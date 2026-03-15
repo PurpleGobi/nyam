@@ -33,6 +33,7 @@ import {
   toggleVisited,
 } from "@/lib/storage"
 import type { RecommendationHistory, Restaurant } from "@/types"
+import { TasteStyleContainer } from "@/presentation/containers/taste-style-container"
 
 function EmptyState({
   icon: Icon,
@@ -258,6 +259,11 @@ export default function HistoryPage() {
 
   return (
     <div className="px-4 py-4">
+      {/* Taste Style Profile Card */}
+      <div className="mb-4">
+        <TasteStyleContainer />
+      </div>
+
       <Tabs defaultValue="history">
         <TabsList className="w-full">
           <TabsTrigger value="history" className="flex-1 gap-1">
