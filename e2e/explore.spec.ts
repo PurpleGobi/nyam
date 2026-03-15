@@ -18,10 +18,10 @@ test.describe('Explore Page', () => {
 
     const searchInput = page.getByPlaceholder('식당, 지역, 메뉴 검색...');
     await searchInput.fill('테스트');
-    // Allow debounce
-    await page.waitForTimeout(500);
+    // Allow debounce + API response
+    await page.waitForTimeout(1000);
 
     // Page should not crash
-    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('main')).toBeVisible({ timeout: 10000 });
   });
 });
