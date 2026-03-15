@@ -25,15 +25,15 @@ export function RestaurantCard({
   return (
     <div
       className={cn(
-        'group relative flex gap-3 overflow-hidden rounded-xl',
-        'bg-white p-3',
-        'border border-neutral-100',
+        'group relative flex gap-3 overflow-hidden rounded-2xl',
+        'bg-white p-4',
+        'shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
         'transition-all duration-200',
         'hover:shadow-md active:scale-[0.99]',
       )}
     >
       {/* Thumbnail */}
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
+      <div className="relative h-[96px] w-[96px] shrink-0 overflow-hidden rounded-xl">
         {restaurant.imageUrl ? (
           <Image
             src={restaurant.imageUrl}
@@ -57,14 +57,16 @@ export function RestaurantCard({
       <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
         {/* Top: name + badge */}
         <div className="flex items-start justify-between gap-1.5">
-          <h3 className="truncate text-base font-bold text-neutral-800">
+          <h3 className="truncate text-[17px] font-bold text-neutral-800">
             {restaurant.name}
           </h3>
-          <VerificationBadge
-            level={restaurant.verificationLevel}
-            count={restaurant.verificationCount}
-            size="sm"
-          />
+          {restaurant.verificationLevel !== 'unverified' && (
+            <VerificationBadge
+              level={restaurant.verificationLevel}
+              count={restaurant.verificationCount}
+              size="sm"
+            />
+          )}
         </div>
 
         {/* Location + cuisine */}
@@ -107,7 +109,7 @@ export function RestaurantCard({
             e.stopPropagation();
             onFavoriteClick(restaurant.id);
           }}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm"
           aria-label={isFavorite ? '찜 해제' : '찜하기'}
         >
           <Heart

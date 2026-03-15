@@ -52,7 +52,7 @@ export function HomeContainer() {
   const { text: greetingText, icon: GreetingIcon } = useMemo(() => getGreeting(), [])
 
   return (
-    <div className="flex flex-col gap-6 pb-20">
+    <div className="flex flex-col gap-5 px-5 pb-20">
       {/* Greeting section */}
       <section className="flex flex-col gap-1">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
@@ -75,20 +75,23 @@ export function HomeContainer() {
       {/* Situation quick buttons */}
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">어떤 상황인가요?</h2>
-        <div className="flex gap-2 overflow-x-auto">
-          {SITUATION_PRESETS.map((preset) => {
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto">
+            {SITUATION_PRESETS.map((preset) => {
             const IconComp = situationIconMap[preset.icon]
             return (
               <Link
                 key={preset.id}
                 href={`${ROUTES.EXPLORE}?situation=${preset.id}`}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
+                className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-3.5 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
               >
                 {IconComp && <IconComp size={16} strokeWidth={1.5} className="text-[var(--color-primary-500)]" />}
                 <span>{preset.label}</span>
               </Link>
             )
           })}
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
         </div>
       </section>
 
@@ -129,7 +132,7 @@ export function HomeContainer() {
         )}
 
         {!restaurantsLoading && !error && restaurants.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {restaurants.map((restaurant) => (
               <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
                 <RestaurantCard restaurant={restaurant} />

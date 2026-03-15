@@ -49,7 +49,7 @@ export function PromptsContainer() {
   )
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 px-5 pb-20">
       {/* Page title */}
       <h1 className="text-2xl font-bold">AI 프롬프트</h1>
 

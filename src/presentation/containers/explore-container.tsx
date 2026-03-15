@@ -63,7 +63,7 @@ export function ExploreContainer() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-3 px-5 pb-20">
       {/* Search input */}
       <div className="relative">
         <Search
@@ -74,13 +74,14 @@ export function ExploreContainer() {
           placeholder="맛집 이름으로 검색..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="h-11 pl-10"
         />
       </div>
 
       {/* Category filter chips */}
-      <div className="flex gap-2 overflow-x-auto">
-        {FOOD_CATEGORIES.map((category) => (
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto">
+          {FOOD_CATEGORIES.map((category) => (
           <button
             key={category.id}
             type="button"
@@ -101,6 +102,8 @@ export function ExploreContainer() {
             <span>{category.label}</span>
           </button>
         ))}
+        </div>
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
       </div>
 
       {/* Restaurant list */}
@@ -141,7 +144,7 @@ export function ExploreContainer() {
       )}
 
       {!isLoading && !error && restaurants.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {restaurants.map((restaurant) => (
             <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
               <RestaurantCard

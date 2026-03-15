@@ -35,7 +35,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${comfortaa.variable} antialiased`}
       >
         <div className="mx-auto flex min-h-dvh max-w-lg flex-col bg-background">
-          <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background/95 px-5 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <h1
               className="text-2xl tracking-tight text-orange-500"
               style={{ fontFamily: "var(--font-logo)" }}

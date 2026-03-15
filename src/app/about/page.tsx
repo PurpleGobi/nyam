@@ -63,7 +63,7 @@ const steps = [
 
 export default function AboutPage() {
   return (
-    <div className="px-4 py-6">
+    <div className="px-5 py-6">
       {/* Hero */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-red-500">
