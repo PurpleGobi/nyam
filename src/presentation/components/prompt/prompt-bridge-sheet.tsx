@@ -1,26 +1,37 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
-import { ExternalLink, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import {
+  Copy,
+  Check,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+} from 'lucide-react'
 import {
   Sheet,
-  SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
   SheetDescription,
 } from '@/components/ui/sheet'
-import { CopyButton } from './copy-button'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/application/hooks/use-auth'
+import { useUserProfile } from '@/application/hooks/use-user-profile'
+import { useUserTaste } from '@/application/hooks/use-user-taste'
 import { usePrompts } from '@/application/hooks/use-prompts'
 import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
-import type { PromptTemplate } from '@/domain/entities/prompt'
-import type { PromptContext } from '@/shared/utils/prompt-resolver'
-import { resolveVariables, getUnfilledVariables } from '@/shared/utils/prompt-resolver'
-import { buildPrompt } from '@/domain/services/prompt-builder'
 import { cn } from '@/shared/utils/cn'
+import { buildEnhancedPrompt, buildUserContext } from '@/shared/utils/prompt-resolver'
+import type { PromptContext } from '@/shared/utils/prompt-resolver'
+import type { PromptTemplate } from '@/domain/entities/prompt'
 
 interface PromptBridgeSheetProps {
-  /** Initial context for auto-filling variables */
+  /** Context with restaurant data for prompt generation */
   readonly context: PromptContext
   /** Restaurant ID for usage logging */
   readonly restaurantId?: string
@@ -32,9 +43,18 @@ interface PromptBridgeSheetProps {
   readonly onOpenChange?: (open: boolean) => void
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  review_verify: '리뷰 검증',
+  situation_recommend: '상황 추천',
+  compare: '비교 분석',
+  info_check: '정보 확인',
+  hidden_gem: '숨은 맛집',
+}
+
 /**
- * Bottom sheet showing prompt templates with auto-filled variables.
- * Used from restaurant detail and home situation buttons.
+ * Enhanced prompt bridge bottom sheet.
+ * Generates expert-level, personalized prompts by injecting
+ * restaurant context, user profile, and taste history.
  */
 export function PromptBridgeSheet({
   context,
@@ -43,264 +63,175 @@ export function PromptBridgeSheet({
   open,
   onOpenChange,
 }: PromptBridgeSheetProps) {
-  const { prompts, isLoading } = usePrompts()
-  const { copyToClipboard, openInChatGPT } = usePromptBridge()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [editedVars, setEditedVars] = useState<Record<string, Record<string, string>>>({})
+  const { user } = useAuth()
+  const { profile } = useUserProfile(user?.id)
+  const { tasteProfile, experiences } = useUserTaste()
+  const { prompts, isLoading: promptsLoading } = usePrompts()
+  const { copyToClipboard, openInChatGPT, copied } = usePromptBridge()
 
-  const getResolvedVars = useCallback(
-    (template: PromptTemplate): Record<string, string> => {
-      const autoVars = resolveVariables(template, context)
-      const userEdits = editedVars[template.id] ?? {}
-      return { ...autoVars, ...userEdits }
-    },
-    [context, editedVars],
-  )
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
 
-  const handleVarChange = useCallback(
-    (templateId: string, key: string, value: string) => {
-      setEditedVars((prev) => ({
-        ...prev,
-        [templateId]: { ...(prev[templateId] ?? {}), [key]: value },
-      }))
-    },
-    [],
-  )
+  // Auto-select first template when prompts load
+  const activeTemplate = selectedTemplate ?? prompts[0] ?? null
 
-  const handleCopy = useCallback(
-    (template: PromptTemplate) => {
-      const vars = getResolvedVars(template)
-      const text = buildPrompt(template, vars)
-      void copyToClipboard(text, template.id, restaurantId)
-    },
-    [getResolvedVars, copyToClipboard, restaurantId],
-  )
+  // Build enhanced prompt with all context (restaurant + user + taste)
+  const enhancedPrompt = useMemo(() => {
+    if (!activeTemplate) return ''
 
-  const handleDeeplink = useCallback(
-    (template: PromptTemplate) => {
-      const vars = getResolvedVars(template)
-      const text = buildPrompt(template, vars)
-      void openInChatGPT(text, template.id, restaurantId)
-    },
-    [getResolvedVars, openInChatGPT, restaurantId],
-  )
+    const fullContext: PromptContext = {
+      ...context,
+      user: profile
+        ? buildUserContext(profile, tasteProfile, experiences)
+        : undefined,
+    }
+
+    return buildEnhancedPrompt(activeTemplate, fullContext)
+  }, [activeTemplate, context, profile, tasteProfile, experiences])
+
+  const handleCopy = () => {
+    if (enhancedPrompt) {
+      void copyToClipboard(enhancedPrompt, activeTemplate?.id, restaurantId)
+    }
+  }
+
+  const handleOpenChatGPT = () => {
+    if (enhancedPrompt) {
+      void openInChatGPT(enhancedPrompt, activeTemplate?.id, restaurantId)
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger>{children}</SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl px-5 pb-8 pt-0">
-        <SheetHeader className="sticky top-0 z-10 bg-background pb-2 pt-4">
-          {/* Drag handle */}
+      <SheetTrigger>
+        {children}
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl px-0">
+        <SheetHeader className="px-5 pb-2">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--color-neutral-300)]" />
-          <SheetTitle className="flex items-center gap-2 text-lg font-bold">
+          <SheetTitle className="flex items-center gap-2 text-left text-lg">
             <Sparkles size={20} className="text-[var(--color-primary-500)]" />
-            AI 프롬프트 선택
+            AI 검증 프롬프트
           </SheetTitle>
           <SheetDescription>
-            {context.restaurantName
-              ? `${context.restaurantName} 정보가 자동으로 입력됩니다`
-              : '프롬프트를 선택하고 변수를 입력하세요'}
+            {context.restaurant
+              ? `${context.restaurant.name} 정보가 자동으로 반영됩니다`
+              : '프롬프트를 선택하세요'}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 pt-2">
-          {isLoading && (
-            <div className="flex flex-col gap-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-28 animate-pulse rounded-xl bg-[var(--color-neutral-100)]"
-                />
-              ))}
+        <ScrollArea className="flex-1 px-5">
+          <div className="flex flex-col gap-4 pb-32">
+            {/* Template selector chips */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-[var(--color-neutral-600)]">
+                프롬프트 선택
+              </span>
+              <div className="flex gap-2 overflow-x-auto">
+                {promptsLoading && (
+                  <div className="flex gap-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-9 w-24 animate-pulse rounded-full bg-[var(--color-neutral-100)]"
+                      />
+                    ))}
+                  </div>
+                )}
+                {prompts.map(template => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => setSelectedTemplate(template)}
+                    className={cn(
+                      'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all',
+                      activeTemplate?.id === template.id
+                        ? 'bg-[var(--color-primary-500)] text-white'
+                        : 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-600)]',
+                    )}
+                  >
+                    {CATEGORY_LABELS[template.category] ?? template.title}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
 
-          {!isLoading && prompts.length === 0 && (
-            <p className="py-8 text-center text-sm text-[var(--color-neutral-500)]">
-              사용 가능한 프롬프트가 없어요.
-            </p>
-          )}
+            <Separator />
 
-          {!isLoading &&
-            prompts.map((template) => (
-              <PromptBridgeCard
-                key={template.id}
-                template={template}
-                resolvedVars={getResolvedVars(template)}
-                expanded={expandedId === template.id}
-                onToggle={() =>
-                  setExpandedId((prev) => (prev === template.id ? null : template.id))
-                }
-                onVarChange={(key, value) => handleVarChange(template.id, key, value)}
-                onCopy={() => handleCopy(template)}
-                onDeeplink={() => handleDeeplink(template)}
-              />
-            ))}
+            {/* Personalization status */}
+            {profile && (
+              <div className="flex items-center gap-2 rounded-lg bg-[var(--color-success-50)] px-3 py-2">
+                <Check size={14} className="text-[var(--color-success-600)]" />
+                <span className="text-xs text-[var(--color-success-700)]">
+                  내 취향이 반영된 맞춤 프롬프트
+                  {tasteProfile ? ' (취향 프로필 적용됨)' : ''}
+                </span>
+              </div>
+            )}
+
+            {/* Prompt preview toggle */}
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPreview(!showPreview)}
+                className="flex items-center justify-between text-sm font-medium text-[var(--color-neutral-600)]"
+              >
+                프롬프트 미리보기
+                {showPreview ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              {showPreview && (
+                <div className="max-h-[40vh] overflow-y-auto rounded-lg bg-[var(--color-neutral-50)] p-4 font-mono text-xs leading-relaxed text-[var(--color-neutral-700)] whitespace-pre-wrap">
+                  {enhancedPrompt || '프롬프트를 생성할 수 없습니다.'}
+                </div>
+              )}
+            </div>
+
+            {/* Restaurant info summary card */}
+            {context.restaurant && (
+              <div className="rounded-lg border border-[var(--color-neutral-200)] p-4">
+                <h3 className="font-semibold text-[var(--color-neutral-800)]">
+                  {context.restaurant.name}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+                  {context.restaurant.cuisineCategory} · {context.restaurant.address}
+                </p>
+                {context.restaurant.externalRatings.length > 0 && (
+                  <div className="mt-2 flex gap-3 text-xs text-[var(--color-neutral-500)]">
+                    {context.restaurant.externalRatings.map(r => (
+                      <span key={r.source}>
+                        {r.source} {r.rating ?? '-'}점 ({r.reviewCount}리뷰)
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Action buttons - sticky bottom */}
+        <div className="absolute inset-x-0 bottom-0 border-t bg-white px-5 pb-[env(safe-area-inset-bottom)] pt-4">
+          <div className="flex gap-3">
+            <Button
+              onClick={handleCopy}
+              variant="outline"
+              className="flex-1 gap-2"
+              size="lg"
+            >
+              {copied ? <Check size={18} /> : <Copy size={18} />}
+              {copied ? '복사됨' : '복사하기'}
+            </Button>
+            <Button
+              onClick={handleOpenChatGPT}
+              className="flex-1 gap-2 bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]"
+              size="lg"
+            >
+              <ExternalLink size={18} />
+              ChatGPT로 열기
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
-  )
-}
-
-// --- Internal card component for the sheet ---
-
-interface PromptBridgeCardProps {
-  template: PromptTemplate
-  resolvedVars: Record<string, string>
-  expanded: boolean
-  onToggle: () => void
-  onVarChange: (key: string, value: string) => void
-  onCopy: () => void
-  onDeeplink: () => void
-}
-
-function PromptBridgeCard({
-  template,
-  resolvedVars,
-  expanded,
-  onToggle,
-  onVarChange,
-  onCopy,
-  onDeeplink,
-}: PromptBridgeCardProps) {
-  const previewText = useMemo(
-    () => buildPrompt(template, resolvedVars),
-    [template, resolvedVars],
-  )
-
-  const unfilled = useMemo(
-    () => getUnfilledVariables(template, resolvedVars),
-    [template, resolvedVars],
-  )
-
-  return (
-    <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-0)] p-4">
-      {/* Header */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex items-center justify-between text-left"
-      >
-        <div className="min-w-0 flex-1">
-          <h4 className="text-base font-semibold text-[var(--color-neutral-800)]">
-            {template.title}
-          </h4>
-          {template.description && (
-            <p className="mt-0.5 text-sm text-[var(--color-neutral-500)]">
-              {template.description}
-            </p>
-          )}
-        </div>
-        {expanded ? (
-          <ChevronUp size={18} className="shrink-0 text-[var(--color-neutral-400)]" />
-        ) : (
-          <ChevronDown size={18} className="shrink-0 text-[var(--color-neutral-400)]" />
-        )}
-      </button>
-
-      {/* Variable status chips */}
-      {template.variables.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {template.variables.map((v) => {
-            const filled = Boolean(resolvedVars[v.key])
-            return (
-              <span
-                key={v.key}
-                className={cn(
-                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium',
-                  filled
-                    ? 'bg-[var(--color-success-50)] text-[var(--color-success-700)]'
-                    : 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]',
-                )}
-              >
-                {v.label}: {filled ? resolvedVars[v.key] : '미입력'}
-              </span>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Expanded area */}
-      {expanded && (
-        <div className="mt-3 flex flex-col gap-3">
-          {/* Variable input form */}
-          {unfilled.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {unfilled.map((v) => (
-                <label key={v.key} className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-[var(--color-neutral-600)]">
-                    {v.label}
-                  </span>
-                  <input
-                    type="text"
-                    placeholder={`${v.label} 입력`}
-                    value={resolvedVars[v.key] ?? ''}
-                    onChange={(e) => onVarChange(v.key, e.target.value)}
-                    className="rounded-[var(--radius-md)] border border-[var(--color-neutral-200)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--color-primary-400)] focus:ring-1 focus:ring-[var(--color-primary-400)]"
-                  />
-                </label>
-              ))}
-            </div>
-          )}
-
-          {/* Already-filled variables (editable) */}
-          {template.variables.filter((v) => resolvedVars[v.key]).length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-[var(--color-neutral-400)]">
-                자동 입력됨 (수정 가능)
-              </span>
-              {template.variables
-                .filter((v) => resolvedVars[v.key])
-                .map((v) => (
-                  <label key={v.key} className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-[var(--color-neutral-600)]">
-                      {v.label}
-                    </span>
-                    <input
-                      type="text"
-                      value={resolvedVars[v.key] ?? ''}
-                      onChange={(e) => onVarChange(v.key, e.target.value)}
-                      className="rounded-[var(--radius-md)] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] px-3 py-2 text-sm outline-none focus:border-[var(--color-primary-400)] focus:ring-1 focus:ring-[var(--color-primary-400)]"
-                    />
-                  </label>
-                ))}
-            </div>
-          )}
-
-          {/* Preview */}
-          <div className="relative overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-neutral-50)] p-3">
-            <p className="whitespace-pre-wrap font-mono text-xs leading-[1.6] text-[var(--color-neutral-700)]">
-              {previewText}
-            </p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <CopyButton
-              text={previewText}
-              label="복사하기"
-              onCopied={onCopy}
-              className="flex-1"
-              variant="secondary"
-            />
-            <button
-              type="button"
-              onClick={onDeeplink}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)]',
-                'bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-600)]',
-                'px-4 py-2.5 text-sm font-medium text-white',
-                'transition-all duration-200',
-                'hover:brightness-105',
-                'active:scale-[0.98]',
-              )}
-            >
-              <ExternalLink size={16} strokeWidth={1.5} />
-              ChatGPT
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   )
 }

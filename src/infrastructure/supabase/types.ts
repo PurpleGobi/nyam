@@ -607,6 +607,97 @@ export interface Database {
           },
         ]
       }
+
+      user_taste_profiles: {
+        Row: {
+          user_id: string
+          priorities: string[]
+          spice_tolerance: string
+          portion_preference: string
+          dining_notes: string[]
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          priorities?: string[]
+          spice_tolerance?: string
+          portion_preference?: string
+          dining_notes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          priorities?: string[]
+          spice_tolerance?: string
+          portion_preference?: string
+          dining_notes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_taste_profiles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+
+      dining_experiences: {
+        Row: {
+          id: string
+          user_id: string
+          restaurant_id: string
+          restaurant_name: string
+          visit_date: string
+          note: string
+          liked: string[]
+          disliked: string[]
+          overall_feeling: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          restaurant_id: string
+          restaurant_name: string
+          visit_date: string
+          note?: string
+          liked?: string[]
+          disliked?: string[]
+          overall_feeling?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          restaurant_id?: string
+          restaurant_name?: string
+          visit_date?: string
+          note?: string
+          liked?: string[]
+          disliked?: string[]
+          overall_feeling?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'dining_experiences_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dining_experiences_restaurant_id_fkey'
+            columns: ['restaurant_id']
+            isOneToOne: false
+            referencedRelation: 'restaurants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
 
     Views: {

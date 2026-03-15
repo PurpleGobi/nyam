@@ -23,6 +23,6 @@ test.describe('Home Page', () => {
   test('situation button should navigate to explore', async ({ page }) => {
     await page.goto('/');
     await page.getByText('비즈니스 점심').click();
-    await expect(page).toHaveURL(/\/explore\?situation=business-lunch/);
+    await expect(page).toHaveURL(/\/prompts\?situation=business-lunch/);
   });
 });
