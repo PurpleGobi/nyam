@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Comfortaa } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { BottomNavWrapper } from "@/presentation/components/layout/bottom-nav-wrapper";
+import { AppProviders } from "@/application/contexts/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +50,9 @@ export default function RootLayout({
               AI 검증 맛집 추천
             </span>
           </header>
-          <main className="flex-1 pt-4 pb-16">{children}</main>
+          <AppProviders>
+            <main className="flex-1 pt-4 pb-16">{children}</main>
+          </AppProviders>
           <BottomNavWrapper />
         </div>
       </body>

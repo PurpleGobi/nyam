@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { createClient } from '@/infrastructure/supabase/client'
+import { createAuthClient } from '@/di/repositories'
 
 type OAuthProvider = 'kakao' | 'google' | 'apple'
 
@@ -24,7 +24,7 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createAuthClient()
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
@@ -48,7 +48,7 @@ export function useAuth(): UseAuthReturn {
   }, [])
 
   const signIn = useCallback(async (provider: OAuthProvider) => {
-    const supabase = createClient()
+    const supabase = createAuthClient()
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -61,7 +61,7 @@ export function useAuth(): UseAuthReturn {
   }, [])
 
   const signOut = useCallback(async () => {
-    const supabase = createClient()
+    const supabase = createAuthClient()
     const { error } = await supabase.auth.signOut()
     if (error) {
       throw error

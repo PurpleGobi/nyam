@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { ExternalLink, Sparkles, type LucideIcon } from 'lucide-react'
+import { ExternalLink, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from '@/components/ui/sheet'
+} from '@/presentation/components/ui/sheet'
 import { CopyButton } from './copy-button'
-import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
 import type { PromptTemplate } from '@/domain/entities/prompt'
 import { buildPrompt } from '@/domain/services/prompt-builder'
 import { SITUATION_PRESETS } from '@/shared/constants/situations'
@@ -23,6 +22,10 @@ interface PromptEditorSheetProps {
   readonly onClose: () => void
   /** Pre-filled situation (from home quick button) */
   readonly situation?: string
+  /** Copy prompt text to clipboard */
+  readonly onCopyToClipboard: (text: string, templateId?: string) => Promise<void>
+  /** Open prompt in ChatGPT */
+  readonly onOpenInChatGPT: (text: string, templateId?: string) => Promise<void>
 }
 
 /** Map of variable labels that support preset chip selection */
@@ -40,8 +43,9 @@ export function PromptEditorSheet({
   template,
   onClose,
   situation,
+  onCopyToClipboard,
+  onOpenInChatGPT,
 }: PromptEditorSheetProps) {
-  const { copyToClipboard, openInChatGPT } = usePromptBridge()
   const [variables, setVariables] = useState<Record<string, string>>({})
 
   // Pre-fill situation if provided
@@ -71,13 +75,13 @@ export function PromptEditorSheet({
 
   const handleCopy = useCallback(() => {
     if (!template) return
-    void copyToClipboard(previewText, template.id)
-  }, [template, previewText, copyToClipboard])
+    void onCopyToClipboard(previewText, template.id)
+  }, [template, previewText, onCopyToClipboard])
 
   const handleDeeplink = useCallback(() => {
     if (!template) return
-    void openInChatGPT(previewText, template.id)
-  }, [template, previewText, openInChatGPT])
+    void onOpenInChatGPT(previewText, template.id)
+  }, [template, previewText, onOpenInChatGPT])
 
   const handleOpenChange = useCallback(
     (open: boolean) => {

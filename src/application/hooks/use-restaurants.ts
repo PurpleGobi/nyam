@@ -3,7 +3,7 @@
 import useSWR from 'swr'
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
 import type { RestaurantFilter, PaginationOptions, PaginatedResult } from '@/domain/repositories/restaurant-repository'
-import { supabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
+import { restaurantRepository } from '@/di/repositories'
 
 interface UseRestaurantsParams {
   readonly filter?: RestaurantFilter
@@ -26,7 +26,7 @@ export function useRestaurants(params?: UseRestaurantsParams): UseRestaurantsRet
 
   const { data, error, isLoading } = useSWR<PaginatedResult<RestaurantWithSummary>>(
     ['restaurants', filter, pagination],
-    () => supabaseRestaurantRepository.findMany(filter, pagination),
+    () => restaurantRepository.findMany(filter, pagination),
   )
 
   return {

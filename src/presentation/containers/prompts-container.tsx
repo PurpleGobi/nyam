@@ -171,6 +171,8 @@ export function PromptsContainer() {
         template={editingTemplate}
         onClose={() => setEditingTemplate(null)}
         situation={situationParam ?? undefined}
+        onCopyToClipboard={copyToClipboard}
+        onOpenInChatGPT={openInChatGPT}
       />
     </div>
   )

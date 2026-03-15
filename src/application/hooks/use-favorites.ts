@@ -1,9 +1,9 @@
 'use client'
 
 import useSWR, { useSWRConfig } from 'swr'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import type { Favorite } from '@/domain/entities/collection'
-import { supabaseCollectionRepository } from '@/infrastructure/repositories/supabase-collection-repository'
+import { collectionRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 const LOCAL_STORAGE_KEY = 'nyam-favorites'
@@ -46,17 +46,11 @@ export function useFavorites(): UseFavoritesReturn {
 
   const { data, error, isLoading: swrLoading, mutate } = useSWR<readonly Favorite[]>(
     swrKey,
-    () => supabaseCollectionRepository.listFavorites(user!.id),
+    () => collectionRepository.listFavorites(user!.id),
   )
 
   // --- localStorage mode (not logged in) ---
-  const [localIds, setLocalIds] = useState<string[]>([])
-
-  useEffect(() => {
-    if (!user) {
-      setLocalIds(getLocalFavorites())
-    }
-  }, [user])
+  const [localIds, setLocalIds] = useState<string[]>(() => getLocalFavorites())
 
   const favorites: readonly Favorite[] = user
     ? (data ?? [])
@@ -110,12 +104,12 @@ export function useFavorites(): UseFavoritesReturn {
 
       await mutate(
         async () => {
-          const newState = await supabaseCollectionRepository.toggleFavorite(
+          const newState = await collectionRepository.toggleFavorite(
             user.id,
             restaurantId,
           )
 
-          const updatedFavorites = await supabaseCollectionRepository.listFavorites(user.id)
+          const updatedFavorites = await collectionRepository.listFavorites(user.id)
 
           await globalMutate(
             (key: unknown) =>

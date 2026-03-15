@@ -7,7 +7,7 @@ import type {
   CreateDiningExperienceInput,
   UpdateTasteProfileInput,
 } from '@/domain/repositories/user-taste-repository'
-import { supabaseUserTasteRepository } from '@/infrastructure/repositories/supabase-user-taste-repository'
+import { userTasteRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 interface UseUserTasteReturn {
@@ -32,7 +32,7 @@ export function useUserTaste(): UseUserTasteReturn {
     mutate: mutateTaste,
   } = useSWR(
     user ? ['taste-profile', user.id] : null,
-    () => supabaseUserTasteRepository.getTasteProfile(user!.id),
+    () => userTasteRepository.getTasteProfile(user!.id),
   )
 
   const {
@@ -42,13 +42,13 @@ export function useUserTaste(): UseUserTasteReturn {
     mutate: mutateExp,
   } = useSWR(
     user ? ['dining-experiences', user.id] : null,
-    () => supabaseUserTasteRepository.getDiningExperiences(user!.id, 10),
+    () => userTasteRepository.getDiningExperiences(user!.id, 10),
   )
 
   const updateTasteProfile = useCallback(
     async (input: UpdateTasteProfileInput): Promise<UserTasteProfile> => {
       if (!user) throw new Error('Must be authenticated')
-      const updated = await supabaseUserTasteRepository.updateTasteProfile(user.id, input)
+      const updated = await userTasteRepository.updateTasteProfile(user.id, input)
       await mutateTaste(updated, { revalidate: false })
       return updated
     },
@@ -58,7 +58,7 @@ export function useUserTaste(): UseUserTasteReturn {
   const addExperience = useCallback(
     async (input: Omit<CreateDiningExperienceInput, 'userId'>): Promise<DiningExperience> => {
       if (!user) throw new Error('Must be authenticated')
-      const created = await supabaseUserTasteRepository.addDiningExperience({
+      const created = await userTasteRepository.addDiningExperience({
         ...input,
         userId: user.id,
       })

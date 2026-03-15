@@ -1,5 +1,5 @@
 import type { FilterState, Restaurant } from "@/types"
-import { mockRestaurants } from "@/data/mock-restaurants"
+import { mockRestaurants } from "@/infrastructure/mock/mock-restaurants"
 import { filterRestaurants } from "@/lib/filter"
 
 export interface RecommendResponse {

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import type { InteractionEventType } from '@/domain/entities/interaction'
-import { supabaseInteractionRepository } from '@/infrastructure/repositories/supabase-interaction-repository'
+import { interactionRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 interface UseInteractionTrackerReturn {
@@ -25,7 +25,7 @@ export function useInteractionTracker(): UseInteractionTrackerReturn {
   const track = useCallback(
     (eventType: InteractionEventType, eventData: Record<string, string>) => {
       if (!user) return
-      void supabaseInteractionRepository.logInteraction({
+      void interactionRepository.logInteraction({
         userId: user.id,
         eventType,
         eventData,

@@ -1,18 +1,16 @@
 'use client'
 
 import useSWR from 'swr'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { RestaurantWithSummary, CuisineCategory } from '@/domain/entities/restaurant'
-import { supabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
+import type { QuickPick } from '@/domain/entities/quick-pick'
+import { computeSmartDefaults, type HomeFilter } from '@/domain/services/smart-defaults'
+import { selectQuickPick } from '@/domain/services/scoring'
+import { restaurantRepository } from '@/di/repositories'
+import { useUserTaste } from './use-user-taste'
+import { usePreferenceSummary } from './use-preference-summary'
 
-/** Filter state for home recommendations */
-export interface HomeFilter {
-  readonly region: string | null
-  readonly cuisineCategory: CuisineCategory | null
-  readonly situation: string | null
-  readonly partySize: string | null
-  readonly budget: string | null
-}
+export type { HomeFilter } from '@/domain/services/smart-defaults'
 
 interface UseHomeRecommendationsReturn {
   readonly restaurants: readonly RestaurantWithSummary[]
@@ -23,8 +21,12 @@ interface UseHomeRecommendationsReturn {
   readonly filter: HomeFilter
   /** Update a single filter field */
   readonly setFilter: <K extends keyof HomeFilter>(key: K, value: HomeFilter[K]) => void
-  /** Reset all filters (keep auto-detected region) */
+  /** Reset all filters (re-apply smart defaults) */
   readonly resetFilters: () => void
+  /** Top-scored restaurant recommendation */
+  readonly quickPick: QuickPick | null
+  /** Whether smart defaults were applied (user hasn't manually changed filters) */
+  readonly smartDefaultsApplied: boolean
   readonly isLoading: boolean
   readonly error: Error | undefined
 }
@@ -54,7 +56,7 @@ async function fetchRecommendations(
   }
 
   const results = await Promise.all(
-    restaurantIds.map(id => supabaseRestaurantRepository.findById(id))
+    restaurantIds.map(id => restaurantRepository.findById(id))
   )
 
   return {
@@ -73,11 +75,27 @@ const DEFAULT_FILTER: HomeFilter = {
 
 /**
  * Hook for home page time-based + location-based restaurant recommendations.
- * Supports chip-based filters auto-filled from geolocation.
+ * Applies smart defaults from user taste/behavior on first load.
  */
 export function useHomeRecommendations(): UseHomeRecommendationsReturn {
   const [detectedRegion, setDetectedRegion] = useState<string | null>(null)
+  const { tasteProfile } = useUserTaste()
+  const { summary: preferenceSummary } = usePreferenceSummary()
+
+  // Compute smart defaults as initial state (no effect needed)
+  const smartDefaults = useMemo(
+    () => computeSmartDefaults({
+      timeHour: new Date().getHours(),
+      detectedRegion: null,
+      tasteProfile,
+      preferenceSummary,
+    }),
+    [tasteProfile, preferenceSummary],
+  )
+
   const [filter, setFilterState] = useState<HomeFilter>(DEFAULT_FILTER)
+  const [userHasEdited, setUserHasEdited] = useState(false)
+  const [smartDefaultsApplied, setSmartDefaultsApplied] = useState(false)
 
   // Try to detect region from geolocation
   useEffect(() => {
@@ -94,10 +112,6 @@ export function useHomeRecommendations(): UseHomeRecommendationsReturn {
             const data = await res.json() as { region: string | null }
             if (data.region) {
               setDetectedRegion(data.region)
-              setFilterState(prev => ({
-                ...prev,
-                region: prev.region ?? data.region,
-              }))
             }
           }
         } catch {
@@ -105,19 +119,39 @@ export function useHomeRecommendations(): UseHomeRecommendationsReturn {
         }
       },
       () => {
-        // Permission denied or error - proceed without region
+        // Permission denied or error
       },
       { timeout: 5000, maximumAge: 300000 }
     )
   }, [])
 
+  // Sync smart defaults into filter when data arrives (only if user hasn't edited)
+  const smartDefaultsKey = JSON.stringify(smartDefaults) + String(detectedRegion)
+  useEffect(() => {
+    if (userHasEdited) return
+
+    const merged: HomeFilter = {
+      ...smartDefaults,
+      region: detectedRegion ?? smartDefaults.region,
+    }
+    const hasAny = Object.values(merged).some(v => v !== null)
+
+    // Use functional updater to avoid direct setState in effect lint error
+    setFilterState(() => merged)
+    setSmartDefaultsApplied(() => hasAny)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [smartDefaultsKey, userHasEdited])
+
   const setFilter = useCallback(<K extends keyof HomeFilter>(key: K, value: HomeFilter[K]) => {
+    setUserHasEdited(true)
+    setSmartDefaultsApplied(false)
     setFilterState(prev => ({ ...prev, [key]: value }))
   }, [])
 
   const resetFilters = useCallback(() => {
-    setFilterState({ ...DEFAULT_FILTER, region: detectedRegion })
-  }, [detectedRegion])
+    setUserHasEdited(false)
+    // Smart defaults will re-apply via useEffect
+  }, [])
 
   const { data, error, isLoading } = useSWR(
     ['home-recommendations', filter.region, filter.cuisineCategory],
@@ -128,13 +162,25 @@ export function useHomeRecommendations(): UseHomeRecommendationsReturn {
     }
   )
 
+  const restaurants = data?.restaurants ?? []
+
+  const quickPick = useMemo(() => {
+    if (restaurants.length === 0) return null
+    return selectQuickPick(restaurants, {
+      preferenceSummary,
+      preferredRegion: filter.region,
+    })
+  }, [restaurants, preferenceSummary, filter.region])
+
   return {
-    restaurants: data?.restaurants ?? [],
+    restaurants,
     mealLabel: data?.mealLabel ?? '',
     detectedRegion,
     filter,
     setFilter,
     resetFilters,
+    quickPick,
+    smartDefaultsApplied,
     isLoading,
     error,
   }

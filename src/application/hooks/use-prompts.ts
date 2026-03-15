@@ -2,7 +2,7 @@
 
 import useSWR from 'swr'
 import type { PromptTemplate, PromptCategory } from '@/domain/entities/prompt'
-import { supabasePromptRepository } from '@/infrastructure/repositories/supabase-prompt-repository'
+import { promptRepository } from '@/di/repositories'
 
 interface UsePromptsParams {
   readonly category?: PromptCategory
@@ -24,8 +24,8 @@ export function usePrompts(params?: UsePromptsParams): UsePromptsReturn {
     ['prompts', category ?? null],
     () =>
       category
-        ? supabasePromptRepository.findByCategory(category)
-        : supabasePromptRepository.findAll(),
+        ? promptRepository.findByCategory(category)
+        : promptRepository.findAll(),
   )
 
   return {

@@ -2,7 +2,7 @@
 
 import useSWR from 'swr'
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
-import { supabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
+import { restaurantRepository } from '@/di/repositories'
 
 interface UseRestaurantDetailReturn {
   readonly restaurant: RestaurantWithSummary | null
@@ -18,7 +18,7 @@ interface UseRestaurantDetailReturn {
 export function useRestaurantDetail(id: string | undefined): UseRestaurantDetailReturn {
   const { data, error, isLoading } = useSWR<RestaurantWithSummary | null>(
     id ? ['restaurant', id] : null,
-    () => supabaseRestaurantRepository.findById(id!),
+    () => restaurantRepository.findById(id!),
   )
 
   return {

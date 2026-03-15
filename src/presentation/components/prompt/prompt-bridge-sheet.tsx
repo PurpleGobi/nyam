@@ -17,21 +17,17 @@ import {
   SheetTitle,
   SheetTrigger,
   SheetDescription,
-} from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/application/hooks/use-auth'
-import { useUserProfile } from '@/application/hooks/use-user-profile'
-import { useUserTaste } from '@/application/hooks/use-user-taste'
-import { usePrompts } from '@/application/hooks/use-prompts'
-import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
-import { usePreferenceSummary } from '@/application/hooks/use-preference-summary'
-import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
+} from '@/presentation/components/ui/sheet'
+import { Button } from '@/presentation/components/ui/button'
+import { ScrollArea } from '@/presentation/components/ui/scroll-area'
+import { Separator } from '@/presentation/components/ui/separator'
 import { cn } from '@/shared/utils/cn'
 import { buildEnhancedPrompt, buildUserContext, buildBehaviorInsights } from '@/shared/utils/prompt-resolver'
 import type { PromptContext } from '@/shared/utils/prompt-resolver'
 import type { PromptTemplate } from '@/domain/entities/prompt'
+import type { UserProfile } from '@/domain/entities/user'
+import type { UserTasteProfile, DiningExperience } from '@/domain/entities/user-taste'
+import type { UserPreferenceSummary } from '@/domain/entities/interaction'
 
 interface PromptBridgeSheetProps {
   /** Context with restaurant data for prompt generation */
@@ -44,6 +40,26 @@ interface PromptBridgeSheetProps {
   readonly open?: boolean
   /** Callback when open state changes */
   readonly onOpenChange?: (open: boolean) => void
+  /** User profile for personalization */
+  readonly profile: UserProfile | null
+  /** User taste profile */
+  readonly tasteProfile: UserTasteProfile | null
+  /** User dining experiences */
+  readonly experiences: readonly DiningExperience[]
+  /** Available prompt templates */
+  readonly prompts: readonly PromptTemplate[]
+  /** Whether prompts are loading */
+  readonly promptsLoading: boolean
+  /** User preference summary from interactions */
+  readonly preferenceSummary: UserPreferenceSummary | null
+  /** Copy prompt to clipboard */
+  readonly onCopyPrompt: (text: string, templateId?: string, restaurantId?: string) => Promise<void>
+  /** Open prompt in ChatGPT */
+  readonly onOpenChatGPT: (text: string, templateId?: string, restaurantId?: string) => Promise<void>
+  /** Whether text was recently copied */
+  readonly copied: boolean
+  /** Track prompt usage */
+  readonly onTrackPromptUse: (templateId: string, category: string) => void
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -65,14 +81,17 @@ export function PromptBridgeSheet({
   children,
   open,
   onOpenChange,
+  profile,
+  tasteProfile,
+  experiences,
+  prompts,
+  promptsLoading,
+  preferenceSummary,
+  onCopyPrompt,
+  onOpenChatGPT,
+  copied,
+  onTrackPromptUse,
 }: PromptBridgeSheetProps) {
-  const { user } = useAuth()
-  const { profile } = useUserProfile(user?.id)
-  const { tasteProfile, experiences } = useUserTaste()
-  const { prompts, isLoading: promptsLoading } = usePrompts()
-  const { copyToClipboard, openInChatGPT, copied } = usePromptBridge()
-  const { summary } = usePreferenceSummary()
-  const { trackPromptUse } = useInteractionTracker()
 
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -92,23 +111,23 @@ export function PromptBridgeSheet({
       user: profile
         ? buildUserContext(profile, tasteProfile, experiences)
         : undefined,
-      behaviorInsights: summary ? buildBehaviorInsights(summary) : undefined,
+      behaviorInsights: preferenceSummary ? buildBehaviorInsights(preferenceSummary) : undefined,
     }
 
     return buildEnhancedPrompt(activeTemplate, fullContext)
-  }, [activeTemplate, context, profile, tasteProfile, experiences, summary])
+  }, [activeTemplate, context, profile, tasteProfile, experiences, preferenceSummary])
 
   const handleCopy = () => {
     if (enhancedPrompt && activeTemplate) {
-      trackPromptUse(activeTemplate.id, activeTemplate.category)
-      void copyToClipboard(enhancedPrompt, activeTemplate.id, restaurantId)
+      onTrackPromptUse(activeTemplate.id, activeTemplate.category)
+      void onCopyPrompt(enhancedPrompt, activeTemplate.id, restaurantId)
     }
   }
 
   const handleOpenChatGPT = () => {
     if (enhancedPrompt && activeTemplate) {
-      trackPromptUse(activeTemplate.id, activeTemplate.category)
-      void openInChatGPT(enhancedPrompt, activeTemplate.id, restaurantId)
+      onTrackPromptUse(activeTemplate.id, activeTemplate.category)
+      void onOpenChatGPT(enhancedPrompt, activeTemplate.id, restaurantId)
     }
   }
 

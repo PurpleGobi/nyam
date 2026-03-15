@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Flame, Sunrise, UtensilsCrossed, Sun, Moon, MoonStar,
   Briefcase, Heart, User, Home, Users, MapPin, ChevronRight,
-  ChevronDown, ChevronUp, RotateCcw,
+  RotateCcw, Sparkles,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/application/hooks/use-auth'
@@ -14,6 +14,8 @@ import { useHomeRecommendations } from '@/application/hooks/use-home-recommendat
 import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
 import { RestaurantCard } from '@/presentation/components/restaurant/restaurant-card'
 import { RestaurantCardSkeleton } from '@/presentation/components/restaurant/restaurant-card-skeleton'
+import { QuickPickCard } from '@/presentation/components/home/quick-pick-card'
+import { SmartFilterBar } from '@/presentation/components/home/smart-filter-bar'
 import { SITUATION_PRESETS, resolvePresetLabel } from '@/shared/constants/situations'
 import { FOOD_CATEGORIES } from '@/shared/constants/categories'
 import { ROUTES } from '@/shared/constants/routes'
@@ -57,12 +59,14 @@ export function HomeContainer() {
     filter,
     setFilter,
     resetFilters,
+    quickPick,
+    smartDefaultsApplied,
     isLoading: recommendLoading,
     error: recommendError,
   } = useHomeRecommendations()
 
   const { trackSituationClick } = useInteractionTracker()
-  const [showMoreFilters, setShowMoreFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   const { text: greetingText, icon: GreetingIcon } = useMemo(() => getGreeting(), [])
 
@@ -117,180 +121,191 @@ export function HomeContainer() {
             )}
           </p>
         )}
+        {smartDefaultsApplied && (
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary-600)]">
+            <Sparkles size={12} />
+            맞춤 추천
+          </span>
+        )}
       </section>
 
-      {/* Filter section */}
-      <section className="flex flex-col gap-3 rounded-2xl bg-[var(--color-neutral-50)] p-4">
-        {/* Situation chips */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-[var(--color-neutral-500)]">상황</span>
-          <div className="flex gap-1.5 overflow-x-auto">
-            {SITUATION_PRESETS.map((preset) => {
-              const IconComp = situationIconMap[preset.icon]
-              const isActive = filter.situation === preset.id
-              return (
+      {/* Smart Filter Bar - compact summary, tap to expand */}
+      <SmartFilterBar
+        region={filter.region}
+        cuisineCategory={filter.cuisineCategory}
+        situation={filter.situation ? (SITUATION_PRESETS.find(p => p.id === filter.situation) ? resolvePresetLabel(SITUATION_PRESETS.find(p => p.id === filter.situation)!) : filter.situation) : null}
+        partySize={filter.partySize}
+        budget={filter.budget}
+        expanded={showFilters}
+        onToggle={() => setShowFilters(!showFilters)}
+        onClearFilter={(key) => {
+          if (key === 'situation') setFilter('situation', null)
+          else if (key === 'region') setFilter('region', null)
+          else if (key === 'cuisineCategory') setFilter('cuisineCategory', null)
+          else if (key === 'partySize') setFilter('partySize', null)
+          else if (key === 'budget') setFilter('budget', null)
+        }}
+      />
+
+      {/* Expandable filter panel */}
+      {showFilters && (
+        <section className="flex flex-col gap-3 rounded-2xl bg-[var(--color-neutral-50)] p-4">
+          {/* Situation chips */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-[var(--color-neutral-500)]">상황</span>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {SITUATION_PRESETS.map((preset) => {
+                const IconComp = situationIconMap[preset.icon]
+                const isActive = filter.situation === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleSituationToggle(preset.id)}
+                    className={cn(
+                      'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                      isActive
+                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                    )}
+                  >
+                    {IconComp && <IconComp size={14} strokeWidth={1.5} />}
+                    {resolvePresetLabel(preset)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Region chips */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-[var(--color-neutral-500)]">
+              지역
+              {detectedRegion && filter.region === detectedRegion && (
+                <span className="ml-1 text-[var(--color-primary-500)]">(현재 위치)</span>
+              )}
+            </span>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {detectedRegion && !REGIONS.includes(detectedRegion) && (
                 <button
-                  key={preset.id}
                   type="button"
-                  onClick={() => handleSituationToggle(preset.id)}
+                  onClick={() => handleRegionToggle(detectedRegion)}
                   className={cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                    isActive
+                    'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                    filter.region === detectedRegion
                       ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
                       : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
                   )}
                 >
-                  {IconComp && <IconComp size={14} strokeWidth={1.5} />}
-                  {resolvePresetLabel(preset)}
+                  <MapPin size={12} />
+                  {detectedRegion}
                 </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Region chips - auto-filled from location */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-[var(--color-neutral-500)]">
-            지역
-            {detectedRegion && filter.region === detectedRegion && (
-              <span className="ml-1 text-[var(--color-primary-500)]">(현재 위치)</span>
-            )}
-          </span>
-          <div className="flex gap-1.5 overflow-x-auto">
-            {/* Show detected region first if not in default list */}
-            {detectedRegion && !REGIONS.includes(detectedRegion) && (
-              <button
-                type="button"
-                onClick={() => handleRegionToggle(detectedRegion)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                  filter.region === detectedRegion
-                    ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
-                    : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
-                )}
-              >
-                <MapPin size={12} />
-                {detectedRegion}
-              </button>
-            )}
-            {REGIONS.map(region => (
-              <button
-                key={region}
-                type="button"
-                onClick={() => handleRegionToggle(region)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                  filter.region === region
-                    ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
-                    : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
-                  region === detectedRegion && filter.region !== region && 'border-[var(--color-primary-200)] bg-[var(--color-primary-50)]',
-                )}
-              >
-                {region === detectedRegion && <MapPin size={12} />}
-                {region}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Cuisine category chips */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-[var(--color-neutral-500)]">음식 종류</span>
-          <div className="flex gap-1.5 overflow-x-auto">
-            {FOOD_CATEGORIES.slice(0, 7).map(category => {
-              const label = categoryIdToLabel[category.id]
-              const isActive = filter.cuisineCategory === label
-              return (
+              )}
+              {REGIONS.map(region => (
                 <button
-                  key={category.id}
+                  key={region}
                   type="button"
-                  onClick={() => handleCuisineToggle(category.id)}
+                  onClick={() => handleRegionToggle(region)}
                   className={cn(
                     'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                    isActive
-                      ? 'text-white shadow-sm'
+                    filter.region === region
+                      ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                      : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                    region === detectedRegion && filter.region !== region && 'border-[var(--color-primary-200)] bg-[var(--color-primary-50)]',
+                  )}
+                >
+                  {region === detectedRegion && <MapPin size={12} />}
+                  {region}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cuisine category chips */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-[var(--color-neutral-500)]">음식 종류</span>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {FOOD_CATEGORIES.slice(0, 7).map(category => {
+                const label = categoryIdToLabel[category.id]
+                const isActive = filter.cuisineCategory === label
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleCuisineToggle(category.id)}
+                    className={cn(
+                      'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                      isActive
+                        ? 'text-white shadow-sm'
+                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                    )}
+                    style={isActive ? { backgroundColor: category.color } : undefined}
+                  >
+                    <category.icon size={13} />
+                    {category.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Party size */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-[var(--color-neutral-500)]">인원</span>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {PARTY_SIZES.map(size => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => handlePartySizeToggle(size)}
+                  className={cn(
+                    'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                    filter.partySize === size
+                      ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
                       : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
                   )}
-                  style={isActive ? { backgroundColor: category.color } : undefined}
                 >
-                  <category.icon size={13} />
-                  {category.label}
+                  {size}
                 </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Expandable: party size + budget */}
-        <button
-          type="button"
-          onClick={() => setShowMoreFilters(!showMoreFilters)}
-          className="flex items-center justify-center gap-1 text-xs font-medium text-[var(--color-neutral-500)]"
-        >
-          {showMoreFilters ? '접기' : '인원 / 예산'}
-          {showMoreFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-
-        {showMoreFilters && (
-          <div className="flex flex-col gap-3">
-            {/* Party size */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-[var(--color-neutral-500)]">인원</span>
-              <div className="flex gap-1.5 overflow-x-auto">
-                {PARTY_SIZES.map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => handlePartySizeToggle(size)}
-                    className={cn(
-                      'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                      filter.partySize === size
-                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
-                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
-                    )}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Budget */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-[var(--color-neutral-500)]">예산 (1인)</span>
-              <div className="flex gap-1.5 overflow-x-auto">
-                {BUDGETS.map(budget => (
-                  <button
-                    key={budget}
-                    type="button"
-                    onClick={() => handleBudgetToggle(budget)}
-                    className={cn(
-                      'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-                      filter.budget === budget
-                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
-                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
-                    )}
-                  >
-                    {budget}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
-        )}
 
-        {/* Reset filters */}
-        {activeFilterCount > 0 && (
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
-          >
-            <RotateCcw size={12} />
-            필터 초기화
-          </button>
-        )}
-      </section>
+          {/* Budget */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-[var(--color-neutral-500)]">예산 (1인)</span>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {BUDGETS.map(budget => (
+                <button
+                  key={budget}
+                  type="button"
+                  onClick={() => handleBudgetToggle(budget)}
+                  className={cn(
+                    'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                    filter.budget === budget
+                      ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                      : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                  )}
+                >
+                  {budget}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Reset filters */}
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
+            >
+              <RotateCcw size={12} />
+              필터 초기화
+            </button>
+          )}
+        </section>
+      )}
 
       {/* Time + location based recommendations */}
       <section className="flex flex-col gap-3">
@@ -358,11 +373,18 @@ export function HomeContainer() {
 
         {!recommendLoading && !recommendError && restaurants.length > 0 && (
           <div className="flex flex-col gap-2.5">
-            {restaurants.map((restaurant) => (
-              <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
-                <RestaurantCard restaurant={restaurant} />
+            {quickPick && (
+              <Link href={`/restaurant/${quickPick.restaurant.id}`}>
+                <QuickPickCard quickPick={quickPick} />
               </Link>
-            ))}
+            )}
+            {restaurants
+              .filter(r => r.id !== quickPick?.restaurant.id)
+              .map((restaurant) => (
+                <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
+                  <RestaurantCard restaurant={restaurant} />
+                </Link>
+              ))}
           </div>
         )}
       </section>

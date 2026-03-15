@@ -16,15 +16,15 @@ import { useAuth } from '@/application/hooks/use-auth'
 import { useUserProfile } from '@/application/hooks/use-user-profile'
 import { useFavorites } from '@/application/hooks/use-favorites'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { Button } from '@/presentation/components/ui/button'
+import { Separator } from '@/presentation/components/ui/separator'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/presentation/components/ui/select'
 import type { PreferredAi } from '@/domain/entities/user'
 
 /** Tier labels for display */

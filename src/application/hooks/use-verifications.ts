@@ -4,7 +4,7 @@ import useSWR, { useSWRConfig } from 'swr'
 import { useCallback } from 'react'
 import type { Verification } from '@/domain/entities/verification'
 import type { CreateVerificationInput } from '@/domain/repositories/verification-repository'
-import { supabaseVerificationRepository } from '@/infrastructure/repositories/supabase-verification-repository'
+import { verificationRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 interface UseRestaurantVerificationsReturn {
@@ -21,7 +21,7 @@ export function useRestaurantVerifications(
 ): UseRestaurantVerificationsReturn {
   const { data, error, isLoading } = useSWR<readonly Verification[]>(
     restaurantId ? ['verifications', 'restaurant', restaurantId] : null,
-    () => supabaseVerificationRepository.findByRestaurant(restaurantId!),
+    () => verificationRepository.findByRestaurant(restaurantId!),
   )
 
   return {
@@ -45,7 +45,7 @@ export function useMyVerifications(): UseMyVerificationsReturn {
 
   const { data, error, isLoading } = useSWR<readonly Verification[]>(
     user ? ['verifications', 'user', user.id] : null,
-    () => supabaseVerificationRepository.findByUser(user!.id),
+    () => verificationRepository.findByUser(user!.id),
   )
 
   return {
@@ -75,7 +75,7 @@ export function useSubmitVerification(): UseSubmitVerificationReturn {
         throw new Error('User must be authenticated to submit a verification')
       }
 
-      const verification = await supabaseVerificationRepository.create({
+      const verification = await verificationRepository.create({
         ...input,
         userId: user.id,
       })

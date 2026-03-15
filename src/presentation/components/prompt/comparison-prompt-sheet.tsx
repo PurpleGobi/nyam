@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Copy,
   Check,
@@ -8,7 +8,8 @@ import {
   ChevronDown,
   ChevronUp,
   GitCompareArrows,
-  ClipboardPaste,
+  Sparkles,
+  Loader2,
   X,
 } from 'lucide-react'
 import {
@@ -17,14 +18,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/application/hooks/use-auth'
-import { useUserProfile } from '@/application/hooks/use-user-profile'
-import { useUserTaste } from '@/application/hooks/use-user-taste'
-import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
+} from '@/presentation/components/ui/sheet'
+import { Button } from '@/presentation/components/ui/button'
+import { ScrollArea } from '@/presentation/components/ui/scroll-area'
+import { Separator } from '@/presentation/components/ui/separator'
 import { cn } from '@/shared/utils/cn'
 import {
   buildComparisonPrompt,
@@ -32,17 +29,35 @@ import {
 } from '@/shared/utils/prompt-resolver'
 import type { PromptContext, RestaurantContextData } from '@/shared/utils/prompt-resolver'
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
+import type { UserProfile } from '@/domain/entities/user'
+import type { UserTasteProfile, DiningExperience } from '@/domain/entities/user-taste'
+import type { ComparisonResult } from '@/domain/entities/comparison-result'
 import { SITUATION_PRESETS, resolvePresetLabel } from '@/shared/constants/situations'
+import { ComparisonResultView } from '@/presentation/components/comparison/comparison-result-view'
 
 interface ComparisonPromptSheetProps {
-  /** Selected restaurants for comparison */
   readonly restaurants: readonly RestaurantWithSummary[]
-  /** Callback to remove a restaurant from selection */
   readonly onRemove: (id: string) => void
-  /** Control open state */
   readonly open: boolean
-  /** Callback when open state changes */
   readonly onOpenChange: (open: boolean) => void
+  readonly profile: UserProfile | null
+  readonly tasteProfile: UserTasteProfile | null
+  readonly experiences: readonly DiningExperience[]
+  readonly onCopyPrompt: (text: string) => Promise<void>
+  readonly onOpenChatGPT: (text: string) => Promise<void>
+  readonly copied: boolean
+  /** Shared filter values from context */
+  readonly sharedOccasion: string | null
+  readonly sharedPartySize: string | null
+  readonly sharedBudget: string | null
+  readonly onOccasionChange: (value: string | null) => void
+  readonly onPartySizeChange: (value: string | null) => void
+  readonly onBudgetChange: (value: string | null) => void
+  /** AI comparison */
+  readonly comparisonResult?: ComparisonResult | null
+  readonly isComparing?: boolean
+  readonly comparisonError?: Error | null
+  readonly onAutoCompare?: () => void
 }
 
 const PARTY_SIZES = ['1명', '2명', '3~4명', '5~6명', '7명 이상']
@@ -76,19 +91,31 @@ export function ComparisonPromptSheet({
   onRemove,
   open,
   onOpenChange,
+  profile,
+  tasteProfile,
+  experiences,
+  onCopyPrompt,
+  onOpenChatGPT,
+  copied,
+  sharedOccasion,
+  sharedPartySize,
+  sharedBudget,
+  onOccasionChange,
+  onPartySizeChange,
+  onBudgetChange,
+  comparisonResult,
+  isComparing,
+  comparisonError,
+  onAutoCompare,
 }: ComparisonPromptSheetProps) {
-  const { user } = useAuth()
-  const { profile } = useUserProfile(user?.id)
-  const { tasteProfile, experiences } = useUserTaste()
-  const { copyToClipboard, openInChatGPT, copied } = usePromptBridge()
 
   const [showPreview, setShowPreview] = useState(false)
-  const [occasion, setOccasion] = useState<string | null>(null)
-  const [partySize, setPartySize] = useState<string | null>(null)
-  const [budget, setBudget] = useState<string | null>(null)
-  const [resultText, setResultText] = useState('')
-  const [resultCopied, setResultCopied] = useState(false)
-  const resultTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const [showManualSection, setShowManualSection] = useState(false)
+
+  // Use shared filter values (synced with home/explore filters)
+  const occasion = sharedOccasion
+  const partySize = sharedPartySize
+  const budget = sharedBudget
 
   const comparisonPrompt = useMemo(() => {
     if (restaurants.length < 2) return ''
@@ -110,13 +137,13 @@ export function ComparisonPromptSheet({
 
   const handleCopy = () => {
     if (comparisonPrompt) {
-      void copyToClipboard(comparisonPrompt)
+      void onCopyPrompt(comparisonPrompt)
     }
   }
 
   const handleOpenChatGPT = () => {
     if (comparisonPrompt) {
-      void openInChatGPT(comparisonPrompt)
+      void onOpenChatGPT(comparisonPrompt)
     }
   }
 
@@ -162,13 +189,18 @@ export function ComparisonPromptSheet({
 
             <Separator />
 
-            {/* Filter conditions */}
+            {/* Filter conditions - synced from shared context */}
             <div className="flex flex-col gap-3">
               <span className="text-sm font-medium text-[var(--color-neutral-600)]">
-                내 조건 (선택)
+                내 조건
+                {(occasion || partySize || budget) && (
+                  <span className="ml-1.5 text-xs text-[var(--color-primary-500)]">
+                    (홈 필터 연동)
+                  </span>
+                )}
               </span>
 
-              {/* Occasion - time-aware labels */}
+              {/* Occasion */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-[var(--color-neutral-500)]">상황</span>
                 <div className="flex flex-wrap gap-1.5">
@@ -178,7 +210,7 @@ export function ComparisonPromptSheet({
                       <button
                         key={preset.id}
                         type="button"
-                        onClick={() => setOccasion(prev => prev === label ? null : label)}
+                        onClick={() => onOccasionChange(occasion === label ? null : label)}
                         className={cn(
                           'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                           occasion === label
@@ -193,7 +225,7 @@ export function ComparisonPromptSheet({
                 </div>
               </div>
 
-              {/* Party size - button select */}
+              {/* Party size */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-[var(--color-neutral-500)]">인원</span>
                 <div className="flex flex-wrap gap-1.5">
@@ -201,7 +233,7 @@ export function ComparisonPromptSheet({
                     <button
                       key={size}
                       type="button"
-                      onClick={() => setPartySize(prev => prev === size ? null : size)}
+                      onClick={() => onPartySizeChange(partySize === size ? null : size)}
                       className={cn(
                         'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                         partySize === size
@@ -223,7 +255,7 @@ export function ComparisonPromptSheet({
                     <button
                       key={b}
                       type="button"
-                      onClick={() => setBudget(prev => prev === b ? null : b)}
+                      onClick={() => onBudgetChange(budget === b ? null : b)}
                       className={cn(
                         'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                         budget === b
@@ -240,99 +272,113 @@ export function ComparisonPromptSheet({
 
             <Separator />
 
-            {/* Prompt preview toggle */}
+            {/* AI Auto-Compare Result */}
+            {isComparing && (
+              <div className="flex flex-col items-center gap-3 rounded-xl bg-[var(--color-neutral-50)] p-6">
+                <Loader2 size={32} className="animate-spin text-[var(--color-primary-500)]" />
+                <p className="text-sm font-medium text-[var(--color-neutral-600)]">
+                  AI가 비교 분석 중이에요...
+                </p>
+              </div>
+            )}
+
+            {comparisonError && !isComparing && (
+              <div className="rounded-xl bg-red-50 p-4 text-center">
+                <p className="text-sm text-red-600">
+                  분석에 실패했어요. 다시 시도하거나 직접 분석을 이용해주세요.
+                </p>
+                {onAutoCompare && (
+                  <button
+                    type="button"
+                    onClick={onAutoCompare}
+                    className="mt-2 text-sm font-medium text-[var(--color-primary-500)]"
+                  >
+                    다시 시도
+                  </button>
+                )}
+              </div>
+            )}
+
+            {comparisonResult && !isComparing && (
+              <ComparisonResultView result={comparisonResult} />
+            )}
+
+            {/* Manual section - collapsible */}
             <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center justify-between text-sm font-medium text-[var(--color-neutral-600)]"
+                onClick={() => setShowManualSection(!showManualSection)}
+                className="flex items-center justify-between text-sm font-medium text-[var(--color-neutral-500)]"
               >
-                프롬프트 미리보기
-                {showPreview ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                직접 분석 (프롬프트 복사)
+                {showManualSection ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
-              {showPreview && (
-                <div className="max-h-[40vh] overflow-y-auto rounded-lg bg-[var(--color-neutral-50)] p-4 font-mono text-xs leading-relaxed text-[var(--color-neutral-700)] whitespace-pre-wrap">
-                  {comparisonPrompt || '2개 이상 식당을 선택해주세요.'}
+
+              {showManualSection && (
+                <div className="flex flex-col gap-3">
+                  {/* Prompt preview */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="flex items-center justify-between text-xs font-medium text-[var(--color-neutral-500)]"
+                  >
+                    프롬프트 미리보기
+                    {showPreview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                  {showPreview && (
+                    <div className="max-h-[30vh] overflow-y-auto rounded-lg bg-[var(--color-neutral-50)] p-4 font-mono text-xs leading-relaxed text-[var(--color-neutral-700)] whitespace-pre-wrap">
+                      {comparisonPrompt || '2개 이상 식당을 선택해주세요.'}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleCopy}
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      size="sm"
+                      disabled={restaurants.length < 2}
+                    >
+                      {copied ? <Check size={14} /> : <Copy size={14} />}
+                      {copied ? '복사됨' : '복사하기'}
+                    </Button>
+                    <Button
+                      onClick={handleOpenChatGPT}
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      size="sm"
+                      disabled={restaurants.length < 2}
+                    >
+                      <ExternalLink size={14} />
+                      ChatGPT로 열기
+                    </Button>
+                  </div>
                 </div>
               )}
-            </div>
-
-            <Separator />
-
-            {/* LLM result paste-back section */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[var(--color-neutral-600)]">
-                  AI 결과 붙여넣기
-                </span>
-                {resultText && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(resultText)
-                      setResultCopied(true)
-                      setTimeout(() => setResultCopied(false), 2000)
-                    }}
-                    className="flex items-center gap-1 text-xs font-medium text-[var(--color-primary-500)]"
-                  >
-                    {resultCopied ? <Check size={12} /> : <Copy size={12} />}
-                    {resultCopied ? '복사됨' : '결과 복사'}
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <textarea
-                  ref={resultTextareaRef}
-                  value={resultText}
-                  onChange={e => setResultText(e.target.value)}
-                  placeholder="ChatGPT 등에서 받은 비교 결과를 여기에 붙여넣으세요..."
-                  className="min-h-[120px] w-full resize-y rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-3 text-sm leading-relaxed text-[var(--color-neutral-700)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-300)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-200)]"
-                />
-                {!resultText && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const text = await navigator.clipboard.readText()
-                        setResultText(text)
-                      } catch {
-                        resultTextareaRef.current?.focus()
-                      }
-                    }}
-                    className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-[var(--color-neutral-500)] shadow-sm"
-                  >
-                    <ClipboardPaste size={12} />
-                    붙여넣기
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </ScrollArea>
 
         {/* Action buttons - sticky bottom */}
         <div className="absolute inset-x-0 bottom-0 border-t bg-white px-5 pb-[env(safe-area-inset-bottom)] pt-4">
-          <div className="flex gap-3">
-            <Button
-              onClick={handleCopy}
-              variant="outline"
-              className="flex-1 gap-2"
-              size="lg"
-              disabled={restaurants.length < 2}
-            >
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-              {copied ? '복사됨' : '복사하기'}
-            </Button>
-            <Button
-              onClick={handleOpenChatGPT}
-              className="flex-1 gap-2 bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]"
-              size="lg"
-              disabled={restaurants.length < 2}
-            >
-              <ExternalLink size={18} />
-              ChatGPT로 열기
-            </Button>
-          </div>
+          <Button
+            onClick={onAutoCompare}
+            className="w-full gap-2 bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]"
+            size="lg"
+            disabled={restaurants.length < 2 || isComparing}
+          >
+            {isComparing ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                분석 중...
+              </>
+            ) : (
+              <>
+                <Sparkles size={18} />
+                AI 자동 비교 분석
+              </>
+            )}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

@@ -4,7 +4,7 @@ import useSWR from 'swr'
 import { useCallback } from 'react'
 import type { UserProfile, UserStats } from '@/domain/entities/user'
 import type { UpdateUserProfileInput } from '@/domain/repositories/user-repository'
-import { supabaseUserRepository } from '@/infrastructure/repositories/supabase-user-repository'
+import { userRepository } from '@/di/repositories'
 
 interface UseUserProfileReturn {
   readonly profile: UserProfile | null
@@ -25,7 +25,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
     mutate: mutateProfile,
   } = useSWR<UserProfile | null>(
     userId ? ['profile', userId] : null,
-    () => supabaseUserRepository.findById(userId!),
+    () => userRepository.findById(userId!),
   )
 
   const {
@@ -34,7 +34,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
     isLoading: statsLoading,
   } = useSWR<UserStats>(
     userId ? ['profile-stats', userId] : null,
-    () => supabaseUserRepository.getStats(userId!),
+    () => userRepository.getStats(userId!),
   )
 
   const updateProfile = useCallback(
@@ -43,7 +43,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
         throw new Error('User ID is required to update profile')
       }
 
-      const updated = await supabaseUserRepository.update(userId, input)
+      const updated = await userRepository.update(userId, input)
       await mutateProfile(updated, { revalidate: false })
       return updated
     },

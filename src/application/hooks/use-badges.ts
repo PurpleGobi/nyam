@@ -2,7 +2,7 @@
 
 import useSWR from 'swr'
 import type { Badge, BadgeWithStatus } from '@/domain/entities/badge'
-import { supabaseBadgeRepository } from '@/infrastructure/repositories/supabase-badge-repository'
+import { badgeRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 interface UseAllBadgesReturn {
@@ -17,7 +17,7 @@ interface UseAllBadgesReturn {
 export function useAllBadges(): UseAllBadgesReturn {
   const { data, error, isLoading } = useSWR<readonly Badge[]>(
     ['badges', 'all'],
-    () => supabaseBadgeRepository.findAll(),
+    () => badgeRepository.findAll(),
   )
 
   return {
@@ -41,7 +41,7 @@ export function useMyBadges(): UseMyBadgesReturn {
 
   const { data, error, isLoading } = useSWR<readonly BadgeWithStatus[]>(
     user ? ['badges', 'user', user.id] : null,
-    () => supabaseBadgeRepository.findByUser(user!.id),
+    () => badgeRepository.findByUser(user!.id),
   )
 
   return {

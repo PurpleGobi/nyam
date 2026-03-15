@@ -2,7 +2,7 @@
 
 import useSWR from 'swr'
 import type { UserPreferenceSummary } from '@/domain/entities/interaction'
-import { supabaseInteractionRepository } from '@/infrastructure/repositories/supabase-interaction-repository'
+import { interactionRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 interface UsePreferenceSummaryReturn {
@@ -20,7 +20,7 @@ export function usePreferenceSummary(): UsePreferenceSummaryReturn {
 
   const { data, error, isLoading } = useSWR(
     user ? ['preference-summary', user.id] : null,
-    () => supabaseInteractionRepository.getPreferenceSummary(user!.id),
+    () => interactionRepository.getPreferenceSummary(user!.id),
     { dedupingInterval: 60_000 },
   )
 

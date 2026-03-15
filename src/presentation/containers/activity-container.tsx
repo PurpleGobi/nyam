@@ -6,8 +6,8 @@ import { useMyVerifications } from '@/application/hooks/use-verifications'
 import { useMyBadges } from '@/application/hooks/use-badges'
 import { BadgeCard } from '@/presentation/components/badge/badge-card'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { Button } from '@/presentation/components/ui/button'
+import { Separator } from '@/presentation/components/ui/separator'
 import { ROUTES } from '@/shared/constants/routes'
 
 /**

@@ -10,11 +10,12 @@ import {
 import { useRestaurants } from '@/application/hooks/use-restaurants'
 import { useFavorites } from '@/application/hooks/use-favorites'
 import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
+import { useFilterContext } from '@/application/contexts/filter-context'
 import { RestaurantCard } from '@/presentation/components/restaurant/restaurant-card'
 import { RestaurantCardSkeleton } from '@/presentation/components/restaurant/restaurant-card-skeleton'
-import { ComparisonPromptSheet } from '@/presentation/components/prompt/comparison-prompt-sheet'
+import { ComparisonPromptSheetContainer } from '@/presentation/containers/comparison-prompt-sheet-container'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/presentation/components/ui/input'
 import { FOOD_CATEGORIES } from '@/shared/constants/categories'
 import { ROUTES } from '@/shared/constants/routes'
 import type { RestaurantFilter } from '@/domain/repositories/restaurant-repository'
@@ -38,21 +39,25 @@ export function ExploreContainer() {
   const searchParams = useSearchParams()
   const situationParam = searchParams?.get('situation')
 
+  const { filter: sharedFilter, setFilter: setSharedFilter } = useFilterContext()
+
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedRegion, setSelectedRegion] = useState<string>('전체')
   const [sortBy, setSortBy] = useState<string>('latest')
   const [showFilters, setShowFilters] = useState(false)
   const [compareMode, setCompareMode] = useState(false)
   const [selectedForCompare, setSelectedForCompare] = useState<RestaurantWithSummary[]>([])
   const [showCompareSheet, setShowCompareSheet] = useState(false)
 
+  // Derive local view values from shared filter context
+  const selectedRegion = sharedFilter.region ?? '전체'
+  const selectedCategory = Object.entries(categoryIdToLabel).find(
+    ([, label]) => label === sharedFilter.cuisineCategory
+  )?.[0] ?? null
+
   const filter: RestaurantFilter = {
-    ...(selectedCategory && categoryIdToLabel[selectedCategory]
-      ? { cuisineCategory: categoryIdToLabel[selectedCategory] }
-      : {}),
+    ...(sharedFilter.cuisineCategory ? { cuisineCategory: sharedFilter.cuisineCategory } : {}),
     ...(searchQuery.trim() ? { query: searchQuery.trim() } : {}),
-    ...(selectedRegion !== '전체' ? { region: selectedRegion } : {}),
+    ...(sharedFilter.region ? { region: sharedFilter.region } : {}),
   }
 
   const { restaurants, isLoading, error } = useRestaurants({ filter })
@@ -93,21 +98,22 @@ export function ExploreContainer() {
   ].filter(Boolean).length
 
   const handleCategoryClick = useCallback((categoryId: string) => {
-    setSelectedCategory(prev => prev === categoryId ? null : categoryId)
     const label = categoryIdToLabel[categoryId]
-    if (label) trackCategoryClick(label)
-  }, [trackCategoryClick])
+    if (!label) return
+    setSharedFilter('cuisineCategory', sharedFilter.cuisineCategory === label ? null : label)
+    trackCategoryClick(label)
+  }, [trackCategoryClick, sharedFilter.cuisineCategory, setSharedFilter])
 
   const handleFavoriteClick = useCallback((restaurantId: string) => {
     void toggleFavorite(restaurantId)
   }, [toggleFavorite])
 
   const clearFilters = useCallback(() => {
-    setSelectedCategory(null)
-    setSelectedRegion('전체')
+    setSharedFilter('cuisineCategory', null)
+    setSharedFilter('region', null)
     setSearchQuery('')
     setSortBy('latest')
-  }, [])
+  }, [setSharedFilter])
 
   const toggleCompareSelect = useCallback((restaurant: RestaurantWithSummary) => {
     setSelectedForCompare(prev => {
@@ -159,7 +165,7 @@ export function ExploreContainer() {
                 key={region}
                 type="button"
                 onClick={() => {
-                  setSelectedRegion(region)
+                  setSharedFilter('region', region === '전체' ? null : region)
                   if (region !== '전체') trackRegionSelect(region)
                 }}
                 className={cn(
@@ -287,7 +293,7 @@ export function ExploreContainer() {
             <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
               <MapPin size={11} />
               {selectedRegion}
-              <button type="button" onClick={() => setSelectedRegion('전체')}>
+              <button type="button" onClick={() => setSharedFilter('region', null)}>
                 <X size={11} />
               </button>
             </span>
@@ -295,7 +301,7 @@ export function ExploreContainer() {
           {selectedCategory && (
             <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
               {FOOD_CATEGORIES.find(c => c.id === selectedCategory)?.label}
-              <button type="button" onClick={() => setSelectedCategory(null)}>
+              <button type="button" onClick={() => setSharedFilter('cuisineCategory', null)}>
                 <X size={11} />
               </button>
             </span>
@@ -424,7 +430,7 @@ export function ExploreContainer() {
       )}
 
       {/* Comparison prompt sheet */}
-      <ComparisonPromptSheet
+      <ComparisonPromptSheetContainer
         restaurants={selectedForCompare}
         onRemove={removeFromCompare}
         open={showCompareSheet}

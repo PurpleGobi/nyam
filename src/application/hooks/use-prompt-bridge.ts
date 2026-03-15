@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import type { PromptTemplate } from '@/domain/entities/prompt'
 import { buildPrompt } from '@/domain/services/prompt-builder'
-import { supabasePromptRepository } from '@/infrastructure/repositories/supabase-prompt-repository'
+import { promptRepository } from '@/di/repositories'
 import { useAuth } from './use-auth'
 
 /** ChatGPT deeplink base URL */
@@ -54,7 +54,7 @@ export function usePromptBridge(): UsePromptBridgeReturn {
     ) => {
       if (!promptTemplateId) return
       try {
-        await supabasePromptRepository.logUsage({
+        await promptRepository.logUsage({
           userId: user?.id,
           promptTemplateId,
           restaurantId,

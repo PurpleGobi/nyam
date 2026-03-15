@@ -14,8 +14,8 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+} from "@/presentation/components/ui/card"
+import { Separator } from "@/presentation/components/ui/separator"
 
 const features = [
   {

@@ -2,7 +2,7 @@
 
 import useSWR from 'swr'
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
-import { supabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
+import { restaurantRepository } from '@/di/repositories'
 
 interface SearchParams {
   readonly query?: string
@@ -48,7 +48,7 @@ async function searchAndFetch(params: SearchParams): Promise<{
 
   // Step 2: Fetch full restaurant data from Supabase (with verification summaries)
   const restaurantPromises = restaurantIds.map(id =>
-    supabaseRestaurantRepository.findById(id)
+    restaurantRepository.findById(id)
   )
   const results = await Promise.all(restaurantPromises)
   const restaurants = results.filter((r): r is RestaurantWithSummary => r !== null)
