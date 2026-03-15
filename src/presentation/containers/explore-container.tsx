@@ -97,7 +97,7 @@ export function ExploreContainer() {
                 : undefined
             }
           >
-            <span>{category.icon}</span>
+            <category.icon size={14} />
             <span>{category.label}</span>
           </button>
         ))}
