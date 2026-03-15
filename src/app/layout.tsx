@@ -46,7 +46,7 @@ export default function RootLayout({
               AI 검증 맛집 추천
             </span>
           </header>
-          <main className="flex-1 pb-16">{children}</main>
+          <main className="flex-1 pt-4 pb-16">{children}</main>
           <BottomNavWrapper />
         </div>
       </body>
