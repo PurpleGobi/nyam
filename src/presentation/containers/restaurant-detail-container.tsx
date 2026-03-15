@@ -78,7 +78,7 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 pb-20">
+      <div className="flex flex-col gap-4 px-5 pb-20">
         <div className="h-8 w-24 animate-pulse rounded bg-[var(--color-neutral-200)]" />
         <div className="h-6 w-3/4 animate-pulse rounded bg-[var(--color-neutral-200)]" />
         <div className="h-48 animate-pulse rounded-xl bg-[var(--color-neutral-200)]" />
@@ -94,7 +94,7 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
   // Error state
   if (error || !restaurant) {
     return (
-      <div className="flex flex-col items-center gap-3 py-20">
+      <div className="flex flex-col items-center gap-3 px-5 py-20">
         <AlertCircle size={48} className="text-[var(--color-error-400)]" />
         <p className="text-sm text-[var(--color-error-500)]">
           {error?.message ?? '맛집 정보를 찾을 수 없어요.'}
@@ -112,7 +112,7 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
   const favorited = isFavorite(restaurant.id)
 
   return (
-    <div className="flex flex-col gap-6 pb-20">
+    <div className="flex flex-col gap-6 px-5 pb-24">
       {/* Header with back button and favorite */}
       <div className="flex items-center justify-between">
         <Link
@@ -304,7 +304,7 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
       </section>
 
       {/* CTA button */}
-      <Link href={ROUTES.PROMPTS} className="sticky bottom-20">
+      <Link href={ROUTES.PROMPTS} className="sticky bottom-24">
         <Button className="w-full gap-2" size="lg">
           <Sparkles size={18} />
           AI 검증하기

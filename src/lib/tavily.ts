@@ -131,6 +131,7 @@ export async function verifyRestaurant(name: string, address: string) {
       query,
       search_depth: "basic",
       include_answer: true,
+      include_images: true,
       max_results: 5,
       include_domains: ["naver.com", "kakao.com", "google.com"],
     }),

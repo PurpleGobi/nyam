@@ -105,27 +105,16 @@ function buildVerifyResponse(
     verified = true
   }
 
-  // Extract image URL from search results
+  // Extract image URL from Tavily images array
   let imageUrl: string | null = null
-  if (mainResults) {
-    for (const result of mainResults.results) {
-      // Look for image URLs in results (Tavily includes images when available)
-      if ('image' in result && typeof (result as Record<string, unknown>).image === 'string') {
-        imageUrl = (result as Record<string, unknown>).image as string
-        break
-      }
-    }
-    // Also check rawContent for og:image patterns
-    if (!imageUrl) {
-      for (const result of mainResults.results) {
-        if ('rawContent' in result) {
-          const ogMatch = String((result as Record<string, unknown>).rawContent).match(/og:image[^"]*"([^"]+)"/i)
-          if (ogMatch) {
-            imageUrl = ogMatch[1]
-            break
-          }
-        }
-      }
+  if (mainResults && 'images' in mainResults) {
+    const images = (mainResults as Record<string, unknown>).images as string[] | undefined
+    if (images && images.length > 0) {
+      // Filter out generic/logo images, prefer food photos
+      const foodImage = images.find(url => 
+        !url.includes('logo') && !url.includes('icon') && !url.includes('favicon')
+      )
+      imageUrl = foodImage ?? images[0]
     }
   }
 
