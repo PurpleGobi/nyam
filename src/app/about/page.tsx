@@ -6,31 +6,37 @@ import {
   Filter,
   Sparkles,
   Code2,
+  ShieldCheck,
+  Utensils,
 } from "lucide-react"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
 const features = [
+  {
+    icon: ShieldCheck,
+    title: "AI 검증 시스템",
+    description: "AI가 웹검색으로 영업 여부, 최신 리뷰, 실제 평판을 교차 검증해요",
+  },
+  {
+    icon: Globe,
+    title: "웹검색 기반 확인",
+    description: "네이버, 카카오, 구글 리뷰를 실시간으로 수집하고 비교 분석해요",
+  },
   {
     icon: SlidersHorizontal,
     title: "스마트 필터",
     description: "지역, 인원, 음식 종류, 분위기까지 세밀한 맞춤 추천",
   },
   {
-    icon: Globe,
-    title: "실시간 검증",
-    description: "웹검색으로 영업 여부, 최신 리뷰를 확인해요",
-  },
-  {
     icon: BarChart3,
-    title: "종합 평점",
-    description: "네이버, 카카오, 구글 리뷰를 한눈에 비교",
+    title: "신뢰도 점수",
+    description: "맛, 가성비, 서비스, 분위기를 종합한 투명한 평가 시스템",
   },
 ]
 
@@ -43,14 +49,14 @@ const steps = [
   },
   {
     number: "2",
-    title: "AI 추천",
-    description: "조건에 맞는 맛집을 웹검색 기반으로 찾아드려요",
+    title: "AI 추천 & 검증",
+    description: "조건에 맞는 맛집을 AI가 웹검색으로 찾고 검증해요",
     icon: Search,
   },
   {
     number: "3",
     title: "결과 확인",
-    description: "평점, 메뉴, 리뷰를 확인하고 방문할 곳을 골라보세요",
+    description: "검증 점수, 리뷰, 메뉴를 확인하고 방문할 곳을 골라보세요",
     icon: Sparkles,
   },
 ]
@@ -61,13 +67,27 @@ export default function AboutPage() {
       {/* Hero */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-red-500">
-          <Search className="h-8 w-8 text-white" />
+          <Utensils className="h-8 w-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground">맛집</h2>
+        <h2 className="text-2xl font-bold text-foreground">Nyam</h2>
+        <p className="mt-1 text-lg font-medium text-orange-500">냠</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          웹검색 기반 검증된 맛집 추천 서비스
+          AI 검증 기반 맛집 추천 서비스
         </p>
       </div>
+
+      {/* What is Nyam */}
+      <section className="mb-8">
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+          Nyam이란?
+        </h3>
+        <div className="rounded-xl bg-orange-50 p-4">
+          <p className="text-sm leading-relaxed text-foreground">
+            Nyam(냠)은 AI가 웹검색을 통해 맛집 정보를 실시간으로 검증하는 서비스입니다.
+            광고나 협찬 없이, 실제 리뷰와 데이터를 기반으로 신뢰할 수 있는 맛집을 추천해드려요.
+          </p>
+        </div>
+      </section>
 
       {/* Features */}
       <section className="mb-8">
@@ -123,14 +143,36 @@ export default function AboutPage() {
 
       <Separator className="mb-8" />
 
+      {/* USPs */}
+      <section className="mb-8">
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+          Nyam만의 차별점
+        </h3>
+        <div className="space-y-2">
+          {[
+            { icon: ShieldCheck, text: "AI가 웹검색으로 교차 검증 - 가짜 리뷰 필터링" },
+            { icon: Globe, text: "네이버/카카오/구글 리뷰 통합 비교" },
+            { icon: BarChart3, text: "맛, 가성비, 서비스, 분위기 4가지 축 평가" },
+            { icon: Sparkles, text: "광고 없는 순수 데이터 기반 추천" },
+          ].map((item) => (
+            <div key={item.text} className="flex items-center gap-3 rounded-lg border border-border p-3">
+              <item.icon className="h-4 w-4 shrink-0 text-orange-500" />
+              <p className="text-sm text-foreground">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Separator className="mb-8" />
+
       {/* Credits */}
       <section className="text-center">
         <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
           <Code2 className="h-5 w-5 text-muted-foreground" />
         </div>
-        <p className="text-sm font-medium text-foreground">맛집 v1.0</p>
+        <p className="text-sm font-medium text-foreground">Nyam v1.0</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          AI 기반 맛집 추천 서비스
+          AI 검증 기반 맛집 추천 서비스
         </p>
       </section>
     </div>

@@ -10,6 +10,7 @@ import {
   MapPin,
   Utensils,
   Star,
+  Eye,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import {
@@ -26,6 +27,7 @@ import {
   deleteHistory,
   getFavorites,
   getVisited,
+  getRecentViews,
   getRestaurantsFromHistory,
   toggleFavorite,
   toggleVisited,
@@ -220,16 +222,19 @@ export default function HistoryPage() {
   const [visIds, setVisIds] = useState<string[]>([])
   const [favRestaurants, setFavRestaurants] = useState<Restaurant[]>([])
   const [visRestaurants, setVisRestaurants] = useState<Restaurant[]>([])
+  const [recentRestaurants, setRecentRestaurants] = useState<Restaurant[]>([])
 
   const refresh = useCallback(() => {
     const h = getHistory()
     const f = getFavorites()
     const v = getVisited()
+    const r = getRecentViews()
     setHistory(h)
     setFavIds(f)
     setVisIds(v)
     setFavRestaurants(getRestaurantsFromHistory(f))
     setVisRestaurants(getRestaurantsFromHistory(v))
+    setRecentRestaurants(getRestaurantsFromHistory(r))
   }, [])
 
   useEffect(() => {
@@ -259,6 +264,10 @@ export default function HistoryPage() {
             <Clock className="h-4 w-4" />
             추천 기록
           </TabsTrigger>
+          <TabsTrigger value="recent" className="flex-1 gap-1">
+            <Eye className="h-4 w-4" />
+            최근 본
+          </TabsTrigger>
           <TabsTrigger value="favorites" className="flex-1 gap-1">
             <Heart className="h-4 w-4" />
             즐겨찾기
@@ -282,6 +291,27 @@ export default function HistoryPage() {
                 key={entry.id}
                 entry={entry}
                 onDelete={handleDelete}
+              />
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="recent" className="mt-4 space-y-3">
+          {recentRestaurants.length === 0 ? (
+            <EmptyState
+              icon={Eye}
+              title="최근 본 맛집이 없어요"
+              description="맛집 상세 페이지를 방문하면 여기에 기록돼요"
+            />
+          ) : (
+            recentRestaurants.map((r) => (
+              <RestaurantCard
+                key={r.id}
+                restaurant={r}
+                isFav={favIds.includes(r.id)}
+                isVis={visIds.includes(r.id)}
+                onToggleFav={handleToggleFav}
+                onToggleVis={handleToggleVis}
               />
             ))
           )}

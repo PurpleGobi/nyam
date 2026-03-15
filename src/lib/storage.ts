@@ -4,7 +4,10 @@ const STORAGE_KEYS = {
   HISTORY: "nyam-history",
   FAVORITES: "nyam-favorites",
   VISITED: "nyam-visited",
+  RECENT_VIEWS: "nyam-recent-views",
 } as const
+
+const MAX_RECENT_VIEWS = 50
 
 function getItem<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback
@@ -89,6 +92,19 @@ export function getVisited(): string[] {
 
 export function isVisited(restaurantId: string): boolean {
   return getVisited().includes(restaurantId)
+}
+
+// --- Recent Views ---
+
+export function addRecentView(restaurantId: string): void {
+  const views = getRecentViews()
+  const filtered = views.filter((id) => id !== restaurantId)
+  filtered.unshift(restaurantId)
+  setItem(STORAGE_KEYS.RECENT_VIEWS, filtered.slice(0, MAX_RECENT_VIEWS))
+}
+
+export function getRecentViews(): string[] {
+  return getItem<string[]>(STORAGE_KEYS.RECENT_VIEWS, [])
 }
 
 // --- Helper: get all restaurants from history by IDs ---

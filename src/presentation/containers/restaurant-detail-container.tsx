@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -10,6 +11,8 @@ import {
   AlertCircle,
   Sparkles,
   Star,
+  Map,
+  Navigation,
 } from 'lucide-react'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useRestaurantVerifications } from '@/application/hooks/use-verifications'
@@ -22,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/utils/cn'
+import { addRecentView } from '@/lib/storage'
 
 interface RestaurantDetailContainerProps {
   id: string
@@ -63,6 +67,13 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
 
   const isLoading = detailLoading
   const error = detailError
+
+  // Track recent view
+  useEffect(() => {
+    if (restaurant) {
+      addRecentView(restaurant.id)
+    }
+  }, [restaurant])
 
   // Loading state
   if (isLoading) {
@@ -192,6 +203,38 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
               </div>
             </div>
           )}
+        </div>
+
+        {/* Map deeplinks */}
+        <div className="flex gap-2">
+          <a
+            href={`https://map.naver.com/v5/search/${encodeURIComponent(restaurant.name + ' ' + (restaurant.shortAddress ?? ''))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)]',
+              'border border-[var(--color-neutral-200)] bg-white px-4 py-2.5',
+              'text-sm font-medium text-[var(--color-neutral-700)]',
+              'transition-colors hover:bg-[var(--color-neutral-50)]',
+            )}
+          >
+            <Map size={16} strokeWidth={1.5} />
+            네이버 지도
+          </a>
+          <a
+            href={`https://map.kakao.com/?q=${encodeURIComponent(restaurant.name + ' ' + (restaurant.shortAddress ?? ''))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)]',
+              'border border-[var(--color-neutral-200)] bg-white px-4 py-2.5',
+              'text-sm font-medium text-[var(--color-neutral-700)]',
+              'transition-colors hover:bg-[var(--color-neutral-50)]',
+            )}
+          >
+            <Navigation size={16} strokeWidth={1.5} />
+            카카오맵
+          </a>
         </div>
       </section>
 

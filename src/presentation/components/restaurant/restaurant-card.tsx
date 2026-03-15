@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Heart, MapPin, Sparkles } from 'lucide-react';
+import { Heart, MapPin, Sparkles, Star } from 'lucide-react';
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant';
 import { cn } from '@/shared/utils/cn';
 import { CategoryTag } from './category-tag';
@@ -161,6 +161,21 @@ export function RestaurantCard({
           <span className="mx-1">·</span>
           <span className="shrink-0">{restaurant.cuisine}</span>
         </div>
+
+        {/* Ratings from external sources */}
+        {restaurant.ratings.length > 0 && (
+          <div className="flex items-center gap-3 text-sm">
+            {restaurant.ratings.map((r) => (
+              r.rating !== null && (
+                <span key={r.id} className="flex items-center gap-0.5 text-[var(--color-neutral-600)]">
+                  <Star size={13} fill="var(--color-primary-500)" stroke="var(--color-primary-500)" strokeWidth={1.5} />
+                  <span className="font-semibold">{r.rating.toFixed(1)}</span>
+                  <span className="text-xs text-[var(--color-neutral-400)]">{r.source}</span>
+                </span>
+              )
+            ))}
+          </div>
+        )}
 
         {/* Mini Trust Meter */}
         {restaurant.verificationCount > 0 && (
