@@ -47,6 +47,7 @@ function toRestaurant(row: RestaurantRow): Restaurant {
 function toRestaurantWithSummary(
   row: RestaurantRow,
   summary: SummaryRow | null,
+  ratings?: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[],
 ): RestaurantWithSummary {
   return {
     ...toRestaurant(row),
@@ -56,7 +57,14 @@ function toRestaurantWithSummary(
     avgService: summary?.avg_service ?? null,
     avgAmbiance: summary?.avg_ambiance ?? null,
     verificationLevel: (summary?.verification_level ?? 'unverified') as VerificationLevel,
-    ratings: [],
+    ratings: (ratings ?? []).map(r => ({
+      id: r.id,
+      restaurantId: r.restaurant_id,
+      source: r.source as 'naver' | 'kakao' | 'google',
+      rating: r.rating,
+      reviewCount: r.review_count,
+      fetchedAt: r.fetched_at,
+    })),
   };
 }
 
@@ -81,7 +89,12 @@ export const supabaseRestaurantRepository: RestaurantRepository = {
       .eq('restaurant_id', id)
       .single();
 
-    return toRestaurantWithSummary(restaurant, summary ?? null);
+    const { data: ratings } = await supabase
+      .from('restaurant_ratings')
+      .select('*')
+      .eq('restaurant_id', id);
+
+    return toRestaurantWithSummary(restaurant, summary ?? null, ratings ?? []);
   },
 
   async findMany(
@@ -133,9 +146,25 @@ export const supabaseRestaurantRepository: RestaurantRepository = {
 
     const summaryMap = new Map(summaries.map(s => [s.restaurant_id, s]));
 
+    // Fetch ratings for the returned restaurants
+    let allRatings: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[] = [];
+    if (ids.length > 0) {
+      const { data: ratingsData } = await supabase
+        .from('restaurant_ratings')
+        .select('*')
+        .in('restaurant_id', ids);
+      allRatings = ratingsData ?? [];
+    }
+    const ratingsMap = new Map<string, typeof allRatings>();
+    for (const r of allRatings) {
+      const arr = ratingsMap.get(r.restaurant_id) ?? [];
+      arr.push(r);
+      ratingsMap.set(r.restaurant_id, arr);
+    }
+
     return {
       data: restaurantRows.map(r =>
-        toRestaurantWithSummary(r, summaryMap.get(r.id) ?? null),
+        toRestaurantWithSummary(r, summaryMap.get(r.id) ?? null, ratingsMap.get(r.id) ?? []),
       ),
       total,
       page,
