@@ -18,15 +18,21 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
 
   const region = searchParams.get('region') ?? undefined
+  const cuisine = searchParams.get('cuisine') ?? undefined
   const limit = parseInt(searchParams.get('limit') ?? '6', 10)
 
   // Determine time-based context
   const hour = new Date().getHours()
   const mealContext = getMealContext(hour)
 
+  // Append cuisine to query if specified
+  const query = cuisine
+    ? `${cuisine} ${mealContext.query}`
+    : mealContext.query
+
   try {
     const { restaurantIds, total, hasMore } = await searchAndCacheRestaurants({
-      query: mealContext.query,
+      query,
       region,
       limit,
     })

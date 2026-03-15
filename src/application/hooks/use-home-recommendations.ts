@@ -1,24 +1,44 @@
 'use client'
 
 import useSWR from 'swr'
-import { useState, useEffect } from 'react'
-import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
+import { useState, useEffect, useCallback } from 'react'
+import type { RestaurantWithSummary, CuisineCategory } from '@/domain/entities/restaurant'
 import { supabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
+
+/** Filter state for home recommendations */
+export interface HomeFilter {
+  readonly region: string | null
+  readonly cuisineCategory: CuisineCategory | null
+  readonly situation: string | null
+  readonly partySize: string | null
+  readonly budget: string | null
+}
 
 interface UseHomeRecommendationsReturn {
   readonly restaurants: readonly RestaurantWithSummary[]
   readonly mealLabel: string
-  readonly region: string | null
+  /** Auto-detected region from geolocation */
+  readonly detectedRegion: string | null
+  /** Current active filter */
+  readonly filter: HomeFilter
+  /** Update a single filter field */
+  readonly setFilter: <K extends keyof HomeFilter>(key: K, value: HomeFilter[K]) => void
+  /** Reset all filters (keep auto-detected region) */
+  readonly resetFilters: () => void
   readonly isLoading: boolean
   readonly error: Error | undefined
 }
 
-async function fetchRecommendations(region: string | null): Promise<{
+async function fetchRecommendations(
+  region: string | null,
+  cuisineCategory: CuisineCategory | null,
+): Promise<{
   restaurants: readonly RestaurantWithSummary[]
   mealLabel: string
 }> {
   const url = new URL('/api/restaurants/recommend', window.location.origin)
   if (region) url.searchParams.set('region', region)
+  if (cuisineCategory) url.searchParams.set('cuisine', cuisineCategory)
   url.searchParams.set('limit', '6')
 
   const response = await fetch(url.toString())
@@ -43,12 +63,21 @@ async function fetchRecommendations(region: string | null): Promise<{
   }
 }
 
+const DEFAULT_FILTER: HomeFilter = {
+  region: null,
+  cuisineCategory: null,
+  situation: null,
+  partySize: null,
+  budget: null,
+}
+
 /**
  * Hook for home page time-based + location-based restaurant recommendations.
- * Uses browser geolocation to detect region (falls back to null).
+ * Supports chip-based filters auto-filled from geolocation.
  */
 export function useHomeRecommendations(): UseHomeRecommendationsReturn {
-  const [region, setRegion] = useState<string | null>(null)
+  const [detectedRegion, setDetectedRegion] = useState<string | null>(null)
+  const [filter, setFilterState] = useState<HomeFilter>(DEFAULT_FILTER)
 
   // Try to detect region from geolocation
   useEffect(() => {
@@ -57,14 +86,19 @@ export function useHomeRecommendations(): UseHomeRecommendationsReturn {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // Use Kakao reverse geocoding to get region name
           const { latitude, longitude } = position.coords
           const res = await fetch(
             `/api/restaurants/geocode?lat=${latitude}&lng=${longitude}`
           )
           if (res.ok) {
             const data = await res.json() as { region: string | null }
-            if (data.region) setRegion(data.region)
+            if (data.region) {
+              setDetectedRegion(data.region)
+              setFilterState(prev => ({
+                ...prev,
+                region: prev.region ?? data.region,
+              }))
+            }
           }
         } catch {
           // Geolocation enrichment is non-critical
@@ -77,19 +111,30 @@ export function useHomeRecommendations(): UseHomeRecommendationsReturn {
     )
   }, [])
 
+  const setFilter = useCallback(<K extends keyof HomeFilter>(key: K, value: HomeFilter[K]) => {
+    setFilterState(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const resetFilters = useCallback(() => {
+    setFilterState({ ...DEFAULT_FILTER, region: detectedRegion })
+  }, [detectedRegion])
+
   const { data, error, isLoading } = useSWR(
-    ['home-recommendations', region],
-    () => fetchRecommendations(region),
+    ['home-recommendations', filter.region, filter.cuisineCategory],
+    () => fetchRecommendations(filter.region, filter.cuisineCategory),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 60000,  // Don't re-fetch within 1 minute
+      dedupingInterval: 60000,
     }
   )
 
   return {
     restaurants: data?.restaurants ?? [],
     mealLabel: data?.mealLabel ?? '',
-    region,
+    detectedRegion,
+    filter,
+    setFilter,
+    resetFilters,
     isLoading,
     error,
   }
