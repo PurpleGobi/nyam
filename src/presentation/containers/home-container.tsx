@@ -1,23 +1,35 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Flame, Sunrise, UtensilsCrossed, Sun, Moon, MoonStar,
   Briefcase, Heart, User, Home, Users, MapPin, ChevronRight,
+  ChevronDown, ChevronUp, RotateCcw,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/application/hooks/use-auth'
 import { useUserProfile } from '@/application/hooks/use-user-profile'
 import { useHomeRecommendations } from '@/application/hooks/use-home-recommendations'
+import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
 import { RestaurantCard } from '@/presentation/components/restaurant/restaurant-card'
 import { RestaurantCardSkeleton } from '@/presentation/components/restaurant/restaurant-card-skeleton'
-import { SITUATION_PRESETS } from '@/shared/constants/situations'
+import { SITUATION_PRESETS, resolvePresetLabel } from '@/shared/constants/situations'
+import { FOOD_CATEGORIES } from '@/shared/constants/categories'
 import { ROUTES } from '@/shared/constants/routes'
+import type { CuisineCategory } from '@/domain/entities/restaurant'
+import { cn } from '@/shared/utils/cn'
 
-/**
- * Returns a time-based Korean greeting with matching Lucide icon.
- */
+const REGIONS = ['강남', '홍대', '종로', '이태원', '성수', '여의도', '잠실', '신촌', '망원', '을지로', '광화문']
+const PARTY_SIZES = ['1명', '2명', '3~4명', '5~6명', '7명 이상']
+const BUDGETS = ['1만원 이하', '1~2만원', '2~3만원', '3~5만원', '5만원 이상']
+
+const categoryIdToLabel: Record<string, CuisineCategory> = {
+  korean: '한식', japanese: '일식', chinese: '중식', western: '양식',
+  'cafe-dessert': '카페', 'southeast-asian': '아시안', 'street-food': '분식',
+  'meat-grill': '기타', seafood: '기타', 'vegetarian-healthy': '기타',
+}
+
 function getGreeting(): { text: string; icon: LucideIcon } {
   const hour = new Date().getHours()
   if (hour < 11) return { text: '좋은 아침이에요!', icon: Sunrise }
@@ -27,7 +39,6 @@ function getGreeting(): { text: string; icon: LucideIcon } {
   return { text: '야식이 땡기는 밤이네요!', icon: MoonStar }
 }
 
-/** Map situation icon string to Lucide component */
 const situationIconMap: Record<string, LucideIcon> = {
   briefcase: Briefcase,
   heart: Heart,
@@ -36,22 +47,56 @@ const situationIconMap: Record<string, LucideIcon> = {
   users: Users,
 }
 
-/**
- * Home tab container.
- * Shows greeting, situation quick buttons, and time+location based recommendations.
- */
 export function HomeContainer() {
   const { user, isLoading: authLoading } = useAuth()
   const { profile, isLoading: profileLoading } = useUserProfile(user?.id)
   const {
     restaurants,
     mealLabel,
-    region,
+    detectedRegion,
+    filter,
+    setFilter,
+    resetFilters,
     isLoading: recommendLoading,
     error: recommendError,
   } = useHomeRecommendations()
 
+  const { trackSituationClick } = useInteractionTracker()
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
+
   const { text: greetingText, icon: GreetingIcon } = useMemo(() => getGreeting(), [])
+
+  const activeFilterCount = [
+    filter.situation,
+    filter.cuisineCategory,
+    filter.partySize,
+    filter.budget,
+  ].filter(Boolean).length
+
+  const handleSituationToggle = (presetId: string) => {
+    setFilter('situation', filter.situation === presetId ? null : presetId)
+    if (filter.situation !== presetId) {
+      const preset = SITUATION_PRESETS.find(p => p.id === presetId)
+      if (preset) trackSituationClick(presetId, resolvePresetLabel(preset))
+    }
+  }
+
+  const handleRegionToggle = (region: string) => {
+    setFilter('region', filter.region === region ? null : region)
+  }
+
+  const handleCuisineToggle = (categoryId: string) => {
+    const label = categoryIdToLabel[categoryId] ?? null
+    setFilter('cuisineCategory', filter.cuisineCategory === label ? null : label)
+  }
+
+  const handlePartySizeToggle = (size: string) => {
+    setFilter('partySize', filter.partySize === size ? null : size)
+  }
+
+  const handleBudgetToggle = (budget: string) => {
+    setFilter('budget', filter.budget === budget ? null : budget)
+  }
 
   return (
     <div className="flex flex-col gap-5 px-5 pb-20">
@@ -74,27 +119,177 @@ export function HomeContainer() {
         )}
       </section>
 
-      {/* Situation quick buttons */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">어떤 상황인가요?</h2>
-        <div className="relative">
-          <div className="flex gap-2 overflow-x-auto">
+      {/* Filter section */}
+      <section className="flex flex-col gap-3 rounded-2xl bg-[var(--color-neutral-50)] p-4">
+        {/* Situation chips */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-[var(--color-neutral-500)]">상황</span>
+          <div className="flex gap-1.5 overflow-x-auto">
             {SITUATION_PRESETS.map((preset) => {
               const IconComp = situationIconMap[preset.icon]
+              const isActive = filter.situation === preset.id
               return (
-                <Link
+                <button
                   key={preset.id}
-                  href={`${ROUTES.PROMPTS}?situation=${preset.id}`}
-                  className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-3.5 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
+                  type="button"
+                  onClick={() => handleSituationToggle(preset.id)}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                    isActive
+                      ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                      : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                  )}
                 >
-                  {IconComp && <IconComp size={16} strokeWidth={1.5} className="text-[var(--color-primary-500)]" />}
-                  <span>{preset.label}</span>
-                </Link>
+                  {IconComp && <IconComp size={14} strokeWidth={1.5} />}
+                  {resolvePresetLabel(preset)}
+                </button>
               )
             })}
           </div>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
         </div>
+
+        {/* Region chips - auto-filled from location */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-[var(--color-neutral-500)]">
+            지역
+            {detectedRegion && filter.region === detectedRegion && (
+              <span className="ml-1 text-[var(--color-primary-500)]">(현재 위치)</span>
+            )}
+          </span>
+          <div className="flex gap-1.5 overflow-x-auto">
+            {/* Show detected region first if not in default list */}
+            {detectedRegion && !REGIONS.includes(detectedRegion) && (
+              <button
+                type="button"
+                onClick={() => handleRegionToggle(detectedRegion)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                  filter.region === detectedRegion
+                    ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                    : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                )}
+              >
+                <MapPin size={12} />
+                {detectedRegion}
+              </button>
+            )}
+            {REGIONS.map(region => (
+              <button
+                key={region}
+                type="button"
+                onClick={() => handleRegionToggle(region)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                  filter.region === region
+                    ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                    : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                  region === detectedRegion && filter.region !== region && 'border-[var(--color-primary-200)] bg-[var(--color-primary-50)]',
+                )}
+              >
+                {region === detectedRegion && <MapPin size={12} />}
+                {region}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Cuisine category chips */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-[var(--color-neutral-500)]">음식 종류</span>
+          <div className="flex gap-1.5 overflow-x-auto">
+            {FOOD_CATEGORIES.slice(0, 7).map(category => {
+              const label = categoryIdToLabel[category.id]
+              const isActive = filter.cuisineCategory === label
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => handleCuisineToggle(category.id)}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                    isActive
+                      ? 'text-white shadow-sm'
+                      : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                  )}
+                  style={isActive ? { backgroundColor: category.color } : undefined}
+                >
+                  <category.icon size={13} />
+                  {category.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Expandable: party size + budget */}
+        <button
+          type="button"
+          onClick={() => setShowMoreFilters(!showMoreFilters)}
+          className="flex items-center justify-center gap-1 text-xs font-medium text-[var(--color-neutral-500)]"
+        >
+          {showMoreFilters ? '접기' : '인원 / 예산'}
+          {showMoreFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        {showMoreFilters && (
+          <div className="flex flex-col gap-3">
+            {/* Party size */}
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-[var(--color-neutral-500)]">인원</span>
+              <div className="flex gap-1.5 overflow-x-auto">
+                {PARTY_SIZES.map(size => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => handlePartySizeToggle(size)}
+                    className={cn(
+                      'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                      filter.partySize === size
+                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                    )}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Budget */}
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-[var(--color-neutral-500)]">예산 (1인)</span>
+              <div className="flex gap-1.5 overflow-x-auto">
+                {BUDGETS.map(budget => (
+                  <button
+                    key={budget}
+                    type="button"
+                    onClick={() => handleBudgetToggle(budget)}
+                    className={cn(
+                      'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+                      filter.budget === budget
+                        ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                        : 'bg-white text-[var(--color-neutral-600)] border border-[var(--color-neutral-200)]',
+                    )}
+                  >
+                    {budget}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reset filters */}
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
+          >
+            <RotateCcw size={12} />
+            필터 초기화
+          </button>
+        )}
       </section>
 
       {/* Time + location based recommendations */}
@@ -104,10 +299,10 @@ export function HomeContainer() {
             <h2 className="text-lg font-semibold">
               {mealLabel || '지금 이 시간 추천'}
             </h2>
-            {region && (
+            {filter.region && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary-600)]">
                 <MapPin size={10} strokeWidth={2} />
-                {region}
+                {filter.region}
               </span>
             )}
           </div>

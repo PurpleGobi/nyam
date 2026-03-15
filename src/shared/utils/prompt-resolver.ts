@@ -6,15 +6,24 @@
 import type { RestaurantWithSummary } from '@/domain/entities/restaurant'
 import type { UserProfile } from '@/domain/entities/user'
 import type { UserTasteProfile, DiningExperience } from '@/domain/entities/user-taste'
+import type { UserPreferenceSummary } from '@/domain/entities/interaction'
 import type { PromptTemplate, PromptVariable } from '@/domain/entities/prompt'
 
 // ── Context types ───────────────────────────────────────────────
+
+export interface BehaviorInsightsData {
+  readonly favoriteCuisines: readonly string[]
+  readonly preferredRegions: readonly string[]
+  readonly commonSituations: readonly string[]
+  readonly recentSearches: readonly string[]
+}
 
 /** All context needed for prompt generation */
 export interface PromptContext {
   readonly restaurant?: RestaurantContextData
   readonly user?: UserContextData
   readonly situation?: SituationContextData
+  readonly behaviorInsights?: BehaviorInsightsData
 
   // Legacy fields for backward compatibility with resolveVariables
   readonly restaurantName?: string
@@ -61,7 +70,7 @@ export interface UserContextData {
 
 export interface SituationContextData {
   readonly occasion?: string
-  readonly partySize?: number
+  readonly partySize?: number | string
   readonly budget?: string
   readonly mood?: string
 }
@@ -245,6 +254,10 @@ export function buildEnhancedPrompt(
     sections.push(buildUserContextBlock(context.user))
   }
 
+  if (context.behaviorInsights) {
+    sections.push(buildBehaviorInsightsBlock(context.behaviorInsights))
+  }
+
   sections.push(buildVerificationInstructions())
 
   return sections.join('\n\n')
@@ -326,6 +339,37 @@ function buildUserContextBlock(u: UserContextData): string {
   return lines.join('\n')
 }
 
+function buildBehaviorInsightsBlock(b: BehaviorInsightsData): string {
+  const lines: string[] = ['---', '행동 패턴 분석 (최근 활동 기반, 이 정보도 참고해서 맞춤 답변해줘):']
+
+  if (b.favoriteCuisines.length > 0) {
+    lines.push(`- 자주 찾는 음식: ${b.favoriteCuisines.join(', ')}`)
+  }
+  if (b.preferredRegions.length > 0) {
+    lines.push(`- 선호 지역: ${b.preferredRegions.join(', ')}`)
+  }
+  if (b.commonSituations.length > 0) {
+    lines.push(`- 주요 상황: ${b.commonSituations.join(', ')}`)
+  }
+  if (b.recentSearches.length > 0) {
+    lines.push(`- 최근 검색: ${b.recentSearches.join(', ')}`)
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * Build BehaviorInsightsData from a UserPreferenceSummary entity.
+ */
+export function buildBehaviorInsights(summary: UserPreferenceSummary): BehaviorInsightsData {
+  return {
+    favoriteCuisines: summary.topCuisines.map(r => r.label),
+    preferredRegions: summary.topRegions.map(r => r.label),
+    commonSituations: summary.topSituations.map(r => r.label),
+    recentSearches: summary.searchKeywords.map(r => r.label),
+  }
+}
+
 function buildVerificationInstructions(): string {
   return [
     '---',
@@ -335,6 +379,116 @@ function buildVerificationInstructions(): string {
     '3. 최근 6개월 이내의 최신 정보를 우선해줘.',
     '4. 폐업, 휴업, 메뉴 변경 등 영업 상태도 확인해줘.',
     '5. 확실하지 않은 정보는 "확인 필요"라고 표시해줘.',
-    '6. 실제 방문 가치를 10점 만점으로 솔직하게 평가해줘.',
+    '',
+    '---',
+    '반드시 아래 형식으로 답변해줘 (항목별 구분 명확히):',
+    '',
+    '## [식당명]',
+    '',
+    '방문가치점수: __/10',
+    '대표 추천메뉴: (2~3개, 가격 포함)',
+    '가격대: (1인 기준 예상 금액)',
+    '분위기: (한 줄 요약)',
+    '장점: (핵심 2~3가지)',
+    '단점: (솔직하게 2~3가지)',
+    '추천 상황: (어떤 모임/상황에 적합한지)',
+    '영업 상태: (정상영업/확인필요)',
+    '한줄평: (방문 여부 결론)',
   ].join('\n')
+}
+
+/**
+ * Build verification instructions for comparison prompts.
+ */
+function buildComparisonInstructions(restaurantNames: readonly string[]): string {
+  const nameList = restaurantNames.join(', ')
+  return [
+    '---',
+    '검증 지침:',
+    '1. 반드시 네이버, 구글맵, 인스타그램 등 여러 소스의 정보를 교차 확인해줘.',
+    '2. 체험단/협찬 리뷰는 구분해서 알려줘.',
+    '3. 최근 6개월 이내의 최신 정보를 우선해줘.',
+    '4. 폐업, 휴업, 메뉴 변경 등 영업 상태도 확인해줘.',
+    '5. 확실하지 않은 정보는 "확인 필요"라고 표시해줘.',
+    '',
+    '---',
+    `비교 대상: ${nameList}`,
+    '',
+    '반드시 아래 형식으로 답변해줘:',
+    '',
+    '## 개별 분석',
+    '(각 식당별로 아래 형식 반복)',
+    '',
+    '### [식당명]',
+    '방문가치점수: __/10',
+    '대표 추천메뉴: (2~3개, 가격 포함)',
+    '가격대: (1인 기준 예상 금액)',
+    '분위기: (한 줄 요약)',
+    '장점: (핵심 2~3가지)',
+    '단점: (솔직하게 2~3가지)',
+    '',
+    '## 비교 요약',
+    '| 항목 | ' + restaurantNames.join(' | ') + ' |',
+    '|------|' + restaurantNames.map(() => '------|').join(''),
+    '| 방문가치점수 | |',
+    '| 가격대 | |',
+    '| 맛 | |',
+    '| 서비스 | |',
+    '| 분위기 | |',
+    '',
+    '## 최종 추천',
+    '추천 순위: (1위부터, 이유 포함)',
+    '상황별 추천: (데이트/회식/혼밥 등 각 상황별 최적 선택)',
+  ].join('\n')
+}
+
+/**
+ * Build a comparison prompt for multiple restaurants.
+ */
+export function buildComparisonPrompt(
+  restaurants: readonly RestaurantContextData[],
+  context: PromptContext,
+): string {
+  const names = restaurants.map(r => r.name)
+  const sections: string[] = []
+
+  // Intro
+  sections.push(
+    `다음 ${restaurants.length}개 식당을 비교 분석해줘: ${names.join(', ')}`,
+  )
+
+  // Situation context
+  if (context.situation) {
+    const parts: string[] = []
+    if (context.situation.occasion) parts.push(`상황: ${context.situation.occasion}`)
+    if (context.situation.partySize) {
+      const size = String(context.situation.partySize)
+      parts.push(`인원: ${size.includes('명') ? size : `${size}명`}`)
+    }
+    if (context.situation.budget) parts.push(`예산: ${context.situation.budget}`)
+    if (context.situation.mood) parts.push(`분위기: ${context.situation.mood}`)
+    if (parts.length > 0) {
+      sections.push('---\n내 조건:\n' + parts.map(p => `- ${p}`).join('\n'))
+    }
+  }
+
+  // Each restaurant's context block
+  for (const r of restaurants) {
+    sections.push(buildRestaurantContextBlock(r))
+  }
+
+  // User context
+  if (context.user) {
+    sections.push(buildUserContextBlock(context.user))
+  }
+
+  // Behavior insights
+  if (context.behaviorInsights) {
+    sections.push(buildBehaviorInsightsBlock(context.behaviorInsights))
+  }
+
+  // Comparison-specific instructions
+  sections.push(buildComparisonInstructions(names))
+
+  return sections.join('\n\n')
 }

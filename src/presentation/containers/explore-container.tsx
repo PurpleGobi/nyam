@@ -1,22 +1,24 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, SearchX, AlertCircle, X, SlidersHorizontal,
-  MapPin, ArrowUpDown, ChevronDown,
+  MapPin, ArrowUpDown, ChevronDown, GitCompareArrows, Check,
 } from 'lucide-react'
 import { useRestaurants } from '@/application/hooks/use-restaurants'
 import { useFavorites } from '@/application/hooks/use-favorites'
+import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
 import { RestaurantCard } from '@/presentation/components/restaurant/restaurant-card'
 import { RestaurantCardSkeleton } from '@/presentation/components/restaurant/restaurant-card-skeleton'
+import { ComparisonPromptSheet } from '@/presentation/components/prompt/comparison-prompt-sheet'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
 import { Input } from '@/components/ui/input'
 import { FOOD_CATEGORIES } from '@/shared/constants/categories'
 import { ROUTES } from '@/shared/constants/routes'
 import type { RestaurantFilter } from '@/domain/repositories/restaurant-repository'
-import type { CuisineCategory } from '@/domain/entities/restaurant'
+import type { CuisineCategory, RestaurantWithSummary } from '@/domain/entities/restaurant'
 import { cn } from '@/shared/utils/cn'
 
 const categoryIdToLabel: Record<string, CuisineCategory> = {
@@ -41,6 +43,9 @@ export function ExploreContainer() {
   const [selectedRegion, setSelectedRegion] = useState<string>('전체')
   const [sortBy, setSortBy] = useState<string>('latest')
   const [showFilters, setShowFilters] = useState(false)
+  const [compareMode, setCompareMode] = useState(false)
+  const [selectedForCompare, setSelectedForCompare] = useState<RestaurantWithSummary[]>([])
+  const [showCompareSheet, setShowCompareSheet] = useState(false)
 
   const filter: RestaurantFilter = {
     ...(selectedCategory && categoryIdToLabel[selectedCategory]
@@ -52,6 +57,21 @@ export function ExploreContainer() {
 
   const { restaurants, isLoading, error } = useRestaurants({ filter })
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { trackCategoryClick, trackRegionSelect, trackSearchQuery } = useInteractionTracker()
+
+  // Debounced search tracking (500ms)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (searchQuery.trim().length >= 2) {
+      searchTimerRef.current = setTimeout(() => {
+        trackSearchQuery(searchQuery.trim())
+      }, 500)
+    }
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    }
+  }, [searchQuery, trackSearchQuery])
 
   // Sort locally
   const sortedRestaurants = useMemo(() => {
@@ -74,7 +94,9 @@ export function ExploreContainer() {
 
   const handleCategoryClick = useCallback((categoryId: string) => {
     setSelectedCategory(prev => prev === categoryId ? null : categoryId)
-  }, [])
+    const label = categoryIdToLabel[categoryId]
+    if (label) trackCategoryClick(label)
+  }, [trackCategoryClick])
 
   const handleFavoriteClick = useCallback((restaurantId: string) => {
     void toggleFavorite(restaurantId)
@@ -86,6 +108,24 @@ export function ExploreContainer() {
     setSearchQuery('')
     setSortBy('latest')
   }, [])
+
+  const toggleCompareSelect = useCallback((restaurant: RestaurantWithSummary) => {
+    setSelectedForCompare(prev => {
+      const exists = prev.find(r => r.id === restaurant.id)
+      if (exists) return prev.filter(r => r.id !== restaurant.id)
+      if (prev.length >= 5) return prev
+      return [...prev, restaurant]
+    })
+  }, [])
+
+  const removeFromCompare = useCallback((id: string) => {
+    setSelectedForCompare(prev => prev.filter(r => r.id !== id))
+  }, [])
+
+  const isSelectedForCompare = useCallback(
+    (id: string) => selectedForCompare.some(r => r.id === id),
+    [selectedForCompare],
+  )
 
   return (
     <div className="flex flex-col gap-3 px-5 pb-20">
@@ -118,7 +158,10 @@ export function ExploreContainer() {
               <button
                 key={region}
                 type="button"
-                onClick={() => setSelectedRegion(region)}
+                onClick={() => {
+                  setSelectedRegion(region)
+                  if (region !== '전체') trackRegionSelect(region)
+                }}
                 className={cn(
                   'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
                   selectedRegion === region
@@ -138,7 +181,7 @@ export function ExploreContainer() {
         </div>
       </div>
 
-      {/* Sort + filter toggle row */}
+      {/* Sort + filter + compare toggle row */}
       <div className="flex items-center justify-between">
         {/* Sort dropdown */}
         <div className="flex items-center gap-1.5">
@@ -155,25 +198,45 @@ export function ExploreContainer() {
           <ChevronDown size={12} className="text-neutral-400" />
         </div>
 
-        {/* Filter toggle */}
-        <button
-          type="button"
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
-            showFilters || activeFilterCount > 0
-              ? 'bg-orange-50 text-orange-600'
-              : 'bg-neutral-100 text-neutral-600',
-          )}
-        >
-          <SlidersHorizontal size={14} />
-          필터
-          {activeFilterCount > 0 && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Compare toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              setCompareMode(!compareMode)
+              if (compareMode) setSelectedForCompare([])
+            }}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+              compareMode
+                ? 'bg-blue-50 text-blue-600'
+                : 'bg-neutral-100 text-neutral-600',
+            )}
+          >
+            <GitCompareArrows size={14} />
+            비교
+          </button>
+
+          {/* Filter toggle */}
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all',
+              showFilters || activeFilterCount > 0
+                ? 'bg-orange-50 text-orange-600'
+                : 'bg-neutral-100 text-neutral-600',
+            )}
+          >
+            <SlidersHorizontal size={14} />
+            필터
+            {activeFilterCount > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Expandable category filter */}
@@ -293,16 +356,80 @@ export function ExploreContainer() {
       {!isLoading && !error && sortedRestaurants.length > 0 && (
         <div className="flex flex-col gap-2.5">
           {sortedRestaurants.map(restaurant => (
-            <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
-              <RestaurantCard
-                restaurant={restaurant}
-                isFavorite={isFavorite(restaurant.id)}
-                onFavoriteClick={handleFavoriteClick}
-              />
-            </Link>
+            compareMode ? (
+              <button
+                key={restaurant.id}
+                type="button"
+                onClick={() => toggleCompareSelect(restaurant)}
+                className="relative text-left"
+              >
+                <RestaurantCard
+                  restaurant={restaurant}
+                  isFavorite={isFavorite(restaurant.id)}
+                />
+                {/* Compare selection indicator */}
+                <div
+                  className={cn(
+                    'absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all',
+                    isSelectedForCompare(restaurant.id)
+                      ? 'border-blue-500 bg-blue-500'
+                      : 'border-neutral-300 bg-white',
+                  )}
+                >
+                  {isSelectedForCompare(restaurant.id) && (
+                    <Check size={14} className="text-white" strokeWidth={3} />
+                  )}
+                </div>
+              </button>
+            ) : (
+              <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
+                <RestaurantCard
+                  restaurant={restaurant}
+                  isFavorite={isFavorite(restaurant.id)}
+                  onFavoriteClick={handleFavoriteClick}
+                />
+              </Link>
+            )
           ))}
         </div>
       )}
+
+      {/* Floating compare bar */}
+      {compareMode && selectedForCompare.length > 0 && (
+        <div className="fixed inset-x-0 bottom-16 z-40 mx-auto max-w-lg px-4 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex items-center justify-between rounded-2xl bg-blue-600 px-4 py-3 shadow-lg">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white">
+                {selectedForCompare.length}곳 선택됨
+              </span>
+              <span className="text-xs text-blue-200">
+                {selectedForCompare.map(r => r.name).join(', ')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCompareSheet(true)}
+              disabled={selectedForCompare.length < 2}
+              className={cn(
+                'rounded-xl px-4 py-2 text-sm font-semibold transition-all',
+                selectedForCompare.length >= 2
+                  ? 'bg-white text-blue-600'
+                  : 'bg-blue-500 text-blue-300',
+              )}
+            >
+              비교 분석
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison prompt sheet */}
+      <ComparisonPromptSheet
+        restaurants={selectedForCompare}
+        onRemove={removeFromCompare}
+        open={showCompareSheet}
+        onOpenChange={setShowCompareSheet}
+      />
     </div>
   )
 }

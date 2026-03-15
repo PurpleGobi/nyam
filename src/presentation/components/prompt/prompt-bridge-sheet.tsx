@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import {
   Copy,
   Check,
@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  ClipboardPaste,
 } from 'lucide-react'
 import {
   Sheet,
@@ -25,8 +26,10 @@ import { useUserProfile } from '@/application/hooks/use-user-profile'
 import { useUserTaste } from '@/application/hooks/use-user-taste'
 import { usePrompts } from '@/application/hooks/use-prompts'
 import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
+import { usePreferenceSummary } from '@/application/hooks/use-preference-summary'
+import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
 import { cn } from '@/shared/utils/cn'
-import { buildEnhancedPrompt, buildUserContext } from '@/shared/utils/prompt-resolver'
+import { buildEnhancedPrompt, buildUserContext, buildBehaviorInsights } from '@/shared/utils/prompt-resolver'
 import type { PromptContext } from '@/shared/utils/prompt-resolver'
 import type { PromptTemplate } from '@/domain/entities/prompt'
 
@@ -68,9 +71,14 @@ export function PromptBridgeSheet({
   const { tasteProfile, experiences } = useUserTaste()
   const { prompts, isLoading: promptsLoading } = usePrompts()
   const { copyToClipboard, openInChatGPT, copied } = usePromptBridge()
+  const { summary } = usePreferenceSummary()
+  const { trackPromptUse } = useInteractionTracker()
 
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [resultText, setResultText] = useState('')
+  const [resultCopied, setResultCopied] = useState(false)
+  const resultTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-select first template when prompts load
   const activeTemplate = selectedTemplate ?? prompts[0] ?? null
@@ -84,20 +92,23 @@ export function PromptBridgeSheet({
       user: profile
         ? buildUserContext(profile, tasteProfile, experiences)
         : undefined,
+      behaviorInsights: summary ? buildBehaviorInsights(summary) : undefined,
     }
 
     return buildEnhancedPrompt(activeTemplate, fullContext)
-  }, [activeTemplate, context, profile, tasteProfile, experiences])
+  }, [activeTemplate, context, profile, tasteProfile, experiences, summary])
 
   const handleCopy = () => {
-    if (enhancedPrompt) {
-      void copyToClipboard(enhancedPrompt, activeTemplate?.id, restaurantId)
+    if (enhancedPrompt && activeTemplate) {
+      trackPromptUse(activeTemplate.id, activeTemplate.category)
+      void copyToClipboard(enhancedPrompt, activeTemplate.id, restaurantId)
     }
   }
 
   const handleOpenChatGPT = () => {
-    if (enhancedPrompt) {
-      void openInChatGPT(enhancedPrompt, activeTemplate?.id, restaurantId)
+    if (enhancedPrompt && activeTemplate) {
+      trackPromptUse(activeTemplate.id, activeTemplate.category)
+      void openInChatGPT(enhancedPrompt, activeTemplate.id, restaurantId)
     }
   }
 
@@ -206,6 +217,62 @@ export function PromptBridgeSheet({
                 )}
               </div>
             )}
+
+            <Separator />
+
+            {/* LLM result paste-back section */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[var(--color-neutral-600)]">
+                  AI 결과 붙여넣기
+                </span>
+                {resultText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(resultText)
+                      setResultCopied(true)
+                      setTimeout(() => setResultCopied(false), 2000)
+                    }}
+                    className="flex items-center gap-1 text-xs font-medium text-[var(--color-primary-500)]"
+                  >
+                    {resultCopied ? <Check size={12} /> : <Copy size={12} />}
+                    {resultCopied ? '복사됨' : '결과 복사'}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <textarea
+                  ref={resultTextareaRef}
+                  value={resultText}
+                  onChange={e => setResultText(e.target.value)}
+                  placeholder="ChatGPT 등에서 받은 결과를 여기에 붙여넣으세요..."
+                  className="min-h-[120px] w-full resize-y rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-3 text-sm leading-relaxed text-[var(--color-neutral-700)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-300)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-200)]"
+                />
+                {!resultText && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText()
+                        setResultText(text)
+                      } catch {
+                        resultTextareaRef.current?.focus()
+                      }
+                    }}
+                    className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-[var(--color-neutral-500)] shadow-sm"
+                  >
+                    <ClipboardPaste size={12} />
+                    붙여넣기
+                  </button>
+                )}
+              </div>
+              {resultText && (
+                <p className="text-xs text-[var(--color-neutral-400)]">
+                  결과가 저장되었어요. 상단 &quot;결과 복사&quot; 버튼으로 다시 복사할 수 있어요.
+                </p>
+              )}
+            </div>
           </div>
         </ScrollArea>
 

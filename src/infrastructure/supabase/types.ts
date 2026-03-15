@@ -644,6 +644,31 @@ export interface Database {
         ]
       }
 
+      user_interactions: {
+        Row: {
+          id: string
+          user_id: string
+          event_type: string
+          event_data: Record<string, string>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          event_type: string
+          event_data?: Record<string, string>
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          event_type?: string
+          event_data?: Record<string, string>
+          created_at?: string
+        }
+        Relationships: []
+      }
+
       dining_experiences: {
         Row: {
           id: string
@@ -728,6 +753,10 @@ export interface Database {
       refresh_verification_summary: {
         Args: Record<string, never>
         Returns: undefined
+      }
+      get_user_preference_summary: {
+        Args: { p_user_id: string; p_days?: number }
+        Returns: Record<string, unknown>
       }
     }
 

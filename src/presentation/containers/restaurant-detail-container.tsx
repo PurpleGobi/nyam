@@ -17,6 +17,7 @@ import {
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useRestaurantVerifications } from '@/application/hooks/use-verifications'
 import { useFavorites } from '@/application/hooks/use-favorites'
+import { useInteractionTracker } from '@/application/hooks/use-interaction-tracker'
 import { TrustMeter } from '@/presentation/components/restaurant/trust-meter'
 import { VerificationBadge } from '@/presentation/components/restaurant/verification-badge'
 import { CategoryTag } from '@/presentation/components/restaurant/category-tag'
@@ -66,6 +67,7 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
     error: verificationsError,
   } = useRestaurantVerifications(id)
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { trackRestaurantView } = useInteractionTracker()
 
   const isLoading = detailLoading
   const error = detailError
@@ -74,8 +76,13 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
   useEffect(() => {
     if (restaurant) {
       addRecentView(restaurant.id)
+      trackRestaurantView(
+        restaurant.id,
+        restaurant.cuisineCategory,
+        restaurant.region ?? restaurant.shortAddress ?? '',
+      )
     }
-  }, [restaurant])
+  }, [restaurant, trackRestaurantView])
 
   // Loading state
   if (isLoading) {
