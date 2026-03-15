@@ -3,16 +3,15 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Flame, SearchX, Sunrise, UtensilsCrossed, Sun, Moon, MoonStar,
-  Briefcase, Heart, User, Home, Users,
+  Flame, Sunrise, UtensilsCrossed, Sun, Moon, MoonStar,
+  Briefcase, Heart, User, Home, Users, MapPin, ChevronRight,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/application/hooks/use-auth'
-import { useRestaurants } from '@/application/hooks/use-restaurants'
 import { useUserProfile } from '@/application/hooks/use-user-profile'
+import { useHomeRecommendations } from '@/application/hooks/use-home-recommendations'
 import { RestaurantCard } from '@/presentation/components/restaurant/restaurant-card'
 import { RestaurantCardSkeleton } from '@/presentation/components/restaurant/restaurant-card-skeleton'
-import { EmptyState } from '@/presentation/components/shared/empty-state'
 import { SITUATION_PRESETS } from '@/shared/constants/situations'
 import { ROUTES } from '@/shared/constants/routes'
 
@@ -39,15 +38,18 @@ const situationIconMap: Record<string, LucideIcon> = {
 
 /**
  * Home tab container.
- * Shows greeting, situation quick buttons, recent verified restaurants,
- * and streak info for logged-in users.
+ * Shows greeting, situation quick buttons, and time+location based recommendations.
  */
 export function HomeContainer() {
   const { user, isLoading: authLoading } = useAuth()
   const { profile, isLoading: profileLoading } = useUserProfile(user?.id)
-  const { restaurants, isLoading: restaurantsLoading, error } = useRestaurants({
-    pagination: { page: 1, limit: 5 },
-  })
+  const {
+    restaurants,
+    mealLabel,
+    region,
+    isLoading: recommendLoading,
+    error: recommendError,
+  } = useHomeRecommendations()
 
   const { text: greetingText, icon: GreetingIcon } = useMemo(() => getGreeting(), [])
 
@@ -78,60 +80,88 @@ export function HomeContainer() {
         <div className="relative">
           <div className="flex gap-2 overflow-x-auto">
             {SITUATION_PRESETS.map((preset) => {
-            const IconComp = situationIconMap[preset.icon]
-            return (
-              <Link
-                key={preset.id}
-                href={`${ROUTES.PROMPTS}?situation=${preset.id}`}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-3.5 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
-              >
-                {IconComp && <IconComp size={16} strokeWidth={1.5} className="text-[var(--color-primary-500)]" />}
-                <span>{preset.label}</span>
-              </Link>
-            )
-          })}
+              const IconComp = situationIconMap[preset.icon]
+              return (
+                <Link
+                  key={preset.id}
+                  href={`${ROUTES.PROMPTS}?situation=${preset.id}`}
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-3.5 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
+                >
+                  {IconComp && <IconComp size={16} strokeWidth={1.5} className="text-[var(--color-primary-500)]" />}
+                  <span>{preset.label}</span>
+                </Link>
+              )
+            })}
           </div>
           <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />
         </div>
       </section>
 
-      {/* Recent verified restaurants */}
+      {/* Time + location based recommendations */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">최근 검증된 맛집</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">
+              {mealLabel || '지금 이 시간 추천'}
+            </h2>
+            {region && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary-600)]">
+                <MapPin size={10} strokeWidth={2} />
+                {region}
+              </span>
+            )}
+          </div>
           <Link
             href={ROUTES.EXPLORE}
-            className="text-sm text-[var(--color-primary-500)]"
+            className="flex items-center gap-0.5 text-sm text-[var(--color-primary-500)]"
           >
             더보기
+            <ChevronRight size={14} />
           </Link>
         </div>
 
-        {restaurantsLoading && (
-          <div className="flex flex-col gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+        {recommendLoading && (
+          <div className="flex flex-col gap-2.5">
+            {Array.from({ length: 4 }).map((_, i) => (
               <RestaurantCardSkeleton key={i} />
             ))}
           </div>
         )}
 
-        {error && !restaurantsLoading && (
-          <p className="py-8 text-center text-sm text-[var(--color-error-500)]">
-            데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
-          </p>
+        {recommendError && !recommendLoading && (
+          <div className="rounded-xl bg-[var(--color-neutral-50)] px-4 py-8 text-center">
+            <p className="text-sm text-[var(--color-neutral-500)]">
+              추천 맛집을 불러오지 못했어요.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-3 rounded-lg bg-[var(--color-primary-500)] px-4 py-2 text-sm font-medium text-white"
+            >
+              다시 시도
+            </button>
+          </div>
         )}
 
-        {!restaurantsLoading && !error && restaurants.length === 0 && (
-          <EmptyState
-            icon={SearchX}
-            title="아직 검증된 맛집이 없어요"
-            description="AI로 첫 번째 맛집을 검증해보세요!"
-            actionLabel="맛집 탐색하기"
-            onAction={() => { window.location.href = ROUTES.EXPLORE }}
-          />
+        {!recommendLoading && !recommendError && restaurants.length === 0 && (
+          <div className="rounded-xl bg-[var(--color-neutral-50)] px-4 py-10 text-center">
+            <UtensilsCrossed size={36} className="mx-auto mb-3 text-[var(--color-neutral-300)]" />
+            <p className="text-sm font-medium text-[var(--color-neutral-600)]">
+              주변 맛집을 검색하려면 API 키 설정이 필요해요
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
+              docs/api-keys-guide.md를 참고해주세요
+            </p>
+            <Link
+              href={ROUTES.EXPLORE}
+              className="mt-4 inline-block rounded-lg bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white"
+            >
+              직접 탐색하기
+            </Link>
+          </div>
         )}
 
-        {!restaurantsLoading && !error && restaurants.length > 0 && (
+        {!recommendLoading && !recommendError && restaurants.length > 0 && (
           <div className="flex flex-col gap-2.5">
             {restaurants.map((restaurant) => (
               <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>

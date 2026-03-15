@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { searchKakaoPlaces, extractCuisineCategory, mapKakaoCuisineCategory } from './kakao-local'
-import { searchNaverPlaces, cleanNaverTitle } from './naver-search'
+import { searchNaverPlaces, cleanNaverTitle, searchNaverImage } from './naver-search'
 import { createAdminClient } from '../supabase/admin'
 import type { CuisineCategory } from '@/domain/entities/restaurant'
 
@@ -28,6 +28,7 @@ export interface ExternalRestaurantResult {
   readonly kakaoMapUrl: string
   readonly naverMapUrl: string | null
   readonly naverDescription: string | null
+  readonly imageUrl: string | null
 }
 
 /**
@@ -85,6 +86,23 @@ export async function searchExternalRestaurants(
     // Naver enrichment is non-critical; proceed without it
   }
 
+  // Fetch images for top 5 results
+  const imageMap = new Map<string, string>()
+  try {
+    const imageResults = await Promise.allSettled(
+      namesToEnrich.map(place =>
+        searchNaverImage(place.place_name, params.region)
+      )
+    )
+    imageResults.forEach((result, idx) => {
+      if (result.status === 'fulfilled' && result.value) {
+        imageMap.set(namesToEnrich[idx].id, result.value)
+      }
+    })
+  } catch {
+    // Image fetching is non-critical; proceed without it
+  }
+
   const results: ExternalRestaurantResult[] = kakaoResponse.documents.map(place => {
     const cuisineRaw = extractCuisineCategory(place.category_name)
     const naverData = naverDataMap.get(place.id)
@@ -102,6 +120,7 @@ export async function searchExternalRestaurants(
       kakaoMapUrl: place.place_url,
       naverMapUrl: naverData?.link ?? null,
       naverDescription: naverData?.description ?? null,
+      imageUrl: imageMap.get(place.id) ?? null,
     }
   })
 
@@ -160,6 +179,7 @@ export async function searchAndCacheRestaurants(
         latitude: result.latitude,
         longitude: result.longitude,
         region,
+        image_url: result.imageUrl,
         is_active: true,
       })
       .select('id')

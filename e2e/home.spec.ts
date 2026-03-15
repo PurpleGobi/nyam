@@ -16,8 +16,8 @@ test.describe('Home Page', () => {
     await expect(page.getByText('데이트')).toBeVisible();
     await expect(page.getByText('혼밥')).toBeVisible();
 
-    // Recent restaurants section
-    await expect(page.getByText('최근 검증된 맛집')).toBeVisible();
+    // Time-based recommendation section (dynamic title, check for the section heading)
+    await expect(page.locator('main').getByRole('heading', { level: 2 }).filter({ hasText: /추천|이 시간/ })).toBeVisible();
   });
 
   test('situation button should navigate to explore', async ({ page }) => {
