@@ -83,18 +83,30 @@ export const supabaseRestaurantRepository: RestaurantRepository = {
       throw new Error(`Failed to fetch restaurant: ${error.message}`);
     }
 
-    const { data: summary } = await supabase
-      .from('restaurant_verification_summary')
-      .select('*')
-      .eq('restaurant_id', id)
-      .single();
+    let summary: SummaryRow | null = null
+    try {
+      const { data } = await supabase
+        .from('restaurant_verification_summary')
+        .select('*')
+        .eq('restaurant_id', id)
+        .maybeSingle()
+      summary = data
+    } catch {
+      // View may not exist yet — proceed without summary
+    }
 
-    const { data: ratings } = await supabase
-      .from('restaurant_ratings')
-      .select('*')
-      .eq('restaurant_id', id);
+    let ratings: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[] = []
+    try {
+      const { data } = await supabase
+        .from('restaurant_ratings')
+        .select('*')
+        .eq('restaurant_id', id)
+      ratings = data ?? []
+    } catch {
+      // Table may not exist yet
+    }
 
-    return toRestaurantWithSummary(restaurant, summary ?? null, ratings ?? []);
+    return toRestaurantWithSummary(restaurant, summary, ratings);
   },
 
   async findMany(
@@ -137,11 +149,15 @@ export const supabaseRestaurantRepository: RestaurantRepository = {
     const ids = restaurantRows.map(r => r.id);
     let summaries: SummaryRow[] = [];
     if (ids.length > 0) {
-      const { data: summaryData } = await supabase
-        .from('restaurant_verification_summary')
-        .select('*')
-        .in('restaurant_id', ids);
-      summaries = summaryData ?? [];
+      try {
+        const { data: summaryData } = await supabase
+          .from('restaurant_verification_summary')
+          .select('*')
+          .in('restaurant_id', ids);
+        summaries = summaryData ?? [];
+      } catch {
+        // View may not exist yet
+      }
     }
 
     const summaryMap = new Map(summaries.map(s => [s.restaurant_id, s]));
@@ -149,11 +165,15 @@ export const supabaseRestaurantRepository: RestaurantRepository = {
     // Fetch ratings for the returned restaurants
     let allRatings: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[] = [];
     if (ids.length > 0) {
-      const { data: ratingsData } = await supabase
-        .from('restaurant_ratings')
-        .select('*')
-        .in('restaurant_id', ids);
-      allRatings = ratingsData ?? [];
+      try {
+        const { data: ratingsData } = await supabase
+          .from('restaurant_ratings')
+          .select('*')
+          .in('restaurant_id', ids);
+        allRatings = ratingsData ?? [];
+      } catch {
+        // Table may not exist yet
+      }
     }
     const ratingsMap = new Map<string, typeof allRatings>();
     for (const r of allRatings) {

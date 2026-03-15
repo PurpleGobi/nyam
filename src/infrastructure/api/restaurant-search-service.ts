@@ -16,7 +16,8 @@ export interface RestaurantSearchParams {
 
 /** A normalized restaurant result from external APIs */
 export interface ExternalRestaurantResult {
-  readonly kakaoId: string
+  readonly externalId: string
+  readonly source: 'kakao' | 'naver' | 'merged'
   readonly name: string
   readonly address: string
   readonly roadAddress: string
@@ -25,90 +26,53 @@ export interface ExternalRestaurantResult {
   readonly cuisineDetail: string
   readonly latitude: number
   readonly longitude: number
-  readonly kakaoMapUrl: string
+  readonly kakaoMapUrl: string | null
   readonly naverMapUrl: string | null
   readonly naverDescription: string | null
   readonly imageUrl: string | null
 }
 
 /**
- * Search restaurants using Kakao Local API as primary source,
- * enriched with Naver data for additional context.
+ * Search restaurants from Kakao + Naver in parallel.
+ * Merges results, deduplicates by name+address similarity,
+ * and enriches with images.
  */
 export async function searchExternalRestaurants(
   params: RestaurantSearchParams,
 ): Promise<{ results: readonly ExternalRestaurantResult[]; total: number; hasMore: boolean }> {
   const searchQuery = buildSearchQuery(params)
+  const naverQuery = params.region
+    ? `${params.region} ${searchQuery}`
+    : searchQuery
 
-  // Primary search: Kakao Local API
-  const kakaoResponse = await searchKakaoPlaces({
-    query: searchQuery,
-    region: params.region,
-    page: params.page ?? 1,
-    size: params.limit ?? 15,
-  })
+  // Search both APIs in parallel
+  const [kakaoResult, naverResult] = await Promise.allSettled([
+    searchKakaoPlaces({
+      query: searchQuery,
+      region: params.region,
+      page: params.page ?? 1,
+      size: params.limit ?? 15,
+    }),
+    searchNaverPlaces({
+      query: naverQuery,
+      display: params.limit ?? 15,
+      start: ((params.page ?? 1) - 1) * (params.limit ?? 15) + 1,
+    }),
+  ])
 
-  if (kakaoResponse.documents.length === 0) {
+  const kakaoPlaces = kakaoResult.status === 'fulfilled' ? kakaoResult.value.documents : []
+  const naverPlaces = naverResult.status === 'fulfilled' ? naverResult.value.items : []
+
+  if (kakaoPlaces.length === 0 && naverPlaces.length === 0) {
     return { results: [], total: 0, hasMore: false }
   }
 
-  // Enrich with Naver data for top results
-  const naverDataMap = new Map<string, { description: string; link: string }>()
-
-  // Only enrich first 5 results to avoid rate limits
-  const namesToEnrich = kakaoResponse.documents.slice(0, 5)
-
-  try {
-    const naverResults = await Promise.allSettled(
-      namesToEnrich.map(place =>
-        searchNaverPlaces({
-          query: `${place.place_name} ${place.road_address_name || place.address_name}`,
-          display: 1,
-        })
-      )
-    )
-
-    naverResults.forEach((result, idx) => {
-      if (result.status === 'fulfilled' && result.value.items.length > 0) {
-        const item = result.value.items[0]
-        const cleanName = cleanNaverTitle(item.title)
-        // Match by name similarity
-        if (cleanName.includes(namesToEnrich[idx].place_name) ||
-            namesToEnrich[idx].place_name.includes(cleanName)) {
-          naverDataMap.set(namesToEnrich[idx].id, {
-            description: item.description,
-            link: item.link,
-          })
-        }
-      }
-    })
-  } catch {
-    // Naver enrichment is non-critical; proceed without it
-  }
-
-  // Fetch images for top 5 results
-  const imageMap = new Map<string, string>()
-  try {
-    const imageResults = await Promise.allSettled(
-      namesToEnrich.map(place =>
-        searchNaverImage(place.place_name, params.region)
-      )
-    )
-    imageResults.forEach((result, idx) => {
-      if (result.status === 'fulfilled' && result.value) {
-        imageMap.set(namesToEnrich[idx].id, result.value)
-      }
-    })
-  } catch {
-    // Image fetching is non-critical; proceed without it
-  }
-
-  const results: ExternalRestaurantResult[] = kakaoResponse.documents.map(place => {
+  // Build results from Kakao
+  const merged: ExternalRestaurantResult[] = kakaoPlaces.map(place => {
     const cuisineRaw = extractCuisineCategory(place.category_name)
-    const naverData = naverDataMap.get(place.id)
-
     return {
-      kakaoId: place.id,
+      externalId: `kakao_${place.id}`,
+      source: 'kakao' as const,
       name: place.place_name,
       address: place.address_name,
       roadAddress: place.road_address_name,
@@ -118,17 +82,85 @@ export async function searchExternalRestaurants(
       latitude: parseFloat(place.y),
       longitude: parseFloat(place.x),
       kakaoMapUrl: place.place_url,
-      naverMapUrl: naverData?.link ?? null,
-      naverDescription: naverData?.description ?? null,
-      imageUrl: imageMap.get(place.id) ?? null,
+      naverMapUrl: null,
+      naverDescription: null,
+      imageUrl: null,
     }
   })
 
-  return {
-    results,
-    total: kakaoResponse.meta.pageable_count,
-    hasMore: !kakaoResponse.meta.is_end,
+  // Merge Naver results — skip duplicates by name similarity
+  for (const naverPlace of naverPlaces) {
+    const cleanName = cleanNaverTitle(naverPlace.title)
+    const duplicate = merged.find(m =>
+      m.name === cleanName ||
+      m.name.includes(cleanName) ||
+      cleanName.includes(m.name)
+    )
+
+    if (duplicate) {
+      // Enrich existing Kakao entry with Naver data
+      const idx = merged.indexOf(duplicate)
+      merged[idx] = {
+        ...duplicate,
+        source: 'merged',
+        naverMapUrl: naverPlace.link || null,
+        naverDescription: naverPlace.description || null,
+      }
+    } else {
+      // Naver-only result — extract cuisine from category
+      const naverCuisine = extractNaverCuisineCategory(naverPlace.category)
+      merged.push({
+        externalId: `naver_${naverPlace.mapx}_${naverPlace.mapy}`,
+        source: 'naver',
+        name: cleanName,
+        address: naverPlace.address,
+        roadAddress: naverPlace.roadAddress,
+        phone: naverPlace.telephone,
+        cuisineCategory: naverCuisine as CuisineCategory,
+        cuisineDetail: naverPlace.category,
+        latitude: parseFloat(naverPlace.mapy) / 1e7,
+        longitude: parseFloat(naverPlace.mapx) / 1e7,
+        kakaoMapUrl: null,
+        naverMapUrl: naverPlace.link || null,
+        naverDescription: naverPlace.description || null,
+        imageUrl: null,
+      })
+    }
   }
+
+  // Fetch images for top results (limit to avoid rate limits)
+  const toFetchImages = merged.slice(0, 8)
+  try {
+    const imageResults = await Promise.allSettled(
+      toFetchImages.map(r => searchNaverImage(r.name, params.region))
+    )
+    imageResults.forEach((result, idx) => {
+      if (result.status === 'fulfilled' && result.value) {
+        toFetchImages[idx] = { ...toFetchImages[idx], imageUrl: result.value }
+        merged[idx] = toFetchImages[idx]
+      }
+    })
+  } catch {
+    // Image fetching is non-critical
+  }
+
+  const limit = params.limit ?? 15
+  const kakaoTotal = kakaoResult.status === 'fulfilled' ? kakaoResult.value.meta.pageable_count : 0
+  const naverTotal = naverResult.status === 'fulfilled' ? naverResult.value.total : 0
+
+  return {
+    results: merged.slice(0, limit),
+    total: Math.max(kakaoTotal, naverTotal),
+    hasMore: merged.length > limit ||
+      (kakaoResult.status === 'fulfilled' && !kakaoResult.value.meta.is_end),
+  }
+}
+
+/** Map Naver category string (e.g., "음식점>한식") to our cuisine type */
+function extractNaverCuisineCategory(category: string): string {
+  const parts = category.split('>')
+  const cuisine = parts.length >= 2 ? parts[1].trim() : '기타'
+  return mapKakaoCuisineCategory(cuisine)
 }
 
 /**
@@ -148,20 +180,43 @@ export async function searchAndCacheRestaurants(
   const restaurantIds: string[] = []
 
   for (const result of results) {
-    // Check if restaurant already exists by kakao_map_url (unique identifier)
+    // Check if restaurant already exists by name + address (cross-source dedup)
+    const address = result.roadAddress || result.address
     const { data: existing } = await supabase
       .from('restaurants')
       .select('id')
-      .eq('kakao_map_url', result.kakaoMapUrl)
-      .single()
+      .eq('name', result.name)
+      .eq('address', address)
+      .maybeSingle()
 
     if (existing) {
+      // Update with any new data from the other source
+      await supabase.from('restaurants').update({
+        ...(result.kakaoMapUrl && { kakao_map_url: result.kakaoMapUrl }),
+        ...(result.naverMapUrl && { naver_map_url: result.naverMapUrl }),
+        ...(result.imageUrl && { image_url: result.imageUrl }),
+      }).eq('id', existing.id)
+
       restaurantIds.push(existing.id)
       continue
     }
 
+    // Also check by kakao_map_url if available
+    if (result.kakaoMapUrl) {
+      const { data: kakaoExisting } = await supabase
+        .from('restaurants')
+        .select('id')
+        .eq('kakao_map_url', result.kakaoMapUrl)
+        .maybeSingle()
+
+      if (kakaoExisting) {
+        restaurantIds.push(kakaoExisting.id)
+        continue
+      }
+    }
+
     // Extract short address (구/동 level)
-    const shortAddress = extractShortAddress(result.roadAddress || result.address)
+    const shortAddress = extractShortAddress(address)
     const region = extractRegion(result.address)
 
     // Insert new restaurant
@@ -169,7 +224,7 @@ export async function searchAndCacheRestaurants(
       .from('restaurants')
       .insert({
         name: result.name,
-        address: result.roadAddress || result.address,
+        address,
         short_address: shortAddress,
         phone: result.phone || null,
         cuisine: result.cuisineDetail,
