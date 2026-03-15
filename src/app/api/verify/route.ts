@@ -11,6 +11,7 @@ interface VerifyResponse {
   verified: boolean
   reviews: { source: string; author: string; content: string; date: string; rating: number }[]
   status: "open" | "closed" | "unknown"
+  imageUrl: string | null
 }
 
 export async function POST(request: NextRequest) {
@@ -104,7 +105,31 @@ function buildVerifyResponse(
     verified = true
   }
 
-  return { verified, reviews: reviews.slice(0, 5), status }
+  // Extract image URL from search results
+  let imageUrl: string | null = null
+  if (mainResults) {
+    for (const result of mainResults.results) {
+      // Look for image URLs in results (Tavily includes images when available)
+      if ('image' in result && typeof (result as Record<string, unknown>).image === 'string') {
+        imageUrl = (result as Record<string, unknown>).image as string
+        break
+      }
+    }
+    // Also check rawContent for og:image patterns
+    if (!imageUrl) {
+      for (const result of mainResults.results) {
+        if ('rawContent' in result) {
+          const ogMatch = String((result as Record<string, unknown>).rawContent).match(/og:image[^"]*"([^"]+)"/i)
+          if (ogMatch) {
+            imageUrl = ogMatch[1]
+            break
+          }
+        }
+      }
+    }
+  }
+
+  return { verified, reviews: reviews.slice(0, 5), status, imageUrl }
 }
 
 function parseReview(result: {
