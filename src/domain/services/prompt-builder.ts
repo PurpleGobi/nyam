@@ -1,42 +1,47 @@
-/**
- * Prompt builder service
- * Pure function: replaces [variable_key] placeholders in template text with actual values
- */
-
-import type { PromptTemplate } from '../entities/prompt';
+import type { PromptTemplate } from '@/domain/entities/prompt'
 
 /**
- * Build a prompt string by replacing variable placeholders with provided values.
- *
- * Placeholders use the format `[label]` where `label` matches
- * the `label` field of a PromptVariable defined in the template.
- *
- * @param template - The prompt template containing the template text and variable definitions
- * @param variables - A record mapping variable keys to their replacement values
- * @returns The fully interpolated prompt string
- *
- * @example
- * ```ts
- * const result = buildPrompt(template, {
- *   restaurant_name: "스시오마카세",
- *   region: "강남",
- * });
- * ```
+ * Build final prompt text by replacing variable placeholders with values.
  */
 export function buildPrompt(
   template: PromptTemplate,
-  variables: Record<string, string>,
+  vars: Record<string, string>,
 ): string {
-  let result = template.template;
+  let text = template.template
 
-  for (const variable of template.variables) {
-    const value = variables[variable.key];
-    if (value !== undefined) {
-      // Replace [label] placeholder with the actual value
-      const placeholder = `[${variable.label}]`;
-      result = result.replaceAll(placeholder, value);
+  for (const v of template.variables) {
+    const value = vars[v.key] || '___'
+    // Replace all bracket-style placeholders: [식당명], [지역], etc.
+    const patterns = getPatterns(v.key, v.label)
+    for (const pattern of patterns) {
+      text = text.replaceAll(pattern, value)
     }
   }
 
-  return result;
+  return text
+}
+
+function getPatterns(key: string, label: string): string[] {
+  const patterns = [`[${label}]`]
+
+  // Common mappings
+  const keyMap: Record<string, string[]> = {
+    restaurant_name: ['[식당명]'],
+    region: ['[지역]'],
+    cuisine: ['[음식종류]', '[음식 종류]'],
+    situation: ['[상황]'],
+    party_size: ['[N]', '[인원]'],
+    budget: ['[금액]', '[예산]'],
+    mood: ['[분위기]', '[키워드]'],
+    exclude: ['[알러지/비선호]', '[제외]'],
+    restaurant_a: ['[식당A]'],
+    restaurant_b: ['[식당B]'],
+    restaurant_c: ['[식당C]'],
+  }
+
+  if (keyMap[key]) {
+    patterns.push(...keyMap[key])
+  }
+
+  return patterns
 }

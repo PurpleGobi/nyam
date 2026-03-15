@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { FileText } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { usePrompts } from '@/application/hooks/use-prompts'
 import { usePromptBridge } from '@/application/hooks/use-prompt-bridge'
 import { PromptCard } from '@/presentation/components/prompt/prompt-card'
+import { PromptEditorSheet } from '@/presentation/components/prompt/prompt-editor-sheet'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
-import type { PromptCategory } from '@/domain/entities/prompt'
+import type { PromptTemplate, PromptCategory } from '@/domain/entities/prompt'
 import { cn } from '@/shared/utils/cn'
 
 /** Category tab definitions with labels */
@@ -22,9 +24,16 @@ const CATEGORY_TABS: Array<{ value: PromptCategory | null; label: string }> = [
 /**
  * Prompts tab container.
  * Category-filtered prompt template list with copy/deeplink actions.
+ * Supports ?situation= query param for auto-selecting situation category.
  */
 export function PromptsContainer() {
-  const [selectedCategory, setSelectedCategory] = useState<PromptCategory | null>(null)
+  const searchParams = useSearchParams()
+  const situationParam = searchParams.get('situation')
+
+  const [selectedCategory, setSelectedCategory] = useState<PromptCategory | null>(
+    situationParam ? 'situation_recommend' : null,
+  )
+  const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null)
 
   const { prompts, isLoading, error } = usePrompts(
     selectedCategory ? { category: selectedCategory } : undefined,
@@ -46,6 +55,13 @@ export function PromptsContainer() {
       }
     },
     [prompts, openInChatGPT],
+  )
+
+  const handleCardClick = useCallback(
+    (template: PromptTemplate) => {
+      setEditingTemplate(template)
+    },
+    [],
   )
 
   return (
@@ -124,18 +140,38 @@ export function PromptsContainer() {
                 : undefined
 
             return (
-              <PromptCard
+              <div
                 key={template.id}
-                template={template}
-                onCopy={handleCopy}
-                onDeeplink={handleDeeplink}
-                usageCount={template.usageCount}
-                likePercentage={likePercentage}
-              />
+                role="button"
+                tabIndex={0}
+                onClick={() => handleCardClick(template)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleCardClick(template)
+                  }
+                }}
+                className="cursor-pointer transition-transform active:scale-[0.99]"
+              >
+                <PromptCard
+                  template={template}
+                  onCopy={handleCopy}
+                  onDeeplink={handleDeeplink}
+                  usageCount={template.usageCount}
+                  likePercentage={likePercentage}
+                />
+              </div>
             )
           })}
         </div>
       )}
+
+      {/* Editor sheet */}
+      <PromptEditorSheet
+        template={editingTemplate}
+        onClose={() => setEditingTemplate(null)}
+        situation={situationParam ?? undefined}
+      />
     </div>
   )
 }

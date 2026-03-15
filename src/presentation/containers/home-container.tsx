@@ -82,7 +82,7 @@ export function HomeContainer() {
             return (
               <Link
                 key={preset.id}
-                href={`${ROUTES.EXPLORE}?situation=${preset.id}`}
+                href={`${ROUTES.PROMPTS}?situation=${preset.id}`}
                 className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-neutral-200)] bg-white px-3.5 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-neutral-50)]"
               >
                 {IconComp && <IconComp size={16} strokeWidth={1.5} className="text-[var(--color-primary-500)]" />}

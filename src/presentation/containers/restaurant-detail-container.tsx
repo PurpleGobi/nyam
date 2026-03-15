@@ -21,11 +21,13 @@ import { TrustMeter } from '@/presentation/components/restaurant/trust-meter'
 import { VerificationBadge } from '@/presentation/components/restaurant/verification-badge'
 import { CategoryTag } from '@/presentation/components/restaurant/category-tag'
 import { EmptyState } from '@/presentation/components/shared/empty-state'
+import { PromptBridgeSheet } from '@/presentation/components/prompt/prompt-bridge-sheet'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/utils/cn'
 import { addRecentView } from '@/lib/storage'
+import { buildContextFromRestaurant } from '@/shared/utils/prompt-resolver'
 
 interface RestaurantDetailContainerProps {
   id: string
@@ -303,13 +305,18 @@ export function RestaurantDetailContainer({ id }: RestaurantDetailContainerProps
         )}
       </section>
 
-      {/* CTA button */}
-      <Link href={ROUTES.PROMPTS} className="sticky bottom-24">
-        <Button className="w-full gap-2" size="lg">
-          <Sparkles size={18} />
-          AI 검증하기
-        </Button>
-      </Link>
+      {/* CTA button - opens prompt bridge sheet */}
+      <div className="sticky bottom-24">
+        <PromptBridgeSheet
+          context={buildContextFromRestaurant(restaurant)}
+          restaurantId={restaurant.id}
+        >
+          <Button className="w-full gap-2" size="lg">
+            <Sparkles size={18} />
+            AI 검증하기
+          </Button>
+        </PromptBridgeSheet>
+      </div>
     </div>
   )
 }
