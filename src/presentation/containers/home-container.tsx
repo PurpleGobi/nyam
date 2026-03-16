@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { MapPin, Star } from "lucide-react"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useRecords } from "@/application/hooks/use-records"
@@ -9,6 +10,7 @@ import { useGeolocation } from "@/application/hooks/use-geolocation"
 import { useNearbyRecords } from "@/application/hooks/use-nearby-records"
 
 export function HomeContainer() {
+  const router = useRouter()
   const { user: authUser } = useAuthContext()
   const userId = authUser?.id
   const { user: profile } = useProfile(userId)
@@ -96,7 +98,7 @@ export function HomeContainer() {
         ) : records && records.data.length > 0 ? (
           <div className="flex flex-col gap-2">
             {records.data.map((record) => (
-              <div key={record.id} className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3">
+              <div key={record.id} onClick={() => router.push(`/records/${record.id}`)} className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3 active:bg-[var(--color-neutral-50)]">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-[var(--color-neutral-800)]">{record.menuName}</span>
                   <span className="text-xs text-[var(--color-neutral-400)]">

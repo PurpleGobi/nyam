@@ -4,7 +4,7 @@ export type AuthProviderType = 'kakao' | 'naver' | 'google' | 'apple'
 export type GroupType = 'private' | 'public' | 'viewonly' | 'paid'
 export type GroupRole = 'owner' | 'moderator' | 'member'
 export type MembershipStatus = 'active' | 'pending' | 'banned'
-export type ReactionType = 'like' | 'comment'
+export type ReactionType = 'like' | 'comment' | 'useful' | 'yummy'
 
 export interface Database {
   public: {

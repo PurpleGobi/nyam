@@ -23,5 +23,6 @@ export function useRecordDetail(id: string | undefined) {
     restaurant: restaurant.data,
     isLoading: record.isLoading || restaurant.isLoading,
     error: record.error || restaurant.error,
+    mutate: record.mutate,
   }
 }

@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useState } from "react"
 import {
   ArrowLeft,
   Star,
@@ -16,9 +17,30 @@ import {
   UtensilsCrossed,
   Wine,
   ChefHat,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Bookmark,
+  BookmarkCheck,
+  Heart,
+  ThumbsUp,
+  Sparkles,
 } from "lucide-react"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
+import { useRecordActions } from "@/application/hooks/use-record-actions"
+import { useBookmarks } from "@/application/hooks/use-bookmarks"
+import { useBookmarkActions } from "@/application/hooks/use-bookmark-actions"
+import { useReactions } from "@/application/hooks/use-reactions"
+import { useReactionActions } from "@/application/hooks/use-reaction-actions"
+import { useAuthContext } from "@/presentation/providers/auth-provider"
+import type { Reaction } from "@/application/hooks/use-reactions"
 import type { FoodRecord, RecordPhoto, RecordType, RestaurantRatings, WineRatings, HomemadeRatings } from "@/domain/entities/record"
+
+const REACTION_CONFIG = [
+  { type: 'like', label: '좋아요', icon: Heart },
+  { type: 'useful', label: '유용해요', icon: ThumbsUp },
+  { type: 'yummy', label: '맛있겠다', icon: Sparkles },
+] as const
 
 const RECORD_TYPE_CONFIG: Record<RecordType, { label: string; icon: typeof UtensilsCrossed }> = {
   restaurant: { label: '외식', icon: UtensilsCrossed },
@@ -157,6 +179,56 @@ export function RecordDetailContainer() {
   const id = typeof params.id === 'string' ? params.id : undefined
 
   const { record, restaurant, isLoading } = useRecordDetail(id)
+  const { deleteRecord } = useRecordActions()
+  const { user: authUser } = useAuthContext()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const { bookmarkedIds, mutate: mutateBookmarks } = useBookmarks(authUser?.id)
+  const { toggleBookmark, isLoading: bookmarkLoading } = useBookmarkActions()
+  const { reactions, mutate: mutateReactions } = useReactions(id)
+  const { toggleReaction, isLoading: reactionLoading } = useReactionActions()
+
+  const isOwner = authUser?.id != null && record?.userId === authUser.id
+  const isBookmarked = id ? bookmarkedIds.has(id) : false
+
+  const handleToggleBookmark = async () => {
+    if (!id || !authUser?.id || bookmarkLoading) return
+    await toggleBookmark(id, authUser.id, isBookmarked)
+    await mutateBookmarks()
+  }
+
+  const handleToggleReaction = async (reactionType: string) => {
+    if (!id || !authUser?.id || reactionLoading) return
+    const existing = reactions.find(
+      (r: Reaction) => r.userId === authUser.id && r.reactionType === reactionType,
+    )
+    await toggleReaction(id, authUser.id, reactionType, existing?.id ?? null)
+    await mutateReactions()
+  }
+
+  const getReactionCount = (reactionType: string): number =>
+    reactions.filter((r: Reaction) => r.reactionType === reactionType).length
+
+  const hasUserReacted = (reactionType: string): boolean =>
+    reactions.some(
+      (r: Reaction) => r.userId === authUser?.id && r.reactionType === reactionType,
+    )
+
+  const handleDelete = async () => {
+    if (!id) return
+    if (!window.confirm('이 기록을 삭제하시겠습니까?')) return
+    setMenuOpen(false)
+    const success = await deleteRecord(id)
+    if (success) {
+      router.replace('/')
+    }
+  }
+
+  const handleEdit = () => {
+    if (!id) return
+    setMenuOpen(false)
+    router.push(`/records/${id}/edit`)
+  }
 
   if (isLoading) {
     return (
@@ -223,10 +295,63 @@ export function RecordDetailContainer() {
         <h1 className="flex-1 truncate text-base font-semibold text-[var(--color-neutral-800)]">
           기록 상세
         </h1>
+        {authUser && (
+          <button
+            type="button"
+            onClick={handleToggleBookmark}
+            disabled={bookmarkLoading}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-neutral-50)]"
+            aria-label={isBookmarked ? '북마크 해제' : '북마크'}
+          >
+            {isBookmarked ? (
+              <BookmarkCheck className="h-5 w-5 text-[#FF6038]" />
+            ) : (
+              <Bookmark className="h-5 w-5 text-[var(--color-neutral-700)]" />
+            )}
+          </button>
+        )}
         <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-neutral-50)] px-2.5 py-1">
           <VisIcon className="h-3.5 w-3.5 text-[var(--color-neutral-500)]" />
           <span className="text-xs text-[var(--color-neutral-500)]">{visConfig.label}</span>
         </div>
+        {isOwner && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-neutral-50)]"
+              aria-label="더보기"
+            >
+              <MoreHorizontal className="h-5 w-5 text-[var(--color-neutral-700)]" />
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-xl border border-[var(--color-neutral-200)] bg-white shadow-lg">
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-50)]"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    삭제
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Photos */}
@@ -362,6 +487,35 @@ export function RecordDetailContainer() {
           </div>
         </div>
       )}
+
+      {/* Reactions */}
+      <div className="px-4">
+        <div className="flex items-center gap-2">
+          {REACTION_CONFIG.map(({ type, label, icon: Icon }) => {
+            const count = getReactionCount(type)
+            const active = hasUserReacted(type)
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleToggleReaction(type)}
+                disabled={!authUser || reactionLoading}
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                  active
+                    ? 'border-[#FF6038]/30 bg-[#FF6038]/10 text-[#FF6038]'
+                    : 'border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-50)]'
+                }`}
+                aria-label={label}
+              >
+                <Icon className={`h-4 w-4 ${active ? 'fill-current' : ''}`} />
+                {count > 0 && (
+                  <span className="text-xs font-medium">{count}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

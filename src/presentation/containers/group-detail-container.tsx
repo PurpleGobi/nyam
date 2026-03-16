@@ -1,12 +1,14 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Users, Lock, Globe, Eye, Gem } from 'lucide-react'
+import { ArrowLeft, Users, Lock, Globe, Eye, Gem, Star, FileText } from 'lucide-react'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
 import { useGroupDetail } from '@/application/hooks/use-group-detail'
 import { useGroupActions } from '@/application/hooks/use-group-actions'
+import { useGroupFeed } from '@/application/hooks/use-group-feed'
 import { GroupMemberList } from '@/presentation/components/group/group-member-list'
 import type { GroupType } from '@/domain/entities/group'
+import type { GroupFeedItem } from '@/application/hooks/use-group-feed'
 
 const TYPE_META: Record<GroupType, { label: string; icon: typeof Lock }> = {
   private: { label: '비공개', icon: Lock },
@@ -21,6 +23,7 @@ export function GroupDetailContainer() {
   const { user: authUser } = useAuthContext()
   const { group, members, isLoading, mutateGroup, mutateMembers } = useGroupDetail(params.id)
   const { joinGroup, leaveGroup, isLoading: actionLoading } = useGroupActions()
+  const { feed, isLoading: feedLoading } = useGroupFeed(params.id)
 
   const isMember = members.some((m) => m.userId === authUser?.id)
   const isOwner = group?.ownerId === authUser?.id
@@ -126,6 +129,72 @@ export function GroupDetailContainer() {
         </h2>
         <GroupMemberList members={members} />
       </section>
+
+      {/* Shared Records */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
+          공유된 기록
+        </h2>
+        {feedLoading ? (
+          <div className="flex flex-col gap-3">
+            <div className="h-24 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
+            <div className="h-24 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
+          </div>
+        ) : feed.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-white py-10">
+            <FileText className="h-8 w-8 text-[var(--color-neutral-300)]" />
+            <p className="text-sm text-[var(--color-neutral-400)]">
+              아직 공유된 기록이 없습니다
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {feed.map((item) => (
+              <FeedCard key={item.id} item={item} onClick={() => router.push(`/records/${item.recordId}`)} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
+  )
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
+function FeedCard({ item, onClick }: { item: GroupFeedItem; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-white p-4 text-left transition-colors hover:border-[var(--color-neutral-300)]"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[var(--color-neutral-800)]">
+          {item.record.menuName}
+        </h3>
+        <span className="text-xs text-[var(--color-neutral-400)]">
+          {formatDate(item.sharedAt)}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="rounded-full bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-neutral-500)]">
+          {item.record.category}
+        </span>
+        <div className="flex items-center gap-0.5">
+          <Star className="h-3.5 w-3.5 fill-[#FF6038] text-[#FF6038]" />
+          <span className="text-xs font-medium text-[var(--color-neutral-600)]">
+            {item.record.ratingOverall}
+          </span>
+        </div>
+      </div>
+      {item.record.comment && (
+        <p className="line-clamp-2 text-xs text-[var(--color-neutral-500)]">
+          {item.record.comment}
+        </p>
+      )}
+    </button>
   )
 }

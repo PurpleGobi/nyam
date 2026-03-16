@@ -2,11 +2,13 @@
 
 import { Search, Star } from "lucide-react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { FOOD_CATEGORIES, SITUATIONS } from "@/shared/constants/categories"
 import { useDiscover } from "@/application/hooks/use-discover"
 import type { DiscoverFilters } from "@/application/hooks/use-discover"
 
 export function DiscoverContainer() {
+  const router = useRouter()
   const [query, setQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [activeSituation, setActiveSituation] = useState<string | null>(null)
@@ -102,7 +104,7 @@ export function DiscoverContainer() {
       ) : results && results.length > 0 ? (
         <div className="flex flex-col gap-2">
           {results.map((record) => (
-            <div key={record.id} className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3">
+            <div key={record.id} onClick={() => router.push(`/records/${record.id}`)} className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3 active:bg-[var(--color-neutral-50)]">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium text-[var(--color-neutral-800)]">{record.menuName}</span>
                 <span className="text-xs text-[var(--color-neutral-400)]">
