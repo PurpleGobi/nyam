@@ -27,6 +27,7 @@ export function PhotoCalendar({
   summary,
   onPrevMonth,
   onNextMonth,
+  onGoToday,
   onDayClick,
 }: {
   year: number

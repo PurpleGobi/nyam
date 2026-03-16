@@ -23,18 +23,7 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     const supabase = createClient()
 
-    supabase.auth.getSession().then(async ({ data: { session: initial } }) => {
-      // Dev auto-login with test account
-      if (!initial && process.env.NODE_ENV === 'development') {
-        const { data } = await supabase.auth.signInWithPassword({
-          email: 'test@nyam.dev',
-          password: 'test1234!!',
-        })
-        setSession(data.session)
-        setUser(data.session?.user ?? null)
-        setIsLoading(false)
-        return
-      }
+    supabase.auth.getSession().then(({ data: { session: initial } }) => {
       setSession(initial)
       setUser(initial?.user ?? null)
       setIsLoading(false)

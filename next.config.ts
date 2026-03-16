@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "search.pstatic.net" },
       { protocol: "https", hostname: "ldb-phinf.pstatic.net" },
       { protocol: "https", hostname: "gfshmpuuafjvwsgrxnie.supabase.co" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 };

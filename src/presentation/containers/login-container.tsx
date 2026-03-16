@@ -1,13 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import { useAuth } from '@/application/hooks/use-auth'
 import { LoginButtons } from '@/presentation/components/auth/login-buttons'
+import { TermsAgreement } from '@/presentation/components/auth/terms-agreement'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export function LoginContainer() {
   const { user, isLoading, signIn } = useAuth()
   const router = useRouter()
+  const [termsAgreed, setTermsAgreed] = useState(false)
 
   useEffect(() => {
     if (user && !isLoading) {
@@ -31,7 +34,14 @@ export function LoginContainer() {
           맛의 Second Brain
         </p>
       </div>
-      <LoginButtons onSignIn={signIn} />
+
+      {termsAgreed ? (
+        <LoginButtons onSignIn={signIn} />
+      ) : (
+        <div className="w-full max-w-[320px]">
+          <TermsAgreement onAllAgreed={() => setTermsAgreed(true)} />
+        </div>
+      )}
     </div>
   )
 }

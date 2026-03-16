@@ -125,7 +125,7 @@ export function HomeContainer() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pb-4">
+    <div className="flex flex-col gap-3 pb-4 pt-6">
       {/* Today's Pick */}
       <div className="px-4">
         {picksLoading ? (

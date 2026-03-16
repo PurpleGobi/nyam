@@ -8,21 +8,21 @@ export function LoginButtons({ onSignIn }: LoginButtonsProps) {
       <button
         type="button"
         onClick={() => onSignIn('kakao')}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] text-sm font-semibold text-[#191919] transition-opacity hover:opacity-90"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] text-sm font-semibold text-[#191919] transition-all hover:brightness-95 active:scale-[0.98]"
       >
         카카오로 시작하기
       </button>
       <button
         type="button"
         onClick={() => onSignIn('naver')}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#03C75A] text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#03C75A] text-sm font-semibold text-white transition-all hover:brightness-95 active:scale-[0.98]"
       >
         네이버로 시작하기
       </button>
       <button
         type="button"
         onClick={() => onSignIn('google')}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-white text-sm font-semibold text-[var(--color-neutral-700)] transition-opacity hover:opacity-90"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#F2F2F2] text-sm font-semibold text-[#1F1F1F] transition-all hover:brightness-95 active:scale-[0.98]"
       >
         Google로 시작하기
       </button>
