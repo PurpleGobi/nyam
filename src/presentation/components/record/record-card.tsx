@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Star, MapPin, Heart } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import type { FoodRecord, RecordPhoto } from '@/domain/entities/record'
@@ -70,10 +71,11 @@ export function RecordCard({
       {/* Photo area */}
       <div className="relative aspect-[16/10] bg-neutral-100 overflow-hidden">
         {photo?.photoUrl ? (
-          <img
+          <Image
             src={photo.photoUrl}
             alt={record.menuName}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-300 text-3xl">

@@ -47,6 +47,7 @@ export function PhotoPicker({
             key={`${file.name}-${index}`}
             className="relative aspect-square rounded-lg overflow-hidden bg-neutral-100"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={URL.createObjectURL(file)}
               alt={`선택된 사진 ${index + 1}`}

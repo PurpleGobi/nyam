@@ -1,13 +1,56 @@
 "use client"
 
+import { useState } from "react"
 import { Users, Plus } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useGroups } from "@/application/hooks/use-groups"
+import { useGroupActions } from "@/application/hooks/use-group-actions"
+import { usePublicGroups } from "@/application/hooks/use-public-groups"
+import { CreateGroupModal } from "@/presentation/components/group/create-group-modal"
+import { PublicGroupsSection } from "@/presentation/components/group/public-groups-section"
+import type { GroupType, GroupEntryRequirements } from "@/domain/entities/group"
+
+const DEFAULT_ENTRY_REQUIREMENTS: GroupEntryRequirements = {
+  minLevel: null,
+  minRecords: null,
+  minCategory: null,
+  minRegion: null,
+  minFrequency: null,
+  requiresApproval: false,
+}
 
 export function GroupsContainer() {
+  const router = useRouter()
   const { user: authUser } = useAuthContext()
-  const { data: groups, isLoading } = useGroups(authUser?.id)
+  const { data: groups, isLoading, mutate } = useGroups(authUser?.id)
+  const { createGroup, joinGroup, isLoading: isCreating } = useGroupActions()
+  const { data: publicGroups, isLoading: isPublicLoading } = usePublicGroups()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
+
+  const handleJoinGroup = async (groupId: string) => {
+    if (!authUser?.id) return
+    setIsJoining(true)
+    await joinGroup(groupId, authUser.id)
+    setIsJoining(false)
+    mutate()
+  }
+
+  const handleCreateGroup = async (data: { name: string; description: string; type: GroupType }) => {
+    if (!authUser?.id) return
+    const group = await createGroup({
+      name: data.name,
+      description: data.description,
+      type: data.type,
+      ownerId: authUser.id,
+      entryRequirements: DEFAULT_ENTRY_REQUIREMENTS,
+    })
+    if (group) {
+      setIsModalOpen(false)
+      mutate()
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 px-4 pt-6">
@@ -30,7 +73,11 @@ export function GroupsContainer() {
         ) : groups && groups.length > 0 ? (
           <div className="flex flex-col gap-2">
             {groups.map((group) => (
-              <div key={group.id} className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5">
+              <div
+                key={group.id}
+                onClick={() => router.push(`/groups/${group.id}`)}
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5 transition-colors active:bg-[var(--color-neutral-50)]"
+              >
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-[var(--color-neutral-800)]">{group.name}</span>
                   {group.description && (
@@ -57,13 +104,30 @@ export function GroupsContainer() {
         )}
       </section>
 
+      {/* Public Groups */}
+      <PublicGroupsSection
+        groups={publicGroups ?? []}
+        isLoading={isPublicLoading}
+        onJoin={handleJoinGroup}
+        isJoining={isJoining}
+      />
+
       {/* FAB */}
-      <Link
-        href="#"
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(true)}
         className="fixed bottom-24 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF6038] shadow-xl transition-transform active:scale-95"
       >
         <Plus className="h-6 w-6 text-white" />
-      </Link>
+      </button>
+
+      {/* Create Group Modal */}
+      <CreateGroupModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateGroup}
+        isLoading={isCreating}
+      />
     </div>
   )
 }

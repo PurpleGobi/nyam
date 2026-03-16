@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { cn } from '@/shared/utils/cn'
 
 const AXIS_EMOJI: Record<string, string> = {
@@ -51,10 +52,12 @@ export function UserMiniCard({
       onClick={onTap}
     >
       {avatarUrl ? (
-        <img
+        <Image
           src={avatarUrl}
           alt={name}
-          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+          width={40}
+          height={40}
+          className="rounded-full object-cover flex-shrink-0"
         />
       ) : (
         <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
