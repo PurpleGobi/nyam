@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Users, Lock, Globe, Eye, Gem, Star, FileText, Link2, Target } from 'lucide-react'
+import { ArrowLeft, Users, Lock, Globe, Eye, Gem, Crown, Star, FileText, Link2, Target } from 'lucide-react'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
 import { useGroupDetail } from '@/application/hooks/use-group-detail'
 import { useGroupActions } from '@/application/hooks/use-group-actions'
 import { useGroupFeed } from '@/application/hooks/use-group-feed'
 import { useInvite } from '@/application/hooks/use-invite'
+import { usePremiumGroup } from '@/application/hooks/use-premium-group'
 import { GroupMemberList } from '@/presentation/components/group/group-member-list'
 import { ChallengeCard } from '@/presentation/components/group/challenge-card'
+import { PremiumGate } from '@/presentation/components/group/premium-gate'
 import { useGroupChallenges } from '@/application/hooks/use-group-challenges'
 import type { GroupType } from '@/domain/entities/group'
 import type { GroupFeedItem } from '@/application/hooks/use-group-feed'
@@ -30,6 +32,7 @@ export function GroupDetailContainer() {
   const { feed, isLoading: feedLoading } = useGroupFeed(params.id)
   const { generateInviteLink, isLoading: inviteLoading } = useInvite()
   const { challenges, isLoading: challengesLoading } = useGroupChallenges(params.id, authUser?.id)
+  const { isPremium, hasAccess, isLoading: premiumLoading } = usePremiumGroup(params.id)
 
   const [copied, setCopied] = useState(false)
 
@@ -89,6 +92,28 @@ export function GroupDetailContainer() {
     )
   }
 
+  if (isPremium && !hasAccess && !premiumLoading) {
+    return (
+      <div className="flex flex-col gap-6 px-4 pt-6">
+        <button
+          type="button"
+          onClick={() => router.push('/groups')}
+          className="flex w-fit items-center gap-1 text-sm text-[var(--color-neutral-500)] transition-colors hover:text-[var(--color-neutral-700)]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>목록</span>
+        </button>
+        <PremiumGate
+          groupName={group.name}
+          description={group.description}
+          memberCount={group.memberCount}
+          onRequestAccess={handleJoin}
+          isRequesting={actionLoading}
+        />
+      </div>
+    )
+  }
+
   const typeMeta = TYPE_META[group.type]
   const TypeIcon = typeMeta.icon
 
@@ -107,7 +132,10 @@ export function GroupDetailContainer() {
       {/* Group Info */}
       <section className="flex flex-col gap-3 rounded-xl border border-[var(--color-neutral-200)] bg-white p-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-[var(--color-neutral-800)]">{group.name}</h1>
+          <h1 className="flex items-center gap-1.5 text-xl font-bold text-[var(--color-neutral-800)]">
+            {group.name}
+            {isPremium && <Crown className="h-4.5 w-4.5 text-[#FF6038]" />}
+          </h1>
           <div className="flex items-center gap-1 rounded-full border border-[var(--color-neutral-200)] px-2.5 py-1">
             <TypeIcon className="h-3.5 w-3.5 text-[var(--color-neutral-500)]" />
             <span className="text-xs text-[var(--color-neutral-500)]">{typeMeta.label}</span>

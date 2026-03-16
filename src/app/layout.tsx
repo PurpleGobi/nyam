@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: "냠 - 맛의 Second Brain",
   description:
     "당신의 미식 경험을 기록하고, 취향을 발견하고, 함께 나누는 맛의 Second Brain",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "냠",
+  },
 }
 
 export const viewport: Viewport = {
@@ -22,6 +28,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#FF6038",
 }
 
 export default function RootLayout({

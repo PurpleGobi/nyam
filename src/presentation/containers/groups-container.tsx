@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Plus } from "lucide-react"
+import { Users, Plus, Crown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useGroups } from "@/application/hooks/use-groups"
@@ -79,7 +79,10 @@ export function GroupsContainer() {
                 className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5 transition-colors active:bg-[var(--color-neutral-50)]"
               >
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-[var(--color-neutral-800)]">{group.name}</span>
+                  <span className="flex items-center gap-1 text-sm font-medium text-[var(--color-neutral-800)]">
+                    {group.name}
+                    {group.type === 'viewonly' && <Crown className="h-3.5 w-3.5 text-[#FF6038]" />}
+                  </span>
                   {group.description && (
                     <span className="mt-0.5 text-xs text-[var(--color-neutral-400)] line-clamp-1">{group.description}</span>
                   )}

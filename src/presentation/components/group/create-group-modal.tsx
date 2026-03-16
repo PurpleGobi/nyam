@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Lock, Globe, Eye, Gem } from 'lucide-react'
+import { X, Lock, Globe, Crown, Gem } from 'lucide-react'
 import type { GroupType } from '@/domain/entities/group'
 
 interface CreateGroupModalProps {
@@ -14,7 +14,7 @@ interface CreateGroupModalProps {
 const GROUP_TYPE_OPTIONS: Array<{ value: GroupType; label: string; icon: typeof Lock; description: string }> = [
   { value: 'private', label: '비공개', icon: Lock, description: '초대된 멤버만 참여' },
   { value: 'public', label: '공개', icon: Globe, description: '누구나 참여 가능' },
-  { value: 'viewonly', label: '열람 전용', icon: Eye, description: '기록 열람만 가능' },
+  { value: 'viewonly', label: '프리미엄', icon: Crown, description: '열람은 자유, 참여는 승인제' },
   { value: 'paid', label: '유료', icon: Gem, description: '구독 후 참여 가능' },
 ]
 

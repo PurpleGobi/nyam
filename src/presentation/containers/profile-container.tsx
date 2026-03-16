@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Settings, ChevronRight, Flame, Star, BookOpen, Pencil, Check, X } from "lucide-react"
+import { User, Settings, ChevronRight, Flame, Star, BookOpen, Pencil, Check, X, Calendar } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -260,6 +260,16 @@ export function ProfileContainer() {
 
       {/* Settings & Logout */}
       <div className="flex flex-col gap-2">
+        <Link
+          href="/wrapped"
+          className="flex items-center justify-between rounded-xl border border-[#FF6038]/30 bg-[#FF6038]/5 px-4 py-3.5"
+        >
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-[#FF6038]" />
+            <span className="text-sm font-medium text-[#FF6038]">{new Date().getFullYear()} 맛 리뷰</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[#FF6038]" />
+        </Link>
         <Link
           href="#"
           className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5"
