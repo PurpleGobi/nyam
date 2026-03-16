@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import type { RecordType } from '@/domain/entities/record'
 import { uploadRecordPhoto, resizeImage } from '@/infrastructure/storage/image-upload'
 import { getRecordRepository } from '@/di/repositories'
 
 export type QuickCaptureStep = 'input' | 'saving' | 'complete'
 
 export interface QuickCaptureDraft {
+  recordType: RecordType
   photos: File[]
   ratings: Record<string, number>
 }
@@ -17,6 +19,7 @@ interface SavedResult {
 }
 
 const INITIAL_DRAFT: QuickCaptureDraft = {
+  recordType: 'restaurant',
   photos: [],
   ratings: {},
 }
@@ -41,6 +44,14 @@ export function useCreateRecord(
     setDraft(prev => ({
       ...prev,
       photos: prev.photos.filter((_, i) => i !== index),
+    }))
+  }, [])
+
+  const setRecordType = useCallback((recordType: RecordType) => {
+    setDraft(prev => ({
+      ...prev,
+      recordType,
+      ratings: {},  // reset ratings when switching type
     }))
   }, [])
 
@@ -82,23 +93,35 @@ export function useCreateRecord(
         ? Math.round(ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length)
         : 0
 
+      const buildRatings = () => {
+        if (draft.recordType === 'wine') {
+          return {
+            aroma: r.aroma ?? 0, body: r.body ?? 0, acidity: r.acidity ?? 0,
+            finish: r.finish ?? 0, balance: r.balance ?? 0, value: r.value ?? 0,
+          }
+        }
+        if (draft.recordType === 'cooking') {
+          return {
+            taste: r.taste ?? 0, difficulty: r.difficulty ?? 0, timeSpent: r.timeSpent ?? 0,
+            reproducibility: r.reproducibility ?? 0, plating: r.plating ?? 0, value: r.value ?? 0,
+          }
+        }
+        return {
+          taste: r.taste ?? 0, value: r.value ?? 0, service: r.service ?? 0,
+          atmosphere: r.atmosphere ?? 0, cleanliness: r.cleanliness ?? 0, portion: r.portion ?? 0,
+        }
+      }
+
       const repo = getRecordRepository()
       const record = await repo.create({
         userId,
         restaurantId: null,
-        recordType: 'restaurant',
+        recordType: draft.recordType,
         menuName: '',
         category: '',
         subCategory: null,
         pricePerPerson: null,
-        ratings: {
-          taste: r.taste ?? 0,
-          value: r.value ?? 0,
-          service: r.service ?? 0,
-          atmosphere: r.atmosphere ?? 0,
-          cleanliness: r.cleanliness ?? 0,
-          portion: r.portion ?? 0,
-        },
+        ratings: buildRatings(),
         ratingOverall,
         comment: null,
         tags: [],
@@ -158,6 +181,7 @@ export function useCreateRecord(
     error,
     addPhotos,
     removePhoto,
+    setRecordType,
     setRating,
     save,
     reset,

@@ -12,7 +12,7 @@ export const FOOD_CATEGORIES: FoodCategory[] = [
   { value: "cafe", label: "카페", emoji: "☕" },
   { value: "dessert", label: "디저트", emoji: "🍰" },
   { value: "wine", label: "와인", emoji: "🍷" },
-  { value: "homecook", label: "홈쿡", emoji: "🍳" },
+  { value: "cooking", label: "요리", emoji: "🍳" },
   { value: "seafood", label: "해산물", emoji: "🦐" },
   { value: "meat", label: "고기", emoji: "🥩" },
   { value: "vegan", label: "비건", emoji: "🥗" },

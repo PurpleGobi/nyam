@@ -2,13 +2,14 @@
 
 import { useRef, useCallback } from 'react'
 import { cn } from '@/shared/utils/cn'
+import type { RecordType } from '@/domain/entities/record'
 
 interface RatingScale {
   key: string
   label: string
 }
 
-const SCALES: RatingScale[] = [
+const RESTAURANT_SCALES: RatingScale[] = [
   { key: 'taste', label: '맛' },
   { key: 'value', label: '가성비' },
   { key: 'service', label: '서비스' },
@@ -17,7 +18,34 @@ const SCALES: RatingScale[] = [
   { key: 'portion', label: '양' },
 ]
 
+const WINE_SCALES: RatingScale[] = [
+  { key: 'aroma', label: '향' },
+  { key: 'body', label: '바디감' },
+  { key: 'acidity', label: '산미' },
+  { key: 'finish', label: '여운' },
+  { key: 'balance', label: '밸런스' },
+  { key: 'value', label: '가성비' },
+]
+
+const COOKING_SCALES: RatingScale[] = [
+  { key: 'taste', label: '맛' },
+  { key: 'difficulty', label: '난이도' },
+  { key: 'timeSpent', label: '소요시간' },
+  { key: 'reproducibility', label: '재현성' },
+  { key: 'plating', label: '플레이팅' },
+  { key: 'value', label: '재료비' },
+]
+
+export function getScalesForType(type: RecordType): RatingScale[] {
+  switch (type) {
+    case 'wine': return WINE_SCALES
+    case 'cooking': return COOKING_SCALES
+    default: return RESTAURANT_SCALES
+  }
+}
+
 interface RatingScalesProps {
+  recordType?: RecordType
   values: Record<string, number>
   onChange: (key: string, value: number) => void
 }
@@ -55,7 +83,7 @@ function SliderBar({ label, scaleKey, value, onChange }: {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 text-sm font-medium text-neutral-600 shrink-0">
+      <span className="w-14 text-sm font-medium text-neutral-600 shrink-0">
         {label}
       </span>
 
@@ -70,10 +98,7 @@ function SliderBar({ label, scaleKey, value, onChange }: {
         onTouchMove={(e) => { handleMove(e.touches[0].clientX) }}
         onTouchEnd={handleEnd}
       >
-        {/* Track background */}
         <div className="absolute inset-x-0 h-3 rounded-full bg-neutral-100" />
-
-        {/* Filled portion */}
         <div
           className={cn(
             'absolute left-0 h-3 rounded-full transition-[width] duration-75',
@@ -81,15 +106,11 @@ function SliderBar({ label, scaleKey, value, onChange }: {
           )}
           style={{ width: `${value}%` }}
         />
-
-        {/* Thumb */}
         <div
           className={cn(
             'absolute w-6 h-6 rounded-full shadow-md border-2 transition-[left] duration-75',
             '-translate-x-1/2',
-            value > 0
-              ? 'bg-white border-[#FF6038]'
-              : 'bg-white border-neutral-300',
+            value > 0 ? 'bg-white border-[#FF6038]' : 'bg-white border-neutral-300',
           )}
           style={{ left: `${value}%` }}
         />
@@ -105,10 +126,12 @@ function SliderBar({ label, scaleKey, value, onChange }: {
   )
 }
 
-export function RatingScales({ values, onChange }: RatingScalesProps) {
+export function RatingScales({ recordType = 'restaurant', values, onChange }: RatingScalesProps) {
+  const scales = getScalesForType(recordType)
+
   return (
     <div className="flex flex-col gap-2">
-      {SCALES.map(({ key, label }) => (
+      {scales.map(({ key, label }) => (
         <SliderBar
           key={key}
           label={label}
@@ -120,5 +143,3 @@ export function RatingScales({ values, onChange }: RatingScalesProps) {
     </div>
   )
 }
-
-export { SCALES }

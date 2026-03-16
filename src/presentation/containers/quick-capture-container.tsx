@@ -8,6 +8,14 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { PhotoCaptureSheet } from '@/presentation/components/capture/photo-capture-sheet'
 import { RatingScales } from '@/presentation/components/capture/rating-scales'
 import { RecordComplete } from '@/presentation/components/record/record-complete'
+import type { RecordType } from '@/domain/entities/record'
+import { cn } from '@/shared/utils/cn'
+
+const TYPE_OPTIONS: { value: RecordType; label: string; emoji: string }[] = [
+  { value: 'restaurant', label: '식당', emoji: '🍽️' },
+  { value: 'wine', label: '와인', emoji: '🍷' },
+  { value: 'cooking', label: '요리', emoji: '🍳' },
+]
 
 export function QuickCaptureContainer() {
   const router = useRouter()
@@ -23,6 +31,7 @@ export function QuickCaptureContainer() {
     error,
     addPhotos,
     removePhoto,
+    setRecordType,
     setRating,
     save,
     reset,
@@ -75,17 +84,38 @@ export function QuickCaptureContainer() {
         </div>
       )}
 
-      {/* 1. Photos */}
+      {/* Record Type Selector */}
+      <div className="flex rounded-xl bg-neutral-100 p-1">
+        {TYPE_OPTIONS.map(({ value, label, emoji }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setRecordType(value)}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all',
+              draft.recordType === value
+                ? 'bg-white text-[var(--color-neutral-800)] shadow-sm'
+                : 'text-[var(--color-neutral-500)]',
+            )}
+          >
+            <span>{emoji}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Photos */}
       <PhotoCaptureSheet
         photos={draft.photos}
         onPhotosAdd={addPhotos}
         onPhotoRemove={removePhoto}
       />
 
-      {/* 2. Rating Scales */}
+      {/* Rating Scales (changes based on record type) */}
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-[var(--color-neutral-700)]">평가</p>
         <RatingScales
+          recordType={draft.recordType}
           values={draft.ratings}
           onChange={setRating}
         />

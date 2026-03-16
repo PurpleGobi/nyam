@@ -36,12 +36,14 @@ function buildRatings(row: RecordRow): RecordRatings {
       value: row.rating_value ?? 0,
     }
   }
-  if (row.record_type === 'homemade') {
+  if (row.record_type === 'cooking' || row.record_type === 'homemade') {
     return {
       taste: row.rating_taste ?? 0,
       difficulty: row.rating_difficulty ?? 0,
       timeSpent: row.rating_time_spent ?? 0,
       reproducibility: row.rating_reproducibility ?? 0,
+      plating: (row as Record<string, unknown>).rating_plating as number ?? 0,
+      value: row.rating_value ?? 0,
     }
   }
   return {
@@ -111,6 +113,7 @@ function ratingsToColumns(ratings: RecordRatings): Record<string, number | null>
     rating_difficulty: null,
     rating_time_spent: null,
     rating_reproducibility: null,
+    rating_plating: null,
   }
 
   const v = (n: number) => (n > 0 ? n : null)
@@ -134,6 +137,8 @@ function ratingsToColumns(ratings: RecordRatings): Record<string, number | null>
     cols.rating_difficulty = v(ratings.difficulty)
     cols.rating_time_spent = v(ratings.timeSpent)
     cols.rating_reproducibility = v(ratings.reproducibility)
+    cols.rating_plating = v((ratings as unknown as Record<string, number>).plating ?? 0)
+    cols.rating_value = v((ratings as unknown as Record<string, number>).value ?? 0)
   }
 
   return cols
@@ -300,7 +305,7 @@ export class SupabaseRecordRepository implements RecordRepository {
 
     const { data, error } = await supabase
       .from('records')
-      .select('*')
+      .select('*, record_photos(*)')
       .eq('user_id', userId)
       .gte('created_at', startDate)
       .lt('created_at', endDate)
@@ -308,7 +313,9 @@ export class SupabaseRecordRepository implements RecordRepository {
 
     if (error || !data) return []
 
-    return (data as RecordRow[]).map((row) => toRecord(row))
+    return (data as (RecordRow & { record_photos: RecordPhotoRow[] })[]).map(
+      ({ record_photos, ...row }) => toRecord(row, record_photos),
+    )
   }
 
   async search(query: string): Promise<FoodRecord[]> {

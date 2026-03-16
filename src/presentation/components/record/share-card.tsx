@@ -14,7 +14,7 @@ interface ShareCardProps {
 const RECORD_TYPE_LABELS: Record<RecordType, string> = {
   restaurant: '외식',
   wine: '와인',
-  homemade: '집밥',
+  cooking: '요리',
 }
 
 /**

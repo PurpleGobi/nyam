@@ -1,4 +1,4 @@
-export type RecordType = 'restaurant' | 'wine' | 'homemade'
+export type RecordType = 'restaurant' | 'wine' | 'cooking'
 
 export type RecordVisibility = 'private' | 'group' | 'public'
 
@@ -25,14 +25,19 @@ export interface WineRatings {
   value: number
 }
 
-export interface HomemadeRatings {
+export interface CookingRatings {
   taste: number
   difficulty: number
   timeSpent: number
   reproducibility: number
+  plating: number
+  value: number
 }
 
-export type RecordRatings = RestaurantRatings | WineRatings | HomemadeRatings
+/** @deprecated Use CookingRatings instead */
+export type HomemadeRatings = CookingRatings
+
+export type RecordRatings = RestaurantRatings | WineRatings | CookingRatings
 
 export interface FoodRecord {
   id: string

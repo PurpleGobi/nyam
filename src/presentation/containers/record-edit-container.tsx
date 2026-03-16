@@ -21,7 +21,7 @@ import type {
   RecordRatings,
   RestaurantRatings,
   WineRatings,
-  HomemadeRatings,
+  CookingRatings,
 } from '@/domain/entities/record'
 
 const RESTAURANT_RATING_CONFIG = [
@@ -63,7 +63,7 @@ function getRatingConfig(recordType: RecordType) {
   switch (recordType) {
     case 'wine':
       return WINE_RATING_CONFIG
-    case 'homemade':
+    case 'cooking':
       return HOMEMADE_RATING_CONFIG
     default:
       return RESTAURANT_RATING_CONFIG
@@ -85,13 +85,15 @@ function buildRatings(recordType: RecordType, values: Record<string, number>): R
       value: values.value ?? 0,
     } satisfies WineRatings
   }
-  if (recordType === 'homemade') {
+  if (recordType === 'cooking') {
     return {
       taste: values.taste ?? 0,
       difficulty: values.difficulty ?? 0,
       timeSpent: values.timeSpent ?? 0,
       reproducibility: values.reproducibility ?? 0,
-    } satisfies HomemadeRatings
+      plating: values.plating ?? 0,
+      value: values.value ?? 0,
+    } satisfies CookingRatings
   }
   return {
     taste: values.taste ?? 0,

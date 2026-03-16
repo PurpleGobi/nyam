@@ -1,4 +1,4 @@
-export type RecordType = 'restaurant' | 'wine' | 'homemade'
+export type RecordType = 'restaurant' | 'wine' | 'homemade' | 'cooking'
 export type VisibilityType = 'private' | 'group' | 'public'
 export type AuthProviderType = 'kakao' | 'naver' | 'google' | 'apple'
 export type GroupType = 'private' | 'public' | 'viewonly' | 'paid'

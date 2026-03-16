@@ -38,7 +38,7 @@ import { useProfile } from "@/application/hooks/use-profile"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { ShareCard } from "@/presentation/components/record/share-card"
 import type { Reaction } from "@/application/hooks/use-reactions"
-import type { FoodRecord, RecordPhoto, RecordType, RestaurantRatings, WineRatings, HomemadeRatings } from "@/domain/entities/record"
+import type { FoodRecord, RecordPhoto, RecordType, RestaurantRatings, WineRatings, CookingRatings } from "@/domain/entities/record"
 
 const REACTION_CONFIG = [
   { type: 'like', label: '좋아요', icon: Heart },
@@ -49,7 +49,7 @@ const REACTION_CONFIG = [
 const RECORD_TYPE_CONFIG: Record<RecordType, { label: string; icon: typeof UtensilsCrossed }> = {
   restaurant: { label: '외식', icon: UtensilsCrossed },
   wine: { label: '와인', icon: Wine },
-  homemade: { label: '집밥', icon: ChefHat },
+  cooking: { label: '요리', icon: ChefHat },
 }
 
 const RESTAURANT_RATING_LABELS: Record<keyof RestaurantRatings, string> = {
@@ -70,11 +70,13 @@ const WINE_RATING_LABELS: Record<keyof WineRatings, string> = {
   value: '가성비',
 }
 
-const HOMEMADE_RATING_LABELS: Record<keyof HomemadeRatings, string> = {
+const COOKING_RATING_LABELS: Record<keyof CookingRatings, string> = {
   taste: '맛',
   difficulty: '난이도',
-  timeSpent: '시간',
+  timeSpent: '소요시간',
   reproducibility: '재현성',
+  plating: '플레이팅',
+  value: '재료비',
 }
 
 const VISIBILITY_CONFIG: Record<string, { label: string; icon: typeof Eye }> = {
@@ -119,11 +121,11 @@ function getRatingEntries(record: FoodRecord): Array<{ label: string; value: num
     }))
   }
 
-  if (recordType === 'homemade') {
-    const r = ratings as HomemadeRatings
-    return Object.entries(HOMEMADE_RATING_LABELS).map(([key, label]) => ({
+  if (recordType === 'cooking') {
+    const r = ratings as CookingRatings
+    return Object.entries(COOKING_RATING_LABELS).map(([key, label]) => ({
       label,
-      value: r[key as keyof HomemadeRatings],
+      value: r[key as keyof CookingRatings],
     }))
   }
 

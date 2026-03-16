@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import useSWR from 'swr'
 import { getRecordRepository } from '@/di/repositories'
+import type { RecordPhoto, PhotoType } from '@/domain/entities/record'
 
 interface CalendarDayRecord {
   photoUrl: string | null
@@ -12,6 +13,21 @@ interface CalendarSummary {
   recordCount: number
   placeCount: number
   avgRating: number
+}
+
+// Prefer signboard/companion photos over food for calendar thumbnails
+const PHOTO_PRIORITY: PhotoType[] = ['signboard', 'companion', 'food', 'menu', 'other', 'receipt']
+
+function pickBestPhoto(photos: RecordPhoto[] | undefined): string | null {
+  if (!photos || photos.length === 0) return null
+
+  for (const type of PHOTO_PRIORITY) {
+    const match = photos.find((p) => p.photoType === type)
+    if (match) return match.thumbnailUrl || match.photoUrl
+  }
+
+  // Fallback: first photo
+  return photos[0].thumbnailUrl || photos[0].photoUrl
 }
 
 export function useCalendarRecords(
@@ -33,7 +49,9 @@ export function useCalendarRecords(
     for (const record of records) {
       const day = new Date(record.createdAt).getDate()
       const existing = map.get(day) ?? []
-      existing.push({ photoUrl: null })
+      // Extract best photo from record's photos array
+      const photos = (record as unknown as { photos?: RecordPhoto[] }).photos
+      existing.push({ photoUrl: pickBestPhoto(photos) })
       map.set(day, existing)
     }
 

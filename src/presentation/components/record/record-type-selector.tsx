@@ -12,7 +12,7 @@ interface RecordTypeSelectorProps {
 const RECORD_TYPE_OPTIONS: { type: RecordType; label: string; icon: typeof UtensilsCrossed }[] = [
   { type: 'restaurant', label: '식당', icon: UtensilsCrossed },
   { type: 'wine', label: '와인', icon: Wine },
-  { type: 'homemade', label: '홈쿡', icon: ChefHat },
+  { type: 'cooking', label: '요리', icon: ChefHat },
 ]
 
 export function RecordTypeSelector({ value, onChange }: RecordTypeSelectorProps) {
