@@ -44,6 +44,13 @@ export function LoginContainer() {
         </button>
         <button
           type="button"
+          onClick={() => signIn('naver')}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#03C75A] text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          네이버로 시작하기
+        </button>
+        <button
+          type="button"
           onClick={() => signIn('google')}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-white text-sm font-semibold text-[var(--color-neutral-700)] transition-opacity hover:opacity-90"
         >

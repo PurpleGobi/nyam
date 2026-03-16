@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Flame, Sunrise, UtensilsCrossed, Sun, Moon, MoonStar,
   Briefcase, Heart, User, Home, Users, MapPin, ChevronRight,
-  RotateCcw, Sparkles,
+  RotateCcw, Sparkles, GitCompareArrows, Check,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/application/hooks/use-auth'
@@ -18,8 +18,9 @@ import { QuickPickCard } from '@/presentation/components/home/quick-pick-card'
 import { SmartFilterBar } from '@/presentation/components/home/smart-filter-bar'
 import { SITUATION_PRESETS, resolvePresetLabel } from '@/shared/constants/situations'
 import { FOOD_CATEGORIES } from '@/shared/constants/categories'
+import { ComparisonPromptSheetContainer } from '@/presentation/containers/comparison-prompt-sheet-container'
 import { ROUTES } from '@/shared/constants/routes'
-import type { CuisineCategory } from '@/domain/entities/restaurant'
+import type { CuisineCategory, RestaurantWithSummary } from '@/domain/entities/restaurant'
 import { cn } from '@/shared/utils/cn'
 
 const REGIONS = ['강남', '홍대', '종로', '이태원', '성수', '여의도', '잠실', '신촌', '망원', '을지로', '광화문']
@@ -67,6 +68,27 @@ export function HomeContainer() {
 
   const { trackSituationClick } = useInteractionTracker()
   const [showFilters, setShowFilters] = useState(false)
+  const [compareMode, setCompareMode] = useState(false)
+  const [selectedForCompare, setSelectedForCompare] = useState<RestaurantWithSummary[]>([])
+  const [showCompareSheet, setShowCompareSheet] = useState(false)
+
+  const toggleCompareSelect = useCallback((restaurant: RestaurantWithSummary) => {
+    setSelectedForCompare(prev => {
+      const exists = prev.find(r => r.id === restaurant.id)
+      if (exists) return prev.filter(r => r.id !== restaurant.id)
+      if (prev.length >= 5) return prev
+      return [...prev, restaurant]
+    })
+  }, [])
+
+  const removeFromCompare = useCallback((id: string) => {
+    setSelectedForCompare(prev => prev.filter(r => r.id !== id))
+  }, [])
+
+  const isSelectedForCompare = useCallback(
+    (id: string) => selectedForCompare.some(r => r.id === id),
+    [selectedForCompare],
+  )
 
   const { text: greetingText, icon: GreetingIcon } = useMemo(() => getGreeting(), [])
 
@@ -321,13 +343,31 @@ export function HomeContainer() {
               </span>
             )}
           </div>
-          <Link
-            href={ROUTES.EXPLORE}
-            className="flex items-center gap-0.5 text-sm text-[var(--color-primary-500)]"
-          >
-            더보기
-            <ChevronRight size={14} />
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCompareMode(!compareMode)
+                if (compareMode) setSelectedForCompare([])
+              }}
+              className={cn(
+                'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all',
+                compareMode
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]',
+              )}
+            >
+              <GitCompareArrows size={12} />
+              비교
+            </button>
+            <Link
+              href={ROUTES.EXPLORE}
+              className="flex items-center gap-0.5 text-sm text-[var(--color-primary-500)]"
+            >
+              더보기
+              <ChevronRight size={14} />
+            </Link>
+          </div>
         </div>
 
         {recommendLoading && (
@@ -373,21 +413,80 @@ export function HomeContainer() {
 
         {!recommendLoading && !recommendError && restaurants.length > 0 && (
           <div className="flex flex-col gap-2.5">
-            {quickPick && (
+            {quickPick && !compareMode && (
               <Link href={`/restaurant/${quickPick.restaurant.id}`}>
                 <QuickPickCard quickPick={quickPick} />
               </Link>
             )}
-            {restaurants
-              .filter(r => r.id !== quickPick?.restaurant.id)
+            {(compareMode ? restaurants : restaurants.filter(r => r.id !== quickPick?.restaurant.id))
               .map((restaurant) => (
-                <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
-                  <RestaurantCard restaurant={restaurant} />
-                </Link>
+                compareMode ? (
+                  <button
+                    key={restaurant.id}
+                    type="button"
+                    onClick={() => toggleCompareSelect(restaurant)}
+                    className="relative text-left"
+                  >
+                    <RestaurantCard restaurant={restaurant} />
+                    <div
+                      className={cn(
+                        'absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all',
+                        isSelectedForCompare(restaurant.id)
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-[var(--color-neutral-300)] bg-white',
+                      )}
+                    >
+                      {isSelectedForCompare(restaurant.id) && (
+                        <Check size={14} className="text-white" strokeWidth={3} />
+                      )}
+                    </div>
+                  </button>
+                ) : (
+                  <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
+                    <RestaurantCard restaurant={restaurant} />
+                  </Link>
+                )
               ))}
           </div>
         )}
       </section>
+
+      {/* Floating compare bar */}
+      {compareMode && selectedForCompare.length > 0 && (
+        <div className="fixed inset-x-0 bottom-16 z-40 mx-auto max-w-lg px-4 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex items-center justify-between rounded-2xl bg-blue-600 px-4 py-3 shadow-lg">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white">
+                {selectedForCompare.length}곳 선택됨
+              </span>
+              <span className="text-xs text-blue-200">
+                {selectedForCompare.map(r => r.name).join(', ')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCompareSheet(true)}
+              disabled={selectedForCompare.length < 2}
+              className={cn(
+                'rounded-xl px-4 py-2 text-sm font-semibold transition-all',
+                selectedForCompare.length >= 2
+                  ? 'bg-white text-blue-600'
+                  : 'bg-blue-500 text-blue-300',
+              )}
+            >
+              비교 분석
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison prompt sheet */}
+      <ComparisonPromptSheetContainer
+        restaurants={selectedForCompare}
+        onRemove={removeFromCompare}
+        open={showCompareSheet}
+        onOpenChange={setShowCompareSheet}
+      />
     </div>
   )
 }

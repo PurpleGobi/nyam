@@ -14,6 +14,29 @@ const districtToRegion: Record<string, string> = {
   '강동구': '강동',
 }
 
+/** Approximate region from lat/lng using bounding boxes for major Seoul areas */
+function approximateRegion(lat: number, lng: number): string | null {
+  const regions: { name: string; lat: [number, number]; lng: [number, number] }[] = [
+    { name: '강남', lat: [37.49, 37.53], lng: [127.01, 127.07] },
+    { name: '홍대', lat: [37.55, 37.57], lng: [126.91, 126.93] },
+    { name: '종로', lat: [37.57, 37.60], lng: [126.97, 127.01] },
+    { name: '이태원', lat: [37.53, 37.55], lng: [126.98, 127.01] },
+    { name: '성수', lat: [37.54, 37.55], lng: [127.04, 127.07] },
+    { name: '여의도', lat: [37.52, 37.53], lng: [126.91, 126.94] },
+    { name: '잠실', lat: [37.50, 37.52], lng: [127.07, 127.11] },
+    { name: '신촌', lat: [37.55, 37.57], lng: [126.93, 126.95] },
+    { name: '을지로', lat: [37.56, 37.57], lng: [126.98, 127.00] },
+    { name: '광화문', lat: [37.57, 37.58], lng: [126.97, 126.98] },
+  ]
+
+  for (const r of regions) {
+    if (lat >= r.lat[0] && lat <= r.lat[1] && lng >= r.lng[0] && lng <= r.lng[1]) {
+      return r.name
+    }
+  }
+  return null
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const lat = searchParams.get('lat')
@@ -25,7 +48,9 @@ export async function GET(request: NextRequest) {
 
   const apiKey = process.env.KAKAO_REST_API_KEY
   if (!apiKey) {
-    return NextResponse.json({ region: null })
+    // Fallback: approximate region from coordinates (Seoul area)
+    const region = approximateRegion(Number(lat), Number(lng))
+    return NextResponse.json({ region })
   }
 
   try {
@@ -39,7 +64,8 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      return NextResponse.json({ region: null })
+      const region = approximateRegion(Number(lat), Number(lng))
+      return NextResponse.json({ region })
     }
 
     const data = await response.json() as {
@@ -47,7 +73,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.documents.length === 0) {
-      return NextResponse.json({ region: null })
+      const region = approximateRegion(Number(lat), Number(lng))
+      return NextResponse.json({ region })
     }
 
     const district = data.documents[0].region_2depth_name
@@ -55,6 +82,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ region })
   } catch {
-    return NextResponse.json({ region: null })
+    const region = approximateRegion(Number(lat!), Number(lng!))
+    return NextResponse.json({ region })
   }
 }

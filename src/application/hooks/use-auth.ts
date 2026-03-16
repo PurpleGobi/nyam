@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { createAuthClient } from '@/di/repositories'
 
-type OAuthProvider = 'kakao' | 'google' | 'apple'
+type OAuthProvider = 'kakao' | 'google' | 'apple' | 'naver'
+type SupabaseProvider = Exclude<OAuthProvider, 'naver'>
 
 interface UseAuthReturn {
   readonly user: User | null
@@ -48,9 +49,19 @@ export function useAuth(): UseAuthReturn {
   }, [])
 
   const signIn = useCallback(async (provider: OAuthProvider) => {
+    if (provider === 'naver') {
+      // Naver is not a built-in Supabase provider, use manual OAuth flow
+      const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID
+      const redirectUri = encodeURIComponent(`${window.location.origin}/auth/naver/callback`)
+      const state = crypto.randomUUID()
+      sessionStorage.setItem('naver_oauth_state', state)
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`
+      return
+    }
+
     const supabase = createAuthClient()
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: provider as SupabaseProvider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },

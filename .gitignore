@@ -10,3 +10,4 @@ playwright-report/
 blob-report/
 *.png
 .playwright-mcp/
+.vercel

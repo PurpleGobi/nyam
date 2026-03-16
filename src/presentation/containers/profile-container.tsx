@@ -86,11 +86,14 @@ export function ProfileContainer() {
         <p className="max-w-[280px] text-center text-sm text-[var(--color-neutral-500)]">
           AI 맛집 검증, 배지 수집, 즐겨찾기 등 다양한 기능을 이용할 수 있어요.
         </p>
-        <div className="flex gap-2">
-          <Button onClick={() => void signIn('kakao')} variant="outline">
+        <div className="flex flex-col gap-2 w-full max-w-[240px]">
+          <Button onClick={() => void signIn('kakao')} variant="outline" className="w-full">
             카카오 로그인
           </Button>
-          <Button onClick={() => void signIn('google')} variant="outline">
+          <Button onClick={() => void signIn('naver')} variant="outline" className="w-full">
+            네이버 로그인
+          </Button>
+          <Button onClick={() => void signIn('google')} variant="outline" className="w-full">
             Google 로그인
           </Button>
         </div>
