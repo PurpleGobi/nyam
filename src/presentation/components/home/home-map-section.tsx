@@ -41,7 +41,7 @@ declare global {
 }
 
 const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY
-const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID
+const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
 
 interface Pin {
@@ -85,9 +85,11 @@ export function HomeMapSection({
 
   // Reset when provider changes
   useEffect(() => {
-    markersRef.current.forEach(m => {
-      if (m.setMap) m.setMap(null)
-    })
+    try {
+      markersRef.current.forEach(m => {
+        try { if (m.setMap) m.setMap(null) } catch { /* ignore */ }
+      })
+    } catch { /* ignore */ }
     markersRef.current = []
     mapInstanceRef.current = null
     setMapLoaded(false)
@@ -96,7 +98,7 @@ export function HomeMapSection({
 
   const clearMarkers = useCallback(() => {
     markersRef.current.forEach(m => {
-      if (m.setMap) m.setMap(null)
+      try { if (m.setMap) m.setMap(null) } catch { /* ignore */ }
     })
     markersRef.current = []
   }, [])
@@ -104,74 +106,73 @@ export function HomeMapSection({
   // ─── Naver Maps ───
   const initNaverMap = useCallback(() => {
     if (!mapRef.current || !window.naver?.maps) return
-    const center = myLocation
-      ? new window.naver.maps.LatLng(myLocation.lat, myLocation.lng)
-      : new window.naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
+    try {
+      const center = myLocation
+        ? new window.naver.maps.LatLng(myLocation.lat, myLocation.lng)
+        : new window.naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
 
-    mapInstanceRef.current = new window.naver.maps.Map(mapRef.current, {
-      center,
-      zoom: 14,
-      zoomControl: true,
-      zoomControlOptions: { position: window.naver.maps.Position?.RIGHT_CENTER },
-    })
-    setMapLoaded(true)
+      const map = new window.naver.maps.Map(mapRef.current, {
+        center,
+        zoom: 14,
+      })
+      mapInstanceRef.current = map
+      // Delay to let naver map fully initialize internally
+      setTimeout(() => setMapLoaded(true), 300)
+    } catch {
+      setSdkError(true)
+    }
   }, [myLocation])
 
   const addNaverMarkers = useCallback(() => {
     if (!mapInstanceRef.current || !window.naver?.maps) return
-    clearMarkers()
+    try { clearMarkers() } catch { /* ignore */ }
+    const nmaps = window.naver.maps
     const map = mapInstanceRef.current
 
-    const visibleMyPins = filter === 'friends' ? [] : myPins
-    visibleMyPins.forEach(pin => {
-      const marker = new window.naver.maps.Marker({
-        position: new window.naver.maps.LatLng(pin.lat, pin.lng),
-        map,
-        icon: {
-          content: `<div style="display:flex;flex-direction:column;align-items:center;">
-            <div style="background:#FF6038;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.15);">${Math.round(pin.rating)}</div>
-            <div style="margin-top:2px;font-size:8px;font-weight:500;color:#374151;white-space:nowrap;text-shadow:0 0 3px rgba(255,255,255,0.9);">${pin.name}</div>
-          </div>`,
-          anchor: { x: 14, y: 38 },
-        },
+    try {
+      const visibleMyPins = filter === 'friends' ? [] : myPins
+      visibleMyPins.forEach(pin => {
+        const marker = new nmaps.Marker({
+          position: new nmaps.LatLng(pin.lat, pin.lng),
+          map,
+        })
+        markersRef.current.push(marker)
       })
-      markersRef.current.push(marker)
-    })
 
-    const visibleFriendPins = filter === 'mine' ? [] : friendPins
-    visibleFriendPins.forEach(pin => {
-      const marker = new window.naver.maps.Marker({
-        position: new window.naver.maps.LatLng(pin.lat, pin.lng),
-        map,
-        icon: {
-          content: `<div style="display:flex;flex-direction:column;align-items:center;">
-            <div style="background:${pin.color};color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.15);">${Math.round(pin.rating)}</div>
-            <div style="margin-top:2px;font-size:7px;font-weight:500;color:#374151;white-space:nowrap;text-shadow:0 0 3px rgba(255,255,255,0.9);">${pin.name}</div>
-          </div>`,
-          anchor: { x: 12, y: 34 },
-        },
+      const visibleFriendPins = filter === 'mine' ? [] : friendPins
+      visibleFriendPins.forEach(pin => {
+        const marker = new nmaps.Marker({
+          position: new nmaps.LatLng(pin.lat, pin.lng),
+          map,
+        })
+        markersRef.current.push(marker)
       })
-      markersRef.current.push(marker)
-    })
+    } catch {
+      // Marker creation can fail if map not fully ready
+    }
   }, [filter, myPins, friendPins, clearMarkers])
 
   // ─── Kakao Maps ───
   const initKakaoMap = useCallback(() => {
     if (!mapRef.current || !window.kakao?.maps) return
-    const { kakao } = window
-    const center = myLocation
-      ? new kakao.maps.LatLng(myLocation.lat, myLocation.lng)
-      : new kakao.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
+    try {
+      const { kakao } = window
+      const center = myLocation
+        ? new kakao.maps.LatLng(myLocation.lat, myLocation.lng)
+        : new kakao.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
 
-    const map = new kakao.maps.Map(mapRef.current, { center, level: 5 })
-    map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT)
-    mapInstanceRef.current = map
-    setMapLoaded(true)
+      const map = new kakao.maps.Map(mapRef.current, { center, level: 5 })
+      mapInstanceRef.current = map
+      setTimeout(() => setMapLoaded(true), 300)
+    } catch {
+      setSdkError(true)
+    }
   }, [myLocation])
 
   const addKakaoMarkers = useCallback(() => {
     if (!mapInstanceRef.current || !window.kakao?.maps) return
     clearMarkers()
+    try {
     const { kakao } = window
     const map = mapInstanceRef.current
 
@@ -215,6 +216,7 @@ export function HomeMapSection({
       o.setMap(map)
       markersRef.current.push(o)
     })
+    } catch { /* ignore marker errors */ }
   }, [filter, myPins, friendPins, myLocation, clearMarkers])
 
   // Re-add markers when filter/pins change

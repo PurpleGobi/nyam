@@ -93,8 +93,20 @@ export async function POST() {
 
   const typedRecords = records as RecordRow[]
 
-  // === 1. TASTE DNA RECALCULATION ===
-  await recalculateTasteDna(supabase, userId, typedRecords)
+  // === 1. TASTE DNA RECALCULATION (음식/와인/요리 분기) ===
+  const restaurantRecords = typedRecords.filter((r) => r.record_type === 'restaurant')
+  const wineRecords = typedRecords.filter((r) => r.record_type === 'wine')
+  const cookingRecords = typedRecords.filter((r) => r.record_type === 'cooking' || r.record_type === 'homemade')
+
+  if (restaurantRecords.length > 0) {
+    await recalculateTasteDna(supabase, userId, restaurantRecords)
+  }
+  if (wineRecords.length > 0) {
+    await recalculateTasteDnaWine(supabase, userId, wineRecords)
+  }
+  if (cookingRecords.length > 0) {
+    await recalculateTasteDnaCooking(supabase, userId, cookingRecords)
+  }
 
   // === 2. EXPERIENCE ATLAS XP ===
   await updateExperienceAtlas(supabase, userId, typedRecords)
@@ -255,6 +267,188 @@ async function recalculateTasteDna(
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
+}
+
+async function recalculateTasteDnaWine(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  records: RecordRow[],
+) {
+  const sampleCount = records.length
+  if (sampleCount === 0) return
+
+  // 와인 평가 축: 향(aroma), 바디(body), 산미(acidity), 여운(finish), 밸런스(balance), 가성비(value)
+  // 이를 TasteDnaWine의 pref_* 와 aroma_* 값으로 변환
+  let totalBody = 0, totalAcidity = 0, totalFinish = 0, totalBalance = 0
+  let ratedCount = 0
+
+  // 향 태그 카운트 (flavor_tags를 와인 아로마로 매핑)
+  const aromaHits: Record<string, number> = {
+    fruit: 0, floral: 0, spice: 0, oak: 0, mineral: 0, herbal: 0,
+  }
+  const WINE_AROMA_MAP: Record<string, string> = {
+    '과일향': 'fruit', '베리': 'fruit', '체리': 'fruit', '블랙베리': 'fruit',
+    '사과': 'fruit', '배': 'fruit', '레몬': 'fruit', '자몽': 'fruit',
+    '꽃향': 'floral', '장미': 'floral', '바이올렛': 'floral',
+    '후추': 'spice', '계피': 'spice', '정향': 'spice', '스파이시': 'spice',
+    '오크': 'oak', '바닐라': 'oak', '토스트': 'oak', '나무': 'oak',
+    '미네랄': 'mineral', '돌': 'mineral', '석회': 'mineral',
+    '허브': 'herbal', '민트': 'herbal', '풀': 'herbal', '유칼립투스': 'herbal',
+  }
+
+  const varietyHits: Record<string, number> = {}
+  const originHits: Record<string, number> = {}
+  const prices: number[] = []
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]
+    const weight = 1 - (i / records.length) * 0.5
+
+    // 평가 점수에서 선호도 산출 (1~5점 → 0~1 정규화)
+    if (r.rating_body != null && r.rating_body > 0) {
+      totalBody += (r.rating_body / 5) * weight
+      totalAcidity += ((r.rating_acidity ?? 3) / 5) * weight
+      totalFinish += ((r.rating_finish ?? 3) / 5) * weight
+      totalBalance += ((r.rating_balance ?? 3) / 5) * weight
+      ratedCount += weight
+    }
+
+    // 맛 태그 → 아로마 매핑
+    for (const tag of (r.flavor_tags ?? [])) {
+      const aroma = WINE_AROMA_MAP[tag]
+      if (aroma) aromaHits[aroma] += weight
+    }
+
+    // 카테고리/서브카테고리에서 품종/산지 추출
+    if (r.sub_category) {
+      varietyHits[r.sub_category] = (varietyHits[r.sub_category] ?? 0) + 1
+    }
+    if (r.category && r.category !== '와인') {
+      originHits[r.category] = (originHits[r.category] ?? 0) + 1
+    }
+
+    if (r.price_per_person != null) prices.push(r.price_per_person)
+  }
+
+  // 정규화
+  const normBody = ratedCount > 0 ? Math.min(totalBody / ratedCount, 1) : 0.5
+  const normAcidity = ratedCount > 0 ? Math.min(totalAcidity / ratedCount, 1) : 0.5
+  const normTannin = ratedCount > 0 ? Math.min(totalFinish / ratedCount, 1) : 0.5 // finish ≈ tannin intensity
+  const normSweetness = ratedCount > 0 ? Math.max(1 - normAcidity, 0) : 0.5 // inverse of acidity
+
+  // 아로마 정규화
+  const maxAroma = Math.max(...Object.values(aromaHits), 1)
+  const normAromas = {
+    fruit: aromaHits.fruit / maxAroma,
+    floral: aromaHits.floral / maxAroma,
+    spice: aromaHits.spice / maxAroma,
+    oak: aromaHits.oak / maxAroma,
+    mineral: aromaHits.mineral / maxAroma,
+    herbal: aromaHits.herbal / maxAroma,
+  }
+
+  // 선호 품종/산지 top 5
+  const preferredVarieties = Object.entries(varietyHits)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name]) => name)
+  const preferredOrigins = Object.entries(originHits)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name]) => name)
+
+  const priceMin = prices.length > 0 ? Math.min(...prices) : 0
+  const priceMax = prices.length > 0 ? Math.max(...prices) : 0
+
+  await supabase
+    .from('taste_dna_wine')
+    .upsert({
+      user_id: userId,
+      pref_body: normBody,
+      pref_acidity: normAcidity,
+      pref_tannin: normTannin,
+      pref_sweetness: normSweetness,
+      aroma_fruit: normAromas.fruit,
+      aroma_floral: normAromas.floral,
+      aroma_spice: normAromas.spice,
+      aroma_oak: normAromas.oak,
+      aroma_mineral: normAromas.mineral,
+      aroma_herbal: normAromas.herbal,
+      preferred_varieties: preferredVarieties,
+      preferred_origins: preferredOrigins,
+      price_range_min: priceMin,
+      price_range_max: priceMax,
+      sample_count: sampleCount,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+}
+
+async function recalculateTasteDnaCooking(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  records: RecordRow[],
+) {
+  const sampleCount = records.length
+  if (sampleCount === 0) return
+
+  let totalDifficulty = 0
+  let totalTimeSpent = 0
+  let ratedCount = 0
+
+  const methodHits: Record<string, number> = {}
+  const cuisineHits: Record<string, number> = {}
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]
+    const weight = 1 - (i / records.length) * 0.5
+
+    // 난이도, 소요시간 (1~5점 → 0~1 정규화)
+    if (r.rating_difficulty != null && r.rating_difficulty > 0) {
+      totalDifficulty += (r.rating_difficulty / 5) * weight
+      totalTimeSpent += ((r.rating_time_spent ?? 3) / 5) * weight
+      ratedCount += weight
+    }
+
+    // 카테고리 → 요리 장르
+    if (r.category) {
+      cuisineHits[r.category] = (cuisineHits[r.category] ?? 0) + 1
+    }
+
+    // 태그에서 조리법 추출
+    for (const tag of (r.tags ?? [])) {
+      const METHODS = ['구이', '볶음', '찜', '튀김', '생식', '베이킹', '발효', '끓이기', '무침']
+      if (METHODS.includes(tag)) {
+        methodHits[tag] = (methodHits[tag] ?? 0) + weight
+      }
+    }
+  }
+
+  const normDifficulty = ratedCount > 0 ? Math.min(totalDifficulty / ratedCount, 1) : 0.5
+  const normTimeInvestment = ratedCount > 0 ? Math.min(totalTimeSpent / ratedCount, 1) : 0.5
+
+  // 조리법 선호도 정규화
+  const maxMethod = Math.max(...Object.values(methodHits), 1)
+  const methodPreferences: Record<string, number> = {}
+  for (const [method, count] of Object.entries(methodHits)) {
+    methodPreferences[method] = Math.round((count / maxMethod) * 100) / 100
+  }
+
+  const preferredCuisines = Object.entries(cuisineHits)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name]) => name)
+
+  await supabase
+    .from('taste_dna_homecook')
+    .upsert({
+      user_id: userId,
+      pref_difficulty: normDifficulty,
+      pref_time_investment: normTimeInvestment,
+      method_preferences: methodPreferences,
+      preferred_cuisines: preferredCuisines,
+      sample_count: sampleCount,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
 }
 
 async function updateExperienceAtlas(

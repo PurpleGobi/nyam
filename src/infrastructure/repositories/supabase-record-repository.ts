@@ -36,7 +36,7 @@ function buildRatings(row: RecordRow): RecordRatings {
       value: row.rating_value ?? 0,
     }
   }
-  if (row.record_type === 'cooking') {
+  if (row.record_type === 'cooking' || row.record_type === 'homemade') {
     return {
       taste: row.rating_taste ?? 0,
       difficulty: row.rating_difficulty ?? 0,
@@ -64,7 +64,7 @@ function toRecord(
     id: row.id,
     userId: row.user_id,
     restaurantId: row.restaurant_id,
-    recordType: row.record_type,
+    recordType: row.record_type === 'homemade' ? 'cooking' : row.record_type,
     createdAt: row.created_at,
     menuName: row.menu_name ?? '',
     category: row.category ?? '',
