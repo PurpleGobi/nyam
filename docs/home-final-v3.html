@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nyam — Home v3</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #E8E6E1;
+    color: #1a1a1a;
+    padding: 48px 20px 100px;
+  }
+  .page-header { max-width: 900px; margin: 0 auto 48px; text-align: center; }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px; font-weight: 600; color: #1a1a1a; letter-spacing: -1px;
+  }
+  .page-header p { font-size: 13px; color: #999; margin-top: 8px; line-height: 1.7; }
+
+  .phone {
+    width: 375px; height: 812px;
+    border-radius: 48px; border: 6px solid #1a1a1a;
+    overflow: hidden; position: relative; margin: 0 auto;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.1), 0 32px 100px rgba(0,0,0,0.25);
+    background: #FAF8F5;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 26px; background: #1a1a1a;
+    border-radius: 0 0 18px 18px; z-index: 10;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    overflow-y: auto; padding-top: 48px; padding-bottom: 84px;
+    background: #FAF8F5;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .bnav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 78px;
+    background: #FAF8F5; border-top: 1px solid #EDE9E3;
+    display: flex; align-items: center; justify-content: space-around;
+    padding-bottom: 12px; z-index: 5;
+  }
+  .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bnav-label { font-size: 9px; letter-spacing: 0.5px; }
+  .bnav-add {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #C45C3A; color: #FAF8F5;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: -18px; font-size: 22px;
+    box-shadow: 0 4px 16px rgba(196,92,58,0.35);
+  }
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  .notes { max-width: 640px; margin: 64px auto 0; }
+  .notes h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 16px; }
+  .notes li {
+    padding: 14px 0; border-bottom: 1px solid #d4d0ca;
+    font-size: 13px; color: #666; line-height: 1.7;
+    display: flex; gap: 12px; list-style: none;
+  }
+  .notes li strong { color: #1a1a1a; display: block; margin-bottom: 2px; }
+  .notes .num { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: #C45C3A; flex-shrink: 0; width: 24px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>nyam home — v3</h1>
+  <p>"맛집 추천 앱"이 아니라 "나의 맛 공간"</p>
+</div>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <!-- ===== HEADER ===== -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 24px 0;">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#C45C3A;letter-spacing:-0.5px;">nyam</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <svg width="20" height="20" fill="none" stroke="#bbb" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <div style="position:relative;">
+          <svg width="20" height="20" fill="none" stroke="#bbb" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;background:#C45C3A;border-radius:50%;border:1.5px solid #FAF8F5;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 나의 프로필 요약 — "내 공간" 느낌의 핵심 ===== -->
+    <div style="padding:20px 24px 0;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <!-- 프로필 이미지 / 이니셜 -->
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#C45C3A,#E8A070);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:600;flex-shrink:0;">지</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;">지수의 맛 노트</div>
+          <div style="font-size:11px;color:#bbb;margin-top:2px;">47개 기록 · 23곳 방문 · 주로 매운 음식</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 내 취향 키워드 ===== -->
+    <div style="padding:14px 24px 0;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#C45C3A;font-weight:500;padding:4px 10px;border-radius:8px;background:#FBF2EC;">🌶️ 매운맛 러버</span>
+        <span style="font-size:11px;color:#6B4C8A;font-weight:500;padding:4px 10px;border-radius:8px;background:#F3EFF8;">🍷 레드 와인</span>
+        <span style="font-size:11px;color:#8B7355;font-weight:500;padding:4px 10px;border-radius:8px;background:#F5F0E8;">🍜 면 요리</span>
+      </div>
+    </div>
+
+    <!-- ===== 구분선 ===== -->
+    <div style="padding:20px 24px 0;"><div style="height:1px;background:#EDE9E3;"></div></div>
+
+    <!-- ===== 이 근처에서 좋아했던 곳 ===== -->
+    <div style="padding:18px 24px 12px;">
+      <div style="font-size:11px;color:#bbb;letter-spacing:0.5px;">이 근처에서 좋아했던 곳</div>
+    </div>
+
+    <div style="padding:0 24px;">
+      <!-- 내 과거 기록 1 -->
+      <div style="display:flex;gap:12px;padding:10px 0;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;">
+          <img src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&q=80" alt="sushi">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">스시 겐</div>
+          <div style="font-size:11px;color:#bbb;margin-top:1px;">850m · 2주 전에 갔었어요</div>
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#C45C3A;">4.8</div>
+      </div>
+      <!-- 내 과거 기록 2 -->
+      <div style="display:flex;gap:12px;padding:10px 0;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;">
+          <img src="https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=200&q=80" alt="pasta">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">트라토리아</div>
+          <div style="font-size:11px;color:#bbb;margin-top:1px;">1.2km · 지난달에 갔었어요</div>
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#C45C3A;">4.2</div>
+      </div>
+    </div>
+
+    <div style="padding:6px 24px 0;"><div style="height:1px;background:#EDE9E3;"></div></div>
+
+    <!-- ===== 최근에 남긴 기록 — 내 코멘트가 주인공 ===== -->
+    <div style="padding:18px 24px 12px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <div style="font-size:11px;color:#bbb;letter-spacing:0.5px;">최근 기록</div>
+        <div style="font-size:11px;color:#C45C3A;">전체보기</div>
+      </div>
+    </div>
+
+    <div style="padding:0 24px;">
+      <!-- Record 1 — 내 코멘트가 먼저 -->
+      <div style="padding:10px 0 14px;border-bottom:1px solid #F0ECE6;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-top:2px;">
+            <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&q=80" alt="ramen">
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">마라탕</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#C45C3A;">4.5</div>
+            </div>
+            <div style="font-size:11px;color:#bbb;margin-top:1px;">해리마라 · 강남 · 3일 전</div>
+            <div style="font-size:12px;color:#777;margin-top:8px;line-height:1.5;font-style:italic;">"땀이 쭉 빠지는 시원한 매운맛. 면 추가 강추"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Record 2 -->
+      <div style="padding:10px 0 14px;border-bottom:1px solid #F0ECE6;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-top:2px;">
+            <img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&q=80" alt="wine">
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">Château Margaux</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#6B4C8A;">5.0</div>
+            </div>
+            <div style="font-size:11px;color:#bbb;margin-top:1px;">르끌로 · 한남동 · 지난주</div>
+            <div style="font-size:12px;color:#777;margin-top:8px;line-height:1.5;font-style:italic;">"실크 같은 탄닌. 블랙베리 여운이 30분 넘게"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Record 3 — 코멘트 없는 경우 -->
+      <div style="padding:10px 0;border-bottom:1px solid #F0ECE6;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;">
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80" alt="pizza">
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:14px;font-weight:600;color:#1a1a1a;">마르게리타</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#C45C3A;">4.3</div>
+            </div>
+            <div style="font-size:11px;color:#bbb;margin-top:1px;">리틀넥 · 연남 · 2주 전</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:18px 24px 0;"><div style="height:1px;background:#EDE9E3;"></div></div>
+
+    <!-- ===== 친구들 — 조용하게 ===== -->
+    <div style="padding:18px 24px 12px;">
+      <div style="font-size:11px;color:#bbb;letter-spacing:0.5px;">친구들이 요즘 간 곳</div>
+    </div>
+
+    <div style="padding:0 24px;">
+      <div style="display:flex;gap:12px;padding:8px 0 12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#93C5FD);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0;margin-top:2px;">지</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:#1a1a1a;"><strong>박지영</strong> · 회사 점심팟</div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-top:4px;">리스토란테 루치아</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;font-style:italic;">"트러플 크림 파스타 진짜 미쳤다"</div>
+          <div style="font-size:10px;color:#bbb;margin-top:4px;">이태원 · ★ 4.2</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#F0ECE6;"></div>
+
+      <div style="display:flex;gap:12px;padding:12px 0 8px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22C55E,#86EFAC);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0;margin-top:2px;">현</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:#1a1a1a;"><strong>이현우</strong> · 와인 동호회</div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-top:4px;">오스테리아 오르조</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;font-style:italic;">"사케 페어링이 예술이다"</div>
+          <div style="font-size:10px;color:#bbb;margin-top:4px;">을지로 · ★ 4.6</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:14px 24px 0;"><div style="height:1px;background:#EDE9E3;"></div></div>
+
+    <!-- ===== 혹시 여기는요? — AI 추천인데 대화처럼 ===== -->
+    <div style="padding:18px 24px 20px;">
+      <div style="font-size:11px;color:#bbb;letter-spacing:0.5px;margin-bottom:10px;">혹시 여기는요?</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0;">
+          <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&q=80" alt="grilled">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">화양연화</div>
+          <div style="font-size:11px;color:#bbb;margin-top:1px;">한남동 · 마라 양꼬치</div>
+          <div style="font-size:11px;color:#999;margin-top:4px;">매운 음식을 좋아하시길래 · <span style="color:#C45C3A;">91% 매칭</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <div class="bnav">
+    <div class="bnav-item" style="color:#C45C3A;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+      <span class="bnav-label" style="color:#C45C3A;">홈</span>
+    </div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span class="bnav-label">탐색</span>
+    </div>
+    <div class="bnav-item"><div class="bnav-add">+</div></div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="bnav-label">그룹</span>
+    </div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="bnav-label">나</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DESIGN NOTES ===== -->
+<div class="notes">
+  <h2>"내 공간"을 만드는 요소들</h2>
+  <ul>
+    <li>
+      <span class="num">1</span>
+      <div>
+        <strong>상단에 나의 정체성</strong>
+        "지수의 맛 노트" — 이 앱이 내 공간임을 선언. 47개 기록 · 23곳 방문 · 주로 매운 음식 — 내 데이터가 나를 설명함. 취향 태그(매운맛 러버, 레드 와인, 면 요리)로 "나"가 어떤 사람인지 한눈에.
+      </div>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <div>
+        <strong>내 코멘트가 주인공</strong>
+        평점이나 사진보다 <em>내가 쓴 한 줄</em>이 더 크게 보임. "땀이 쭉 빠지는 시원한 매운맛" — 이건 광고 카피가 아니라 내가 쓴 말. 사진은 44px 썸네일로 축소.
+      </div>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <div>
+        <strong>친구 섹션도 "사람의 말"로</strong>
+        사진 카드가 아니라 아바타 + 코멘트. "트러플 크림 파스타 진짜 미쳤다" — 친구가 직접 한 말이 보임. 리뷰 앱이 아니라 친구의 카톡을 보는 느낌.
+      </div>
+    </li>
+    <li>
+      <span class="num">4</span>
+      <div>
+        <strong>AI도 대화체로</strong>
+        "혹시 여기는요?" + "매운 음식을 좋아하시길래" — 시스템 추천이 아니라 친구가 말하듯. 크기도 다른 섹션과 동일하게 작게.
+      </div>
+    </li>
+    <li>
+      <span class="num">5</span>
+      <div>
+        <strong>시각적으로 균일한 밀도</strong>
+        히어로 카드, 대형 사진 없음. 모든 섹션이 같은 밀도의 리스트형. 구분은 레이블("이 근처에서 좋아했던 곳", "최근 기록", "친구들이 요즘 간 곳") + 얇은 구분선으로만. 조용하고 정돈된 나만의 노트.
+      </div>
+    </li>
+  </ul>
+
+  <div style="margin-top:32px;padding:24px;background:#fff;border-radius:16px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px;">이전 버전과의 차이</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:10px 0;color:#ccc;text-decoration:line-through;width:45%;">대형 히어로 사진 카드</td>
+        <td style="padding:10px 4px;color:#999;">→</td>
+        <td style="padding:10px 0;color:#1a1a1a;">44px 썸네일 + 텍스트 중심</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:10px 0;color:#ccc;text-decoration:line-through;">평점이 가장 눈에 띔</td>
+        <td style="padding:10px 4px;color:#999;">→</td>
+        <td style="padding:10px 0;color:#1a1a1a;">내 코멘트가 가장 눈에 띔</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:10px 0;color:#ccc;text-decoration:line-through;">"추천" 톤의 인사 메시지</td>
+        <td style="padding:10px 4px;color:#999;">→</td>
+        <td style="padding:10px 0;color:#1a1a1a;">"지수의 맛 노트" 프로필</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:10px 0;color:#ccc;text-decoration:line-through;">친구 기록 = 사진 카드</td>
+        <td style="padding:10px 4px;color:#999;">→</td>
+        <td style="padding:10px 0;color:#1a1a1a;">친구 기록 = 사람 + 한마디</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;color:#ccc;text-decoration:line-through;">AI = 다크 카드 별도 디자인</td>
+        <td style="padding:10px 4px;color:#999;">→</td>
+        <td style="padding:10px 0;color:#1a1a1a;">AI = 나머지와 같은 톤, 조용히</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>
