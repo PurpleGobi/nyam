@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>냠(Nyam) v2 비판적 분석 — "식음료 기록 + AI 리뷰" 모델의 현실</title>
+<style>
+  :root {
+    --red: #DC2626;
+    --red-bg: #FEF2F2;
+    --red-border: #FECACA;
+    --orange: #EA580C;
+    --orange-bg: #FFF7ED;
+    --orange-border: #FED7AA;
+    --yellow: #CA8A04;
+    --yellow-bg: #FEFCE8;
+    --yellow-border: #FEF08A;
+    --navy: #1E293B;
+    --navy-light: #334155;
+    --text: #0F172A;
+    --text-sec: #64748B;
+    --border: #E2E8F0;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.75; font-size:15px; }
+
+  .header { background:linear-gradient(135deg,#0F172A,#1E293B); color:white; padding:56px 0 48px; }
+  .header-inner { max-width:820px; margin:0 auto; padding:0 24px; }
+  .header h1 { font-size:1.8rem; font-weight:800; margin-bottom:8px; letter-spacing:-0.02em; }
+  .header .sub { color:rgba(255,255,255,.6); font-size:.95rem; margin-bottom:20px; }
+  .header .meta { display:flex; gap:16px; font-size:.8rem; color:rgba(255,255,255,.4); }
+
+  .content { max-width:820px; margin:0 auto; padding:0 24px; }
+
+  /* Severity banner */
+  .severity-banner { background:var(--surface); border:2px solid var(--red); border-radius:12px; padding:28px; margin:-28px 0 36px; box-shadow:0 4px 20px rgba(0,0,0,.06); }
+  .severity-banner h2 { color:var(--red); font-size:1.15rem; margin-bottom:16px; }
+  .sev-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sev-item { padding:10px 14px; border-radius:8px; font-size:.85rem; font-weight:600; }
+  .sev-item.critical { background:var(--red-bg); border:1px solid var(--red-border); color:var(--red); }
+  .sev-item.serious { background:var(--orange-bg); border:1px solid var(--orange-border); color:var(--orange); }
+  .sev-item.moderate { background:var(--yellow-bg); border:1px solid var(--yellow-border); color:var(--yellow); }
+  .sev-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; opacity:.7; }
+
+  /* Part */
+  .part-head { background:var(--navy); color:white; padding:14px 24px; border-radius:12px 12px 0 0; margin-top:48px; font-size:1.1rem; font-weight:700; }
+  .part-body { background:var(--surface); border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; padding:28px; margin-bottom:28px; box-shadow:0 2px 10px rgba(0,0,0,.03); }
+
+  h3 { font-size:1.05rem; font-weight:700; color:var(--navy); margin:24px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--border); }
+  h3:first-child { margin-top:0; }
+  h4 { font-size:.95rem; font-weight:600; margin:16px 0 6px; }
+  p { margin-bottom:10px; }
+  ul,ol { margin:8px 0 12px 20px; }
+  li { margin-bottom:4px; }
+
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:.85rem; }
+  thead th { background:var(--navy); color:white; padding:8px 12px; text-align:left; font-weight:600; font-size:.8rem; }
+  thead th:first-child { border-radius:6px 0 0 0; }
+  thead th:last-child { border-radius:0 6px 0 0; }
+  tbody td { padding:8px 12px; border-bottom:1px solid var(--border); }
+  tbody tr:nth-child(even) { background:#F8FAFC; }
+
+  .verdict { padding:12px 18px; border-radius:0 8px 8px 0; margin:14px 0; font-weight:600; font-size:.9rem; }
+  .verdict.critical { background:var(--red-bg); border-left:4px solid var(--red); color:var(--red); }
+  .verdict.serious { background:var(--orange-bg); border-left:4px solid var(--orange); color:var(--orange); }
+  .verdict.moderate { background:var(--yellow-bg); border-left:4px solid var(--yellow); color:var(--yellow); }
+
+  .data-card { background:#F1F5F9; border:1px solid var(--border); border-radius:8px; padding:16px; margin:14px 0; }
+  .data-card .num { font-size:1.8rem; font-weight:800; color:var(--red); }
+  .data-card .label { font-size:.8rem; color:var(--text-sec); }
+
+  .quote { background:#F1F5F9; border-left:3px solid var(--text-sec); padding:12px 16px; margin:12px 0; font-style:italic; font-size:.9rem; color:var(--text-sec); }
+
+  /* Summary box */
+  .summary-box { background:linear-gradient(135deg,#0F172A,#1E293B); color:white; border-radius:12px; padding:36px 28px; margin:48px 0 36px; }
+  .summary-box h2 { color:var(--red); font-size:1.3rem; margin-bottom:20px; }
+  .summary-box table { margin:16px 0; }
+  .summary-box thead th { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }
+  .summary-box tbody td { color:rgba(255,255,255,.85); border-bottom:1px solid rgba(255,255,255,.1); }
+  .summary-box .final { margin-top:28px; padding-top:20px; border-top:1px solid rgba(255,255,255,.15); }
+  .summary-box .final p { color:rgba(255,255,255,.7); }
+  .summary-box .final blockquote { background:rgba(220,38,38,.15); border-left:3px solid var(--red); padding:14px 18px; border-radius:0 8px 8px 0; margin-top:12px; font-weight:600; color:rgba(255,255,255,.95); font-style:normal; }
+
+  .refs { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 28px; margin-bottom:48px; }
+  .refs h3 { border-bottom:none; margin-bottom:10px; }
+  .refs li { font-size:.8rem; color:var(--text-sec); }
+
+  @media(max-width:640px) {
+    .header { padding:36px 0 32px; }
+    .header h1 { font-size:1.4rem; }
+    .sev-grid { grid-template-columns:1fr; }
+    .part-body { padding:18px; }
+    table { font-size:.78rem; }
+    thead th,tbody td { padding:6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>"식음료 기록 + AI 리뷰" 모델의 현실</h1>
+    <p class="sub">냠(Nyam) v2 방향성에 대한 냉정한 비판적 분석</p>
+    <div class="meta">
+      <span>2026-03-16</span>
+      <span>딥리서치 2건 기반</span>
+      <span>학술 논문 + 시장 데이터</span>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Severity Overview -->
+  <div class="severity-banner">
+    <h2>리스크 심각도 요약</h2>
+    <div class="sev-grid">
+      <div class="sev-item critical"><span class="sev-label">치명적</span><br>97%가 1주 내 이탈 (식단 기록 앱 역사적 패턴)</div>
+      <div class="sev-item critical"><span class="sev-label">치명적</span><br>"식음료 기록" 전용 시장 $1.5억 — 너무 작다</div>
+      <div class="sev-item critical"><span class="sev-label">치명적</span><br>네이버/카카오가 기능 하나 추가하면 게임 끝</div>
+      <div class="sev-item critical"><span class="sev-label">치명적</span><br>Vivino도 15년간 흑자 미달성, Beli도 수익화 미검증</div>
+      <div class="sev-item serious"><span class="sev-label">심각</span><br>혼합 요리/한식 AI 인식 정확도 73% — 서비스 불가</div>
+      <div class="sev-item serious"><span class="sev-label">심각</span><br>도심 GPS 오차 20-50m, 같은 건물 식당 구분 불가</div>
+      <div class="sev-item serious"><span class="sev-label">심각</span><br>55% 소비자가 AI 생성 콘텐츠에 불편함</div>
+      <div class="sev-item moderate"><span class="sev-label">중간</span><br>AI+GPS+OCR 상시 구동 = 배터리 킬러</div>
+    </div>
+  </div>
+
+  <!-- Part 1: 심리적 장벽 -->
+  <div class="part-head">1. 심리적 장벽 — "사람들은 기록하지 않는다"</div>
+  <div class="part-body">
+
+    <h3>식단 기록 리텐션의 참혹한 현실</h3>
+
+    <div class="data-card">
+      <div class="num">3%</div>
+      <div class="label">식단 기록 앱 다운로드 중 1주일 이상 사용한 비율 (CHI 2015, The Eatery 190,000 DL 기준)</div>
+    </div>
+
+    <table>
+      <thead><tr><th>지표</th><th>데이터</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>다이어트 앱 30일 리텐션</td><td>~45%</td><td>market.us 2026</td></tr>
+        <tr><td>다이어트 앱 90일 리텐션</td><td>43% (전체 앱 평균 48% 이하)</td><td>Alchemer 2026</td></tr>
+        <tr><td>MyFitnessPal 등록 대비 활성</td><td>38% (62%가 유령계정)</td><td>Business of Apps</td></tr>
+        <tr><td>MyFitnessPal 2025 매출</td><td>$3.1억 (전년 대비 -5.7%)</td><td>Business of Apps</td></tr>
+        <tr><td>일일 기록 소요시간</td><td>평균 15분</td><td>MyFitnessPal 블로그</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>건강 목적(칼로리) vs 라이프로그 목적:</strong> 건강/다이어트 목적은 명확한 목표(체중 감량)가 있어 상대적으로 지속 가능. 라이프로그 목적("뭐 먹었나 기록")은 이탈자 94명 중 22명만 "충분한 이점을 얻었다"고 응답. <strong>나머지 72명은 그냥 포기.</strong></p>
+
+    <h3>Vivino 6천만 가입자의 착시</h3>
+
+    <table>
+      <thead><tr><th>지표</th><th>수치</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>총 가입자</td><td>7,400만+</td><td>마케팅용 숫자</td></tr>
+        <tr><td>총 스캔 수</td><td>32.6억 건</td><td>15년 누적</td></tr>
+        <tr><td>사용자당 평균 스캔</td><td>~44건 (전체 기간)</td><td>1년에 약 3건</td></tr>
+        <tr><td>무료 스캔 제한 후</td><td>대규모 반발 (Reddit 2023)</td><td>유료 전환 거부감 극심</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict critical">결론: 7,400만 가입자 중 "매주 꾸준히 스캔·기록하는 사용자"는 5% 미만으로 추정. MyFitnessPal 2.2억 등록 중 활성도 38%. 기록 앱의 본질적 한계다.</div>
+
+    <h3>기록 피로(Logging Fatigue)의 메커니즘</h3>
+    <ul>
+      <li><strong>CHI 2015 설문</strong>: 141명 기록자 중 가장 많은 불만 — "too much effort"(31명), "time-consuming"(27명), "tedious"(16명)</li>
+      <li><strong>Streak fatigue</strong>: 긴 연속 기록이 한 번 끊기면 동기가 급격히 하락 (MyFitnessPal 커뮤니티)</li>
+      <li><strong>사진 촬영의 식사 방해</strong>: "음식 사진 촬영은 식사 절차를 중단시키고 음식을 식게 만든다" (Frontiers in Psychology 2021)</li>
+    </ul>
+
+    <h3>위치 추적 프라이버시 거부감</h3>
+    <ul>
+      <li>다이어트 앱 사용자 <strong>60% 이상</strong>이 데이터 프라이버시 우려 (market.us)</li>
+      <li>iOS ATT 도입 이후 위치 권한 허용률 급감</li>
+      <li>Android 알림 옵트인율: 2024년 85% → 2025년 <strong>67%</strong>로 1년 만에 18%p 하락</li>
+      <li>"건강 앱도 거부감인데, 맛집 기록용 상시 위치 추적이라면?"</li>
+    </ul>
+
+    <div class="verdict critical">판정: "AI로 기록을 편하게 만들어도, 기록 행위 자체의 심리적 마찰을 완전히 제거할 수 없다." 15년간의 앱 시장 역사가 반복적으로 증명한 사실이다.</div>
+  </div>
+
+  <!-- Part 2: 기술적 현실 -->
+  <div class="part-head">2. 기술적 현실 — "AI는 아직 그 수준이 아니다"</div>
+  <div class="part-body">
+
+    <h3>음식 이미지 AI 인식 정확도</h3>
+
+    <table>
+      <thead><tr><th>데이터셋</th><th>정확도</th><th>조건</th></tr></thead>
+      <tbody>
+        <tr><td>Food-101 (서양 단일 요리)</td><td>92.4~92.6%</td><td>정제된 데이터, 연구실 환경</td></tr>
+        <tr><td>ISIA Food-200 (혼합 요리)</td><td style="color:var(--red);font-weight:700;">72.9%</td><td>20%p 급락 — 현실에 가까움</td></tr>
+        <tr><td>K-foodNet (한식, 2019)</td><td>91.3%</td><td>단일 한식 분류, 연구실</td></tr>
+      </tbody>
+    </table>
+
+    <h4>한국 음식 인식의 특수한 난제</h4>
+    <ul>
+      <li><strong>반찬 5~7개 + 국/찌개 + 밥</strong>이 한 사진에 — 개별 분류 극도로 어려움</li>
+      <li><strong>찌개류 외관 유사성</strong>: 된장찌개, 김치찌개, 순두부찌개 → 같은 갈색/붉은 국물</li>
+      <li><strong>떡볶이+튀김+순대</strong> 한 접시 — 복수 음식 분할 문제</li>
+      <li>PMC 종합 리뷰: "CNN 기반 모델은 조리되고 섞인 음식에서 여전히 성능 문제"</li>
+    </ul>
+
+    <div class="verdict serious">판정: 혼합 요리 정확도 73%는 "10번 중 3번 틀린다"는 뜻. 사용자가 매번 수정해야 한다면 "자동 인식"의 가치가 없다.</div>
+
+    <h3>Geofencing 식당 매칭의 한계</h3>
+
+    <table>
+      <thead><tr><th>환경</th><th>GPS 오차</th><th>식당 구분 가능?</th></tr></thead>
+      <tbody>
+        <tr><td>실외 (최적 조건)</td><td>5-10m</td><td>단독 건물이면 가능</td></tr>
+        <tr><td>실내/도심</td><td>20-50m</td><td>같은 건물 10개 식당 구분 불가</td></tr>
+        <tr><td>지하/푸드코트</td><td>50m+</td><td>사실상 불가능</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>서울 현실:</strong> 강남역 주변 한 건물에 10개+ 식당은 흔한 일. 지하 식당가, 백화점 푸드코트, 포장마차/노점 → GPS 매칭 자체가 불가능한 환경이 한국 식당의 상당 부분을 차지.</p>
+
+    <h3>한국어 OCR의 현실</h3>
+    <p><strong>KORIE 벤치마크 (MDPI, 2026.1)</strong> — 한국 영수증 OCR 전문 연구:</p>
+    <ul>
+      <li>작은 폰트의 한글 인식 어려움</li>
+      <li>자모 분리 현상(jamo fragmentation): 블러 시 초성/중성/종성이 분리</li>
+      <li>한글 음절 수 ~11,000개 (영어 26자 대비 압도적으로 복잡)</li>
+      <li>메뉴판 포맷 비표준: 가게마다 완전히 다른 레이아웃, 디자인 폰트</li>
+    </ul>
+
+    <h3>배터리: 사용자가 가장 싫어하는 것</h3>
+    <div class="quote">"공격적인 온디바이스 학습은 눈에 띄는 기기 발열과 급격한 배터리 소모를 유발하여 사용자 불만과 앱 삭제로 이어진다" — ML Systems Book</div>
+    <p>음식 인식 + 위치 추적 + OCR 동시 상시 구동 → 배터리 15~20% 추가 소모. 사용자에게 "맛집 기록 앱 때문에 배터리가 닳는다"는 인식이 생기는 순간 삭제.</p>
+  </div>
+
+  <!-- Part 3: AI 리뷰 생성의 가치 의문 -->
+  <div class="part-head">3. AI 리뷰 자동생성 — "누가 읽고 싶어하는가?"</div>
+  <div class="part-body">
+
+    <h3>AI 생성 콘텐츠에 대한 소비자 불신</h3>
+
+    <div class="data-card">
+      <div class="num">55%</div>
+      <div class="label">소비자가 AI에 불편함을 느끼는 비율 (Forbes 2025)</div>
+    </div>
+
+    <ul>
+      <li><strong>NIM 연구 (2025)</strong>: AI 생성 라벨링 시 소비자는 "덜 자연스럽고 덜 유용하다"고 인식, 구매 의향 하락</li>
+      <li><strong>KPMG 2024</strong>: AI를 통해 수집된 데이터를 신뢰하는 소비자 <strong>29%에 불과</strong></li>
+      <li><strong>KO Insights (2025)</strong>: "소비자들은 AI 생성 콘텐츠를 거부(rejecting)하고 있다" — Authenticity Premium 형성 중</li>
+    </ul>
+
+    <h3>"진정성"의 훼손</h3>
+    <p>리뷰의 가치는 <strong>실제 경험한 사람의 주관적 감정과 세부 묘사</strong>에 있다. AI가 "객관식 5개를 조합해 만든 문단"은 이 본질을 빗나간다.</p>
+    
+    <ul>
+      <li>객관식 5개 탭 → AI 문단 = <strong>노력 최소화 = 소유감 최소화</strong> (IKEA Effect 역적용)</li>
+      <li>소유감이 없으면 공유 동기도 없고, 수정/관리 동기도 없다</li>
+      <li>"내 리뷰"가 아니라 "앱이 써준 것"이 된다</li>
+    </ul>
+
+    <h3>가짜 리뷰 생태계 악화</h3>
+    <div class="quote">"AI 지원 리뷰가 현재 속도로 증가하면, 2026년 말에는 AI 리뷰가 인간 작성 리뷰를 초과할 수 있다" — Whitespark 2025</div>
+    <ul>
+      <li>온라인 리뷰의 약 <strong>30%가 이미 가짜</strong> (ReviewDriver 2025)</li>
+      <li>Yelp: AI 지원 리뷰 공식 금지</li>
+      <li>"AI가 리뷰를 대신 써주는 기능"은 가짜 리뷰 생태계를 <strong>정당화</strong>하는 것과 다를 바 없다</li>
+    </ul>
+
+    <div class="verdict serious">판정: AI 리뷰 자동생성은 "편의성"과 "진정성"이 정면 충돌한다. 편하게 만들수록 가치가 떨어지는 역설.</div>
+  </div>
+
+  <!-- Part 4: 통합 앱 실패 역사 -->
+  <div class="part-head">4. "모든 것을 하는 앱"의 실패 역사</div>
+  <div class="part-body">
+
+    <h3>Foursquare/Swarm: 체크인 + 추천의 몰락</h3>
+    <ul>
+      <li>밸류에이션: 2013년 $6.5억 → 2016년 $3.25억으로 <strong>반토막</strong></li>
+      <li>체크인(Swarm) + 추천(Foursquare) 분리 → 양 앱 모두 앱스토어 순위 급락</li>
+      <li>통합 상태에서도 성장 정체 → 분리해도 해결 안 됨 → <strong>다기능 전략 자체의 문제</strong></li>
+    </ul>
+
+    <h3>Path: 라이프로그 소셜의 완벽한 실패</h3>
+    <ul>
+      <li>"음식, 운동, 기분, 음악, 수면 기록 + 소셜" 통합 앱</li>
+      <li><strong>$6,620만 투자 → 2018년 종료</strong></li>
+      <li>각 카테고리별 전문 앱(Instagram, Spotify, 수면 앱)에 모두 패배</li>
+    </ul>
+
+    <h3>슈퍼앱은 왜 실패하는가</h3>
+    <ul>
+      <li><strong>Forbes</strong>: "미국 주요 산업은 과점 구조 — 슈퍼앱이 진입할 틈이 없다"</li>
+      <li><strong>카카오톡</strong>: 2025년 슈퍼앱 개편 시도 → 사용자 집단 반발 → 사실상 후퇴</li>
+      <li><strong>CB Insights</strong>: 스타트업 실패 1위 = "시장 수요 부재". Feature creep이 이를 악화</li>
+    </ul>
+
+    <div class="quote">"2%의 사용자만 혜택을 받는 기능이 남은 개발 시간의 30%를 잡아먹는다" — Pragmatic Coders</div>
+
+    <div class="verdict critical">판정: "와인+음식+카페+집밥" 통합은 각 영역 전문 앱(Vivino, Beli, Savor)과 동시에 싸우겠다는 의미. 역사적으로 이 전략은 실패한다.</div>
+  </div>
+
+  <!-- Part 5: 네트워크 효과 부재 -->
+  <div class="part-head">5. 네트워크 효과 부재 — "개인 도구는 해자가 없다"</div>
+  <div class="part-body">
+
+    <h3>도구 → 소셜 전환은 거의 불가능</h3>
+    <div class="quote">"사용자를 도구에서 네트워크로 전환시키는 것은 어렵다. 행동 변화를 요구하기 때문이다." — Andrew Chen, a16z</div>
+
+    <h3>Evernote의 교훈</h3>
+    <ul>
+      <li>"당신의 외부 두뇌" → 단일 사용자 도구에서 멀티플레이어 전환 실패</li>
+      <li>2011년 $10억 밸류에이션 → Bending Spoons에 헐값 인수</li>
+      <li>Notion, Obsidian, Apple Notes에 지속적으로 침식</li>
+      <li><strong>네트워크 효과 없는 도구는 언제든 대체될 수 있다</strong></li>
+    </ul>
+
+    <h3>"나만의 기록"은 공유될 이유가 없다</h3>
+    <ul>
+      <li>"오늘 점심에 김치찌개 먹었다"는 정보의 <strong>공유 가치가 극히 낮다</strong></li>
+      <li>인스타에서 음식 사진이 공유되는 이유는 <strong>시각적 매력</strong>이지 기록 자체가 아니다</li>
+      <li>맛집 추천이 공유되는 이유는 <strong>발견의 가치</strong>이지 일상 식사 로그가 아니다</li>
+      <li>Obsidian/Notion도 소셜 기능 추가에 실패 — <strong>개인 도구 → 소셜 성공 사례 거의 없음</strong></li>
+    </ul>
+
+    <div class="verdict critical">판정: 개인 기록 도구는 네트워크 효과가 없어 해자가 없다. 네이버/카카오가 같은 기능을 추가하면 한 분기면 따라잡는다.</div>
+  </div>
+
+  <!-- Part 6: 사업성 -->
+  <div class="part-head">6. 사업성 — "돈이 안 된다"</div>
+  <div class="part-body">
+
+    <h3>시장 규모: 기대보다 작다</h3>
+    <table>
+      <thead><tr><th>시장</th><th>규모 (2025)</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>식단/영양 앱 (넓은 의미)</td><td>$57~60억</td><td>75%가 구독+인앱구매 매출</td></tr>
+        <tr><td style="color:var(--red);font-weight:700;">식음료 기록 전용</td><td style="color:var(--red);font-weight:700;">$1.5억</td><td>극히 작은 규모</td></tr>
+        <tr><td>비교: 전체 피트니스 앱</td><td>$39.8억</td><td>식음료 기록의 26배</td></tr>
+      </tbody>
+    </table>
+
+    <h3>경쟁사의 수익 현실</h3>
+    <table>
+      <thead><tr><th>앱</th><th>펀딩</th><th>수익성</th><th>시사점</th></tr></thead>
+      <tbody>
+        <tr><td>Vivino</td><td>$2.21억+</td><td>15년간 흑자 미달성</td><td>와인 커머스로도 안 됨</td></tr>
+        <tr><td>Beli</td><td>$530만</td><td>수익화 미검증</td><td>NYT 화제 = 수익 아님</td></tr>
+        <tr><td>Savor</td><td>비공개</td><td>극초기 단계</td><td>데이터 자체가 없음</td></tr>
+        <tr><td>MyFitnessPal</td><td>-</td><td>$3.1억 (역성장 -5.7%)</td><td>시장 1위도 줄고 있다</td></tr>
+      </tbody>
+    </table>
+
+    <h3>CAC vs LTV가 성립하지 않는다</h3>
+    <ul>
+      <li><strong>CAC</strong>: 한국 모바일 앱 CPI $2-5, 유료 전환 시 $30-50+</li>
+      <li><strong>LTV</strong>: 월 $4 구독, 평균 3-6개월 유지 → $12-24</li>
+      <li><strong>CAC > LTV</strong>: 유료 전환율 5% 미만이면 단위 경제 성립 불가</li>
+    </ul>
+
+    <div class="verdict critical">판정: "식음료 기록"만으로는 시장이 너무 작고, "식단 관리"까지 확장하면 MyFitnessPal이라는 거인과 싸워야 한다. 그리고 그 거인도 역성장 중이다.</div>
+  </div>
+
+  <!-- Part 7: 경쟁 위협 -->
+  <div class="part-head">7. 경쟁 위협 — "거인들이 옆에 있다"</div>
+  <div class="part-body">
+
+    <h3>이미 "기록"을 하고 있는 플랫폼들</h3>
+    <table>
+      <thead><tr><th>플랫폼</th><th>이미 하는 것</th><th>추가하면 끝나는 것</th></tr></thead>
+      <tbody>
+        <tr><td>인스타그램</td><td>음식 사진 + 위치 태그 + 해시태그 (20억 MAU)</td><td>"내 방문 식당 모아보기" 한 기능</td></tr>
+        <tr><td>네이버 지도</td><td>마이플레이스, 별점, 사진, 블로그 리뷰 연동</td><td>AI 리뷰 자동생성</td></tr>
+        <tr><td>카카오맵</td><td>LikePoint 평가, 즐겨찾기, 카톡 연동</td><td>개인 맛집 히스토리</td></tr>
+        <tr><td>Google/Apple Photos</td><td>음식 자동 분류, 장소/날짜 메타데이터</td><td>식당별 자동 그룹핑</td></tr>
+      </tbody>
+    </table>
+
+    <h3>한국 시장의 특수한 포화</h3>
+    <ul>
+      <li><strong>"먹스타그램"</strong>이라는 용어가 보편화 — 이미 인스타가 식음료 기록 역할</li>
+      <li>맛집 공유 = 카카오톡으로 네이버 링크 보내기 — <strong>"왜 새 앱을 깔아야 하나?"</strong></li>
+      <li>네이버 블로그 맛집 리뷰 ~1,050만 블로그 — 확립된 행동 패턴을 바꿔야 함</li>
+      <li>캐치테이블, 다이닝코드, 식신, 테이블링, 포잉 — 이미 니치별로 포화</li>
+    </ul>
+
+    <div class="verdict critical">판정: 네이버/카카오에게 이 기능을 추가하는 건 "신규 기능 하나 정도의 개발 리소스"에 불과하다. 거인이 한 분기만 투자하면 따라잡는다.</div>
+  </div>
+
+  <!-- Final Summary -->
+  <div class="summary-box">
+    <h2>종합 리스크 매트릭스</h2>
+
+    <table>
+      <thead><tr><th>영역</th><th>핵심 리스크</th><th>심각도</th></tr></thead>
+      <tbody>
+        <tr><td>리텐션</td><td>97%가 1주 내 이탈 (역사적 패턴)</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>기록 동기</td><td>라이프로그 목적은 건강 목적보다 지속성 훨씬 낮음</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>시장 규모</td><td>"식음료 기록" 전용 시장 $1.5억으로 극소</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>플랫폼 리스크</td><td>네이버/카카오가 기능 하나 추가하면 게임 끝</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>수익 모델</td><td>Vivino 15년 흑자 미달성, Beli 수익화 미검증</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>통합 전략</td><td>"모든 것을 하는 앱"은 역사적으로 실패</td><td style="color:#FCA5A5;">치명적</td></tr>
+        <tr><td>음식 AI 인식</td><td>혼합 요리/한식 정확도 73% — 서비스 불가</td><td style="color:#FDBA74;">심각</td></tr>
+        <tr><td>GPS 매칭</td><td>도심 20-50m 오차, 같은 건물 구분 불가</td><td style="color:#FDBA74;">심각</td></tr>
+        <tr><td>AI 리뷰 신뢰</td><td>55% 불편함, 진정성 훼손, 가짜 리뷰 악화</td><td style="color:#FDBA74;">심각</td></tr>
+        <tr><td>프라이버시</td><td>60%+ 사용자가 위치 추적에 우려</td><td style="color:#FDBA74;">심각</td></tr>
+        <tr><td>배터리</td><td>AI+GPS+OCR 상시 구동 = 15-20% 추가 소모</td><td style="color:#FDE68A;">중간</td></tr>
+        <tr><td>한국어 OCR</td><td>영수증/메뉴판 소형 한글 인식 오류</td><td style="color:#FDE68A;">중간</td></tr>
+      </tbody>
+    </table>
+
+    <div class="final">
+      <h3 style="color:white; border:none; margin-top:0;">가장 냉정한 질문</h3>
+      <p>이 앱이 해결하려는 "음식 기록의 번거로움"은 <strong>사용자가 실제로 겪고 있는 문제인가?</strong> 사람들은 이미 인스타, 네이버, 카카오맵으로 원하는 수준의 기록을 하고 있다.</p>
+      <blockquote>CB Insights 스타트업 실패 원인 1위: "시장 수요 부재(No Market Need)". 해결하려는 문제가 진짜 존재하는지부터 검증해야 한다.</blockquote>
+    </div>
+  </div>
+
+  <!-- References -->
+  <div class="refs">
+    <h3>참고 자료</h3>
+    <ul>
+      <li>CHI 2015: "Barriers and Negative Nudges: Exploring Challenges in Food Journaling" (PMC4755274)</li>
+      <li>Frontiers in Psychology 2021: "How Digital Food Affects Our Analog Lives"</li>
+      <li>MDPI Applied Sciences 2025: "Deep Learning in Food Image Recognition: A Comprehensive Review"</li>
+      <li>MDPI Mathematics 2026: "KORIE: Korean Retail Receipts OCR Benchmark"</li>
+      <li>Forbes 2025: "55% of Consumers Feel Uncomfortable With AI"</li>
+      <li>NIM 2025: AI 라벨링이 소비자 인식에 미치는 영향</li>
+      <li>KPMG 2024: GenAI 소비자 신뢰도 조사</li>
+      <li>Whitespark 2025: AI 리뷰 증가 전망</li>
+      <li>Business of Apps 2026: MyFitnessPal/Vivino 통계</li>
+      <li>market.us 2026: Diet and Nutrition Apps Statistics</li>
+      <li>DataInsightsMarket: Food Tracking App 시장 규모</li>
+      <li>Andrew Chen: The Cold Start Problem (a16z, 2021)</li>
+      <li>CB Insights: Top 20 Reasons Startups Fail</li>
+      <li>Inc./FastCompany: Foursquare 분리 후 영향 분석</li>
+      <li>Batch 2025: Push Notification Benchmarks</li>
+      <li>KO Insights 2025: Authenticity Premium 분석</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>
