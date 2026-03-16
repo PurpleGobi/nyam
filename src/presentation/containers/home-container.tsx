@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
 import { useProfile } from '@/application/hooks/use-profile'
-import { useNotifications } from '@/application/hooks/use-notifications'
 import { useTodaysPick } from '@/application/hooks/use-todays-pick'
 import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRecordsForMap } from '@/application/hooks/use-records-for-map'
@@ -13,12 +12,13 @@ import { useFriendsFeed } from '@/application/hooks/use-friends-feed'
 import { useTasteDna } from '@/application/hooks/use-taste-dna'
 import { useTasteDnaWine } from '@/application/hooks/use-taste-dna-wine'
 import { useExperienceAtlas } from '@/application/hooks/use-experience-atlas'
-import { HomeHeader } from '@/presentation/components/home/home-header'
+import type { CalendarDayRecord } from '@/application/hooks/use-calendar-records'
 import { TodaysPickCard } from '@/presentation/components/home/todays-pick-card'
 import { HomeProfileCard } from '@/presentation/components/home/home-profile-card'
 import { PhotoCalendar } from '@/presentation/components/home/photo-calendar'
 import { HomeMapSection } from '@/presentation/components/home/home-map-section'
 import { FriendsFeedCard } from '@/presentation/components/home/friends-feed-card'
+import { CalendarDayPopup } from '@/presentation/components/home/calendar-day-popup'
 
 type MapFilter = 'all' | 'mine' | 'friends'
 
@@ -28,7 +28,6 @@ export function HomeContainer() {
   const userId = authUser?.id
 
   // Hooks
-  const { unreadCount } = useNotifications(userId)
   const { user: profile, stats } = useProfile(userId)
   const { picks, isLoading: picksLoading } = useTodaysPick(userId)
   const { data: tasteDna } = useTasteDna(userId)
@@ -50,6 +49,9 @@ export function HomeContainer() {
     calendarYear,
     calendarMonth,
   )
+
+  // Calendar day popup state
+  const [selectedDay, setSelectedDay] = useState<{ day: number; records: CalendarDayRecord[] } | null>(null)
 
   // Map filter state
   const [mapFilter, setMapFilter] = useState<MapFilter>('all')
@@ -91,6 +93,20 @@ export function HomeContainer() {
     })
   }
 
+  const handleGoToday = () => {
+    const today = new Date()
+    setCalendarYear(today.getFullYear())
+    setCalendarMonth(today.getMonth() + 1)
+  }
+
+  const handleDayClick = (day: number, records: CalendarDayRecord[]) => {
+    if (records.length === 1) {
+      router.push(`/records/${records[0].id}`)
+    } else {
+      setSelectedDay({ day, records })
+    }
+  }
+
   // Map friend pins with required fields
   const mappedFriendPins = friendPins.map((pin) => ({
     id: pin.id,
@@ -110,9 +126,6 @@ export function HomeContainer() {
 
   return (
     <div className="flex flex-col gap-3 pb-4">
-      {/* Header */}
-      <HomeHeader unreadCount={unreadCount} />
-
       {/* Today's Pick */}
       <div className="px-4">
         {picksLoading ? (
@@ -155,6 +168,8 @@ export function HomeContainer() {
             summary={summary}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
+            onGoToday={handleGoToday}
+            onDayClick={handleDayClick}
           />
         )}
       </div>
@@ -174,6 +189,20 @@ export function HomeContainer() {
       <div className="px-4">
         <FriendsFeedCard items={feedItems} />
       </div>
+
+      {/* Calendar day popup */}
+      {selectedDay && (
+        <CalendarDayPopup
+          day={selectedDay.day}
+          month={calendarMonth}
+          records={selectedDay.records}
+          onSelect={(recordId) => {
+            setSelectedDay(null)
+            router.push(`/records/${recordId}`)
+          }}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
     </div>
   )
 }

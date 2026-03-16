@@ -5,8 +5,12 @@ import useSWR from 'swr'
 import { getRecordRepository } from '@/di/repositories'
 import type { RecordPhoto, PhotoType } from '@/domain/entities/record'
 
-interface CalendarDayRecord {
+export interface CalendarDayRecord {
+  id: string
   photoUrl: string | null
+  recordType: 'restaurant' | 'wine' | 'cooking'
+  menuName: string
+  rating: number
 }
 
 interface CalendarSummary {
@@ -23,11 +27,19 @@ function pickBestPhoto(photos: RecordPhoto[] | undefined): string | null {
 
   for (const type of PHOTO_PRIORITY) {
     const match = photos.find((p) => p.photoType === type)
-    if (match) return match.thumbnailUrl || match.photoUrl
+    if (match) {
+      const url = (match.thumbnailUrl && match.thumbnailUrl.length > 0) ? match.thumbnailUrl : match.photoUrl
+      if (url && url.length > 0) return url
+    }
   }
 
-  // Fallback: first photo
-  return photos[0].thumbnailUrl || photos[0].photoUrl
+  // Fallback: any photo with a valid URL
+  for (const p of photos) {
+    const url = (p.thumbnailUrl && p.thumbnailUrl.length > 0) ? p.thumbnailUrl : p.photoUrl
+    if (url && url.length > 0) return url
+  }
+
+  return null
 }
 
 export function useCalendarRecords(
@@ -51,7 +63,13 @@ export function useCalendarRecords(
       const existing = map.get(day) ?? []
       // Extract best photo from record's photos array
       const photos = (record as unknown as { photos?: RecordPhoto[] }).photos
-      existing.push({ photoUrl: pickBestPhoto(photos) })
+      existing.push({
+        id: record.id,
+        photoUrl: pickBestPhoto(photos),
+        recordType: record.recordType,
+        menuName: record.menuName,
+        rating: record.ratingOverall,
+      })
       map.set(day, existing)
     }
 

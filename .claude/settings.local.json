@@ -57,7 +57,10 @@
       "Bash(cp:*)",
       "Bash(for f:*)",
       "Bash(do echo:*)",
-      "Read(//private/tmp/claude-501/-Users-jkm4-Documents-GitHub-nyam/ae67df82-3f8e-4140-a170-453242df4557/tasks/**)"
+      "Read(//private/tmp/claude-501/-Users-jkm4-Documents-GitHub-nyam/ae67df82-3f8e-4140-a170-453242df4557/tasks/**)",
+      "Bash(npx next:*)",
+      "Bash(npx eslint:*)",
+      "mcp__context7__resolve-library-id"
     ]
   }
 }

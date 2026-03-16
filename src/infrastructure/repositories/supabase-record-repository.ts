@@ -298,10 +298,9 @@ export class SupabaseRecordRepository implements RecordRepository {
     month: number,
   ): Promise<FoodRecord[]> {
     const supabase = createClient()
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00.000Z`
-    const endMonth = month === 12 ? 1 : month + 1
-    const endYear = month === 12 ? year + 1 : year
-    const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00:00.000Z`
+    // Use local timezone boundaries (KST) converted to UTC ISO strings
+    const startDate = new Date(year, month - 1, 1).toISOString()
+    const endDate = new Date(year, month, 1).toISOString()
 
     const { data, error } = await supabase
       .from('records')

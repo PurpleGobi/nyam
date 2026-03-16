@@ -3,12 +3,11 @@
 import { usePathname } from 'next/navigation'
 import { LogoLink } from './logo-link'
 import { BottomNav } from './bottom-nav'
+import { HeaderActions } from './header-actions'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isAuthPage = pathname.startsWith('/auth')
-
-  const isHomePage = pathname === '/'
 
   if (isAuthPage) {
     return <>{children}</>
@@ -16,12 +15,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {!isHomePage && (
-        <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background/95 px-5 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-5">
           <LogoLink />
-        </header>
-      )}
-      <main className="pb-20">{children}</main>
+          <HeaderActions />
+        </div>
+      </header>
+      <main className="mx-auto max-w-lg pb-20">{children}</main>
       <BottomNav />
     </>
   )
