@@ -1,54 +1,39 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Comfortaa } from "next/font/google";
-import "./globals.css";
-import { BottomNavWrapper } from "@/presentation/components/layout/bottom-nav-wrapper";
-import { AppProviders } from "@/application/contexts/providers";
-import { LogoLink } from "@/presentation/components/layout/logo-link";
+import type { Metadata, Viewport } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { BottomNav } from "@/presentation/components/layout/bottom-nav"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const comfortaa = Comfortaa({
-  variable: "--font-logo",
-  subsets: ["latin"],
-  weight: ["700"],
-});
+  variable: "--font-inter",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
-  title: "nyam - AI 검증 맛집 추천",
-  description: "웹검색으로 검증된 맛집을 추천받아보세요",
-};
+  title: "냠 - 맛의 Second Brain",
+  description:
+    "당신의 미식 경험을 기록하고, 취향을 발견하고, 함께 나누는 맛의 Second Brain",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${comfortaa.variable} antialiased`}
-      >
-        <div className="mx-auto flex min-h-dvh max-w-lg flex-col bg-background">
-          <AppProviders>
-            <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background/95 px-5 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <LogoLink />
-              <span className="ml-2 text-sm text-muted-foreground">
-                AI 검증 맛집 추천
-              </span>
-            </header>
-            <main className="flex-1 pt-4 pb-16">{children}</main>
-          </AppProviders>
-          <BottomNavWrapper />
-        </div>
+    <html lang="ko" className={inter.variable}>
+      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
+        <main className="pb-20">{children}</main>
+        <BottomNav />
       </body>
     </html>
-  );
+  )
 }

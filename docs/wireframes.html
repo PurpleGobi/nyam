@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam 와이어프레임</title>
+<style>
+:root{--coral:#FF6038;--coral-bg:#FFF4F0;--coral-light:#FF9B7D;--navy:#1E293B;--navy-light:#334E68;--text:#0F172A;--text-sec:#64748B;--border:#E2E8F0;--bg:#F8FAFC;--surface:#FFF;--green:#38A169;--amber:#E9B949;--blue:#3182CE;--purple:#7C3AED;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;}
+.header{background:linear-gradient(135deg,var(--coral),#E5462A);color:#fff;padding:48px 0 40px;}
+.header-inner{max-width:1100px;margin:0 auto;padding:0 24px;}
+.header h1{font-size:1.8rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
+.header .sub{color:rgba(255,255,255,.75);font-size:.95rem;margin-bottom:16px;}
+.header .principle{background:rgba(255,255,255,.15);border-radius:8px;padding:12px 18px;font-size:.9rem;font-weight:600;display:inline-block;}
+.content{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+/* Nav overview */
+.nav-overview{background:var(--surface);border:2px solid var(--coral);border-radius:12px;padding:24px;margin:-24px 0 32px;box-shadow:0 4px 20px rgba(0,0,0,.06);text-align:center;}
+.nav-bar{display:inline-flex;gap:0;background:var(--navy);border-radius:12px;padding:12px 8px;margin:16px 0;}
+.nav-item{color:rgba(255,255,255,.5);text-align:center;padding:4px 20px;font-size:.75rem;}
+.nav-item.active{color:var(--coral-light);}
+.nav-fab{background:var(--coral);color:#fff;width:48px;height:48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem;margin:-12px 8px 0;vertical-align:middle;box-shadow:0 4px 14px rgba(255,96,56,.35);}
+
+/* Page sections */
+.page-section{margin-top:48px;}
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.page-num{background:var(--coral);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
+.page-title{font-size:1.2rem;font-weight:700;color:var(--navy);}
+.page-type{font-size:.75rem;padding:3px 10px;border-radius:20px;font-weight:600;}
+.page-type.main{background:var(--coral-bg);color:var(--coral);}
+.page-type.overlay{background:#F5F3FF;color:var(--purple);}
+.page-type.sub{background:#EFF6FF;color:var(--blue);}
+.page-type.entry{background:#F0FFF4;color:var(--green);}
+.page-desc{color:var(--text-sec);font-size:.9rem;margin-bottom:16px;}
+
+/* Phone frames */
+.phone-row{display:flex;gap:24px;flex-wrap:wrap;margin:20px 0;}
+.phone-wrap{flex:0 0 auto;}
+.phone-label{font-size:.8rem;font-weight:600;color:var(--navy);margin-bottom:8px;text-align:center;}
+.phone{width:320px;border:2px solid var(--border);border-radius:24px;background:var(--surface);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06);font-size:.78rem;color:var(--text);}
+.phone-status{background:var(--navy);color:rgba(255,255,255,.5);text-align:center;font-size:.6rem;padding:4px 0;letter-spacing:.05em;}
+.phone-topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:.85rem;}
+.phone-topbar .left{color:var(--text-sec);}
+.phone-topbar .center{color:var(--navy);}
+.phone-topbar .right{color:var(--text-sec);display:flex;gap:8px;}
+.phone-body{padding:16px;min-height:480px;}
+.phone-bottombar{display:flex;justify-content:space-around;align-items:center;padding:8px 0 12px;border-top:1px solid var(--border);background:var(--surface);}
+.phone-bottombar .tab{text-align:center;font-size:.6rem;color:var(--text-sec);padding:0 8px;}
+.phone-bottombar .tab.active{color:var(--coral);font-weight:600;}
+.phone-bottombar .fab{background:var(--coral);color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-top:-20px;box-shadow:0 4px 10px rgba(255,96,56,.3);}
+
+/* Inner UI elements */
+.greeting{font-size:.95rem;margin-bottom:12px;}
+.greeting strong{font-size:1rem;}
+.section-label{font-size:.8rem;font-weight:600;color:var(--navy);margin:16px 0 8px;display:flex;align-items:center;gap:6px;}
+.card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;background:var(--surface);}
+.card-img{height:100px;background:linear-gradient(135deg,#FFE0D6,#FFF4F0);display:flex;align-items:center;justify-content:center;color:var(--coral);font-size:.75rem;position:relative;}
+.card-img .tag{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.55);color:#fff;font-size:.6rem;padding:2px 8px;border-radius:10px;}
+.card-body{padding:10px 12px;}
+.card-body .title{font-weight:600;font-size:.85rem;display:flex;justify-content:space-between;align-items:center;}
+.card-body .meta{font-size:.7rem;color:var(--text-sec);margin-top:2px;}
+.card-body .comment{font-size:.72rem;color:var(--text);margin-top:6px;font-style:italic;}
+.card-body .author{font-size:.68rem;color:var(--text-sec);margin-top:6px;display:flex;justify-content:space-between;}
+.mini-bar{height:4px;background:#E2E8F0;border-radius:2px;margin:2px 0;overflow:hidden;}
+.mini-bar .fill{height:100%;background:var(--coral);border-radius:2px;}
+.trust-meter{display:grid;grid-template-columns:auto 1fr auto;gap:2px 6px;font-size:.65rem;color:var(--text-sec);margin:6px 0;align-items:center;}
+.hscroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
+.hscroll .mini-card{flex:0 0 120px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.hscroll .mini-card .img{height:70px;background:linear-gradient(135deg,#FFE0D6,#FFF4F0);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--coral);}
+.hscroll .mini-card .info{padding:6px 8px;font-size:.68rem;}
+.hscroll .mini-card .info .name{font-weight:600;}
+.btn-primary{background:linear-gradient(135deg,var(--coral),#E5462A);color:#fff;border:none;border-radius:10px;padding:12px;text-align:center;font-weight:600;font-size:.85rem;width:100%;margin:8px 0;cursor:pointer;}
+.btn-secondary{background:var(--surface);color:var(--navy);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;font-weight:500;font-size:.82rem;width:100%;margin:6px 0;cursor:pointer;}
+.btn-ghost{background:none;border:none;color:var(--text-sec);font-size:.8rem;text-align:center;width:100%;padding:8px;cursor:pointer;}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;}
+.chip{padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-sec);}
+.chip.active{background:var(--coral-bg);color:var(--coral);border-color:var(--coral);}
+.xp-bar{background:#E2E8F0;border-radius:4px;height:8px;overflow:hidden;margin:4px 0;}
+.xp-bar .fill{height:100%;background:linear-gradient(90deg,var(--coral-light),var(--coral));border-radius:4px;}
+.xp-label{font-size:.68rem;color:var(--text-sec);display:flex;justify-content:space-between;}
+.radar-placeholder{width:140px;height:140px;border-radius:50%;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin:12px auto;font-size:.7rem;color:var(--text-sec);}
+.stat-row{display:flex;justify-content:space-between;font-size:.75rem;padding:4px 0;border-bottom:1px solid #F0F4F8;}
+.stat-row .label{color:var(--text-sec);}
+.stat-row .value{font-weight:600;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:8px 0;}
+.calendar-grid .day{width:100%;aspect-ratio:1;border-radius:3px;font-size:.55rem;display:flex;align-items:center;justify-content:center;}
+.calendar-grid .day.empty{background:#F7F9FC;}
+.calendar-grid .day.l1{background:#FFE0D6;}
+.calendar-grid .day.l2{background:#FFC1AD;}
+.calendar-grid .day.l3{background:var(--coral-light);}
+.calendar-grid .day.l4{background:var(--coral);}
+.level-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600;}
+.level-badge.analyst{background:#F0FFF4;color:var(--green);}
+.level-badge.curator{background:#FFFBEA;color:var(--amber);}
+.level-badge.recorder{background:#EFF6FF;color:var(--blue);}
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.divider.thick{border-top:6px solid #F0F4F8;margin:16px -16px;}
+.lock-section{background:#F8FAFC;border:1px dashed var(--border);border-radius:8px;padding:10px 12px;margin:10px 0;}
+.lock-section .lock-title{font-size:.75rem;font-weight:600;color:var(--navy);margin-bottom:6px;}
+.group-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.group-card .g-title{font-weight:600;font-size:.85rem;display:flex;justify-content:space-between;}
+.group-card .g-meta{font-size:.7rem;color:var(--text-sec);margin-top:2px;}
+.group-card .g-recent{font-size:.7rem;color:var(--text-sec);margin-top:4px;}
+.avatar-stack{display:flex;margin:6px 0;}
+.avatar-stack .av{width:24px;height:24px;border-radius:50%;background:var(--border);border:2px solid var(--surface);margin-left:-6px;display:flex;align-items:center;justify-content:center;font-size:.5rem;color:var(--text-sec);}
+.avatar-stack .av:first-child{margin-left:0;}
+.compat-card{background:#F5F3FF;border:1px solid #DDD6FE;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:.75rem;}
+.compat-card .compat-title{font-weight:600;color:var(--purple);margin-bottom:4px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-sec);}
+.empty-state .emoji{font-size:2rem;margin-bottom:8px;}
+.empty-state .msg{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.empty-state .sub{font-size:.75rem;}
+.tab-bar{display:flex;border-bottom:2px solid var(--border);margin-bottom:12px;}
+.tab-bar .tab{flex:1;text-align:center;padding:8px 0;font-size:.78rem;font-weight:500;color:var(--text-sec);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab-bar .tab.active{color:var(--coral);border-bottom-color:var(--coral);font-weight:600;}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0;}
+.badge-item{border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;font-size:.68rem;}
+.badge-item.earned{background:var(--coral-bg);border-color:#FFC1AD;}
+.badge-item.locked{background:#F7F9FC;color:var(--text-sec);}
+.badge-item .badge-icon{font-size:1.2rem;margin-bottom:4px;}
+.flow-arrow{text-align:center;color:var(--coral);font-size:1.2rem;margin:8px 0;}
+.ai-result{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin:4px 0;font-size:.8rem;cursor:pointer;}
+.ai-result.selected{border-color:var(--coral);background:var(--coral-bg);}
+.ai-result .check{color:var(--coral);font-weight:700;}
+.login-btn{padding:14px;border-radius:10px;text-align:center;font-weight:600;font-size:.85rem;margin:6px 0;cursor:pointer;}
+.login-kakao{background:#FEE500;color:#3C1E1E;}
+.login-naver{background:#03C75A;color:#fff;}
+.login-google{background:#fff;color:#333;border:1px solid var(--border);}
+.login-apple{background:#000;color:#fff;}
+.onboarding-slide{text-align:center;padding:30px 20px;}
+.onboarding-slide .illust{height:180px;background:linear-gradient(135deg,var(--coral-bg),#FFF);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:.8rem;color:var(--coral);}
+.onboarding-slide h2{font-size:1.1rem;font-weight:700;margin-bottom:8px;}
+.onboarding-slide p{font-size:.85rem;color:var(--text-sec);}
+.dots{display:flex;gap:6px;justify-content:center;margin:16px 0;}
+.dots .dot{width:8px;height:8px;border-radius:50%;background:var(--border);}
+.dots .dot.active{background:var(--coral);}
+
+/* Notes */
+.note{background:#FFFBEA;border-left:3px solid var(--amber);padding:10px 14px;margin:12px 0;font-size:.82rem;border-radius:0 6px 6px 0;}
+.note strong{color:var(--amber);}
+
+/* Table */
+.info-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.82rem;}
+.info-table th{background:var(--navy);color:#fff;padding:8px 12px;text-align:left;font-weight:600;font-size:.78rem;}
+.info-table th:first-child{border-radius:6px 0 0 0;}
+.info-table th:last-child{border-radius:0 6px 0 0;}
+.info-table td{padding:8px 12px;border-bottom:1px solid var(--border);}
+.info-table tr:nth-child(even){background:#F8FAFC;}
+
+/* Timeline */
+.timeline{position:relative;padding-left:20px;margin:16px 0;}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border);}
+.timeline .step{position:relative;margin-bottom:12px;font-size:.82rem;}
+.timeline .step::before{content:'';position:absolute;left:-18px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--coral);border:2px solid var(--surface);}
+.timeline .step .time{font-weight:700;color:var(--coral);font-size:.75rem;}
+.timeline .step .desc{color:var(--text-sec);}
+
+/* Flow summary */
+.flow-box{background:var(--navy);color:rgba(255,255,255,.85);border-radius:12px;padding:24px;margin:32px 0;font-size:.82rem;line-height:1.8;}
+.flow-box h3{color:var(--coral-light);margin-bottom:12px;font-size:1rem;}
+.flow-box code{background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px;font-size:.78rem;}
+
+/* Responsive */
+@media(max-width:740px){
+  .phone-row{justify-content:center;}
+  .phone{width:100%;max-width:360px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>Nyam 와이어프레임</h1>
+    <p class="sub">버전 1.0.0 | 2026-03-16 | 12개 페이지</p>
+    <div class="principle">핵심 원칙: "기록은 10초 이내에 끝낸다."</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Nav Overview -->
+  <div class="nav-overview">
+    <h3 style="margin-bottom:8px;color:var(--navy);">네비게이션 구조</h3>
+    <div class="nav-bar">
+      <div class="nav-item active">🏠<br>홈</div>
+      <div class="nav-item">🔍<br>발견</div>
+      <div class="nav-fab">＋</div>
+      <div class="nav-item">👥<br>그룹</div>
+      <div class="nav-item">👤<br>프로필</div>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-sec);margin-top:8px;">4탭 + 중앙 FAB · FAB은 어느 화면에서든 접근 가능 · 탭 → 즉시 카메라 진입</p>
+  </div>
+
+  <!-- Page Index -->
+  <table class="info-table">
+    <thead><tr><th>#</th><th>페이지</th><th>유형</th><th>핵심 역할</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>홈</td><td>메인 탭</td><td>근처 추천, 그룹 최근, 트렌딩</td></tr>
+      <tr><td>2</td><td>기록 플로우</td><td>오버레이</td><td><strong>10초 기록</strong> 핵심 플로우</td></tr>
+      <tr><td>3</td><td>발견</td><td>메인 탭</td><td>공개 기록 탐색, 검색, Bottom-up 발견</td></tr>
+      <tr><td>4</td><td>그룹</td><td>메인 탭</td><td>내 그룹 목록, 그룹 피드</td></tr>
+      <tr><td>5</td><td>프로필</td><td>메인 탭</td><td>Taste DNA, 통계, 기록, 배지</td></tr>
+      <tr><td>6</td><td>기록 상세</td><td>서브</td><td>개별 기록 풀뷰 + 비공개 일기</td></tr>
+      <tr><td>7</td><td>타인 프로필</td><td>서브</td><td>궁합 + 그룹 발견 (Bottom-up 중간)</td></tr>
+      <tr><td>8</td><td>그룹 상세</td><td>서브</td><td>그룹 피드, 통계, 멤버, 랭킹</td></tr>
+      <tr><td>9</td><td>그룹 생성</td><td>서브</td><td>새 그룹 만들기</td></tr>
+      <tr><td>10</td><td>식당 상세</td><td>서브</td><td>식당 정보 + 커뮤니티 기록 모음</td></tr>
+      <tr><td>11</td><td>온보딩</td><td>진입</td><td>3장 슬라이드</td></tr>
+      <tr><td>12</td><td>로그인</td><td>진입</td><td>소셜 로그인 4종</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== 1. HOME ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">1</div>
+      <div class="page-title">홈</div>
+      <span class="page-type main">메인 탭</span>
+    </div>
+    <p class="page-desc">"기록의 즉시 활용"을 체감하는 첫 화면. 근처 추천 + 그룹 피드 + 트렌딩.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">기록 5건+ (기본 상태)</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">🍽️ <strong style="color:var(--coral)">nyam</strong></span><span class="right">🔔</span></div>
+          <div class="phone-body">
+            <div class="greeting">안녕하세요, <strong>민지</strong>님 👋<br><span style="color:var(--text-sec);font-size:.85rem;">오늘 점심은 뭘 드실 건가요?</span></div>
+
+            <div class="section-label">📍 이 근처 추천</div>
+            <div class="card" style="border-left:3px solid var(--coral);">
+              <div class="card-body">
+                <div class="title">⭐ 4.5 을지로 골목식당<span style="font-size:.65rem;color:var(--text-sec);">120m</span></div>
+                <div class="meta">3번 갔고, 매번 좋았어요</div>
+              </div>
+            </div>
+            <div class="card" style="border-left:3px solid var(--green);">
+              <div class="card-body">
+                <div class="title">⭐ 4.8 을지로 스시바 <span style="font-size:.6rem;background:var(--green);color:#fff;padding:1px 6px;border-radius:8px;">🆕 그룹 추천</span></div>
+                <div class="meta">직장동료 그룹 4명 추천</div>
+              </div>
+            </div>
+
+            <div class="section-label">👥 그룹 최근 기록</div>
+            <div class="hscroll">
+              <div class="mini-card"><div class="img">📷 라멘</div><div class="info"><div class="name">민지 · ⭐4.2</div>을지로 라멘집</div></div>
+              <div class="mini-card"><div class="img">📷 스시</div><div class="info"><div class="name">준호 · ⭐4.5</div>강남 스시바</div></div>
+              <div class="mini-card"><div class="img">📷 카페</div><div class="info"><div class="name">소영 · ⭐3.8</div>성수 카페</div></div>
+            </div>
+
+            <div class="section-label">🔥 트렌딩</div>
+            <div class="card">
+              <div class="card-img">📷 음식 사진<div class="tag">양식</div></div>
+              <div class="card-body">
+                <div class="title">크림파스타 · 을지로 골목식당 <span style="color:var(--amber);">⭐ 4.3</span></div>
+                <div class="meta">📍 을지로 · 3일 전</div>
+                <div class="comment">"파스타가 정말 좋았고..."</div>
+                <div class="author"><span>👤 민지 · <span class="level-badge analyst">📊 분석가</span></span><span>❤️ 23</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab active">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">기록 0건 (신규 사용자)</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">🍽️ <strong style="color:var(--coral)">nyam</strong></span><span class="right">🔔</span></div>
+          <div class="phone-body">
+            <div class="greeting">환영합니다! 👋<br><span style="color:var(--text-sec);font-size:.85rem;">첫 기록을 시작해보세요</span></div>
+            <div class="empty-state" style="padding:30px 16px;">
+              <div class="emoji">📷</div>
+              <div class="msg">첫 기록을 해보세요!</div>
+              <div class="sub">사진 한 장이면 AI가 자동으로 인식해요<br>기록이 쌓일수록 맞춤 추천을 받아요</div>
+              <div class="btn-primary" style="margin-top:16px;">📷 기록하기</div>
+            </div>
+            <div class="section-label">🔥 다른 사람들의 기록</div>
+            <div class="card">
+              <div class="card-img">📷 음식 사진<div class="tag">한식</div></div>
+              <div class="card-body">
+                <div class="title">김치찌개 · 을지로 식당 <span style="color:var(--amber);">⭐ 4.5</span></div>
+                <div class="meta">📍 을지로 · 1일 전</div>
+                <div class="author"><span>👤 준호 · <span class="level-badge curator" style="background:#FFFBEA;color:#B17A10;">⭐ 큐레이터</span></span><span>❤️ 31</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab active">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab" style="animation:pulse 2s infinite;">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2. RECORD FLOW ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">2</div>
+      <div class="page-title">기록 플로우</div>
+      <span class="page-type overlay">오버레이 · 핵심</span>
+    </div>
+    <p class="page-desc"><strong>최소 경로: 사진 → 확인 → 완료 (3탭, 10초).</strong> 평가/코멘트/일기/공유는 모두 선택.</p>
+
+    <div class="note"><strong>10초 타임라인:</strong> 0초 FAB → 2초 셔터 → 4초 AI 완료 → 6초 확인 → 7초 "기록 완료" 탭</div>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">Step 1: 카메라</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">✕</span><span class="center"></span><span class="right"></span></div>
+          <div class="phone-body" style="background:#1A202C;display:flex;flex-direction:column;justify-content:space-between;min-height:480px;">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);font-size:.85rem;">[ 카메라 뷰파인더 ]</div>
+            <div style="display:flex;justify-content:space-around;align-items:center;padding:20px 0;">
+              <div style="color:rgba(255,255,255,.6);font-size:.75rem;text-align:center;">🖼️<br>갤러리</div>
+              <div style="width:56px;height:56px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer;"><div style="width:44px;height:44px;border-radius:50%;background:#fff;"></div></div>
+              <div style="color:rgba(255,255,255,.6);font-size:.75rem;text-align:center;">✏️<br>수동입력</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">Step 2: AI 인식 + 확인</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">←</span><span class="center"></span><span class="right"></span></div>
+          <div class="phone-body">
+            <div style="height:140px;background:linear-gradient(135deg,#FFE0D6,#FFF4F0);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--coral);font-size:.8rem;margin-bottom:12px;">📷 촬영한 사진</div>
+
+            <div style="font-size:.75rem;font-weight:600;color:var(--navy);margin-bottom:6px;">🍝 메뉴</div>
+            <div class="ai-result selected"><span>🍝 크림 파스타</span><span class="check" style="margin-left:auto;">✓</span></div>
+            <div class="ai-result"><span>🍕 마르게리타 피자</span></div>
+            <div class="ai-result"><span>✏️ 직접 입력</span></div>
+
+            <div style="font-size:.75rem;font-weight:600;color:var(--navy);margin:10px 0 6px;">📍 식당</div>
+            <div class="ai-result selected"><span>📍 을지로 골목식당</span><span class="check" style="margin-left:auto;">✓</span></div>
+            <div class="ai-result"><span>📍 을지로 파스타하우스</span></div>
+            <div class="ai-result"><span>🔍 다른 식당 검색</span></div>
+
+            <div class="btn-primary" style="margin-top:12px;">✓ 기록 완료</div>
+            <div class="btn-secondary">+ 평가 / 코멘트 추가 ▾</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">Step 3: 완료 + 즉시 보상</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left"></span><span class="center"></span><span class="right"></span></div>
+          <div class="phone-body" style="text-align:center;">
+            <div style="font-size:2.5rem;margin:20px 0 8px;">✓</div>
+            <div style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">기록 완료!</div>
+
+            <div style="background:var(--coral-bg);border-radius:10px;padding:12px;margin-bottom:16px;text-align:left;">
+              <div style="font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:6px;">Taste Graph 업데이트</div>
+              <div class="radar-placeholder" style="width:100px;height:100px;margin:8px auto;">🎯 레이더<br>변화 애니</div>
+              <div style="font-size:.75rem;color:var(--text-sec);text-align:center;">한식 82% → 83% ↑</div>
+              <div style="font-size:.82rem;font-weight:600;color:var(--coral);text-align:center;margin-top:6px;">+15 XP · 기록자까지 45 XP</div>
+            </div>
+
+            <div style="text-align:left;">
+              <div class="section-label">📍 이 근처 좋아한 곳</div>
+              <div class="hscroll">
+                <div class="mini-card"><div class="img">📷 스시</div><div class="info"><div class="name">⭐4.8 을지로 스시바</div></div></div>
+                <div class="mini-card"><div class="img">📷 카페</div><div class="info"><div class="name">⭐4.0 을지로 카페</div></div></div>
+              </div>
+            </div>
+
+            <div class="btn-secondary" style="margin-top:16px;">홈으로</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note"><strong>선택 확장:</strong> "평가/코멘트 추가" 펼치면 → 4축 평가 슬라이더, 한줄평 (AI 보조), 상황 태그, 공유 대상, 비공개 일기 (함께한 사람, 모임, 분위기, 메모)</div>
+  </div>
+
+  <!-- ===== 3. DISCOVER ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">3</div>
+      <div class="page-title">발견</div>
+      <span class="page-type main">메인 탭</span>
+    </div>
+    <p class="page-desc">공개 기록 탐색. 기록 → 작성자 → 그룹의 Bottom-up 발견.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">기록 피드</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="center" style="flex:1;"><div style="background:#F0F4F8;border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--text-sec);font-weight:400;">🔍 식당, 메뉴, 지역 검색</div></span></div>
+          <div class="phone-body">
+            <div class="chip-row">
+              <span class="chip active">전체</span>
+              <span class="chip">한식</span>
+              <span class="chip">일식</span>
+              <span class="chip">양식</span>
+              <span class="chip">카페</span>
+              <span class="chip">와인</span>
+            </div>
+            <div class="chip-row" style="margin-bottom:12px;">
+              <span class="chip">📍 근처</span>
+              <span class="chip active">⭐ 높은순</span>
+              <span class="chip">🆕 최신</span>
+            </div>
+
+            <div class="card">
+              <div class="card-img">📷 크림파스타<div class="tag">양식</div></div>
+              <div class="card-body">
+                <div class="title">크림파스타 · 을지로 골목식당 <span style="color:var(--amber);">⭐ 4.5</span></div>
+                <div class="meta">📍 을지로 · 3일 전</div>
+                <div class="trust-meter">
+                  <span>맛</span><div class="mini-bar"><div class="fill" style="width:90%"></div></div><span>90</span>
+                  <span>가성비</span><div class="mini-bar"><div class="fill" style="width:70%"></div></div><span>70</span>
+                  <span>분위기</span><div class="mini-bar"><div class="fill" style="width:85%"></div></div><span>85</span>
+                </div>
+                <div class="comment">"파스타가 정말 좋았고..."</div>
+                <div class="author"><span>👤 민지 · <span class="level-badge analyst">📊 분석가</span></span><span>❤️ 12</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-img">📷 오마카세<div class="tag">일식</div></div>
+              <div class="card-body">
+                <div class="title">오마카세 · 강남 스시바 <span style="color:var(--amber);">⭐ 4.8</span></div>
+                <div class="meta">📍 강남 · 1일 전</div>
+                <div class="comment">"접대용으로 완벽"</div>
+                <div class="author"><span>👤 준호 · <span class="level-badge curator" style="background:#FFFBEA;color:#B17A10;">⭐ 큐레이터</span></span><span>❤️ 31</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab">🏠<br>홈</div>
+            <div class="tab active">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. GROUPS ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">4</div>
+      <div class="page-title">그룹</div>
+      <span class="page-type main">메인 탭</span>
+    </div>
+    <p class="page-desc">내 그룹 목록. 버블 네트워킹의 허브.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">내 그룹 목록</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="center">그룹</span><span class="right" style="color:var(--coral);font-size:.8rem;">+ 새 그룹</span></div>
+          <div class="phone-body">
+            <div class="tab-bar">
+              <div class="tab active">내 그룹</div>
+              <div class="tab">추천 그룹</div>
+            </div>
+            <div class="group-card">
+              <div class="g-title">직장 동료 맛집 <span>🔒</span></div>
+              <div class="g-meta">멤버 8명 · 기록 127건</div>
+              <div class="g-recent">최근: 민지 — 을지로 파스타 · 2시간 전</div>
+            </div>
+            <div class="group-card">
+              <div class="g-title">대학 동기 맛집 <span>🔒</span></div>
+              <div class="g-meta">멤버 12명 · 기록 89건</div>
+              <div class="g-recent">최근: 준호 — 홍대 이자카야 · 1일 전</div>
+            </div>
+            <div class="group-card">
+              <div class="g-title">와인 모임 <span>🌐</span></div>
+              <div class="g-meta">멤버 23명 · 기록 312건</div>
+              <div class="g-recent">최근: 소영 — Barolo 2019 · 3시간 전</div>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab active">👥<br>그룹</div>
+            <div class="tab">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5. PROFILE ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">5</div>
+      <div class="page-title">프로필</div>
+      <span class="page-type main">메인 탭</span>
+    </div>
+    <p class="page-desc">나의 Taste DNA, 통계, 기록 타임라인, 배지. Second Brain의 허브.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">Taste DNA 탭</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="center">내 프로필</span><span class="right">⚙️</span></div>
+          <div class="phone-body">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;">👤</div>
+              <div>
+                <div style="font-weight:600;">민지</div>
+                <span class="level-badge analyst">📊 분석가</span>
+                <div style="font-size:.7rem;color:var(--text-sec);">기록 87건 · 그룹 3개</div>
+              </div>
+            </div>
+            <div class="xp-bar"><div class="fill" style="width:78%"></div></div>
+            <div class="xp-label"><span>큐레이터까지 660 XP</span><span>2,340 / 3,000</span></div>
+
+            <div class="chip-row" style="margin:8px 0;">
+              <span class="chip" style="background:#F0FFF4;color:var(--green);border-color:var(--green);">📍 을지로 38건</span>
+              <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:var(--blue);">📍 강남 22건</span>
+            </div>
+
+            <div class="tab-bar">
+              <div class="tab active">Taste DNA</div>
+              <div class="tab">통계</div>
+              <div class="tab">기록</div>
+              <div class="tab">배지</div>
+            </div>
+
+            <div class="radar-placeholder">🎯 Taste DNA<br>레이더 차트</div>
+            <div style="text-align:center;font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:4px;">"Bold Flavor Seeker"</div>
+            <div style="text-align:center;font-size:.75rem;color:var(--text-sec);margin-bottom:12px;">매운맛과 감칠맛을 사랑하는 타입</div>
+
+            <div style="font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:6px;">카테고리 선호</div>
+            <div class="trust-meter">
+              <span>한식</span><div class="mini-bar"><div class="fill" style="width:84%"></div></div><span>42%</span>
+              <span>일식</span><div class="mini-bar"><div class="fill" style="width:50%"></div></div><span>25%</span>
+              <span>양식</span><div class="mini-bar"><div class="fill" style="width:36%"></div></div><span>18%</span>
+              <span>카페</span><div class="mini-bar"><div class="fill" style="width:20%"></div></div><span>10%</span>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab active">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">통계 탭</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="center">내 프로필</span><span class="right">⚙️</span></div>
+          <div class="phone-body">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;">👤</div>
+              <div><div style="font-weight:600;">민지</div><span class="level-badge analyst">📊 분석가</span></div>
+            </div>
+
+            <div class="tab-bar">
+              <div class="tab">Taste DNA</div>
+              <div class="tab active">통계</div>
+              <div class="tab">기록</div>
+              <div class="tab">배지</div>
+            </div>
+
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:8px;">3월 리포트</div>
+            <div class="stat-row"><span class="label">외식 횟수</span><span class="value">14회</span></div>
+            <div class="stat-row"><span class="label">총 지출</span><span class="value">₩342,000</span></div>
+            <div class="stat-row"><span class="label">🥇 가장 많이 간 곳</span><span class="value">을지로 골목식당 (3회)</span></div>
+            <div class="stat-row"><span class="label">🆕 새 발견</span><span class="value">2곳</span></div>
+
+            <div style="font-size:.78rem;font-weight:600;margin:14px 0 6px;">활동 링</div>
+            <div style="display:flex;gap:16px;justify-content:center;margin:8px 0;">
+              <div style="text-align:center;font-size:.68rem;"><div style="width:50px;height:50px;border-radius:50%;border:4px solid var(--coral);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--coral);">5/7</div>기록</div>
+              <div style="text-align:center;font-size:.68rem;"><div style="width:50px;height:50px;border-radius:50%;border:4px solid var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--green);">2/3</div>새곳</div>
+              <div style="text-align:center;font-size:.68rem;"><div style="width:50px;height:50px;border-radius:50%;border:4px solid var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--blue);">1/2</div>공유</div>
+            </div>
+
+            <div style="font-size:.78rem;font-weight:600;margin:14px 0 6px;">캘린더 히트맵</div>
+            <div class="calendar-grid">
+              <div class="day empty"></div><div class="day l1"></div><div class="day l2"></div><div class="day empty"></div><div class="day l3"></div><div class="day l1"></div><div class="day empty"></div>
+              <div class="day l2"></div><div class="day l4"></div><div class="day l1"></div><div class="day l2"></div><div class="day empty"></div><div class="day l3"></div><div class="day l2"></div>
+              <div class="day l1"></div><div class="day l2"></div><div class="day l4"></div><div class="day l3"></div><div class="day l2"></div><div class="day l1"></div><div class="day empty"></div>
+              <div class="day empty"></div><div class="day l1"></div><div class="day l2"></div><div class="day l4"></div><div class="day l3"></div><div class="day l2"></div><div class="day l1"></div>
+            </div>
+            <div style="font-size:.7rem;color:var(--text-sec);text-align:center;">연속 기록: 12일 🔥</div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab active">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 6. RECORD DETAIL ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">6</div>
+      <div class="page-title">기록 상세</div>
+      <span class="page-type sub">서브</span>
+    </div>
+    <p class="page-desc">개별 기록 풀뷰. 공유 영역 + 비공개 일기 영역 분리.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">기록 상세 (내 기록)</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">←</span><span class="center"></span><span class="right">↗️ ❤️ ⋮</span></div>
+          <div class="phone-body" style="padding:0;">
+            <div style="height:160px;background:linear-gradient(135deg,#FFE0D6,#FFF4F0);display:flex;align-items:center;justify-content:center;color:var(--coral);font-size:.85rem;">📷 음식 사진 (풀 너비)</div>
+            <div style="padding:16px;">
+              <div style="font-size:1.05rem;font-weight:700;">크림 파스타</div>
+              <div style="font-size:.82rem;color:var(--coral);">📍 을지로 골목식당 →</div>
+              <div style="font-size:.75rem;color:var(--text-sec);">2026.03.15 (토) · 저녁</div>
+              <div class="chip-row" style="margin:6px 0;"><span class="chip">🍝 양식</span><span class="chip">🥂 데이트</span></div>
+
+              <div class="trust-meter" style="margin:10px 0;">
+                <span>맛</span><div class="mini-bar"><div class="fill" style="width:100%"></div></div><span>5</span>
+                <span>가성비</span><div class="mini-bar"><div class="fill" style="width:80%"></div></div><span>4</span>
+                <span>서비스</span><div class="mini-bar"><div class="fill" style="width:60%"></div></div><span>3</span>
+                <span>분위기</span><div class="mini-bar"><div class="fill" style="width:100%"></div></div><span>5</span>
+              </div>
+
+              <div style="font-size:.82rem;margin:10px 0;line-height:1.6;">"파스타가 정말 예술이었다. 특히 크림소스가 진하면서도 느끼하지 않은 게 좋았다."</div>
+
+              <div class="author" style="font-size:.75rem;">
+                <span>👤 민지 · <span class="level-badge analyst">📊 분석가</span></span>
+                <span>❤️ 12 · 💬 3</span>
+              </div>
+
+              <hr class="divider">
+              <div style="font-size:.75rem;color:var(--text-sec);">💬 준호: "여기 나도 좋았어!"</div>
+              <div style="font-size:.75rem;color:var(--text-sec);">💬 소영: "다음에 같이 가자"</div>
+
+              <div class="divider thick"></div>
+
+              <div class="lock-section">
+                <div class="lock-title">🔒 나만의 일기</div>
+                <div style="font-size:.75rem;color:var(--text-sec);margin-bottom:4px;">👥 함께한 사람: <span style="color:var(--navy);">민지, 준호</span></div>
+                <div style="font-size:.75rem;color:var(--text-sec);margin-bottom:4px;">🎭 대학 동기 모임</div>
+                <div style="font-size:.75rem;color:var(--text-sec);margin-bottom:4px;">💭 따뜻한 · 편안한 · 웃음가득</div>
+                <div style="font-size:.78rem;margin-top:8px;line-height:1.6;">"오랜만에 동기들 만남. 준호가 추천한 파스타가 진짜 맛있었다. 다음엔 와인바로."</div>
+                <div style="margin-top:8px;"><span style="font-size:.72rem;color:var(--coral);cursor:pointer;">✏️ 일기 수정</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 7. OTHER PROFILE ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">7</div>
+      <div class="page-title">타인 프로필</div>
+      <span class="page-type sub">서브</span>
+    </div>
+    <p class="page-desc">Bottom-up 발견의 중간 단계. 궁합 + 보완 궁합 + 그룹 발견.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">타인 프로필</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-topbar"><span class="left">←</span><span class="center">사용자 프로필</span><span class="right"></span></div>
+          <div class="phone-body">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+              <div style="width:48px;height:48px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;">👤</div>
+              <div>
+                <div style="font-weight:600;">준호</div>
+                <span class="level-badge curator" style="background:#FFFBEA;color:#B17A10;">⭐ 큐레이터</span>
+                <div style="font-size:.7rem;color:var(--text-sec);">기록 234건 · 그룹 5개</div>
+              </div>
+            </div>
+
+            <div class="chip-row" style="margin-bottom:8px;">
+              <span class="chip" style="background:#F0FFF4;color:var(--green);border-color:var(--green);">📍 홍대 52건</span>
+              <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:var(--blue);">📍 이태원 38건</span>
+            </div>
+            <div style="font-size:.82rem;color:var(--navy);margin-bottom:10px;">맛 성격: <strong>"모험적 미식 탐험가"</strong></div>
+
+            <div class="compat-card">
+              <div class="compat-title">🧩 나와의 궁합</div>
+              <div style="margin:4px 0;">❤️ 맛 궁합 <strong>72%</strong></div>
+              <div class="mini-bar" style="height:6px;"><div class="fill" style="width:72%;background:var(--purple);"></div></div>
+              <div style="margin:6px 0;">🧩 정보 보완 궁합 <strong>94%</strong></div>
+              <div class="mini-bar" style="height:6px;"><div class="fill" style="width:94%;background:var(--green);"></div></div>
+              <div style="margin-top:6px;font-size:.72rem;color:var(--text-sec);">준호의 홍대·와인 기록이 당신에게 도움이 될 수 있어요</div>
+            </div>
+
+            <div style="font-size:.78rem;font-weight:600;margin:10px 0 6px;">소속 그룹</div>
+            <div class="chip-row">
+              <span class="chip">🌐 와인 모임</span>
+              <span class="chip">🌐 홍대 탐험대</span>
+              <span class="chip">🔒 비공개 그룹</span>
+            </div>
+
+            <div style="font-size:.78rem;font-weight:600;margin:12px 0 6px;">공개 기록</div>
+            <div class="card">
+              <div class="card-img">📷 와인<div class="tag">와인</div></div>
+              <div class="card-body">
+                <div class="title">Barolo 2019 <span style="color:var(--amber);">⭐ 4.8</span></div>
+                <div class="meta">📍 이태원 와인바 · 2일 전</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottombar">
+            <div class="tab">🏠<br>홈</div>
+            <div class="tab">🔍<br>발견</div>
+            <div class="fab">＋</div>
+            <div class="tab">👥<br>그룹</div>
+            <div class="tab">👤<br>프로필</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 11 & 12. ONBOARDING & LOGIN ===== -->
+  <div class="page-section">
+    <div class="page-head">
+      <div class="page-num">11</div>
+      <div class="page-title">온보딩 & 로그인</div>
+      <span class="page-type entry">진입</span>
+    </div>
+    <p class="page-desc">3장 슬라이드 + 소셜 로그인 4종.</p>
+
+    <div class="phone-row">
+      <div class="phone-wrap">
+        <div class="phone-label">온보딩 슬라이드 1</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-body">
+            <div class="onboarding-slide">
+              <div class="illust">📷 → ✨ AI → ✓<br><br>사진 촬영 → 자동 인식</div>
+              <h2>찍으면 기록 끝</h2>
+              <p>사진 한 장이면 AI가<br>메뉴와 식당을 자동 인식해요</p>
+              <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+              <div class="btn-primary">다음</div>
+              <div class="btn-ghost">건너뛰기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">온보딩 슬라이드 3</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-body">
+            <div class="onboarding-slide">
+              <div class="illust">👥 👥 👥<br><br>소규모 그룹 · 맛집 공유</div>
+              <h2>믿을 수 있는 사람들과</h2>
+              <p>친구, 동료, 가족과<br>맛집 경험을 나누세요</p>
+              <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+              <div class="btn-primary">시작하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-label">로그인</div>
+        <div class="phone">
+          <div class="phone-status">9:41 AM</div>
+          <div class="phone-body" style="display:flex;flex-direction:column;justify-content:center;text-align:center;">
+            <div style="font-size:1.8rem;margin-bottom:4px;">🍽️</div>
+            <div style="font-size:1.2rem;font-weight:800;color:var(--coral);margin-bottom:2px;">nyam</div>
+            <div style="font-size:.82rem;color:var(--text-sec);margin-bottom:24px;">맛의 Second Brain</div>
+
+            <div class="login-btn login-kakao">🟡 카카오로 시작하기</div>
+            <div class="login-btn login-naver">🟢 네이버로 시작하기</div>
+            <div class="login-btn login-google">G Google로 시작하기</div>
+            <div class="login-btn login-apple">🍎 Apple로 시작하기</div>
+
+            <div class="btn-ghost" style="margin-top:12px;">먼저 둘러볼게요</div>
+            <div style="font-size:.65rem;color:var(--text-sec);margin-top:16px;">로그인 시 이용약관과 개인정보 처리방침에<br>동의하는 것으로 간주합니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FLOW SUMMARY ===== -->
+  <div class="flow-box">
+    <h3>핵심 플로우 요약</h3>
+    <p><strong>기록 플로우 (10초):</strong><br>
+    <code>FAB</code> → <code>📷</code> → <code>AI 인식</code> → <code>✓ 확인</code> → <code>완료</code> → <code>보상</code></p>
+    <br>
+    <p><strong>발견 플로우 (Bottom-up):</strong><br>
+    <code>기록 발견</code> → <code>❤️ 저장</code> → <code>👤 작성자</code> → <code>🧩 궁합</code> → <code>👥 그룹</code> → <code>참여</code></p>
+    <br>
+    <p><strong>활용 플로우 (즉시):</strong><br>
+    <code>홈 진입</code> → <code>📍 근처 추천</code> → <code>탭</code> → <code>식당 상세</code> → <code>기록하기</code></p>
+    <br>
+    <p><strong>그룹 플로우:</strong><br>
+    <code>그룹 생성</code> → <code>멤버 초대</code> → <code>기록 공유</code> → <code>통계/랭킹</code> → <code>활동 촉진</code></p>
+  </div>
+
+</div>
+
+<style>
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+</style>
+</body>
+</html>

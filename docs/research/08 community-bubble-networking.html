@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam 커뮤니티 버블 네트워킹 — 설계 & 운영 로직</title>
+<style>
+  :root{--coral:#FF6038;--coral-bg:#FFF4F0;--coral-border:#FFC1AD;--navy:#1E293B;--navy-light:#334155;--teal:#0D9488;--teal-bg:#F0FDFA;--teal-border:#99F6E4;--purple:#7C3AED;--purple-bg:#F5F3FF;--purple-border:#DDD6FE;--amber:#E9B949;--amber-bg:#FFFBEA;--amber-border:#FEF08A;--green:#38A169;--green-bg:#F0FFF4;--green-border:#A7F3D0;--blue:#3182CE;--blue-bg:#EFF6FF;--blue-border:#BFDBFE;--text:#0F172A;--text-sec:#64748B;--border:#E2E8F0;--bg:#F8FAFC;--surface:#FFF;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.75;font-size:15px;}
+  .header{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;padding:56px 0 48px;}
+  .header-inner{max-width:860px;margin:0 auto;padding:0 24px;}
+  .header h1{font-size:1.8rem;font-weight:800;margin-bottom:8px;letter-spacing:-.02em;}
+  .header .sub{color:rgba(255,255,255,.7);font-size:.95rem;margin-bottom:20px;}
+  .header .meta{display:flex;gap:16px;font-size:.8rem;color:rgba(255,255,255,.45);flex-wrap:wrap;}
+  .content{max-width:860px;margin:0 auto;padding:0 24px;}
+  .part-head{background:var(--navy);color:#fff;padding:14px 24px;border-radius:12px 12px 0 0;margin-top:48px;font-size:1.1rem;font-weight:700;}
+  .part-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:28px;margin-bottom:28px;box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  h3{font-size:1.05rem;font-weight:700;color:var(--navy);margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);}
+  h3:first-child{margin-top:0;}
+  h4{font-size:.95rem;font-weight:600;margin:16px 0 6px;}
+  p{margin-bottom:10px;}
+  ul,ol{margin:8px 0 12px 20px;}
+  li{margin-bottom:4px;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.85rem;}
+  thead th{background:var(--navy);color:#fff;padding:8px 12px;text-align:left;font-weight:600;font-size:.8rem;}
+  thead th:first-child{border-radius:6px 0 0 0;}
+  thead th:last-child{border-radius:0 6px 0 0;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);}
+  tbody tr:nth-child(even){background:#F8FAFC;}
+  .verdict{padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0;font-weight:600;font-size:.88rem;}
+  .verdict.key{background:var(--coral-bg);border-left:4px solid var(--coral);color:var(--coral);}
+  .verdict.ref{background:var(--blue-bg);border-left:4px solid var(--blue);color:var(--blue);}
+  .verdict.warn{background:var(--amber-bg);border-left:4px solid var(--amber);color:var(--amber);}
+  .mockup{background:var(--navy);color:#E8ECF1;border-radius:8px;padding:16px 20px;margin:14px 0;font-family:'JetBrains Mono','Fira Code',monospace;font-size:.78rem;line-height:1.6;white-space:pre;overflow-x:auto;}
+  .quote{background:#F1F5F9;border-left:3px solid var(--text-sec);padding:12px 16px;margin:12px 0;font-style:italic;font-size:.9rem;color:var(--text-sec);}
+  .case{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:8px;padding:16px;margin:14px 0;}
+  .case .cs-title{font-weight:700;color:var(--blue);font-size:.9rem;margin-bottom:6px;}
+  .banner{background:var(--surface);border:2px solid var(--coral);border-radius:12px;padding:28px;margin:-28px 0 36px;box-shadow:0 4px 20px rgba(0,0,0,.06);}
+  .banner h2{color:var(--coral);font-size:1.15rem;margin-bottom:16px;}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:.85rem;}
+  .flow .step{background:var(--coral-bg);color:var(--coral);padding:6px 14px;border-radius:8px;font-weight:600;}
+  .flow .arrow{color:var(--text-sec);font-size:1.2rem;}
+  .summary-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;border-radius:12px;padding:36px 28px;margin:48px 0 36px;}
+  .summary-box h2{font-size:1.3rem;margin-bottom:20px;}
+  .summary-box table{margin:16px 0;}
+  .summary-box thead th{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);}
+  .summary-box tbody td{color:rgba(255,255,255,.85);border-bottom:1px solid rgba(255,255,255,.1);}
+  .refs{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;margin-bottom:48px;}
+  .refs h3{border-bottom:none;margin-bottom:10px;}
+  .refs li{font-size:.78rem;color:var(--text-sec);margin-bottom:3px;}
+  .refs a{color:var(--blue);text-decoration:none;}
+  .refs a:hover{text-decoration:underline;}
+  @media(max-width:640px){.header{padding:36px 0 32px;}.header h1{font-size:1.4rem;}.part-body{padding:18px;}.mockup{font-size:.7rem;padding:12px;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>커뮤니티 버블 네트워킹 — 설계 & 운영 로직</h1>
+    <p class="sub">Nyam의 그룹 시스템이 어떻게 작동하고, 성장하고, 수익화되는가</p>
+    <div class="meta">
+      <span>2026-03-16</span>
+      <span>딥리서치 기반</span>
+      <span>참고: Telegram · Discord · Strava · Michelin · Patreon</span>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Overview Banner -->
+  <div class="banner">
+    <h2>핵심 컨셉: "버블" 네트워킹이란</h2>
+    <p>냠의 네트워킹은 <strong>오픈 소셜이 아니라 소규모 신뢰 그룹(버블)</strong> 기반이다. 모든 사람에게 공개되는 피드가 아니라, 내가 선택한 사람들과만 경험을 나눈다.</p>
+    <div class="flow">
+      <span class="step">개인 기록</span>
+      <span class="arrow">→</span>
+      <span class="step">버블(그룹) 공유</span>
+      <span class="arrow">→</span>
+      <span class="step">버블 간 발견</span>
+      <span class="arrow">→</span>
+      <span class="step">네트워크 확장</span>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-sec);margin-top:12px;">Evernote·Path처럼 "도구 → 오픈 소셜"은 실패한다. 냠은 처음부터 <strong>"도구 + 버블 네트워킹"을 병행</strong>한다.</p>
+  </div>
+
+  <!-- Part 1: 그룹 유형 체계 -->
+  <div class="part-head">1. 그룹 유형 체계</div>
+  <div class="part-body">
+
+    <h3>4가지 그룹 유형</h3>
+
+    <table>
+      <thead><tr><th>유형</th><th>접근 권한</th><th>발견 경로</th><th>예시</th><th>Phase</th></tr></thead>
+      <tbody>
+        <tr><td><strong>비공개</strong> 🔒</td><td>초대 링크/QR로만 참여. 외부에서 검색/열람 불가</td><td>기존 멤버의 직접 초대만</td><td>가족 맛집, 친한 친구 5명</td><td>MVP</td></tr>
+        <tr><td><strong>공개</strong> 🌐</td><td>누구나 열람 + 참여 가능 (참여 조건 충족 시)</td><td>발견 탭, 기록→소유자→그룹</td><td>을지로 맛집 탐험대</td><td>MVP</td></tr>
+        <tr><td><strong>보기 전용</strong> 👁️</td><td>누구나 열람 가능. 참여(기록 공유)는 승인제</td><td>발견 탭, 검색</td><td>와인 전문가 모임 (큐레이션)</td><td>MVP</td></tr>
+        <tr><td><strong>유료</strong> 💎</td><td>열람에 월정액 결제 필요. 참여는 별도 승인</td><td>추천, 검색, 광고 없음</td><td>미슐랭급 큐레이션 그룹</td><td>Phase 2</td></tr>
+      </tbody>
+    </table>
+
+    <h3>유형 전환 규칙</h3>
+    <p>그룹 운영자는 언제든 유형을 변경할 수 있다. 단, 아래 규칙을 따른다:</p>
+
+    <table>
+      <thead><tr><th>전환</th><th>허용</th><th>조건</th></tr></thead>
+      <tbody>
+        <tr><td>비공개 → 공개</td><td>✅</td><td>즉시. 기존 멤버에게 알림</td></tr>
+        <tr><td>비공개 → 보기전용</td><td>✅</td><td>즉시. 기존 멤버는 참여 권한 유지</td></tr>
+        <tr><td>공개 → 비공개</td><td>✅</td><td>기존 멤버 유지. 신규 참여 차단</td></tr>
+        <tr><td>공개 → 유료</td><td>✅</td><td>운영자 Lv.마스터 이상. 기존 멤버 무료 유지 or 유예 기간 설정</td></tr>
+        <tr><td>비공개 → 유료</td><td>✅</td><td>동일 조건</td></tr>
+        <tr><td>유료 → 무료</td><td>✅</td><td>즉시. 기존 구독자에게 알림 + 환불 정책 안내</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict key">원칙: 유형 변경 시 기존 멤버의 권한은 최소 30일간 유지 (기득권 보호). 갑작스러운 유료 전환으로 기존 멤버를 쫓아내지 않는다.</div>
+
+  </div>
+
+  <!-- Part 2: 참여 조건 시스템 -->
+  <div class="part-head">2. 참여 조건 시스템 (Gate)</div>
+  <div class="part-body">
+
+    <h3>운영자가 설정 가능한 참여 문턱</h3>
+    <p>그룹 운영자는 아래 조건을 조합하여 참여 문턱을 설정할 수 있다. 조건을 충족하지 못하면 "참여 요청" 버튼이 비활성화되고, 부족한 조건이 안내된다.</p>
+
+    <table>
+      <thead><tr><th>조건</th><th>설정 범위</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><strong>최소 레벨</strong></td><td>탐색자 ~ 마스터</td><td>일정 활동량 이상만 허용</td></tr>
+        <tr><td><strong>최소 기록 수</strong></td><td>0 ~ 500</td><td>전체 기록 건수</td></tr>
+        <tr><td><strong>최소 카테고리 기록</strong></td><td>카테고리 + 건수</td><td>예: "와인 기록 20건 이상"만 가입 가능</td></tr>
+        <tr><td><strong>최소 지역 기록</strong></td><td>지역 + 건수</td><td>예: "을지로 기록 10건 이상"만 가입 가능</td></tr>
+        <tr><td><strong>기록 빈도</strong></td><td>주 N회 이상</td><td>최근 4주 평균 기록 빈도</td></tr>
+        <tr><td><strong>운영자 승인</strong></td><td>ON/OFF</td><td>조건 충족해도 운영자가 최종 승인</td></tr>
+      </tbody>
+    </table>
+
+    <div class="mockup">
+  참여 조건 설정 (그룹 생성/편집 시)
+
+  ┌─────────────────────────────────┐
+  │  참여 조건 (선택)                │
+  │                                 │
+  │  최소 레벨    [분석가 ▾]         │
+  │  최소 기록    [50건 ▾]           │
+  │                                 │
+  │  + 카테고리 조건 추가            │
+  │    카테고리: [와인 ▾]            │
+  │    최소 기록: [20건 ▾]           │
+  │                                 │
+  │  + 지역 조건 추가                │
+  │    지역: [을지로 ▾]              │
+  │    최소 기록: [10건 ▾]           │
+  │                                 │
+  │  ☑ 운영자 최종 승인 필요         │
+  └─────────────────────────────────┘</div>
+
+    <h3>조건 미달 사용자에게 보이는 UI</h3>
+    <div class="mockup">
+  ┌─────────────────────────────────┐
+  │  와인 전문가 모임            👁️ │
+  │  멤버 23명 · 기록 312건         │
+  │                                 │
+  │  ⚠️ 참여 조건 미달               │
+  │                                 │
+  │  ✅ 레벨: 분석가 (충족)          │
+  │  ✅ 전체 기록: 87건 (충족)       │
+  │  ❌ 와인 기록: 3건 / 20건 필요   │
+  │                                 │
+  │  "와인 기록 17건 더 채우면       │
+  │   참여할 수 있어요!"            │
+  │                                 │
+  │  [열람만 하기]  [조건 달성 알림] │
+  └─────────────────────────────────┘</div>
+
+    <div class="verdict key">원칙: 거부가 아닌 동기 부여. 부족한 조건을 명확히 보여주고, "알림 받기"로 달성 시 자동 안내. 기록 행동을 촉진하는 넛지.</div>
+
+  </div>
+
+  <!-- Part 3: 역할과 권한 -->
+  <div class="part-head">3. 그룹 내 역할과 권한</div>
+  <div class="part-body">
+
+    <h3>3-Tier 역할 구조</h3>
+    <p>Discord의 다층 권한 시스템에서 영감을 받되, 냠의 컨텍스트에 맞게 단순화.</p>
+
+    <table>
+      <thead><tr><th>역할</th><th>인원</th><th>권한</th></tr></thead>
+      <tbody>
+        <tr><td><strong>운영자</strong> 👑</td><td>1-2명</td><td>모든 권한: 그룹 설정, 유형 전환, 참여 조건, 멤버 관리, 기록 삭제, 역할 지정</td></tr>
+        <tr><td><strong>모더레이터</strong> 🛡️</td><td>운영자 지정</td><td>멤버 승인/제거, 부적절 기록 숨기기, 공지 작성. 그룹 설정 변경 불가</td></tr>
+        <tr><td><strong>멤버</strong> 👤</td><td>제한 없음</td><td>기록 공유, 반응(좋아요/댓글), 그룹 피드 열람</td></tr>
+      </tbody>
+    </table>
+
+    <div class="case">
+      <div class="cs-title">참고: Discord 역할 시스템</div>
+      <p>Discord는 "Admin은 극도의 신뢰를 바탕으로 1-2명에게만 부여, Moderator가 일상적 관리의 핵심"이라는 원칙을 따른다. 냠도 운영자는 최소한으로, 모더레이터가 실질적 운영을 담당하는 구조.</p>
+    </div>
+
+    <h3>자동 모더레이터 승격 조건 (제안)</h3>
+    <p>운영자가 직접 지정하는 것이 기본이지만, 아래 조건을 충족한 멤버를 "모더레이터 추천" 알림으로 제안:</p>
+    <ul>
+      <li>그룹 내 기록 공유 50건+ (상위 10%)</li>
+      <li>멤버 가입 후 3개월+</li>
+      <li>기록 품질(완성도) 평균 80%+</li>
+      <li>신고 이력 0건</li>
+    </ul>
+
+  </div>
+
+  <!-- Part 4: 발견과 성장 -->
+  <div class="part-head">4. 그룹 발견과 성장 엔진</div>
+  <div class="part-body">
+
+    <h3>Bottom-up 발견 플로우</h3>
+    <p>냠에서는 그룹을 직접 검색하지 않는다. <strong>좋은 기록 → 좋은 사람 → 좋은 그룹</strong> 순서로 자연스럽게 발견한다.</p>
+
+    <div class="flow">
+      <span class="step">공개 기록 발견</span>
+      <span class="arrow">→</span>
+      <span class="step">❤️ 저장</span>
+      <span class="arrow">→</span>
+      <span class="step">👤 작성자 프로필</span>
+      <span class="arrow">→</span>
+      <span class="step">🧩 궁합 확인</span>
+      <span class="arrow">→</span>
+      <span class="step">👥 소속 그룹 확인</span>
+      <span class="arrow">→</span>
+      <span class="step">참여 요청</span>
+    </div>
+
+    <p>이 플로우의 핵심은 <strong>"콘텐츠(기록)의 품질이 그룹의 마케팅"</strong>이라는 것이다. 좋은 기록을 많이 쓰는 그룹일수록 자연스럽게 발견된다.</p>
+
+    <h3>성장 단계: 초기 미슐랭 모델</h3>
+
+    <table>
+      <thead><tr><th>단계</th><th>전략</th><th>목표 규모</th><th>핵심 지표</th></tr></thead>
+      <tbody>
+        <tr><td><strong>시드</strong><br>(0-3개월)</td><td>맛집에 진심인 5-10인 그룹을 운영팀이 직접 생성·운영. 초대 기반. "냠 오리지널 그룹"으로 브랜딩</td><td>시드 그룹 10-20개<br>총 멤버 100-200명</td><td>그룹당 주간 기록 수<br>멤버 리텐션</td></tr>
+        <tr><td><strong>확산</strong><br>(3-6개월)</td><td>시드 멤버가 자신의 그룹 개설. 버블 복제. "그룹 만들기" 넛지 강화</td><td>그룹 200-500개<br>멤버 1,000-3,000명</td><td>그룹 생성률<br>초대 전환율</td></tr>
+        <tr><td><strong>가치 증폭</strong><br>(6-12개월)</td><td>그룹 간 인기 맛집이 자연스럽게 떠오름. 크로스 버블 발견. 그룹 랭킹 도입</td><td>그룹 1,000+<br>멤버 10,000+</td><td>크로스 그룹 발견율<br>그룹 랭킹 참여</td></tr>
+        <tr><td><strong>문화 형성</strong><br>(12개월+)</td><td>"냠에서 추천받은 곳"이 신뢰 브랜드가 됨. 유료 그룹 등장. 지역/카테고리 전문 그룹 생태계</td><td>자연 성장</td><td>유료 그룹 전환율<br>NPS</td></tr>
+      </tbody>
+    </table>
+
+    <div class="case">
+      <div class="cs-title">참고: 미슐랭 가이드의 신뢰 구축 역사</div>
+      <p>미슐랭은 1900년 타이어 마케팅 도구로 시작, <strong>익명 인스펙터 + 광고 제거 + 유료화</strong>로 신뢰를 구축했다. 핵심 교훈: "사람은 자기가 돈을 낸 것만 진지하게 대한다" (앙드레 미슐랭). 냠의 유료 그룹도 이 원리를 따른다 — 유료 그룹의 멤버는 더 열심히 기록하고 정보를 정제한다.</p>
+    </div>
+
+    <div class="case">
+      <div class="cs-title">참고: Strava 클럽 성장</div>
+      <p>Strava는 개인 운동 기록 도구로 시작했지만, <strong>클럽 기능이 성장의 핵심 엔진</strong>이 되었다. 2025년 러닝 클럽 3.5배 증가, 클럽 이벤트 1.5배 증가. 비공개 그룹 챌린지(최대 200명)는 유료 구독자 전용 — 무료/유료 차별화에 그룹 기능을 활용한 좋은 사례.</p>
+    </div>
+
+  </div>
+
+  <!-- Part 5: Dunbar's Number -->
+  <div class="part-head">5. 최적 그룹 크기 — Dunbar's Number 적용</div>
+  <div class="part-body">
+
+    <h3>Dunbar의 사회적 관계 계층</h3>
+    <p>Robin Dunbar(1992)의 연구에 따르면, 인간의 사회적 관계는 프랙탈 구조로 5 → 15 → 50 → 150으로 확장된다:</p>
+
+    <table>
+      <thead><tr><th>규모</th><th>관계 유형</th><th>접촉 빈도</th><th>냠 적용</th></tr></thead>
+      <tbody>
+        <tr><td><strong>5명</strong></td><td>핵심 관계 (intimates)</td><td>평균 12.6일 간격</td><td>"절친 맛집" — 가족, 베프</td></tr>
+        <tr><td><strong>15명</strong></td><td>좋은 친구 (good friends)</td><td>평균 23.9일 간격</td><td>"직장 동료 맛집" — 팀 단위</td></tr>
+        <tr><td><strong>50명</strong></td><td>친구 (friends)</td><td>평균 25.0일 간격</td><td>"동호회 맛집" — 와인 모임, 러닝 크루</td></tr>
+        <tr><td><strong>150명</strong></td><td>의미 있는 관계 (meaningful contacts)</td><td>평균 46.3일 간격</td><td>"지역 커뮤니티" — 을지로 맛집 탐험대</td></tr>
+      </tbody>
+    </table>
+
+    <h3>냠의 그룹 크기 가이드라인</h3>
+
+    <table>
+      <thead><tr><th>그룹 유형</th><th>권장 크기</th><th>최대</th><th>근거</th></tr></thead>
+      <tbody>
+        <tr><td>비공개 (가족/친구)</td><td>5-15명</td><td>30명</td><td>Dunbar 핵심-좋은친구 레이어. 참여율 30-50%</td></tr>
+        <tr><td>공개 (동호회)</td><td>15-50명</td><td>200명</td><td>Dunbar 친구 레이어. 40명 이하에서 민주적 운영 가능</td></tr>
+        <tr><td>보기 전용 (큐레이션)</td><td>제한 없음</td><td>제한 없음</td><td>열람자는 소셜 부담 없으므로 규모 무관</td></tr>
+        <tr><td>유료</td><td>30-100명</td><td>500명</td><td>너무 적으면 콘텐츠 부족, 너무 많으면 희소성 상실</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict key">원칙: 시스템이 강제하지 않되, 권장 크기를 넘으면 "그룹 분할을 고려해보세요" 넛지. 소규모일수록 참여율이 높다는 데이터를 안내.</div>
+
+    <div class="quote">"40명 이하의 커뮤니티는 더 높은 동지애를 보이며, 관리 책임이 멤버들에게 자연스럽게 분산된다. 그 이상이 되면 공식적 리더십이 필요해진다."</div>
+
+  </div>
+
+  <!-- Part 6: 신뢰와 품질 관리 -->
+  <div class="part-head">6. 신뢰와 품질 관리</div>
+  <div class="part-body">
+
+    <h3>왜 버블 네트워킹이 가짜 리뷰를 막는가</h3>
+
+    <table>
+      <thead><tr><th>오픈 리뷰 (네이버)</th><th>버블 네트워킹 (냠)</th></tr></thead>
+      <tbody>
+        <tr><td>익명 → 가짜 리뷰 동기 높음</td><td>아는 사람들 사이 → 가짜 리뷰 동기 자체가 없음</td></tr>
+        <tr><td>노출 = 수익 → 조작 인센티브</td><td>그룹 내 신뢰 = 가치 → 조작하면 추방</td></tr>
+        <tr><td>탐지 시스템 필요 (비용 높음)</td><td>사회적 제재가 자동 필터 (비용 제로)</td></tr>
+        <tr><td>리뷰어 정체 불명</td><td>레벨·활동 이력으로 신뢰도 판별</td></tr>
+      </tbody>
+    </table>
+
+    <h3>그룹 품질 지표 (자동 산출)</h3>
+    <p>그룹의 활동성과 품질을 데이터로 자동 산출. 그룹 랭킹과 추천에 활용.</p>
+
+    <table>
+      <thead><tr><th>지표</th><th>산출 방법</th><th>가중치</th></tr></thead>
+      <tbody>
+        <tr><td><strong>활동 빈도</strong></td><td>주간 신규 기록 수 / 멤버 수</td><td>30%</td></tr>
+        <tr><td><strong>기록 품질</strong></td><td>멤버 평균 기록 완성도 (사진+평가+코멘트)</td><td>25%</td></tr>
+        <tr><td><strong>멤버 다양성</strong></td><td>다양한 레벨·지역·카테고리의 멤버 구성</td><td>15%</td></tr>
+        <tr><td><strong>외부 인용</strong></td><td>그룹 기록이 비멤버에게 저장(찜)된 횟수</td><td>20%</td></tr>
+        <tr><td><strong>성장률</strong></td><td>최근 4주 신규 멤버 + 기록 증가율</td><td>10%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>신고와 제재</h3>
+
+    <table>
+      <thead><tr><th>행위</th><th>신고 → 처리</th></tr></thead>
+      <tbody>
+        <tr><td>부적절한 기록 (스팸, 광고)</td><td>모더레이터가 숨기기 → 반복 시 운영자가 퇴출</td></tr>
+        <tr><td>허위 기록 (방문 안 한 곳 기록)</td><td>커뮤니티 신고 3건+ → 기록 숨김 + 경고</td></tr>
+        <tr><td>괴롭힘/비방</td><td>즉시 숨김 → 운영자 판단 후 퇴출</td></tr>
+        <tr><td>유료 그룹 사기</td><td>플랫폼 개입 → 환불 + 그룹 제재</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict warn">원칙: 모더레이션은 그룹 내 자치가 우선. 플랫폼은 유료 그룹 사기와 법적 문제에만 직접 개입. Telegram 모델: "신뢰할 수 있는 멤버를 앰배서더로 임명하여 분산 모더레이션"</div>
+
+  </div>
+
+  <!-- Part 7: 유료 그룹 -->
+  <div class="part-head">7. 유료 그룹 운영 모델</div>
+  <div class="part-body">
+
+    <h3>유료 그룹이란</h3>
+    <p>그룹 운영자가 <strong>열람에 월정액을 설정</strong>할 수 있는 프리미엄 그룹. Discord의 Server Subscription + Patreon의 Tier 모델에서 영감.</p>
+
+    <h4>유료 그룹 개설 조건</h4>
+    <ul>
+      <li>운영자 레벨: <strong>마스터</strong> 이상 (기록 200건+, 높은 기여도)</li>
+      <li>기존 그룹 운영 실적: 무료 그룹 3개월+ 운영 & 활동 지표 상위 20%</li>
+      <li>플랫폼 심사 통과 (자동 기준 + 수동 검토)</li>
+    </ul>
+
+    <h3>가격 정책</h3>
+
+    <table>
+      <thead><tr><th>항목</th><th>규격</th><th>근거</th></tr></thead>
+      <tbody>
+        <tr><td>가격 범위</td><td>₩1,900 ~ ₩29,900/월</td><td>커피 1잔 ~ 넷플릭스 수준</td></tr>
+        <tr><td>운영자 수익</td><td>결제액의 85%</td><td>Patreon 90%, Discord 90%, Apple 70%의 중간</td></tr>
+        <tr><td>플랫폼 수수료</td><td>15%</td><td>결제 수수료 포함</td></tr>
+        <tr><td>무료 체험</td><td>7일 (운영자 설정 가능)</td><td>Discord Free Trial 모델</td></tr>
+        <tr><td>연간 결제</td><td>월정액의 10개월분</td><td>2개월 할인으로 장기 구독 유도</td></tr>
+      </tbody>
+    </table>
+
+    <div class="case">
+      <div class="cs-title">참고: Patreon 가격 전략 (2025)</div>
+      <p>Patreon은 3-Tier 전략을 권장: Starter ($6-9), Growth ($25-120), Pro ($180-900). 무료 티어로 팬을 유입하고, 디지털 제품으로 충동 구매를 유도하고, 유료 티어로 반복 수익을 구축. 냠의 유료 그룹은 Starter 레벨(₩2,900-4,900)이 가장 적합할 것.</p>
+    </div>
+
+    <h3>유료 그룹 구독자에게 제공되는 가치</h3>
+    <ul>
+      <li><strong>큐레이션된 기록</strong>: 마스터급 운영자의 엄선된 식당 리뷰</li>
+      <li><strong>독점 정보</strong>: 비공개 신규 오픈, 메뉴 변경, 예약 팁 등</li>
+      <li><strong>그룹 내 소통</strong>: 운영자/멤버에게 질문, 추천 요청</li>
+      <li><strong>월간 큐레이션 리포트</strong>: "이달의 추천 5곳" 같은 정기 콘텐츠</li>
+    </ul>
+
+    <h3>유료 그룹 운영자의 의무</h3>
+    <ul>
+      <li>최소 주 2회 이상 기록 공유</li>
+      <li>4주간 기록 0건 시 구독자에게 경고 알림 + 환불 옵션</li>
+      <li>8주간 비활성 시 유료 기능 자동 정지</li>
+    </ul>
+
+    <div class="verdict key">원칙: "돈을 내면 더 좋은 정보를 받는다"가 아니라 "돈을 내면 더 열심히 정보를 정제하는 사람들의 그룹에 들어간다." 미슐랭의 교훈: 유료화가 품질을 끌어올린다.</div>
+
+  </div>
+
+  <!-- Part 8: 그룹 활성화 도구 -->
+  <div class="part-head">8. 그룹 활성화 도구</div>
+  <div class="part-body">
+
+    <h3>그룹 챌린지</h3>
+    <p>Strava의 Group Challenges에서 영감. 그룹 운영자가 미션을 설정하고 멤버가 함께 참여.</p>
+
+    <table>
+      <thead><tr><th>챌린지 유형</th><th>예시</th><th>기간</th></tr></thead>
+      <tbody>
+        <tr><td><strong>카테고리 탐험</strong></td><td>"이번 주 동남아 음식 3곳 기록하기"</td><td>1주</td></tr>
+        <tr><td><strong>지역 정복</strong></td><td>"성수동 맛집 팀 합산 20곳 달성"</td><td>2주</td></tr>
+        <tr><td><strong>신규 발견</strong></td><td>"처음 가보는 식당 5곳 기록하기"</td><td>1주</td></tr>
+        <tr><td><strong>공유 미션</strong></td><td>"이번 달 기록 10건 이상 그룹에 공유"</td><td>1개월</td></tr>
+      </tbody>
+    </table>
+
+    <h3>그룹 리더보드</h3>
+    <p>주간 기준, 그룹 내 활동 랭킹. Dunbar 규모(5-15명)에서 리더보드 참여율 30-50%.</p>
+    <div class="mockup">
+  마케팅팀 맛집 — 이번 주 랭킹
+
+  🥇 민지    12건 기록  +85 XP   📍 을지로 마스터
+  🥈 준호     8건 기록  +62 XP   🍷 와인 전문가
+  🥉 소영     6건 기록  +45 XP   🆕 새 발견 3곳!
+  4. 현우     4건 기록  +30 XP
+  5. 나       3건 기록  +22 XP   ← 여기!</div>
+
+    <h3>그룹 통계 대시보드</h3>
+    <p>그룹의 종합 데이터를 시각화. 그룹의 가치를 멤버에게 체감시키는 핵심 도구.</p>
+    <ul>
+      <li><strong>그룹 TOP 식당</strong>: 멤버 N명 중 M명이 추천한 곳 (과반수 기준)</li>
+      <li><strong>카테고리 분포</strong>: 그룹 전체의 식음료 취향 비율</li>
+      <li><strong>활동 히트맵</strong>: 그룹 기록의 시간대/요일 패턴</li>
+      <li><strong>멤버 기여도</strong>: 기록 수, 반응 수, 저장 수 기준</li>
+      <li><strong>월간 리포트</strong>: "이번 달 우리 그룹의 새 발견 N곳"</li>
+    </ul>
+
+  </div>
+
+  <!-- Part 9: 지역 전문가 영입 -->
+  <div class="part-head">9. 지역 전문가 영입 시스템</div>
+  <div class="part-body">
+
+    <h3>지역 특화 → 인재 영입의 연결</h3>
+    <p>사용자의 기록이 특정 지역에 밀집되면 자동으로 "지역 특화"가 프로필에 노출. 이것이 그룹 운영자의 영입 도구가 된다.</p>
+
+    <div class="mockup">
+  그룹 운영자 대시보드 — "멤버 추천"
+
+  이 그룹에 어울릴 수 있는 사용자:
+
+  👤 민지 · Lv.분석가
+     📍 을지로 38건 (마스터)
+     🧩 정보 보완 궁합 91%
+     "을지로 기록이 풍부해 그룹에 도움이 됩니다"
+     [초대하기]
+
+  👤 준호 · Lv.큐레이터
+     📍 을지로 12건 · 🍷 와인 42건
+     🧩 정보 보완 궁합 87%
+     "와인 기록이 그룹에 새로운 영역을 추가합니다"
+     [초대하기]</div>
+
+    <h3>영입 흐름</h3>
+    <div class="flow">
+      <span class="step">운영자: 추천 확인</span>
+      <span class="arrow">→</span>
+      <span class="step">초대 메시지 전송</span>
+      <span class="arrow">→</span>
+      <span class="step">대상자: 초대 수신</span>
+      <span class="arrow">→</span>
+      <span class="step">그룹 프리뷰 확인</span>
+      <span class="arrow">→</span>
+      <span class="step">참여 수락</span>
+    </div>
+
+    <p><strong>초대 메시지에 포함되는 정보</strong>:</p>
+    <ul>
+      <li>그룹 이름, 설명, 멤버 수</li>
+      <li>"당신의 [을지로] 기록이 이 그룹에 도움이 됩니다"</li>
+      <li>그룹 TOP 3 식당 미리보기</li>
+      <li>정보 보완 궁합 수치</li>
+    </ul>
+
+    <div class="verdict key">원칙: 영입은 "당신이 필요합니다"가 아니라 "서로에게 도움이 됩니다". 상호 가치를 명확히 보여줘야 수락율이 높다.</div>
+
+  </div>
+
+  <!-- Part 10: 다크소셜 성장 -->
+  <div class="part-head">10. 다크소셜 기반 성장 전략</div>
+  <div class="part-body">
+
+    <h3>카카오톡이 핵심 성장 채널</h3>
+    <p>한국에서 맛집 공유는 "카톡으로 네이버 링크 보내기"가 지배적. 냠은 이 행동을 가로채야 한다.</p>
+
+    <table>
+      <thead><tr><th>공유 유형</th><th>카카오톡 프리뷰</th><th>비설치자 경험</th></tr></thead>
+      <tbody>
+        <tr><td><strong>기록 공유</strong></td><td>사진 + 메뉴 + 평가 + 식당명. 매력적인 OG 카드</td><td>웹 프리뷰에서 기록 열람 가능 → 앱 설치 유도</td></tr>
+        <tr><td><strong>그룹 초대</strong></td><td>"[민지]님이 [직장동료 맛집]에 초대합니다" + 그룹 미리보기</td><td>웹에서 그룹 프리뷰 → 가입 유도</td></tr>
+        <tr><td><strong>맛 궁합</strong></td><td>"우리 맛 궁합: 87%!" 비주얼 카드</td><td>"나도 해보기" → 앱 설치</td></tr>
+        <tr><td><strong>Year in Review</strong></td><td>개인 맛 리포트 카드 (Wrapped 스타일)</td><td>바이럴 최대. 인스타 스토리 공유도 가능</td></tr>
+      </tbody>
+    </table>
+
+    <div class="case">
+      <div class="cs-title">다크소셜 규모</div>
+      <p>DM 기반 인터랙션이 전체 소셜 커뮤니케이션의 <strong>41%</strong>를 차지. 인스턴트 메시징 앱 시장 2024년 $286억 → 2033년 $637억 (CAGR 9.3%). 한국에서 카카오톡 메시징 시장 점유율 94% — <strong>카톡 공유 최적화가 곧 성장 전략</strong>.</p>
+    </div>
+
+    <h3>바이럴 루프 설계</h3>
+    <div class="mockup">
+  바이럴 루프:
+
+  사용자 A: 맛집 기록 → 카카오톡에 기록 카드 공유
+                                ↓
+  사용자 B: 카톡에서 프리뷰 확인 → "이거 뭐야?" → 앱 설치
+                                ↓
+  사용자 B: 기록 시작 → A의 그룹에 초대 수락
+                                ↓
+  사용자 B: 자기 기록 공유 → 사용자 C가 발견...
+                                ↓
+  (반복)</div>
+
+    <p><strong>바이럴 계수 목표</strong>: K-factor > 1.0 (각 사용자가 평균 1명 이상 초대)</p>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-box">
+    <h2>커뮤니티 버블 운영 핵심 원칙 요약</h2>
+
+    <table>
+      <thead><tr><th>원칙</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><strong>버블 우선</strong></td><td>오픈 소셜이 아닌 소규모 신뢰 그룹. 5-15명이 최적</td></tr>
+        <tr><td><strong>Bottom-up 발견</strong></td><td>기록 → 사람 → 그룹 순서. 그룹을 직접 검색하지 않는다</td></tr>
+        <tr><td><strong>참여 조건 = 동기 부여</strong></td><td>거부가 아닌 넛지. "N건 더 기록하면 참여할 수 있어요"</td></tr>
+        <tr><td><strong>분산 모더레이션</strong></td><td>그룹 내 자치 우선. 플랫폼은 최소 개입</td></tr>
+        <tr><td><strong>유료 = 품질</strong></td><td>돈이 품질을 끌어올림. 미슐랭 원리</td></tr>
+        <tr><td><strong>콘텐츠가 마케팅</strong></td><td>좋은 기록이 그룹을 자연스럽게 발견시킴</td></tr>
+        <tr><td><strong>기득권 보호</strong></td><td>유형 변경 시 기존 멤버 최소 30일 권한 유지</td></tr>
+        <tr><td><strong>상호 가치</strong></td><td>영입은 "당신이 필요"가 아니라 "서로에게 도움"</td></tr>
+        <tr><td><strong>카톡이 성장 채널</strong></td><td>다크소셜 공유 최적화가 곧 사용자 획득 전략</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- References -->
+  <div class="refs">
+    <h3>참고 자료</h3>
+    <ul>
+      <li><strong>Dunbar's Number</strong>: Dunbar (1992), 프랙탈 구조 5→15→50→150. 소그룹 참여율 30-50% vs 대규모 1% (<a href="https://en.wikipedia.org/wiki/Dunbar%27s_number">Wikipedia</a>, <a href="https://supernuclear.substack.com/p/dunbars-number-and-community-size">Phil Levin</a>)</li>
+      <li><strong>미슐랭 가이드</strong>: 1900년 시작, 익명 인스펙터, 광고 제거, 유료화로 신뢰 구축 (<a href="https://guide.michelin.com/th/en/history-of-the-michelin-guide-th">Michelin Guide</a>, <a href="https://www.cnn.com/2024/02/10/business/michelin-guide-history">CNN</a>)</li>
+      <li><strong>Discord 역할/권한</strong>: Admin(극소) + Moderator(일상 관리) + 유료 구독 + Server Shop (<a href="https://support.discord.com/hc/en-us/articles/214836687-Discord-Roles-and-Permissions">Discord</a>, <a href="https://postiz.com/blog/discord-monetization-paid-roles-tiers-and-perks">Postiz</a>)</li>
+      <li><strong>Telegram 커뮤니티</strong>: 비공개/공개 설정, 분산 모더레이션, 앰배서더 제도, 봇 자동화 (<a href="https://lkiconsulting.io/marketing/telegram-community-management/">LKI Consulting</a>)</li>
+      <li><strong>Strava 클럽</strong>: 2025년 러닝 클럽 3.5배 증가, 비공개 그룹 챌린지(최대 200명) 유료 전용 (<a href="https://trophy.so/blog/strava-gamification-case-study">Trophy</a>)</li>
+      <li><strong>Patreon 가격</strong>: 2025년 10% 플랫폼 수수료, 3-Tier 전략 (Starter $6-9, Growth $25-120) (<a href="https://influencermarketinghub.com/patreon-memberships/">Influencer Marketing Hub</a>)</li>
+      <li><strong>다크소셜</strong>: DM 기반 41% of social communication, 메시징 시장 $286B→$637B CAGR 9.3%</li>
+      <li><strong>신뢰/평판 시스템</strong>: TrustRank, 분산 모더레이션, 커뮤니티 자치 모델 (<a href="https://en.wikipedia.org/wiki/Reputation_system">Wikipedia</a>)</li>
+      <li><strong>커뮤니티 플랫폼 트렌드 2026</strong>: 의도적 커뮤니티, 데이터 주권, 안전/신뢰 우선 (<a href="https://bevy.com/b/blog/7-community-management-trends-to-know-in-2025">Bevy</a>, <a href="https://www.disco.co/blog/what-is-a-community-platform-a-2026-overview">Disco</a>)</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

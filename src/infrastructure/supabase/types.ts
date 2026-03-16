@@ -1,794 +1,878 @@
-/**
- * Supabase Database type definitions.
- *
- * This file will eventually be auto-generated via `supabase gen types typescript`.
- * Until then, these types are manually maintained to match the migration SQL
- * defined in docs/DEVELOPMENT_PLAN.md (migrations 001-009).
- */
+export type RecordType = 'restaurant' | 'wine' | 'homemade'
+export type VisibilityType = 'private' | 'group' | 'public'
+export type AuthProviderType = 'kakao' | 'naver' | 'google' | 'apple'
+export type GroupType = 'private' | 'public' | 'viewonly' | 'paid'
+export type GroupRole = 'owner' | 'moderator' | 'member'
+export type MembershipStatus = 'active' | 'pending' | 'banned'
+export type ReactionType = 'like' | 'comment'
 
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string
+          nickname: string
+          avatar_url: string | null
+          email: string
+          auth_provider: AuthProviderType
+          created_at: string
+          last_active_at: string
+        }
+        Insert: {
+          id?: string
+          nickname: string
+          avatar_url?: string | null
+          email: string
+          auth_provider: AuthProviderType
+          created_at?: string
+          last_active_at?: string
+        }
+        Update: {
+          id?: string
+          nickname?: string
+          avatar_url?: string | null
+          email?: string
+          auth_provider?: AuthProviderType
+          created_at?: string
+          last_active_at?: string
+        }
+        Relationships: []
+      }
       restaurants: {
         Row: {
           id: string
           name: string
-          address: string
-          short_address: string | null
-          phone: string | null
-          cuisine: string
-          cuisine_category: string
-          price_range: string | null
-          hours: Record<string, string> | null
-          mood: string[]
+          address: string | null
           region: string | null
-          image_url: string | null
-          naver_map_url: string | null
-          kakao_map_url: string | null
-          google_map_url: string | null
+          category: string | null
           latitude: number | null
           longitude: number | null
-          is_active: boolean
+          phone: string | null
+          hours: Record<string, unknown> | null
+          source: string | null
+          external_id: string | null
+          external_url: string | null
+          menu_items: Record<string, unknown> | null
+          synced_at: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           name: string
-          address: string
-          short_address?: string | null
-          phone?: string | null
-          cuisine: string
-          cuisine_category: string
-          price_range?: string | null
-          hours?: Record<string, string> | null
-          mood?: string[]
+          address?: string | null
           region?: string | null
-          image_url?: string | null
-          naver_map_url?: string | null
-          kakao_map_url?: string | null
-          google_map_url?: string | null
+          category?: string | null
           latitude?: number | null
           longitude?: number | null
-          is_active?: boolean
+          phone?: string | null
+          hours?: Record<string, unknown> | null
+          source?: string | null
+          external_id?: string | null
+          external_url?: string | null
+          menu_items?: Record<string, unknown> | null
+          synced_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           name?: string
-          address?: string
-          short_address?: string | null
-          phone?: string | null
-          cuisine?: string
-          cuisine_category?: string
-          price_range?: string | null
-          hours?: Record<string, string> | null
-          mood?: string[]
+          address?: string | null
           region?: string | null
-          image_url?: string | null
-          naver_map_url?: string | null
-          kakao_map_url?: string | null
-          google_map_url?: string | null
+          category?: string | null
           latitude?: number | null
           longitude?: number | null
-          is_active?: boolean
+          phone?: string | null
+          hours?: Record<string, unknown> | null
+          source?: string | null
+          external_id?: string | null
+          external_url?: string | null
+          menu_items?: Record<string, unknown> | null
+          synced_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }
-
-      restaurant_ratings: {
-        Row: {
-          id: string
-          restaurant_id: string
-          source: string
-          rating: number | null
-          review_count: number
-          fetched_at: string
-        }
-        Insert: {
-          id?: string
-          restaurant_id: string
-          source: string
-          rating?: number | null
-          review_count?: number
-          fetched_at?: string
-        }
-        Update: {
-          id?: string
-          restaurant_id?: string
-          source?: string
-          rating?: number | null
-          review_count?: number
-          fetched_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'restaurant_ratings_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      user_profiles: {
-        Row: {
-          id: string
-          nickname: string | null
-          avatar_url: string | null
-          preferred_ai: string
-          allergies: string[]
-          food_preferences: string[]
-          tier: string
-          total_verifications: number
-          current_streak: number
-          longest_streak: number
-          last_verified_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          nickname?: string | null
-          avatar_url?: string | null
-          preferred_ai?: string
-          allergies?: string[]
-          food_preferences?: string[]
-          tier?: string
-          total_verifications?: number
-          current_streak?: number
-          longest_streak?: number
-          last_verified_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          nickname?: string | null
-          avatar_url?: string | null
-          preferred_ai?: string
-          allergies?: string[]
-          food_preferences?: string[]
-          tier?: string
-          total_verifications?: number
-          current_streak?: number
-          longest_streak?: number
-          last_verified_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-
-      verifications: {
+      records: {
         Row: {
           id: string
           user_id: string
-          restaurant_id: string
-          prompt_template_id: string | null
-          ai_model: string | null
-          taste_score: number | null
-          value_score: number | null
-          service_score: number | null
-          ambiance_score: number | null
-          comment: string | null
-          visited: boolean
-          visited_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          restaurant_id: string
-          prompt_template_id?: string | null
-          ai_model?: string | null
-          taste_score?: number | null
-          value_score?: number | null
-          service_score?: number | null
-          ambiance_score?: number | null
-          comment?: string | null
-          visited?: boolean
-          visited_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          restaurant_id?: string
-          prompt_template_id?: string | null
-          ai_model?: string | null
-          taste_score?: number | null
-          value_score?: number | null
-          service_score?: number | null
-          ambiance_score?: number | null
-          comment?: string | null
-          visited?: boolean
-          visited_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'verifications_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'verifications_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      suspicious_flags: {
-        Row: {
-          id: string
-          restaurant_id: string
-          user_id: string
-          reason: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          restaurant_id: string
-          user_id: string
-          reason: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          restaurant_id?: string
-          user_id?: string
-          reason?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'suspicious_flags_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'suspicious_flags_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      prompt_templates: {
-        Row: {
-          id: string
-          author_id: string | null
-          title: string
-          description: string | null
-          category: string
-          template: string
-          variables: PromptVariable[]
-          is_official: boolean
-          is_public: boolean
-          usage_count: number
-          like_count: number
-          dislike_count: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          author_id?: string | null
-          title: string
-          description?: string | null
-          category: string
-          template: string
-          variables?: PromptVariable[]
-          is_official?: boolean
-          is_public?: boolean
-          usage_count?: number
-          like_count?: number
-          dislike_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          author_id?: string | null
-          title?: string
-          description?: string | null
-          category?: string
-          template?: string
-          variables?: PromptVariable[]
-          is_official?: boolean
-          is_public?: boolean
-          usage_count?: number
-          like_count?: number
-          dislike_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'prompt_templates_author_id_fkey'
-            columns: ['author_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      prompt_usage_logs: {
-        Row: {
-          id: string
-          user_id: string | null
-          prompt_template_id: string | null
           restaurant_id: string | null
-          action: string
+          record_type: RecordType
           created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          prompt_template_id?: string | null
-          restaurant_id?: string | null
-          action: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          prompt_template_id?: string | null
-          restaurant_id?: string | null
-          action?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'prompt_usage_logs_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'prompt_usage_logs_prompt_template_id_fkey'
-            columns: ['prompt_template_id']
-            isOneToOne: false
-            referencedRelation: 'prompt_templates'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'prompt_usage_logs_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      prompt_reactions: {
-        Row: {
-          id: string
-          user_id: string
-          prompt_template_id: string
-          reaction: 'like' | 'dislike'
-          created_at: string
+          menu_name: string | null
+          category: string | null
+          sub_category: string | null
+          price_per_person: number | null
+          rating_taste: number | null
+          rating_value: number | null
+          rating_service: number | null
+          rating_atmosphere: number | null
+          rating_cleanliness: number | null
+          rating_portion: number | null
+          rating_aroma: number | null
+          rating_body: number | null
+          rating_acidity: number | null
+          rating_finish: number | null
+          rating_balance: number | null
+          rating_difficulty: number | null
+          rating_time_spent: number | null
+          rating_reproducibility: number | null
+          rating_overall: number | null
+          comment: string | null
+          tags: string[]
+          flavor_tags: string[]
+          texture_tags: string[]
+          atmosphere_tags: string[]
+          visibility: VisibilityType
+          ai_recognized: boolean
+          completeness_score: number
+          location_lat: number | null
+          location_lng: number | null
         }
         Insert: {
           id?: string
           user_id: string
-          prompt_template_id: string
-          reaction: 'like' | 'dislike'
+          restaurant_id?: string | null
+          record_type: RecordType
           created_at?: string
+          menu_name?: string | null
+          category?: string | null
+          sub_category?: string | null
+          price_per_person?: number | null
+          rating_taste?: number | null
+          rating_value?: number | null
+          rating_service?: number | null
+          rating_atmosphere?: number | null
+          rating_cleanliness?: number | null
+          rating_portion?: number | null
+          rating_aroma?: number | null
+          rating_body?: number | null
+          rating_acidity?: number | null
+          rating_finish?: number | null
+          rating_balance?: number | null
+          rating_difficulty?: number | null
+          rating_time_spent?: number | null
+          rating_reproducibility?: number | null
+          rating_overall?: number | null
+          comment?: string | null
+          tags?: string[]
+          flavor_tags?: string[]
+          texture_tags?: string[]
+          atmosphere_tags?: string[]
+          visibility?: VisibilityType
+          ai_recognized?: boolean
+          completeness_score?: number
+          location_lat?: number | null
+          location_lng?: number | null
         }
         Update: {
           id?: string
           user_id?: string
-          prompt_template_id?: string
-          reaction?: 'like' | 'dislike'
+          restaurant_id?: string | null
+          record_type?: RecordType
           created_at?: string
+          menu_name?: string | null
+          category?: string | null
+          sub_category?: string | null
+          price_per_person?: number | null
+          rating_taste?: number | null
+          rating_value?: number | null
+          rating_service?: number | null
+          rating_atmosphere?: number | null
+          rating_cleanliness?: number | null
+          rating_portion?: number | null
+          rating_aroma?: number | null
+          rating_body?: number | null
+          rating_acidity?: number | null
+          rating_finish?: number | null
+          rating_balance?: number | null
+          rating_difficulty?: number | null
+          rating_time_spent?: number | null
+          rating_reproducibility?: number | null
+          rating_overall?: number | null
+          comment?: string | null
+          tags?: string[]
+          flavor_tags?: string[]
+          texture_tags?: string[]
+          atmosphere_tags?: string[]
+          visibility?: VisibilityType
+          ai_recognized?: boolean
+          completeness_score?: number
+          location_lat?: number | null
+          location_lng?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: 'prompt_reactions_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'prompt_reactions_prompt_template_id_fkey'
-            columns: ['prompt_template_id']
-            isOneToOne: false
-            referencedRelation: 'prompt_templates'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-
-      favorites: {
+      record_photos: {
         Row: {
           id: string
-          user_id: string
-          restaurant_id: string
-          created_at: string
+          record_id: string
+          photo_url: string
+          thumbnail_url: string | null
+          order_index: number
+          ai_labels: string[]
         }
         Insert: {
           id?: string
-          user_id: string
-          restaurant_id: string
-          created_at?: string
+          record_id: string
+          photo_url: string
+          thumbnail_url?: string | null
+          order_index?: number
+          ai_labels?: string[]
         }
         Update: {
           id?: string
-          user_id?: string
-          restaurant_id?: string
-          created_at?: string
+          record_id?: string
+          photo_url?: string
+          thumbnail_url?: string | null
+          order_index?: number
+          ai_labels?: string[]
         }
-        Relationships: [
-          {
-            foreignKeyName: 'favorites_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'favorites_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-
-      collections: {
+      record_journals: {
         Row: {
           id: string
-          user_id: string
+          record_id: string
+          companions: Record<string, unknown> | null
+          occasion: string | null
+          mood_tags: string[]
+          memo: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          record_id: string
+          companions?: Record<string, unknown> | null
+          occasion?: string | null
+          mood_tags?: string[]
+          memo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          record_id?: string
+          companions?: Record<string, unknown> | null
+          occasion?: string | null
+          mood_tags?: string[]
+          memo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      groups: {
+        Row: {
+          id: string
           name: string
           description: string | null
-          is_public: boolean
+          owner_id: string
+          type: GroupType
           created_at: string
-          updated_at: string
+          entry_requirements: Record<string, unknown> | null
+          price_monthly: number | null
+          trial_days: number | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          owner_id: string
+          type: GroupType
+          created_at?: string
+          entry_requirements?: Record<string, unknown> | null
+          price_monthly?: number | null
+          trial_days?: number | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          owner_id?: string
+          type?: GroupType
+          created_at?: string
+          entry_requirements?: Record<string, unknown> | null
+          price_monthly?: number | null
+          trial_days?: number | null
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      group_memberships: {
+        Row: {
+          group_id: string
+          user_id: string
+          role: GroupRole
+          joined_at: string
+          status: MembershipStatus
+        }
+        Insert: {
+          group_id: string
+          user_id: string
+          role?: GroupRole
+          joined_at?: string
+          status?: MembershipStatus
+        }
+        Update: {
+          group_id?: string
+          user_id?: string
+          role?: GroupRole
+          joined_at?: string
+          status?: MembershipStatus
+        }
+        Relationships: []
+      }
+      record_shares: {
+        Row: {
+          record_id: string
+          group_id: string
+          shared_at: string
+        }
+        Insert: {
+          record_id: string
+          group_id: string
+          shared_at?: string
+        }
+        Update: {
+          record_id?: string
+          group_id?: string
+          shared_at?: string
+        }
+        Relationships: []
+      }
+      bookmarks: {
+        Row: {
+          user_id: string
+          record_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          record_id: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          record_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      reactions: {
+        Row: {
+          id: string
+          user_id: string
+          record_id: string
+          type: ReactionType
+          comment_text: string | null
+          created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          name: string
-          description?: string | null
-          is_public?: boolean
+          record_id: string
+          type: ReactionType
+          comment_text?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          name?: string
-          description?: string | null
-          is_public?: boolean
+          record_id?: string
+          type?: ReactionType
+          comment_text?: string | null
           created_at?: string
+        }
+        Relationships: []
+      }
+      taste_dna: {
+        Row: {
+          user_id: string
+          flavor_spicy: number
+          flavor_sweet: number
+          flavor_salty: number
+          flavor_sour: number
+          flavor_umami: number
+          flavor_rich: number
+          texture_crispy: number
+          texture_tender: number
+          texture_chewy: number
+          atmosphere_noise: number
+          atmosphere_formality: number
+          atmosphere_space: number
+          price_sensitivity: number
+          price_avg: number | null
+          price_range_min: number | null
+          price_range_max: number | null
+          category_preferences: Record<string, unknown> | null
+          peak_day: number | null
+          peak_hour: number | null
+          adventurousness: number
+          taste_type_code: string | null
+          taste_type_name: string | null
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          flavor_spicy?: number
+          flavor_sweet?: number
+          flavor_salty?: number
+          flavor_sour?: number
+          flavor_umami?: number
+          flavor_rich?: number
+          texture_crispy?: number
+          texture_tender?: number
+          texture_chewy?: number
+          atmosphere_noise?: number
+          atmosphere_formality?: number
+          atmosphere_space?: number
+          price_sensitivity?: number
+          price_avg?: number | null
+          price_range_min?: number | null
+          price_range_max?: number | null
+          category_preferences?: Record<string, unknown> | null
+          peak_day?: number | null
+          peak_hour?: number | null
+          adventurousness?: number
+          taste_type_code?: string | null
+          taste_type_name?: string | null
+          sample_count?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'collections_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-        ]
+        Update: {
+          user_id?: string
+          flavor_spicy?: number
+          flavor_sweet?: number
+          flavor_salty?: number
+          flavor_sour?: number
+          flavor_umami?: number
+          flavor_rich?: number
+          texture_crispy?: number
+          texture_tender?: number
+          texture_chewy?: number
+          atmosphere_noise?: number
+          atmosphere_formality?: number
+          atmosphere_space?: number
+          price_sensitivity?: number
+          price_avg?: number | null
+          price_range_min?: number | null
+          price_range_max?: number | null
+          category_preferences?: Record<string, unknown> | null
+          peak_day?: number | null
+          peak_hour?: number | null
+          adventurousness?: number
+          taste_type_code?: string | null
+          taste_type_name?: string | null
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
-
-      collection_items: {
+      taste_dna_wine: {
         Row: {
-          id: string
-          collection_id: string
-          restaurant_id: string
-          note: string | null
-          created_at: string
+          user_id: string
+          pref_body: number
+          pref_acidity: number
+          pref_tannin: number
+          pref_sweetness: number
+          aroma_fruit: number
+          aroma_floral: number
+          aroma_spice: number
+          aroma_oak: number
+          aroma_mineral: number
+          aroma_herbal: number
+          preferred_varieties: string[]
+          preferred_origins: string[]
+          price_range_min: number | null
+          price_range_max: number | null
+          sample_count: number
+          updated_at: string
         }
         Insert: {
-          id?: string
-          collection_id: string
-          restaurant_id: string
-          note?: string | null
-          created_at?: string
+          user_id: string
+          pref_body?: number
+          pref_acidity?: number
+          pref_tannin?: number
+          pref_sweetness?: number
+          aroma_fruit?: number
+          aroma_floral?: number
+          aroma_spice?: number
+          aroma_oak?: number
+          aroma_mineral?: number
+          aroma_herbal?: number
+          preferred_varieties?: string[]
+          preferred_origins?: string[]
+          price_range_min?: number | null
+          price_range_max?: number | null
+          sample_count?: number
+          updated_at?: string
         }
         Update: {
-          id?: string
-          collection_id?: string
-          restaurant_id?: string
-          note?: string | null
-          created_at?: string
+          user_id?: string
+          pref_body?: number
+          pref_acidity?: number
+          pref_tannin?: number
+          pref_sweetness?: number
+          aroma_fruit?: number
+          aroma_floral?: number
+          aroma_spice?: number
+          aroma_oak?: number
+          aroma_mineral?: number
+          aroma_herbal?: number
+          preferred_varieties?: string[]
+          preferred_origins?: string[]
+          price_range_min?: number | null
+          price_range_max?: number | null
+          sample_count?: number
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'collection_items_collection_id_fkey'
-            columns: ['collection_id']
-            isOneToOne: false
-            referencedRelation: 'collections'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'collection_items_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-
-      badges: {
+      taste_dna_homecook: {
         Row: {
-          id: string
-          slug: string
-          name: string
-          description: string
-          category: string
-          icon: string
-          tier: string | null
-          condition: BadgeCondition
-          created_at: string
+          user_id: string
+          pref_difficulty: number
+          pref_time_investment: number
+          method_preferences: Record<string, unknown> | null
+          preferred_cuisines: string[]
+          sample_count: number
+          updated_at: string
         }
         Insert: {
-          id?: string
-          slug: string
-          name: string
-          description: string
-          category: string
-          icon: string
-          tier?: string | null
-          condition: BadgeCondition
-          created_at?: string
+          user_id: string
+          pref_difficulty?: number
+          pref_time_investment?: number
+          method_preferences?: Record<string, unknown> | null
+          preferred_cuisines?: string[]
+          sample_count?: number
+          updated_at?: string
         }
         Update: {
-          id?: string
-          slug?: string
-          name?: string
-          description?: string
+          user_id?: string
+          pref_difficulty?: number
+          pref_time_investment?: number
+          method_preferences?: Record<string, unknown> | null
+          preferred_cuisines?: string[]
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      experience_atlas_regions: {
+        Row: {
+          user_id: string
+          region: string
+          record_count: number
+          unique_restaurants: number
+          sub_region_count: number
+          level: number
+          xp: number
+          xp_to_next: number
+          volume_score: number
+          diversity_score: number
+          recency_score: number
+          consistency_score: number
+          first_record_at: string | null
+          last_record_at: string | null
+        }
+        Insert: {
+          user_id: string
+          region: string
+          record_count?: number
+          unique_restaurants?: number
+          sub_region_count?: number
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          region?: string
+          record_count?: number
+          unique_restaurants?: number
+          sub_region_count?: number
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
+        }
+        Relationships: []
+      }
+      experience_atlas_genres: {
+        Row: {
+          user_id: string
+          category: string
+          record_count: number
+          sub_category_count: number
+          sub_categories: string[]
+          avg_rating: number | null
+          percentage: number | null
+          level: number
+          xp: number
+          xp_to_next: number
+          volume_score: number
+          diversity_score: number
+          recency_score: number
+          consistency_score: number
+          first_record_at: string | null
+          last_record_at: string | null
+        }
+        Insert: {
+          user_id: string
+          category: string
+          record_count?: number
+          sub_category_count?: number
+          sub_categories?: string[]
+          avg_rating?: number | null
+          percentage?: number | null
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
+        }
+        Update: {
+          user_id?: string
           category?: string
-          icon?: string
-          tier?: string | null
-          condition?: BadgeCondition
-          created_at?: string
+          record_count?: number
+          sub_category_count?: number
+          sub_categories?: string[]
+          avg_rating?: number | null
+          percentage?: number | null
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
         }
         Relationships: []
       }
-
-      user_badges: {
+      experience_atlas_scenes: {
         Row: {
-          id: string
           user_id: string
-          badge_id: string
-          earned_at: string
+          scene: string
+          record_count: number
+          unique_restaurants: number
+          category_diversity: number
+          level: number
+          xp: number
+          xp_to_next: number
+          volume_score: number
+          diversity_score: number
+          recency_score: number
+          consistency_score: number
+          first_record_at: string | null
+          last_record_at: string | null
         }
         Insert: {
-          id?: string
           user_id: string
-          badge_id: string
-          earned_at?: string
+          scene: string
+          record_count?: number
+          unique_restaurants?: number
+          category_diversity?: number
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
         }
         Update: {
-          id?: string
           user_id?: string
-          badge_id?: string
-          earned_at?: string
+          scene?: string
+          record_count?: number
+          unique_restaurants?: number
+          category_diversity?: number
+          level?: number
+          xp?: number
+          xp_to_next?: number
+          volume_score?: number
+          diversity_score?: number
+          recency_score?: number
+          consistency_score?: number
+          first_record_at?: string | null
+          last_record_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: 'user_badges_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'user_badges_badge_id_fkey'
-            columns: ['badge_id']
-            isOneToOne: false
-            referencedRelation: 'badges'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-
-      user_taste_profiles: {
+      user_stats: {
         Row: {
           user_id: string
-          priorities: string[]
-          spice_tolerance: string
-          portion_preference: string
-          dining_notes: string[]
+          total_records: number
+          total_photos: number
+          records_this_week: number
+          records_this_month: number
+          avg_weekly_frequency: number
+          current_streak_days: number
+          longest_streak_days: number
+          avg_completeness: number
+          nyam_level: number
+          points: number
+          groups_count: number
+          shared_records_count: number
+          reactions_received: number
           updated_at: string
         }
         Insert: {
           user_id: string
-          priorities?: string[]
-          spice_tolerance?: string
-          portion_preference?: string
-          dining_notes?: string[]
+          total_records?: number
+          total_photos?: number
+          records_this_week?: number
+          records_this_month?: number
+          avg_weekly_frequency?: number
+          current_streak_days?: number
+          longest_streak_days?: number
+          avg_completeness?: number
+          nyam_level?: number
+          points?: number
+          groups_count?: number
+          shared_records_count?: number
+          reactions_received?: number
           updated_at?: string
         }
         Update: {
           user_id?: string
-          priorities?: string[]
-          spice_tolerance?: string
-          portion_preference?: string
-          dining_notes?: string[]
+          total_records?: number
+          total_photos?: number
+          records_this_week?: number
+          records_this_month?: number
+          avg_weekly_frequency?: number
+          current_streak_days?: number
+          longest_streak_days?: number
+          avg_completeness?: number
+          nyam_level?: number
+          points?: number
+          groups_count?: number
+          shared_records_count?: number
+          reactions_received?: number
           updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'user_taste_profiles_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: true
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-
-      user_interactions: {
-        Row: {
-          id: string
-          user_id: string
-          event_type: string
-          event_data: Record<string, string>
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          event_type: string
-          event_data?: Record<string, string>
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          event_type?: string
-          event_data?: Record<string, string>
-          created_at?: string
         }
         Relationships: []
       }
-
-      dining_experiences: {
+      group_stats: {
         Row: {
-          id: string
-          user_id: string
-          restaurant_id: string
-          restaurant_name: string
-          visit_date: string
-          note: string
-          liked: string[]
-          disliked: string[]
-          overall_feeling: string
-          created_at: string
+          group_id: string
+          member_count: number
+          record_count: number
+          records_this_week: number
+          activity_score: number
+          quality_score: number
+          diversity_score: number
+          external_citation: number
+          growth_rate: number
+          overall_score: number
+          top_restaurants: Record<string, unknown> | null
+          top_categories: Record<string, unknown> | null
+          updated_at: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          restaurant_id: string
-          restaurant_name: string
-          visit_date: string
-          note?: string
-          liked?: string[]
-          disliked?: string[]
-          overall_feeling?: string
-          created_at?: string
+          group_id: string
+          member_count?: number
+          record_count?: number
+          records_this_week?: number
+          activity_score?: number
+          quality_score?: number
+          diversity_score?: number
+          external_citation?: number
+          growth_rate?: number
+          overall_score?: number
+          top_restaurants?: Record<string, unknown> | null
+          top_categories?: Record<string, unknown> | null
+          updated_at?: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          restaurant_id?: string
-          restaurant_name?: string
-          visit_date?: string
-          note?: string
-          liked?: string[]
-          disliked?: string[]
-          overall_feeling?: string
-          created_at?: string
+          group_id?: string
+          member_count?: number
+          record_count?: number
+          records_this_week?: number
+          activity_score?: number
+          quality_score?: number
+          diversity_score?: number
+          external_citation?: number
+          growth_rate?: number
+          overall_score?: number
+          top_restaurants?: Record<string, unknown> | null
+          top_categories?: Record<string, unknown> | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'dining_experiences_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_profiles'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'dining_experiences_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: false
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-    }
-
-    Views: {
-      restaurant_verification_summary: {
+      restaurant_stats: {
         Row: {
           restaurant_id: string
-          verification_count: number
+          record_count: number
+          unique_users: number
           avg_taste: number | null
           avg_value: number | null
           avg_service: number | null
-          avg_ambiance: number | null
-          last_verified_at: string | null
-          verification_level: 'trusted' | 'verified' | 'partial' | 'unverified'
+          avg_atmosphere: number | null
+          avg_overall: number | null
+          latest_record_at: string | null
+          updated_at: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'restaurant_verification_summary_restaurant_id_fkey'
-            columns: ['restaurant_id']
-            isOneToOne: true
-            referencedRelation: 'restaurants'
-            referencedColumns: ['id']
-          },
-        ]
+        Insert: {
+          restaurant_id: string
+          record_count?: number
+          unique_users?: number
+          avg_taste?: number | null
+          avg_value?: number | null
+          avg_service?: number | null
+          avg_atmosphere?: number | null
+          avg_overall?: number | null
+          latest_record_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          restaurant_id?: string
+          record_count?: number
+          unique_users?: number
+          avg_taste?: number | null
+          avg_value?: number | null
+          avg_service?: number | null
+          avg_atmosphere?: number | null
+          avg_overall?: number | null
+          latest_record_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
-
-    Functions: {
-      refresh_verification_summary: {
-        Args: Record<string, never>
-        Returns: undefined
-      }
-      get_user_preference_summary: {
-        Args: { p_user_id: string; p_days?: number }
-        Returns: Record<string, unknown>
-      }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: {
+      record_type: RecordType
+      visibility: VisibilityType
+      auth_provider: AuthProviderType
+      group_type: GroupType
+      group_role: GroupRole
+      membership_status: MembershipStatus
+      reaction_type: ReactionType
     }
-
-    Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
 }
-
-// ── Helper types ──────────────────────────────────────────────
-
-/** JSON structure for prompt template variables */
-export interface PromptVariable {
-  key: string
-  label: string
-  type: 'auto' | 'input' | 'preset'
-}
-
-/** JSON structure for badge unlock conditions */
-export interface BadgeCondition {
-  type: 'verification_count' | 'streak' | 'prompt_shared' | 'early_adopter'
-  value: number | boolean
-}
-
-// ── Convenience aliases ───────────────────────────────────────
-
-type Tables = Database['public']['Tables']
-
-/** Extract the Row type for a given table name */
-export type Row<T extends keyof Tables> = Tables[T]['Row']
-
-/** Extract the Insert type for a given table name */
-export type InsertRow<T extends keyof Tables> = Tables[T]['Insert']
-
-/** Extract the Update type for a given table name */
-export type UpdateRow<T extends keyof Tables> = Tables[T]['Update']

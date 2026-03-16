@@ -1,229 +1,106 @@
-/**
- * Supabase implementation of RestaurantRepository
- */
-
-import { createClient } from '../supabase/client';
-import type { Row } from '../supabase/types';
-import type { Database } from '../supabase/types';
-import type { Restaurant, RestaurantWithSummary, CuisineCategory, PriceRange, OperatingHours } from '@/domain/entities/restaurant';
-import type { VerificationLevel } from '@/domain/entities/verification';
+import { createClient } from '@/infrastructure/supabase/client'
+import type { Restaurant, MenuItem } from '@/domain/entities/restaurant'
 import type {
   RestaurantRepository,
-  RestaurantFilter,
-  PaginationOptions,
-  PaginatedResult,
-} from '@/domain/repositories/restaurant-repository';
+  RestaurantSearchParams,
+} from '@/domain/repositories/restaurant-repository'
+import type { Database } from '@/infrastructure/supabase/types'
 
-type RestaurantRow = Row<'restaurants'>;
-type SummaryRow = Database['public']['Views']['restaurant_verification_summary']['Row'];
+type RestaurantRow = Database['public']['Tables']['restaurants']['Row']
 
-/** Map a Supabase restaurant row to the domain entity */
+function toMenuItems(raw: Record<string, unknown> | null): MenuItem[] {
+  if (!raw || !Array.isArray(raw)) return []
+  return (raw as Array<Record<string, unknown>>).map((item) => ({
+    name: (item.name as string) ?? '',
+    price: (item.price as number) ?? null,
+    description: (item.description as string) ?? null,
+  }))
+}
+
 function toRestaurant(row: RestaurantRow): Restaurant {
   return {
     id: row.id,
     name: row.name,
-    address: row.address,
-    shortAddress: row.short_address,
+    address: row.address ?? '',
+    region: row.region ?? '',
+    category: row.category ?? '',
+    location: {
+      lat: row.latitude ?? 0,
+      lng: row.longitude ?? 0,
+    },
     phone: row.phone,
-    cuisine: row.cuisine,
-    cuisineCategory: row.cuisine_category as CuisineCategory,
-    priceRange: row.price_range as PriceRange | null,
-    hours: row.hours as OperatingHours | null,
-    mood: row.mood,
-    region: row.region,
-    imageUrl: row.image_url,
-    naverMapUrl: row.naver_map_url,
-    kakaoMapUrl: row.kakao_map_url,
-    googleMapUrl: row.google_map_url,
-    latitude: row.latitude,
-    longitude: row.longitude,
-    isActive: row.is_active,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+    hours: (row.hours as Record<string, string>) ?? {},
+    source: row.source ?? '',
+    externalId: row.external_id,
+    externalUrl: row.external_url,
+    menuItems: toMenuItems(row.menu_items),
+    syncedAt: row.synced_at ?? row.created_at,
+  }
 }
 
-/** Map a restaurant row + summary row to RestaurantWithSummary */
-function toRestaurantWithSummary(
-  row: RestaurantRow,
-  summary: SummaryRow | null,
-  ratings?: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[],
-): RestaurantWithSummary {
-  return {
-    ...toRestaurant(row),
-    verificationCount: summary?.verification_count ?? 0,
-    avgTaste: summary?.avg_taste ?? null,
-    avgValue: summary?.avg_value ?? null,
-    avgService: summary?.avg_service ?? null,
-    avgAmbiance: summary?.avg_ambiance ?? null,
-    verificationLevel: (summary?.verification_level ?? 'unverified') as VerificationLevel,
-    ratings: (ratings ?? []).map(r => ({
-      id: r.id,
-      restaurantId: r.restaurant_id,
-      source: r.source as 'naver' | 'kakao' | 'google',
-      rating: r.rating,
-      reviewCount: r.review_count,
-      fetchedAt: r.fetched_at,
-    })),
-  };
-}
-
-export const supabaseRestaurantRepository: RestaurantRepository = {
-  async findById(id: string): Promise<RestaurantWithSummary | null> {
-    const supabase = createClient();
-
-    const { data: restaurant, error } = await supabase
+export class SupabaseRestaurantRepository implements RestaurantRepository {
+  async getById(id: string): Promise<Restaurant | null> {
+    const supabase = createClient()
+    const { data, error } = await supabase
       .from('restaurants')
       .select('*')
       .eq('id', id)
-      .single();
+      .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw new Error(`Failed to fetch restaurant: ${error.message}`);
-    }
+    if (error || !data) return null
+    return toRestaurant(data as RestaurantRow)
+  }
 
-    let summary: SummaryRow | null = null
-    try {
-      const { data } = await supabase
-        .from('restaurant_verification_summary')
-        .select('*')
-        .eq('restaurant_id', id)
-        .maybeSingle()
-      summary = data
-    } catch {
-      // View may not exist yet — proceed without summary
-    }
-
-    let ratings: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[] = []
-    try {
-      const { data } = await supabase
-        .from('restaurant_ratings')
-        .select('*')
-        .eq('restaurant_id', id)
-      ratings = data ?? []
-    } catch {
-      // Table may not exist yet
-    }
-
-    return toRestaurantWithSummary(restaurant, summary, ratings);
-  },
-
-  async findMany(
-    filter?: RestaurantFilter,
-    pagination?: PaginationOptions,
-  ): Promise<PaginatedResult<RestaurantWithSummary>> {
-    const supabase = createClient();
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 20;
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    let query = supabase.from('restaurants').select('*', { count: 'exact' });
-
-    if (filter?.cuisineCategory) {
-      query = query.eq('cuisine_category', filter.cuisineCategory);
-    }
-    if (filter?.region) {
-      query = query.eq('region', filter.region);
-    }
-    if (filter?.query) {
-      query = query.ilike('name', `%${filter.query}%`);
-    }
-    if (filter?.isActive !== undefined) {
-      query = query.eq('is_active', filter.isActive);
-    }
-
-    const { data: restaurants, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      throw new Error(`Failed to fetch restaurants: ${error.message}`);
-    }
-
-    const total = count ?? 0;
-    const restaurantRows = restaurants ?? [];
-
-    // Fetch summaries for the returned restaurants
-    const ids = restaurantRows.map(r => r.id);
-    let summaries: SummaryRow[] = [];
-    if (ids.length > 0) {
-      try {
-        const { data: summaryData } = await supabase
-          .from('restaurant_verification_summary')
-          .select('*')
-          .in('restaurant_id', ids);
-        summaries = summaryData ?? [];
-      } catch {
-        // View may not exist yet
-      }
-    }
-
-    const summaryMap = new Map(summaries.map(s => [s.restaurant_id, s]));
-
-    // Fetch ratings for the returned restaurants
-    let allRatings: { id: string; restaurant_id: string; source: string; rating: number | null; review_count: number; fetched_at: string }[] = [];
-    if (ids.length > 0) {
-      try {
-        const { data: ratingsData } = await supabase
-          .from('restaurant_ratings')
-          .select('*')
-          .in('restaurant_id', ids);
-        allRatings = ratingsData ?? [];
-      } catch {
-        // Table may not exist yet
-      }
-    }
-    const ratingsMap = new Map<string, typeof allRatings>();
-    for (const r of allRatings) {
-      const arr = ratingsMap.get(r.restaurant_id) ?? [];
-      arr.push(r);
-      ratingsMap.set(r.restaurant_id, arr);
-    }
-
-    return {
-      data: restaurantRows.map(r =>
-        toRestaurantWithSummary(r, summaryMap.get(r.id) ?? null, ratingsMap.get(r.id) ?? []),
-      ),
-      total,
-      page,
-      limit,
-      hasMore: from + restaurantRows.length < total,
-    };
-  },
-
-  async search(
-    query: string,
-    pagination?: PaginationOptions,
-  ): Promise<PaginatedResult<Restaurant>> {
-    const supabase = createClient();
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 20;
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, count, error } = await supabase
+  async search(params: RestaurantSearchParams): Promise<Restaurant[]> {
+    const supabase = createClient()
+    let query = supabase
       .from('restaurants')
-      .select('*', { count: 'exact' })
-      .ilike('name', `%${query}%`)
-      .eq('is_active', true)
-      .order('name')
-      .range(from, to);
+      .select('*')
+      .ilike('name', `%${params.query}%`)
 
-    if (error) {
-      throw new Error(`Failed to search restaurants: ${error.message}`);
+    if (params.location) {
+      const delta = 0.05
+      query = query
+        .gte('latitude', params.location.lat - delta)
+        .lte('latitude', params.location.lat + delta)
+        .gte('longitude', params.location.lng - delta)
+        .lte('longitude', params.location.lng + delta)
     }
 
-    const total = count ?? 0;
-    const rows = data ?? [];
+    const { data, error } = await query.limit(50)
 
-    return {
-      data: rows.map(toRestaurant),
-      total,
-      page,
-      limit,
-      hasMore: from + rows.length < total,
-    };
-  },
-};
+    if (error || !data) return []
+    return (data as RestaurantRow[]).map(toRestaurant)
+  }
+
+  async getByRegion(region: string): Promise<Restaurant[]> {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('region', region)
+
+    if (error || !data) return []
+    return (data as RestaurantRow[]).map(toRestaurant)
+  }
+
+  async getNearby(
+    lat: number,
+    lng: number,
+    radiusKm: number,
+  ): Promise<Restaurant[]> {
+    const supabase = createClient()
+    const delta = radiusKm * 0.01
+
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .gte('latitude', lat - delta)
+      .lte('latitude', lat + delta)
+      .gte('longitude', lng - delta)
+      .lte('longitude', lng + delta)
+
+    if (error || !data) return []
+    return (data as RestaurantRow[]).map(toRestaurant)
+  }
+}

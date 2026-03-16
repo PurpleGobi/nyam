@@ -1,7 +1,3 @@
-# Henry - Development Guide
-
-> Clawdbot 대시보드. Next.js 16 + App Router, Tailwind, shadcn/ui, SWR.
-
 ## Commands
 
 ```bash
@@ -10,12 +6,6 @@ pnpm build        # 프로덕션 빌드
 pnpm lint         # ESLint
 ```
 
-## Clawdbot Gateway API
-
-- **URL**: `http://localhost:18789`
-- **Auth**: Bearer token (환경변수 또는 lib 참조)
-
----
 
 ## Clean Architecture (절대 규칙)
 
