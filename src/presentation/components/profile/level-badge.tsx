@@ -38,7 +38,7 @@ export function LevelBadge({
         className,
       )}
     >
-      {showLabel ? `냠 Lv.${level}` : level}
+      {showLabel ? `nyam Lv.${level}` : level}
     </span>
   )
 }

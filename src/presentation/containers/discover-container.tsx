@@ -125,7 +125,7 @@ export function DiscoverContainer() {
               </div>
               <div className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 text-[#FF6038]" />
-                <span className="text-sm font-medium text-[var(--color-neutral-700)]">{record.ratingOverall.toFixed(1)}</span>
+                <span className="text-sm font-medium text-[var(--color-neutral-700)]">{Math.round(record.ratingOverall)}</span>
               </div>
             </div>
           ))}

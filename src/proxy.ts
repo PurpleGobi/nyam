@@ -14,11 +14,6 @@ export function proxy(request: NextRequest) {
     .getAll()
     .some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))
 
-  // Redirect unauthenticated users to login (except public paths)
-  if (!hasSession && !isPublicPath(pathname)) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
   // Redirect authenticated users away from login
   if (hasSession && pathname === '/auth/login') {
     return NextResponse.redirect(new URL('/', request.url))

@@ -125,7 +125,7 @@ function BestRatedSection({ data }: { data: WrappedData }) {
         <div className="flex items-center gap-2">
           <Star className="h-6 w-6 fill-[#FF6038] text-[#FF6038]" />
           <span className="text-2xl font-bold text-[#FF6038]">
-            {data.topRated.rating.toFixed(1)}
+            {Math.round(data.topRated.rating)}
           </span>
         </div>
       </div>
@@ -272,8 +272,8 @@ function StatsSummarySection({ data }: { data: WrappedData }) {
   const statItems = [
     {
       icon: Star,
-      label: '평균 별점',
-      value: data.averageRating > 0 ? data.averageRating.toFixed(1) : '-',
+      label: '평균 점수',
+      value: data.averageRating > 0 ? Math.round(data.averageRating).toString() : '-',
     },
     {
       icon: MapPin,

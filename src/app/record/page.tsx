@@ -1,5 +1,5 @@
-import { RecordContainer } from "@/presentation/containers/record-container"
+import { QuickCaptureContainer } from "@/presentation/containers/quick-capture-container"
 
 export default function RecordPage() {
-  return <RecordContainer />
+  return <QuickCaptureContainer />
 }

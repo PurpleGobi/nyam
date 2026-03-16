@@ -56,13 +56,13 @@ export function GroupsContainer() {
     <div className="flex flex-col gap-6 px-4 pt-6">
       {/* Header */}
       <h1 className="text-xl font-bold text-[var(--color-neutral-800)]">
-        그룹
+        버블
       </h1>
 
       {/* My Groups */}
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
-          내 그룹
+          내 버블
         </h2>
         {isLoading ? (
           <div className="flex flex-col gap-2">
@@ -98,7 +98,7 @@ export function GroupsContainer() {
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-16">
             <Users className="mb-3 h-8 w-8 text-[var(--color-neutral-300)]" />
             <p className="text-center text-sm text-[var(--color-neutral-500)]">
-              첫 그룹에 참여해보세요
+              첫 버블에 참여해보세요
             </p>
             <p className="mt-1 text-center text-xs text-[var(--color-neutral-400)]">
               같은 취향의 사람들과 맛집을 공유할 수 있어요

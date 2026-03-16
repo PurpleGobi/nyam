@@ -45,7 +45,7 @@ export function PremiumGate({
         </div>
 
         <p className="text-center text-sm font-medium text-[var(--color-neutral-600)]">
-          이 그룹은 승인이 필요합니다
+          이 버블은 승인이 필요합니다
         </p>
 
         <button
@@ -58,7 +58,7 @@ export function PremiumGate({
         </button>
 
         <p className="text-center text-xs text-[var(--color-neutral-400)]">
-          그룹 운영자의 승인 후 참여할 수 있습니다
+          버블 운영자의 승인 후 참여할 수 있습니다
         </p>
       </div>
     </div>

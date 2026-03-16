@@ -21,7 +21,7 @@ export function PublicGroupsSection({ groups, isLoading, onJoin, isJoining }: Pu
       <div className="flex items-center gap-2">
         <Globe className="h-4 w-4 text-[var(--color-neutral-500)]" />
         <h3 className="text-sm font-semibold text-[var(--color-neutral-700)]">
-          공개 그룹 둘러보기
+          공개 버블 둘러보기
         </h3>
       </div>
 
@@ -33,7 +33,7 @@ export function PublicGroupsSection({ groups, isLoading, onJoin, isJoining }: Pu
         </div>
       ) : groups.length === 0 ? (
         <p className="py-6 text-center text-sm text-[var(--color-neutral-400)]">
-          공개 그룹이 아직 없습니다
+          공개 버블이 아직 없습니다
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

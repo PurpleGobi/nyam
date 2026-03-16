@@ -11,7 +11,7 @@ interface VisibilitySelectorProps {
 
 const VISIBILITY_OPTIONS: { visibility: RecordVisibility; label: string; icon: typeof Lock }[] = [
   { visibility: 'private', label: '나만 보기', icon: Lock },
-  { visibility: 'group', label: '그룹 공개', icon: Users },
+  { visibility: 'group', label: '버블 공개', icon: Users },
   { visibility: 'public', label: '전체 공개', icon: Globe },
 ]
 

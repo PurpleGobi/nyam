@@ -105,7 +105,7 @@ export function RecordCard({
             <span className="flex items-center gap-0.5 shrink-0 text-sm">
               <Star className="size-3.5 fill-[#E9B949] text-[#E9B949]" />
               <span className="text-neutral-700 font-medium">
-                {record.ratingOverall.toFixed(1)}
+                {Math.round(record.ratingOverall)}
               </span>
             </span>
           )}

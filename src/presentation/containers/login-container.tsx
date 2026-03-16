@@ -26,7 +26,7 @@ export function LoginContainer() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-8 px-6">
       <div className="flex flex-col items-center gap-2">
-        <h1 className="text-4xl font-bold text-[#FF6038]">냠</h1>
+        <h1 className="text-4xl font-bold text-[#FF6038]" style={{ fontFamily: 'var(--font-logo)' }}>nyam</h1>
         <p className="text-sm text-[var(--color-neutral-500)]">
           맛의 Second Brain
         </p>

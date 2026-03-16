@@ -135,7 +135,7 @@ export function ProfileContainer() {
               </button>
             </div>
           )}
-          <span className="text-sm text-[#FF6038]">냠 Lv.{level}</span>
+          <span className="text-sm text-[#FF6038]">nyam Lv.{level}</span>
         </div>
       </div>
 
@@ -244,7 +244,7 @@ export function ProfileContainer() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="h-3.5 w-3.5 text-[#FF6038]" />
-                  <span className="text-sm font-medium text-[var(--color-neutral-700)]">{record.ratingOverall.toFixed(1)}</span>
+                  <span className="text-sm font-medium text-[var(--color-neutral-700)]">{Math.round(record.ratingOverall)}</span>
                 </div>
               </div>
             ))}

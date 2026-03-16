@@ -1,7 +1,7 @@
 {
-  "name": "냠 — 맛의 Second Brain",
-  "short_name": "냠",
-  "description": "식음료 경험을 기록하고, 즉시 활용하며, 신뢰할 수 있는 그룹과 공유",
+  "name": "nyam — 맛의 Second Brain",
+  "short_name": "nyam",
+  "description": "식음료 경험을 기록하고, 즉시 활용하며, 신뢰할 수 있는 버블과 공유",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

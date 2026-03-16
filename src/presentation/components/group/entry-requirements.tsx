@@ -23,7 +23,7 @@ export function EntryRequirements({
   const items: { icon: string; label: string }[] = []
 
   if (requirements.minLevel != null) {
-    items.push({ icon: '\u2B50', label: `냠 Lv.${requirements.minLevel}+` })
+    items.push({ icon: '\u2B50', label: `nyam Lv.${requirements.minLevel}+` })
   }
   if (requirements.minRecords != null) {
     items.push({ icon: '\uD83D\uDCDD', label: `기록 ${requirements.minRecords}개+` })

@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: ROUTES.HOME, label: "홈", icon: Home },
   { href: ROUTES.DISCOVER, label: "발견", icon: Search },
   { href: ROUTES.RECORD, label: "기록", icon: Plus, isFab: true },
-  { href: ROUTES.GROUPS, label: "그룹", icon: Users },
+  { href: ROUTES.GROUPS, label: "버블", icon: Users },
   { href: ROUTES.PROFILE, label: "프로필", icon: User },
 ]
 

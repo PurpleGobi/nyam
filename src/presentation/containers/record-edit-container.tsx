@@ -55,7 +55,7 @@ const VISIBILITY_OPTIONS: Array<{
   icon: typeof Eye
 }> = [
   { value: 'private', label: '나만 보기', icon: EyeOff },
-  { value: 'group', label: '그룹 공개', icon: Users },
+  { value: 'group', label: '버블 공개', icon: Users },
   { value: 'public', label: '전체 공개', icon: Eye },
 ]
 

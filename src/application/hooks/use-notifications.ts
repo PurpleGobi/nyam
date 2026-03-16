@@ -45,10 +45,9 @@ export function useNotifications(userId: string | undefined) {
 
         // Fetch menu names for reacted records
         const reactedRecordIds = [...new Set((reactions ?? []).map((r) => r.record_id))]
-        const { data: reactedRecords } = await supabase
-          .from('records')
-          .select('id, menu_name')
-          .in('id', reactedRecordIds.length > 0 ? reactedRecordIds : ['_none_'])
+        const reactedRecords = reactedRecordIds.length > 0
+          ? (await supabase.from('records').select('id, menu_name').in('id', reactedRecordIds)).data
+          : []
 
         const menuMap = new Map((reactedRecords ?? []).map((r) => [r.id, r.menu_name]))
 
@@ -76,18 +75,22 @@ export function useNotifications(userId: string | undefined) {
       const shareRecordIds = [...new Set((shares ?? []).map((s) => s.record_id))]
       const shareGroupIds = [...new Set((shares ?? []).map((s) => s.group_id))]
 
-      const [shareRecordsResult, shareGroupsResult] = await Promise.all([
-        supabase.from('records').select('id, menu_name').in('id', shareRecordIds.length > 0 ? shareRecordIds : ['_none_']),
-        supabase.from('groups').select('id, name').in('id', shareGroupIds.length > 0 ? shareGroupIds : ['_none_']),
+      const [shareRecords, shareGroups] = await Promise.all([
+        shareRecordIds.length > 0
+          ? supabase.from('records').select('id, menu_name').in('id', shareRecordIds).then(r => r.data)
+          : Promise.resolve([]),
+        shareGroupIds.length > 0
+          ? supabase.from('groups').select('id, name').in('id', shareGroupIds).then(r => r.data)
+          : Promise.resolve([]),
       ])
 
-      const shareMenuMap = new Map((shareRecordsResult.data ?? []).map((r) => [r.id, r.menu_name]))
-      const groupNameMap = new Map((shareGroupsResult.data ?? []).map((g) => [g.id, g.name]))
+      const shareMenuMap = new Map((shareRecords ?? []).map((r) => [r.id, r.menu_name]))
+      const groupNameMap = new Map((shareGroups ?? []).map((g) => [g.id, g.name]))
 
       const shareNotifs: Notification[] = (shares ?? []).map((row) => ({
         id: `share-${row.record_id}-${row.group_id}`,
         type: 'share' as const,
-        message: `'${groupNameMap.get(row.group_id) ?? '그룹'}' 그룹에 '${shareMenuMap.get(row.record_id) ?? '메뉴'}' 기록이 공유되었습니다`,
+        message: `'${groupNameMap.get(row.group_id) ?? '버블'}' 버블에 '${shareMenuMap.get(row.record_id) ?? '메뉴'}' 기록이 공유되었습니다`,
         recordId: row.record_id,
         createdAt: row.shared_at,
       }))

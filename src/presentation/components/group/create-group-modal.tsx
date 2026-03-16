@@ -46,7 +46,7 @@ export function CreateGroupModal({ isOpen, onClose, onSubmit, isLoading }: Creat
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-[var(--color-neutral-800)]">
-            새 그룹 만들기
+            새 버블 만들기
           </h2>
           <button
             type="button"
@@ -62,14 +62,14 @@ export function CreateGroupModal({ isOpen, onClose, onSubmit, isLoading }: Creat
           {/* Name */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="group-name" className="text-sm font-medium text-[var(--color-neutral-700)]">
-              그룹 이름 <span className="text-red-500">*</span>
+              버블 이름 <span className="text-red-500">*</span>
             </label>
             <input
               id="group-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="그룹 이름을 입력하세요"
+              placeholder="버블 이름을 입력하세요"
               className="rounded-lg border border-[var(--color-neutral-200)] px-3 py-2.5 text-sm text-[var(--color-neutral-800)] outline-none placeholder:text-[var(--color-neutral-400)] focus:border-[#FF6038] focus:ring-1 focus:ring-[#FF6038]"
               required
               maxLength={50}
@@ -85,7 +85,7 @@ export function CreateGroupModal({ isOpen, onClose, onSubmit, isLoading }: Creat
               id="group-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="그룹에 대한 설명을 입력하세요"
+              placeholder="버블에 대한 설명을 입력하세요"
               rows={3}
               className="resize-none rounded-lg border border-[var(--color-neutral-200)] px-3 py-2.5 text-sm text-[var(--color-neutral-800)] outline-none placeholder:text-[var(--color-neutral-400)] focus:border-[#FF6038] focus:ring-1 focus:ring-[#FF6038]"
               maxLength={200}

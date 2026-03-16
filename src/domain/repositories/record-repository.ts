@@ -17,5 +17,6 @@ export interface RecordRepository {
   create(record: Omit<FoodRecord, 'id' | 'createdAt'>): Promise<FoodRecord>
   update(id: string, record: Partial<FoodRecord>): Promise<FoodRecord>
   delete(id: string): Promise<void>
+  getByUserIdForMonth(userId: string, year: number, month: number): Promise<FoodRecord[]>
   search(query: string): Promise<FoodRecord[]>
 }

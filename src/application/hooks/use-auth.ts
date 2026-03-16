@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { createClient } from '@/infrastructure/supabase/client'
 
@@ -23,7 +23,18 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     const supabase = createClient()
 
-    supabase.auth.getSession().then(({ data: { session: initial } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: initial } }) => {
+      // Dev auto-login with test account
+      if (!initial && process.env.NODE_ENV === 'development') {
+        const { data } = await supabase.auth.signInWithPassword({
+          email: 'test@nyam.dev',
+          password: 'test1234!!',
+        })
+        setSession(data.session)
+        setUser(data.session?.user ?? null)
+        setIsLoading(false)
+        return
+      }
       setSession(initial)
       setUser(initial?.user ?? null)
       setIsLoading(false)
@@ -71,5 +82,8 @@ export function useAuth(): UseAuthReturn {
     if (error) throw error
   }, [])
 
-  return { user, session, isLoading, signIn, signOut }
+  return useMemo(
+    () => ({ user, session, isLoading, signIn, signOut }),
+    [user, session, isLoading, signIn, signOut],
+  )
 }

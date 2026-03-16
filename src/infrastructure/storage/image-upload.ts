@@ -36,6 +36,67 @@ export async function uploadRecordPhoto(
 }
 
 /**
+ * Resize an image file to fit within a maximum dimension while maintaining aspect ratio.
+ * Returns the original file if it is already smaller than maxSize.
+ */
+export async function resizeImage(
+  file: File,
+  maxSize: number = 1024,
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+
+      const { width, height } = img
+
+      if (width <= maxSize && height <= maxSize) {
+        resolve(file)
+        return
+      }
+
+      const scale = maxSize / Math.max(width, height)
+      const newWidth = Math.round(width * scale)
+      const newHeight = Math.round(height * scale)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = newWidth
+      canvas.height = newHeight
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(file)
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, newWidth, newHeight)
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file)
+            return
+          }
+
+          const resized = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          })
+          resolve(resized)
+        },
+        'image/jpeg',
+        0.85,
+      )
+    }
+
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+/**
  * Convert a File object to a base64 string (without the data URL prefix).
  */
 export function fileToBase64(file: File): Promise<string> {

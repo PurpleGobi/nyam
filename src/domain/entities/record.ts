@@ -60,7 +60,19 @@ export interface FoodRecord {
   aiRecognized: boolean
   completenessScore: number
   locationAtRecord: RecordLocation | null
+
+  phaseStatus: 1 | 2 | 3
+  phase1CompletedAt: string | null
+  phase2CompletedAt: string | null
+  phase3CompletedAt: string | null
+  scaledRating: number | null
+  comparisonCount: number
+  visitTime: string | null
+  companionCount: number | null
+  totalCost: number | null
 }
+
+export type PhotoType = 'signboard' | 'menu' | 'companion' | 'receipt' | 'food' | 'other'
 
 export interface RecordPhoto {
   id: string
@@ -69,6 +81,22 @@ export interface RecordPhoto {
   thumbnailUrl: string
   orderIndex: number
   aiLabels: string[]
+  photoType: PhotoType
+  aiDescription: string | null
+}
+
+export interface BlogSection {
+  type: 'text' | 'photo'
+  content: string
+  photoIndex?: number
+  caption?: string
+}
+
+export interface AiQuestion {
+  id: string
+  question: string
+  options: string[]
+  type: 'select' | 'freetext'
 }
 
 export interface RecordJournal {
@@ -78,4 +106,11 @@ export interface RecordJournal {
   occasion: string | null
   moodTags: string[]
   memo: string | null
+  blogTitle: string | null
+  blogContent: string | null
+  blogSections: BlogSection[] | null
+  aiQuestions: AiQuestion[] | null
+  userAnswers: Record<string, string> | null
+  published: boolean
+  publishedAt: string | null
 }

@@ -20,6 +20,8 @@ function toPhoto(row: RecordPhotoRow): RecordPhoto {
     thumbnailUrl: row.thumbnail_url ?? '',
     orderIndex: row.order_index,
     aiLabels: row.ai_labels ?? [],
+    photoType: (row as Record<string, unknown>).photo_type as RecordPhoto['photoType'] ?? 'food',
+    aiDescription: (row as Record<string, unknown>).ai_description as string | null ?? null,
   }
 }
 
@@ -80,6 +82,15 @@ function toRecord(
       row.location_lat != null && row.location_lng != null
         ? { lat: row.location_lat, lng: row.location_lng }
         : null,
+    phaseStatus: ((row as Record<string, unknown>).phase_status as number ?? 1) as 1 | 2 | 3,
+    phase1CompletedAt: (row as Record<string, unknown>).phase1_completed_at as string | null ?? null,
+    phase2CompletedAt: (row as Record<string, unknown>).phase2_completed_at as string | null ?? null,
+    phase3CompletedAt: (row as Record<string, unknown>).phase3_completed_at as string | null ?? null,
+    scaledRating: (row as Record<string, unknown>).scaled_rating as number | null ?? null,
+    comparisonCount: (row as Record<string, unknown>).comparison_count as number ?? 0,
+    visitTime: (row as Record<string, unknown>).visit_time as string | null ?? null,
+    companionCount: (row as Record<string, unknown>).companion_count as number | null ?? null,
+    totalCost: (row as Record<string, unknown>).total_cost as number | null ?? null,
     photos: photos ? photos.map(toPhoto) : undefined,
   } as FoodRecord & { photos?: RecordPhoto[] }
 }
@@ -102,25 +113,27 @@ function ratingsToColumns(ratings: RecordRatings): Record<string, number | null>
     rating_reproducibility: null,
   }
 
+  const v = (n: number) => (n > 0 ? n : null)
+
   if ('service' in ratings) {
-    cols.rating_taste = ratings.taste
-    cols.rating_value = ratings.value
-    cols.rating_service = ratings.service
-    cols.rating_atmosphere = ratings.atmosphere
-    cols.rating_cleanliness = ratings.cleanliness
-    cols.rating_portion = ratings.portion
+    cols.rating_taste = v(ratings.taste)
+    cols.rating_value = v(ratings.value)
+    cols.rating_service = v(ratings.service)
+    cols.rating_atmosphere = v(ratings.atmosphere)
+    cols.rating_cleanliness = v(ratings.cleanliness)
+    cols.rating_portion = v(ratings.portion)
   } else if ('aroma' in ratings) {
-    cols.rating_aroma = ratings.aroma
-    cols.rating_body = ratings.body
-    cols.rating_acidity = ratings.acidity
-    cols.rating_finish = ratings.finish
-    cols.rating_balance = ratings.balance
-    cols.rating_value = ratings.value
+    cols.rating_aroma = v(ratings.aroma)
+    cols.rating_body = v(ratings.body)
+    cols.rating_acidity = v(ratings.acidity)
+    cols.rating_finish = v(ratings.finish)
+    cols.rating_balance = v(ratings.balance)
+    cols.rating_value = v(ratings.value)
   } else if ('difficulty' in ratings) {
-    cols.rating_taste = ratings.taste
-    cols.rating_difficulty = ratings.difficulty
-    cols.rating_time_spent = ratings.timeSpent
-    cols.rating_reproducibility = ratings.reproducibility
+    cols.rating_taste = v(ratings.taste)
+    cols.rating_difficulty = v(ratings.difficulty)
+    cols.rating_time_spent = v(ratings.timeSpent)
+    cols.rating_reproducibility = v(ratings.reproducibility)
   }
 
   return cols
@@ -159,6 +172,16 @@ function toInsert(data: Omit<FoodRecord, 'id' | 'createdAt'> | Partial<FoodRecor
   if ('ratings' in data && data.ratings !== undefined) {
     Object.assign(insert, ratingsToColumns(data.ratings))
   }
+
+  if ('phaseStatus' in data && data.phaseStatus !== undefined) insert.phase_status = data.phaseStatus
+  if ('phase1CompletedAt' in data && data.phase1CompletedAt !== undefined) insert.phase1_completed_at = data.phase1CompletedAt
+  if ('phase2CompletedAt' in data && data.phase2CompletedAt !== undefined) insert.phase2_completed_at = data.phase2CompletedAt
+  if ('phase3CompletedAt' in data && data.phase3CompletedAt !== undefined) insert.phase3_completed_at = data.phase3CompletedAt
+  if ('scaledRating' in data && data.scaledRating !== undefined) insert.scaled_rating = data.scaledRating
+  if ('comparisonCount' in data && data.comparisonCount !== undefined) insert.comparison_count = data.comparisonCount
+  if ('visitTime' in data && data.visitTime !== undefined) insert.visit_time = data.visitTime
+  if ('companionCount' in data && data.companionCount !== undefined) insert.companion_count = data.companionCount
+  if ('totalCost' in data && data.totalCost !== undefined) insert.total_cost = data.totalCost
 
   return insert as RecordInsert
 }
@@ -262,6 +285,30 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (error) {
       throw new Error(error.message)
     }
+  }
+
+  async getByUserIdForMonth(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<FoodRecord[]> {
+    const supabase = createClient()
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00.000Z`
+    const endMonth = month === 12 ? 1 : month + 1
+    const endYear = month === 12 ? year + 1 : year
+    const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00:00.000Z`
+
+    const { data, error } = await supabase
+      .from('records')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('created_at', startDate)
+      .lt('created_at', endDate)
+      .order('created_at', { ascending: true })
+
+    if (error || !data) return []
+
+    return (data as RecordRow[]).map((row) => toRecord(row))
   }
 
   async search(query: string): Promise<FoodRecord[]> {

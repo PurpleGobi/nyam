@@ -65,7 +65,7 @@ export function GroupJoinContainer() {
         router.push(`/groups/${groupInfo.id}`)
       }, 1500)
     } else {
-      setErrorMessage('그룹 참여에 실패했습니다. 이미 멤버이거나 오류가 발생했습니다.')
+      setErrorMessage('버블 참여에 실패했습니다. 이미 멤버이거나 오류가 발생했습니다.')
       setStatus('error')
     }
   }
@@ -99,7 +99,7 @@ export function GroupJoinContainer() {
           onClick={() => router.push('/groups')}
           className="mt-2 text-sm font-medium text-[#FF6038]"
         >
-          그룹 목록으로 이동
+          버블 목록으로 이동
         </button>
       </div>
     )
@@ -110,10 +110,10 @@ export function GroupJoinContainer() {
       <div className="flex flex-col items-center justify-center gap-3 px-4 pt-20">
         <CheckCircle2 className="h-10 w-10 text-green-500" />
         <p className="text-sm font-medium text-[var(--color-neutral-700)]">
-          그룹에 참여했습니다!
+          버블에 참여했습니다!
         </p>
         <p className="text-xs text-[var(--color-neutral-400)]">
-          잠시 후 그룹 페이지로 이동합니다...
+          잠시 후 버블 페이지로 이동합니다...
         </p>
       </div>
     )

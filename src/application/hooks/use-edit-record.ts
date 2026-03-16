@@ -29,7 +29,7 @@ export function useEditRecord(recordId: string | undefined): UseEditRecordReturn
     setError(null)
     try {
       const updated = await repo.update(recordId, updates)
-      await mutate(updated, false)
+      await mutate(updated, { revalidate: false })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save changes'
       setError(message)

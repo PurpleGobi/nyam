@@ -33,7 +33,7 @@ export function RecordComplete({
         <div className="flex items-center gap-1 mt-1">
           <Star className="size-5 fill-[#E9B949] text-[#E9B949]" />
           <span className="text-lg font-semibold text-neutral-800">
-            {ratingOverall.toFixed(1)}
+            {Math.round(ratingOverall)}
           </span>
         </div>
       </div>

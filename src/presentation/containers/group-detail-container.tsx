@@ -80,7 +80,7 @@ export function GroupDetailContainer() {
   if (!group) {
     return (
       <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <p className="text-sm text-[var(--color-neutral-500)]">그룹을 찾을 수 없습니다</p>
+        <p className="text-sm text-[var(--color-neutral-500)]">버블을 찾을 수 없습니다</p>
         <button
           type="button"
           onClick={() => router.push('/groups')}

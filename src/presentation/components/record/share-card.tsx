@@ -80,7 +80,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 letterSpacing: -0.5,
               }}
             >
-              냠
+              nyam
             </span>
             <span
               style={{
@@ -149,7 +149,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 lineHeight: 1,
               }}
             >
-              {record.ratingOverall.toFixed(1)}
+              {Math.round(record.ratingOverall)}
             </span>
             <span
               style={{
@@ -160,7 +160,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 paddingBottom: 4,
               }}
             >
-              / 5.0
+              / 100
             </span>
           </div>
         </div>
@@ -249,7 +249,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
               fontWeight: 500,
             }}
           >
-            냠 nyam -- 맛의 Second Brain
+            nyam -- 맛의 Second Brain
           </span>
         </div>
       </div>

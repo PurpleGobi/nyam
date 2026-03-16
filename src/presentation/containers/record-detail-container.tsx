@@ -79,7 +79,7 @@ const HOMEMADE_RATING_LABELS: Record<keyof HomemadeRatings, string> = {
 
 const VISIBILITY_CONFIG: Record<string, { label: string; icon: typeof Eye }> = {
   private: { label: '나만 보기', icon: EyeOff },
-  group: { label: '그룹 공개', icon: Users },
+  group: { label: '버블 공개', icon: Users },
   public: { label: '전체 공개', icon: Eye },
 }
 
@@ -91,7 +91,7 @@ const TAG_COLORS: Record<string, { bg: string; text: string }> = {
 }
 
 function RatingBar({ label, value }: { label: string; value: number }) {
-  const percentage = Math.min((value / 5) * 100, 100)
+  const percentage = Math.min(value, 100)
   return (
     <div className="flex items-center gap-3">
       <span className="w-14 shrink-0 text-xs text-[var(--color-neutral-600)]">{label}</span>
@@ -102,7 +102,7 @@ function RatingBar({ label, value }: { label: string; value: number }) {
         />
       </div>
       <span className="w-6 shrink-0 text-right text-xs font-medium text-[var(--color-neutral-700)]">
-        {value.toFixed(1)}
+        {value}
       </span>
     </div>
   )
@@ -442,9 +442,9 @@ export function RecordDetailContainer() {
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-5">
           <Star className="h-7 w-7 text-[#FF6038]" />
           <span className="text-3xl font-bold text-[var(--color-neutral-800)]">
-            {record.ratingOverall.toFixed(1)}
+            {Math.round(record.ratingOverall)}
           </span>
-          <span className="text-sm text-[var(--color-neutral-400)]">/ 5.0</span>
+          <span className="text-sm text-[var(--color-neutral-400)]">/ 100</span>
         </div>
       </div>
 
@@ -558,7 +558,7 @@ export function RecordDetailContainer() {
             ref={shareCardRef}
             record={record}
             restaurant={restaurant}
-            userName={profileUser?.nickname ?? '냠 유저'}
+            userName={profileUser?.nickname ?? 'nyam 유저'}
           />
         </div>
       )}

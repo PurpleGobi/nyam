@@ -1,159 +1,206 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { MapPin, Star, Sparkles, ChevronRight, Bell } from "lucide-react"
-import { useAuthContext } from "@/presentation/providers/auth-provider"
-import { useRecords } from "@/application/hooks/use-records"
-import { useProfile } from "@/application/hooks/use-profile"
-import { useGeolocation } from "@/application/hooks/use-geolocation"
-import { useNearbyRecords } from "@/application/hooks/use-nearby-records"
-import { useNotifications } from "@/application/hooks/use-notifications"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Users, Utensils, Wine, Heart, Briefcase, Cake } from 'lucide-react'
+import { useAuthContext } from '@/presentation/providers/auth-provider'
+import { useProfile } from '@/application/hooks/use-profile'
+import { useNotifications } from '@/application/hooks/use-notifications'
+import { useTodaysPick } from '@/application/hooks/use-todays-pick'
+import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
+import { useRecordsForMap } from '@/application/hooks/use-records-for-map'
+import { useGeolocation } from '@/application/hooks/use-geolocation'
+import { useFriendsFeed } from '@/application/hooks/use-friends-feed'
+import { HomeHeader } from '@/presentation/components/home/home-header'
+import { TodaysPickCard } from '@/presentation/components/home/todays-pick-card'
+import { HomeProfileCard } from '@/presentation/components/home/home-profile-card'
+import { PhotoCalendar } from '@/presentation/components/home/photo-calendar'
+import { HomeMapSection } from '@/presentation/components/home/home-map-section'
+import { FriendsFeedCard } from '@/presentation/components/home/friends-feed-card'
+
+type MapFilter = 'all' | 'mine' | 'friends'
+
+const PLACEHOLDER_TASTE_DNA = {
+  spicy: 0.81,
+  sweet: 0.45,
+  salty: 0.55,
+  sour: 0.3,
+  umami: 0.72,
+  rich: 0.65,
+}
+
+const PLACEHOLDER_REGIONS = [
+  { name: '강남', level: 6 },
+  { name: '한남', level: 4 },
+  { name: '성수', level: 5 },
+  { name: '을지로', level: 3 },
+  { name: '연남', level: 4 },
+]
+
+const PLACEHOLDER_GENRES = [
+  { name: '중식', level: 6 },
+  { name: '와인', level: 5 },
+  { name: '일식', level: 4 },
+  { name: '이탈리안', level: 3 },
+  { name: '한식', level: 5 },
+  { name: '디저트', level: 2 },
+]
+
+const PLACEHOLDER_SCENES = [
+  { name: '데이트', level: 5, icon: <Heart className="h-3 w-3" /> },
+  { name: '회식', level: 4, icon: <Users className="h-3 w-3" /> },
+  { name: '혼밥', level: 6, icon: <Utensils className="h-3 w-3" /> },
+  { name: '와인바', level: 3, icon: <Wine className="h-3 w-3" /> },
+  { name: '비즈니스', level: 2, icon: <Briefcase className="h-3 w-3" /> },
+  { name: '기념일', level: 3, icon: <Cake className="h-3 w-3" /> },
+]
 
 export function HomeContainer() {
   const router = useRouter()
   const { user: authUser } = useAuthContext()
   const userId = authUser?.id
-  const { user: profile } = useProfile(userId)
-  const { data: records, isLoading } = useRecords(userId, 10)
-  const { location, isLoading: geoLoading, error: geoError } = useGeolocation()
-  const { data: nearbyRecords, isLoading: nearbyLoading } = useNearbyRecords(location)
-  const { unreadCount } = useNotifications(userId)
 
+  // Hooks
+  const { unreadCount } = useNotifications(userId)
+  const { user: profile, stats } = useProfile(userId)
+  const { picks, isLoading: picksLoading } = useTodaysPick(userId)
+  const { location } = useGeolocation()
+  const { myPins, friendPins } = useRecordsForMap(userId)
+  const { items: feedItems } = useFriendsFeed(userId)
+
+  // Today's Pick cycling state
+  const [currentPickIndex, setCurrentPickIndex] = useState(0)
+
+  // Calendar month navigation state
+  const now = new Date()
+  const [calendarYear, setCalendarYear] = useState(now.getFullYear())
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth() + 1)
+  const { recordsByDay, summary, isLoading: calendarLoading } = useCalendarRecords(
+    userId,
+    calendarYear,
+    calendarMonth,
+  )
+
+  // Map filter state
+  const [mapFilter, setMapFilter] = useState<MapFilter>('all')
+
+  // Derived values
   const nickname = profile?.nickname ?? authUser?.user_metadata?.full_name ?? '게스트'
 
+  const handlePickTap = () => {
+    if (picks.length > 0) {
+      setCurrentPickIndex((prev) => (prev + 1) % picks.length)
+    }
+  }
+
+  const handlePickDetailClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const pick = picks[currentPickIndex]
+    if (pick?.recordId) {
+      router.push(`/records/${pick.recordId}`)
+    }
+  }
+
+  const handlePrevMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 1) {
+        setCalendarYear((y) => y - 1)
+        return 12
+      }
+      return prev - 1
+    })
+  }
+
+  const handleNextMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 12) {
+        setCalendarYear((y) => y + 1)
+        return 1
+      }
+      return prev + 1
+    })
+  }
+
+  // Map friend pins with required fields
+  const mappedFriendPins = friendPins.map((pin) => ({
+    id: pin.id,
+    lat: pin.lat,
+    lng: pin.lng,
+    rating: pin.rating,
+    name: pin.name,
+    friendName: pin.friendName ?? '익명',
+    color: pin.color ?? '#4A90D9',
+  }))
+
+  const profileStats = {
+    records: stats?.totalRecords ?? 0,
+    places: stats?.totalPhotos ?? 0,
+    groups: stats?.groupsCount ?? 0,
+  }
+
   return (
-    <div className="flex flex-col gap-6 px-4 pt-6">
+    <div className="flex flex-col gap-3 pb-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#FF6038]">냠</h1>
-          <p className="mt-0.5 text-sm text-[var(--color-neutral-500)]">
-            안녕하세요, {nickname}님
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-sm text-[var(--color-neutral-500)]">
-            <MapPin className="h-4 w-4" />
-            <span>현재 위치</span>
-          </div>
-          <Link href="/notifications" className="relative">
-            <Bell className="h-5 w-5 text-[var(--color-neutral-500)]" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[#FF6038]" />
-            )}
-          </Link>
-        </div>
+      <HomeHeader unreadCount={unreadCount} />
+
+      {/* Today's Pick */}
+      <div className="px-4">
+        {picksLoading ? (
+          <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-neutral-100)]" />
+        ) : picks.length > 0 ? (
+          <TodaysPickCard
+            pick={picks[currentPickIndex]}
+            totalCount={picks.length}
+            onTap={handlePickTap}
+            onDetailClick={handlePickDetailClick}
+          />
+        ) : null}
       </div>
 
-      {/* AI Recommendation Banner */}
-      <Link
-        href="/recommend"
-        className="flex items-center justify-between rounded-2xl border border-[var(--color-neutral-200)] bg-white px-4 py-4 active:bg-[var(--color-neutral-50)]"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF5F2]">
-            <Sparkles className="h-4 w-4 text-[#FF6038]" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-[var(--color-neutral-800)]">
-              AI 맛집 추천
-            </span>
-            <span className="text-xs text-[var(--color-neutral-500)]">
-              당신의 취향에 맞는 맛집을 추천해드려요
-            </span>
-          </div>
-        </div>
-        <ChevronRight className="h-4 w-4 text-[var(--color-neutral-400)]" />
-      </Link>
+      {/* Profile Card */}
+      <div className="px-4">
+        <HomeProfileCard
+          nickname={nickname}
+          stats={profileStats}
+          tasteTypeCode="미식 탐험가"
+          tasteDna={PLACEHOLDER_TASTE_DNA}
+          experienceRegions={PLACEHOLDER_REGIONS}
+          experienceGenres={PLACEHOLDER_GENRES}
+          experienceScenes={PLACEHOLDER_SCENES}
+        />
+      </div>
 
-      {/* Nearby Favorites */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-[var(--color-neutral-800)]">
-          이 근처에서 좋아한 곳
-        </h2>
-        {geoLoading || nearbyLoading ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
-            ))}
-          </div>
-        ) : geoError || !location ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-12">
-            <MapPin className="mb-2 h-5 w-5 text-[var(--color-neutral-400)]" />
-            <p className="text-center text-sm text-[var(--color-neutral-500)]">
-              위치 권한을 허용하면 근처 맛집을 보여드릴 수 있어요
-            </p>
-          </div>
-        ) : nearbyRecords.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {nearbyRecords.map((record) => (
-              <Link
-                key={record.id}
-                href={`/records/${record.id}`}
-                className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-[var(--color-neutral-800)]">{record.menuName}</span>
-                  <span className="text-xs text-[var(--color-neutral-400)]">
-                    {record.category} · {new Date(record.createdAt).toLocaleDateString('ko-KR')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 text-[#FF6038]" />
-                  <span className="text-sm font-medium text-[var(--color-neutral-700)]">{record.ratingOverall.toFixed(1)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+      {/* Photo Calendar */}
+      <div className="px-4">
+        {calendarLoading ? (
+          <div className="h-80 animate-pulse rounded-2xl bg-[var(--color-neutral-100)]" />
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-12">
-            <p className="text-center text-sm text-[var(--color-neutral-500)]">
-              이 근처에 기록된 맛집이 아직 없습니다
-            </p>
-          </div>
+          <PhotoCalendar
+            year={calendarYear}
+            month={calendarMonth}
+            recordsByDay={recordsByDay}
+            summary={summary}
+            onPrevMonth={handlePrevMonth}
+            onNextMonth={handleNextMonth}
+          />
         )}
-      </section>
+      </div>
 
-      {/* Recent Records */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-[var(--color-neutral-800)]">
-          최근 기록
-        </h2>
-        {isLoading ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
-            ))}
-          </div>
-        ) : records && records.data.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {records.data.map((record) => (
-              <div key={record.id} onClick={() => router.push(`/records/${record.id}`)} className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3 active:bg-[var(--color-neutral-50)]">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-[var(--color-neutral-800)]">{record.menuName}</span>
-                  <span className="text-xs text-[var(--color-neutral-400)]">
-                    {record.category} · {new Date(record.createdAt).toLocaleDateString('ko-KR')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 text-[#FF6038]" />
-                  <span className="text-sm font-medium text-[var(--color-neutral-700)]">{record.ratingOverall.toFixed(1)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-12">
-            <p className="text-center text-sm text-[var(--color-neutral-500)]">
-              아직 기록이 없습니다
-            </p>
-            <p className="mt-1 text-center text-xs text-[var(--color-neutral-400)]">
-              + 버튼을 눌러 첫 기록을 남겨보세요
-            </p>
-          </div>
-        )}
-      </section>
+      {/* Map Section */}
+      <div className="px-4">
+        <HomeMapSection
+          myLocation={location}
+          myPins={myPins}
+          friendPins={mappedFriendPins}
+          filter={mapFilter}
+          onFilterChange={setMapFilter}
+        />
+      </div>
+
+      {/* Friends Feed */}
+      <div className="px-4">
+        <FriendsFeedCard items={feedItems} />
+      </div>
     </div>
   )
 }

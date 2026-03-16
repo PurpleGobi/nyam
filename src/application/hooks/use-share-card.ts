@@ -44,7 +44,7 @@ export function useShareCard(): UseShareCardReturn {
       // Try Web Share API (available on most mobile browsers)
       if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
         const file = new File([blob], `nyam-${menuName}.png`, { type: 'image/png' })
-        const shareData = { files: [file], title: `냠 - ${menuName}` }
+        const shareData = { files: [file], title: `nyam - ${menuName}` }
 
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData)

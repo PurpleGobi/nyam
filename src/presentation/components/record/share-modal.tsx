@@ -28,7 +28,7 @@ export function ShareModal({ isOpen, onClose, groups, onShare, isSharing }: Shar
           <div className="flex items-center gap-2">
             <Share2 className="h-5 w-5 text-[#FF6038]" />
             <h2 className="text-lg font-semibold text-[var(--color-neutral-800)]">
-              그룹에 공유
+              버블에 공유
             </h2>
           </div>
           <button
@@ -43,7 +43,7 @@ export function ShareModal({ isOpen, onClose, groups, onShare, isSharing }: Shar
         {/* Group list */}
         {groups.length === 0 ? (
           <p className="py-8 text-center text-sm text-[var(--color-neutral-500)]">
-            참여 중인 그룹이 없습니다
+            참여 중인 버블이 없습니다
           </p>
         ) : (
           <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">

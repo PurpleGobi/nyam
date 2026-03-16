@@ -311,7 +311,7 @@ async function updateExperienceAtlas(
         record_count: data.count,
         sub_category_count: data.subCategories.size,
         sub_categories: Array.from(data.subCategories),
-        avg_rating: Math.round(avgRating * 10) / 10,
+        avg_rating: Math.round(avgRating),
         percentage,
         level,
         xp,

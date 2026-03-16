@@ -73,7 +73,7 @@ export function UserMiniCard({
             {name}
           </span>
           <span className="text-xs text-neutral-500 flex-shrink-0">
-            냠 Lv.{level}
+            nyam Lv.{level}
           </span>
         </div>
 
