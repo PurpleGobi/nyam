@@ -306,9 +306,77 @@ export function useComparison(userId: string | undefined) {
           }
         }).filter((aw) => aw.menuName !== '')
 
+        // Score scaling: adjust ratings based on user picks
+        // If user picked A over B for "taste" but A.rating_taste < B.rating_taste,
+        // nudge both toward alignment with the pick
+        const supabase = createClient()
+        const K = 8 // adjustment factor (gentle nudge per comparison)
+
+        const ASPECT_TO_COLUMN: Record<string, string> = {
+          taste: 'rating_taste',
+          atmosphere: 'rating_atmosphere',
+          value: 'rating_value',
+          revisit: 'rating_overall',
+        }
+
+        for (const r of newResults) {
+          const col = ASPECT_TO_COLUMN[r.aspect]
+          if (!col) continue
+
+          const loserId = r.winnerId === r.recordAId ? r.recordBId : r.recordAId
+
+          // Fetch current scores
+          const { data: scores } = await supabase
+            .from('records')
+            .select('*')
+            .in('id', [r.winnerId, loserId])
+
+          if (!scores || scores.length !== 2) continue
+
+          const rows = scores as unknown as Record<string, unknown>[]
+          const winnerRow = rows.find(s => s.id === r.winnerId)
+          const loserRow = rows.find(s => s.id === loserId)
+          if (!winnerRow || !loserRow) continue
+
+          const winnerScore = winnerRow[col] as number ?? 0
+          const loserScore = loserRow[col] as number ?? 0
+
+          // Only adjust if winner has lower or equal score (contradicts user pick)
+          if (winnerScore <= loserScore) {
+            const newWinner = Math.min(100, winnerScore + K)
+            const newLoser = Math.max(0, loserScore - K)
+
+            const winnerCompCount = (winnerRow.comparison_count as number ?? 0) + 1
+            const loserCompCount = (loserRow.comparison_count as number ?? 0) + 1
+
+            await supabase
+              .from('records')
+              .update({ [col]: newWinner, comparison_count: winnerCompCount } as never)
+              .eq('id', r.winnerId)
+
+            await supabase
+              .from('records')
+              .update({ [col]: newLoser, comparison_count: loserCompCount } as never)
+              .eq('id', loserId)
+          } else {
+            // Scores already align, just increment comparison_count
+            const winnerCompCount = (winnerRow.comparison_count as number ?? 0) + 1
+            const loserCompCount = (loserRow.comparison_count as number ?? 0) + 1
+
+            await supabase
+              .from('records')
+              .update({ comparison_count: winnerCompCount } as never)
+              .eq('id', r.winnerId)
+
+            await supabase
+              .from('records')
+              .update({ comparison_count: loserCompCount } as never)
+              .eq('id', loserId)
+          }
+        }
+
         // Update comparison in DB
         if (comparisonId) {
-          const supabase = createClient()
           try {
             await supabase
               .from('comparisons' as never)
@@ -321,6 +389,18 @@ export function useComparison(userId: string | undefined) {
           } catch {
             // fire-and-forget
           }
+        }
+
+        // Award XP
+        try {
+          await supabase.from('phase_completions' as never).insert({
+            user_id: userId,
+            record_id: null,
+            phase: 3,
+            xp_earned: 5,
+          } as never)
+        } catch {
+          // fire-and-forget
         }
 
         setResults({ rankings, aspectWinners: aspectWinnersList })

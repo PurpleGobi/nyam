@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, Utensils, Wine, Heart, Briefcase, Cake } from 'lucide-react'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
 import { useProfile } from '@/application/hooks/use-profile'
 import { useNotifications } from '@/application/hooks/use-notifications'
@@ -11,6 +10,9 @@ import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRecordsForMap } from '@/application/hooks/use-records-for-map'
 import { useGeolocation } from '@/application/hooks/use-geolocation'
 import { useFriendsFeed } from '@/application/hooks/use-friends-feed'
+import { useTasteDna } from '@/application/hooks/use-taste-dna'
+import { useTasteDnaWine } from '@/application/hooks/use-taste-dna-wine'
+import { useExperienceAtlas } from '@/application/hooks/use-experience-atlas'
 import { HomeHeader } from '@/presentation/components/home/home-header'
 import { TodaysPickCard } from '@/presentation/components/home/todays-pick-card'
 import { HomeProfileCard } from '@/presentation/components/home/home-profile-card'
@@ -19,41 +21,6 @@ import { HomeMapSection } from '@/presentation/components/home/home-map-section'
 import { FriendsFeedCard } from '@/presentation/components/home/friends-feed-card'
 
 type MapFilter = 'all' | 'mine' | 'friends'
-
-const PLACEHOLDER_TASTE_DNA = {
-  spicy: 0.81,
-  sweet: 0.45,
-  salty: 0.55,
-  sour: 0.3,
-  umami: 0.72,
-  rich: 0.65,
-}
-
-const PLACEHOLDER_REGIONS = [
-  { name: '강남', level: 6 },
-  { name: '한남', level: 4 },
-  { name: '성수', level: 5 },
-  { name: '을지로', level: 3 },
-  { name: '연남', level: 4 },
-]
-
-const PLACEHOLDER_GENRES = [
-  { name: '중식', level: 6 },
-  { name: '와인', level: 5 },
-  { name: '일식', level: 4 },
-  { name: '이탈리안', level: 3 },
-  { name: '한식', level: 5 },
-  { name: '디저트', level: 2 },
-]
-
-const PLACEHOLDER_SCENES = [
-  { name: '데이트', level: 5, icon: <Heart className="h-3 w-3" /> },
-  { name: '회식', level: 4, icon: <Users className="h-3 w-3" /> },
-  { name: '혼밥', level: 6, icon: <Utensils className="h-3 w-3" /> },
-  { name: '와인바', level: 3, icon: <Wine className="h-3 w-3" /> },
-  { name: '비즈니스', level: 2, icon: <Briefcase className="h-3 w-3" /> },
-  { name: '기념일', level: 3, icon: <Cake className="h-3 w-3" /> },
-]
 
 export function HomeContainer() {
   const router = useRouter()
@@ -64,6 +31,9 @@ export function HomeContainer() {
   const { unreadCount } = useNotifications(userId)
   const { user: profile, stats } = useProfile(userId)
   const { picks, isLoading: picksLoading } = useTodaysPick(userId)
+  const { data: tasteDna } = useTasteDna(userId)
+  const { data: tasteDnaWine } = useTasteDnaWine(userId)
+  const { regions, genres, scenes } = useExperienceAtlas(userId)
   const { location } = useGeolocation()
   const { myPins, friendPins } = useRecordsForMap(userId)
   const { items: feedItems } = useFriendsFeed(userId)
@@ -161,12 +131,15 @@ export function HomeContainer() {
       <div className="px-4">
         <HomeProfileCard
           nickname={nickname}
+          level={stats?.nyamLevel ?? 1}
+          points={stats?.points ?? 0}
+          pointsToNextLevel={1000}
           stats={profileStats}
-          tasteTypeCode="미식 탐험가"
-          tasteDna={PLACEHOLDER_TASTE_DNA}
-          experienceRegions={PLACEHOLDER_REGIONS}
-          experienceGenres={PLACEHOLDER_GENRES}
-          experienceScenes={PLACEHOLDER_SCENES}
+          tasteDna={tasteDna ?? null}
+          tasteDnaWine={tasteDnaWine ?? null}
+          regions={regions}
+          genres={genres}
+          scenes={scenes}
         />
       </div>
 

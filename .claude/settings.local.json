@@ -54,7 +54,10 @@
       "mcp__sequential-thinking__sequentialthinking",
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_file_upload",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//private/tmp/claude-501/-Users-jkm4-Documents-GitHub-nyam/ae67df82-3f8e-4140-a170-453242df4557/tasks/**)"
     ]
   }
 }
