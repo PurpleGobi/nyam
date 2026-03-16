@@ -26,7 +26,7 @@ interface GeminiResponse {
 interface RecognitionOutput {
   menuName: string
   category: string
-  recordType: 'restaurant' | 'wine' | 'homemade'
+  recordType: 'restaurant' | 'wine' | 'cooking'
   flavorTags: string[]
   textureTags: string[]
   confidence: number
@@ -34,7 +34,7 @@ interface RecognitionOutput {
 
 const VALID_CATEGORIES = [
   'korean', 'japanese', 'chinese', 'western', 'cafe',
-  'dessert', 'wine', 'homecook', 'seafood', 'meat', 'vegan', 'street',
+  'dessert', 'wine', 'cooking', 'seafood', 'meat', 'vegan', 'street',
 ] as const
 
 const VALID_FLAVOR_TAGS = [
@@ -49,7 +49,7 @@ const VALID_TEXTURE_TAGS = [
 const PROMPT = `Analyze the food in this image and return a JSON object with these fields:
 - "menuName": the name of the dish (in Korean if identifiable, otherwise English)
 - "category": one of [${VALID_CATEGORIES.join(', ')}]
-- "recordType": one of ["restaurant", "wine", "homemade"]
+- "recordType": one of ["restaurant", "wine", "cooking"]
 - "flavorTags": array of applicable tags from [${VALID_FLAVOR_TAGS.join(', ')}]
 - "textureTags": array of applicable tags from [${VALID_TEXTURE_TAGS.join(', ')}]
 - "confidence": number between 0 and 1 indicating recognition confidence

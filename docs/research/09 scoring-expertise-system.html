@@ -184,7 +184,7 @@
         <tr><td rowspan="2"><strong>📍 지역</strong><br>(WHERE)</td><td colspan="3">기록이 발생한 지리적 위치. 식당/와인바의 소재지 기준.</td></tr>
         <tr><td>행정구역 기반</td><td>을지로, 강남, 홍대, 성수, 이태원, 여의도, 잠실 ...</td></tr>
         <tr><td rowspan="2"><strong>🍴 장르</strong><br>(WHAT)</td><td colspan="3">무엇을 먹고 마셨는가. 음식/음료의 종류.</td></tr>
-        <tr><td>카테고리 기반</td><td>한식, 일식, 양식, 중식, 동남아, 카페, 🍷 와인, 🍳 홈쿡 ...</td></tr>
+        <tr><td>카테고리 기반</td><td>한식, 일식, 양식, 중식, 동남아, 카페, 🍷 와인, 🍳 요리 ...</td></tr>
         <tr><td rowspan="2"><strong>🎭 씬</strong><br>(WHY)</td><td colspan="3">어떤 맥락에서 먹었는가. 식사의 상황과 분위기.</td></tr>
         <tr><td>상황 태그 기반</td><td>혼밥, 데이트, 비즈니스, 가족, 친구모임, 술자리, 브런치 ...</td></tr>
       </tbody>
@@ -249,7 +249,7 @@
   │  한식    Lv.6 고수   ██████░░░░ 350  │
   │  양식    Lv.4 숙련자 ████░░░░░░ 130  │
   │  와인    Lv.3 경험자 ███░░░░░░░  70  │
-  │  홈쿡    Lv.2 초보   ██░░░░░░░░  30  │
+  │  요리    Lv.2 초보   ██░░░░░░░░  30  │
   │  카페    Lv.2 초보   ██░░░░░░░░  30  │
   │                                     │
   │  ── 🎭 씬 ──                        │
@@ -807,7 +807,7 @@
       <tbody>
         <tr><td><strong>레벨</strong></td><td>냠 Lv. 숫자 + 등급 이름 (5개)</td><td>5대 요소 복합 점수 → 비선형 매핑</td></tr>
         <tr><td><strong>포인트</strong></td><td>행동마다 "+N" 즉각 보상</td><td>레벨 산출에 간접 영향 (Activity, Quality 통해)</td></tr>
-        <tr><td><strong>전문 태그</strong></td><td>📍 지역 / 🍷 와인 / 🍳 홈쿡 등</td><td>카테고리/지역별 기록 수 기준 자동 부여</td></tr>
+        <tr><td><strong>전문 태그</strong></td><td>📍 지역 / 🍷 와인 / 🍳 요리 등</td><td>카테고리/지역별 기록 수 기준 자동 부여</td></tr>
         <tr><td><strong>나의 Top N</strong></td><td>"🥇 을지로 골목식당"</td><td>Elo 알고리즘 (K값 동적, 최소 비교 3회)</td></tr>
         <tr><td><strong>맛 유형</strong></td><td>"모험적 미식가 (AESF)"</td><td>4축 행동 분석 (모험/미식/소셜/빈도)</td></tr>
         <tr><td><strong>버블 문턱</strong></td><td>"⭐ 미식가 이상 + 와인 15건+"</td><td>레벨 + 카테고리/지역 기록 수 조합</td></tr>

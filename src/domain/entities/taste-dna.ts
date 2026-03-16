@@ -56,7 +56,7 @@ export interface TasteDnaWine {
   sampleCount: number
 }
 
-export interface TasteDnaHomecook {
+export interface TasteDnaCooking {
   userId: string
 
   prefDifficulty: number

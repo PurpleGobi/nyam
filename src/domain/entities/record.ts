@@ -34,8 +34,6 @@ export interface CookingRatings {
   value: number
 }
 
-/** @deprecated Use CookingRatings instead */
-export type HomemadeRatings = CookingRatings
 
 export type RecordRatings = RestaurantRatings | WineRatings | CookingRatings
 

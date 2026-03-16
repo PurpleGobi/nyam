@@ -1,5 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
-import type { TasteDna, TasteDnaWine, TasteDnaHomecook } from '@/domain/entities/taste-dna'
+import type { TasteDna, TasteDnaWine, TasteDnaCooking } from '@/domain/entities/taste-dna'
 import type { TasteDnaRepository } from '@/domain/repositories/taste-dna-repository'
 import type { Database } from '@/infrastructure/supabase/types'
 
@@ -55,7 +55,7 @@ function toTasteDnaWine(row: TasteDnaWineRow): TasteDnaWine {
   }
 }
 
-function toTasteDnaHomecook(row: TasteDnaHomecookRow): TasteDnaHomecook {
+function toTasteDnaCooking(row: TasteDnaHomecookRow): TasteDnaCooking {
   return {
     userId: row.user_id,
     prefDifficulty: row.pref_difficulty,
@@ -118,7 +118,7 @@ export class SupabaseTasteDnaRepository implements TasteDnaRepository {
     return toTasteDnaWine(data as TasteDnaWineRow)
   }
 
-  async getHomecookByUserId(userId: string): Promise<TasteDnaHomecook | null> {
+  async getCookingByUserId(userId: string): Promise<TasteDnaCooking | null> {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('taste_dna_homecook')
@@ -127,7 +127,7 @@ export class SupabaseTasteDnaRepository implements TasteDnaRepository {
       .single()
 
     if (error || !data) return null
-    return toTasteDnaHomecook(data as TasteDnaHomecookRow)
+    return toTasteDnaCooking(data as TasteDnaHomecookRow)
   }
 
   async calculateSimilarity(

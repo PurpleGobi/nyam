@@ -184,14 +184,14 @@ function MonthlyActivitySection({ data }: { data: WrappedData }) {
 }
 
 function RecordTypeSection({ data }: { data: WrappedData }) {
-  const { restaurant, wine, homemade } = data.recordTypeBreakdown
-  const total = restaurant + wine + homemade
+  const { restaurant, wine, cooking } = data.recordTypeBreakdown
+  const total = restaurant + wine + cooking
   if (total === 0) return null
 
   const items = [
     { label: '외식', count: restaurant, icon: UtensilsCrossed, color: '#FF6038' },
     { label: '와인', count: wine, icon: Wine, color: '#8B5CF6' },
-    { label: '홈메이드', count: homemade, icon: ChefHat, color: '#10B981' },
+    { label: '요리', count: cooking, icon: ChefHat, color: '#10B981' },
   ]
 
   return (

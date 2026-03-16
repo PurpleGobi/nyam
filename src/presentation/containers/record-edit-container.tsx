@@ -42,7 +42,7 @@ const WINE_RATING_CONFIG = [
   { key: 'value', label: '가성비' },
 ]
 
-const HOMEMADE_RATING_CONFIG = [
+const COOKING_RATING_CONFIG = [
   { key: 'taste', label: '맛' },
   { key: 'difficulty', label: '난이도' },
   { key: 'timeSpent', label: '시간' },
@@ -64,7 +64,7 @@ function getRatingConfig(recordType: RecordType) {
     case 'wine':
       return WINE_RATING_CONFIG
     case 'cooking':
-      return HOMEMADE_RATING_CONFIG
+      return COOKING_RATING_CONFIG
     default:
       return RESTAURANT_RATING_CONFIG
   }

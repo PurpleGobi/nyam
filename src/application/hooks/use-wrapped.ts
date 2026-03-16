@@ -11,7 +11,7 @@ export interface WrappedData {
   topMenu: { name: string; count: number } | null
   topRated: { menuName: string; rating: number } | null
   monthlyDistribution: number[]
-  recordTypeBreakdown: { restaurant: number; wine: number; homemade: number }
+  recordTypeBreakdown: { restaurant: number; wine: number; cooking: number }
   topTags: Array<{ tag: string; count: number }>
   topFlavorTags: Array<{ tag: string; count: number }>
   averageRating: number
@@ -85,12 +85,12 @@ function computeWrapped(records: RawRecord[], year: number): WrappedData {
   }
 
   // Record type breakdown
-  const recordTypeBreakdown = { restaurant: 0, wine: 0, homemade: 0 }
+  const recordTypeBreakdown = { restaurant: 0, wine: 0, cooking: 0 }
   for (const r of records) {
     const rt = r.record_type ?? 'restaurant'
     if (rt === 'restaurant') recordTypeBreakdown.restaurant++
     else if (rt === 'wine') recordTypeBreakdown.wine++
-    else if (rt === 'homemade') recordTypeBreakdown.homemade++
+    else if (rt === 'cooking') recordTypeBreakdown.cooking++
   }
 
   // Tags

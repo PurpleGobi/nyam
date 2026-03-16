@@ -148,7 +148,7 @@ app → presentation → application → domain ← infrastructure
 | `use-create-record.ts` | 7단계 상태 머신 |
 | `use-restaurant-search.ts` | Kakao Local 디바운스 검색 |
 | `photo-picker.tsx` | 3컬럼 그리드 사진 선택 |
-| `record-type-selector.tsx` | 식당/와인/홈쿡 탭 |
+| `record-type-selector.tsx` | 식당/와인/요리 탭 |
 | `restaurant-matcher.tsx` | 식당 검색/매칭 UI |
 | `rating-input.tsx` | 1-5점 원형 버튼 (타입별 축 분기) |
 | `tag-selector.tsx` | 멀티 셀렉트 칩 + AI 추천 하이라이트 |

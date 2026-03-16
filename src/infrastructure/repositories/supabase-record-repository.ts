@@ -36,7 +36,7 @@ function buildRatings(row: RecordRow): RecordRatings {
       value: row.rating_value ?? 0,
     }
   }
-  if (row.record_type === 'cooking' || row.record_type === 'homemade') {
+  if (row.record_type === 'cooking') {
     return {
       taste: row.rating_taste ?? 0,
       difficulty: row.rating_difficulty ?? 0,

@@ -2,7 +2,7 @@ export interface FoodRecognitionResult {
   available: boolean
   menuName?: string
   category?: string
-  recordType?: 'restaurant' | 'wine' | 'homemade'
+  recordType?: 'restaurant' | 'wine' | 'cooking'
   flavorTags?: string[]
   textureTags?: string[]
   confidence?: number
