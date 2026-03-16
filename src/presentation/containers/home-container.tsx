@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { MapPin, Star, Sparkles, ChevronRight } from "lucide-react"
+import { MapPin, Star, Sparkles, ChevronRight, Bell } from "lucide-react"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useRecords } from "@/application/hooks/use-records"
 import { useProfile } from "@/application/hooks/use-profile"
 import { useGeolocation } from "@/application/hooks/use-geolocation"
 import { useNearbyRecords } from "@/application/hooks/use-nearby-records"
+import { useNotifications } from "@/application/hooks/use-notifications"
 
 export function HomeContainer() {
   const router = useRouter()
@@ -17,6 +18,7 @@ export function HomeContainer() {
   const { data: records, isLoading } = useRecords(userId, 10)
   const { location, isLoading: geoLoading, error: geoError } = useGeolocation()
   const { data: nearbyRecords, isLoading: nearbyLoading } = useNearbyRecords(location)
+  const { unreadCount } = useNotifications(userId)
 
   const nickname = profile?.nickname ?? authUser?.user_metadata?.full_name ?? '게스트'
 
@@ -30,9 +32,17 @@ export function HomeContainer() {
             안녕하세요, {nickname}님
           </p>
         </div>
-        <div className="flex items-center gap-1 text-sm text-[var(--color-neutral-500)]">
-          <MapPin className="h-4 w-4" />
-          <span>현재 위치</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-sm text-[var(--color-neutral-500)]">
+            <MapPin className="h-4 w-4" />
+            <span>현재 위치</span>
+          </div>
+          <Link href="/notifications" className="relative">
+            <Bell className="h-5 w-5 text-[var(--color-neutral-500)]" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[#FF6038]" />
+            )}
+          </Link>
         </div>
       </div>
 

@@ -1,12 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Users, Lock, Globe, Eye, Gem, Star, FileText } from 'lucide-react'
+import { ArrowLeft, Users, Lock, Globe, Eye, Gem, Star, FileText, Link2, Target } from 'lucide-react'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
 import { useGroupDetail } from '@/application/hooks/use-group-detail'
 import { useGroupActions } from '@/application/hooks/use-group-actions'
 import { useGroupFeed } from '@/application/hooks/use-group-feed'
+import { useInvite } from '@/application/hooks/use-invite'
 import { GroupMemberList } from '@/presentation/components/group/group-member-list'
+import { ChallengeCard } from '@/presentation/components/group/challenge-card'
+import { useGroupChallenges } from '@/application/hooks/use-group-challenges'
 import type { GroupType } from '@/domain/entities/group'
 import type { GroupFeedItem } from '@/application/hooks/use-group-feed'
 
@@ -24,9 +28,23 @@ export function GroupDetailContainer() {
   const { group, members, isLoading, mutateGroup, mutateMembers } = useGroupDetail(params.id)
   const { joinGroup, leaveGroup, isLoading: actionLoading } = useGroupActions()
   const { feed, isLoading: feedLoading } = useGroupFeed(params.id)
+  const { generateInviteLink, isLoading: inviteLoading } = useInvite()
+  const { challenges, isLoading: challengesLoading } = useGroupChallenges(params.id, authUser?.id)
+
+  const [copied, setCopied] = useState(false)
 
   const isMember = members.some((m) => m.userId === authUser?.id)
   const isOwner = group?.ownerId === authUser?.id
+
+  const handleCopyInviteLink = async () => {
+    if (!params.id || inviteLoading) return
+    const url = await generateInviteLink(params.id)
+    if (url) {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const handleJoin = async () => {
     if (!authUser?.id || !params.id) return
@@ -100,9 +118,23 @@ export function GroupDetailContainer() {
           <p className="text-sm text-[var(--color-neutral-500)]">{group.description}</p>
         )}
 
-        <div className="flex items-center gap-1 text-sm text-[var(--color-neutral-400)]">
-          <Users className="h-4 w-4" />
-          <span>멤버 {group.memberCount}명</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 text-sm text-[var(--color-neutral-400)]">
+            <Users className="h-4 w-4" />
+            <span>멤버 {group.memberCount}명</span>
+          </div>
+
+          {isOwner && (
+            <button
+              type="button"
+              onClick={handleCopyInviteLink}
+              disabled={inviteLoading}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-neutral-200)] px-3 py-1.5 text-xs font-medium text-[var(--color-neutral-600)] transition-colors hover:border-[#FF6038] hover:text-[#FF6038] disabled:opacity-50"
+            >
+              <Link2 className="h-3.5 w-3.5" />
+              {copied ? '복사됨!' : inviteLoading ? '생성 중...' : '초대 링크'}
+            </button>
+          )}
         </div>
       </section>
 
@@ -120,6 +152,30 @@ export function GroupDetailContainer() {
         >
           {actionLoading ? '처리 중...' : isMember ? '탈퇴하기' : '참여하기'}
         </button>
+      )}
+
+      {/* Weekly Challenges */}
+      {isMember && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-[#FF6038]" />
+            <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
+              이번 주 챌린지
+            </h2>
+          </div>
+          {challengesLoading ? (
+            <div className="flex flex-col gap-3">
+              <div className="h-24 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
+              <div className="h-24 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {challenges.map((challenge) => (
+                <ChallengeCard key={challenge.id} challenge={challenge} />
+              ))}
+            </div>
+          )}
+        </section>
       )}
 
       {/* Members */}
