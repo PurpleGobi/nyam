@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import {
   ArrowLeft,
   Star,
@@ -25,6 +25,7 @@ import {
   Heart,
   ThumbsUp,
   Sparkles,
+  Share2,
 } from "lucide-react"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
 import { useRecordActions } from "@/application/hooks/use-record-actions"
@@ -32,7 +33,10 @@ import { useBookmarks } from "@/application/hooks/use-bookmarks"
 import { useBookmarkActions } from "@/application/hooks/use-bookmark-actions"
 import { useReactions } from "@/application/hooks/use-reactions"
 import { useReactionActions } from "@/application/hooks/use-reaction-actions"
+import { useShareCard } from "@/application/hooks/use-share-card"
+import { useProfile } from "@/application/hooks/use-profile"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
+import { ShareCard } from "@/presentation/components/record/share-card"
 import type { Reaction } from "@/application/hooks/use-reactions"
 import type { FoodRecord, RecordPhoto, RecordType, RestaurantRatings, WineRatings, HomemadeRatings } from "@/domain/entities/record"
 
@@ -181,6 +185,10 @@ export function RecordDetailContainer() {
   const { record, restaurant, isLoading } = useRecordDetail(id)
   const { deleteRecord } = useRecordActions()
   const { user: authUser } = useAuthContext()
+  const { user: profileUser } = useProfile(authUser?.id)
+  const { generateAndShare, isGenerating } = useShareCard()
+  const shareCardRef = useRef<HTMLDivElement>(null)
+  const [showShareCard, setShowShareCard] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const { bookmarkedIds, mutate: mutateBookmarks } = useBookmarks(authUser?.id)
@@ -228,6 +236,20 @@ export function RecordDetailContainer() {
     if (!id) return
     setMenuOpen(false)
     router.push(`/records/${id}/edit`)
+  }
+
+  const handleShare = async () => {
+    if (!record) return
+    setShowShareCard(true)
+    // Wait for the card to render in the DOM
+    requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
+        if (shareCardRef.current) {
+          await generateAndShare(shareCardRef.current, record.menuName)
+        }
+        setShowShareCard(false)
+      })
+    })
   }
 
   if (isLoading) {
@@ -295,6 +317,15 @@ export function RecordDetailContainer() {
         <h1 className="flex-1 truncate text-base font-semibold text-[var(--color-neutral-800)]">
           기록 상세
         </h1>
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={isGenerating}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-neutral-50)] disabled:opacity-50"
+          aria-label="공유 카드 생성"
+        >
+          <Share2 className="h-5 w-5 text-[var(--color-neutral-700)]" />
+        </button>
         {authUser && (
           <button
             type="button"
@@ -516,6 +547,21 @@ export function RecordDetailContainer() {
           })}
         </div>
       </div>
+
+      {/* Hidden share card for image capture */}
+      {showShareCard && (
+        <div
+          style={{ position: 'absolute', left: -9999, top: 0, opacity: 0, pointerEvents: 'none' }}
+          aria-hidden="true"
+        >
+          <ShareCard
+            ref={shareCardRef}
+            record={record}
+            restaurant={restaurant}
+            userName={profileUser?.nickname ?? '냠 유저'}
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -127,7 +127,7 @@ export function GroupDetailContainer() {
         <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
           멤버 ({members.length})
         </h2>
-        <GroupMemberList members={members} />
+        <GroupMemberList members={members} currentUserId={authUser?.id} />
       </section>
 
       {/* Shared Records */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { MapPin, Star } from "lucide-react"
+import { MapPin, Star, Sparkles, ChevronRight } from "lucide-react"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useRecords } from "@/application/hooks/use-records"
 import { useProfile } from "@/application/hooks/use-profile"
@@ -35,6 +35,27 @@ export function HomeContainer() {
           <span>현재 위치</span>
         </div>
       </div>
+
+      {/* AI Recommendation Banner */}
+      <Link
+        href="/recommend"
+        className="flex items-center justify-between rounded-2xl border border-[var(--color-neutral-200)] bg-white px-4 py-4 active:bg-[var(--color-neutral-50)]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF5F2]">
+            <Sparkles className="h-4 w-4 text-[#FF6038]" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-[var(--color-neutral-800)]">
+              AI 맛집 추천
+            </span>
+            <span className="text-xs text-[var(--color-neutral-500)]">
+              당신의 취향에 맞는 맛집을 추천해드려요
+            </span>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-[var(--color-neutral-400)]" />
+      </Link>
 
       {/* Nearby Favorites */}
       <section className="flex flex-col gap-3">
