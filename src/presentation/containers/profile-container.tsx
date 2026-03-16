@@ -1,10 +1,12 @@
 "use client"
 
-import { User, Settings, ChevronRight, Flame, Star, BookOpen } from "lucide-react"
+import { useState } from "react"
+import { User, Settings, ChevronRight, Flame, Star, BookOpen, Pencil, Check, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useProfile } from "@/application/hooks/use-profile"
+import { useUpdateProfile } from "@/application/hooks/use-update-profile"
 import { useRecords } from "@/application/hooks/use-records"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
 import { useExperienceAtlas } from "@/application/hooks/use-experience-atlas"
@@ -36,7 +38,10 @@ function FlavorBar({ label, value }: { label: string; value: number }) {
 export function ProfileContainer() {
   const { user: authUser, signOut } = useAuthContext()
   const userId = authUser?.id
-  const { user: profile, stats, isLoading: profileLoading } = useProfile(userId)
+  const { user: profile, stats, isLoading: profileLoading, mutate: mutateProfile } = useProfile(userId)
+  const { updateProfile, isLoading: updateLoading } = useUpdateProfile()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editNickname, setEditNickname] = useState("")
   const { data: records, isLoading: recordsLoading } = useRecords(userId, 5)
   const { data: tasteDna, isLoading: dnaLoading } = useTasteDna(userId)
   const { regions, genres, isLoading: atlasLoading } = useExperienceAtlas(userId)
@@ -79,9 +84,55 @@ export function ProfileContainer() {
           </div>
         )}
         <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-[var(--color-neutral-800)]">
-            {nickname}
-          </h1>
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editNickname}
+                onChange={(e) => setEditNickname(e.target.value)}
+                className="h-8 w-36 rounded-lg border border-[var(--color-neutral-300)] px-2 text-sm text-[var(--color-neutral-800)] outline-none focus:border-[#FF6038]"
+                autoFocus
+              />
+              <button
+                type="button"
+                disabled={updateLoading || !editNickname.trim()}
+                onClick={async () => {
+                  if (!userId || !editNickname.trim()) return
+                  const result = await updateProfile(userId, { nickname: editNickname.trim() })
+                  if (result) {
+                    await mutateProfile()
+                    setIsEditing(false)
+                  }
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF6038] text-white disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-bold text-[var(--color-neutral-800)]">
+                {nickname}
+              </h1>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditNickname(nickname)
+                  setIsEditing(true)
+                }}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           <span className="text-sm text-[#FF6038]">냠 Lv.{level}</span>
         </div>
       </div>
