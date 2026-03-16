@@ -6,10 +6,10 @@ import { cn } from '@/shared/utils/cn'
 import { User, Heart, Users, Utensils, Wine, Briefcase, Cake, MapPin } from 'lucide-react'
 import type { TasteDna, TasteDnaWine } from '@/domain/entities/taste-dna'
 import type {
-  ExperienceAtlasRegion,
-  ExperienceAtlasGenre,
-  ExperienceAtlasScene,
-} from '@/domain/entities/experience-atlas'
+  StyleDnaRegion,
+  StyleDnaGenre,
+  StyleDnaScene,
+} from '@/domain/entities/style-dna'
 
 type TasteMode = 'food' | 'wine'
 
@@ -143,9 +143,9 @@ export function HomeProfileCard({
   stats: { records: number; places: number; groups: number }
   tasteDna: TasteDna | null
   tasteDnaWine: TasteDnaWine | null
-  regions: ExperienceAtlasRegion[]
-  genres: ExperienceAtlasGenre[]
-  scenes: ExperienceAtlasScene[]
+  regions: StyleDnaRegion[]
+  genres: StyleDnaGenre[]
+  scenes: StyleDnaScene[]
 }) {
   const [tasteMode, setTasteMode] = useState<TasteMode>('food')
 
@@ -351,11 +351,11 @@ export function HomeProfileCard({
         </div>
       </div>
 
-      {/* Experience Atlas */}
+      {/* Style DNA Profile */}
       {(regions.length > 0 || genres.length > 0 || scenes.length > 0) && (
         <div className="border-t border-[var(--color-neutral-100)] px-4 pb-4 pt-3">
           <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-[var(--color-neutral-400)]">
-            Experience Atlas
+            Style DNA
           </span>
 
           <div className="flex gap-4">

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nyam — Home Final</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #E8E6E1;
+    color: #1a1a1a;
+    padding: 48px 20px 100px;
+  }
+
+  .page-header { max-width: 900px; margin: 0 auto 48px; text-align: center; }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px; font-weight: 600; color: #1a1a1a; letter-spacing: -1px;
+  }
+  .page-header p { font-size: 13px; color: #999; margin-top: 8px; line-height: 1.7; }
+
+  .phone {
+    width: 375px; height: 812px;
+    border-radius: 48px; border: 6px solid #1a1a1a;
+    overflow: hidden; position: relative; margin: 0 auto;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.1), 0 32px 100px rgba(0,0,0,0.25);
+    background: #FAF8F5;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 26px; background: #1a1a1a;
+    border-radius: 0 0 18px 18px; z-index: 10;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    overflow-y: auto; padding-top: 48px; padding-bottom: 84px;
+    background: #FAF8F5;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  .bnav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 78px;
+    background: #FAF8F5; border-top: 1px solid #EDE9E3;
+    display: flex; align-items: center; justify-content: space-around;
+    padding-bottom: 12px; z-index: 5;
+  }
+  .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bnav-label { font-size: 9px; letter-spacing: 0.5px; }
+  .bnav-add {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #C45C3A; color: #FAF8F5;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: -18px; font-size: 22px;
+    box-shadow: 0 4px 16px rgba(196,92,58,0.35);
+  }
+
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  .notes { max-width: 640px; margin: 64px auto 0; }
+  .notes h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 16px; }
+  .notes ul { list-style: none; padding: 0; }
+  .notes li {
+    padding: 14px 0; border-bottom: 1px solid #d4d0ca;
+    font-size: 13px; color: #666; line-height: 1.7;
+    display: flex; gap: 12px;
+  }
+  .notes li strong { color: #1a1a1a; display: block; margin-bottom: 2px; }
+  .notes .num { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: #C45C3A; flex-shrink: 0; width: 24px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>nyam home — final</h1>
+  <p>Warm Collection을 다듬고, "뭐 먹지?" 순간에 도움이 되는 화면으로.</p>
+</div>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <!-- ===== HEADER ===== -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 24px 0;">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#C45C3A;letter-spacing:-0.5px;">nyam</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <svg width="20" height="20" fill="none" stroke="#bbb" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <div style="position:relative;">
+          <svg width="20" height="20" fill="none" stroke="#bbb" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;background:#C45C3A;border-radius:50%;border:1.5px solid #FAF8F5;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== GREETING ===== -->
+    <div style="padding:24px 24px 22px;">
+      <div style="font-size:14px;color:#bbb;">안녕, 지수</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#1a1a1a;line-height:1.3;margin-top:4px;letter-spacing:-0.5px;">
+        이 근처에서 좋아했던 곳이<br>3곳 있어요
+      </div>
+    </div>
+
+    <!-- ===== 이 근처 내 기록 (과거 기록에서 꺼내주기) ===== -->
+    <div style="display:flex;gap:10px;overflow-x:auto;padding:0 24px 20px;scroll-snap-type:x mandatory;">
+
+      <!-- Nearby past 1 -->
+      <div style="width:140px;flex-shrink:0;scroll-snap-align:start;">
+        <div style="height:140px;border-radius:16px;overflow:hidden;position:relative;">
+          <img src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&q=80" alt="sushi">
+          <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,0.5));"></div>
+          <div style="position:absolute;bottom:10px;left:10px;right:10px;">
+            <div style="font-size:13px;font-weight:600;color:#fff;">스시 겐</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.7);">850m</div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:6px;padding:2px 6px;font-size:11px;font-weight:600;color:#C45C3A;">4.8</div>
+        </div>
+        <div style="font-size:10px;color:#bbb;margin-top:6px;padding:0 2px;">2주 전에 갔었어요</div>
+      </div>
+
+      <!-- Nearby past 2 -->
+      <div style="width:140px;flex-shrink:0;scroll-snap-align:start;">
+        <div style="height:140px;border-radius:16px;overflow:hidden;position:relative;">
+          <img src="https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=400&q=80" alt="pasta">
+          <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,0.5));"></div>
+          <div style="position:absolute;bottom:10px;left:10px;right:10px;">
+            <div style="font-size:13px;font-weight:600;color:#fff;">트라토리아</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.7);">1.2km</div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:6px;padding:2px 6px;font-size:11px;font-weight:600;color:#C45C3A;">4.2</div>
+        </div>
+        <div style="font-size:10px;color:#bbb;margin-top:6px;padding:0 2px;">지난달에 갔었어요</div>
+      </div>
+
+      <!-- Nearby past 3 -->
+      <div style="width:140px;flex-shrink:0;scroll-snap-align:start;">
+        <div style="height:140px;border-radius:16px;overflow:hidden;position:relative;">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80" alt="plating">
+          <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,0.5));"></div>
+          <div style="position:absolute;bottom:10px;left:10px;right:10px;">
+            <div style="font-size:13px;font-weight:600;color:#fff;">라미띠에</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.7);">2.1km</div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:6px;padding:2px 6px;font-size:11px;font-weight:600;color:#C45C3A;">4.5</div>
+        </div>
+        <div style="font-size:10px;color:#bbb;margin-top:6px;padding:0 2px;">3개월 전에 갔었어요</div>
+      </div>
+
+    </div>
+
+    <!-- ===== 최근 기록 ===== -->
+    <div style="padding:4px 24px 12px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;">최근 기록</div>
+        <div style="font-size:11px;color:#C45C3A;">전체보기</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;overflow-x:auto;padding:0 24px 24px;scroll-snap-type:x mandatory;">
+
+      <div style="width:180px;flex-shrink:0;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04);scroll-snap-align:start;">
+        <div style="height:140px;position:relative;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80" alt="ramen" style="filter:brightness(0.95);">
+          <div style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;color:#C45C3A;">4.5</div>
+        </div>
+        <div style="padding:12px 14px;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">마라탕</div>
+          <div style="font-size:11px;color:#bbb;margin-top:2px;">해리마라 · 강남</div>
+          <div style="font-size:11px;color:#999;margin-top:6px;">3일 전</div>
+        </div>
+      </div>
+
+      <div style="width:180px;flex-shrink:0;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04);scroll-snap-align:start;">
+        <div style="height:140px;position:relative;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&q=80" alt="wine">
+          <div style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;color:#6B4C8A;">5.0</div>
+        </div>
+        <div style="padding:12px 14px;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">Château Margaux</div>
+          <div style="font-size:11px;color:#bbb;margin-top:2px;">르끌로 · 한남동</div>
+          <div style="font-size:11px;color:#999;margin-top:6px;">지난주</div>
+        </div>
+      </div>
+
+      <div style="width:180px;flex-shrink:0;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04);scroll-snap-align:start;">
+        <div style="height:140px;position:relative;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80" alt="pizza">
+          <div style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;color:#C45C3A;">4.3</div>
+        </div>
+        <div style="padding:12px 14px;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">마르게리타</div>
+          <div style="font-size:11px;color:#bbb;margin-top:2px;">리틀넥 · 연남</div>
+          <div style="font-size:11px;color:#999;margin-top:6px;">2주 전</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== 친구들의 발견 ===== -->
+    <div style="padding:0 24px 12px;">
+      <div style="font-size:13px;font-weight:600;color:#1a1a1a;">친구들의 발견</div>
+    </div>
+
+    <div style="padding:0 20px 10px;">
+      <div style="border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+        <div style="height:180px;position:relative;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80" alt="fine dining">
+        </div>
+        <div style="padding:14px 16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#60A5FA);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;">지</div>
+            <span style="font-size:11px;color:#bbb;">박지영 · 회사 점심팟</span>
+          </div>
+          <div style="font-size:15px;font-weight:600;color:#1a1a1a;">리스토란테 루치아</div>
+          <div style="font-size:12px;color:#888;margin-top:4px;line-height:1.5;">트러플 크림 파스타가 미쳤다고 난리</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+            <div style="display:flex;gap:6px;">
+              <span style="font-size:10px;color:#C45C3A;font-weight:500;padding:3px 8px;border-radius:6px;background:#FBF2EC;">이태원</span>
+              <span style="font-size:10px;color:#8B7355;font-weight:500;padding:3px 8px;border-radius:6px;background:#F5F0E8;">양식</span>
+            </div>
+            <span style="font-size:12px;font-weight:600;color:#C45C3A;">4.2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Friend compact -->
+    <div style="padding:0 20px 10px;">
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:16px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04);align-items:center;">
+        <div style="width:52px;height:52px;border-radius:12px;overflow:hidden;flex-shrink:0;">
+          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80" alt="pizza">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#22C55E,#86EFAC);display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;font-weight:700;">현</div>
+            <span style="font-size:10px;color:#bbb;">이현우 · 와인 동호회</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-top:4px;">오스테리아 오르조</div>
+          <div style="font-size:11px;color:#999;margin-top:1px;">을지로 · "사케 페어링 대박"</div>
+        </div>
+        <span style="font-size:12px;font-weight:600;color:#C45C3A;">4.6</span>
+      </div>
+    </div>
+
+    <!-- ===== AI 추천 (부드럽게) ===== -->
+    <div style="margin:8px 20px 16px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#F5F0E8,#FAF8F5);border:1px solid #EDE6D8;">
+      <div style="font-size:11px;color:#bbb;">지수님 취향으로 찾아봤어요</div>
+      <div style="display:flex;gap:12px;margin-top:12px;align-items:center;">
+        <div style="width:64px;height:64px;border-radius:14px;overflow:hidden;flex-shrink:0;">
+          <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200&q=80" alt="grilled">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">화양연화</div>
+          <div style="font-size:11px;color:#999;margin-top:2px;">한남동 · 매운 마라 양꼬치</div>
+          <div style="font-size:10px;color:#C45C3A;margin-top:4px;">취향 매칭 91%</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <div class="bnav">
+    <div class="bnav-item" style="color:#C45C3A;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+      <span class="bnav-label" style="color:#C45C3A;">홈</span>
+    </div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span class="bnav-label">탐색</span>
+    </div>
+    <div class="bnav-item"><div class="bnav-add">+</div></div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="bnav-label">그룹</span>
+    </div>
+    <div class="bnav-item" style="color:#ccc;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="bnav-label">나</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DESIGN NOTES ===== -->
+<div class="notes">
+  <h2>화면 구성 해설</h2>
+  <ul>
+    <li>
+      <span class="num">1</span>
+      <div>
+        <strong>인사 + 이 근처 과거 기록</strong>
+        "이 근처에서 좋아했던 곳이 3곳 있어요" — GPS 기반으로 내가 과거에 높게 평가했던 곳을 꺼내줌.
+        "뭐 먹지?" 순간에 가장 직접적인 답. 날짜가 아니라 거리가 기준. 기록이 쌓일수록 이 섹션이 풍부해짐.
+      </div>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <div>
+        <strong>최근 기록 (가로 스크롤)</strong>
+        내 컬렉션의 최근 항목들. 날짜는 "3일 전", "지난주" 같은 상대 시간으로만 표시.
+        일기장이 아니라 내가 쌓아온 맛의 아카이브.
+      </div>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <div>
+        <strong>친구들의 발견</strong>
+        그룹 친구들이 최근 기록한 것. 첫 번째는 사진이 큰 카드로, 이후는 컴팩트하게.
+        기록 안 한 날에도 이 섹션이 화면을 채워줌 → 앱을 여는 이유가 됨.
+      </div>
+    </li>
+    <li>
+      <span class="num">4</span>
+      <div>
+        <strong>AI 추천 (부드럽게)</strong>
+        맨 아래에 자연스럽게. "지수님 취향으로 찾아봤어요" — 안 가본 곳 중 Taste DNA 매칭이 높은 곳.
+        강요가 아니라 "혹시 관심 있으면" 톤.
+      </div>
+    </li>
+  </ul>
+
+  <div style="margin-top:32px;padding:24px;background:#fff;border-radius:16px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px;">핵심 원리</div>
+    <div style="font-size:13px;color:#666;line-height:1.9;">
+      <strong style="color:#C45C3A;">기록이 많을수록 홈이 똑똑해짐</strong> — "이 근처" 섹션은 기록 0개면 안 보이고, 쌓일수록 정확해짐. 기록하라고 말하지 않지만, 기록의 가치가 눈에 보이는 구조.<br><br>
+      <strong style="color:#1a1a1a;">앱을 여는 3가지 이유</strong><br>
+      ① "뭐 먹지?" → 이 근처 과거 기록 + AI 추천<br>
+      ② "친구 뭐 먹었지?" → 친구들의 발견<br>
+      ③ "내 기록 보기" → 최근 기록 가로 스크롤<br><br>
+      <strong style="color:#1a1a1a;">기록 안 해도 가치 있는 화면</strong> — 친구 기록 + AI 추천이 항상 있으므로 빈 화면이 없음. 기록은 + 버튼으로만 유도. 화면 어디에도 "기록하세요" 없음.
+    </div>
+  </div>
+
+  <div style="margin-top:24px;padding:24px;background:#fff;border-radius:16px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px;">상황별 인사 메시지 예시</div>
+    <div style="font-size:13px;color:#666;line-height:2;">
+      GPS 기반: "이 근처에서 좋아했던 곳이 3곳 있어요"<br>
+      GPS 없을 때: "최근에 매운 음식에 빠져있네요 🌶️"<br>
+      기록 많을 때: "47개의 맛있는 기억이 쌓였어요"<br>
+      그룹 활발할 때: "와인 동호회에서 새 기록 3개"<br>
+      기록 적을 때: "지수님의 맛 컬렉션"
+    </div>
+  </div>
+
+  <div style="margin-top:24px;padding:24px;background:#fff;border-radius:16px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px;">"이 근처" 섹션 로직</div>
+    <div style="font-size:13px;color:#666;line-height:2;">
+      <strong>데이터</strong>: 현재 GPS 반경 3km 내 과거 기록 중 평점 4.0 이상<br>
+      <strong>정렬</strong>: 거리순 (가까운 것 먼저)<br>
+      <strong>0건일 때</strong>: 섹션 자체가 안 보임. 인사 메시지가 다른 것으로 대체<br>
+      <strong>차별점</strong>: 네이버/카카오맵은 남의 리뷰. 이건 <em>내가 직접 가서 좋았던 곳</em>.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

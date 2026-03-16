@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import type { RecordType } from '@/domain/entities/record'
 import { uploadRecordPhoto, resizeImage } from '@/infrastructure/storage/image-upload'
 import { getRecordRepository } from '@/di/repositories'
+import { createClient } from '@/infrastructure/supabase/client'
 
 export type QuickCaptureStep = 'input' | 'saving' | 'complete'
 
@@ -142,6 +143,20 @@ export function useCreateRecord(
         companionCount: null,
         totalCost: null,
       })
+
+      // Insert photo records
+      if (photoUrls.length > 0) {
+        const supabase = createClient()
+        await supabase.from('record_photos').insert(
+          photoUrls.map((url, i) => ({
+            record_id: record.id,
+            photo_url: url,
+            thumbnail_url: url,
+            order_index: i,
+            photo_type: 'food',
+          })),
+        )
+      }
 
       // Fire-and-forget: AI analysis + enrichment
       fetch('/api/records/enrich', {

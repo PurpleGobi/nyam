@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useEditRecord } from '@/application/hooks/use-edit-record'
 import { useAuthContext } from '@/presentation/providers/auth-provider'
-import { RatingInput } from '@/presentation/components/record/rating-input'
+import { RatingScales } from '@/presentation/components/capture/rating-scales'
 import type {
   FoodRecord,
   RecordType,
@@ -24,31 +24,6 @@ import type {
   CookingRatings,
 } from '@/domain/entities/record'
 
-const RESTAURANT_RATING_CONFIG = [
-  { key: 'taste', label: '맛' },
-  { key: 'value', label: '가성비' },
-  { key: 'service', label: '서비스' },
-  { key: 'atmosphere', label: '분위기' },
-  { key: 'cleanliness', label: '청결' },
-  { key: 'portion', label: '양' },
-]
-
-const WINE_RATING_CONFIG = [
-  { key: 'aroma', label: '향' },
-  { key: 'body', label: '바디감' },
-  { key: 'acidity', label: '산미' },
-  { key: 'finish', label: '여운' },
-  { key: 'balance', label: '밸런스' },
-  { key: 'value', label: '가성비' },
-]
-
-const COOKING_RATING_CONFIG = [
-  { key: 'taste', label: '맛' },
-  { key: 'difficulty', label: '난이도' },
-  { key: 'timeSpent', label: '시간' },
-  { key: 'reproducibility', label: '재현성' },
-]
-
 const VISIBILITY_OPTIONS: Array<{
   value: RecordVisibility
   label: string
@@ -58,17 +33,6 @@ const VISIBILITY_OPTIONS: Array<{
   { value: 'group', label: '버블 공개', icon: Users },
   { value: 'public', label: '전체 공개', icon: Eye },
 ]
-
-function getRatingConfig(recordType: RecordType) {
-  switch (recordType) {
-    case 'wine':
-      return WINE_RATING_CONFIG
-    case 'cooking':
-      return COOKING_RATING_CONFIG
-    default:
-      return RESTAURANT_RATING_CONFIG
-  }
-}
 
 function ratingsToRecord(ratings: RecordRatings): Record<string, number> {
   return { ...ratings } as unknown as Record<string, number>
@@ -264,7 +228,6 @@ export function RecordEditContainer() {
     )
   }
 
-  const ratingConfig = getRatingConfig(record.recordType)
   const allTags = [
     ...record.tags,
     ...record.flavorTags,
@@ -354,8 +317,8 @@ export function RecordEditContainer() {
       <div className="flex flex-col gap-2 px-4">
         <span className="text-sm font-medium text-[var(--color-neutral-700)]">평가</span>
         <div className="rounded-xl border border-[var(--color-neutral-200)] bg-white p-4">
-          <RatingInput
-            config={ratingConfig}
+          <RatingScales
+            recordType={record.recordType}
             values={ratingValues}
             onChange={handleRatingChange}
           />

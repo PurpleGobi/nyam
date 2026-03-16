@@ -44,13 +44,11 @@ export function CalendarDayPopup({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] px-6">
       <div
         ref={ref}
-        className="w-full max-w-md animate-in slide-in-from-bottom-4 duration-200 rounded-t-2xl bg-white px-4 pb-6 pt-3 shadow-lg"
+        className="w-full max-w-md animate-in fade-in zoom-in-95 duration-200 rounded-2xl bg-white px-4 pb-5 pt-4 shadow-lg"
       >
-        {/* Handle bar */}
-        <div className="mx-auto mb-3 h-1 w-8 rounded-full bg-[var(--color-neutral-200)]" />
 
         {/* Date header */}
         <div className="mb-3 text-sm font-semibold text-[var(--color-neutral-800)]">

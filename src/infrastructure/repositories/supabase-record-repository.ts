@@ -93,8 +93,8 @@ function toRecord(
     visitTime: (row as Record<string, unknown>).visit_time as string | null ?? null,
     companionCount: (row as Record<string, unknown>).companion_count as number | null ?? null,
     totalCost: (row as Record<string, unknown>).total_cost as number | null ?? null,
-    photos: photos ? photos.map(toPhoto) : undefined,
-  } as FoodRecord & { photos?: RecordPhoto[] }
+    photos: photos ? photos.map(toPhoto) : [],
+  }
 }
 
 function ratingsToColumns(ratings: RecordRatings): Record<string, number | null> {

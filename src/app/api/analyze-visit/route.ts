@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import {
+  FOOD_CATEGORIES,
+  FLAVOR_TAGS,
+  TEXTURE_TAGS,
+} from '@/shared/constants/categories'
 
 export const config = {
   api: { bodyParser: { sizeLimit: '20mb' } },
@@ -77,19 +82,7 @@ interface VisitAnalysis {
   estimatedVisitHour: number | null
 }
 
-const VALID_CATEGORIES = [
-  'korean', 'japanese', 'chinese', 'western', 'cafe',
-  'dessert', 'wine', 'seafood', 'meat', 'vegan', 'street',
-] as const
-
-const VALID_FLAVOR_TAGS = [
-  '매운', '달콤한', '짭짤한', '시큼한', '감칠맛',
-  '담백한', '기름진', '고소한', '향긋한', '깔끔한',
-] as const
-
-const VALID_TEXTURE_TAGS = [
-  '바삭한', '부드러운', '쫄깃한', '크리미한', '아삭한', '촉촉한',
-] as const
+const VALID_CATEGORY_VALUES = FOOD_CATEGORIES.map(c => c.value)
 
 function buildPrompt(nearbyPlaces: NearbyPlace[]): string {
   const placesContext = nearbyPlaces.length > 0
@@ -108,6 +101,20 @@ ${placesContext}
 5. **영수증 분석**: 총 금액, 인당 금액, 항목 수 추출
 6. **동행자 파악**: 사진에 나타난 인원수와 모임 성격 추정
 7. **카테고리/태그**: 음식 카테고리와 맛/식감 태그 분류
+
+## 필수 규칙
+- "category"는 반드시 아래 허용 목록 중 하나의 값(영문 key)을 그대로 사용하세요. 목록에 없는 값은 절대 사용하지 마세요.
+- "flavorTags"는 반드시 아래 맛 태그 허용 목록에 있는 값만 사용하세요.
+- "textureTags"는 반드시 아래 식감 태그 허용 목록에 있는 값만 사용하세요.
+
+## category 허용 목록
+${FOOD_CATEGORIES.map(c => `- "${c.value}" → ${c.label}`).join('\n')}
+
+## flavorTags 허용 목록
+[${FLAVOR_TAGS.map(t => `"${t}"`).join(', ')}]
+
+## textureTags 허용 목록
+[${TEXTURE_TAGS.map(t => `"${t}"`).join(', ')}]
 
 ## 응답 형식 (JSON)
 
@@ -133,9 +140,9 @@ ${placesContext}
     "count": 본인포함_총인원수(기본1),
     "occasion": "모임 성격 추정 (회식, 데이트, 가족모임, 친구모임, 혼밥 등) 또는 null"
   },
-  "category": "${VALID_CATEGORIES.join(' | ')}",
-  "flavorTags": [${VALID_FLAVOR_TAGS.map(t => `"${t}"`).join(', ')}] 중 해당하는 것,
-  "textureTags": [${VALID_TEXTURE_TAGS.map(t => `"${t}"`).join(', ')}] 중 해당하는 것,
+  "category": "${VALID_CATEGORY_VALUES.join(' | ')}",
+  "flavorTags": ["해당하는 맛 태그"],
+  "textureTags": ["해당하는 식감 태그"],
   "estimatedVisitHour": 0~23_방문시간_추정_또는_null
 }
 
@@ -277,6 +284,17 @@ export async function POST(request: NextRequest) {
         { status: 502 },
       )
     }
+
+    // Sanitize: only allow values from the defined constants
+    if (!VALID_CATEGORY_VALUES.includes(parsed.category)) {
+      parsed.category = 'korean'
+    }
+    parsed.flavorTags = parsed.flavorTags.filter(
+      (t: string) => (FLAVOR_TAGS as readonly string[]).includes(t),
+    )
+    parsed.textureTags = parsed.textureTags.filter(
+      (t: string) => (TEXTURE_TAGS as readonly string[]).includes(t),
+    )
 
     return NextResponse.json({ success: true, analysis: parsed })
   } catch (error) {

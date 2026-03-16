@@ -10,7 +10,7 @@ import { useProfile } from "@/application/hooks/use-profile"
 import { useUpdateProfile } from "@/application/hooks/use-update-profile"
 import { useRecords } from "@/application/hooks/use-records"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
-import { useExperienceAtlas } from "@/application/hooks/use-experience-atlas"
+import { useStyleDna } from "@/application/hooks/use-style-dna"
 import type { TasteDna } from "@/domain/entities/taste-dna"
 
 const FLAVOR_LABELS: Record<string, string> = {
@@ -46,9 +46,9 @@ export function ProfileContainer() {
   const [editNickname, setEditNickname] = useState("")
   const { data: records, isLoading: recordsLoading } = useRecords(userId, 5)
   const { data: tasteDna, isLoading: dnaLoading } = useTasteDna(userId)
-  const { regions, genres, isLoading: atlasLoading } = useExperienceAtlas(userId)
+  const { regions, genres, isLoading: styleDnaLoading } = useStyleDna(userId)
 
-  const isLoading = profileLoading || recordsLoading || dnaLoading || atlasLoading
+  const isLoading = profileLoading || recordsLoading || dnaLoading || styleDnaLoading
 
   if (isLoading) {
     return (
@@ -186,10 +186,10 @@ export function ProfileContainer() {
         )}
       </section>
 
-      {/* Experience Atlas */}
+      {/* Style DNA */}
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
-          경험 Atlas
+          Style DNA
         </h2>
         {regions.length > 0 || genres.length > 0 ? (
           <div className="flex flex-col gap-3">

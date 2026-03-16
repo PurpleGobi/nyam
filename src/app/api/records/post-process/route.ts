@@ -108,8 +108,8 @@ export async function POST() {
     await recalculateTasteDnaCooking(supabase, userId, cookingRecords)
   }
 
-  // === 2. EXPERIENCE ATLAS XP ===
-  await updateExperienceAtlas(supabase, userId, typedRecords)
+  // === 2. STYLE DNA XP ===
+  await updateStyleDna(supabase, userId, typedRecords)
 
   // === 3. USER STATS ===
   await updateUserStats(supabase, userId, typedRecords)
@@ -451,7 +451,7 @@ async function recalculateTasteDnaCooking(
     }, { onConflict: 'user_id' })
 }
 
-async function updateExperienceAtlas(
+async function updateStyleDna(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   records: RecordRow[],

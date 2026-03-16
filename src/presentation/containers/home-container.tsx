@@ -11,7 +11,7 @@ import { useGeolocation } from '@/application/hooks/use-geolocation'
 import { useFriendsFeed } from '@/application/hooks/use-friends-feed'
 import { useTasteDna } from '@/application/hooks/use-taste-dna'
 import { useTasteDnaWine } from '@/application/hooks/use-taste-dna-wine'
-import { useExperienceAtlas } from '@/application/hooks/use-experience-atlas'
+import { useStyleDna } from '@/application/hooks/use-style-dna'
 import type { CalendarDayRecord } from '@/application/hooks/use-calendar-records'
 import { TodaysPickCard } from '@/presentation/components/home/todays-pick-card'
 import { HomeProfileCard } from '@/presentation/components/home/home-profile-card'
@@ -32,7 +32,7 @@ export function HomeContainer() {
   const { picks, isLoading: picksLoading } = useTodaysPick(userId)
   const { data: tasteDna } = useTasteDna(userId)
   const { data: tasteDnaWine } = useTasteDnaWine(userId)
-  const { regions, genres, scenes } = useExperienceAtlas(userId)
+  const { regions, genres, scenes } = useStyleDna(userId)
   const { location } = useGeolocation()
   const { myPins, friendPins } = useRecordsForMap(userId)
   const { items: feedItems } = useFriendsFeed(userId)

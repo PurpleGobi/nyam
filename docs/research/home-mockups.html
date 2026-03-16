@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nyam 홈화면 후보 10가지</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #F0F0F5;
+    color: #1a1a2e;
+    padding: 40px 20px;
+  }
+
+  .page-header {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+  .page-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #FF6038, #E9B949);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-header p { color: #666; font-size: 15px; }
+
+  .mockup-section {
+    max-width: 1200px;
+    margin: 0 auto 64px;
+  }
+  .mockup-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .rank {
+    font-size: 48px;
+    font-weight: 900;
+    color: #FF6038;
+    line-height: 1;
+    min-width: 56px;
+  }
+  .mockup-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .mockup-meta {
+    margin-left: 72px;
+    margin-bottom: 20px;
+  }
+  .mockup-meta .subtitle { font-size: 14px; color: #888; margin-bottom: 8px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-engage { background: #FFF0ED; color: #FF6038; }
+  .tag-retain { background: #EDF5FF; color: #3B82F6; }
+  .tag-social { background: #F0FDF4; color: #22C55E; }
+  .tag-ai { background: #FDF4FF; color: #A855F7; }
+  .tag-record { background: #FFFBEB; color: #D97706; }
+
+  .pros-cons {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+    color: #555;
+  }
+  .pros-cons span { font-weight: 600; }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #fff;
+    border-radius: 40px;
+    border: 8px solid #1a1a2e;
+    overflow: hidden;
+    position: relative;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .phone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 28px;
+    background: #1a1a2e;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background: #fff;
+    padding-top: 44px;
+  }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  /* Bottom Nav (shared) */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 68px;
+    background: #fff;
+    border-top: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: 8px;
+    z-index: 5;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: #999;
+  }
+  .nav-item.active { color: #FF6038; }
+  .nav-icon { width: 22px; height: 22px; }
+  .nav-add {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #FF6038;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -20px;
+    box-shadow: 0 4px 12px rgba(255,96,56,0.4);
+  }
+
+  /* ===================== SHARED MICRO-STYLES ===================== */
+  .greeting { padding: 16px 20px 0; font-size: 18px; font-weight: 700; color: #1a1a2e; }
+  .greeting small { display: block; font-size: 13px; font-weight: 400; color: #888; margin-top: 2px; }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a2e;
+    padding: 0 20px;
+    margin-bottom: 12px;
+  }
+  .section-title .more { float: right; font-size: 13px; font-weight: 500; color: #FF6038; }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #f0f0f0;
+    overflow: hidden;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF6038, #E9B949);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .food-img {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    display: block;
+  }
+  .food-img-placeholder {
+    width: 100%;
+    aspect-ratio: 16/10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+  .food-thumb {
+    width: 64px; height: 64px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .rating-bar {
+    display: flex;
+    gap: 2px;
+  }
+  .star { color: #FF6038; font-size: 12px; }
+  .star.empty { color: #ddd; }
+
+  .chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #f5f5f5;
+    color: #555;
+  }
+  .chip-primary { background: #FFF0ED; color: #FF6038; }
+
+  .ai-banner {
+    margin: 12px 20px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #FFF5F2, #FFF9F0);
+    border: 1px solid #FFE4DB;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ai-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: #FF6038;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .ai-banner .text { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .ai-banner .sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .pb-safe { padding-bottom: 80px; }
+
+  /* Taste DNA chart placeholder */
+  .taste-chart {
+    width: 120px; height: 120px;
+    position: relative;
+    margin: 0 auto;
+  }
+  .taste-chart svg { width: 100%; height: 100%; }
+
+  .horizontal-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 0 20px 8px;
+    scroll-snap-type: x mandatory;
+  }
+  .horizontal-scroll::-webkit-scrollbar { display: none; }
+  .horizontal-scroll > * { scroll-snap-align: start; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>nyam 홈화면 후보 10가지</h1>
+  <p>PRD 기반 + 리서치 기반 — 추천 순위별 정렬 (모바일 375×812)</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- #1 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">01</div>
+    <h2>Taste Feed — 소셜 피드 + AI 추천 하이브리드</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">그룹 친구들의 최신 기록이 피드로 흐르고, 상단에 AI 추천이 자연스럽게 삽입되는 구조</div>
+    <div class="tags">
+      <span class="tag tag-social">소셜</span>
+      <span class="tag tag-ai">AI 추천</span>
+      <span class="tag tag-engage">높은 체류시간</span>
+      <span class="tag tag-retain">D30 리텐션 ↑</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 앱을 열 때마다 새 콘텐츠 → 습관 형성, 그룹 활성화</div>
+      <div><span>단점:</span> 초기 콘텐츠 부족 시 빈 피드 → 콜드스타트 대책 필요</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="position:relative;">🔔<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;background:#FF6038;border-radius:50%;border:2px solid #fff;"></span></div>
+        </div>
+      </div>
+
+      <!-- AI Recommendation Card -->
+      <div class="ai-banner">
+        <div class="ai-icon">✨</div>
+        <div>
+          <div class="text">지수님, 오늘 이태원에서 파스타 어때요?</div>
+          <div class="sub">Taste DNA 기반 · 날씨 맑음 🌤️</div>
+        </div>
+        <div style="margin-left:auto;color:#FF6038;font-size:18px;">›</div>
+      </div>
+
+      <!-- Group Filter Tabs -->
+      <div style="display:flex;gap:8px;padding:12px 20px;overflow-x:auto;">
+        <div style="padding:6px 14px;border-radius:999px;background:#FF6038;color:#fff;font-size:13px;font-weight:600;white-space:nowrap;">전체</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:13px;font-weight:600;white-space:nowrap;">🍷 와인 동호회</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:13px;font-weight:600;white-space:nowrap;">🏢 회사 점심팟</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:13px;font-weight:600;white-space:nowrap;">👨‍👩‍👧 가족</div>
+      </div>
+
+      <!-- Feed Card 1 -->
+      <div style="padding:0 20px 16px;">
+        <div class="card">
+          <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <div class="avatar">민</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">김민수</div>
+              <div style="font-size:11px;color:#999;">와인 동호회 · 2시간 전</div>
+            </div>
+            <div class="chip" style="margin-left:auto;">🍷 와인</div>
+          </div>
+          <div class="food-img-placeholder" style="background:linear-gradient(135deg,#2D1B4E,#4A2C7A);">🍷</div>
+          <div style="padding:12px 16px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Château Margaux 2018</div>
+            <div style="font-size:12px;color:#888;margin-bottom:8px;">탄닌이 실크처럼 부드럽고 블랙베리 향이 오래 남아요</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="rating-bar">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </div>
+              <span style="font-size:12px;color:#FF6038;font-weight:600;">5.0</span>
+              <span style="font-size:11px;color:#bbb;margin-left:auto;">❤️ 12 · 💬 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feed Card 2 -->
+      <div style="padding:0 20px 16px;">
+        <div class="card">
+          <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <div class="avatar" style="background:linear-gradient(135deg,#3B82F6,#60A5FA);">지</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">박지영</div>
+              <div style="font-size:11px;color:#999;">회사 점심팟 · 5시간 전</div>
+            </div>
+            <div class="chip" style="margin-left:auto;">🍝 양식</div>
+          </div>
+          <div class="food-img-placeholder" style="background:linear-gradient(135deg,#FFF5E0,#FFE4B5);">🍝</div>
+          <div style="padding:12px 16px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">트러플 크림 파스타</div>
+            <div style="font-size:12px;color:#888;margin-bottom:8px;">리스토란테 루치아 · 이태원</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="rating-bar">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span>
+              </div>
+              <span style="font-size:12px;color:#FF6038;font-weight:600;">4.2</span>
+              <span style="font-size:11px;color:#bbb;margin-left:auto;">❤️ 8 · 💬 5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #2 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">02</div>
+    <h2>My Taste Dashboard — 개인 미식 대시보드</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">나의 Taste DNA, 이번 달 기록 통계, 레벨이 한눈에 보이는 개인화 대시보드</div>
+    <div class="tags">
+      <span class="tag tag-record">기록 동기부여</span>
+      <span class="tag tag-ai">개인화</span>
+      <span class="tag tag-engage">게이미피케이션</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 기록할수록 성장하는 느낌 → 리텐션, 레벨/뱃지 시스템과 시너지</div>
+      <div><span>단점:</span> 신규 사용자에게 빈 대시보드 → 온보딩 CTA 필수</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div style="display:flex;gap:12px;align-items:center;">🔔</div>
+      </div>
+
+      <!-- Profile Summary -->
+      <div style="padding:8px 20px 16px;display:flex;align-items:center;gap:14px;">
+        <div class="avatar" style="width:52px;height:52px;font-size:20px;">지</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;">지수님</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;">
+            <span style="color:#E9B949;">★</span> Lv.7 미식 탐험가
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:#FF6038;">47</div>
+          <div style="font-size:10px;color:#999;">이번 달 기록</div>
+        </div>
+      </div>
+
+      <!-- Taste DNA Radar Preview -->
+      <div style="margin:0 20px 16px;padding:20px;border-radius:20px;background:linear-gradient(135deg,#1a1a2e,#334E68);color:#fff;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">나의 Taste DNA</div>
+        <div style="display:flex;align-items:center;gap:20px;">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <polygon points="55,10 95,35 95,75 55,100 15,75 15,35" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <polygon points="55,25 82,40 82,70 55,85 28,70 28,40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            <polygon points="55,20 90,42 78,80 55,90 22,70 20,38" fill="rgba(255,96,56,0.3)" stroke="#FF6038" stroke-width="2"/>
+            <circle cx="55" cy="20" r="3" fill="#FF6038"/>
+            <circle cx="90" cy="42" r="3" fill="#FF6038"/>
+            <circle cx="78" cy="80" r="3" fill="#FF6038"/>
+            <circle cx="55" cy="90" r="3" fill="#FF6038"/>
+            <circle cx="22" cy="70" r="3" fill="#FF6038"/>
+            <circle cx="20" cy="38" r="3" fill="#FF6038"/>
+            <text x="55" y="8" text-anchor="middle" fill="#fff" font-size="8">매운맛</text>
+            <text x="100" y="38" text-anchor="start" fill="#fff" font-size="8">단맛</text>
+            <text x="100" y="78" text-anchor="start" fill="#fff" font-size="8">짠맛</text>
+            <text x="55" y="108" text-anchor="middle" fill="#fff" font-size="8">신맛</text>
+            <text x="8" y="78" text-anchor="end" fill="#fff" font-size="8">감칠맛</text>
+            <text x="8" y="38" text-anchor="end" fill="#fff" font-size="8">고소함</text>
+          </svg>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px;">주요 취향</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span style="padding:3px 8px;border-radius:999px;background:rgba(255,96,56,0.2);color:#FF6038;font-size:10px;">🌶️ 매운맛</span>
+              <span style="padding:3px 8px;border-radius:999px;background:rgba(233,185,73,0.2);color:#E9B949;font-size:10px;">🧈 고소함</span>
+              <span style="padding:3px 8px;border-radius:999px;background:rgba(96,165,250,0.2);color:#60A5FA;font-size:10px;">🍜 면 요리</span>
+            </div>
+            <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.5);">47회 기록 기반 분석</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Stats -->
+      <div style="display:flex;gap:8px;padding:0 20px 16px;">
+        <div style="flex:1;padding:14px;border-radius:14px;background:#FFF5F2;text-align:center;">
+          <div style="font-size:20px;">🍽️</div>
+          <div style="font-size:18px;font-weight:800;color:#FF6038;margin-top:4px;">47</div>
+          <div style="font-size:10px;color:#888;">기록 수</div>
+        </div>
+        <div style="flex:1;padding:14px;border-radius:14px;background:#EDF5FF;text-align:center;">
+          <div style="font-size:20px;">📍</div>
+          <div style="font-size:18px;font-weight:800;color:#3B82F6;margin-top:4px;">23</div>
+          <div style="font-size:10px;color:#888;">방문 식당</div>
+        </div>
+        <div style="flex:1;padding:14px;border-radius:14px;background:#F0FDF4;text-align:center;">
+          <div style="font-size:20px;">⭐</div>
+          <div style="font-size:18px;font-weight:800;color:#22C55E;margin-top:4px;">4.3</div>
+          <div style="font-size:10px;color:#888;">평균 평점</div>
+        </div>
+      </div>
+
+      <!-- AI Recommendation -->
+      <div class="ai-banner">
+        <div class="ai-icon">✨</div>
+        <div>
+          <div class="text">매운 면 요리를 좋아하시네요!</div>
+          <div class="sub">근처 마라탕 맛집 3곳을 추천해드릴게요</div>
+        </div>
+        <div style="margin-left:auto;color:#FF6038;">›</div>
+      </div>
+
+      <!-- Recent Records -->
+      <div class="section-title" style="margin-top:12px;">최근 기록 <span class="more">더보기 ›</span></div>
+      <div style="padding:0 20px 16px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:#fafafa;">
+          <div class="food-thumb" style="background:#FFF5E0;">🍜</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">마라탕 (매운맛 3단계)</div>
+            <div style="font-size:11px;color:#999;">해리마라 · 강남 · 오늘</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#FF6038;">4.5</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:#fafafa;">
+          <div class="food-thumb" style="background:#F0FDF4;">🍣</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">오마카세 런치 코스</div>
+            <div style="font-size:11px;color:#999;">스시 겐 · 청담 · 어제</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#FF6038;">4.8</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #3 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">03</div>
+    <h2>Today's Pick — 오늘의 추천 카드 스와이프</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">매일 새로운 AI 추천 3-5개를 틴더 스타일 카드로 스와이프. 간단한 인터랙션으로 취향 학습</div>
+    <div class="tags">
+      <span class="tag tag-ai">AI 추천</span>
+      <span class="tag tag-engage">높은 인터랙션</span>
+      <span class="tag tag-retain">매일 방문 유도</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 매일 새로운 콘텐츠, 스와이프로 취향 학습, 재방문율 극대화</div>
+      <div><span>단점:</span> 기록보다 탐색 중심, 추천 품질이 핵심 → AI 정확도 의존</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div>🔔</div>
+      </div>
+
+      <div style="padding:4px 20px 8px;">
+        <div style="font-size:20px;font-weight:800;color:#1a1a2e;">오늘의 추천</div>
+        <div style="font-size:12px;color:#888;">지수님의 Taste DNA + 현재 위치 기반</div>
+      </div>
+
+      <!-- Swipe Card Stack -->
+      <div style="position:relative;margin:12px 20px;height:380px;">
+        <!-- Card 3 (back) -->
+        <div style="position:absolute;top:16px;left:12px;right:12px;bottom:0;border-radius:24px;background:#f0f0f0;"></div>
+        <!-- Card 2 (middle) -->
+        <div style="position:absolute;top:8px;left:6px;right:6px;bottom:0;border-radius:24px;background:#f8f8f8;box-shadow:0 2px 8px rgba(0,0,0,0.05);"></div>
+        <!-- Card 1 (front) -->
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;border-radius:24px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.12);overflow:hidden;">
+          <div style="height:220px;background:linear-gradient(135deg,#FF8A65,#FFB74D);display:flex;align-items:center;justify-content:center;font-size:80px;">🍣</div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:18px;font-weight:700;">스시 오마카세</div>
+                <div style="font-size:12px;color:#888;margin-top:2px;">스시 겐 · 청담동 · 850m</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#FF6038;">94%</div>
+                <div style="font-size:9px;color:#999;">취향 매칭</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:12px;">
+              <span class="chip">🐟 신선한 해산물</span>
+              <span class="chip">🍶 사케 페어링</span>
+              <span class="chip">💰 15만원대</span>
+            </div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">와인 동호회 민수님이 ⭐ 4.8 평가</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex;justify-content:center;gap:24px;padding:20px;">
+        <div style="width:52px;height:52px;border-radius:50%;border:2px solid #eee;display:flex;align-items:center;justify-content:center;font-size:22px;">👎</div>
+        <div style="width:52px;height:52px;border-radius:50%;border:2px solid #eee;display:flex;align-items:center;justify-content:center;font-size:22px;">📌</div>
+        <div style="width:52px;height:52px;border-radius:50%;background:#FF6038;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 12px rgba(255,96,56,0.4);">❤️</div>
+      </div>
+
+      <!-- Today Stats -->
+      <div style="display:flex;justify-content:center;gap:20px;padding:0 20px;">
+        <div style="font-size:11px;color:#999;">오늘 남은 추천 <strong style="color:#FF6038;">3장</strong></div>
+        <div style="font-size:11px;color:#999;">저장한 맛집 <strong style="color:#FF6038;">12곳</strong></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #4 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">04</div>
+    <h2>Map-First — 지도 중심 발견</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">지도 위에 내 기록 + 그룹 기록이 핀으로 표시. 현재 위치 기반 즉각적 가치 제공</div>
+    <div class="tags">
+      <span class="tag tag-engage">즉각적 가치</span>
+      <span class="tag tag-social">그룹 기록</span>
+      <span class="tag tag-record">위치 기반</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> "지금 어디서 먹지?"에 즉답, 위치 기반 즉각 가치</div>
+      <div><span>단점:</span> 지도 로딩 성능, 데이터 없는 지역은 휑함</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe" style="position:relative;">
+      <!-- Map Background -->
+      <div style="position:absolute;top:44px;left:0;right:0;bottom:68px;background:linear-gradient(180deg,#E8F0E8,#D4E4D4);overflow:hidden;">
+        <!-- Map grid lines -->
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,0,0,0.03) 40px,rgba(0,0,0,0.03) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(0,0,0,0.03) 40px,rgba(0,0,0,0.03) 41px);"></div>
+        <!-- Roads -->
+        <div style="position:absolute;top:50%;left:0;right:0;height:8px;background:rgba(255,255,255,0.7);"></div>
+        <div style="position:absolute;top:0;bottom:0;left:40%;width:8px;background:rgba(255,255,255,0.7);"></div>
+
+        <!-- Map Pins -->
+        <div style="position:absolute;top:30%;left:25%;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">📍</div>
+        <div style="position:absolute;top:45%;left:55%;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">📍</div>
+        <div style="position:absolute;top:35%;left:65%;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">📍</div>
+        <div style="position:absolute;top:55%;left:35%;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">📍</div>
+        <!-- Current location pulse -->
+        <div style="position:absolute;top:48%;left:48%;width:16px;height:16px;background:#3B82F6;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 8px rgba(59,130,246,0.2);"></div>
+
+        <!-- My Pin (highlighted) -->
+        <div style="position:absolute;top:38%;left:45%;">
+          <div style="background:#FF6038;color:#fff;padding:4px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(255,96,56,0.4);">
+            ⭐ 4.8 스시겐
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Search Bar (floating) -->
+      <div style="position:absolute;top:52px;left:16px;right:16px;z-index:3;">
+        <div style="background:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);">
+          <span style="color:#999;">🔍</span>
+          <span style="font-size:13px;color:#bbb;">장소, 메뉴, 그룹 검색...</span>
+          <span style="margin-left:auto;font-size:11px;padding:4px 8px;background:#f5f5f5;border-radius:8px;color:#666;">📍 강남</span>
+        </div>
+      </div>
+
+      <!-- Filter Chips (floating) -->
+      <div style="position:absolute;top:108px;left:16px;right:16px;z-index:3;display:flex;gap:6px;">
+        <div style="padding:5px 10px;border-radius:999px;background:#FF6038;color:#fff;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.1);">내 기록</div>
+        <div style="padding:5px 10px;border-radius:999px;background:#fff;color:#666;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.1);">그룹 기록</div>
+        <div style="padding:5px 10px;border-radius:999px;background:#fff;color:#666;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.1);">AI 추천</div>
+      </div>
+
+      <!-- Bottom Sheet -->
+      <div style="position:absolute;bottom:68px;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 20px 16px;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:3;">
+        <div style="width:36px;height:4px;border-radius:2px;background:#ddd;margin:0 auto 12px;"></div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">근처 기록 4곳</div>
+        <div style="display:flex;gap:10px;overflow-x:auto;">
+          <div style="flex-shrink:0;width:140px;border-radius:14px;overflow:hidden;border:1px solid #f0f0f0;">
+            <div style="height:80px;background:linear-gradient(135deg,#FFE4B5,#FFF5E0);display:flex;align-items:center;justify-content:center;font-size:36px;">🍣</div>
+            <div style="padding:8px;">
+              <div style="font-size:12px;font-weight:600;">스시 겐</div>
+              <div style="font-size:10px;color:#999;">⭐ 4.8 · 850m</div>
+            </div>
+          </div>
+          <div style="flex-shrink:0;width:140px;border-radius:14px;overflow:hidden;border:1px solid #f0f0f0;">
+            <div style="height:80px;background:linear-gradient(135deg,#FFD4CC,#FFF0ED);display:flex;align-items:center;justify-content:center;font-size:36px;">🍝</div>
+            <div style="padding:8px;">
+              <div style="font-size:12px;font-weight:600;">루치아</div>
+              <div style="font-size:10px;color:#999;">⭐ 4.2 · 1.2km</div>
+            </div>
+          </div>
+          <div style="flex-shrink:0;width:140px;border-radius:14px;overflow:hidden;border:1px solid #f0f0f0;">
+            <div style="height:80px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);display:flex;align-items:center;justify-content:center;font-size:36px;">🥗</div>
+            <div style="padding:8px;">
+              <div style="font-size:12px;font-weight:600;">샐러디</div>
+              <div style="font-size:10px;color:#999;">⭐ 3.9 · 300m</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #5 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">05</div>
+    <h2>Bento Grid — 벤토 박스 레이아웃</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">다양한 크기의 카드가 벤토 박스처럼 배치. 기록, 추천, 통계, 그룹을 한눈에 조망</div>
+    <div class="tags">
+      <span class="tag tag-engage">시각적 풍부함</span>
+      <span class="tag tag-ai">AI 추천</span>
+      <span class="tag tag-record">기록</span>
+      <span class="tag tag-social">그룹</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 정보 밀도 높고 시각적, Apple 스타일 모던함</div>
+      <div><span>단점:</span> 각 셀 우선순위 결정 어려움, 복잡도 관리 필요</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div>🔔</div>
+      </div>
+      <div class="greeting">안녕하세요, 지수님 👋</div>
+
+      <!-- Bento Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 20px;">
+        <!-- Large Card: AI Recommendation -->
+        <div style="grid-column:span 2;border-radius:20px;background:linear-gradient(135deg,#FF6038,#FF8A65);padding:20px;color:#fff;">
+          <div style="font-size:12px;opacity:0.8;">✨ AI가 추천하는 오늘의 맛집</div>
+          <div style="font-size:18px;font-weight:700;margin-top:6px;">이태원 트러플 파스타</div>
+          <div style="font-size:12px;opacity:0.7;margin-top:4px;">취향 매칭 94% · 1.2km</div>
+          <div style="margin-top:12px;display:flex;gap:6px;">
+            <span style="padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.2);font-size:10px;">🍝 양식</span>
+            <span style="padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.2);font-size:10px;">💰 2만원대</span>
+          </div>
+        </div>
+
+        <!-- Taste DNA -->
+        <div style="border-radius:20px;background:#1a1a2e;padding:16px;color:#fff;aspect-ratio:1;">
+          <div style="font-size:11px;opacity:0.6;">Taste DNA</div>
+          <svg width="100%" viewBox="0 0 100 100" style="margin-top:8px;">
+            <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <polygon points="50,18 80,38 72,75 50,82 20,65 18,32" fill="rgba(255,96,56,0.3)" stroke="#FF6038" stroke-width="1.5"/>
+          </svg>
+        </div>
+
+        <!-- Stats -->
+        <div style="border-radius:20px;background:#FFF5F2;padding:16px;display:flex;flex-direction:column;justify-content:center;aspect-ratio:1;">
+          <div style="font-size:11px;color:#888;">이번 달 기록</div>
+          <div style="font-size:36px;font-weight:800;color:#FF6038;margin-top:4px;">47</div>
+          <div style="font-size:10px;color:#999;margin-top:4px;">+12 vs 지난달</div>
+        </div>
+
+        <!-- Recent Record -->
+        <div style="grid-column:span 2;border-radius:20px;border:1px solid #f0f0f0;overflow:hidden;display:flex;">
+          <div style="width:110px;background:linear-gradient(135deg,#FFE4B5,#FFF5E0);display:flex;align-items:center;justify-content:center;font-size:48px;flex-shrink:0;">🍜</div>
+          <div style="padding:14px 16px;flex:1;">
+            <div style="font-size:10px;color:#999;">오늘 · 강남</div>
+            <div style="font-size:14px;font-weight:700;margin-top:4px;">마라탕 3단계</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">해리마라</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:8px;">
+              <span style="color:#FF6038;font-size:12px;">★★★★★</span>
+              <span style="font-size:12px;font-weight:600;color:#FF6038;">4.5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group Activity -->
+        <div style="border-radius:20px;background:#EDF5FF;padding:16px;aspect-ratio:1;">
+          <div style="font-size:11px;color:#888;">그룹 활동</div>
+          <div style="font-size:24px;margin-top:8px;">👥</div>
+          <div style="font-size:20px;font-weight:800;color:#3B82F6;margin-top:4px;">3</div>
+          <div style="font-size:10px;color:#999;">새 기록</div>
+        </div>
+
+        <!-- Level -->
+        <div style="border-radius:20px;background:linear-gradient(135deg,#FDF4FF,#F3E8FF);padding:16px;aspect-ratio:1;">
+          <div style="font-size:11px;color:#888;">내 레벨</div>
+          <div style="font-size:24px;margin-top:8px;">⭐</div>
+          <div style="font-size:14px;font-weight:700;color:#A855F7;margin-top:4px;">Lv.7</div>
+          <div style="font-size:10px;color:#999;">미식 탐험가</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #6 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">06</div>
+    <h2>Timeline Journal — 타임라인 일기장</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">날짜별로 기록이 시간순 타임라인으로 흐르는 미식 일기장 컨셉</div>
+    <div class="tags">
+      <span class="tag tag-record">기록 중심</span>
+      <span class="tag tag-engage">감성적</span>
+      <span class="tag tag-retain">일기 습관</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> "기록"이라는 핵심 가치에 충실, 감성적 사용 경험</div>
+      <div><span>단점:</span> 소셜 요소 약화, 추천/탐색 기능 접근성 낮음</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div>🔔</div>
+      </div>
+
+      <!-- Date Header -->
+      <div style="padding:8px 20px;">
+        <div style="font-size:24px;font-weight:800;color:#1a1a2e;">3월 16일 일요일</div>
+        <div style="font-size:12px;color:#999;margin-top:2px;">오늘 2개의 맛있는 경험 ✨</div>
+      </div>
+
+      <!-- Week Calendar Strip -->
+      <div style="display:flex;gap:0;padding:12px 20px;justify-content:space-between;">
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">월</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">10</div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">화</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">11</div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#FF6038;margin:2px auto 0;"></div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">수</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">12</div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#FF6038;margin:2px auto 0;"></div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">목</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">13</div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">금</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">14</div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#FF6038;margin:2px auto 0;"></div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;">
+          <div style="font-size:10px;color:#999;">토</div>
+          <div style="font-size:14px;font-weight:600;color:#ccc;">15</div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#FF6038;margin:2px auto 0;"></div>
+        </div>
+        <div style="text-align:center;padding:6px 10px;border-radius:12px;background:#FF6038;">
+          <div style="font-size:10px;color:rgba(255,255,255,0.7);">일</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;">16</div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#fff;margin:2px auto 0;"></div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div style="padding:16px 20px;position:relative;">
+        <!-- Timeline Line -->
+        <div style="position:absolute;left:39px;top:16px;bottom:0;width:2px;background:#f0f0f0;"></div>
+
+        <!-- Entry 1 -->
+        <div style="display:flex;gap:16px;margin-bottom:20px;position:relative;">
+          <div style="width:20px;text-align:right;flex-shrink:0;">
+            <div style="font-size:11px;font-weight:600;color:#999;">12:30</div>
+          </div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#FF6038;border:2px solid #fff;box-shadow:0 0 0 2px #FF6038;margin-top:4px;flex-shrink:0;z-index:1;"></div>
+          <div style="flex:1;background:#fff;border-radius:16px;border:1px solid #f0f0f0;overflow:hidden;">
+            <div style="height:120px;background:linear-gradient(135deg,#FFE4B5,#FFF5E0);display:flex;align-items:center;justify-content:center;font-size:48px;">🍜</div>
+            <div style="padding:12px;">
+              <div style="font-size:14px;font-weight:600;">마라탕 3단계</div>
+              <div style="font-size:11px;color:#999;margin-top:2px;">해리마라 · 강남</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:6px;">
+                <span style="color:#FF6038;font-size:11px;">★★★★★</span>
+                <span style="font-size:11px;font-weight:600;color:#FF6038;">4.5</span>
+              </div>
+              <div style="font-size:11px;color:#888;margin-top:6px;font-style:italic;">"땀이 쭉 빠지는 시원한 매운맛 🔥"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry 2 -->
+        <div style="display:flex;gap:16px;margin-bottom:20px;position:relative;">
+          <div style="width:20px;text-align:right;flex-shrink:0;">
+            <div style="font-size:11px;font-weight:600;color:#999;">18:00</div>
+          </div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#E9B949;border:2px solid #fff;box-shadow:0 0 0 2px #E9B949;margin-top:4px;flex-shrink:0;z-index:1;"></div>
+          <div style="flex:1;background:#fff;border-radius:16px;border:1px solid #f0f0f0;overflow:hidden;">
+            <div style="height:120px;background:linear-gradient(135deg,#2D1B4E,#4A2C7A);display:flex;align-items:center;justify-content:center;font-size:48px;">🍷</div>
+            <div style="padding:12px;">
+              <div style="font-size:14px;font-weight:600;">Château Margaux 2018</div>
+              <div style="font-size:11px;color:#999;margin-top:2px;">와인바 르끌로 · 한남동</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:6px;">
+                <span style="color:#FF6038;font-size:11px;">★★★★★</span>
+                <span style="font-size:11px;font-weight:600;color:#FF6038;">5.0</span>
+              </div>
+              <div style="font-size:11px;color:#888;margin-top:6px;font-style:italic;">"실크같은 탄닌, 블랙베리 피니시 🍇"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty prompt -->
+        <div style="display:flex;gap:16px;position:relative;">
+          <div style="width:20px;flex-shrink:0;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#ddd;border:2px solid #fff;box-shadow:0 0 0 2px #ddd;margin-top:4px;flex-shrink:0;z-index:1;"></div>
+          <div style="flex:1;border:2px dashed #e0e0e0;border-radius:16px;padding:20px;text-align:center;">
+            <div style="font-size:24px;">📝</div>
+            <div style="font-size:12px;color:#999;margin-top:4px;">오늘의 미식 경험을 기록해보세요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #7 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">07</div>
+    <h2>Stories + Quick Actions — 스토리 + 퀵 액션</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">상단에 그룹 스토리 원형 아바타, 중간에 퀵 액션 바, 하단에 최근 기록</div>
+    <div class="tags">
+      <span class="tag tag-social">소셜</span>
+      <span class="tag tag-engage">빠른 접근</span>
+      <span class="tag tag-record">기록 유도</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 익숙한 스토리 UX, 빠른 액션 접근, 소셜 + 기록 균형</div>
+      <div><span>단점:</span> 인스타그램과 너무 유사해 보일 위험</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div style="display:flex;gap:12px;">🔍 🔔</div>
+      </div>
+
+      <!-- Stories Row -->
+      <div class="horizontal-scroll" style="padding-top:8px;padding-bottom:16px;">
+        <div style="text-align:center;width:64px;">
+          <div style="width:60px;height:60px;border-radius:50%;border:2px dashed #FF6038;display:flex;align-items:center;justify-content:center;font-size:24px;background:#FFF5F2;">+</div>
+          <div style="font-size:10px;color:#FF6038;margin-top:4px;font-weight:600;">기록하기</div>
+        </div>
+        <div style="text-align:center;width:64px;">
+          <div style="width:60px;height:60px;border-radius:50%;border:3px solid #FF6038;padding:2px;">
+            <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#FF6038,#E9B949);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">민</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-top:4px;">김민수</div>
+        </div>
+        <div style="text-align:center;width:64px;">
+          <div style="width:60px;height:60px;border-radius:50%;border:3px solid #FF6038;padding:2px;">
+            <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#60A5FA);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">지</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-top:4px;">박지영</div>
+        </div>
+        <div style="text-align:center;width:64px;">
+          <div style="width:60px;height:60px;border-radius:50%;border:3px solid #ccc;padding:2px;">
+            <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#22C55E,#86EFAC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">현</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-top:4px;">이현우</div>
+        </div>
+        <div style="text-align:center;width:64px;">
+          <div style="width:60px;height:60px;border-radius:50%;border:3px solid #ccc;padding:2px;">
+            <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#A855F7,#C084FC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">수</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-top:4px;">최수진</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="display:flex;gap:8px;padding:0 20px 16px;">
+        <div style="flex:1;padding:14px 12px;border-radius:16px;background:linear-gradient(135deg,#FFF5F2,#FFF0ED);text-align:center;">
+          <div style="font-size:24px;">📸</div>
+          <div style="font-size:11px;font-weight:600;color:#FF6038;margin-top:4px;">사진 기록</div>
+        </div>
+        <div style="flex:1;padding:14px 12px;border-radius:16px;background:linear-gradient(135deg,#EDF5FF,#E0EFFF);text-align:center;">
+          <div style="font-size:24px;">✨</div>
+          <div style="font-size:11px;font-weight:600;color:#3B82F6;margin-top:4px;">AI 추천</div>
+        </div>
+        <div style="flex:1;padding:14px 12px;border-radius:16px;background:linear-gradient(135deg,#F0FDF4,#E0F9E8);text-align:center;">
+          <div style="font-size:24px;">📍</div>
+          <div style="font-size:11px;font-weight:600;color:#22C55E;margin-top:4px;">근처 맛집</div>
+        </div>
+        <div style="flex:1;padding:14px 12px;border-radius:16px;background:linear-gradient(135deg,#FDF4FF,#F3E8FF);text-align:center;">
+          <div style="font-size:24px;">🍷</div>
+          <div style="font-size:11px;font-weight:600;color:#A855F7;margin-top:4px;">와인 스캔</div>
+        </div>
+      </div>
+
+      <!-- AI Insight -->
+      <div class="ai-banner">
+        <div class="ai-icon">💡</div>
+        <div>
+          <div class="text">이번 주 매운 음식을 자주 드셨네요</div>
+          <div class="sub">비슷한 취향의 그룹 추천 3개</div>
+        </div>
+        <div style="margin-left:auto;color:#FF6038;">›</div>
+      </div>
+
+      <!-- Recent -->
+      <div class="section-title" style="margin-top:16px;">그룹 피드 <span class="more">더보기 ›</span></div>
+      <div style="padding:0 20px 16px;">
+        <div class="card">
+          <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <div class="avatar">민</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">김민수</div>
+              <div style="font-size:11px;color:#999;">와인 동호회 · 방금</div>
+            </div>
+          </div>
+          <div class="food-img-placeholder" style="background:linear-gradient(135deg,#2D1B4E,#4A2C7A);aspect-ratio:16/9;">🍷</div>
+          <div style="padding:12px 16px;">
+            <div style="font-size:14px;font-weight:600;">Barolo Reserva 2019</div>
+            <div style="font-size:12px;color:#888;margin-top:4px;">체리와 가죽 노트가 인상적 🍒</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+              <span style="font-size:12px;color:#FF6038;font-weight:600;">★ 4.7</span>
+              <span style="font-size:11px;color:#bbb;margin-left:auto;">❤️ 5 · 💬 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #8 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">08</div>
+    <h2>Photo Grid — 비주얼 갤러리</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">음식 사진 중심 그리드 레이아웃. 시각적 임팩트 극대화, Pinterest 스타일</div>
+    <div class="tags">
+      <span class="tag tag-engage">시각적 임팩트</span>
+      <span class="tag tag-record">사진 중심</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 음식 사진의 힘 활용, 스크롤 체류시간 높음</div>
+      <div><span>단점:</span> 텍스트 정보 부족, 사진 없는 기록 처리 어려움</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div style="display:flex;gap:12px;">🔍 🔔</div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div style="display:flex;gap:8px;padding:8px 20px;overflow-x:auto;">
+        <div style="padding:6px 14px;border-radius:999px;background:#FF6038;color:#fff;font-size:12px;font-weight:600;">전체</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:12px;font-weight:600;">🍽️ 외식</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:12px;font-weight:600;">🍷 와인</div>
+        <div style="padding:6px 14px;border-radius:999px;background:#f5f5f5;color:#666;font-size:12px;font-weight:600;">🏠 요리</div>
+      </div>
+
+      <!-- Photo Grid (Masonry-like) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:12px 3px;">
+        <div style="aspect-ratio:1;background:linear-gradient(135deg,#FFE4B5,#FFF5E0);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🍜
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">마라탕</div>
+            <div style="font-size:8px;opacity:0.8;">★ 4.5</div>
+          </div>
+        </div>
+        <div style="aspect-ratio:3/4;background:linear-gradient(135deg,#2D1B4E,#4A2C7A);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🍷
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">Margaux 2018</div>
+            <div style="font-size:8px;opacity:0.8;">★ 5.0</div>
+          </div>
+        </div>
+        <div style="aspect-ratio:3/4;background:linear-gradient(135deg,#FF8A65,#FFB74D);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🍣
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">오마카세</div>
+            <div style="font-size:8px;opacity:0.8;">★ 4.8</div>
+          </div>
+        </div>
+        <div style="aspect-ratio:1;background:linear-gradient(135deg,#C8E6C9,#E8F5E9);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🥗
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">아보카도 샐러드</div>
+            <div style="font-size:8px;opacity:0.8;">★ 3.9</div>
+          </div>
+        </div>
+        <div style="aspect-ratio:1;background:linear-gradient(135deg,#FFCDD2,#FFEBEE);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🍰
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">딸기 케이크</div>
+            <div style="font-size:8px;opacity:0.8;">★ 4.2</div>
+          </div>
+        </div>
+        <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#FFE0B2,#FFF3E0);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border-radius:4px;">
+          🍝
+          <div style="position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,0.5);border-radius:8px;padding:4px 8px;color:#fff;">
+            <div style="font-size:10px;font-weight:600;">트러플 파스타</div>
+            <div style="font-size:8px;opacity:0.8;">★ 4.2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #9 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">09</div>
+    <h2>Group Hub — 그룹 중심 허브</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">소속 그룹별 최신 활동이 한눈에. 그룹간 경쟁, 공동 기록이 핵심 동력</div>
+    <div class="tags">
+      <span class="tag tag-social">그룹 중심</span>
+      <span class="tag tag-engage">경쟁 요소</span>
+      <span class="tag tag-retain">커뮤니티</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 그룹 활성화 극대화, "버블형 네트워킹" 전략에 최적</div>
+      <div><span>단점:</span> 그룹 미가입 사용자 경험 빈약, 개인 기록 부각 약함</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div>🔔</div>
+      </div>
+
+      <div class="greeting">지수님의 그룹 <small>3개 그룹 · 새 기록 7개</small></div>
+
+      <!-- Group Cards -->
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+        <!-- Group 1 -->
+        <div style="border-radius:20px;overflow:hidden;border:1px solid #f0f0f0;">
+          <div style="background:linear-gradient(135deg,#2D1B4E,#4A2C7A);padding:16px;color:#fff;display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;">🍷</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">와인 동호회</div>
+              <div style="font-size:11px;opacity:0.7;">멤버 12명 · 오늘 3개 기록</div>
+            </div>
+            <div style="padding:4px 10px;border-radius:999px;background:rgba(255,96,56,0.3);color:#FF6038;font-size:11px;font-weight:600;">🔥 3 new</div>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:8px;overflow-x:auto;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#fafafa;">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;">민</div>
+              <div>
+                <div style="font-size:11px;font-weight:600;">Margaux 2018</div>
+                <div style="font-size:10px;color:#FF6038;">★ 5.0</div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#fafafa;">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#22C55E,#86EFAC);">현</div>
+              <div>
+                <div style="font-size:11px;font-weight:600;">Barolo 2019</div>
+                <div style="font-size:10px;color:#FF6038;">★ 4.7</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 2 -->
+        <div style="border-radius:20px;overflow:hidden;border:1px solid #f0f0f0;">
+          <div style="background:linear-gradient(135deg,#FF6038,#FF8A65);padding:16px;color:#fff;display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;">🏢</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">회사 점심팟</div>
+              <div style="font-size:11px;opacity:0.7;">멤버 8명 · 오늘 2개 기록</div>
+            </div>
+            <div style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.2);font-size:11px;font-weight:600;">🔥 2 new</div>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:8px;overflow-x:auto;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#fafafa;">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#3B82F6,#60A5FA);">지</div>
+              <div>
+                <div style="font-size:11px;font-weight:600;">트러플 파스타</div>
+                <div style="font-size:10px;color:#FF6038;">★ 4.2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 3 -->
+        <div style="border-radius:20px;overflow:hidden;border:1px solid #f0f0f0;">
+          <div style="background:linear-gradient(135deg,#22C55E,#86EFAC);padding:16px;color:#fff;display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;">👨‍👩‍👧</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">우리 가족</div>
+              <div style="font-size:11px;opacity:0.7;">멤버 4명 · 어제 2개 기록</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:8px;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#fafafa;">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#E9B949,#FCD34D);">엄</div>
+              <div>
+                <div style="font-size:11px;font-weight:600;">된장찌개</div>
+                <div style="font-size:10px;color:#FF6038;">★ 4.0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discover Groups -->
+        <div style="border:2px dashed #e0e0e0;border-radius:20px;padding:20px;text-align:center;">
+          <div style="font-size:28px;">🔍</div>
+          <div style="font-size:13px;font-weight:600;color:#555;margin-top:8px;">새로운 그룹 탐색</div>
+          <div style="font-size:11px;color:#999;margin-top:4px;">취향이 비슷한 그룹을 찾아보세요</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- #10 -->
+<!-- ============================================================ -->
+<div class="mockup-section">
+  <div class="mockup-header">
+    <div class="rank">10</div>
+    <h2>Minimal CTA — 미니멀 기록 유도형</h2>
+  </div>
+  <div class="mockup-meta">
+    <div class="subtitle">극도로 심플한 화면. 기록하기 CTA가 최우선, 나머지는 최소한의 요약</div>
+    <div class="tags">
+      <span class="tag tag-record">기록 극대화</span>
+      <span class="tag tag-engage">미니멀</span>
+    </div>
+    <div class="pros-cons">
+      <div><span>장점:</span> 핵심 액션(기록)에 집중, 인지 부하 최소화, 빠른 로딩</div>
+      <div><span>단점:</span> 정보량 부족, 소셜/추천 기능 매몰, 재방문 동기 약함</div>
+    </div>
+  </div>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen pb-safe" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;">
+        <div style="font-size:22px;font-weight:800;color:#FF6038;">nyam</div>
+        <div>🔔</div>
+      </div>
+
+      <!-- Hero CTA -->
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;">
+        <div style="font-size:64px;margin-bottom:16px;">🍽️</div>
+        <div style="font-size:22px;font-weight:800;color:#1a1a2e;text-align:center;">오늘 뭐 드셨어요?</div>
+        <div style="font-size:13px;color:#888;text-align:center;margin-top:6px;">맛있는 경험을 기록해보세요</div>
+
+        <div style="margin-top:28px;width:100%;padding:16px;border-radius:18px;background:#FF6038;color:#fff;text-align:center;font-size:16px;font-weight:700;box-shadow:0 8px 24px rgba(255,96,56,0.35);">
+          📸 기록하기
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <div style="padding:10px 16px;border-radius:14px;border:1px solid #eee;font-size:12px;color:#666;">🍷 와인 스캔</div>
+          <div style="padding:10px 16px;border-radius:14px;border:1px solid #eee;font-size:12px;color:#666;">🏠 요리 기록</div>
+        </div>
+      </div>
+
+      <!-- Minimal Summary -->
+      <div style="padding:20px;display:flex;gap:16px;justify-content:center;border-top:1px solid #f0f0f0;">
+        <div style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#FF6038;">47</div>
+          <div style="font-size:10px;color:#999;">총 기록</div>
+        </div>
+        <div style="width:1px;background:#f0f0f0;"></div>
+        <div style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3B82F6;">23</div>
+          <div style="font-size:10px;color:#999;">방문 식당</div>
+        </div>
+        <div style="width:1px;background:#f0f0f0;"></div>
+        <div style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#22C55E;">7일</div>
+          <div style="font-size:10px;color:#999;">연속 기록</div>
+        </div>
+        <div style="width:1px;background:#f0f0f0;"></div>
+        <div style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#E9B949;">Lv.7</div>
+          <div style="font-size:10px;color:#999;">레벨</div>
+        </div>
+      </div>
+
+      <!-- Quick Feed Peek -->
+      <div style="padding:0 20px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#fafafa;">
+          <div class="avatar" style="width:32px;height:32px;font-size:12px;">민</div>
+          <div style="flex:1;font-size:12px;">
+            <strong>김민수</strong>님이 <strong>Château Margaux</strong>를 ★5.0으로 기록했어요
+          </div>
+          <div style="font-size:10px;color:#999;">2h</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div>🏠</div><span>홈</span></div>
+      <div class="nav-item"><div>🔍</div><span>탐색</span></div>
+      <div class="nav-item"><div class="nav-add" style="color:#fff;font-size:24px;">+</div></div>
+      <div class="nav-item"><div>👥</div><span>그룹</span></div>
+      <div class="nav-item"><div>👤</div><span>프로필</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- COMPARISON TABLE -->
+<!-- ============================================================ -->
+<div class="mockup-section" style="margin-top:80px;">
+  <h2 style="font-size:24px;font-weight:800;margin-bottom:24px;text-align:center;">비교 분석표</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+      <thead>
+        <tr style="background:#1a1a2e;color:#fff;">
+          <th style="padding:12px 16px;text-align:left;">순위</th>
+          <th style="padding:12px 16px;text-align:left;">홈 화면 유형</th>
+          <th style="padding:12px 16px;text-align:center;">기록 유도</th>
+          <th style="padding:12px 16px;text-align:center;">소셜 활성</th>
+          <th style="padding:12px 16px;text-align:center;">AI 추천</th>
+          <th style="padding:12px 16px;text-align:center;">리텐션</th>
+          <th style="padding:12px 16px;text-align:center;">콜드스타트</th>
+          <th style="padding:12px 16px;text-align:center;">종합</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f0f0f0;background:#FFF5F2;">
+          <td style="padding:10px 16px;font-weight:800;color:#FF6038;">01</td>
+          <td style="padding:10px 16px;font-weight:600;">Taste Feed</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:800;color:#FF6038;">9.2</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;color:#FF6038;">02</td>
+          <td style="padding:10px 16px;font-weight:600;">My Taste Dashboard</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:800;color:#FF6038;">8.8</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;color:#FF6038;">03</td>
+          <td style="padding:10px 16px;font-weight:600;">Today's Pick</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:800;color:#FF6038;">8.6</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">04</td>
+          <td style="padding:10px 16px;font-weight:600;">Map-First</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">8.2</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">05</td>
+          <td style="padding:10px 16px;font-weight:600;">Bento Grid</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">8.0</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">06</td>
+          <td style="padding:10px 16px;font-weight:600;">Timeline Journal</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">7.8</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">07</td>
+          <td style="padding:10px 16px;font-weight:600;">Stories + Quick Actions</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">7.6</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">08</td>
+          <td style="padding:10px 16px;font-weight:600;">Photo Grid</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">7.2</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 16px;font-weight:800;">09</td>
+          <td style="padding:10px 16px;font-weight:600;">Group Hub</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">7.0</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 16px;font-weight:800;">10</td>
+          <td style="padding:10px 16px;font-weight:600;">Minimal CTA</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px 16px;text-align:center;font-weight:700;">6.5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:32px;padding:24px;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;">💡 추천 전략</h3>
+    <div style="font-size:14px;color:#555;line-height:1.8;">
+      <p><strong>최종 추천: #1 Taste Feed를 기본으로 + #2 Dashboard 요소를 합친 하이브리드</strong></p>
+      <br>
+      <p>• <strong>MVP 단계</strong>: #6 Timeline Journal 또는 #10 Minimal CTA로 시작 (콜드스타트에 강함, 기록 습관 형성에 집중)</p>
+      <p>• <strong>그룹 활성화 후</strong>: #1 Taste Feed로 전환 (소셜 피드가 콘텐츠로 채워진 후 최대 효과)</p>
+      <p>• <strong>데이터 축적 후</strong>: #2 Dashboard + #3 Today's Pick 요소를 점진적 추가 (AI 추천 품질이 보장된 후)</p>
+      <br>
+      <p style="font-size:12px;color:#999;">* nyam의 핵심 차별점인 "신뢰할 수 있는 그룹 기반 추천"을 극대화하려면, 그룹 피드가 홈에 있되 개인 기록 동기부여도 함께 제공하는 #1이 가장 균형잡힌 선택입니다.</p>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:40px;color:#999;font-size:12px;">
+  <p>nyam Home Screen Mockups — Generated from PRD analysis + UX research</p>
+  <p style="margin-top:4px;">Sources: Medium, Toptal, UiStudioz, Mobbin, GetStream, UserPilot, AppsFlyer</p>
+</div>
+
+</body>
+</html>

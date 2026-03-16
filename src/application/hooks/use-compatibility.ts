@@ -1,7 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
-import { getTasteDnaRepository, getExperienceAtlasRepository } from '@/di/repositories'
+import { getTasteDnaRepository, getStyleDnaRepository } from '@/di/repositories'
 import {
   calculateTasteSimilarity,
   calculateExperienceComplementarity,
@@ -14,7 +14,7 @@ async function fetchCompatibility(
   userIdB: string,
 ): Promise<CompatibilityResult | null> {
   const tasteDnaRepo = getTasteDnaRepository()
-  const atlasRepo = getExperienceAtlasRepository()
+  const atlasRepo = getStyleDnaRepository()
 
   const [dnaA, dnaB, regionsA, regionsB, genresA, genresB] = await Promise.all([
     tasteDnaRepo.getByUserId(userIdA),

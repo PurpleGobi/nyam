@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  FOOD_CATEGORIES,
+  FLAVOR_TAGS,
+  TEXTURE_TAGS,
+} from '@/shared/constants/categories'
 
 interface RecognizeRequestBody {
   imageBase64: string
@@ -32,29 +37,35 @@ interface RecognitionOutput {
   confidence: number
 }
 
-const VALID_CATEGORIES = [
-  'korean', 'japanese', 'chinese', 'western', 'cafe',
-  'dessert', 'wine', 'cooking', 'seafood', 'meat', 'vegan', 'street',
-] as const
+const CATEGORY_VALUES = FOOD_CATEGORIES.map(c => c.value)
 
-const VALID_FLAVOR_TAGS = [
-  '매운', '달콤한', '짭짤한', '시큼한', '감칠맛',
-  '담백한', '기름진', '고소한', '향긋한', '깔끔한',
-] as const
+const PROMPT = `사진 속 음식을 분석하여 아래 JSON 형식으로 응답하세요.
 
-const VALID_TEXTURE_TAGS = [
-  '바삭한', '부드러운', '쫄깃한', '크리미한', '아삭한', '촉촉한',
-] as const
+## 필수 규칙
+- "category"는 반드시 아래 허용 목록 중 하나의 값(영문 key)을 그대로 사용하세요. 목록에 없는 값은 절대 사용하지 마세요.
+- "flavorTags"는 반드시 아래 허용 목록에 있는 값만 사용하세요.
+- "textureTags"는 반드시 아래 허용 목록에 있는 값만 사용하세요.
 
-const PROMPT = `Analyze the food in this image and return a JSON object with these fields:
-- "menuName": the name of the dish (in Korean if identifiable, otherwise English)
-- "category": one of [${VALID_CATEGORIES.join(', ')}]
-- "recordType": one of ["restaurant", "wine", "cooking"]
-- "flavorTags": array of applicable tags from [${VALID_FLAVOR_TAGS.join(', ')}]
-- "textureTags": array of applicable tags from [${VALID_TEXTURE_TAGS.join(', ')}]
-- "confidence": number between 0 and 1 indicating recognition confidence
+## category 허용 목록
+${FOOD_CATEGORIES.map(c => `- "${c.value}" → ${c.label}`).join('\n')}
 
-Return ONLY the JSON object, no other text.`
+## flavorTags 허용 목록
+[${FLAVOR_TAGS.map(t => `"${t}"`).join(', ')}]
+
+## textureTags 허용 목록
+[${TEXTURE_TAGS.map(t => `"${t}"`).join(', ')}]
+
+## 응답 형식
+{
+  "menuName": "메뉴 이름 (한국어 우선)",
+  "category": "${CATEGORY_VALUES.join(' | ')}",
+  "recordType": "restaurant | wine | cooking",
+  "flavorTags": ["해당하는 맛 태그"],
+  "textureTags": ["해당하는 식감 태그"],
+  "confidence": 0.0~1.0
+}
+
+JSON만 반환하세요.`
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY
@@ -116,13 +127,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const parsed: RecognitionOutput = JSON.parse(text)
+
+    const validCategory = CATEGORY_VALUES.includes(parsed.category)
+      ? parsed.category
+      : 'korean'
+    const validFlavorTags = (parsed.flavorTags ?? []).filter(
+      (t: string) => (FLAVOR_TAGS as readonly string[]).includes(t),
+    )
+    const validTextureTags = (parsed.textureTags ?? []).filter(
+      (t: string) => (TEXTURE_TAGS as readonly string[]).includes(t),
+    )
+
     return NextResponse.json({
       available: true,
       menuName: parsed.menuName,
-      category: parsed.category,
+      category: validCategory,
       recordType: parsed.recordType,
-      flavorTags: parsed.flavorTags,
-      textureTags: parsed.textureTags,
+      flavorTags: validFlavorTags,
+      textureTags: validTextureTags,
       confidence: parsed.confidence,
     })
   } catch {

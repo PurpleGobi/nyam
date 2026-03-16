@@ -73,6 +73,8 @@ export interface FoodRecord {
   visitTime: string | null
   companionCount: number | null
   totalCost: number | null
+
+  photos?: RecordPhoto[]
 }
 
 export type PhotoType = 'signboard' | 'menu' | 'companion' | 'receipt' | 'food' | 'other'

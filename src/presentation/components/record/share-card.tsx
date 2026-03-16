@@ -249,7 +249,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
               fontWeight: 500,
             }}
           >
-            nyam -- 맛의 Second Brain
+            nyam -- Real People. Real Taste.
           </span>
         </div>
       </div>

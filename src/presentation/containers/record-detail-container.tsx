@@ -26,6 +26,8 @@ import {
   ThumbsUp,
   Sparkles,
   Share2,
+  NotebookPen,
+  CheckCircle2,
 } from "lucide-react"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
 import { useRecordActions } from "@/application/hooks/use-record-actions"
@@ -38,7 +40,7 @@ import { useProfile } from "@/application/hooks/use-profile"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { ShareCard } from "@/presentation/components/record/share-card"
 import type { Reaction } from "@/application/hooks/use-reactions"
-import type { FoodRecord, RecordPhoto, RecordType, RestaurantRatings, WineRatings, CookingRatings } from "@/domain/entities/record"
+import type { FoodRecord, RecordType, RestaurantRatings, WineRatings, CookingRatings } from "@/domain/entities/record"
 
 const REACTION_CONFIG = [
   { type: 'like', label: '좋아요', icon: Heart },
@@ -153,7 +155,7 @@ function TagChips({ tags, colorKey }: { tags: string[]; colorKey: string }) {
   )
 }
 
-function PhotoCarousel({ photos }: { photos: RecordPhoto[] }) {
+function PhotoCarousel({ photos }: { photos: NonNullable<FoodRecord['photos']> }) {
   if (photos.length === 0) return null
 
   return (
@@ -285,8 +287,7 @@ export function RecordDetailContainer() {
     )
   }
 
-  const typedRecord = record as FoodRecord & { photos?: RecordPhoto[] }
-  const photos = typedRecord.photos ?? []
+  const photos = record.photos ?? []
   const typeConfig = RECORD_TYPE_CONFIG[record.recordType]
   const TypeIcon = typeConfig.icon
   const visConfig = VISIBILITY_CONFIG[record.visibility]
@@ -517,6 +518,41 @@ export function RecordDetailContainer() {
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-neutral-600)]">
               {record.comment}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2 CTA */}
+      {isOwner && record.phaseStatus < 2 && (
+        <div className="px-4">
+          <Link
+            href={`/records/${id}/complete`}
+            className="flex items-center justify-between rounded-2xl border border-[#FF6038]/20 bg-[#FF6038]/5 p-4 transition-colors hover:bg-[#FF6038]/10"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6038]/10">
+                <NotebookPen className="h-5 w-5 text-[#FF6038]" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-[var(--color-neutral-800)]">
+                  AI 블로그 리뷰 작성하기
+                </span>
+                <span className="text-xs text-[var(--color-neutral-500)]">
+                  질문에 답하면 AI가 블로그를 만들어드려요 · +15 XP
+                </span>
+              </div>
+            </div>
+            <ArrowLeft className="h-4 w-4 rotate-180 text-[#FF6038]" />
+          </Link>
+        </div>
+      )}
+
+      {/* Phase 2 completed badge */}
+      {record.phaseStatus >= 2 && (
+        <div className="px-4">
+          <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <span className="text-sm text-green-700">AI 블로그 리뷰 완료</span>
           </div>
         </div>
       )}

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import {
+  FOOD_CATEGORIES,
+  FLAVOR_TAGS,
+  TEXTURE_TAGS,
+} from '@/shared/constants/categories'
 
 /**
  * POST /api/records/enrich
@@ -80,16 +85,31 @@ export async function POST(request: NextRequest) {
       ...{ text: `당신은 음식점 방문 분석 전문가입니다. 사진을 분석하여 JSON으로 응답하세요.
 ${nearbyContext}
 
+## 필수 규칙
+- "category"는 반드시 아래 허용 목록 중 하나의 값(영문 key)을 그대로 사용하세요. 목록에 없는 값은 절대 사용하지 마세요.
+- "flavorTags"는 반드시 아래 맛 태그 허용 목록에 있는 값만 사용하세요.
+- "textureTags"는 반드시 아래 식감 태그 허용 목록에 있는 값만 사용하세요.
+
+## category 허용 목록
+${FOOD_CATEGORIES.map(c => `- "${c.value}" → ${c.label}`).join('\n')}
+
+## flavorTags 허용 목록
+[${FLAVOR_TAGS.map(t => `"${t}"`).join(', ')}]
+
+## textureTags 허용 목록
+[${TEXTURE_TAGS.map(t => `"${t}"`).join(', ')}]
+
+## 응답 형식
 {
   "restaurantName": "식당 이름 (간판에서 읽거나 추정, 없으면 빈 문자열)",
-  "category": "korean|japanese|chinese|western|cafe|dessert|wine|seafood|meat|vegan|street",
+  "category": "${FOOD_CATEGORIES.map(c => c.value).join(' | ')}",
   "orderedItems": ["주문 메뉴 추정"],
   "menuItems": [{"name": "메뉴명", "price": 가격숫자}],
   "totalCost": 총액_또는_null,
   "perPersonCost": 인당_또는_null,
   "companionCount": 인원수(기본1),
-  "flavorTags": ["매운","달콤한","짭짤한","시큼한","감칠맛","담백한","기름진","고소한","향긋한","깔끔한"] 중 해당,
-  "textureTags": ["바삭한","부드러운","쫄깃한","크리미한","아삭한","촉촉한"] 중 해당
+  "flavorTags": ["해당하는 맛 태그"],
+  "textureTags": ["해당하는 식감 태그"]
 }
 
 JSON만 반환하세요.` },
@@ -145,14 +165,21 @@ JSON만 반환하세요.` },
       }
     }
 
+    const categoryValues = FOOD_CATEGORIES.map(c => c.value)
     const category = analysis.category as string
-    if (category) updateData.category = category
+    if (category && categoryValues.includes(category)) {
+      updateData.category = category
+    }
 
     const flavorTags = analysis.flavorTags as string[]
-    if (Array.isArray(flavorTags)) updateData.flavor_tags = flavorTags
+    if (Array.isArray(flavorTags)) {
+      updateData.flavor_tags = flavorTags.filter(t => (FLAVOR_TAGS as readonly string[]).includes(t))
+    }
 
     const textureTags = analysis.textureTags as string[]
-    if (Array.isArray(textureTags)) updateData.texture_tags = textureTags
+    if (Array.isArray(textureTags)) {
+      updateData.texture_tags = textureTags.filter(t => (TEXTURE_TAGS as readonly string[]).includes(t))
+    }
 
     const totalCost = analysis.totalCost as number | null
     if (totalCost) updateData.total_cost = totalCost
