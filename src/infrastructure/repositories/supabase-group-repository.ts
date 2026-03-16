@@ -73,7 +73,20 @@ export class SupabaseGroupRepository implements GroupRepository {
       .in('id', groupIds)
 
     if (error || !data) return []
-    return (data as GroupRow[]).map((row) => toGroup(row))
+
+    const groupRows = data as GroupRow[]
+    const counts = await Promise.all(
+      groupRows.map(async (g) => {
+        const { count } = await supabase
+          .from('group_memberships')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('group_id', g.id)
+        return { id: g.id, count: count ?? 0 }
+      }),
+    )
+    const countMap = new Map(counts.map((c) => [c.id, c.count]))
+
+    return groupRows.map((row) => toGroup(row, countMap.get(row.id) ?? 0))
   }
 
   async create(

@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
+import { sanitizeLikePattern } from '@/shared/utils/sanitize'
 import type { Restaurant, MenuItem } from '@/domain/entities/restaurant'
 import type {
   RestaurantRepository,
@@ -56,7 +57,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     let query = supabase
       .from('restaurants')
       .select('*')
-      .ilike('name', `%${params.query}%`)
+      .ilike('name', `%${sanitizeLikePattern(params.query)}%`)
 
     if (params.location) {
       const delta = 0.05

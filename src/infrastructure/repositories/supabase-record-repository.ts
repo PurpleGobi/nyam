@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
+import { sanitizeLikePattern } from '@/shared/utils/sanitize'
 import type { FoodRecord, RecordPhoto, RecordRatings } from '@/domain/entities/record'
 import type {
   RecordRepository,
@@ -268,7 +269,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     const { data, error } = await supabase
       .from('records')
       .select('*')
-      .or(`menu_name.ilike.%${query}%,comment.ilike.%${query}%`)
+      .or(`menu_name.ilike.%${sanitizeLikePattern(query)}%,comment.ilike.%${sanitizeLikePattern(query)}%`)
 
     if (error || !data) return []
 

@@ -212,8 +212,6 @@ export function useCreateRecord(userId: string | undefined) {
       // Post-process: Taste DNA, Experience Atlas, User Stats (fire-and-forget)
       fetch('/api/records/post-process', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
       }).catch(() => { /* non-blocking */ })
 
       setSavedResult({

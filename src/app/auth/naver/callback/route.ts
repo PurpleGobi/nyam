@@ -4,14 +4,24 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/infrastructure/supabase/admin'
 
+const UUID_LIKE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const state = requestUrl.searchParams.get('state')
   const error = requestUrl.searchParams.get('error')
 
   if (error || !code) {
     return NextResponse.redirect(
       new URL('/auth/login?error=naver_auth_failed', requestUrl.origin)
+    )
+  }
+
+  // Validate state parameter to mitigate CSRF
+  if (!state || !UUID_LIKE_RE.test(state)) {
+    return NextResponse.redirect(
+      new URL('/auth/login?error=naver_invalid_state', requestUrl.origin)
     )
   }
 
@@ -30,7 +40,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenRes.json()
 
     if (tokenData.error) {
-      console.error('[naver-auth] Token exchange failed:', tokenData)
+      console.error('[naver-auth] Token exchange failed')
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_token_failed', requestUrl.origin)
       )
@@ -43,7 +53,7 @@ export async function GET(request: NextRequest) {
     const profileData = await profileRes.json()
 
     if (profileData.resultcode !== '00') {
-      console.error('[naver-auth] Profile fetch failed:', profileData)
+      console.error('[naver-auth] Profile fetch failed:', profileData.resultcode)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_profile_failed', requestUrl.origin)
       )
@@ -80,7 +90,7 @@ export async function GET(request: NextRequest) {
         })
 
       if (createError) {
-        console.error('[naver-auth] User creation failed:', createError)
+        console.error('[naver-auth] User creation failed:', createError.message)
         return NextResponse.redirect(
           new URL('/auth/login?error=naver_create_failed', requestUrl.origin)
         )
@@ -95,7 +105,7 @@ export async function GET(request: NextRequest) {
       })
 
     if (linkError || !linkData) {
-      console.error('[naver-auth] Magic link failed:', linkError)
+      console.error('[naver-auth] Magic link failed:', linkError?.message)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_session_failed', requestUrl.origin)
       )
@@ -127,7 +137,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (verifyError) {
-      console.error('[naver-auth] OTP verify failed:', verifyError)
+      console.error('[naver-auth] OTP verify failed:', verifyError.message)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_verify_failed', requestUrl.origin)
       )
@@ -135,7 +145,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(new URL('/', requestUrl.origin))
   } catch (err) {
-    console.error('[naver-auth] Unexpected error:', err)
+    console.error('[naver-auth] Unexpected error:', err instanceof Error ? err.message : 'unknown')
     return NextResponse.redirect(
       new URL('/auth/login?error=naver_unknown', requestUrl.origin)
     )

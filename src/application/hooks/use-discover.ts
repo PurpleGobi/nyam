@@ -2,6 +2,7 @@
 
 import useSWR from 'swr'
 import { createClient } from '@/infrastructure/supabase/client'
+import { sanitizeLikePattern } from '@/shared/utils/sanitize'
 
 export interface DiscoverFilters {
   query: string
@@ -30,7 +31,8 @@ async function fetchDiscoverRecords(filters: DiscoverFilters): Promise<DiscoverR
     .limit(30)
 
   if (filters.query.trim()) {
-    query = query.or(`menu_name.ilike.%${filters.query}%,comment.ilike.%${filters.query}%`)
+    const sanitized = sanitizeLikePattern(filters.query.trim())
+    query = query.or(`menu_name.ilike.%${sanitized}%,comment.ilike.%${sanitized}%`)
   }
   if (filters.category) {
     query = query.eq('category', filters.category)

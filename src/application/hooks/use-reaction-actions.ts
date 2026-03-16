@@ -6,6 +6,7 @@ import type { ReactionType } from '@/infrastructure/supabase/types'
 
 export function useReactionActions() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const toggleReaction = useCallback(
     async (
@@ -15,6 +16,7 @@ export function useReactionActions() {
       existingReactionId: string | null,
     ) => {
       setIsLoading(true)
+      setError(null)
       try {
         const supabase = createClient()
 
@@ -34,6 +36,8 @@ export function useReactionActions() {
             })
           if (error) throw error
         }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to toggle reaction')
       } finally {
         setIsLoading(false)
       }
@@ -41,5 +45,5 @@ export function useReactionActions() {
     [],
   )
 
-  return { toggleReaction, isLoading }
+  return { toggleReaction, isLoading, error }
 }

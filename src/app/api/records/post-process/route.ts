@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import type { Database } from '@/infrastructure/supabase/types'
 
@@ -67,34 +66,26 @@ function calculateLevel(xp: number): { level: number; xpToNext: number } {
   return { level, xpToNext: nextThreshold - xp }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   const supabase = await createClient()
 
-  let body: { userId: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
-  }
-
-  const { userId } = body
-  if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 })
-  }
-
-  // Verify auth
+  // Extract userId from authenticated session (not from request body)
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.id !== userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const userId = user.id
+
   // Fetch recent 100 records
-  const { data: records } = await supabase
+  const { data: records, error: recordsError } = await supabase
     .from('records')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(100)
+
+  if (recordsError) throw new Error(recordsError.message)
 
   if (!records || records.length === 0) {
     return NextResponse.json({ ok: true, message: 'No records to process' })
