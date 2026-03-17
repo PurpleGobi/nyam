@@ -1,23 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { MessageCircle, ChevronRight } from "lucide-react"
+import { MessageCircle, Pencil } from "lucide-react"
 
 interface AiQuestionCardProps {
   question: string
+  type: "select" | "freetext"
+  options?: string[]
+  value: string
+  onChange: (answer: string) => void
   placeholder?: string
-  onAnswer: (answer: string) => void
 }
 
-export function AiQuestionCard({ question, placeholder, onAnswer }: AiQuestionCardProps) {
-  const [answer, setAnswer] = useState("")
-  const [submitted, setSubmitted] = useState(false)
+export function AiQuestionCard({
+  question,
+  type,
+  options,
+  value,
+  onChange,
+  placeholder,
+}: AiQuestionCardProps) {
+  const [showFreetext, setShowFreetext] = useState(false)
 
-  const handleSubmit = () => {
-    if (!answer.trim()) return
-    onAnswer(answer.trim())
-    setSubmitted(true)
-  }
+  const isSelectMode = type === "select" && options && !showFreetext
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl bg-orange-50 p-4">
@@ -26,27 +31,59 @@ export function AiQuestionCard({ question, placeholder, onAnswer }: AiQuestionCa
         <p className="text-sm font-medium text-gray-800">{question}</p>
       </div>
 
-      {submitted ? (
-        <p className="ml-6 text-sm text-gray-600">{answer}</p>
-      ) : (
-        <div className="ml-6 flex gap-2">
-          <input
-            type="text"
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder={placeholder ?? "답변을 입력하세요"}
-            className="flex-1 rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400"
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!answer.trim()}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500 text-white disabled:opacity-40"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      <div className="ml-6 flex flex-col gap-2">
+        {isSelectMode ? (
+          <>
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onChange(option)}
+                className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                  value === option
+                    ? "border-primary-500 bg-primary-50 text-primary-700 font-medium"
+                    : "border-orange-200 bg-white text-gray-700 hover:border-orange-300"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setShowFreetext(true)
+                onChange("")
+              }}
+              className="flex items-center gap-1.5 self-start text-xs text-gray-400 hover:text-gray-600"
+            >
+              <Pencil className="h-3 w-3" />
+              직접 입력
+            </button>
+          </>
+        ) : (
+          <>
+            <textarea
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder ?? "답변을 입력하세요"}
+              rows={3}
+              className="w-full rounded-xl border border-orange-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-orange-400 resize-none"
+            />
+            {type === "select" && showFreetext && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFreetext(false)
+                  onChange("")
+                }}
+                className="self-start text-xs text-gray-400 hover:text-gray-600"
+              >
+                선택지로 돌아가기
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
