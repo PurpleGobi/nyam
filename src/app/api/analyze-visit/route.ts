@@ -4,7 +4,7 @@ import { FOOD_CATEGORIES } from "@/shared/constants/categories"
 import { FLAVOR_TAGS, TEXTURE_TAGS } from "@/shared/constants/tags"
 import { RESTAURANT_SCENES, WINE_SCENES, COOKING_SCENES } from "@/shared/constants/scenes"
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 const GEMINI_TIMEOUT_MS = 30_000
 
 export async function POST(request: NextRequest) {
