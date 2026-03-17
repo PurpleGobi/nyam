@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "@/application/hooks/use-auth"
+import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useProfile } from "@/application/hooks/use-profile"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
 import { TasteDnaRadar } from "@/presentation/components/profile/taste-dna-radar"
@@ -11,8 +11,8 @@ import { cn } from "@/shared/utils/cn"
 import { LogOut, Settings } from "lucide-react"
 
 export function ProfileContainer() {
-  const { signOut } = useAuth()
-  const { user, stats } = useProfile()
+  const { user: authUser, signOut } = useAuthContext()
+  const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
   const [dnaTab, setDnaTab] = useState<"food" | "wine" | "cooking">("food")
 

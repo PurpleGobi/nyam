@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useProfile } from "@/application/hooks/use-profile"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
 import { useCalendarRecords } from "@/application/hooks/use-calendar-records"
@@ -19,7 +20,8 @@ export function HomeContainer() {
   const [calendarYear, setCalendarYear] = useState(now.getFullYear())
   const [calendarMonth, setCalendarMonth] = useState(now.getMonth() + 1)
 
-  const { user, stats } = useProfile()
+  const { user: authUser } = useAuthContext()
+  const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
   const { recordsByDay, records } = useCalendarRecords(user?.id ?? null, calendarYear, calendarMonth)
   const { pick } = useTodaysPick(user?.id ?? null)

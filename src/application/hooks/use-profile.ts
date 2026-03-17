@@ -4,16 +4,17 @@ import useSWR from "swr"
 import { createClient } from "@/infrastructure/supabase/client"
 import type { User, UserStats } from "@/domain/entities/user"
 
-export function useProfile() {
+export function useProfile(authUserId?: string | null) {
   const supabase = createClient()
 
-  const { data, error, isLoading, mutate } = useSWR("profile", async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) return null
+  const { data, error, isLoading, mutate } = useSWR(
+    authUserId ? `profile-${authUserId}` : null,
+    async () => {
+    if (!authUserId) return null
 
     const [userResult, statsResult] = await Promise.all([
-      supabase.from("users").select("*").eq("id", authUser.id).single(),
-      supabase.from("user_stats").select("*").eq("user_id", authUser.id).single(),
+      supabase.from("users").select("*").eq("id", authUserId).single(),
+      supabase.from("user_stats").select("*").eq("user_id", authUserId).single(),
     ])
 
     const user: User | null = userResult.data ? {
