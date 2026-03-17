@@ -6,9 +6,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: 'list',
   use: {
-    baseURL: 'http://localhost:7911',
+    baseURL: 'http://localhost:7922',
     trace: 'on-first-retry',
   },
   projects: [
@@ -17,10 +17,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm build && pnpm start',
-    url: 'http://localhost:7911',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // webServer disabled — dev server already running on port 7922
+  // webServer: {
+  //   command: 'pnpm build && pnpm start',
+  //   url: 'http://localhost:7922',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120000,
+  // },
 })
