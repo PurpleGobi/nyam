@@ -2,20 +2,26 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createAdminClient } from '@/infrastructure/supabase/admin'
 
-/**
- * Naver OAuth callback handler.
- * Exchanges the authorization code for user info,
- * then creates/signs in the user via Supabase admin API.
- */
+const UUID_LIKE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const state = requestUrl.searchParams.get('state')
   const error = requestUrl.searchParams.get('error')
 
   if (error || !code) {
     return NextResponse.redirect(
       new URL('/auth/login?error=naver_auth_failed', requestUrl.origin)
+    )
+  }
+
+  // Validate state parameter to mitigate CSRF
+  if (!state || !UUID_LIKE_RE.test(state)) {
+    return NextResponse.redirect(
+      new URL('/auth/login?error=naver_invalid_state', requestUrl.origin)
     )
   }
 
@@ -34,7 +40,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenRes.json()
 
     if (tokenData.error) {
-      console.error('[naver-auth] Token exchange failed:', tokenData)
+      console.error('[naver-auth] Token exchange failed')
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_token_failed', requestUrl.origin)
       )
@@ -47,16 +53,16 @@ export async function GET(request: NextRequest) {
     const profileData = await profileRes.json()
 
     if (profileData.resultcode !== '00') {
-      console.error('[naver-auth] Profile fetch failed:', profileData)
+      console.error('[naver-auth] Profile fetch failed:', profileData.resultcode)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_profile_failed', requestUrl.origin)
       )
     }
 
     const naverUser = profileData.response
-    const email = naverUser.email
-    const nickname = naverUser.nickname ?? naverUser.name ?? null
-    const avatarUrl = naverUser.profile_image ?? null
+    const email = naverUser.email as string | undefined
+    const nickname = (naverUser.nickname ?? naverUser.name ?? null) as string | null
+    const avatarUrl = (naverUser.profile_image ?? null) as string | null
 
     if (!email) {
       return NextResponse.redirect(
@@ -64,29 +70,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 3. Create or sign in user via Supabase admin
-    const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          getAll() { return [] },
-          setAll() { /* admin client doesn't need cookies */ },
-        },
-      },
-    )
+    // 3. Create or find user via Supabase admin
+    const supabaseAdmin = createAdminClient()
 
-    // Check if user exists by email
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     const existingUser = existingUsers?.users?.find(u => u.email === email)
 
-    let userId: string
-
-    if (existingUser) {
-      userId = existingUser.id
-    } else {
-      // Create new user
-      const { data: newUser, error: createError } =
+    if (!existingUser) {
+      const { error: createError } =
         await supabaseAdmin.auth.admin.createUser({
           email,
           email_confirm: true,
@@ -98,31 +89,15 @@ export async function GET(request: NextRequest) {
           },
         })
 
-      if (createError || !newUser.user) {
-        console.error('[naver-auth] User creation failed:', createError)
+      if (createError) {
+        console.error('[naver-auth] User creation failed:', createError.message)
         return NextResponse.redirect(
           new URL('/auth/login?error=naver_create_failed', requestUrl.origin)
         )
       }
-
-      userId = newUser.user.id
-
-      // Create user_profiles record
-      await supabaseAdmin.from('user_profiles').insert({
-        id: userId,
-        nickname,
-        avatar_url: avatarUrl,
-        preferred_ai: 'chatgpt',
-        allergies: [],
-        food_preferences: [],
-        tier: 'explorer',
-        total_verifications: 0,
-        current_streak: 0,
-        longest_streak: 0,
-      })
     }
 
-    // 4. Generate a magic link to sign the user in on the client side
+    // 4. Generate magic link to establish session
     const { data: linkData, error: linkError } =
       await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
@@ -130,17 +105,16 @@ export async function GET(request: NextRequest) {
       })
 
     if (linkError || !linkData) {
-      console.error('[naver-auth] Magic link failed:', linkError)
+      console.error('[naver-auth] Magic link failed:', linkError?.message)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_session_failed', requestUrl.origin)
       )
     }
 
-    // Extract the token hash from the magic link
+    // 5. Verify OTP to set session cookies
     const linkUrl = new URL(linkData.properties.action_link)
     const tokenHash = linkUrl.searchParams.get('token_hash') ?? linkUrl.hash
 
-    // Redirect to Supabase auth verify endpoint to establish session
     const cookieStore = await cookies()
     const supabaseClient = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -163,7 +137,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (verifyError) {
-      console.error('[naver-auth] OTP verify failed:', verifyError)
+      console.error('[naver-auth] OTP verify failed:', verifyError.message)
       return NextResponse.redirect(
         new URL('/auth/login?error=naver_verify_failed', requestUrl.origin)
       )
@@ -171,7 +145,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(new URL('/', requestUrl.origin))
   } catch (err) {
-    console.error('[naver-auth] Unexpected error:', err)
+    console.error('[naver-auth] Unexpected error:', err instanceof Error ? err.message : 'unknown')
     return NextResponse.redirect(
       new URL('/auth/login?error=naver_unknown', requestUrl.origin)
     )

@@ -61,7 +61,12 @@
       "Bash(npx next:*)",
       "Bash(npx eslint:*)",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:newsletter.pricingsaas.com)",
+      "WebFetch(domain:andrewchen.com)",
+      "WebFetch(domain:www.revenuecat.com)",
+      "WebFetch(domain:backlinko.com)",
+      "Bash(find /Users/jk_mini/github/nyam/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))"
     ]
   }
 }

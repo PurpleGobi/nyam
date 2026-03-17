@@ -1,264 +1,293 @@
-'use client'
+"use client"
 
-import { useCallback } from 'react'
-import {
-  LogIn,
-  LogOut,
-  User,
-  Shield,
-  Flame,
-  ClipboardCheck,
-  Share2,
-  Heart,
-  Settings,
-} from 'lucide-react'
-import { useAuth } from '@/application/hooks/use-auth'
-import { useUserProfile } from '@/application/hooks/use-user-profile'
-import { useFavorites } from '@/application/hooks/use-favorites'
-import { EmptyState } from '@/presentation/components/shared/empty-state'
-import { Button } from '@/presentation/components/ui/button'
-import { Separator } from '@/presentation/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/presentation/components/ui/select'
-import type { PreferredAi } from '@/domain/entities/user'
+import { useState } from "react"
+import { User, Settings, ChevronRight, Flame, Star, BookOpen, Pencil, Check, X, Calendar } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useAuthContext } from "@/presentation/providers/auth-provider"
+import { useProfile } from "@/application/hooks/use-profile"
+import { useUpdateProfile } from "@/application/hooks/use-update-profile"
+import { useRecords } from "@/application/hooks/use-records"
+import { useTasteDna } from "@/application/hooks/use-taste-dna"
+import { useStyleDna } from "@/application/hooks/use-style-dna"
+import type { TasteDna } from "@/domain/entities/taste-dna"
 
-/** Tier labels for display */
-const TIER_LABELS: Record<string, string> = {
-  explorer: '탐험가',
-  verifier: '검증자',
-  analyst: '분석가',
-  master: '마스터',
-  guide: '가이드',
+const FLAVOR_LABELS: Record<string, string> = {
+  flavorSpicy: '매운맛',
+  flavorSweet: '단맛',
+  flavorSalty: '짠맛',
+  flavorSour: '신맛',
+  flavorUmami: '감칠맛',
+  flavorRich: '진한맛',
 }
 
-/** AI labels for display */
-const AI_LABELS: Record<PreferredAi, string> = {
-  chatgpt: 'ChatGPT',
-  claude: 'Claude',
-  gemini: 'Gemini',
-}
-
-/**
- * Profile tab container.
- * Shows user profile, stats, favorites count, settings, and logout.
- * Login prompt if not authenticated.
- */
-export function ProfileContainer() {
-  const { user, isLoading: authLoading, signIn, signOut } = useAuth()
-  const { profile, stats, isLoading: profileLoading, error, updateProfile } =
-    useUserProfile(user?.id)
-  const { favorites, isLoading: favoritesLoading } = useFavorites()
-
-  const handleAiChange = useCallback(
-    (value: PreferredAi | null) => {
-      if (value) {
-        void updateProfile({ preferredAi: value })
-      }
-    },
-    [updateProfile],
+function FlavorBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-14 shrink-0 text-xs text-[var(--color-neutral-600)]">{label}</span>
+      <div className="h-2 flex-1 rounded-full bg-[var(--color-neutral-100)]">
+        <div
+          className="h-2 rounded-full bg-[#FF6038]"
+          style={{ width: `${Math.min(value * 100, 100)}%` }}
+        />
+      </div>
+    </div>
   )
+}
 
-  const handleLogout = useCallback(() => {
-    void signOut()
-  }, [signOut])
+export function ProfileContainer() {
+  const router = useRouter()
+  const { user: authUser, signOut } = useAuthContext()
+  const userId = authUser?.id
+  const { user: profile, stats, isLoading: profileLoading, mutate: mutateProfile } = useProfile(userId)
+  const { updateProfile, isLoading: updateLoading } = useUpdateProfile()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editNickname, setEditNickname] = useState("")
+  const { data: records, isLoading: recordsLoading } = useRecords(userId, 5)
+  const { data: tasteDna, isLoading: dnaLoading } = useTasteDna(userId)
+  const { regions, genres, isLoading: styleDnaLoading } = useStyleDna(userId)
 
-  // Auth loading
-  if (authLoading) {
-    return (
-      <div className="flex flex-col gap-4 pb-20">
-        <div className="h-20 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
-        <div className="h-32 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
-      </div>
-    )
-  }
+  const isLoading = profileLoading || recordsLoading || dnaLoading || styleDnaLoading
 
-  // Not authenticated
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-20">
-        <User size={64} className="text-[var(--color-neutral-300)]" />
-        <h2 className="text-xl font-semibold">로그인하고 시작해보세요</h2>
-        <p className="max-w-[280px] text-center text-sm text-[var(--color-neutral-500)]">
-          AI 맛집 검증, 배지 수집, 즐겨찾기 등 다양한 기능을 이용할 수 있어요.
-        </p>
-        <div className="flex flex-col gap-2 w-full max-w-[240px]">
-          <Button onClick={() => void signIn('kakao')} variant="outline" className="w-full">
-            카카오 로그인
-          </Button>
-          <Button onClick={() => void signIn('naver')} variant="outline" className="w-full">
-            네이버 로그인
-          </Button>
-          <Button onClick={() => void signIn('google')} variant="outline" className="w-full">
-            Google 로그인
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  const isLoading = profileLoading
-
-  // Profile loading
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 pb-20">
+      <div className="flex flex-col gap-6 px-4 pt-6">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 animate-pulse rounded-full bg-[var(--color-neutral-200)]" />
+          <div className="h-16 w-16 animate-pulse rounded-full bg-[var(--color-neutral-100)]" />
           <div className="flex flex-col gap-2">
-            <div className="h-5 w-24 animate-pulse rounded bg-[var(--color-neutral-200)]" />
+            <div className="h-5 w-24 animate-pulse rounded bg-[var(--color-neutral-100)]" />
             <div className="h-4 w-16 animate-pulse rounded bg-[var(--color-neutral-100)]" />
           </div>
         </div>
-        <div className="h-32 animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
       </div>
     )
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-20">
-        <p className="text-sm text-[var(--color-error-500)]">
-          프로필을 불러오지 못했어요.
-        </p>
-        <Button onClick={() => window.location.reload()} variant="outline">
-          다시 시도
-        </Button>
-      </div>
-    )
-  }
+  const nickname = profile?.nickname ?? authUser?.user_metadata?.full_name ?? '게스트'
+  const avatarUrl = profile?.avatarUrl ?? authUser?.user_metadata?.avatar_url
+  const level = stats?.nyamLevel ?? 1
 
   return (
-    <div className="flex flex-col gap-6 pb-20">
-      {/* Profile header */}
+    <div className="flex flex-col gap-6 px-4 pt-6">
+      {/* Profile Header */}
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[var(--color-neutral-200)]">
-          {profile?.avatarUrl ? (
-            <img
-              src={profile.avatarUrl}
-              alt={profile.nickname ?? '프로필'}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <User size={32} className="text-[var(--color-neutral-400)]" />
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold">
-            {profile?.nickname ?? '맛집 탐험가'}
-          </h1>
-          <div className="flex items-center gap-1.5">
-            <Shield size={14} className="text-[var(--color-primary-500)]" />
-            <span className="text-sm text-[var(--color-primary-500)]">
-              {TIER_LABELS[profile?.tier ?? 'explorer']}
-            </span>
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={nickname}
+            width={64}
+            height={64}
+            className="h-16 w-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-neutral-100)]">
+            <User className="h-8 w-8 text-[var(--color-neutral-400)]" />
           </div>
+        )}
+        <div className="flex flex-col">
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editNickname}
+                onChange={(e) => setEditNickname(e.target.value)}
+                className="h-8 w-36 rounded-lg border border-[var(--color-neutral-300)] px-2 text-sm text-[var(--color-neutral-800)] outline-none focus:border-[#FF6038]"
+                autoFocus
+              />
+              <button
+                type="button"
+                disabled={updateLoading || !editNickname.trim()}
+                onClick={async () => {
+                  if (!userId || !editNickname.trim()) return
+                  const result = await updateProfile(userId, { nickname: editNickname.trim() })
+                  if (result) {
+                    await mutateProfile()
+                    setIsEditing(false)
+                  }
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF6038] text-white disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-bold text-[var(--color-neutral-800)]">
+                {nickname}
+              </h1>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditNickname(nickname)
+                  setIsEditing(true)
+                }}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+          <span className="text-sm text-[#FF6038]">nyam Lv.{level}</span>
         </div>
       </div>
 
-      <Separator />
+      {/* Stats Summary */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col items-center rounded-xl bg-[var(--color-neutral-50)] p-3">
+            <BookOpen className="mb-1 h-5 w-5 text-[#FF6038]" />
+            <span className="text-lg font-bold text-[var(--color-neutral-800)]">{stats.totalRecords}</span>
+            <span className="text-xs text-[var(--color-neutral-500)]">기록</span>
+          </div>
+          <div className="flex flex-col items-center rounded-xl bg-[var(--color-neutral-50)] p-3">
+            <Flame className="mb-1 h-5 w-5 text-[#FF6038]" />
+            <span className="text-lg font-bold text-[var(--color-neutral-800)]">{stats.currentStreakDays}</span>
+            <span className="text-xs text-[var(--color-neutral-500)]">연속일</span>
+          </div>
+          <div className="flex flex-col items-center rounded-xl bg-[var(--color-neutral-50)] p-3">
+            <Star className="mb-1 h-5 w-5 text-[#FF6038]" />
+            <span className="text-lg font-bold text-[var(--color-neutral-800)]">{stats.points}</span>
+            <span className="text-xs text-[var(--color-neutral-500)]">포인트</span>
+          </div>
+        </div>
+      )}
 
-      {/* Stats section */}
+      {/* Taste DNA */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">활동 통계</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--color-neutral-200)] p-3">
-            <ClipboardCheck size={20} className="text-[var(--color-primary-500)]" />
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">
-                {stats?.totalVerifications ?? 0}
-              </span>
-              <span className="text-xs text-[var(--color-neutral-500)]">
-                총 검증
-              </span>
+        <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
+          취향 DNA
+        </h2>
+        {tasteDna ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-[#FF6038]">{tasteDna.tasteTypeName}</span>
+              <span className="text-xs text-[var(--color-neutral-400)]">{tasteDna.sampleCount}개 기록 기반</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {(Object.entries(FLAVOR_LABELS) as [keyof TasteDna, string][]).map(([key, label]) => (
+                <FlavorBar key={key} label={label} value={tasteDna[key] as number} />
+              ))}
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--color-neutral-200)] p-3">
-            <Flame size={20} className="text-[var(--color-warning-500)]" />
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">
-                {stats?.currentStreak ?? 0}일
-              </span>
-              <span className="text-xs text-[var(--color-neutral-500)]">
-                연속 검증
-              </span>
-            </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-10">
+            <p className="text-center text-sm text-[var(--color-neutral-500)]">
+              기록이 5개 이상이면 취향 DNA가 생성됩니다
+            </p>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--color-neutral-200)] p-3">
-            <Share2 size={20} className="text-[var(--color-info-500)]" />
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">
-                {stats?.promptsShared ?? 0}
-              </span>
-              <span className="text-xs text-[var(--color-neutral-500)]">
-                프롬프트 공유
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--color-neutral-200)] p-3">
-            <Heart size={20} className="text-[var(--color-error-400)]" />
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">
-                {favoritesLoading ? '-' : favorites.length}
-              </span>
-              <span className="text-xs text-[var(--color-neutral-500)]">
-                즐겨찾기
-              </span>
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
-      <Separator />
-
-      {/* Settings section */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">설정</h2>
-
-        {/* Preferred AI selector */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">선호 AI</span>
-            <span className="text-xs text-[var(--color-neutral-500)]">
-              프롬프트 딥링크에 사용됩니다
-            </span>
+      {/* Style DNA */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
+          Style DNA
+        </h2>
+        {regions.length > 0 || genres.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {regions.length > 0 && (
+              <div className="flex flex-col gap-2 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4">
+                <span className="text-xs font-medium text-[var(--color-neutral-500)]">지역</span>
+                <div className="flex flex-wrap gap-2">
+                  {regions.slice(0, 6).map((r) => (
+                    <span key={r.region} className="rounded-full bg-[var(--color-neutral-50)] px-3 py-1.5 text-xs text-[var(--color-neutral-700)]">
+                      {r.region} Lv.{r.level}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {genres.length > 0 && (
+              <div className="flex flex-col gap-2 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4">
+                <span className="text-xs font-medium text-[var(--color-neutral-500)]">장르</span>
+                <div className="flex flex-wrap gap-2">
+                  {genres.slice(0, 6).map((g) => (
+                    <span key={g.category} className="rounded-full bg-[var(--color-neutral-50)] px-3 py-1.5 text-xs text-[var(--color-neutral-700)]">
+                      {g.category} Lv.{g.level}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <Select
-            value={profile?.preferredAi ?? 'chatgpt'}
-            onValueChange={handleAiChange}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.entries(AI_LABELS) as Array<[PreferredAi, string]>).map(
-                ([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ),
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-10">
+            <p className="text-center text-sm text-[var(--color-neutral-500)]">
+              기록하면 자동으로 영역이 쌓입니다
+            </p>
+          </div>
+        )}
+      </section>
 
-        <Separator />
+      {/* Record Timeline */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold text-[var(--color-neutral-700)]">
+          기록 타임라인
+        </h2>
+        {records && records.data.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {records.data.map((record) => (
+              <div key={record.id} onClick={() => router.push(`/records/${record.id}`)} className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3 active:bg-[var(--color-neutral-50)]">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-[var(--color-neutral-800)]">{record.menuName}</span>
+                  <span className="text-xs text-[var(--color-neutral-400)]">
+                    {new Date(record.createdAt).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5 text-[#FF6038]" />
+                  <span className="text-sm font-medium text-[var(--color-neutral-700)]">{Math.round(record.ratingOverall)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] px-6 py-10">
+            <p className="text-center text-sm text-[var(--color-neutral-500)]">
+              아직 기록이 없습니다
+            </p>
+          </div>
+        )}
+      </section>
 
-        {/* Logout */}
-        <Button
-          variant="outline"
-          onClick={handleLogout}
-          className="gap-2 text-[var(--color-error-500)]"
+      {/* Settings & Logout */}
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/wrapped"
+          className="flex items-center justify-between rounded-xl border border-[#FF6038]/30 bg-[#FF6038]/5 px-4 py-3.5"
         >
-          <LogOut size={16} />
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-[#FF6038]" />
+            <span className="text-sm font-medium text-[#FF6038]">{new Date().getFullYear()} 맛 리뷰</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[#FF6038]" />
+        </Link>
+        <Link
+          href="#"
+          className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5"
+        >
+          <div className="flex items-center gap-3">
+            <Settings className="h-5 w-5 text-[var(--color-neutral-500)]" />
+            <span className="text-sm text-[var(--color-neutral-700)]">설정</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[var(--color-neutral-400)]" />
+        </Link>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 py-3.5 text-left text-sm text-[var(--color-neutral-500)]"
+        >
           로그아웃
-        </Button>
-      </section>
+        </button>
+      </div>
     </div>
   )
 }

@@ -2,10 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
 
-/**
- * Server-side Supabase client for Server Components and Route Handlers.
- * Reads/writes cookies via next/headers for session management.
- */
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -23,8 +19,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             }
           } catch {
-            // setAll can throw in Server Components where cookies are read-only.
-            // This is safe to ignore when the middleware handles session refresh.
+            /* read-only in Server Components */
           }
         },
       },

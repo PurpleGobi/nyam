@@ -1,76 +1,65 @@
-'use client';
+"use client"
 
-import Link from 'next/link';
-import { Home, Search, Sparkles, Trophy, User } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { ROUTES } from '@/shared/constants/routes';
-import { cn } from '@/shared/utils/cn';
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Home, Search, Plus, Users, User } from "lucide-react"
+import { ROUTES } from "@/shared/constants/routes"
+import { cn } from "@/shared/utils/cn"
 
-export interface BottomNavProps {
-  /** Current route path to determine active tab */
-  currentPath: string;
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  isFab?: boolean
 }
 
-interface NavTab {
-  path: string;
-  label: string;
-  icon: LucideIcon;
-}
+const NAV_ITEMS: NavItem[] = [
+  { href: ROUTES.HOME, label: "홈", icon: Home },
+  { href: ROUTES.DISCOVER, label: "발견", icon: Search },
+  { href: ROUTES.RECORD, label: "기록", icon: Plus, isFab: true },
+  { href: ROUTES.GROUPS, label: "버블", icon: Users },
+  { href: ROUTES.PROFILE, label: "프로필", icon: User },
+]
 
-const tabs: NavTab[] = [
-  { path: ROUTES.HOME, label: '홈', icon: Home },
-  { path: ROUTES.EXPLORE, label: '탐색', icon: Search },
-  { path: ROUTES.PROMPTS, label: '프롬프트', icon: Sparkles },
-  { path: ROUTES.ACTIVITY, label: '활동', icon: Trophy },
-  { path: ROUTES.PROFILE, label: '프로필', icon: User },
-];
+export function BottomNav() {
+  const pathname = usePathname()
 
-/**
- * 5-tab bottom navigation bar.
- * Active tab shows primary-500 filled icons; inactive shows neutral-400 outline icons.
- * Height: 56px + safe area inset.
- */
-export function BottomNav({ currentPath }: BottomNavProps) {
   return (
-    <nav
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-50',
-        'bg-[var(--color-neutral-0)]',
-        'shadow-[0_-4px_12px_rgba(16,42,67,0.08)]',
-        'pb-[env(safe-area-inset-bottom)]',
-      )}
-    >
-      <div className="flex h-14 items-center justify-around">
-        {tabs.map((tab) => {
-          const isActive = currentPath === tab.path
-            || (tab.path !== '/' && currentPath.startsWith(tab.path));
-          const IconComponent = tab.icon;
+    <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-[var(--color-neutral-200)] bg-white pb-[env(safe-area-inset-bottom)] shadow-lg">
+      <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href
+          const Icon = item.icon
+
+          if (item.isFab) {
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF6038] shadow-lg transition-transform active:scale-95"
+              >
+                <Icon className="h-6 w-6 text-white" />
+              </Link>
+            )
+          }
 
           return (
             <Link
-              key={tab.path}
-              href={tab.path}
+              key={item.href}
+              href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-1',
-                'min-w-[44px] min-h-[44px] px-2',
-                'transition-colors duration-150',
+                "flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors",
                 isActive
-                  ? 'text-[var(--color-primary-500)]'
-                  : 'text-[var(--color-neutral-400)]',
+                  ? "text-[#FF6038]"
+                  : "text-[var(--color-neutral-400)]"
               )}
             >
-              <IconComponent
-                size={24}
-                strokeWidth={1.5}
-                fill={isActive ? 'currentColor' : 'none'}
-              />
-              <span className="text-[10px] font-medium leading-none tracking-[0.08em]">
-                {tab.label}
-              </span>
+              <Icon className="h-5 w-5" />
+              <span>{item.label}</span>
             </Link>
-          );
+          )
         })}
       </div>
     </nav>
-  );
+  )
 }
