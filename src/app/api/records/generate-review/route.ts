@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
 import { createAdminClient } from "@/infrastructure/supabase/admin"
+import { calculateNyamLevel } from "@/shared/utils/xp"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
@@ -220,13 +221,6 @@ JSON 형식:
 - 사진이 없으면 text 섹션만 사용
 - 자연스럽고 친근한 매거진 톤
 - 섹션은 5-8개로 구성`
-}
-
-function calculateNyamLevel(points: number): number {
-  if (points >= 3600) return 30
-  if (points >= 1200) return Math.floor(15 + (points - 1200) * 15 / 2400)
-  if (points >= 300) return Math.floor(5 + (points - 300) * 10 / 900)
-  return Math.floor(1 + points * 4 / 300)
 }
 
 async function handleGenerateBlog(

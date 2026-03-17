@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
 import { createAdminClient } from "@/infrastructure/supabase/admin"
+import { calculateNyamLevel, collectXpBonuses, calculateConsecutiveDays } from "@/shared/utils/xp"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -196,16 +197,64 @@ export async function POST(request: NextRequest) {
     phase_status: 2,
   }).eq("id", recordId)
 
-  // Update user_stats
-  try {
-    await admin.rpc("increment_user_stats", { p_user_id: user.id })
-  } catch {
-    // Fallback if RPC doesn't exist: manual update
-    await admin.from("user_stats").upsert({
-      user_id: user.id,
-      total_records: 1,
-    }, { onConflict: "user_id" })
-  }
+  // Update user_stats with Phase 1 XP + bonuses
+  let xpEarned = 5 // Phase 1 base XP
+
+  // Photo count for bonus check
+  const { count: photoCount } = await admin
+    .from("record_photos")
+    .select("*", { count: "exact", head: true })
+    .eq("record_id", recordId)
+
+  // Consecutive days
+  const { data: recentRecords } = await admin
+    .from("records")
+    .select("created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(30)
+
+  // New genre check
+  const { count: genreCount } = await admin
+    .from("records")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("genre", record.genre)
+
+  const xpBonuses = collectXpBonuses({
+    isNewGenre: (genreCount ?? 0) <= 1,
+    consecutiveDays: calculateConsecutiveDays(
+      recentRecords?.map((r) => r.created_at as string) ?? [],
+    ),
+    photoTypeCount: photoCount ?? 0,
+  })
+  xpEarned += xpBonuses.reduce((sum, b) => sum + b.points, 0)
+
+  // Read current stats
+  const { data: stats } = await admin
+    .from("user_stats")
+    .select("points, total_records")
+    .eq("user_id", user.id)
+    .single()
+
+  const currentPoints = (stats?.points as number) ?? 0
+  const newPoints = currentPoints + xpEarned
+
+  await admin.from("user_stats").upsert({
+    user_id: user.id,
+    points: newPoints,
+    nyam_level: calculateNyamLevel(newPoints),
+    total_records: ((stats?.total_records as number) ?? 0) + 1,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id" })
+
+  // Record phase completion
+  await admin.from("phase_completions").insert({
+    record_id: recordId,
+    user_id: user.id,
+    phase: 1,
+    xp_earned: xpEarned,
+  })
 
   return NextResponse.json({ success: true })
 }

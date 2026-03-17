@@ -832,3 +832,813 @@ test('모바일 뷰포트(390x844): 레이아웃 정상')
 - S2 초기: 식당만 완전 구현
 - S2 중기: 요리 분기 추가 (기존 UI 재활용 + 맛 특성 입력 추가)
 - S2 후기: 와인 분기 추가 (WSET 슬라이더 + AI 병합 로직)
+
+---
+---
+
+# Post-Audit Implementation Plan
+
+> 버전: 1.0.0 | 작성일: 2026-03-18
+> 근거 문서: [IMPLEMENTATION_AUDIT.md](./IMPLEMENTATION_AUDIT.md)
+
+구현 감사(Audit) 결과 발견된 P0/P1 미구현 항목 5건의 상세 구현 계획.
+
+---
+
+## 총괄 요약
+
+| # | 항목 | 우선순위 | 예상 소요 | 의존성 | 상태 |
+|---|------|----------|-----------|--------|------|
+| 0 | DESIGN_SPEC Wine DNA Note 정정 | P0 | - | 없음 | 완료 (2026-03-18) |
+| 1 | 미들웨어 연결 | P0 | 10분 | 없음 | 미착수 |
+| 2 | 친구 피드 연결 | P1 | 30분 | 없음 | 미착수 |
+| 3 | XP 보너스 구현 | P1 | 2시간 | 없음 | 미착수 |
+| 4 | 계정 삭제 Cron | P1 | 1.5시간 | Vercel 배포 환경 | 미착수 |
+| 5 | 상권명 매핑 생성 | P1 | 1시간 | 없음 | 미착수 |
+
+**총 소요: ~5시간** (항목 0 완료 제외) | 항목 1-2-5는 병렬 가능, 3-4는 독립
+
+---
+
+## 1. 미들웨어 연결 (P0, 10분)
+
+### 현황
+
+- `src/proxy.ts`에 완전한 미들웨어 로직 존재 (89줄)
+  - 인증 확인 → 비활성 계정 체크 → 약관 동의 체크
+  - `PUBLIC_ROUTES` 화이트리스트, API/정적 경로 스킵
+  - `config.matcher` 패턴 정의 완료
+- **문제**: Next.js는 `middleware.ts` 파일명만 자동 감지. `proxy.ts`는 무시됨
+
+### 구현 단계
+
+#### Step 1: 파일 이름 변경
+
+```bash
+git mv src/proxy.ts src/middleware.ts
+```
+
+#### Step 2: export 이름 변경
+
+```typescript
+// src/middleware.ts
+
+// Before (line 14):
+export async function proxy(request: NextRequest) {
+
+// After:
+export async function middleware(request: NextRequest) {
+```
+
+`config` export는 그대로 유지 (Next.js 컨벤션과 일치).
+
+#### Step 3: import 참조 업데이트
+
+프로젝트 내 `proxy`를 import하는 파일이 있으면 `middleware`로 변경.
+
+### 수정 파일
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `src/proxy.ts` → `src/middleware.ts` | 파일명 변경 |
+| `src/middleware.ts` | `proxy` → `middleware` 함수명 변경 |
+
+### 검증
+
+- [ ] `pnpm build` 성공
+- [ ] 프로젝트 내 `proxy` import 참조가 없는지 확인 (grep "from.*proxy")
+- [ ] 미인증 상태로 `/` 접근 시 `/auth/login` 리다이렉트
+- [ ] 인증 후 `is_deactivated=true` 계정으로 접근 시 `/auth/login?error=account_deactivated` 리다이렉트
+- [ ] `terms_agreed_at=null` 계정으로 접근 시 `/auth/consent` 리다이렉트
+- [ ] PUBLIC_ROUTES (`/auth/login`, `/terms/*`, `/offline`) 정상 접근
+
+### 리스크
+
+- 낮음. 로직 변경 없이 파일명/함수명만 변경
+
+---
+
+## 2. 친구 피드 연결 (P1, 30분)
+
+### 현황
+
+- **Hook**: `src/application/hooks/use-friends-feed.ts` — 완전 구현
+  - `useFriendsFeed(limit = 20)` → `{ records: RecordWithPhotos[], isLoading, error, mutate }`
+  - group_memberships → record_shares → records 조회, 자신 제외, createdAt 내림차순
+- **Component**: `src/presentation/components/home/friends-feed-card.tsx` — 완전 구현
+  - Props: `nickname`, `profileImageUrl`, `recordTitle`, `thumbnailUrl`, `recordType`, `createdAt`, `onClick`
+- **Container**: `src/presentation/containers/home-container.tsx` — 하드코딩 플레이스홀더 (lines 99-108)
+
+### 구현 단계
+
+#### Step 1: home-container.tsx에 hook + component 연결
+
+```typescript
+// src/presentation/containers/home-container.tsx
+
+// 추가 import
+import { useFriendsFeed } from "@/application/hooks/use-friends-feed"
+import { FriendsFeedCard } from "@/presentation/components/home/friends-feed-card"
+
+// Container 함수 내부에 hook 호출 추가
+const { records: friendsRecords, isLoading: friendsLoading } = useFriendsFeed(5)
+```
+
+#### Step 2: 플레이스홀더를 실제 렌더링으로 교체
+
+```tsx
+{/* 5. Friends Feed */}
+<SectionHeader title="친구 피드" subtitle="버블 멤버의 최근 기록" />
+{friendsLoading ? (
+  <div className="space-y-3">
+    {Array.from({ length: 3 }, (_, i) => (
+      <div key={i} className="h-20 animate-pulse rounded-2xl bg-neutral-100" />
+    ))}
+  </div>
+) : friendsRecords.length === 0 ? (
+  <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)] text-center">
+    <p className="text-sm text-neutral-400">
+      버블에 가입하면 친구들의 기록을 볼 수 있어요
+    </p>
+  </div>
+) : (
+  <div className="space-y-3">
+    {friendsRecords.map((record) => (
+      <FriendsFeedCard
+        key={record.id}
+        nickname={record.user?.nickname ?? "익명"}
+        profileImageUrl={record.user?.profileImageUrl ?? null}
+        recordTitle={record.title ?? "무제"}
+        thumbnailUrl={record.photos?.[0]?.thumbnailUrl ?? null}
+        recordType={record.recordType}
+        createdAt={record.createdAt}
+        onClick={() => router.push(`/records/${record.id}`)}
+      />
+    ))}
+  </div>
+)}
+```
+
+> **참고**: `RecordWithPhotos` 타입에 `user` 필드(닉네임, 프로필 이미지)가 join되어 있는지 확인 필요. 없으면 `use-friends-feed.ts`에서 user 정보를 함께 fetch하도록 보강.
+
+### 수정 파일
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `src/presentation/containers/home-container.tsx` | hook import + 플레이스홀더 → 실제 렌더링 |
+
+### 검증
+
+- [ ] 버블 미가입 시 빈 상태 메시지 표시
+- [ ] 버블 가입 + 공유 기록 있을 때 FriendsFeedCard 렌더링
+- [ ] 카드 클릭 시 `/records/[id]` 이동
+- [ ] 로딩 중 스켈레톤 표시
+
+### 리스크
+
+- `RecordWithPhotos` 타입에 user join 데이터가 없을 수 있음 → hook 수정 필요할 수 있음 (영향도: 낮음)
+
+---
+
+## 3. XP 보너스 구현 (P1, 2시간)
+
+### 현황
+
+- **TECH_SPEC 5-5 기준 XP 보너스**:
+  - Phase 1 완료: +5 XP ← **미구현**
+  - Phase 2 완료: +15 XP ← 구현 완료 (`generate-review/route.ts:293-320`)
+  - Phase 3 완료: +5 XP ← **미구현**
+  - 신규 장르 기록: +10 XP ← **미구현**
+  - 7일 연속 기록: +20 XP ← **미구현**
+  - 4종류 사진 촬영: +3 XP ← **미구현**
+- `calculateNyamLevel()` 함수가 `generate-review/route.ts`에 인라인 정의됨 (재사용 불가)
+- `post-process/route.ts`에서는 `total_records`만 증가, XP 로직 없음
+
+### 구현 단계
+
+#### Step 1: calculateNyamLevel을 공유 유틸로 추출
+
+```typescript
+// src/shared/utils/xp.ts
+
+export function calculateNyamLevel(points: number): number {
+  if (points >= 3600) return 30
+  if (points >= 1200) return Math.floor(15 + (points - 1200) * 15 / 2400)
+  if (points >= 300) return Math.floor(5 + (points - 300) * 10 / 900)
+  return Math.floor(1 + points * 4 / 300)
+}
+
+export interface XpBonus {
+  reason: string
+  points: number
+}
+
+export function collectXpBonuses(params: {
+  isNewGenre: boolean
+  consecutiveDays: number
+  photoTypeCount: number
+}): XpBonus[] {
+  const bonuses: XpBonus[] = []
+  if (params.isNewGenre) bonuses.push({ reason: "new_genre", points: 10 })
+  if (params.consecutiveDays >= 7) bonuses.push({ reason: "7day_streak", points: 20 })
+  if (params.photoTypeCount >= 4) bonuses.push({ reason: "4type_photos", points: 3 })
+  return bonuses
+}
+```
+
+#### Step 2: post-process/route.ts에 Phase 1 XP (+5) + 보너스 로직 추가
+
+```typescript
+// src/app/api/records/post-process/route.ts 수정
+
+import { calculateNyamLevel, collectXpBonuses, calculateConsecutiveDays } from "@/shared/utils/xp"
+
+// user_stats 업데이트 섹션 (기존 lines 199-208) 교체:
+
+// 1. Phase 1 기본 XP
+let xpEarned = 5
+
+// 2. 사진 수 조회 (record select에 photos 미포함이므로 별도 쿼리)
+const { count: photoCount } = await admin
+  .from("record_photos")
+  .select("*", { count: "exact", head: true })
+  .eq("record_id", record.id)
+
+// 3. 연속 기록 일수 조회
+const { data: recentRecords } = await admin
+  .from("records")
+  .select("created_at")
+  .eq("user_id", user.id)
+  .order("created_at", { ascending: false })
+  .limit(30)
+
+// 4. 신규 장르 체크
+const { count: genreCount } = await admin
+  .from("records")
+  .select("*", { count: "exact", head: true })
+  .eq("user_id", user.id)
+  .eq("genre", record.genre)
+
+const xpBonuses = collectXpBonuses({
+  isNewGenre: (genreCount ?? 0) <= 1,  // 이번 기록 포함 1건이면 신규
+  consecutiveDays: calculateConsecutiveDays(
+    recentRecords?.map(r => r.created_at) ?? []
+  ),
+  photoTypeCount: photoCount ?? 0,
+})
+xpEarned += xpBonuses.reduce((sum, b) => sum + b.points, 0)
+
+// 6. user_stats 업데이트
+const { data: stats } = await admin
+  .from("user_stats")
+  .select("points, total_records")
+  .eq("user_id", user.id)
+  .single()
+
+const currentPoints = stats?.points ?? 0
+const newPoints = currentPoints + xpEarned
+
+await admin.from("user_stats").upsert({
+  user_id: user.id,
+  points: newPoints,
+  nyam_level: calculateNyamLevel(newPoints),
+  total_records: (stats?.total_records ?? 0) + 1,
+  updated_at: new Date().toISOString(),
+}, { onConflict: "user_id" })
+
+// 7. phase_completions 기록
+await admin.from("phase_completions").insert({
+  record_id: record.id,
+  user_id: user.id,
+  phase: 1,
+  xp_earned: xpEarned,
+})
+```
+
+#### Step 3: 7일 연속 기록 계산 헬퍼
+
+```typescript
+// src/shared/utils/xp.ts에 추가
+// Note: SupabaseClient 타입을 shared에서 직접 import하면 아키텍처 위반.
+// 이 함수는 post-process API route에서만 호출되므로, route 파일 내 인라인 구현도 가능.
+// 여기서는 Supabase 의존성 없이 날짜 배열을 받는 순수 함수로 분리.
+
+export function calculateConsecutiveDays(dates: string[]): number {
+  if (!dates.length) return 0
+
+  // 날짜 중복 제거 + 내림차순 정렬
+  const unique = [...new Set(dates.map(d => d.split("T")[0]))]
+    .sort((a, b) => b.localeCompare(a))
+
+  let streak = 1
+  for (let i = 1; i < unique.length; i++) {
+    const prev = new Date(unique[i - 1])
+    const curr = new Date(unique[i])
+    const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24)
+    if (diff === 1) streak++
+    else break
+  }
+  return streak
+}
+
+// post-process/route.ts에서 사용:
+// const { data: recentRecords } = await admin
+//   .from("records").select("created_at")
+//   .eq("user_id", user.id)
+//   .order("created_at", { ascending: false }).limit(30)
+// const streak = calculateConsecutiveDays(
+//   recentRecords?.map(r => r.created_at) ?? []
+// )
+```
+
+#### Step 4: Phase 3 XP (+5) — comparison 완료 시
+
+```typescript
+// src/app/api/comparison/route.ts (또는 비교 완료 API)
+// 비교 게임 결과 저장 후:
+
+import { calculateNyamLevel } from "@/shared/utils/xp"
+
+// Phase 3 XP 부여
+const { data: stats } = await admin
+  .from("user_stats")
+  .select("points")
+  .eq("user_id", user.id)
+  .single()
+
+const newPoints = (stats?.points ?? 0) + 5
+
+await admin.from("user_stats").upsert({
+  user_id: user.id,
+  points: newPoints,
+  nyam_level: calculateNyamLevel(newPoints),
+  updated_at: new Date().toISOString(),
+}, { onConflict: "user_id" })
+
+await admin.from("phase_completions").insert({
+  record_id: winnerId,
+  user_id: user.id,
+  phase: 3,
+  xp_earned: 5,
+})
+```
+
+#### Step 5: generate-review/route.ts의 인라인 함수 제거
+
+```typescript
+// src/app/api/records/generate-review/route.ts
+
+// Before (lines 225-230): 인라인 calculateNyamLevel 삭제
+// After: import { calculateNyamLevel } from "@/shared/utils/xp"
+```
+
+### 수정 파일
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `src/shared/utils/xp.ts` | **신규** — calculateNyamLevel, collectXpBonuses, calculateConsecutiveDays |
+| `src/app/api/records/post-process/route.ts` | Phase 1 XP + 보너스 로직 추가 |
+| `src/app/api/records/generate-review/route.ts` | 인라인 함수 → shared import |
+| `src/presentation/containers/comparison-container.tsx` (또는 비교 결과 저장 API) | Phase 3 XP 로직 추가 — 현재 API route 미존재 시 신규 생성 필요 |
+
+### 검증
+
+- [ ] Phase 1 기록 생성 → user_stats.points +5
+- [ ] 신규 장르 기록 → 추가 +10
+- [ ] 7일 연속 기록 → 추가 +20
+- [ ] 4종류 사진 촬영 → 추가 +3
+- [ ] Phase 2 완료 → +15 (기존 로직 유지 확인)
+- [ ] Phase 3 완료 → +5
+- [ ] nyam_level이 포인트에 따라 정확히 계산
+
+### 리스크
+
+- `phase_completions` 테이블: DB에 존재 확인됨 (`004_records.sql:149-156`)
+- 동시성: 같은 유저가 동시에 여러 기록 저장 시 race condition → `points + xpEarned` 방식 대신 RPC 사용 고려
+- `calculateConsecutiveDays`의 타임존 처리 (Asia/Seoul 기준 — UTC 날짜 비교 시 자정 전후 오차 가능)
+- Phase 3 XP: 비교 게임 결과 저장 API가 별도로 없을 수 있음 → 클라이언트 측 비교 결과를 서버에 전송하는 route 신규 생성 필요 여부 확인
+
+---
+
+## 4. 계정 삭제 Cron (P1, 1.5시간)
+
+### 현황
+
+- **TECH_SPEC 4-7 기준**: 30일 유예 후 데이터 영구 삭제 (특정 순서)
+- `src/app/api/auth/delete-account/route.ts` — 탈퇴 요청만 처리 (is_deactivated=true + account_deletions INSERT)
+- `src/app/api/auth/cancel-deletion/route.ts` — 탈퇴 철회
+- **Cron 작업 (실제 삭제)**: **미구현**
+
+### TECH_SPEC 삭제 순서 (4-7, CASCADE 활용)
+
+```
+a. Supabase Storage 파일 삭제 (record_photos → storage_path)
+b. records DELETE → CASCADE로 record_photos, record_journals,
+   record_ai_analyses, record_taste_profiles, record_shares,
+   bookmarks, reactions, phase_completions 자동 삭제
+c. comparisons DELETE → CASCADE → comparison_matchups
+d. groups (owner) 처리 (이관 or 삭제)
+e. group_memberships DELETE (비소유 그룹)
+f. notifications DELETE
+g. taste_dna_restaurant/wine/cooking DELETE
+h. style_dna_restaurant_*/wine_*/cooking_* DELETE
+i. user_stats DELETE
+j. users DELETE
+k. supabase.auth.admin.deleteUser(userId)
+```
+
+> **Note**: `record_photos`에는 `user_id` 컬럼이 없음. `records` 테이블을 통해 JOIN 필요.
+> `records` DELETE 시 CASCADE로 대부분의 하위 테이블이 자동 삭제되므로, Storage 파일만 먼저 수동 삭제.
+
+### 구현 단계
+
+#### Step 1: Vercel Cron 설정
+
+```json
+// vercel.json (프로젝트 루트)
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-deletions",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
+```
+
+> 매일 오전 3시(UTC) = 한국시간 12시(정오) 실행
+
+#### Step 2: Cron API Route 생성
+
+```typescript
+// src/app/api/cron/process-deletions/route.ts
+
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
+
+export async function GET(request: NextRequest) {
+  // Vercel Cron 인증
+  const authHeader = request.headers.get("authorization")
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // 유예 기간 만료된 계정 조회
+  const { data: deletions } = await admin
+    .from("account_deletions")
+    .select("user_id")
+    .lte("scheduled_at", new Date().toISOString())
+    .eq("status", "pending")
+
+  if (!deletions?.length) {
+    return NextResponse.json({ processed: 0 })
+  }
+
+  let processed = 0
+
+  for (const { user_id } of deletions) {
+    try {
+      // TECH_SPEC 4-7 CASCADE 기반 삭제 순서
+
+      // a. Storage 파일 삭제 (record_photos에 user_id 없음 → records JOIN)
+      const { data: records } = await admin
+        .from("records")
+        .select("id")
+        .eq("user_id", user_id)
+
+      if (records?.length) {
+        const recordIds = records.map(r => r.id)
+        const { data: photos } = await admin
+          .from("record_photos")
+          .select("photo_url")
+          .in("record_id", recordIds)
+
+        if (photos?.length) {
+          const paths = photos
+            .map(p => p.photo_url)
+            .filter(Boolean)
+            .map(url => url.split("/").pop()!)
+            .filter(Boolean)
+          if (paths.length) {
+            await admin.storage.from("record-photos").remove(paths)
+          }
+        }
+      }
+
+      // b. records DELETE → CASCADE 자동 삭제:
+      //    record_photos, record_ai_analyses, record_taste_profiles,
+      //    record_shares, bookmarks, reactions, phase_completions
+      await admin.from("records").delete().eq("user_id", user_id)
+
+      // c. comparisons DELETE → CASCADE → comparison_matchups
+      await admin.from("comparisons").delete().eq("user_id", user_id)
+
+      // d. groups (owner) — 다른 멤버에게 이관 or 삭제
+      const { data: ownedGroups } = await admin
+        .from("groups")
+        .select("id")
+        .eq("owner_id", user_id)
+
+      if (ownedGroups?.length) {
+        for (const group of ownedGroups) {
+          const { data: nextOwner } = await admin
+            .from("group_memberships")
+            .select("user_id")
+            .eq("group_id", group.id)
+            .neq("user_id", user_id)
+            .eq("role", "admin")
+            .limit(1)
+            .single()
+
+          if (nextOwner) {
+            await admin.from("groups").update({ owner_id: nextOwner.user_id }).eq("id", group.id)
+          } else {
+            await admin.from("groups").delete().eq("id", group.id)
+          }
+        }
+      }
+
+      // e. group_memberships (비소유 그룹)
+      await admin.from("group_memberships").delete().eq("user_id", user_id)
+
+      // f. notifications
+      await admin.from("notifications").delete().eq("user_id", user_id)
+
+      // g. Taste DNA
+      await admin.from("taste_dna_restaurant").delete().eq("user_id", user_id)
+      await admin.from("taste_dna_wine").delete().eq("user_id", user_id)
+      await admin.from("taste_dna_cooking").delete().eq("user_id", user_id)
+
+      // h. Style DNA (restaurant 7 + wine 4 + cooking 2 = 9 tables)
+      const styleTables = [
+        "style_dna_restaurant_genres", "style_dna_restaurant_areas",
+        "style_dna_restaurant_scenes",
+        "style_dna_wine_varieties", "style_dna_wine_regions",
+        "style_dna_wine_types", "style_dna_wine_scenes",
+        "style_dna_cooking_genres", "style_dna_cooking_scenes",
+      ]
+      for (const table of styleTables) {
+        await admin.from(table).delete().eq("user_id", user_id)
+      }
+
+      // i-j. user_stats + account_deletions + users
+      await admin.from("user_stats").delete().eq("user_id", user_id)
+      await admin.from("account_deletions").delete().eq("user_id", user_id)
+      await admin.from("users").delete().eq("id", user_id)
+
+      // k. Supabase Auth
+      await admin.auth.admin.deleteUser(user_id)
+
+      processed++
+    } catch (error) {
+      console.error(`Failed to delete user ${user_id}:`, error)
+      // 실패한 계정은 다음 Cron에서 재시도
+      // Note: status CHECK constraint은 'pending'|'cancelled'|'completed'만 허용
+      // 에러 시 pending 유지 + updated_at으로 재시도 추적
+      await admin.from("account_deletions").update({
+        updated_at: new Date().toISOString(),
+      }).eq("user_id", user_id)
+    }
+  }
+
+  return NextResponse.json({ processed, total: deletions.length })
+}
+```
+
+#### Step 3: 환경 변수 추가
+
+```
+CRON_SECRET=<random-secret>  # Vercel 프로젝트 설정에 추가
+```
+
+### 수정 파일
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `vercel.json` | **신규** — Cron 스케줄 정의 |
+| `src/app/api/cron/process-deletions/route.ts` | **신규** — 삭제 Cron 핸들러 |
+| `.env.example` | `CRON_SECRET` 추가 |
+
+### 검증
+
+- [ ] `GET /api/cron/process-deletions` (Bearer 인증) 호출 시 정상 응답
+- [ ] 유예 기간 만료 계정: CASCADE 포함 모든 데이터 삭제 확인 (Storage + 9개 Style DNA + 3개 Taste DNA + user_stats + users + auth)
+- [ ] 유예 기간 미만 계정: 삭제되지 않음
+- [ ] 삭제 실패 시 pending 상태 유지 + updated_at 갱신 (다음 실행에서 재시도)
+- [ ] cancel-deletion 후 status=cancelled인 계정은 스킵
+- [ ] owner인 그룹: 다른 admin에게 이관되거나, 멤버 없으면 그룹 삭제
+
+### 리스크
+
+- CASCADE 의존: `records` 삭제 전 반드시 Storage 파일 먼저 제거 (CASCADE 후에는 photo_url 조회 불가)
+- `record_photos`에 `user_id` 컬럼 없음 → `records` JOIN 필요 (코드에 반영 완료)
+- Vercel Hobby 플랜: Cron 실행 시간 제한 (10초). 대량 삭제 시 배치 처리 필요
+- `account_deletions.status` CHECK constraint: `pending`, `cancelled`, `completed` 만 허용 — 에러 시 `pending` 유지 + `updated_at` 갱신으로 처리 (코드에 반영 완료)
+- `notifications` 테이블: 존재 확인됨 (`008_notifications.sql`)
+- `comparisons` 테이블: 존재 확인됨 (`007_comparisons.sql`), CASCADE to `comparison_matchups`
+
+---
+
+## 5. 상권명 매핑 생성 (P1, 1시간)
+
+### 현황
+
+- TECH_SPEC: Style DNA에 상권명(area) 포함 → `style_dna_restaurant_areas` 테이블
+- `post-process/route.ts`(lines 128-158): `restaurant.region`을 읽어 Style DNA 업데이트하지만, region 값이 항상 null
+- `supabase-restaurant-repository.ts`: `upsertFromKakao()`에 `region` 파라미터 정의되어 있으나, **이 메서드는 코드베이스 어디에서도 호출되지 않음** (dead stub)
+- `enrich/route.ts`는 `admin.from("records").update(...)` 등 직접 쿼리 사용 — Repository 패턴 미적용
+- `src/shared/constants/areas.ts` 파일 없음
+- Kakao API 응답에 `address_name` (예: "서울 강남구 역삼동 123-4") 포함
+
+### 구현 단계
+
+#### Step 1: 상권명 상수 파일 생성
+
+```typescript
+// src/shared/constants/areas.ts
+
+export const AREA_MAPPINGS: Record<string, string> = {
+  // 서울 주요 상권
+  "역삼동": "강남역",
+  "서초동": "강남역",
+  "논현동": "신논현/강남",
+  "청담동": "청담/압구정",
+  "신사동": "가로수길/압구정",
+  "압구정동": "청담/압구정",
+  "삼성동": "삼성/코엑스",
+  "대치동": "대치/학여울",
+  "잠실동": "잠실/송파",
+  "송파동": "잠실/송파",
+  "방이동": "잠실/송파",
+  "문정동": "문정/가든파이브",
+  "이태원동": "이태원/경리단길",
+  "한남동": "한남동/이태원",
+  "용산동": "용산역",
+  "서교동": "홍대/합정",
+  "합정동": "홍대/합정",
+  "연남동": "연남동",
+  "상수동": "상수/망원",
+  "망원동": "상수/망원",
+  "성수동": "성수동",
+  "건대입구": "건대/성수",
+  "화양동": "건대/성수",
+  "종로1가": "종로/광화문",
+  "종로2가": "종각",
+  "종로3가": "종로3가/익선동",
+  "익선동": "익선동",
+  "명동": "명동",
+  "을지로": "을지로",
+  "연희동": "연희동",
+  "이촌동": "이촌/용산",
+  "여의도동": "여의도",
+  "영등포동": "영등포/타임스퀘어",
+  "목동": "목동",
+  "천호동": "천호/강동",
+  "노원동": "노원",
+  // 경기/인천
+  "정자동": "분당/정자",
+  "서현동": "분당/서현",
+  "판교동": "판교",
+  "동탄": "동탄",
+  "부평동": "부평",
+  // 기타 광역시는 구 단위로 매핑
+} as const
+
+/**
+ * 카카오 주소에서 상권명 추출
+ * @param addressName "서울 강남구 역삼동 123-4" 형태
+ * @returns "강남역" 또는 구 이름 (매핑 없을 시)
+ */
+export function extractArea(addressName: string): string | null {
+  if (!addressName) return null
+
+  const parts = addressName.split(" ")
+  // 동 이름으로 매핑 시도 (3번째 파트가 보통 동)
+  for (const part of parts) {
+    const cleaned = part.replace(/[0-9-]+$/, "") // "역삼동 123-4" → "역삼동"
+    if (AREA_MAPPINGS[cleaned]) return AREA_MAPPINGS[cleaned]
+  }
+
+  // 매핑 실패 시 구 이름 반환 ("강남구" → "강남구")
+  const gu = parts.find(p => p.endsWith("구") || p.endsWith("시"))
+  return gu ?? null
+}
+
+export type AreaName = string
+```
+
+#### Step 2: kakao-local.ts에서 address_name 원본 보존
+
+현재 `kakao-local.ts`는 `road_address_name || address_name`을 `address`로 병합. 상권명 추출에는 지번주소(`address_name`)가 필요하므로, `NearbyPlace` 타입에 원본 필드 추가.
+
+```typescript
+// src/infrastructure/api/kakao-local.ts 수정
+
+// NearbyPlace 인터페이스에 추가:
+addressName: string  // 지번 주소 원본 (예: "서울 강남구 역삼동 123")
+
+// 매핑 부분 수정 (line 67-70):
+address: doc.road_address_name || doc.address_name,
+addressName: doc.address_name,  // ← 추가
+```
+
+#### Step 3: use-create-record.ts에서 region 추출 및 restaurants INSERT에 추가
+
+> **핵심**: restaurants INSERT는 `enrich/route.ts`가 아닌 `use-create-record.ts`(클라이언트 훅)에서 수행됨.
+> `enrich/route.ts`는 restaurants 테이블에 접근하지 않음.
+
+```typescript
+// src/application/hooks/use-create-record.ts 수정
+
+import { extractArea } from "@/shared/constants/areas"
+
+// restaurants INSERT 부분 (lines 80-91):
+const { data: created } = await supabase
+  .from("restaurants")
+  .insert({
+    source: "kakao",
+    external_id: data.selectedPlace.externalId,
+    name: data.selectedPlace.name,
+    address: data.selectedPlace.address,
+    phone: data.selectedPlace.phone || null,
+    latitude: data.selectedPlace.latitude,
+    longitude: data.selectedPlace.longitude,
+    external_url: data.selectedPlace.placeUrl || null,
+    region: extractArea(data.selectedPlace.addressName),  // ← 추가
+  })
+```
+
+#### Step 4: post-process의 Style DNA area 업데이트 확인
+
+`post-process/route.ts` lines 128-158에서 이미 `restaurant.region`을 읽어 `style_dna_restaurant_areas`에 upsert하고 있음. Step 3에서 region이 채워지면 자동으로 동작.
+
+#### Step 5 (선택): upsertFromKakao dead stub 정리
+
+`upsertFromKakao`가 호출되지 않는 상태이므로, 추후 리팩토링 시 클라이언트 직접 쿼리를 Repository 패턴으로 마이그레이션하거나, dead stub을 제거하는 것을 권장.
+
+### 수정 파일
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `src/shared/constants/areas.ts` | **신규** — AREA_MAPPINGS + extractArea |
+| `src/infrastructure/api/kakao-local.ts` | NearbyPlace에 `addressName` 필드 추가 |
+| `src/application/hooks/use-create-record.ts` | restaurants INSERT에 `region` 추가 |
+
+### 검증
+
+- [ ] `extractArea("서울 강남구 역삼동 123-4")` → `"강남역"`
+- [ ] `extractArea("서울 마포구 서교동 395-1")` → `"홍대/합정"`
+- [ ] `extractArea("경기 성남시 분당구 판교동")` → `"판교"`
+- [ ] 매핑 없는 주소 → 구 이름 반환
+- [ ] 기록 생성 후 `restaurants.region` 컬럼에 값 저장 확인
+- [ ] `style_dna_restaurant_areas`에 상권명 누적 확인
+
+### 리스크
+
+- 카카오 API `address_name`이 항상 지번 주소인지 확인 필요 (일부 장소는 빈 값일 수 있음)
+- 초기 매핑이 서울 중심 → 다른 도시는 구 이름으로 fallback
+- 기존 기록의 region은 소급 적용 안 됨 (필요시 별도 마이그레이션)
+- `use-create-record.ts`는 클라이언트 훅 → `extractArea`가 클라이언트 번들에 포함됨 (shared/constants이므로 허용 범위)
+
+---
+
+## 실행 순서
+
+```
+모든 항목은 서로 독립 (의존성 없음).
+
+병렬 그룹 A (단순 연결 작업):
+  ├─ #1 미들웨어 연결 (10분)
+  ├─ #2 친구 피드 연결 (30분)
+  └─ #5 상권명 매핑 (1시간)
+
+병렬 그룹 B (신규 로직, A와도 병렬 가능):
+  ├─ #3 XP 보너스 구현 (2시간)
+  └─ #4 계정 삭제 Cron (1.5시간)
+
+권장 실행 순서 (1인 작업 시):
+  1. #1 미들웨어 (빠른 P0 해결, 10분)
+  2. #2 친구 피드 연결 (30분)
+  3. #5 상권명 매핑 (1시간)
+  4. #3 XP 보너스 (2시간)
+  5. #4 계정 삭제 Cron (1.5시간)
+  6. pnpm build && pnpm lint
+  7. 통합 테스트
+```
+
+---
+
+## SSOT 문서 동기화
+
+구현 완료 후 업데이트 필요한 문서:
+
+| 문서 | 업데이트 내용 |
+|------|-------------|
+| `IMPLEMENTATION_AUDIT.md` | 각 항목 상태를 "구현 완료"로 변경 |
+| `TECH_SPEC.md` | XP 보너스 구현 세부사항 (collectXpBonuses 함수 참조) |
+| 이 문서 (IMPLEMENTATION_PLAN.md) | 완료 체크리스트 업데이트 |

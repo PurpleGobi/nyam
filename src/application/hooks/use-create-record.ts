@@ -5,6 +5,7 @@ import { createClient } from "@/infrastructure/supabase/client"
 import { uploadRecordPhoto } from "@/infrastructure/storage/image-upload"
 import type { RecordType } from "@/infrastructure/supabase/types"
 import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
+import { extractArea } from "@/shared/constants/areas"
 
 interface CreateRecordData {
   recordType: RecordType
@@ -88,6 +89,7 @@ export function useCreateRecord() {
               latitude: data.selectedPlace.latitude,
               longitude: data.selectedPlace.longitude,
               external_url: data.selectedPlace.placeUrl || null,
+              region: extractArea(data.selectedPlace.addressName),
             })
             .select("id")
             .single()

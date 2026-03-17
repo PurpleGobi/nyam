@@ -5,11 +5,16 @@ import { createClient } from "@/infrastructure/supabase/client"
 import { getRecordRepository } from "@/di/repositories"
 import type { RecordWithPhotos } from "@/domain/entities/record"
 
+export interface FriendsFeedRecord extends RecordWithPhotos {
+  authorNickname: string
+  authorAvatarUrl: string | null
+}
+
 export function useFriendsFeed(limit = 20) {
   const supabase = createClient()
   const recordRepo = getRecordRepository()
 
-  const { data, error, isLoading, mutate } = useSWR<RecordWithPhotos[]>(
+  const { data, error, isLoading, mutate } = useSWR<FriendsFeedRecord[]>(
     `friends-feed/${limit}`,
     async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -39,12 +44,23 @@ export function useFriendsFeed(limit = 20) {
       // Deduplicate record IDs
       const uniqueRecordIds = [...new Set(shares.map((s) => s.record_id as string))]
 
-      // Fetch full records with photos
-      const records: RecordWithPhotos[] = []
+      // Fetch full records with photos + author info
+      const records: FriendsFeedRecord[] = []
       for (const recordId of uniqueRecordIds) {
         const record = await recordRepo.getById(recordId)
         if (record && record.userId !== user.id) {
-          records.push(record)
+          // Fetch author info
+          const { data: author } = await supabase
+            .from("users")
+            .select("nickname, avatar_url")
+            .eq("id", record.userId)
+            .single()
+
+          records.push({
+            ...record,
+            authorNickname: author?.nickname ?? "익명",
+            authorAvatarUrl: author?.avatar_url ?? null,
+          })
         }
       }
 

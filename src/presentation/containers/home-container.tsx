@@ -8,7 +8,9 @@ import { useTasteDna } from "@/application/hooks/use-taste-dna"
 import { useStyleDna } from "@/application/hooks/use-style-dna"
 import { useCalendarRecords } from "@/application/hooks/use-calendar-records"
 import { useTodaysPick } from "@/application/hooks/use-todays-pick"
+import { useFriendsFeed } from "@/application/hooks/use-friends-feed"
 import { TodaysPickCard } from "@/presentation/components/home/todays-pick-card"
+import { FriendsFeedCard } from "@/presentation/components/home/friends-feed-card"
 import { HomeProfileCard } from "@/presentation/components/home/home-profile-card"
 import { PhotoCalendar } from "@/presentation/components/home/photo-calendar"
 import { HomeMapSection } from "@/presentation/components/home/home-map-section"
@@ -42,6 +44,7 @@ export function HomeContainer() {
   }, [tasteDnaRestaurant])
 
   const { pick, reason, refresh } = useTodaysPick(user?.id ?? null, tasteDnaTopAxis)
+  const { records: friendsRecords, isLoading: friendsLoading } = useFriendsFeed(5)
 
   const handleMonthChange = (year: number, month: number) => {
     setCalendarYear(year)
@@ -96,13 +99,36 @@ export function HomeContainer() {
         onRecordClick={handleRecordClick}
       />
 
-      {/* 5. Friends Feed (placeholder - no data hook yet) */}
+      {/* 5. Friends Feed */}
       <SectionHeader title="친구 피드" subtitle="버블 멤버의 최근 기록" />
-      <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)] text-center">
-        <p className="text-sm text-neutral-400">
-          버블에 가입하면 친구들의 기록을 볼 수 있어요
-        </p>
-      </div>
+      {friendsLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-neutral-100" />
+          ))}
+        </div>
+      ) : friendsRecords.length === 0 ? (
+        <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)] text-center">
+          <p className="text-sm text-neutral-400">
+            버블에 가입하면 친구들의 기록을 볼 수 있어요
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {friendsRecords.map((record) => (
+            <FriendsFeedCard
+              key={record.id}
+              nickname={record.authorNickname}
+              profileImageUrl={record.authorAvatarUrl}
+              recordTitle={record.menuName ?? record.restaurant?.name ?? "무제"}
+              thumbnailUrl={record.photos[0]?.thumbnailUrl ?? null}
+              recordType={record.recordType}
+              createdAt={record.createdAt}
+              onClick={() => router.push(ROUTES.recordDetail(record.id))}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

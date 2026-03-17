@@ -27,6 +27,7 @@ export interface NearbyPlace {
   externalId: string
   name: string
   address: string
+  addressName: string
   categoryName: string
   phone: string
   latitude: number
@@ -68,6 +69,7 @@ export async function searchNearbyRestaurants(
     externalId: doc.id,
     name: doc.place_name,
     address: doc.road_address_name || doc.address_name,
+    addressName: doc.address_name,
     categoryName: doc.category_name,
     phone: doc.phone,
     latitude: Number(doc.y),
@@ -100,6 +102,7 @@ export async function searchRestaurantsByKeyword(
     externalId: doc.id,
     name: doc.place_name,
     address: doc.road_address_name || doc.address_name,
+    addressName: doc.address_name,
     categoryName: doc.category_name,
     phone: doc.phone,
     latitude: Number(doc.y),
