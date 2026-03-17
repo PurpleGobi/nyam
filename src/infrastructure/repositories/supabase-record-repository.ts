@@ -1,6 +1,6 @@
 import { createClient } from "@/infrastructure/supabase/client"
 import type { FoodRecord, RecordPhoto, RecordTasteProfile, RecordAiAnalysis, RecordWithPhotos } from "@/domain/entities/record"
-import type { RecordRepository, CreateRecordInput, RecordFilters } from "@/domain/repositories/record-repository"
+import type { RecordRepository, CreateRecordInput, RecordFilters, UpdateAiAnalysisInput, UpdateTasteProfileInput, UpdateJournalInput } from "@/domain/repositories/record-repository"
 
 function calculateOverallRating(input: CreateRecordInput): number | null {
   if (input.recordType === "restaurant") {
@@ -157,12 +157,19 @@ export class SupabaseRecordRepository implements RecordRepository {
     const updateData: Record<string, unknown> = {}
     if (data.menuName !== undefined) updateData.menu_name = data.menuName
     if (data.genre !== undefined) updateData.genre = data.genre
+    if (data.subGenre !== undefined) updateData.sub_genre = data.subGenre
     if (data.ratingTaste !== undefined) updateData.rating_taste = data.ratingTaste
     if (data.ratingValue !== undefined) updateData.rating_value = data.ratingValue
     if (data.ratingService !== undefined) updateData.rating_service = data.ratingService
     if (data.ratingAtmosphere !== undefined) updateData.rating_atmosphere = data.ratingAtmosphere
     if (data.ratingCleanliness !== undefined) updateData.rating_cleanliness = data.ratingCleanliness
     if (data.ratingPortion !== undefined) updateData.rating_portion = data.ratingPortion
+    if (data.ratingBalance !== undefined) updateData.rating_balance = data.ratingBalance
+    if (data.ratingDifficulty !== undefined) updateData.rating_difficulty = data.ratingDifficulty
+    if (data.ratingTimeSpent !== undefined) updateData.rating_time_spent = data.ratingTimeSpent
+    if (data.ratingReproducibility !== undefined) updateData.rating_reproducibility = data.ratingReproducibility
+    if (data.ratingPlating !== undefined) updateData.rating_plating = data.ratingPlating
+    if (data.ratingMaterialCost !== undefined) updateData.rating_material_cost = data.ratingMaterialCost
     if (data.comment !== undefined) updateData.comment = data.comment
     if (data.tags !== undefined) updateData.tags = data.tags
     if (data.flavorTags !== undefined) updateData.flavor_tags = data.flavorTags
@@ -170,6 +177,22 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (data.atmosphereTags !== undefined) updateData.atmosphere_tags = data.atmosphereTags
     if (data.visibility !== undefined) updateData.visibility = data.visibility
     if (data.scene !== undefined) updateData.scene = data.scene
+    if (data.companionCount !== undefined) updateData.companion_count = data.companionCount
+    if (data.totalCost !== undefined) updateData.total_cost = data.totalCost
+    if (data.pairingFood !== undefined) updateData.pairing_food = data.pairingFood
+    if (data.purchasePrice !== undefined) updateData.purchase_price = data.purchasePrice
+
+    // Recalculate overall rating if any rating field changed
+    const ratingFields = [
+      "ratingTaste", "ratingValue", "ratingService", "ratingAtmosphere",
+      "ratingCleanliness", "ratingPortion", "ratingBalance", "ratingDifficulty",
+      "ratingTimeSpent", "ratingReproducibility", "ratingPlating", "ratingMaterialCost",
+    ] as const
+    const hasRatingChange = ratingFields.some((f) => data[f] !== undefined)
+    if (hasRatingChange) {
+      const overall = calculateOverallRating({ ...data, recordType: data.recordType ?? "restaurant" } as CreateRecordInput)
+      if (overall !== null) updateData.rating_overall = overall
+    }
 
     const { data: result, error } = await this.supabase
       .from("records")
@@ -301,5 +324,83 @@ export class SupabaseRecordRepository implements RecordRepository {
     const startDate = new Date(year, month - 1, 1).toISOString()
     const endDate = new Date(year, month, 0, 23, 59, 59).toISOString()
     return this.list({ userId, fromDate: startDate, toDate: endDate })
+  }
+
+  async updateAiAnalysis(recordId: string, data: UpdateAiAnalysisInput): Promise<void> {
+    const updateData: Record<string, unknown> = {}
+    if (data.identifiedRestaurant !== undefined) updateData.identified_restaurant = data.identifiedRestaurant
+    if (data.orderedItems !== undefined) updateData.ordered_items = data.orderedItems
+    if (data.extractedMenuItems !== undefined) updateData.extracted_menu_items = data.extractedMenuItems
+    if (data.wineInfo !== undefined) updateData.wine_info = data.wineInfo
+    if (data.wineTastingAi !== undefined) updateData.wine_tasting_ai = data.wineTastingAi
+
+    // Update the latest AI analysis row
+    const { error } = await this.supabase
+      .from("record_ai_analyses")
+      .update(updateData)
+      .eq("record_id", recordId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    if (error) throw new Error(`Failed to update AI analysis: ${error.message}`)
+  }
+
+  async updateTasteProfile(recordId: string, data: UpdateTasteProfileInput): Promise<void> {
+    const updateData: Record<string, unknown> = { source: "manual" }
+    if (data.spicy !== undefined) updateData.spicy = data.spicy
+    if (data.sweet !== undefined) updateData.sweet = data.sweet
+    if (data.salty !== undefined) updateData.salty = data.salty
+    if (data.sour !== undefined) updateData.sour = data.sour
+    if (data.umami !== undefined) updateData.umami = data.umami
+    if (data.rich !== undefined) updateData.rich = data.rich
+    if (data.wineAcidity !== undefined) updateData.wine_acidity = data.wineAcidity
+    if (data.wineBody !== undefined) updateData.wine_body = data.wineBody
+    if (data.wineTannin !== undefined) updateData.wine_tannin = data.wineTannin
+    if (data.wineSweetness !== undefined) updateData.wine_sweetness = data.wineSweetness
+    if (data.wineBalance !== undefined) updateData.wine_balance = data.wineBalance
+    if (data.wineFinish !== undefined) updateData.wine_finish = data.wineFinish
+    if (data.wineAroma !== undefined) updateData.wine_aroma = data.wineAroma
+    if (data.wineAcidityUser !== undefined) updateData.wine_acidity_user = data.wineAcidityUser
+    if (data.wineBodyUser !== undefined) updateData.wine_body_user = data.wineBodyUser
+    if (data.wineTanninUser !== undefined) updateData.wine_tannin_user = data.wineTanninUser
+    if (data.wineSweetnessUser !== undefined) updateData.wine_sweetness_user = data.wineSweetnessUser
+    if (data.wineBalanceUser !== undefined) updateData.wine_balance_user = data.wineBalanceUser
+    if (data.wineFinishUser !== undefined) updateData.wine_finish_user = data.wineFinishUser
+    if (data.wineAromaUser !== undefined) updateData.wine_aroma_user = data.wineAromaUser
+
+    // Upsert: update existing or create new
+    const { data: existing } = await this.supabase
+      .from("record_taste_profiles")
+      .select("id")
+      .eq("record_id", recordId)
+      .single()
+
+    if (existing) {
+      const { error } = await this.supabase
+        .from("record_taste_profiles")
+        .update(updateData)
+        .eq("record_id", recordId)
+
+      if (error) throw new Error(`Failed to update taste profile: ${error.message}`)
+    } else {
+      const { error } = await this.supabase
+        .from("record_taste_profiles")
+        .insert({ record_id: recordId, ...updateData })
+
+      if (error) throw new Error(`Failed to create taste profile: ${error.message}`)
+    }
+  }
+
+  async updateJournal(recordId: string, data: UpdateJournalInput): Promise<void> {
+    const updateData: Record<string, unknown> = {}
+    if (data.blogTitle !== undefined) updateData.blog_title = data.blogTitle
+    if (data.blogContent !== undefined) updateData.blog_content = data.blogContent
+
+    const { error } = await this.supabase
+      .from("record_journals")
+      .update(updateData)
+      .eq("record_id", recordId)
+
+    if (error) throw new Error(`Failed to update journal: ${error.message}`)
   }
 }

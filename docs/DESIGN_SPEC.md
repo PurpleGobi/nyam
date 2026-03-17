@@ -331,7 +331,7 @@ Taste DNA 시각화. SVG 기반.
 **Wine DNA**: 7축 다각형 (산미/바디감/타닌/당도/균형/여운/향), 색상 = `#6B4C8A`
 **Cooking DNA**: 6축 다각형 (식당과 동일 축), 색상 = `primary-500` (프로필 페이지에서만)
 
-> **Note**: 홈 화면 코드의 `WINE_AXES`는 현재 6축(레거시)이며, TECH_SPEC 기준 7축(WSET)으로 마이그레이션 필요. SSOT는 PRD/TECH_SPEC의 7축이다.
+> **Note**: 홈 화면·프로필 모두 Wine DNA 7축(WSET)으로 구현 완료 (2026-03-18 확인). PRD/TECH_SPEC과 일치.
 
 ### 4-5. 사진 캐러셀 (PhotoCarousel)
 
@@ -531,13 +531,88 @@ Animation: slide-up + fade-in, 3초 후 자동 소멸
 
 ### 5-4. 기록 수정 (`/records/[id]/edit`)
 
-기록 생성과 동일한 RatingScales 컴포넌트 재사용. 차이점:
-- 메뉴명/장르: 편집 가능 텍스트 입력
-- 코멘트: textarea
-- 태그: 읽기 전용 칩
-- 공개 범위: 3-way 세그먼트 (나만/버블/전체)
-- 사진: 수정 불가 안내 텍스트
-- 저장 버튼: Primary 버튼
+기록 생성과 동일한 RatingScales 컴포넌트 재사용. AI 분석 데이터와 사용자 입력 데이터를 모두 표시하되, 수정 가능/불가를 명확히 구분한다.
+
+#### 전체 구조
+
+```
+┌──────────────────────────────────────┐
+│ [←] 기록 수정     Phase N · 완성도 N% │
+├──────────────────────────────────────┤
+│ 사진 프리뷰 (가로 스크롤, 수정 불가)     │
+│ 각 사진 하단 AI 분류 뱃지               │
+│ "사진은 수정할 수 없습니다" 안내         │
+├──────────────────────────────────────┤
+│ [Store] 기본 정보                     │
+│ 상호명[R] / 메뉴명 / 장르 / 보조장르    │
+│ 상황 / 공개범위 / 동행인원 / 총비용     │
+│ 1인당비용[RO] / 방문시간               │
+│ [Wine] 페어링 / 구입가                │
+│ 맛태그 / 식감태그 / 분위기태그          │
+│ 위치[RO] / 코멘트                     │
+├──────────────────────────────────────┤
+│ [Star] 평가                           │
+│ RatingScales (타입별)                  │
+│ 종합 점수[RO] (자동 계산)               │
+├──────────────────────────────────────┤
+│ [Brain] AI 분석 결과                   │
+│ 신뢰도 뱃지 · 추정 방문시간[RO]         │
+│ [R] 영수증 분석[RO] / 동행 추정[RO]    │
+│ [R] AI 추정 메뉴 / 메뉴판 OCR          │
+│ [R/C] 맛 프로필 6축 + 출처 뱃지        │
+│ [W] 와인 정보 + AI추정가 + 평론가[RO]  │
+│ [W] AI 테이스팅 7축 / 내 테이스팅 7축   │
+│ 사진 분류 결과[RO] / 맛 요약[RO]       │
+├──────────────────────────────────────┤
+│ [BookOpen] 블로그 (Phase 3+)          │
+│ 제목 / 본문                            │
+├──────────────────────────────────────┤
+│ [Info] 시스템 정보 (기본 접힘)[RO]      │
+│ Phase 상태 / 완성도 / Elo점수 / 생성일  │
+├──────────────────────────────────────┤
+│ [RotateCcw] AI 재분석 버튼             │
+├──────────────────────────────────────┤
+│ [수정하기] Primary 버튼 (fixed bottom)  │
+└──────────────────────────────────────┘
+[R]=Restaurant [W]=Wine [C]=Cooking [RO]=읽기전용
+```
+
+#### 필드 분류
+
+**수정 가능 필드**:
+- 기본: menuName, genre, subGenre, scene, visibility, companionCount, totalCost, visitTime, comment
+- 태그: flavorTags, textureTags, atmosphereTags
+- 와인 전용: pairingFood, purchasePrice
+- 평가: rating 전체 (타입별 슬라이더)
+- AI 분석 수정: aiRestaurantName, aiOrderedItems, aiMenuItems, tasteValues(6축)
+- 와인 AI: wineInfo(name/vintage/winery/origin/variety/estimatedPriceKrw), wineTastingAi(7축), wineUserWset(7축)
+- 블로그: blogTitle, blogContent (Phase 3+)
+
+**읽기 전용 필드** (비활성 스타일 + 터치 시 사유 안내 toast):
+- 자동 계산: ratingOverall, pricePerPerson
+- AI 분석: receiptData, companionData, photoClassifications, estimatedVisitTime, confidenceScore
+- 외부 DB: wineInfo.criticScore
+- 시스템: phaseStatus, completenessScore, scaledRating, comparisonCount, createdAt, locationLat/Lng
+
+#### 읽기 전용 스타일
+
+```
+배경: bg-neutral-50, 텍스트: text-neutral-400, 커서: cursor-not-allowed
+터치 시 toast로 비활성 사유 안내 (동일 메시지 중복 방지)
+```
+
+#### 데이터 출처 뱃지
+
+| 뱃지 | 스타일 | 대상 |
+|------|--------|------|
+| AI 분석 | `bg-blue-50 text-blue-600 text-[10px]` | AI 추출값 |
+| 직접 입력 | `bg-green-50 text-green-600 text-[10px]` | 사용자 입력 |
+| 자동 계산 | `bg-neutral-100 text-neutral-500 text-[10px]` | ratingOverall 등 |
+| 외부 DB | `bg-purple-50 text-purple-600 text-[10px]` | criticScore 등 |
+
+#### AI 미추출 빈 상태
+
+값이 null인 AI 필드: `text-xs text-neutral-400`로 "AI가 [항목]을 인식하지 못했습니다" 표시
 
 ### 5-5. Phase 2 완성 (`/records/[id]/complete`)
 

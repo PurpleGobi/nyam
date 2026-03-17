@@ -47,6 +47,42 @@ export interface RecordFilters {
   offset?: number
 }
 
+export interface UpdateAiAnalysisInput {
+  identifiedRestaurant?: RecordAiAnalysis["identifiedRestaurant"]
+  orderedItems?: RecordAiAnalysis["orderedItems"]
+  extractedMenuItems?: RecordAiAnalysis["extractedMenuItems"]
+  wineInfo?: RecordAiAnalysis["wineInfo"]
+  wineTastingAi?: RecordAiAnalysis["wineTastingAi"]
+}
+
+export interface UpdateTasteProfileInput {
+  spicy?: number | null
+  sweet?: number | null
+  salty?: number | null
+  sour?: number | null
+  umami?: number | null
+  rich?: number | null
+  wineAcidity?: number | null
+  wineBody?: number | null
+  wineTannin?: number | null
+  wineSweetness?: number | null
+  wineBalance?: number | null
+  wineFinish?: number | null
+  wineAroma?: number | null
+  wineAcidityUser?: number | null
+  wineBodyUser?: number | null
+  wineTanninUser?: number | null
+  wineSweetnessUser?: number | null
+  wineBalanceUser?: number | null
+  wineFinishUser?: number | null
+  wineAromaUser?: number | null
+}
+
+export interface UpdateJournalInput {
+  blogTitle?: string | null
+  blogContent?: string | null
+}
+
 export interface RecordRepository {
   create(input: CreateRecordInput): Promise<FoodRecord>
   getById(id: string): Promise<RecordWithPhotos | null>
@@ -58,4 +94,7 @@ export interface RecordRepository {
   getTasteProfile(recordId: string): Promise<RecordTasteProfile | null>
   getAiAnalysis(recordId: string): Promise<RecordAiAnalysis | null>
   getByMonth(userId: string, year: number, month: number): Promise<RecordWithPhotos[]>
+  updateAiAnalysis(recordId: string, data: UpdateAiAnalysisInput): Promise<void>
+  updateTasteProfile(recordId: string, data: UpdateTasteProfileInput): Promise<void>
+  updateJournal(recordId: string, data: UpdateJournalInput): Promise<void>
 }
