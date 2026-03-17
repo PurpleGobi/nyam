@@ -2,8 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import useSWR from "swr"
+import { createClient } from "@/infrastructure/supabase/client"
 import { getRecordRepository } from "@/di/repositories"
 import type { RecordWithPhotos, RecordTasteProfile, RecordAiAnalysis } from "@/domain/entities/record"
+
+export interface RecordJournal {
+  id: string
+  recordId: string
+  blogTitle: string | null
+  blogContent: string | null
+  blogSections: Array<{ heading: string; content: string; photoIndex?: number }> | null
+  tags: string[]
+  overallImpression: string | null
+  published: boolean
+}
+
+export interface RelatedVisit {
+  id: string
+  createdAt: string
+  menuName: string | null
+}
 
 const ANALYSIS_TIMEOUT_MS = 90_000
 
@@ -40,6 +58,52 @@ export function useRecordDetail(recordId: string | null) {
     () => {
       if (!recordId) return null
       return getRecordRepository().getAiAnalysis(recordId)
+    },
+  )
+
+  const supabase = createClient()
+
+  // Fetch journal (blog) data when phase >= 3
+  const { data: journal } = useSWR<RecordJournal | null>(
+    record && record.phaseStatus >= 3 ? `journal-${recordId}` : null,
+    async () => {
+      if (!recordId) return null
+      const { data, error } = await supabase
+        .from("record_journals")
+        .select("*")
+        .eq("record_id", recordId)
+        .single()
+      if (error || !data) return null
+      return {
+        id: data.id,
+        recordId: data.record_id,
+        blogTitle: data.blog_title,
+        blogContent: data.blog_content,
+        blogSections: data.blog_sections as RecordJournal["blogSections"],
+        tags: (data.blog_sections as Array<Record<string, unknown>> | null)
+          ?.flatMap((s) => (s.tags as string[]) ?? []) ?? [],
+        overallImpression: data.blog_content,
+        published: data.published,
+      }
+    },
+  )
+
+  // Fetch related visits for same restaurant
+  const { data: relatedVisits } = useSWR<RelatedVisit[]>(
+    record?.restaurantId ? `related-visits-${record.restaurantId}-${recordId}` : null,
+    async () => {
+      if (!record?.restaurantId) return []
+      const { data, error } = await supabase
+        .from("records")
+        .select("id, created_at, menu_name")
+        .eq("restaurant_id", record.restaurantId)
+        .order("created_at", { ascending: false })
+      if (error || !data) return []
+      return data.map((r) => ({
+        id: r.id as string,
+        createdAt: r.created_at as string,
+        menuName: r.menu_name as string | null,
+      }))
     },
   )
 
@@ -112,6 +176,8 @@ export function useRecordDetail(recordId: string | null) {
     record: record ?? null,
     tasteProfile: tasteProfile ?? null,
     aiAnalysis: aiAnalysis ?? null,
+    journal: journal ?? null,
+    relatedVisits: relatedVisits ?? [],
     isLoading,
     isRetrying,
     isAnalysisTimedOut,

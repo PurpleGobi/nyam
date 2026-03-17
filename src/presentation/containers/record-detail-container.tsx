@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from "react"
 import Link from "next/link"
-import { ArrowLeft, Edit, RefreshCw, Sparkles } from "lucide-react"
+import { ArrowLeft, Calendar, Edit, RefreshCw, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
 import { PhotoPicker } from "@/presentation/components/record/photo-picker"
 import { RatingBars } from "@/presentation/components/record/rating-bars"
 import { CategoryTag } from "@/presentation/components/record/category-tag"
+import { BlogPreview } from "@/presentation/components/capture/blog-preview"
 import { ROUTES } from "@/shared/constants/routes"
 
 interface RecordDetailContainerProps {
@@ -15,7 +16,7 @@ interface RecordDetailContainerProps {
 }
 
 export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) {
-  const { record, tasteProfile, isLoading, isRetrying, isAnalysisTimedOut, retryAnalysis } = useRecordDetail(recordId)
+  const { record, tasteProfile, journal, relatedVisits, isLoading, isRetrying, isAnalysisTimedOut, retryAnalysis } = useRecordDetail(recordId)
   const prevPhaseRef = useRef<number | null>(null)
 
   // Show toast when AI analysis completes (phase 1 → 2)
@@ -138,6 +139,54 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         {record.comment && (
           <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
             <p className="text-sm text-neutral-600">{record.comment}</p>
+          </div>
+        )}
+
+        {/* Multi-visit banner (8-4-0) */}
+        {relatedVisits.length >= 2 && (
+          <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-4 w-4 text-primary-500" />
+              <span className="text-sm font-semibold text-neutral-700">
+                {relatedVisits.length}회 방문
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {relatedVisits.map((visit) => (
+                <Link
+                  key={visit.id}
+                  href={ROUTES.recordDetail(visit.id)}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors ${
+                    visit.id === record.id
+                      ? "bg-primary-50 text-primary-600 font-medium"
+                      : "bg-neutral-50 text-neutral-500 hover:bg-neutral-100"
+                  }`}
+                >
+                  <span>
+                    {new Date(visit.createdAt).toLocaleDateString("ko-KR", {
+                      year: "numeric", month: "short", day: "numeric",
+                    })}
+                  </span>
+                  {visit.menuName && <span className="truncate ml-2 max-w-[120px]">{visit.menuName}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Phase 2 Blog inline (8-4-6b) */}
+        {record.phaseStatus >= 3 && journal?.blogSections && journal.blogSections.length > 0 && (
+          <div className="rounded-2xl bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+            <BlogPreview
+              review={{
+                title: journal.blogTitle ?? record.menuName ?? "리뷰",
+                summary: "",
+                sections: journal.blogSections,
+                tags: journal.tags,
+                overallImpression: journal.overallImpression ?? "",
+              }}
+              photos={record.photos.map((p) => p.photoUrl)}
+            />
           </div>
         )}
 

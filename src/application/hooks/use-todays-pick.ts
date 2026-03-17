@@ -1,101 +1,228 @@
 "use client"
 
+import { useCallback, useMemo, useState } from "react"
 import useSWR from "swr"
 import { createClient } from "@/infrastructure/supabase/client"
 import type { RecordWithPhotos } from "@/domain/entities/record"
 
-export function useTodaysPick(userId: string | null) {
+interface ReasonPreset {
+  key: string
+  text: string
+  filter: (record: RecordWithPhotos, tasteDnaTopAxis: string | null) => boolean
+}
+
+export interface PickReason {
+  key: string
+  text: string
+}
+
+export interface TodaysPickResult {
+  pick: RecordWithPhotos | null
+  reason: PickReason | null
+  refresh: () => void
+  isLoading: boolean
+}
+
+const TIME_GENRES: Record<string, string[]> = {
+  morning: ["cafe", "salad", "lunchbox"],
+  lunch: ["korean", "japanese", "snack", "stew", "lunchbox", "katsu"],
+  afternoon: ["cafe"],
+  dinner: ["bbq", "western", "chinese", "seafood", "korean"],
+  latenight: ["chicken", "jokbal", "asian", "snack"],
+}
+
+function getTimeSlot(): string {
+  const hour = new Date().getHours()
+  if (hour < 10) return "morning"
+  if (hour < 14) return "lunch"
+  if (hour < 17) return "afternoon"
+  if (hour < 21) return "dinner"
+  return "latenight"
+}
+
+function buildReasonPresets(timeSlot: string): ReasonPreset[] {
+  const genres = TIME_GENRES[timeSlot] ?? []
+  const genreLabel = genres[0] ?? ""
+
+  return [
+    {
+      key: "high_rating",
+      text: "만족도가 높았어요",
+      filter: (r) => (r.ratingOverall ?? 0) >= 80,
+    },
+    {
+      key: "genre_match",
+      text: `${genreLabel} 맛집`,
+      filter: (r) => r.genre != null && genres.includes(r.genre),
+    },
+    {
+      key: "long_ago",
+      text: "오래 안 갔던 곳",
+      filter: (r) => {
+        const twoMonthsAgo = Date.now() - 60 * 24 * 60 * 60 * 1000
+        return new Date(r.createdAt).getTime() < twoMonthsAgo
+      },
+    },
+    {
+      key: "dna_match",
+      text: "이 맛 좋아할걸",
+      filter: (r, topAxis) => {
+        if (!topAxis) return false
+        const axisToTag: Record<string, string[]> = {
+          spicy: ["매운", "spicy", "辣"],
+          sweet: ["달콤", "sweet"],
+          salty: ["짭짤", "salty"],
+          sour: ["새콤", "sour"],
+          umami: ["감칠맛", "umami"],
+          rich: ["풍미", "rich", "진한"],
+        }
+        const keywords = axisToTag[topAxis] ?? []
+        const allTags = [...r.flavorTags, ...r.textureTags].map((t) => t.toLowerCase())
+        return keywords.some((kw) => allTags.some((t) => t.includes(kw)))
+      },
+    },
+    {
+      key: "random",
+      text: "오늘의 추천",
+      filter: () => true,
+    },
+  ]
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | null = null): TodaysPickResult {
   const supabase = createClient()
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const { data, isLoading } = useSWR(
-    userId ? `todays-pick-${userId}` : null,
-    async (): Promise<RecordWithPhotos | null> => {
-      if (!userId) return null
+  const { data: allRecords, isLoading } = useSWR(
+    userId ? `todays-pick-records-${userId}` : null,
+    async (): Promise<RecordWithPhotos[]> => {
+      if (!userId) return []
 
-      // Get a random recent record with photos
       const { data: records } = await supabase
         .from("records")
         .select("*, record_photos(*), restaurants(name, address)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(10)
 
-      if (!records?.length) return null
+      if (!records?.length) return []
 
-      const withPhotos = records.filter(
-        (r) => (r.record_photos as unknown[])?.length > 0,
-      )
+      return records.map((picked) => {
+        const photos = ((picked.record_photos as Array<Record<string, unknown>>) ?? [])
+          .map((p) => ({
+            id: p.id as string,
+            recordId: p.record_id as string,
+            photoUrl: p.photo_url as string,
+            thumbnailUrl: p.thumbnail_url as string | null,
+            orderIndex: p.order_index as number,
+            aiLabels: (p.ai_labels as string[]) ?? [],
+          }))
+          .sort((a, b) => a.orderIndex - b.orderIndex)
 
-      const picked = withPhotos.length > 0
-        ? withPhotos[Math.floor(Math.random() * withPhotos.length)]
-        : records[0]
+        const restaurant = picked.restaurants
+          ? { name: (picked.restaurants as Record<string, unknown>).name as string, address: (picked.restaurants as Record<string, unknown>).address as string | null }
+          : null
 
-      const photos = ((picked.record_photos as Array<Record<string, unknown>>) ?? [])
-        .map((p) => ({
-          id: p.id as string,
-          recordId: p.record_id as string,
-          photoUrl: p.photo_url as string,
-          thumbnailUrl: p.thumbnail_url as string | null,
-          orderIndex: p.order_index as number,
-          aiLabels: (p.ai_labels as string[]) ?? [],
-        }))
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-
-      const restaurant = picked.restaurants
-        ? { name: (picked.restaurants as Record<string, unknown>).name as string, address: (picked.restaurants as Record<string, unknown>).address as string | null }
-        : null
-
-      return {
-        id: picked.id,
-        userId: picked.user_id,
-        restaurantId: picked.restaurant_id,
-        recordType: picked.record_type,
-        menuName: picked.menu_name,
-        genre: picked.genre,
-        subGenre: picked.sub_genre,
-        ratingOverall: picked.rating_overall,
-        ratingTaste: picked.rating_taste,
-        ratingValue: picked.rating_value,
-        ratingService: picked.rating_service,
-        ratingAtmosphere: picked.rating_atmosphere,
-        ratingCleanliness: picked.rating_cleanliness,
-        ratingPortion: picked.rating_portion,
-        ratingBalance: picked.rating_balance,
-        ratingDifficulty: picked.rating_difficulty,
-        ratingTimeSpent: picked.rating_time_spent,
-        ratingReproducibility: picked.rating_reproducibility,
-        ratingPlating: picked.rating_plating,
-        ratingMaterialCost: picked.rating_material_cost,
-        comment: picked.comment,
-        tags: picked.tags ?? [],
-        flavorTags: picked.flavor_tags ?? [],
-        textureTags: picked.texture_tags ?? [],
-        atmosphereTags: picked.atmosphere_tags ?? [],
-        visibility: picked.visibility,
-        aiRecognized: picked.ai_recognized,
-        completenessScore: picked.completeness_score,
-        locationLat: picked.location_lat,
-        locationLng: picked.location_lng,
-        pricePerPerson: picked.price_per_person,
-        phaseStatus: picked.phase_status,
-        phase1CompletedAt: picked.phase1_completed_at,
-        phase2CompletedAt: picked.phase2_completed_at,
-        phase3CompletedAt: picked.phase3_completed_at,
-        scaledRating: picked.scaled_rating,
-        comparisonCount: picked.comparison_count,
-        scene: picked.scene,
-        pairingFood: picked.pairing_food,
-        purchasePrice: picked.purchase_price,
-        visitTime: picked.visit_time,
-        companionCount: picked.companion_count,
-        totalCost: picked.total_cost,
-        createdAt: picked.created_at,
-        photos,
-        restaurant,
-      }
+        return {
+          id: picked.id,
+          userId: picked.user_id,
+          restaurantId: picked.restaurant_id,
+          recordType: picked.record_type,
+          menuName: picked.menu_name,
+          genre: picked.genre,
+          subGenre: picked.sub_genre,
+          ratingOverall: picked.rating_overall,
+          ratingTaste: picked.rating_taste,
+          ratingValue: picked.rating_value,
+          ratingService: picked.rating_service,
+          ratingAtmosphere: picked.rating_atmosphere,
+          ratingCleanliness: picked.rating_cleanliness,
+          ratingPortion: picked.rating_portion,
+          ratingBalance: picked.rating_balance,
+          ratingDifficulty: picked.rating_difficulty,
+          ratingTimeSpent: picked.rating_time_spent,
+          ratingReproducibility: picked.rating_reproducibility,
+          ratingPlating: picked.rating_plating,
+          ratingMaterialCost: picked.rating_material_cost,
+          comment: picked.comment,
+          tags: picked.tags ?? [],
+          flavorTags: picked.flavor_tags ?? [],
+          textureTags: picked.texture_tags ?? [],
+          atmosphereTags: picked.atmosphere_tags ?? [],
+          visibility: picked.visibility,
+          aiRecognized: picked.ai_recognized,
+          completenessScore: picked.completeness_score,
+          locationLat: picked.location_lat,
+          locationLng: picked.location_lng,
+          pricePerPerson: picked.price_per_person,
+          phaseStatus: picked.phase_status,
+          phase1CompletedAt: picked.phase1_completed_at,
+          phase2CompletedAt: picked.phase2_completed_at,
+          phase3CompletedAt: picked.phase3_completed_at,
+          scaledRating: picked.scaled_rating,
+          comparisonCount: picked.comparison_count,
+          scene: picked.scene,
+          pairingFood: picked.pairing_food,
+          purchasePrice: picked.purchase_price,
+          visitTime: picked.visit_time,
+          companionCount: picked.companion_count,
+          totalCost: picked.total_cost,
+          createdAt: picked.created_at,
+          photos,
+          restaurant,
+        }
+      })
     },
     { revalidateOnFocus: false },
   )
 
-  return { pick: data ?? null, isLoading }
+  const result = useMemo(() => {
+    const records = allRecords ?? []
+    if (records.length < 5) return { pick: null, reason: null }
+
+    const timeSlot = getTimeSlot()
+    const genres = TIME_GENRES[timeSlot] ?? []
+
+    // Filter by time-slot genre, prioritize records with photos
+    const genreFiltered = records.filter((r) => r.genre != null && genres.includes(r.genre))
+    const candidates = genreFiltered.length > 0 ? genreFiltered : records
+    const withPhotos = candidates.filter((r) => r.photos.length > 0)
+    const pool = withPhotos.length > 0 ? withPhotos : candidates
+
+    // Try presets in random order
+    const presets = buildReasonPresets(timeSlot)
+    const shuffledPresets = shuffle(presets)
+
+    for (const preset of shuffledPresets) {
+      const matched = pool.filter((r) => preset.filter(r, tasteDnaTopAxis))
+      if (matched.length > 0) {
+        const pick = matched[Math.floor(Math.random() * matched.length)]
+        return { pick, reason: { key: preset.key, text: preset.text } }
+      }
+    }
+
+    // Fallback: random from full pool
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    return { pick, reason: { key: "random", text: "오늘의 추천" } }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRecords, tasteDnaTopAxis, refreshKey])
+
+  const refresh = useCallback(() => {
+    setRefreshKey((k) => k + 1)
+  }, [])
+
+  return {
+    pick: result.pick,
+    reason: result.reason,
+    refresh,
+    isLoading,
+  }
 }

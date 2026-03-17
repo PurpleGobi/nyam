@@ -1,14 +1,18 @@
 import Image from "next/image"
 import Link from "next/link"
+import { ChevronRight } from "lucide-react"
 import { ROUTES } from "@/shared/constants/routes"
 import type { RecordWithPhotos } from "@/domain/entities/record"
+import type { PickReason } from "@/application/hooks/use-todays-pick"
 
 interface TodaysPickCardProps {
-  record: RecordWithPhotos | null
+  pick: RecordWithPhotos | null
+  reason: PickReason | null
+  onRefresh: () => void
 }
 
-export function TodaysPickCard({ record }: TodaysPickCardProps) {
-  if (!record) {
+export function TodaysPickCard({ pick, reason, onRefresh }: TodaysPickCardProps) {
+  if (!pick) {
     return (
       <div className="rounded-2xl bg-primary-50 p-6 text-center">
         <p className="text-lg font-semibold text-neutral-700">오늘의 Pick</p>
@@ -25,41 +29,51 @@ export function TodaysPickCard({ record }: TodaysPickCardProps) {
     )
   }
 
-  const firstPhoto = record.photos[0]
+  const firstPhoto = pick.photos[0]
+  const displayName = pick.restaurant?.name ?? pick.menuName ?? "기록"
 
   return (
-    <Link href={ROUTES.recordDetail(record.id)} className="block">
-      <div className="relative overflow-hidden rounded-2xl shadow-[var(--shadow-md)]">
-        {firstPhoto ? (
-          <div className="relative h-40">
-            <Image
-              src={firstPhoto.photoUrl}
-              alt={record.menuName ?? "Today's Pick"}
-              fill
-              className="object-cover brightness-[0.85]"
-            />
-            <div className="absolute inset-0 flex flex-col justify-end p-4">
-              <p className="text-[10px] font-medium text-white/80 uppercase tracking-wider">
-                Today&apos;s Pick
-              </p>
-              <p className="text-lg font-semibold text-white">
-                {record.menuName ?? record.restaurant?.name ?? "기록"}
-              </p>
-              {record.ratingOverall != null && (
-                <p className="text-sm font-bold text-white">
-                  {Math.round(record.ratingOverall)}점
-                </p>
-              )}
-            </div>
+    <div className="relative overflow-hidden rounded-2xl shadow-[var(--shadow-md)]">
+      {firstPhoto ? (
+        <button type="button" onClick={onRefresh} className="relative block h-40 w-full text-left">
+          <Image
+            src={firstPhoto.photoUrl}
+            alt={displayName}
+            fill
+            className="object-cover brightness-[0.85]"
+          />
+          {reason && (
+            <span className="absolute left-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+              {reason.text}
+            </span>
+          )}
+          <div className="absolute inset-0 flex flex-col justify-end p-4">
+            <h3 className="text-lg font-semibold text-white">{displayName}</h3>
+            {pick.ratingOverall != null && (
+              <span className="mt-0.5 inline-flex w-fit items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+                {Math.round(pick.ratingOverall)}점
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="h-40 bg-primary-50 flex items-center justify-center">
-            <p className="text-sm text-neutral-500">
-              {record.menuName ?? record.restaurant?.name ?? "기록"}
-            </p>
-          </div>
-        )}
-      </div>
-    </Link>
+        </button>
+      ) : (
+        <button type="button" onClick={onRefresh} className="flex h-40 w-full items-center justify-center bg-primary-50 text-left">
+          {reason && (
+            <span className="absolute left-3 top-3 rounded-full bg-neutral-200/60 px-2.5 py-1 text-[10px] font-medium text-neutral-600 backdrop-blur-md">
+              {reason.text}
+            </span>
+          )}
+          <p className="text-sm text-neutral-500">{displayName}</p>
+        </button>
+      )}
+
+      <Link
+        href={ROUTES.recordDetail(pick.id)}
+        className="flex items-center justify-between bg-white px-4 py-2.5"
+      >
+        <span className="text-xs font-medium text-neutral-500">더보기</span>
+        <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+      </Link>
+    </div>
   )
 }

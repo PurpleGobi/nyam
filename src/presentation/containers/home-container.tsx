@@ -24,7 +24,22 @@ export function HomeContainer() {
   const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
   const { recordsByDay, records } = useCalendarRecords(user?.id ?? null, calendarYear, calendarMonth)
-  const { pick } = useTodaysPick(user?.id ?? null)
+  // Derive top taste axis from Taste DNA for dna_match preset
+  const tasteDnaTopAxis = useMemo(() => {
+    if (!tasteDnaRestaurant) return null
+    const axes: Array<{ key: string; value: number }> = [
+      { key: "spicy", value: tasteDnaRestaurant.flavorSpicy },
+      { key: "sweet", value: tasteDnaRestaurant.flavorSweet },
+      { key: "salty", value: tasteDnaRestaurant.flavorSalty },
+      { key: "sour", value: tasteDnaRestaurant.flavorSour },
+      { key: "umami", value: tasteDnaRestaurant.flavorUmami },
+      { key: "rich", value: tasteDnaRestaurant.flavorRich },
+    ]
+    const top = axes.reduce((a, b) => (a.value >= b.value ? a : b))
+    return top.value > 0 ? top.key : null
+  }, [tasteDnaRestaurant])
+
+  const { pick, reason, refresh } = useTodaysPick(user?.id ?? null, tasteDnaTopAxis)
 
   const handleMonthChange = (year: number, month: number) => {
     setCalendarYear(year)
@@ -50,7 +65,7 @@ export function HomeContainer() {
   return (
     <div className="flex flex-col gap-3 px-4 pt-6 pb-4">
       {/* 1. Today's Pick */}
-      <TodaysPickCard record={pick} />
+      <TodaysPickCard pick={pick} reason={reason} onRefresh={refresh} />
 
       {/* 2. Profile + Taste DNA */}
       <HomeProfileCard
