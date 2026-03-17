@@ -6,6 +6,7 @@ export const ROUTES = {
   PROFILE: "/profile",
   LOGIN: "/auth/login",
   AUTH_CALLBACK: "/auth/callback",
+  AUTH_CONSENT: "/auth/consent",
   TERMS_SERVICE: "/terms/service",
   TERMS_PRIVACY: "/terms/privacy",
   NOTIFICATIONS: "/notifications",

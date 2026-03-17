@@ -166,41 +166,40 @@ export function useCreateRecord() {
       }
 
       // Trigger async AI pipeline (fire and forget)
-      setProgress("AI 분석 시작...")
+      setProgress("AI 분석 요청 중...")
       const photoUrls = data.photos.length > 0
         ? (await supabase.from("record_photos").select("photo_url").eq("record_id", record.id)).data?.map((p) => p.photo_url) ?? []
         : []
 
-      if (data.recordType !== "cooking" && photoUrls.length > 0) {
-        fetch("/api/records/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recordId: record.id,
-            photoUrls,
-            location: data.locationLat ? { lat: data.locationLat, lng: data.locationLng } : null,
-          }),
-        }).then(() =>
-          fetch("/api/records/taste-profile", {
+      const runPipeline = async () => {
+        try {
+          if (data.recordType !== "cooking" && photoUrls.length > 0) {
+            await fetch("/api/records/enrich", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                recordId: record.id,
+                photoUrls,
+                location: data.locationLat ? { lat: data.locationLat, lng: data.locationLng } : null,
+              }),
+            }).catch(() => {/* enrich failure is non-fatal */})
+
+            await fetch("/api/records/taste-profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ recordId: record.id }),
+            }).catch(() => {/* taste-profile failure is non-fatal */})
+          }
+        } finally {
+          // post-process always runs to update phase_status
+          await fetch("/api/records/post-process", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ recordId: record.id }),
-          }),
-        ).then(() =>
-          fetch("/api/records/post-process", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ recordId: record.id }),
-          }),
-        ).catch(console.error)
-      } else {
-        // For cooking, go directly to post-process
-        fetch("/api/records/post-process", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: record.id }),
-        }).catch(console.error)
+          }).catch(console.error)
+        }
       }
+      runPipeline()
 
       return record.id
     } finally {

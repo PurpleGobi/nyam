@@ -28,6 +28,7 @@ export class SupabaseUserRepository implements UserRepository {
       authProvider: data.auth_provider,
       isDeactivated: data.is_deactivated,
       deactivatedAt: data.deactivated_at,
+      termsAgreedAt: data.terms_agreed_at,
       createdAt: data.created_at,
       lastActiveAt: data.last_active_at,
     }

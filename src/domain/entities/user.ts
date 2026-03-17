@@ -8,6 +8,7 @@ export interface User {
   authProvider: AuthProvider
   isDeactivated: boolean
   deactivatedAt: string | null
+  termsAgreedAt: string | null
   createdAt: string
   lastActiveAt: string
 }

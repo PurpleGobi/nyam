@@ -25,6 +25,7 @@ export function useProfile(authUserId?: string | null) {
       authProvider: userResult.data.auth_provider,
       isDeactivated: userResult.data.is_deactivated,
       deactivatedAt: userResult.data.deactivated_at,
+      termsAgreedAt: userResult.data.terms_agreed_at,
       createdAt: userResult.data.created_at,
       lastActiveAt: userResult.data.last_active_at,
     } : null

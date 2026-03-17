@@ -119,49 +119,58 @@ export function QuickCaptureContainer() {
 
   const canSave = photos.length > 0
 
+  const [saveComplete, setSaveComplete] = useState(false)
+
   const handleSave = useCallback(async () => {
     if (!canSave) return
 
-    const recordId = await createRecord({
-      recordType,
-      photos,
-      restaurantId: undefined, // Will be resolved from selected place
-      menuName: (aiResult?.restaurant as Record<string, unknown>)?.name as string ?? undefined,
-      genre: (aiResult?.restaurant as Record<string, unknown>)?.genre as string ?? undefined,
-      scene: aiResult?.scene as string ?? undefined,
-      ratingTaste: ratings.taste,
-      ratingValue: ratings.value,
-      ratingService: ratings.service,
-      ratingAtmosphere: ratings.atmosphere,
-      ratingCleanliness: ratings.cleanliness,
-      ratingPortion: ratings.portion,
-      ratingBalance: ratings.balance,
-      ratingDifficulty: ratings.difficulty,
-      ratingTimeSpent: ratings.timeSpent,
-      ratingReproducibility: ratings.reproducibility,
-      ratingPlating: ratings.plating,
-      ratingMaterialCost: ratings.materialCost,
-      // Wine WSET tasting notes (optional)
-      wineAcidity: ratings.wineAcidity,
-      wineBody: ratings.wineBody,
-      wineTannin: ratings.wineTannin,
-      wineSweetness: ratings.wineSweetness,
-      wineBalance: ratings.wineBalance,
-      wineFinish: ratings.wineFinish,
-      wineAroma: ratings.wineAroma,
-      // Cooking manual flavor input
-      flavorSpicy: ratings.flavorSpicy,
-      flavorSweet: ratings.flavorSweet,
-      flavorSalty: ratings.flavorSalty,
-      flavorSour: ratings.flavorSour,
-      flavorUmami: ratings.flavorUmami,
-      flavorRich: ratings.flavorRich,
-      comment: comment || undefined,
-      locationLat: location?.lat,
-      locationLng: location?.lng,
-    })
+    try {
+      const recordId = await createRecord({
+        recordType,
+        photos,
+        restaurantId: undefined, // Will be resolved from selected place
+        menuName: (aiResult?.restaurant as Record<string, unknown>)?.name as string ?? undefined,
+        genre: (aiResult?.restaurant as Record<string, unknown>)?.genre as string ?? undefined,
+        scene: aiResult?.scene as string ?? undefined,
+        ratingTaste: ratings.taste,
+        ratingValue: ratings.value,
+        ratingService: ratings.service,
+        ratingAtmosphere: ratings.atmosphere,
+        ratingCleanliness: ratings.cleanliness,
+        ratingPortion: ratings.portion,
+        ratingBalance: ratings.balance,
+        ratingDifficulty: ratings.difficulty,
+        ratingTimeSpent: ratings.timeSpent,
+        ratingReproducibility: ratings.reproducibility,
+        ratingPlating: ratings.plating,
+        ratingMaterialCost: ratings.materialCost,
+        // Wine WSET tasting notes (optional)
+        wineAcidity: ratings.wineAcidity,
+        wineBody: ratings.wineBody,
+        wineTannin: ratings.wineTannin,
+        wineSweetness: ratings.wineSweetness,
+        wineBalance: ratings.wineBalance,
+        wineFinish: ratings.wineFinish,
+        wineAroma: ratings.wineAroma,
+        // Cooking manual flavor input
+        flavorSpicy: ratings.flavorSpicy,
+        flavorSweet: ratings.flavorSweet,
+        flavorSalty: ratings.flavorSalty,
+        flavorSour: ratings.flavorSour,
+        flavorUmami: ratings.flavorUmami,
+        flavorRich: ratings.flavorRich,
+        comment: comment || undefined,
+        locationLat: location?.lat,
+        locationLng: location?.lng,
+      })
 
-    router.push(ROUTES.recordDetail(recordId))
+      setSaveComplete(true)
+      setTimeout(() => {
+        router.push(ROUTES.recordDetail(recordId))
+      }, 1500)
+    } catch (err) {
+      console.error("Failed to save record:", err)
+    }
   }, [canSave, createRecord, recordType, photos, aiResult, ratings, comment, location, router])
 
   const restaurantAnalysis = aiResult?.restaurant as Record<string, unknown> | undefined
@@ -180,9 +189,12 @@ export function QuickCaptureContainer() {
       />
 
       {isAnalyzing && (
-        <div className="flex items-center justify-center py-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-          <span className="ml-2 text-sm text-neutral-500">분석 중...</span>
+        <div className="flex flex-col items-center gap-1.5 py-4">
+          <div className="flex items-center">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+            <span className="ml-2 text-sm font-medium text-neutral-600">AI 분석중...</span>
+          </div>
+          <span className="text-xs text-neutral-400">저장 후에도 분석 결과가 자동으로 업데이트됩니다</span>
         </div>
       )}
 
@@ -228,13 +240,20 @@ export function QuickCaptureContainer() {
         className="h-20 resize-none rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
       />
 
+      {saveComplete && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-center">
+          <p className="text-sm font-medium text-green-700">저장 완료!</p>
+          <p className="mt-0.5 text-xs text-green-600">AI 분석 결과는 잠시 후 자동으로 업데이트됩니다</p>
+        </div>
+      )}
+
       <button
         type="button"
-        disabled={!canSave || isCreating}
+        disabled={!canSave || isCreating || saveComplete}
         onClick={handleSave}
         className="h-12 rounded-xl bg-primary-500 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
       >
-        {isCreating ? progress || "저장 중..." : "저장하기"}
+        {saveComplete ? "이동 중..." : isCreating ? progress || "저장 중..." : "저장하기"}
       </button>
     </div>
   )

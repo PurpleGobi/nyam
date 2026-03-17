@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Link from "next/link"
-import { ArrowLeft, Edit } from "lucide-react"
+import { ArrowLeft, Edit, Sparkles } from "lucide-react"
+import { toast } from "sonner"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
 import { PhotoPicker } from "@/presentation/components/record/photo-picker"
 import { RatingBars } from "@/presentation/components/record/rating-bars"
@@ -14,6 +16,20 @@ interface RecordDetailContainerProps {
 
 export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) {
   const { record, tasteProfile, isLoading } = useRecordDetail(recordId)
+  const prevPhaseRef = useRef<number | null>(null)
+
+  // Show toast when AI analysis completes (phase 1 → 2)
+  useEffect(() => {
+    if (!record) return
+    const prev = prevPhaseRef.current
+    prevPhaseRef.current = record.phaseStatus
+
+    if (prev === 1 && record.phaseStatus >= 2) {
+      toast.success("AI 분석이 완료되었어요!", {
+        description: "2단계 리뷰를 작성할 수 있어요",
+      })
+    }
+  }, [record])
 
   if (isLoading) {
     return (
@@ -123,6 +139,23 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
           <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
             <p className="text-sm text-neutral-600">{record.comment}</p>
           </div>
+        )}
+
+        {record.phaseStatus < 2 && (
+          <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+            <span className="text-sm text-amber-700">AI 분석 진행 중...</span>
+          </div>
+        )}
+
+        {record.phaseStatus >= 2 && !record.phase2CompletedAt && (
+          <Link
+            href={ROUTES.recordEdit(record.id)}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-primary-500 px-4 py-3.5 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] transition-all"
+          >
+            <Sparkles className="h-4 w-4" />
+            2단계 리뷰 작성하기
+          </Link>
         )}
       </div>
     </div>

@@ -10,6 +10,20 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // 약관 동의 여부 확인
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("terms_agreed_at")
+          .eq("id", user.id)
+          .single()
+
+        if (!profile?.terms_agreed_at) {
+          return NextResponse.redirect(`${origin}/auth/consent?next=${encodeURIComponent(next)}`)
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

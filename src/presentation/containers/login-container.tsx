@@ -1,13 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { useAuth } from "@/application/hooks/use-auth"
-import { TermsAgreement } from "@/presentation/components/auth/terms-agreement"
 import { LoginButtons } from "@/presentation/components/auth/login-buttons"
 
 export function LoginContainer() {
   const { signInWithProvider, signInWithNaver } = useAuth()
-  const [termsAgreed, setTermsAgreed] = useState(false)
 
   const handleLogin = async (provider: "google" | "kakao" | "apple" | "naver") => {
     if (provider === "naver") {
@@ -29,8 +26,7 @@ export function LoginContainer() {
           </p>
         </div>
 
-        <TermsAgreement onAllAgreed={setTermsAgreed} />
-        <LoginButtons disabled={!termsAgreed} onLogin={handleLogin} />
+        <LoginButtons disabled={false} onLogin={handleLogin} />
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ const PUBLIC_ROUTES = [
   "/auth/login",
   "/auth/callback",
   "/auth/naver/callback",
+  "/auth/consent",
   "/terms/service",
   "/terms/privacy",
   "/offline",
@@ -58,10 +59,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Check deactivated account
+  // Check deactivated account and terms agreement
   const { data: profile } = await supabase
     .from("users")
-    .select("is_deactivated")
+    .select("is_deactivated, terms_agreed_at")
     .eq("id", user.id)
     .single()
 
@@ -69,6 +70,13 @@ export async function proxy(request: NextRequest) {
     const loginUrl = new URL("/auth/login", request.url)
     loginUrl.searchParams.set("error", "account_deactivated")
     return NextResponse.redirect(loginUrl)
+  }
+
+  // 약관 미동의 사용자는 동의 페이지로
+  if (!profile?.terms_agreed_at && pathname !== "/auth/consent") {
+    const consentUrl = new URL("/auth/consent", request.url)
+    consentUrl.searchParams.set("next", pathname)
+    return NextResponse.redirect(consentUrl)
   }
 
   return response

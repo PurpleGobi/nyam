@@ -155,6 +155,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Mark AI analysis complete — ready for Phase 2 review
+  await supabase.from("records").update({
+    phase_status: 2,
+  }).eq("id", recordId)
+
   // Update user_stats
   try {
     await supabase.rpc("increment_user_stats", { p_user_id: user.id })

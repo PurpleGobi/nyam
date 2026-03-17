@@ -11,7 +11,8 @@
 |------|------|------|
 | 프레임워크 | Next.js 16 (App Router, Turbopack) | React 19, TypeScript strict |
 | 스타일링 | Tailwind CSS 4 + shadcn/ui | 유틸리티 기반, 컴포넌트 라이브러리 |
-| 상태 관리 | SWR | 데이터 페칭 + 캐싱 |
+| 상태 관리 | SWR | 데이터 페칭 + 캐싱 + 조건부 폴링 |
+| 토스트 | sonner | 알림 토스트 (AI 분석 완료 등) |
 | 데이터베이스 | PostgreSQL (Supabase) | RLS 적용, 실시간 구독 |
 | 스토리지 | Supabase Storage | record-photos 버킷 |
 | AI | Google Gemini 2.5 Flash | 사진 분석, 블로그 생성 |
@@ -143,7 +144,7 @@ location_lat      DOUBLE PRECISION NULL
 location_lng      DOUBLE PRECISION NULL
 price_per_person  INTEGER NULL
 -- Phase 관리
-phase_status      SMALLINT DEFAULT 1     -- 1: 기본 | 2: 블로그 완료 | 3: 비교 완료
+phase_status      SMALLINT DEFAULT 1     -- 1: 기본(AI 분석 중) | 2: AI 분석 완료(Phase 2 진입 가능) | 3: 블로그 완료 | 4: 비교 완료
 phase1_completed_at TIMESTAMPTZ NULL
 phase2_completed_at TIMESTAMPTZ NULL
 phase3_completed_at TIMESTAMPTZ NULL
@@ -1082,7 +1083,7 @@ Output: record_taste_profiles INSERT (source='ai')
 
 #### Step 3: DNA 반영 — POST /api/records/post-process
 
-Step 2 완료 후 호출. Taste DNA와 Style DNA를 모두 업데이트.
+Step 2 완료 후 호출. Taste DNA와 Style DNA를 모두 업데이트하고, `phase_status = 2`로 마킹하여 AI 분석 완료를 표시. 이 단계는 try/finally로 보장되어 앞 단계 실패 시에도 반드시 실행된다.
 
 ```
 Input: recordId (내부에서 record + taste_profile 조회)
@@ -1449,20 +1450,23 @@ nyam_level = f(user_stats.points)
 6c. 🍳 요리 전용: record_taste_profiles에 사용자 맛 특성 6축 저장 (source='manual')
 → 저장 완료, 사용자에게 즉시 응답
 
-비동기 (fire-and-forget, 백그라운드 — 유형별 분기):
+비동기 (백그라운드 — 유형별 분기, try/finally로 post-process 보장):
   🍽️ 식당:
-  7. POST /api/records/enrich → 식당·메뉴 특정, record_ai_analyses 저장
-  8. POST /api/records/taste-profile → 웹 리뷰 교차 검증 → record_taste_profiles (source='ai')
-  9. POST /api/records/post-process → taste_dna_restaurant + style_dna_restaurant_* 업데이트
+  7. POST /api/records/enrich → 식당·메뉴 특정, record_ai_analyses 저장 (실패 시 non-fatal)
+  8. POST /api/records/taste-profile → 웹 리뷰 교차 검증 → record_taste_profiles (source='ai') (실패 시 non-fatal)
+  9. POST /api/records/post-process → taste_dna + style_dna 업데이트 + phase_status=2 (항상 실행)
 
   🍷 와인:
-  7. POST /api/records/enrich → 와인 식별 + 객관적 정보 수집, record_ai_analyses 저장
-  8. POST /api/records/taste-profile → WSET 7축 AI 산출 → 사용자 기록(wine_*_user)과 평균 → wine_* 컬럼 업데이트 (source='ai_user_avg'). 사용자가 WSET 미입력 시 AI 값만 사용 (source='ai')
-  9. POST /api/records/post-process → taste_dna_wine + style_dna_wine_* 업데이트 + dna_summary 생성
+  7. POST /api/records/enrich → 와인 식별 + 객관적 정보 수집 (실패 시 non-fatal)
+  8. POST /api/records/taste-profile → WSET 7축 AI 산출 + 사용자 기록 평균 (실패 시 non-fatal)
+  9. POST /api/records/post-process → taste_dna_wine + style_dna_wine_* 업데이트 + phase_status=2 (항상 실행)
 
   🍳 요리:
-  7-8. 스킵 (Step 1-2 불필요: Phase 1 동기 저장(6c)에서 사용자가 맛 특성 직접 입력 완료)
-  9. POST /api/records/post-process → taste_dna_cooking + style_dna_cooking_* 업데이트 (Step 3만 호출)
+  7-8. 스킵
+  9. POST /api/records/post-process → taste_dna_cooking + style_dna_cooking_* 업데이트 + phase_status=2 (항상 실행)
+
+  ※ enrich/taste-profile 실패 시에도 post-process는 반드시 실행되어 phase_status를 업데이트.
+  ※ 기록 상세 페이지에서 SWR 폴링(3초)으로 phase_status 변화를 감지 → 토스트 알림 + Phase 2 CTA 표시.
 ```
 
 ---

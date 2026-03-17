@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Comfortaa, Inter } from "next/font/google"
+import { Toaster } from "sonner"
 import { SWRProvider } from "@/presentation/providers/swr-provider"
 import { AuthProvider } from "@/presentation/providers/auth-provider"
 import "./globals.css"
@@ -42,6 +43,7 @@ export default function RootLayout({
         <SWRProvider>
           <AuthProvider>
             {children}
+            <Toaster position="top-center" richColors />
           </AuthProvider>
         </SWRProvider>
       </body>
