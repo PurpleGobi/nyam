@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
+const GEMINI_TIMEOUT_MS = 30_000
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -57,6 +58,8 @@ export async function POST(request: NextRequest) {
   "confidence": 0.0-1.0
 }`
 
+    const controller1 = new AbortController()
+    const timer1 = setTimeout(() => controller1.abort(), GEMINI_TIMEOUT_MS)
     const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,7 +67,9 @@ export async function POST(request: NextRequest) {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
       }),
+      signal: controller1.signal,
     })
+    clearTimeout(timer1)
 
     if (!geminiResponse.ok) {
       return NextResponse.json({ error: "AI taste profile generation failed" }, { status: 500 })
@@ -115,6 +120,8 @@ export async function POST(request: NextRequest) {
   "confidence": 0.0-1.0
 }`
 
+    const controller2 = new AbortController()
+    const timer2 = setTimeout(() => controller2.abort(), GEMINI_TIMEOUT_MS)
     const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,7 +129,9 @@ export async function POST(request: NextRequest) {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
       }),
+      signal: controller2.signal,
     })
+    clearTimeout(timer2)
 
     if (!geminiResponse.ok) {
       return NextResponse.json({ error: "AI wine tasting failed" }, { status: 500 })

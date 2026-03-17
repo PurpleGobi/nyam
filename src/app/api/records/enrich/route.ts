@@ -3,6 +3,23 @@ import { createClient } from "@/infrastructure/supabase/server"
 import { FOOD_CATEGORIES } from "@/shared/constants/categories"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
+const GEMINI_TIMEOUT_MS = 30_000
+
+async function fetchImageAsBase64(url: string): Promise<{ mimeType: string; data: string } | null> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10_000)
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return null
+    const buffer = await res.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString("base64")
+    const mimeType = res.headers.get("content-type") ?? "image/jpeg"
+    return { mimeType, data: base64 }
+  } catch {
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -51,10 +68,17 @@ ${genreList}
 
   const parts: Array<Record<string, unknown>> = [{ text: prompt }]
 
-  for (const url of (photoUrls ?? []).slice(0, 8)) {
-    parts.push({ text: `사진 URL: ${url}` })
+  // Fetch images and convert to base64 for Gemini inline_data
+  const imagePromises = (photoUrls ?? []).slice(0, 8).map(fetchImageAsBase64)
+  const images = await Promise.all(imagePromises)
+  for (const img of images) {
+    if (img) {
+      parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } })
+    }
   }
 
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS)
   const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -62,7 +86,9 @@ ${genreList}
       contents: [{ parts }],
       generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
     }),
+    signal: controller.signal,
   })
+  clearTimeout(timer)
 
   if (!geminiResponse.ok) {
     return NextResponse.json({ error: "AI enrichment failed" }, { status: 500 })

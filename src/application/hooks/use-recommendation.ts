@@ -12,29 +12,30 @@ interface TasteDna {
 }
 
 interface Recommendation {
-  id: string
-  name: string
-  genre: string | null
-  address: string | null
-  score: number
+  food: string
+  reason: string
+  tip: string
 }
 
 interface RecommendationResponse {
   success: boolean
   recommendations: Recommendation[]
   tasteDna: TasteDna | null
-  message?: string
+  isColdStart: boolean
+  sampleCount: number
   error?: string
 }
 
 export function useRecommendation() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [tasteDna, setTasteDna] = useState<TasteDna | null>(null)
+  const [isColdStart, setIsColdStart] = useState(false)
+  const [sampleCount, setSampleCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const requestRecommendation = useCallback(
-    async (params: { scene?: string; location?: { lat: number; lng: number } }) => {
+    async (params: { scene?: string; location?: { lat: number; lng: number }; additionalContext?: string }) => {
       setIsLoading(true)
       setError(null)
 
@@ -48,14 +49,16 @@ export function useRecommendation() {
         const data: RecommendationResponse = await response.json()
 
         if (!response.ok || !data.success) {
-          setError(data.error ?? "Failed to get recommendations")
+          setError(data.error ?? "추천을 받지 못했어요")
           return
         }
 
         setRecommendations(data.recommendations)
         setTasteDna(data.tasteDna ?? null)
+        setIsColdStart(data.isColdStart)
+        setSampleCount(data.sampleCount)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error")
+        setError(err instanceof Error ? err.message : "알 수 없는 오류")
       } finally {
         setIsLoading(false)
       }
@@ -63,5 +66,5 @@ export function useRecommendation() {
     [],
   )
 
-  return { recommendations, tasteDna, isLoading, error, requestRecommendation }
+  return { recommendations, tasteDna, isColdStart, sampleCount, isLoading, error, requestRecommendation }
 }
