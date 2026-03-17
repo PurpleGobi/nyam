@@ -186,31 +186,48 @@ export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | n
 
   const result = useMemo(() => {
     const records = allRecords ?? []
-    if (records.length < 5) return { pick: null, reason: null }
+    // 기록 0건이면 콜드 스타트
+    if (records.length === 0) return { pick: null, reason: null }
 
     const timeSlot = getTimeSlot()
     const genres = TIME_GENRES[timeSlot] ?? []
 
-    // Filter by time-slot genre, prioritize records with photos
-    const genreFiltered = records.filter((r) => r.genre != null && genres.includes(r.genre))
-    const candidates = genreFiltered.length > 0 ? genreFiltered : records
-    const withPhotos = candidates.filter((r) => r.photos.length > 0)
-    const pool = withPhotos.length > 0 ? withPhotos : candidates
+    // 사진 있는 기록 우선
+    const withPhotos = records.filter((r) => r.photos.length > 0)
+    const basePool = withPhotos.length > 0 ? withPhotos : records
 
-    // Try presets in random order
+    // 시간대 장르 필터
+    const genreFiltered = basePool.filter((r) => r.genre != null && genres.includes(r.genre))
+
+    // 프리셋을 랜덤 순서로 시도 — 시간대 필터된 풀 → 전체 풀 순서로 폴백
     const presets = buildReasonPresets(timeSlot)
     const shuffledPresets = shuffle(presets)
 
+    // Phase 1: 시간대 장르 필터 + 프리셋
+    if (genreFiltered.length > 0) {
+      for (const preset of shuffledPresets) {
+        const matched = genreFiltered.filter((r) => preset.filter(r, tasteDnaTopAxis))
+        if (matched.length > 0) {
+          const pick = matched[Math.floor(Math.random() * matched.length)]
+          return { pick, reason: { key: preset.key, text: preset.text } }
+        }
+      }
+      // 장르 매칭은 되지만 프리셋 조건 불일치 → 장르 풀에서 랜덤
+      const pick = genreFiltered[Math.floor(Math.random() * genreFiltered.length)]
+      return { pick, reason: { key: "genre_match", text: `${pick.genre ?? "맛있는"} 맛집` } }
+    }
+
+    // Phase 2: 시간대 장르 없음 → 전체 풀에서 프리셋 시도
     for (const preset of shuffledPresets) {
-      const matched = pool.filter((r) => preset.filter(r, tasteDnaTopAxis))
+      const matched = basePool.filter((r) => preset.filter(r, tasteDnaTopAxis))
       if (matched.length > 0) {
         const pick = matched[Math.floor(Math.random() * matched.length)]
         return { pick, reason: { key: preset.key, text: preset.text } }
       }
     }
 
-    // Fallback: random from full pool
-    const pick = pool[Math.floor(Math.random() * pool.length)]
+    // Phase 3: 최종 폴백 — 전체에서 랜덤
+    const pick = basePool[Math.floor(Math.random() * basePool.length)]
     return { pick, reason: { key: "random", text: "오늘의 추천" } }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRecords, tasteDnaTopAxis, refreshKey])

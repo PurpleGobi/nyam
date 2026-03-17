@@ -1449,10 +1449,30 @@ nyam_level = f(user_stats.points)
 
 ### 5-8. Today's Pick
 
-1. 고평점 재방문 후보 (rating ≥ 70, 2개월 이상 미방문)
-2. 위치 기반 근처 기록
-3. Taste DNA 유사 음식 추천
-4. 기록 부족 시 온보딩 메시지 fallback
+**시간대 분기** (현재 시각 기준):
+```
+아침 (~10시): genre IN (cafe, salad, lunchbox) — 브런치/가벼운 식사
+점심 (10~14시): genre IN (korean, japanese, snack, stew, lunchbox, katsu) — 주요 식사
+오후 (14~17시): genre IN (cafe) — 카페/디저트
+저녁 (17~21시): genre IN (bbq, western, chinese, seafood, korean) — 본격 식사
+야식 (21시~): genre IN (chicken, jokbal, asian, snack) — 야식
+```
+
+**추천 이유 프리셋** (랜덤 1개 선택 → 해당 조건으로 필터):
+| 프리셋 | 조건 | 표시 텍스트 |
+|--------|------|------------|
+| 높은 만족도 | rating_overall ≥ 80 | "만족도가 높았어요" |
+| 장르 맛집 | 해당 시간대 genre 매칭 | "{genre} 맛집" |
+| 오래 안 간 곳 | 2개월+ 미방문 restaurant | "오래 안 갔던 곳" |
+| DNA 추천 | Taste DNA 상위 선호축 매칭 | "이 맛 좋아할걸" |
+
+**선택 로직**:
+1. 시간대에 해당하는 genre 필터
+2. 랜덤 프리셋 선택 → 해당 조건 AND 적용
+3. 결과에서 랜덤 1건 Pick
+4. 사용자가 사진 터치 시 → 같은 프리셋 내 다른 기록 또는 다른 프리셋으로 재추천
+5. 후보 소진 시 전체 기록에서 랜덤
+6. 기록 5건 미만 시 온보딩 메시지 fallback
 
 ---
 
