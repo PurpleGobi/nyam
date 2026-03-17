@@ -5,7 +5,7 @@ import { BottomNav } from "./bottom-nav"
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-neutral-50">
-      <header className="sticky top-0 z-50 bg-white/65 backdrop-blur-md border-b border-neutral-100">
+      <header className="sticky top-0 z-50 bg-white/40 backdrop-blur-xl border-b border-white/30">
         <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-5">
           <LogoLink />
           <HeaderActions />
