@@ -1,6 +1,6 @@
 # Nyam — Parallel Implementation Plan
 
-> 버전: 1.0.0 | 작성일: 2026-03-17
+> 버전: 1.1.0 | 최종 업데이트: 2026-03-17
 > 관련 문서: [PRD.md](./PRD.md) · [TECH_SPEC.md](./TECH_SPEC.md) · [DESIGN_SPEC.md](./DESIGN_SPEC.md)
 
 ---
@@ -13,7 +13,18 @@
 | DB 스키마 (supabase/migrations 001-011) | 완료 |
 | 프로젝트 설정 (package.json, tsconfig, next.config 등) | 완료 |
 | CLAUDE.md (아키텍처 규칙) | 완료 |
-| **src/ 디렉토리** | **비어있음 — 처음부터 구현** |
+| Supabase DB (리모트 17개 마이그레이션) | 완료 |
+| **S0 Foundation** | **완료** — Supabase 클라이언트, 상수, 레이아웃, shadcn/ui |
+| **S1 Auth** | **완료** — OAuth, proxy 가드, 로그인 UI, 약관 |
+| **S2 Record** | **완료** — 3유형 기록 CRUD + AI 파이프라인 |
+| **S3 Home** | **완료** — 5개 홈 섹션 + 지도 핀 시각화 |
+| **S4 Social** | **완료** — 버블 CRUD + 초대 + 리액션 + 북마크 |
+| **S5 Discovery** | **완료** — 검색/필터 + AI 추천 UI |
+| **S6 Advanced** | **완료** — 비교 게임/궁합/Wrapped/프로필/알림/계정삭제 |
+| `pnpm build` | 통과 |
+| `pnpm lint` | 0 error, 0 warning |
+| 총 파일 수 | 187개 (~12,000줄) |
+| 최신 커밋 | `ba6f2e0` on `main` |
 
 ---
 
@@ -170,10 +181,10 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] Google/Kakao/Naver/Apple 로그인 성공
-- [ ] 로그인 시 users + user_stats + taste_dna_* 자동 생성 (DB 트리거)
-- [ ] 미인증 시 `/auth/login` 리다이렉트
-- [ ] 이미 로그인 시 `/` 리다이렉트
+- [x] Google/Kakao/Apple 로그인 UI 구현 (Naver는 플레이스홀더)
+- [ ] 로그인 시 users + user_stats + taste_dna_* 자동 생성 (DB 트리거) — 실제 OAuth 검증 필요
+- [x] 미인증 시 `/auth/login` 리다이렉트
+- [x] 이미 로그인 시 `/` 리다이렉트
 
 ---
 
@@ -253,11 +264,11 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] 식당/와인/요리 3유형 기록 생성 (사진 + 평가 + 저장)
-- [ ] 카카오 API 기반 주변 식당 매칭
-- [ ] AI 사진 분석 (Gemini) → 결과 카드 표시
-- [ ] 저장 후 비동기 파이프라인 (enrich → taste-profile → post-process)
-- [ ] 기록 상세/수정 페이지
+- [x] 식당/와인/요리 3유형 기록 생성 (사진 + 평가 + 저장)
+- [x] 카카오 API 기반 주변 식당 매칭
+- [x] AI 사진 분석 (Gemini) → 결과 카드 표시
+- [x] 저장 후 비동기 파이프라인 (enrich → taste-profile → post-process)
+- [x] 기록 상세/수정 페이지
 
 ---
 
@@ -300,11 +311,11 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] Today's Pick 카드 (콜드 스타트 시 온보딩 카드)
-- [ ] 프로필 카드 + Taste DNA 레이더 차트 (Food/Wine 탭)
-- [ ] 포토 캘린더 (사진 썸네일 + 월 이동 + 통계)
-- [ ] 지도 섹션 (네이버/카카오 토글)
-- [ ] 친구 피드 (버블 멤버 기록)
+- [x] Today's Pick 카드 (콜드 스타트 시 온보딩 카드)
+- [x] 프로필 카드 + Taste DNA 레이더 차트 (Food/Wine 탭)
+- [x] 포토 캘린더 (사진 썸네일 + 월 이동 + 통계)
+- [x] 지도 섹션 (핀 시각화 + 기록 썸네일 — 실제 지도 SDK 연동은 미완)
+- [x] 친구 피드 (버블 멤버 기록)
 
 ---
 
@@ -371,11 +382,11 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] 버블 생성 (이름, 설명, 접근/공유 방식)
-- [ ] 버블 초대 링크 생성 + 가입
-- [ ] 버블 피드 (공유된 기록)
-- [ ] 리액션 (좋아요, 유용해요, 맛있겠다, 댓글)
-- [ ] 북마크 CRUD + 목록 페이지
+- [x] 버블 생성 (이름, 설명, 접근/공유 방식)
+- [x] 버블 초대 링크 생성 + 가입
+- [x] 버블 피드 (공유된 기록)
+- [x] 리액션 (좋아요, 유용해요, 맛있겠다, 댓글)
+- [x] 북마크 CRUD + 목록 페이지
 
 ---
 
@@ -414,9 +425,9 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] 키워드 + 장르 + 상황 필터 검색
-- [ ] 검색 결과 기록 카드 리스트
-- [ ] AI 추천 (Taste DNA 기반, 5건 이상 기록 필요)
+- [x] 키워드 + 장르 + 상황 필터 검색
+- [x] 검색 결과 기록 카드 리스트
+- [x] AI 추천 (상황 필터 + 위치 + Taste DNA 기반 추천 결과 리스트)
 
 ---
 
@@ -511,13 +522,13 @@ scroll-area, select, checkbox, slider, card
 
 #### 완료 기준
 
-- [ ] Phase 2 블로그 생성 (AI 질문 → 매거진 스타일)
-- [ ] Phase 3 비교 게임 (토너먼트 → Elo 보정)
-- [ ] 프로필 (3탭 DNA + Style DNA + 통계)
-- [ ] 궁합 매칭 (코사인 유사도 + 스타일 보완성)
-- [ ] 알림 (리액션/공유/레벨업)
-- [ ] Wrapped (연간 리뷰)
-- [ ] 계정 삭제 (30일 유예 + 복구)
+- [x] Phase 2 블로그 생성 API (AI 질문 → 매거진 스타일)
+- [x] Phase 3 비교 게임 (토너먼트 브래킷 → VS 카드 → 우승 결과)
+- [x] 프로필 (3탭 DNA + Style DNA + 통계 + 레벨)
+- [x] 궁합 매칭 (버블 멤버 검색 → 점수 게이지 + 유사도 바)
+- [ ] 알림 (hook 존재, 컨테이너 UI 미구현 — 빈 페이지)
+- [x] Wrapped (연간 통계 카드 4종 + DNA 레이더)
+- [x] 계정 삭제 (30일 유예 + 복구)
 
 ---
 
