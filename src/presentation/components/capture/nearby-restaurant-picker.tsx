@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { MapPin } from "lucide-react"
 import { cn } from "@/shared/utils/cn"
 import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
@@ -9,6 +10,7 @@ interface NearbyRestaurantPickerProps {
   selectedId: string | null
   onSelect: (place: NearbyPlace) => void
   isLoading: boolean
+  aiMatchedPlaceId?: string
 }
 
 export function NearbyRestaurantPicker({
@@ -16,7 +18,20 @@ export function NearbyRestaurantPicker({
   selectedId,
   onSelect,
   isLoading,
+  aiMatchedPlaceId,
 }: NearbyRestaurantPickerProps) {
+  const autoSelectedRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!aiMatchedPlaceId || places.length === 0) return
+    if (autoSelectedRef.current === aiMatchedPlaceId) return
+
+    const matched = places.find((p) => p.externalId === aiMatchedPlaceId)
+    if (matched) {
+      autoSelectedRef.current = aiMatchedPlaceId
+      onSelect(matched)
+    }
+  }, [aiMatchedPlaceId, places, onSelect])
   if (isLoading) {
     return (
       <div className="space-y-2">

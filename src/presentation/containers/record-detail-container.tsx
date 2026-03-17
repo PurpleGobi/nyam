@@ -165,7 +165,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
         {record.phaseStatus >= 2 && !record.phase2CompletedAt && (
           <Link
-            href={ROUTES.recordEdit(record.id)}
+            href={ROUTES.recordComplete(record.id)}
             className="flex items-center justify-center gap-2 rounded-2xl bg-primary-500 px-4 py-3.5 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] transition-all"
           >
             <Sparkles className="h-4 w-4" />

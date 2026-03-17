@@ -4,11 +4,13 @@ import { useCallback, useState } from "react"
 import { createClient } from "@/infrastructure/supabase/client"
 import { uploadRecordPhoto } from "@/infrastructure/storage/image-upload"
 import type { RecordType } from "@/infrastructure/supabase/types"
+import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 
 interface CreateRecordData {
   recordType: RecordType
   photos: File[]
   restaurantId?: string
+  selectedPlace?: NearbyPlace
   menuName?: string
   genre?: string
   scene?: string
@@ -61,6 +63,41 @@ export function useCreateRecord() {
 
       setProgress("기록 저장 중...")
 
+      // Resolve restaurant from selected place (select-or-insert)
+      let resolvedRestaurantId = data.restaurantId ?? null
+      if (data.selectedPlace) {
+        // Try to find existing restaurant by source + external_id
+        const { data: existing } = await supabase
+          .from("restaurants")
+          .select("id")
+          .eq("source", "kakao")
+          .eq("external_id", data.selectedPlace.externalId)
+          .maybeSingle()
+
+        if (existing) {
+          resolvedRestaurantId = existing.id
+        } else {
+          const { data: created } = await supabase
+            .from("restaurants")
+            .insert({
+              source: "kakao",
+              external_id: data.selectedPlace.externalId,
+              name: data.selectedPlace.name,
+              address: data.selectedPlace.address,
+              phone: data.selectedPlace.phone || null,
+              latitude: data.selectedPlace.latitude,
+              longitude: data.selectedPlace.longitude,
+              external_url: data.selectedPlace.placeUrl || null,
+            })
+            .select("id")
+            .single()
+
+          if (created) {
+            resolvedRestaurantId = created.id
+          }
+        }
+      }
+
       // Calculate overall rating
       let ratingOverall: number | null = null
       if (data.recordType === "restaurant") {
@@ -83,7 +120,7 @@ export function useCreateRecord() {
         .insert({
           user_id: user.id,
           record_type: data.recordType,
-          restaurant_id: data.restaurantId ?? null,
+          restaurant_id: resolvedRestaurantId,
           menu_name: data.menuName ?? null,
           genre: data.genre ?? null,
           scene: data.scene ?? null,

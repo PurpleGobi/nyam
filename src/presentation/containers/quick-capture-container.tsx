@@ -32,9 +32,66 @@ export function QuickCaptureContainer() {
   const [aiResult, setAiResult] = useState<Record<string, unknown> | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
+  // Editable fields (prefilled by AI)
+  const [menuName, setMenuName] = useState("")
+  const [genre, setGenre] = useState("")
+  const [flavorTags, setFlavorTags] = useState<string[]>([])
+  const [textureTags, setTextureTags] = useState<string[]>([])
+  const [scene, setScene] = useState("")
+
+  // Track which fields user has manually edited
+  const userEditedRef = useRef<Set<string>>(new Set())
+
+  const markEdited = useCallback((field: string) => {
+    userEditedRef.current.add(field)
+  }, [])
+
+  const handleMenuNameChange = useCallback((v: string) => { markEdited("menuName"); setMenuName(v) }, [markEdited])
+  const handleGenreChange = useCallback((v: string) => { markEdited("genre"); setGenre(v) }, [markEdited])
+  const handleFlavorTagsChange = useCallback((v: string[]) => { markEdited("flavorTags"); setFlavorTags(v) }, [markEdited])
+  const handleTextureTagsChange = useCallback((v: string[]) => { markEdited("textureTags"); setTextureTags(v) }, [markEdited])
+  const handleSceneChange = useCallback((v: string) => { markEdited("scene"); setScene(v) }, [markEdited])
+
   useEffect(() => {
     requestLocation()
   }, [requestLocation])
+
+  // Prefill editable fields from AI result (only fill empty / unedited fields)
+  useEffect(() => {
+    if (!aiResult) return
+    const edited = userEditedRef.current
+
+    if (recordType === "restaurant") {
+      const r = aiResult.restaurant as Record<string, unknown> | undefined
+      if (r) {
+        if (!edited.has("menuName") && !menuName && typeof r.name === "string") setMenuName(r.name)
+        if (!edited.has("genre") && !genre && typeof r.genre === "string") setGenre(r.genre)
+        if (!edited.has("flavorTags") && flavorTags.length === 0 && Array.isArray(r.flavorTags)) setFlavorTags(r.flavorTags as string[])
+        if (!edited.has("textureTags") && textureTags.length === 0 && Array.isArray(r.textureTags)) setTextureTags(r.textureTags as string[])
+        if (!edited.has("scene") && !scene && typeof r.scene === "string") setScene(r.scene)
+      }
+    } else if (recordType === "wine") {
+      const w = aiResult.wine as Record<string, unknown> | undefined
+      if (w) {
+        if (!edited.has("menuName") && !menuName && typeof w.name === "string") setMenuName(w.name)
+        if (!edited.has("genre") && !genre && typeof w.variety === "string") setGenre(w.variety)
+      }
+    } else if (recordType === "cooking") {
+      const c = aiResult.cooking as Record<string, unknown> | undefined
+      if (c) {
+        if (!edited.has("menuName") && !menuName && typeof c.dishName === "string") setMenuName(c.dishName)
+        if (!edited.has("genre") && !genre && typeof c.genre === "string") setGenre(c.genre)
+        if (!edited.has("flavorTags") && flavorTags.length === 0 && Array.isArray(c.flavorTags)) setFlavorTags(c.flavorTags as string[])
+        if (!edited.has("textureTags") && textureTags.length === 0 && Array.isArray(c.textureTags)) setTextureTags(c.textureTags as string[])
+      }
+    }
+
+    // Scene from top-level
+    if (!edited.has("scene") && !scene && typeof aiResult.scene === "string") {
+      setScene(aiResult.scene)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiResult, recordType])
 
   const handleAddPhotos = useCallback((files: File[]) => {
     const newPhotos = [...photos, ...files]
@@ -115,7 +172,10 @@ export function QuickCaptureContainer() {
 
   const handleSelectPlace = useCallback((place: NearbyPlace) => {
     setSelectedPlace(place)
-  }, [])
+    if (!userEditedRef.current.has("menuName") && !menuName) {
+      setMenuName(place.name)
+    }
+  }, [menuName])
 
   const canSave = photos.length > 0
 
@@ -128,10 +188,12 @@ export function QuickCaptureContainer() {
       const recordId = await createRecord({
         recordType,
         photos,
-        restaurantId: undefined, // Will be resolved from selected place
-        menuName: (aiResult?.restaurant as Record<string, unknown>)?.name as string ?? undefined,
-        genre: (aiResult?.restaurant as Record<string, unknown>)?.genre as string ?? undefined,
-        scene: aiResult?.scene as string ?? undefined,
+        selectedPlace: selectedPlace ?? undefined,
+        menuName: menuName || undefined,
+        genre: genre || undefined,
+        scene: scene || undefined,
+        flavorTags: flavorTags.length > 0 ? flavorTags : undefined,
+        textureTags: textureTags.length > 0 ? textureTags : undefined,
         ratingTaste: ratings.taste,
         ratingValue: ratings.value,
         ratingService: ratings.service,
@@ -144,7 +206,6 @@ export function QuickCaptureContainer() {
         ratingReproducibility: ratings.reproducibility,
         ratingPlating: ratings.plating,
         ratingMaterialCost: ratings.materialCost,
-        // Wine WSET tasting notes (optional)
         wineAcidity: ratings.wineAcidity,
         wineBody: ratings.wineBody,
         wineTannin: ratings.wineTannin,
@@ -152,7 +213,6 @@ export function QuickCaptureContainer() {
         wineBalance: ratings.wineBalance,
         wineFinish: ratings.wineFinish,
         wineAroma: ratings.wineAroma,
-        // Cooking manual flavor input
         flavorSpicy: ratings.flavorSpicy,
         flavorSweet: ratings.flavorSweet,
         flavorSalty: ratings.flavorSalty,
@@ -171,11 +231,11 @@ export function QuickCaptureContainer() {
     } catch (err) {
       console.error("Failed to save record:", err)
     }
-  }, [canSave, createRecord, recordType, photos, aiResult, ratings, comment, location, router])
+  }, [canSave, createRecord, recordType, photos, selectedPlace, menuName, genre, scene, flavorTags, textureTags, ratings, comment, location, router])
 
   const restaurantAnalysis = aiResult?.restaurant as Record<string, unknown> | undefined
   const wineAnalysis = aiResult?.wine as Record<string, unknown> | undefined
-  const cookingAnalysis = aiResult?.cooking as Record<string, unknown> | undefined
+  const aiMatchedPlaceId = restaurantAnalysis?.matchedPlaceId as string | undefined
 
   return (
     <div className="flex flex-col gap-6 px-4 pt-6 pb-4">
@@ -198,19 +258,23 @@ export function QuickCaptureContainer() {
         </div>
       )}
 
-      {aiResult && (
-        <AiResultCard
-          restaurantName={restaurantAnalysis?.name as string}
-          genre={restaurantAnalysis?.genre as string}
-          orderedItems={restaurantAnalysis?.orderedItems as string[]}
-          wineName={wineAnalysis?.name as string}
-          wineVariety={wineAnalysis?.variety as string}
-          cookingDish={cookingAnalysis?.dishName as string}
-          confidence={
-            (restaurantAnalysis?.confidence ?? wineAnalysis?.confidence ?? 0) as number
-          }
-        />
-      )}
+      <AiResultCard
+        recordType={recordType}
+        menuName={menuName}
+        genre={genre}
+        flavorTags={flavorTags}
+        textureTags={textureTags}
+        scene={scene}
+        orderedItems={restaurantAnalysis?.orderedItems as string[] | undefined}
+        confidence={
+          (restaurantAnalysis?.confidence ?? wineAnalysis?.confidence ?? 0) as number
+        }
+        onMenuNameChange={handleMenuNameChange}
+        onGenreChange={handleGenreChange}
+        onFlavorTagsChange={handleFlavorTagsChange}
+        onTextureTagsChange={handleTextureTagsChange}
+        onSceneChange={handleSceneChange}
+      />
 
       {recordType === "restaurant" && (
         <div>
@@ -220,6 +284,7 @@ export function QuickCaptureContainer() {
             selectedId={selectedPlace?.externalId ?? null}
             onSelect={handleSelectPlace}
             isLoading={placesLoading}
+            aiMatchedPlaceId={aiMatchedPlaceId}
           />
         </div>
       )}

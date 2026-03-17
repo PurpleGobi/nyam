@@ -67,7 +67,10 @@
       "WebFetch(domain:www.revenuecat.com)",
       "WebFetch(domain:backlinko.com)",
       "Bash(find /Users/jk_mini/github/nyam/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git -C /Users/jk_mini/github/nyam status)",
+      "Bash(git -C /Users/jk_mini/github/nyam log --oneline -3)",
+      "Bash(npx vercel:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
