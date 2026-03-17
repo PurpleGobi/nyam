@@ -12,6 +12,7 @@ interface TasteDnaRadarProps {
   color?: string
   size?: number
   className?: string
+  sampleCount?: number
 }
 
 export function TasteDnaRadar({
@@ -19,6 +20,7 @@ export function TasteDnaRadar({
   color = "var(--color-primary-500)",
   size = 128,
   className,
+  sampleCount,
 }: TasteDnaRadarProps) {
   const cx = size / 2
   const cy = size / 2
@@ -45,8 +47,14 @@ export function TasteDnaRadar({
     return `M${cx},${cy} L${end.x},${end.y}`
   })
 
-  const dataPoints = axes.map((axis, i) => getPoint(i, radius * (axis.value / 100)))
-  const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + "Z"
+  const hasData = sampleCount !== undefined && sampleCount > 0
+
+  const dataPoints = hasData
+    ? axes.map((axis, i) => getPoint(i, radius * (axis.value / 100)))
+    : []
+  const dataPath = hasData
+    ? dataPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + "Z"
+    : ""
 
   const labelPositions = axes.map((axis, i) => {
     const p = getPoint(i, radius + labelOffset)
@@ -82,16 +90,18 @@ export function TasteDnaRadar({
       ))}
 
       {/* Data area */}
-      <path
-        d={dataPath}
-        fill={color}
-        fillOpacity={0.15}
-        stroke={color}
-        strokeWidth={1.4}
-      />
+      {hasData && (
+        <path
+          d={dataPath}
+          fill={color}
+          fillOpacity={0.15}
+          stroke={color}
+          strokeWidth={1.4}
+        />
+      )}
 
       {/* Data points */}
-      {dataPoints.map((p, i) => (
+      {hasData && dataPoints.map((p, i) => (
         <circle
           key={i}
           cx={p.x}
@@ -100,6 +110,20 @@ export function TasteDnaRadar({
           fill={color}
         />
       ))}
+
+      {/* Empty state */}
+      {!hasData && (
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--color-neutral-400)"
+          fontSize={9}
+        >
+          기록이 쌓이면 분석돼요
+        </text>
+      )}
 
       {/* Labels */}
       {labelPositions.map((p, i) => (

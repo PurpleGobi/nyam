@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { Utensils, MapPin } from "lucide-react"
 import type { User, UserStats } from "@/domain/entities/user"
 import type { TasteDnaRestaurant, TasteDnaWine } from "@/application/hooks/use-taste-dna"
+import type { RestaurantStyleDna } from "@/application/hooks/use-style-dna"
 import { TasteDnaRadar } from "@/presentation/components/profile/taste-dna-radar"
 import { cn } from "@/shared/utils/cn"
 
@@ -11,6 +13,7 @@ interface HomeProfileCardProps {
   stats: UserStats | null
   tasteDnaRestaurant: TasteDnaRestaurant | null
   tasteDnaWine: TasteDnaWine | null
+  styleDnaRestaurant: RestaurantStyleDna | null
 }
 
 export function HomeProfileCard({
@@ -18,6 +21,7 @@ export function HomeProfileCard({
   stats,
   tasteDnaRestaurant,
   tasteDnaWine,
+  styleDnaRestaurant,
 }: HomeProfileCardProps) {
   const [tab, setTab] = useState<"food" | "wine">("food")
 
@@ -90,6 +94,7 @@ export function HomeProfileCard({
       <TasteDnaRadar
         axes={tab === "food" ? foodAxes : wineAxes}
         color={tab === "food" ? "var(--color-primary-500)" : "var(--color-wine)"}
+        sampleCount={tab === "food" ? (tasteDnaRestaurant?.sampleCount ?? 0) : (tasteDnaWine?.sampleCount ?? 0)}
       />
 
       {tasteDnaRestaurant?.tasteTypeName && tab === "food" && (
@@ -101,6 +106,45 @@ export function HomeProfileCard({
         <p className="mt-2 text-center text-xs text-neutral-500">
           {tasteDnaWine.dnaSummary}
         </p>
+      )}
+
+      {/* Style DNA */}
+      {tab === "food" && styleDnaRestaurant && (
+        <div className="mt-3 border-t border-neutral-100 pt-3 space-y-2">
+          {styleDnaRestaurant.genres.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Utensils className="h-2.5 w-2.5 mt-0.5 shrink-0 text-neutral-400" />
+              <div className="flex flex-wrap gap-1">
+                {styleDnaRestaurant.genres.slice(0, 5).map((g) => (
+                  <span key={g.genre} className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600">
+                    {g.genre}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {styleDnaRestaurant.areas.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <MapPin className="h-2.5 w-2.5 mt-0.5 shrink-0 text-neutral-400" />
+              <div className="flex flex-wrap gap-1">
+                {styleDnaRestaurant.areas.slice(0, 5).map((a) => (
+                  <span key={a.area} className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                    {a.area}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {styleDnaRestaurant.scenes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {styleDnaRestaurant.scenes.slice(0, 3).map((s) => (
+                <span key={s.scene} className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
+                  {s.scene}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

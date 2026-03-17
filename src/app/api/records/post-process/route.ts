@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
+import { createAdminClient } from "@/infrastructure/supabase/admin"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -7,6 +8,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const admin = createAdminClient()
 
   const { recordId } = await request.json() as { recordId: string }
 
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
       : "taste_dna_cooking"
 
     if (tasteProfile) {
-      const { data: currentDna } = await supabase
+      const { data: currentDna } = await admin
         .from(dnaTable)
         .select("*")
         .eq("user_id", user.id)
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
         updateData[`flavor_${axis}`] = currentValue + alpha * (newValue * ratingWeight - currentValue)
       }
 
-      await supabase.from(dnaTable).upsert({
+      await admin.from(dnaTable).upsert({
         user_id: user.id,
         ...updateData,
       }, { onConflict: "user_id" })
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (record.record_type === "wine" && tasteProfile) {
-    const { data: currentDna } = await supabase
+    const { data: currentDna } = await admin
       .from("taste_dna_wine")
       .select("*")
       .eq("user_id", user.id)
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
       updateData[`pref_${axis}`] = currentValue + alpha * (newValue * ratingWeight - currentValue)
     }
 
-    await supabase.from("taste_dna_wine").upsert({
+    await admin.from("taste_dna_wine").upsert({
       user_id: user.id,
       ...updateData,
     }, { onConflict: "user_id" })
@@ -98,7 +101,7 @@ export async function POST(request: NextRequest) {
     const genreColumn = record.record_type === "wine" ? "variety" : "genre"
 
     if (styleDnaGenreTable) {
-      const { data: existing } = await supabase
+      const { data: existing } = await admin
         .from(styleDnaGenreTable)
         .select("*")
         .eq("user_id", user.id)
@@ -106,14 +109,47 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (existing) {
-        await supabase.from(styleDnaGenreTable).update({
+        await admin.from(styleDnaGenreTable).update({
           record_count: (existing.record_count ?? 0) + 1,
           last_record_at: new Date().toISOString(),
         }).eq("user_id", user.id).eq(genreColumn, record.genre)
       } else {
-        await supabase.from(styleDnaGenreTable).insert({
+        await admin.from(styleDnaGenreTable).insert({
           user_id: user.id,
           [genreColumn]: record.genre,
+          record_count: 1,
+          first_record_at: new Date().toISOString(),
+          last_record_at: new Date().toISOString(),
+        })
+      }
+    }
+  }
+
+  // Update Style DNA - area (restaurant only)
+  if (record.record_type === "restaurant" && record.restaurant_id) {
+    const { data: restaurant } = await admin
+      .from("restaurants")
+      .select("region")
+      .eq("id", record.restaurant_id)
+      .single()
+
+    if (restaurant?.region) {
+      const { data: existing } = await admin
+        .from("style_dna_restaurant_areas")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("area", restaurant.region)
+        .single()
+
+      if (existing) {
+        await admin.from("style_dna_restaurant_areas").update({
+          record_count: (existing.record_count ?? 0) + 1,
+          last_record_at: new Date().toISOString(),
+        }).eq("user_id", user.id).eq("area", restaurant.region)
+      } else {
+        await admin.from("style_dna_restaurant_areas").insert({
+          user_id: user.id,
+          area: restaurant.region,
           record_count: 1,
           first_record_at: new Date().toISOString(),
           last_record_at: new Date().toISOString(),
@@ -131,7 +167,7 @@ export async function POST(request: NextRequest) {
     }[record.record_type as string]
 
     if (styleDnaSceneTable) {
-      const { data: existing } = await supabase
+      const { data: existing } = await admin
         .from(styleDnaSceneTable)
         .select("*")
         .eq("user_id", user.id)
@@ -139,12 +175,12 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (existing) {
-        await supabase.from(styleDnaSceneTable).update({
+        await admin.from(styleDnaSceneTable).update({
           record_count: (existing.record_count ?? 0) + 1,
           last_record_at: new Date().toISOString(),
         }).eq("user_id", user.id).eq("scene", record.scene)
       } else {
-        await supabase.from(styleDnaSceneTable).insert({
+        await admin.from(styleDnaSceneTable).insert({
           user_id: user.id,
           scene: record.scene,
           record_count: 1,
@@ -156,16 +192,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Mark AI analysis complete — ready for Phase 2 review
-  await supabase.from("records").update({
+  await admin.from("records").update({
     phase_status: 2,
   }).eq("id", recordId)
 
   // Update user_stats
   try {
-    await supabase.rpc("increment_user_stats", { p_user_id: user.id })
+    await admin.rpc("increment_user_stats", { p_user_id: user.id })
   } catch {
     // Fallback if RPC doesn't exist: manual update
-    await supabase.from("user_stats").upsert({
+    await admin.from("user_stats").upsert({
       user_id: user.id,
       total_records: 1,
     }, { onConflict: "user_id" })

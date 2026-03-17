@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useProfile } from "@/application/hooks/use-profile"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
+import { useStyleDna } from "@/application/hooks/use-style-dna"
 import { useCalendarRecords } from "@/application/hooks/use-calendar-records"
 import { useTodaysPick } from "@/application/hooks/use-todays-pick"
 import { TodaysPickCard } from "@/presentation/components/home/todays-pick-card"
@@ -23,6 +24,7 @@ export function HomeContainer() {
   const { user: authUser } = useAuthContext()
   const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
+  const { restaurant: styleDnaRestaurant } = useStyleDna(user?.id ?? null)
   const { recordsByDay, records } = useCalendarRecords(user?.id ?? null, calendarYear, calendarMonth)
   // Derive top taste axis from Taste DNA for dna_match preset
   const tasteDnaTopAxis = useMemo(() => {
@@ -73,6 +75,7 @@ export function HomeContainer() {
         stats={stats}
         tasteDnaRestaurant={tasteDnaRestaurant}
         tasteDnaWine={tasteDnaWine}
+        styleDnaRestaurant={styleDnaRestaurant}
       />
 
       {/* 3. Photo Calendar */}
