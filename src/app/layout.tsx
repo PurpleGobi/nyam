@@ -3,6 +3,7 @@ import { Comfortaa, Inter } from "next/font/google"
 import { Toaster } from "sonner"
 import { SWRProvider } from "@/presentation/providers/swr-provider"
 import { AuthProvider } from "@/presentation/providers/auth-provider"
+import { ThemeProvider } from "@/presentation/providers/theme-provider"
 import "./globals.css"
 
 const inter = Inter({
@@ -38,14 +39,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" className={`${inter.variable} ${comfortaa.variable}`}>
+    <html lang="ko" className={`${inter.variable} ${comfortaa.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('nyam-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.documentElement.classList.add('dark')}catch(e){}})()` }} />
+      </head>
       <body>
-        <SWRProvider>
-          <AuthProvider>
-            {children}
-            <Toaster position="top-center" richColors />
-          </AuthProvider>
-        </SWRProvider>
+        <ThemeProvider>
+          <SWRProvider>
+            <AuthProvider>
+              {children}
+              <Toaster position="top-center" richColors />
+            </AuthProvider>
+          </SWRProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

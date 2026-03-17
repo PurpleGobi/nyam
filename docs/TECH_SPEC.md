@@ -13,6 +13,7 @@
 | 스타일링 | Tailwind CSS 4 + shadcn/ui | 유틸리티 기반, 컴포넌트 라이브러리 |
 | 상태 관리 | SWR | 데이터 페칭 + 캐싱 + 조건부 폴링 |
 | 토스트 | sonner | 알림 토스트 (AI 분석 완료 등) |
+| 테마 | ThemeProvider (자체 구현) | CSS 변수 기반 다크모드, localStorage 저장 |
 | 데이터베이스 | PostgreSQL (Supabase) | RLS 적용, 실시간 구독 |
 | 스토리지 | Supabase Storage | record-photos 버킷 |
 | AI | Google Gemini 2.5 Flash | 사진 분석, 블로그 생성 |
@@ -1426,7 +1427,27 @@ nyam_level = f(user_stats.points)
 
 > **MVP에서 batch 재계산 비용**: 기록 50건 이하에서는 무시할 수 있는 수준. 기록 100건+ 시 최적화 검토.
 
-### 5-7. Today's Pick
+### 5-7. 설정 페이지 (`/settings`)
+
+**다크 모드 구현**:
+- CSS 변수 기반. `.dark` 클래스를 `<html>`에 토글.
+- `ThemeProvider` (React Context): theme 상태 관리 + localStorage(`nyam-theme`) 저장.
+- FOUC 방지: `<head>` 인라인 스크립트로 페이지 로드 전 `.dark` 클래스 적용.
+- 3-way 선택: light / dark / system. system은 `prefers-color-scheme` 미디어쿼리 연동.
+
+**클라이언트 설정 저장** (localStorage 기반, 서버 동기화는 Phase 2+):
+- `nyam-theme`: light | dark | system
+- `nyam-push`: true | false (푸시 알림)
+- `nyam-weekly-report`: true | false (주간 리포트)
+- `nyam-default-visibility`: private | group (기록 기본 공개 범위)
+
+**계정 탈퇴 플로우**:
+1. 사유 선택 (선택적, 칩 UI)
+2. "탈퇴합니다" 텍스트 확인 입력
+3. POST /api/auth/delete-account → `account_deletions` INSERT + `users.is_deactivated = true`
+4. 30일 유예 후 Cron 실행으로 완전 삭제
+
+### 5-8. Today's Pick
 
 1. 고평점 재방문 후보 (rating ≥ 70, 2개월 이상 미방문)
 2. 위치 기반 근처 기록

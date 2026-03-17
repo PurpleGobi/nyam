@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useAuthContext } from "@/presentation/providers/auth-provider"
 import { useProfile } from "@/application/hooks/use-profile"
 import { useTasteDna } from "@/application/hooks/use-taste-dna"
@@ -8,10 +9,11 @@ import { TasteDnaRadar } from "@/presentation/components/profile/taste-dna-radar
 import { StatsSummary } from "@/presentation/components/profile/stats-summary"
 import { LevelBadge } from "@/presentation/components/profile/level-badge"
 import { cn } from "@/shared/utils/cn"
-import { LogOut, Settings } from "lucide-react"
+import { Settings } from "lucide-react"
+import { ROUTES } from "@/shared/constants/routes"
 
 export function ProfileContainer() {
-  const { user: authUser, signOut } = useAuthContext()
+  const { user: authUser } = useAuthContext()
   const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
   const [dnaTab, setDnaTab] = useState<"food" | "wine" | "cooking">("food")
@@ -58,14 +60,9 @@ export function ProfileContainer() {
             <LevelBadge level={stats?.nyamLevel ?? 1} points={stats?.points ?? 0} />
           </div>
         </div>
-        <div className="flex gap-1">
-          <button type="button" className="p-2 text-neutral-400 hover:text-neutral-600">
-            <Settings className="h-5 w-5" />
-          </button>
-          <button type="button" onClick={() => signOut()} className="p-2 text-neutral-400 hover:text-neutral-600">
-            <LogOut className="h-5 w-5" />
-          </button>
-        </div>
+        <Link href={ROUTES.SETTINGS} className="p-2 text-neutral-400 hover:text-neutral-600">
+          <Settings className="h-5 w-5" />
+        </Link>
       </div>
 
       <StatsSummary stats={stats} />

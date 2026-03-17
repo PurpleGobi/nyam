@@ -15,6 +15,7 @@ export const ROUTES = {
   COMPATIBILITY: "/compatibility",
   WRAPPED: "/wrapped",
   OFFLINE: "/offline",
+  SETTINGS: "/settings",
   recordDetail: (id: string) => `/records/${id}` as const,
   recordEdit: (id: string) => `/records/${id}/edit` as const,
   recordComplete: (id: string) => `/records/${id}/complete` as const,
