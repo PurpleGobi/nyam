@@ -101,6 +101,7 @@ function shuffle<T>(arr: T[]): T[] {
 export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | null = null): TodaysPickResult {
   const supabase = createClient()
   const [refreshKey, setRefreshKey] = useState(0)
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
   const { data: allRecords, isLoading } = useSWR(
     userId ? `todays-pick-records-${userId}` : null,
@@ -186,7 +187,6 @@ export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | n
 
   const result = useMemo(() => {
     const records = allRecords ?? []
-    // 기록 0건이면 콜드 스타트
     if (records.length === 0) return { pick: null, reason: null }
 
     const timeSlot = getTimeSlot()
@@ -196,45 +196,59 @@ export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | n
     const withPhotos = records.filter((r) => r.photos.length > 0)
     const basePool = withPhotos.length > 0 ? withPhotos : records
 
-    // 시간대 장르 필터
-    const genreFiltered = basePool.filter((r) => r.genre != null && genres.includes(r.genre))
+    // 이미 본 기록 제외 (다 봤으면 리셋)
+    const unseen = basePool.filter((r) => !seenIds.has(r.id))
+    const pool = unseen.length > 0 ? unseen : basePool
 
-    // 프리셋을 랜덤 순서로 시도 — 시간대 필터된 풀 → 전체 풀 순서로 폴백
+    // 시간대 장르 필터
+    const genreFiltered = pool.filter((r) => r.genre != null && genres.includes(r.genre))
+
     const presets = buildReasonPresets(timeSlot)
     const shuffledPresets = shuffle(presets)
 
-    // Phase 1: 시간대 장르 필터 + 프리셋
+    // 풀에서 1건 뽑는 헬퍼 (항상 다른 것 우선)
+    const pickOne = (arr: RecordWithPhotos[]) => arr[Math.floor(Math.random() * arr.length)]
+
+    // Phase 1: 시간대 장르 + 프리셋
     if (genreFiltered.length > 0) {
       for (const preset of shuffledPresets) {
         const matched = genreFiltered.filter((r) => preset.filter(r, tasteDnaTopAxis))
         if (matched.length > 0) {
-          const pick = matched[Math.floor(Math.random() * matched.length)]
-          return { pick, reason: { key: preset.key, text: preset.text } }
+          return { pick: pickOne(matched), reason: { key: preset.key, text: preset.text } }
         }
       }
-      // 장르 매칭은 되지만 프리셋 조건 불일치 → 장르 풀에서 랜덤
-      const pick = genreFiltered[Math.floor(Math.random() * genreFiltered.length)]
+      const pick = pickOne(genreFiltered)
       return { pick, reason: { key: "genre_match", text: `${pick.genre ?? "맛있는"} 맛집` } }
     }
 
-    // Phase 2: 시간대 장르 없음 → 전체 풀에서 프리셋 시도
+    // Phase 2: 전체 풀 + 프리셋
     for (const preset of shuffledPresets) {
-      const matched = basePool.filter((r) => preset.filter(r, tasteDnaTopAxis))
+      const matched = pool.filter((r) => preset.filter(r, tasteDnaTopAxis))
       if (matched.length > 0) {
-        const pick = matched[Math.floor(Math.random() * matched.length)]
-        return { pick, reason: { key: preset.key, text: preset.text } }
+        return { pick: pickOne(matched), reason: { key: preset.key, text: preset.text } }
       }
     }
 
-    // Phase 3: 최종 폴백 — 전체에서 랜덤
-    const pick = basePool[Math.floor(Math.random() * basePool.length)]
-    return { pick, reason: { key: "random", text: "오늘의 추천" } }
+    // Phase 3: 최종 폴백
+    return { pick: pickOne(pool), reason: { key: "random", text: "오늘의 추천" } }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allRecords, tasteDnaTopAxis, refreshKey])
+  }, [allRecords, tasteDnaTopAxis, refreshKey, seenIds])
 
   const refresh = useCallback(() => {
+    if (result.pick) {
+      setSeenIds((prev) => {
+        const next = new Set(prev)
+        next.add(result.pick!.id)
+        // 전체 기록 다 봤으면 리셋 (현재 것만 남겨서 연속 중복 방지)
+        const total = allRecords?.length ?? 0
+        if (next.size >= total) {
+          return new Set([result.pick!.id])
+        }
+        return next
+      })
+    }
     setRefreshKey((k) => k + 1)
-  }, [])
+  }, [result.pick, allRecords?.length])
 
   return {
     pick: result.pick,
