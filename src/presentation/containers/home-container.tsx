@@ -24,7 +24,7 @@ export function HomeContainer() {
   const { user: authUser } = useAuthContext()
   const { user, stats } = useProfile(authUser?.id)
   const { restaurant: tasteDnaRestaurant, wine: tasteDnaWine } = useTasteDna(user?.id ?? null)
-  const { restaurant: styleDnaRestaurant } = useStyleDna(user?.id ?? null)
+  const { restaurant: styleDnaRestaurant, wine: styleDnaWine } = useStyleDna(user?.id ?? null)
   const { recordsByDay, records } = useCalendarRecords(user?.id ?? null, calendarYear, calendarMonth)
   // Derive top taste axis from Taste DNA for dna_match preset
   const tasteDnaTopAxis = useMemo(() => {
@@ -76,6 +76,7 @@ export function HomeContainer() {
         tasteDnaRestaurant={tasteDnaRestaurant}
         tasteDnaWine={tasteDnaWine}
         styleDnaRestaurant={styleDnaRestaurant}
+        styleDnaWine={styleDnaWine}
       />
 
       {/* 3. Photo Calendar */}

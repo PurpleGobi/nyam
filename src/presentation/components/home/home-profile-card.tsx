@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Utensils, MapPin } from "lucide-react"
+import { Utensils, MapPin, Wine, Globe } from "lucide-react"
 import type { User, UserStats } from "@/domain/entities/user"
 import type { TasteDnaRestaurant, TasteDnaWine } from "@/application/hooks/use-taste-dna"
-import type { RestaurantStyleDna } from "@/application/hooks/use-style-dna"
+import type { RestaurantStyleDna, WineStyleDna } from "@/application/hooks/use-style-dna"
 import { TasteDnaRadar } from "@/presentation/components/profile/taste-dna-radar"
 import { cn } from "@/shared/utils/cn"
 
@@ -14,6 +14,7 @@ interface HomeProfileCardProps {
   tasteDnaRestaurant: TasteDnaRestaurant | null
   tasteDnaWine: TasteDnaWine | null
   styleDnaRestaurant: RestaurantStyleDna | null
+  styleDnaWine: WineStyleDna | null
 }
 
 export function HomeProfileCard({
@@ -22,6 +23,7 @@ export function HomeProfileCard({
   tasteDnaRestaurant,
   tasteDnaWine,
   styleDnaRestaurant,
+  styleDnaWine,
 }: HomeProfileCardProps) {
   const [tab, setTab] = useState<"food" | "wine">("food")
 
@@ -140,6 +142,44 @@ export function HomeProfileCard({
               {styleDnaRestaurant.scenes.slice(0, 3).map((s) => (
                 <span key={s.scene} className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
                   {s.scene}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Wine Style DNA */}
+      {tab === "wine" && styleDnaWine && (
+        <div className="mt-3 border-t border-neutral-100 pt-3 space-y-2">
+          {styleDnaWine.varieties.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Wine className="h-2.5 w-2.5 mt-0.5 shrink-0 text-neutral-400" />
+              <div className="flex flex-wrap gap-1">
+                {styleDnaWine.varieties.slice(0, 5).map((v) => (
+                  <span key={v.variety} className="rounded-full bg-wine-light px-2 py-0.5 text-[10px] font-medium text-wine">
+                    {v.variety}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {styleDnaWine.regions.length > 0 && (
+            <div className="flex items-start gap-1.5">
+              <Globe className="h-2.5 w-2.5 mt-0.5 shrink-0 text-neutral-400" />
+              <div className="flex flex-wrap gap-1">
+                {styleDnaWine.regions.slice(0, 5).map((r) => (
+                  <span key={r.region} className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                    {r.region}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {styleDnaWine.types.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {styleDnaWine.types.slice(0, 5).map((t) => (
+                <span key={t.type} className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
+                  {t.type}
                 </span>
               ))}
             </div>
