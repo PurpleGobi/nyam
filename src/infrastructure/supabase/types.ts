@@ -1,0 +1,7 @@
+export type RecordType = "restaurant" | "wine" | "cooking"
+export type Visibility = "private" | "group" | "public"
+export type AuthProvider = "kakao" | "naver" | "google" | "apple"
+export type GroupRole = "owner" | "moderator" | "member"
+export type MembershipStatus = "active" | "pending" | "banned"
+export type ReactionType = "like" | "comment" | "useful" | "yummy"
+export type TasteProfileSource = "ai" | "pending_user" | "ai_user_avg" | "manual"
