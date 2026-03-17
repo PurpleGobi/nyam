@@ -9,7 +9,7 @@ interface AuthContextValue {
   loading: boolean
   isAuthenticated: boolean
   signInWithProvider: (provider: "google" | "kakao" | "apple") => Promise<void>
-  signInWithNaver: () => Promise<void>
+  signInWithNaver: () => void
   signOut: () => Promise<void>
 }
 

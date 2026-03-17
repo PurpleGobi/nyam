@@ -38,16 +38,20 @@ export function useAuth() {
     [supabase],
   )
 
-  const signInWithNaver = useCallback(async () => {
-    // Naver uses custom OAuth flow through Supabase
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "kakao", // placeholder - Naver requires custom OIDC setup
-      options: {
-        redirectTo: `${window.location.origin}/auth/naver/callback`,
-      },
+  const signInWithNaver = useCallback(() => {
+    const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID
+    if (!clientId) throw new Error("Naver Client ID not configured")
+    const state = crypto.randomUUID()
+    sessionStorage.setItem("naver_oauth_state", state)
+    const redirectUri = `${window.location.origin}/auth/naver/callback`
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      state,
     })
-    if (error) throw error
-  }, [supabase])
+    window.location.href = `https://nid.naver.com/oauth2.0/authorize?${params}`
+  }, [])
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
