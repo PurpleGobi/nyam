@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   const lat = Number(searchParams.get("lat"))
   const lng = Number(searchParams.get("lng"))
   const radius = Number(searchParams.get("radius")) || 500
-  const scene = searchParams.get("scene")
+  const sceneParam = searchParams.get("scene")
+  const scene = sceneParam?.split(",")[0] ?? null
   const genre = searchParams.get("genre")
 
   if (searchParams.get("lat") === null || searchParams.get("lng") === null || isNaN(lat) || isNaN(lng)) {

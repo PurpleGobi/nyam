@@ -29,15 +29,35 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const query = typeof body.query === "string" ? body.query.trim() : ""
+  const filterContext = body.filterContext as {
+    scenes?: string[]
+    areas?: string[]
+    isNearby?: boolean
+  } | undefined
 
   if (!query || query.length > 200) {
     return NextResponse.json({ error: "유효한 검색어를 입력해주세요" }, { status: 400 })
   }
 
+  // Build filter context hint for LLM
+  const contextHints: string[] = []
+  if (filterContext?.scenes && filterContext.scenes.length > 0) {
+    contextHints.push(`사용자가 이미 선택한 씬: [${filterContext.scenes.join(", ")}]`)
+  }
+  if (filterContext?.areas && filterContext.areas.length > 0) {
+    contextHints.push(`사용자가 이미 선택한 지역: [${filterContext.areas.join(", ")}]`)
+  }
+  if (filterContext?.isNearby) {
+    contextHints.push("사용자가 '내주변' 모드를 활성화한 상태입니다")
+  }
+  const contextBlock = contextHints.length > 0
+    ? `\n\n사용자 필터 컨텍스트:\n${contextHints.join("\n")}\n이미 선택된 필터가 있으면 텍스트에서 해당 정보는 무시하고 추가 정보만 추출하세요.`
+    : ""
+
   try {
     const prompt = `사용자가 식당 추천을 요청했습니다. 아래 텍스트에서 지역, 상황, 음식 장르를 추출하세요.
 
-입력: "${query}"
+입력: "${query}"${contextBlock}
 
 추출 규칙:
 - area: 지역명 (예: "강남역", "성수동", "홍대", "이태원"). 없으면 null.

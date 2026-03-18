@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { Compass, MapPin, Loader2, Search } from "lucide-react"
 import { useDiscoverEngine } from "@/application/hooks/use-discover-engine"
@@ -11,7 +11,7 @@ import { DiscoverOnboarding } from "@/presentation/components/discover/discover-
 import { DiscoverResultCard } from "@/presentation/components/discover/discover-result-card"
 import { EmptyState } from "@/presentation/components/ui/empty-state"
 import { FOOD_CATEGORIES } from "@/shared/constants/categories"
-import { RESTAURANT_SCENES } from "@/shared/constants/scenes"
+import { DISCOVER_SCENES } from "@/shared/constants/scenes"
 import { cn } from "@/shared/utils/cn"
 
 /** Top areas for quick selection */
@@ -45,18 +45,28 @@ export function DiscoverContainer() {
     isLoading,
     error,
     filters,
-    setArea,
-    setScene,
+    toggleArea,
+    toggleScene,
     setGenre,
     searchNearby,
     sendFeedback,
     isNearbyMode,
     isSeedActive,
+    toggleNearby,
   } = useDiscoverEngine(seed)
 
   const { location, loading: geoLoading, requestLocation } = useGeolocation()
   const [manualView, setManualView] = useState<ViewState | null>(null)
   const [queryText, setQueryText] = useState("")
+
+  // Auto-activate nearby mode on first load when GPS available
+  const [nearbyInitialized, setNearbyInitialized] = useState(false)
+  useEffect(() => {
+    if (!nearbyInitialized && location && !isSeedActive) {
+      searchNearby(location.lat, location.lng)
+      setNearbyInitialized(true)
+    }
+  }, [location, nearbyInitialized, isSeedActive, searchNearby])
 
   const viewState: ViewState = (() => {
     if (manualView) return manualView
@@ -71,44 +81,33 @@ export function DiscoverContainer() {
     await completeOnboarding(selections)
     const firstArea = selections.areas[0] ?? null
     const firstScene = selections.scenes[0] ?? null
-    if (firstArea) setArea(firstArea)
-    if (firstScene) setScene(firstScene)
+    if (firstArea) toggleArea(firstArea)
+    if (firstScene) toggleScene(firstScene)
     setManualView("results")
-  }, [completeOnboarding, setArea, setScene])
+  }, [completeOnboarding, toggleArea, toggleScene])
 
   const handleOnboardingSkip = useCallback(async () => {
     await skipOnboarding()
     setManualView("search")
   }, [skipOnboarding])
 
-  const handleAreaSelect = useCallback((area: string) => {
-    const newArea = filters.area === area ? null : area
-    setArea(newArea)
-  }, [filters.area, setArea])
-
-  const handleSceneSelect = useCallback((scene: string) => {
-    const newScene = filters.scene === scene ? null : scene
-    setScene(newScene)
-  }, [filters.scene, setScene])
-
   const handleGenreSelect = useCallback((genre: string) => {
     setGenre(filters.genre === genre ? null : genre)
   }, [filters.genre, setGenre])
 
-  const handleNearby = useCallback(() => {
+  const handleNearbyToggle = useCallback(() => {
     if (location) {
-      searchNearby(location.lat, location.lng)
-      setManualView("results")
+      toggleNearby(location.lat, location.lng)
     } else {
       requestLocation()
     }
-  }, [location, searchNearby, requestLocation])
+  }, [location, toggleNearby, requestLocation])
 
   const handleSearch = useCallback(() => {
-    if (filters.area || filters.scene || isNearbyMode) {
+    if (filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode) {
       setManualView("results")
     }
-  }, [filters.area, filters.scene, isNearbyMode])
+  }, [filters.areas, filters.scenes, isNearbyMode])
 
   const [isParsing, setIsParsing] = useState(false)
 
@@ -121,12 +120,19 @@ export function DiscoverContainer() {
       const res = await fetch("/api/discover/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: trimmed }),
+        body: JSON.stringify({
+          query: trimmed,
+          filterContext: {
+            scenes: filters.scenes,
+            areas: filters.areas,
+            isNearby: isNearbyMode,
+          },
+        }),
       })
 
       if (!res.ok) {
         // Fallback: use raw text as area
-        setArea(trimmed)
+        toggleArea(trimmed)
         setManualView("results")
         return
       }
@@ -135,17 +141,16 @@ export function DiscoverContainer() {
         parsed: { area: string | null; scene: string | null; genre: string | null }
       }
 
-      if (parsed.area) setArea(parsed.area)
-      if (parsed.scene) setScene(parsed.scene)
+      if (parsed.area) toggleArea(parsed.area)
+      if (parsed.scene) toggleScene(parsed.scene)
       if (parsed.genre) setGenre(parsed.genre)
 
-      // No area parsed → use GPS location for nearby search
+      // No area parsed -> use GPS location for nearby search
       if (!parsed.area && location) {
         searchNearby(location.lat, location.lng)
       } else if (!parsed.area && !location) {
-        // No area + no GPS → request location, or use seed area as last resort
         if (seed?.area) {
-          setArea(seed.area)
+          toggleArea(seed.area)
         } else {
           requestLocation()
         }
@@ -153,18 +158,18 @@ export function DiscoverContainer() {
 
       // If nothing at all was parsed, use raw text as area
       if (!parsed.area && !parsed.scene && !parsed.genre) {
-        setArea(trimmed)
+        toggleArea(trimmed)
       }
 
       setManualView("results")
     } catch {
       // Network error fallback
-      setArea(trimmed)
+      toggleArea(trimmed)
       setManualView("results")
     } finally {
       setIsParsing(false)
     }
-  }, [queryText, setArea, setScene, setGenre, location, searchNearby, requestLocation, seed])
+  }, [queryText, toggleArea, toggleScene, setGenre, location, searchNearby, requestLocation, seed, filters.scenes, filters.areas, isNearbyMode])
 
   const handleBackToSearch = useCallback(() => {
     setManualView("search")
@@ -175,6 +180,73 @@ export function DiscoverContainer() {
       sendFeedback(restaurantName, kakaoId, feedback)
     }
   }, [sendFeedback])
+
+  // --- Filter Bar (shared between search & results views) ---
+  const filterBar = (
+    <div className="flex flex-col gap-2">
+      {/* Scene filters - 누구랑 */}
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-[11px] font-semibold text-neutral-400">누구랑</span>
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          {DISCOVER_SCENES.map((scene) => (
+            <button
+              key={scene.value}
+              type="button"
+              onClick={() => toggleScene(scene.value)}
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                filters.scenes.includes(scene.value)
+                  ? "bg-primary-500 text-white"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+              )}
+            >
+              {scene.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Area filters - 어디서 */}
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-[11px] font-semibold text-neutral-400">어디서</span>
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          <button
+            type="button"
+            onClick={handleNearbyToggle}
+            disabled={geoLoading}
+            className={cn(
+              "shrink-0 flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+              isNearbyMode
+                ? "bg-blue-500 text-white"
+                : "bg-blue-50 text-blue-600 hover:bg-blue-100",
+            )}
+          >
+            {geoLoading ? (
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+            ) : (
+              <MapPin className="h-2.5 w-2.5" />
+            )}
+            내주변
+          </button>
+          {QUICK_AREAS.map((area) => (
+            <button
+              key={area}
+              type="button"
+              onClick={() => toggleArea(area)}
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                filters.areas.includes(area)
+                  ? "bg-blue-500 text-white"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+              )}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 
   // --- Render ---
 
@@ -198,17 +270,14 @@ export function DiscoverContainer() {
     )
   }
 
-  // Search entry screen (section 3-2)
+  // Search entry screen
   if (viewState === "search") {
     return (
-      <div className="flex flex-col gap-5 px-4 pt-6 pb-4">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-neutral-800">지금 뭐 먹고 싶어요?</h1>
-          <p className="mt-1 text-sm text-neutral-500">상황과 지역을 선택하거나 자유롭게 입력하세요</p>
-        </div>
+      <div className="flex flex-col gap-4 px-4 pt-4 pb-4">
+        {/* Filter bar at top */}
+        {filterBar}
 
-        {/* Natural language input bar (section 3-2) */}
+        {/* Natural language input bar */}
         <div className="relative">
           {isParsing ? (
             <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-500 animate-spin" />
@@ -221,85 +290,17 @@ export function DiscoverContainer() {
             onChange={(e) => setQueryText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
             disabled={isParsing}
-            placeholder="점심 아무거나, 강남 파스타, 비 오는 날 따뜻한 거..."
+            placeholder="강남 파스타, 비 오는 날 따뜻한 거..."
             className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors disabled:opacity-60"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="h-px flex-1 bg-neutral-100" />
-          <span className="text-xs text-neutral-400">또는 빠르게 선택</span>
-          <div className="h-px flex-1 bg-neutral-100" />
-        </div>
-
-        {/* Scene filters */}
-        <div>
-          <p className="mb-2 text-xs font-semibold text-neutral-500">누구랑?</p>
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-            {RESTAURANT_SCENES.map((scene) => (
-              <button
-                key={scene.value}
-                type="button"
-                onClick={() => handleSceneSelect(scene.value)}
-                className={cn(
-                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  filters.scene === scene.value
-                    ? "bg-primary-500 text-white"
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-                )}
-              >
-                {scene.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Area filters */}
-        <div>
-          <p className="mb-2 text-xs font-semibold text-neutral-500">어디서?</p>
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-            <button
-              type="button"
-              onClick={handleNearby}
-              disabled={geoLoading}
-              className={cn(
-                "shrink-0 flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                isNearbyMode
-                  ? "bg-blue-500 text-white"
-                  : "bg-blue-50 text-blue-600 hover:bg-blue-100",
-              )}
-            >
-              {geoLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <MapPin className="h-3 w-3" />
-              )}
-              내 주변
-            </button>
-            {QUICK_AREAS.map((area) => (
-              <button
-                key={area}
-                type="button"
-                onClick={() => handleAreaSelect(area)}
-                className={cn(
-                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  filters.area === area
-                    ? "bg-blue-500 text-white"
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-                )}
-              >
-                {area}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Search button */}
-        {(filters.area || filters.scene || isNearbyMode) && (
+        {(filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode) && (
           <button
             type="button"
             onClick={handleSearch}
-            className="mt-2 w-full rounded-xl bg-primary-500 py-3 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] transition-all"
+            className="w-full rounded-xl bg-primary-500 py-3 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] transition-all"
           >
             추천 받기
           </button>
@@ -308,15 +309,21 @@ export function DiscoverContainer() {
     )
   }
 
-  // Results screen (section 3-5)
+  // Results screen
   return (
-    <div className="flex flex-col gap-4 px-4 pt-6 pb-4">
+    <div className="flex flex-col gap-3 px-4 pt-4 pb-4">
+      {/* Filter bar at top */}
+      {filterBar}
+
       {/* Results header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-1">
         <h1 className="text-lg font-bold text-neutral-800">
           {isNearbyMode
-            ? "내 주변"
-            : `${filters.area ?? ""} ${filters.scene ?? ""}`.trim() || "추천 결과"}
+            ? `내 주변${filters.scenes.length > 0 ? ` ${filters.scenes.join(" ")}` : ""}`
+            : [
+                ...filters.areas,
+                ...filters.scenes,
+              ].join(" ") || "추천 결과"}
         </h1>
         <button
           type="button"
@@ -325,25 +332,6 @@ export function DiscoverContainer() {
         >
           다시 검색
         </button>
-      </div>
-
-      {/* Filter chips (current filters) */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-        {RESTAURANT_SCENES.map((scene) => (
-          <button
-            key={scene.value}
-            type="button"
-            onClick={() => handleSceneSelect(scene.value)}
-            className={cn(
-              "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-              filters.scene === scene.value
-                ? "bg-primary-500 text-white"
-                : "bg-neutral-100 text-neutral-500",
-            )}
-          >
-            {scene.label}
-          </button>
-        ))}
       </div>
 
       {/* Genre post-filter tabs */}
@@ -380,7 +368,6 @@ export function DiscoverContainer() {
       {/* Results list */}
       {isLoading ? (
         <div className="flex flex-col gap-3">
-          {/* Skeleton cards (section 8-3) */}
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse rounded-2xl bg-white shadow-[var(--shadow-sm)] p-4">
               <div className="flex items-start gap-3">

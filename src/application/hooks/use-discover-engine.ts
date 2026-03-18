@@ -6,8 +6,8 @@ import type { DiscoverResult, DiscoverResponse } from "@/domain/entities/discove
 import { useAuth } from "@/application/hooks/use-auth"
 
 interface DiscoverFilters {
-  area: string | null
-  scene: string | null
+  areas: string[]
+  scenes: string[]
   genre: string | null
 }
 
@@ -23,20 +23,23 @@ interface UseDiscoverEngineReturn {
   filters: DiscoverFilters
   source: "cache" | "realtime" | null
   isSeedActive: boolean
-  setArea: (area: string | null) => void
-  setScene: (scene: string | null) => void
+  setAreas: (areas: string[]) => void
+  toggleArea: (area: string) => void
+  setScenes: (scenes: string[]) => void
+  toggleScene: (scene: string) => void
   setGenre: (genre: string | null) => void
   searchNearby: (lat: number, lng: number, radius?: number) => void
   sendFeedback: (restaurantName: string, kakaoId: string | null, feedback: "good" | "bad") => Promise<void>
   isNearbyMode: boolean
+  toggleNearby: (lat: number, lng: number) => void
 }
 
 function buildQueryKey(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string | null {
   if (nearby) {
-    return `discover-nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}-${filters.scene}-${filters.genre}`
+    return `discover-nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}-${filters.scenes.join(",")}-${filters.genre}`
   }
-  if (!filters.area && !filters.scene) return null
-  return `discover-${filters.area}-${filters.scene}-${filters.genre}`
+  if (filters.areas.length === 0 && filters.scenes.length === 0) return null
+  return `discover-${filters.areas.join(",")}-${filters.scenes.join(",")}-${filters.genre}`
 }
 
 function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string {
@@ -45,14 +48,14 @@ function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; 
     params.set("lat", String(nearby.lat))
     params.set("lng", String(nearby.lng))
     params.set("radius", String(nearby.radius))
-    if (filters.scene) params.set("scene", filters.scene)
+    if (filters.scenes.length > 0) params.set("scene", filters.scenes.join(","))
     if (filters.genre) params.set("genre", filters.genre)
     return `/api/discover/nearby?${params}`
   }
 
   const params = new URLSearchParams()
-  if (filters.area) params.set("area", filters.area)
-  if (filters.scene) params.set("scene", filters.scene)
+  if (filters.areas.length > 0) params.set("area", filters.areas[0])
+  if (filters.scenes.length > 0) params.set("scene", filters.scenes.join(","))
   if (filters.genre) params.set("genre", filters.genre)
   return `/api/discover?${params}`
 }
@@ -60,8 +63,8 @@ function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; 
 export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn {
   const { isAuthenticated } = useAuth()
   const [filters, setFilters] = useState<DiscoverFilters>({
-    area: null,
-    scene: null,
+    areas: [],
+    scenes: [],
     genre: null,
   })
   const [nearby, setNearby] = useState<{ lat: number; lng: number; radius: number } | null>(null)
@@ -71,7 +74,11 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
   // Derived state: use seed values until user manually interacts with filters
   const effectiveFilters: DiscoverFilters = useMemo(() => {
     if (!interactedRef.current && seed) {
-      return { area: seed.area ?? null, scene: seed.scene ?? null, genre: null }
+      return {
+        areas: seed.area ? [seed.area] : [],
+        scenes: seed.scene ? [seed.scene] : [],
+        genre: null,
+      }
     }
     return filters
   }, [seed, filters])
@@ -93,15 +100,36 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     { revalidateOnFocus: false, dedupingInterval: 5000 },
   )
 
-  const setArea = useCallback((area: string | null) => {
+  const setAreas = useCallback((areas: string[]) => {
     interactedRef.current = true
     setNearby(null)
-    setFilters((prev) => ({ ...prev, area }))
+    setFilters((prev) => ({ ...prev, areas }))
   }, [])
 
-  const setScene = useCallback((scene: string | null) => {
+  const toggleArea = useCallback((area: string) => {
     interactedRef.current = true
-    setFilters((prev) => ({ ...prev, scene }))
+    setNearby(null)
+    setFilters((prev) => ({
+      ...prev,
+      areas: prev.areas.includes(area)
+        ? prev.areas.filter((a) => a !== area)
+        : [...prev.areas, area],
+    }))
+  }, [])
+
+  const setScenes = useCallback((scenes: string[]) => {
+    interactedRef.current = true
+    setFilters((prev) => ({ ...prev, scenes }))
+  }, [])
+
+  const toggleScene = useCallback((scene: string) => {
+    interactedRef.current = true
+    setFilters((prev) => ({
+      ...prev,
+      scenes: prev.scenes.includes(scene)
+        ? prev.scenes.filter((s) => s !== scene)
+        : [...prev.scenes, scene],
+    }))
   }, [])
 
   const setGenre = useCallback((genre: string | null) => {
@@ -110,8 +138,18 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
   }, [])
 
   const searchNearby = useCallback((lat: number, lng: number, radius = 500) => {
+    interactedRef.current = true
     setNearby({ lat, lng, radius })
   }, [])
+
+  const toggleNearby = useCallback((lat: number, lng: number) => {
+    interactedRef.current = true
+    if (nearby) {
+      setNearby(null)
+    } else {
+      setNearby({ lat, lng, radius: 500 })
+    }
+  }, [nearby])
 
   const sendFeedback = useCallback(async (
     restaurantName: string,
@@ -128,8 +166,8 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
           kakaoId,
           feedback,
           queryContext: {
-            area: effectiveFilters.area,
-            scene: effectiveFilters.scene,
+            area: effectiveFilters.areas[0] ?? null,
+            scene: effectiveFilters.scenes[0] ?? null,
             genre: effectiveFilters.genre,
           },
         }),
@@ -151,11 +189,14 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     filters: effectiveFilters,
     source: data?.source ?? null,
     isSeedActive,
-    setArea,
-    setScene,
+    setAreas,
+    toggleArea,
+    setScenes,
+    toggleScene,
     setGenre,
     searchNearby,
     sendFeedback,
     isNearbyMode: nearby !== null,
+    toggleNearby,
   }
 }

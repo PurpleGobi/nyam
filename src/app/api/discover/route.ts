@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const area = searchParams.get("area")
-  const scene = searchParams.get("scene")
+  const sceneParam = searchParams.get("scene")
+  const scene = sceneParam?.split(",")[0] ?? null
   const genre = searchParams.get("genre")
 
   if (!area && !scene) {

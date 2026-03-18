@@ -9,6 +9,16 @@ export const RESTAURANT_SCENES = [
   { value: "간단점심", label: "간단점심" },
 ] as const
 
+/** Discover filter scenes - only party-size/atmosphere-indicating scenes */
+export const DISCOVER_SCENES = [
+  { value: "혼밥", label: "혼밥" },
+  { value: "데이트", label: "데이트" },
+  { value: "비즈니스", label: "비즈니스" },
+  { value: "가족", label: "가족" },
+  { value: "친구모임", label: "친구모임" },
+  { value: "술자리", label: "술자리" },
+] as const
+
 export type RestaurantScene = (typeof RESTAURANT_SCENES)[number]["value"]
 
 export const WINE_SCENES = [
