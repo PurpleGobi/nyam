@@ -304,7 +304,7 @@ async function fetchSeedGenres(
     .from("discover_preferences")
     .select("seed_genres")
     .eq("user_id", userId)
-    .single()
+    .maybeSingle()
   return (data?.seed_genres as string[] | null) ?? []
 }
 
