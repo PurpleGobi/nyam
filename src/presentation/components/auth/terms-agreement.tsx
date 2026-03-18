@@ -40,7 +40,7 @@ export function TermsAgreement({ onAllAgreed }: TermsAgreementProps) {
       <button
         type="button"
         onClick={toggleAll}
-        className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+        className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 p-4"
       >
         <div
           className={cn(

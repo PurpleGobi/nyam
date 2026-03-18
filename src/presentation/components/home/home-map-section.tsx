@@ -26,7 +26,7 @@ export function HomeMapSection({ records, onRecordClick }: HomeMapSectionProps) 
 
   if (recordsWithLocation.length === 0) {
     return (
-      <div className="rounded-2xl bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+      <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
         <div className="flex h-48 flex-col items-center justify-center gap-3 bg-neutral-50">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50">
             <MapPin className="h-6 w-6 text-primary-500" />
@@ -53,7 +53,7 @@ export function HomeMapSection({ records, onRecordClick }: HomeMapSectionProps) 
   }))
 
   return (
-    <div className="rounded-2xl bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
       {HAS_KAKAO_KEY ? (
         <KakaoMap
           pins={pins}
@@ -128,7 +128,7 @@ function PlaceholderMap({
       })}
 
       <div className="absolute inset-0 flex items-end justify-center pb-2">
-        <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur-sm">
+        <div className="flex items-center gap-1 rounded-full bg-card/90 px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur-sm">
           <Navigation className="h-3 w-3 text-primary-500" />
           {records.length}개의 위치 기록
         </div>

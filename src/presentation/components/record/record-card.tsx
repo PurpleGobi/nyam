@@ -12,7 +12,7 @@ export function RecordCard({ record }: RecordCardProps) {
 
   return (
     <Link href={ROUTES.recordDetail(record.id)} className="block">
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-sm)]">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-sm)]">
         {firstPhoto && (
           <div className="relative h-40 w-full">
             <Image

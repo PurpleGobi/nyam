@@ -37,7 +37,7 @@ export function RecommendContainer() {
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-4">
       {/* Taste DNA */}
-      <div className="rounded-2xl bg-white p-5 shadow-[var(--shadow-sm)]">
+      <div className="rounded-2xl bg-card p-5 shadow-[var(--shadow-sm)]">
         <h2 className="text-sm font-semibold text-neutral-700 mb-1">나의 Taste DNA</h2>
         {dnaAxes ? (
           <>
@@ -84,7 +84,7 @@ export function RecommendContainer() {
         value={additionalContext}
         onChange={(e) => setAdditionalContext(e.target.value)}
         placeholder='추가 요청 (선택) — 예: "매운 거 빼고", "가성비 좋은 곳"'
-        className="h-16 resize-none rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
+        className="h-16 resize-none rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
       />
 
       {/* Location + Request */}
@@ -126,7 +126,7 @@ export function RecommendContainer() {
           {recommendations.map((rec, i) => (
             <div
               key={`${rec.food}-${i}`}
-              className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]"
+              className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]"
             >
               <div className="flex items-start gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-500">

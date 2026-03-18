@@ -44,7 +44,7 @@ export function CalendarDayPopup({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] px-6"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md rounded-2xl bg-card p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-neutral-800">{date}</p>
           <button

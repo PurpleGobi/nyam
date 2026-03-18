@@ -19,7 +19,7 @@ function StatCard({
   sub?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+    <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50">
         <Icon className="h-5 w-5 text-primary-500" />
       </div>
@@ -111,7 +111,7 @@ export function WrappedContainer() {
 
       {/* Taste DNA */}
       {dnaAxes && (
-        <div className="rounded-2xl bg-white p-5 shadow-[var(--shadow-sm)]">
+        <div className="rounded-2xl bg-card p-5 shadow-[var(--shadow-sm)]">
           <h2 className="mb-3 text-center text-sm font-semibold text-neutral-700">
             나의 Taste DNA
           </h2>

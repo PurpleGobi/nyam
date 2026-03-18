@@ -22,7 +22,7 @@ interface AiResultCardProps {
 }
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-neutral-200 bg-white px-3.5 text-sm outline-none transition-colors focus:border-[#FF6038]"
+  "h-11 w-full rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 text-sm outline-none transition-colors focus:border-[#FF6038]"
 
 function ChipToggle({
   items,

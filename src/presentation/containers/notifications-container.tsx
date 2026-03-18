@@ -33,7 +33,7 @@ function NotificationItem({
       className={cn(
         "w-full rounded-2xl p-4 text-left transition-colors",
         notification.isRead
-          ? "bg-white"
+          ? "bg-card"
           : "bg-primary-50",
       )}
     >

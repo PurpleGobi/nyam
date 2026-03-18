@@ -69,7 +69,7 @@ export function TodaysPickCard({ pick, reason, onRefresh }: TodaysPickCardProps)
 
       <Link
         href={ROUTES.recordDetail(pick.id)}
-        className="flex items-center justify-between bg-white px-4 py-2.5"
+        className="flex items-center justify-between bg-card px-4 py-2.5"
       >
         <span className="text-xs font-medium text-neutral-500">더보기</span>
         <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />

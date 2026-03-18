@@ -93,7 +93,7 @@ export function ReviewCompletionContainer({ recordId }: ReviewCompletionContaine
   if (stage === "preview" && blog) {
     return (
       <div className="flex flex-col gap-4 pb-24">
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-white/80 backdrop-blur-sm px-4 py-3 border-b border-neutral-100">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-background/80 backdrop-blur-sm px-4 py-3 border-b border-neutral-100">
           <h1 className="text-lg font-bold text-neutral-800">블로그 미리보기</h1>
         </div>
 
@@ -109,7 +109,7 @@ export function ReviewCompletionContainer({ recordId }: ReviewCompletionContaine
           overallImpression: "",
         }} photos={photoUrls} />
 
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-neutral-100 p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-neutral-100 p-4">
           <button
             type="button"
             onClick={completeReview}

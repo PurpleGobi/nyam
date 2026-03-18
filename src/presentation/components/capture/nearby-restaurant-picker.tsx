@@ -61,7 +61,7 @@ export function NearbyRestaurantPicker({
             "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
             selectedId === place.externalId
               ? "bg-primary-50 border border-primary-500"
-              : "bg-white border border-neutral-200 hover:bg-neutral-50",
+              : "bg-card border border-neutral-200 hover:bg-neutral-50",
           )}
         >
           <MapPin className={cn(

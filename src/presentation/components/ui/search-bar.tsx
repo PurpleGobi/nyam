@@ -19,7 +19,7 @@ export function SearchBar({ value, onChange, placeholder = "검색", className }
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-3.5 text-sm outline-none transition-colors focus:border-primary-500"
+        className="h-11 w-full rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 pl-10 pr-3.5 text-sm outline-none transition-colors focus:border-primary-500"
       />
     </div>
   )

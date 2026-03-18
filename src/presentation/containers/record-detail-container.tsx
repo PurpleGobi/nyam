@@ -102,7 +102,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         </div>
 
         {record.ratingOverall != null && (
-          <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+          <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
             <div className="flex items-baseline gap-2 mb-3">
               <span className="text-2xl font-bold text-primary-500">
                 {Math.round(record.ratingOverall)}
@@ -123,7 +123,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         )}
 
         {tasteProfile && (record.recordType === "restaurant" || record.recordType === "cooking") && (
-          <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+          <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
             <h3 className="text-sm font-semibold text-neutral-700 mb-3">맛 프로필</h3>
             <RatingBars items={[
               { label: "매운맛", value: tasteProfile.spicy },
@@ -137,14 +137,14 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         )}
 
         {record.comment && (
-          <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+          <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
             <p className="text-sm text-neutral-600">{record.comment}</p>
           </div>
         )}
 
         {/* Multi-visit banner (8-4-0) */}
         {relatedVisits.length >= 2 && (
-          <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+          <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-4 w-4 text-primary-500" />
               <span className="text-sm font-semibold text-neutral-700">
@@ -176,7 +176,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
         {/* Phase 2 Blog inline (8-4-6b) */}
         {record.phaseStatus >= 3 && journal?.blogSections && journal.blogSections.length > 0 && (
-          <div className="rounded-2xl bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+          <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
             <BlogPreview
               review={{
                 title: journal.blogTitle ?? record.menuName ?? "리뷰",

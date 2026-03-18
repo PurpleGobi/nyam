@@ -17,7 +17,7 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function CardSkeleton() {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-white p-4">
+    <div className="flex flex-col gap-3 rounded-2xl bg-card p-4">
       <Skeleton className="h-40 w-full rounded-xl" />
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-3 w-1/2" />

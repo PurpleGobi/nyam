@@ -51,7 +51,7 @@ export function FriendsFeedCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-2xl bg-white p-4 text-left shadow-[var(--shadow-sm)] transition-colors hover:bg-neutral-50 active:scale-[0.98]"
+      className="flex w-full items-start gap-3 rounded-2xl bg-card p-4 text-left shadow-[var(--shadow-sm)] transition-colors hover:bg-neutral-50 active:scale-[0.98]"
     >
       {/* Avatar */}
       {profileImageUrl ? (

@@ -24,7 +24,7 @@ export function CreateGroupModal({ open, onClose, onSubmit, isLoading }: CreateG
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] px-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md rounded-2xl bg-card p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-neutral-800">새 버블 만들기</h3>
           <button type="button" onClick={onClose} className="text-neutral-400">
@@ -37,13 +37,13 @@ export function CreateGroupModal({ open, onClose, onSubmit, isLoading }: CreateG
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="버블 이름"
-            className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3.5 text-sm outline-none focus:border-primary-500"
+            className="h-11 w-full rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 text-sm outline-none focus:border-primary-500"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="설명 (선택)"
-            className="h-20 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-primary-500"
+            className="h-20 w-full resize-none rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 py-3 text-sm outline-none focus:border-primary-500"
           />
           <div className="flex gap-2">
             {(["private", "public"] as const).map((type) => (

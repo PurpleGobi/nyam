@@ -666,7 +666,7 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="한줄 메모 (선택)"
-            className="h-20 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
+            className="h-20 w-full resize-none rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
           />
         </FieldRow>
       </EditSection>
@@ -1014,7 +1014,7 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
               value={blogContent}
               onChange={(e) => setBlogContent(e.target.value)}
               placeholder="블로그 본문"
-              className="h-40 w-full resize-y rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
+              className="h-40 w-full resize-y rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
             />
           </FieldRow>
         </EditSection>
@@ -1072,7 +1072,7 @@ function EditSection({ icon, title, children }: { icon: React.ReactNode; title: 
         <span className="text-neutral-500">{icon}</span>
         <h3 className="text-sm font-semibold text-neutral-700">{title}</h3>
       </div>
-      <div className="space-y-3 rounded-xl border border-neutral-100 bg-white p-3.5">
+      <div className="space-y-3 rounded-xl border border-neutral-100 bg-card p-3.5">
         {children}
       </div>
     </div>

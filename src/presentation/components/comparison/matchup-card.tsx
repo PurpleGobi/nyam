@@ -29,7 +29,7 @@ function RecordSide({
     <button
       type="button"
       onClick={onSelect}
-      className="group flex flex-1 flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-[var(--shadow-sm)] transition-all active:scale-[0.97] hover:ring-2 hover:ring-primary-500"
+      className="group flex flex-1 flex-col items-center gap-2 rounded-2xl bg-card p-3 shadow-[var(--shadow-sm)] transition-all active:scale-[0.97] hover:ring-2 hover:ring-primary-500"
     >
       {record.thumbnailUrl ? (
         <div className="relative h-28 w-full overflow-hidden rounded-xl">

@@ -18,7 +18,7 @@ export function DiscoverResultCard({ result, onFeedback }: DiscoverResultCardPro
   const { restaurant, practicalInfo, scores, reason, highlights } = result
 
   return (
-    <div className="rounded-2xl bg-white shadow-[var(--shadow-sm)] overflow-hidden">
+    <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
       {/* 대표 사진 */}
       {result.photos.length > 0 && (
         <div className="flex h-32 gap-0.5 overflow-hidden">

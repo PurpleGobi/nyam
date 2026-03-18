@@ -45,7 +45,7 @@ export function GroupJoinContainer() {
   return (
     <div className="flex flex-col gap-6 px-4 pt-6 pb-4">
       {/* Group preview */}
-      <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)]">
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-sm)]">
         <div className="flex items-center gap-2 mb-2">
           {group.accessType === "private" ? (
             <Lock className="h-4 w-4 text-neutral-400" />

@@ -20,7 +20,7 @@ export function TasteTypeCard({ type, label, axes, color }: TasteTypeCardProps) 
   const Icon = typeIcons[type]
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+    <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
       {/* Header */}
       <div className="mb-3 flex items-center gap-2">
         <div

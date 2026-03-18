@@ -54,7 +54,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       </div>
 
       {/* Info card */}
-      <div className="mx-4 rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="mx-4 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
         {restaurant.genre && (
           <span className="inline-block rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600 mb-2">
             {restaurant.genre}
@@ -84,7 +84,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
 
       {/* Stats */}
       {stats && (
-        <div className="mx-4 rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+        <div className="mx-4 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
           <h2 className="mb-3 text-sm font-semibold text-neutral-700">통계</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>

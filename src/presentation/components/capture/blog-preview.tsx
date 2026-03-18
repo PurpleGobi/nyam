@@ -26,13 +26,13 @@ export function BlogPreview({ review, photos, onEdit }: BlogPreviewProps) {
   return (
     <article className="flex flex-col gap-6 p-4">
       <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold text-gray-900">{review.title}</h1>
-        <p className="text-sm text-gray-500">{review.summary}</p>
+        <h1 className="text-xl font-bold text-foreground">{review.title}</h1>
+        <p className="text-sm text-neutral-500">{review.summary}</p>
       </header>
 
       {review.sections.map((section, index) => (
         <section key={index} className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-gray-800">{section.heading}</h2>
+          <h2 className="text-base font-semibold text-foreground">{section.heading}</h2>
 
           {section.photoIndex !== undefined && photos[section.photoIndex] && (
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
@@ -46,7 +46,7 @@ export function BlogPreview({ review, photos, onEdit }: BlogPreviewProps) {
           )}
 
           <p
-            className="text-sm leading-relaxed text-gray-700"
+            className="text-sm leading-relaxed text-neutral-600"
             onClick={() => onEdit?.(index, section.content)}
           >
             {section.content}
@@ -54,8 +54,8 @@ export function BlogPreview({ review, photos, onEdit }: BlogPreviewProps) {
         </section>
       ))}
 
-      <footer className="flex flex-col gap-3 border-t border-gray-100 pt-4">
-        <p className="text-sm leading-relaxed text-gray-700">{review.overallImpression}</p>
+      <footer className="flex flex-col gap-3 border-t border-neutral-200 pt-4">
+        <p className="text-sm leading-relaxed text-neutral-600">{review.overallImpression}</p>
 
         {review.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

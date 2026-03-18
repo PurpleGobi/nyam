@@ -302,7 +302,7 @@ export function QuickCaptureContainer() {
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="한줄 메모 (선택)"
-        className="h-20 resize-none rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
+        className="h-20 resize-none rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 px-3.5 py-3 text-sm outline-none transition-colors focus:border-primary-500"
       />
 
       {saveComplete && (

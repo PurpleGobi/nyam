@@ -57,7 +57,7 @@ export function HomeProfileCard({
       }))
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+    <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
       <div className="flex items-center gap-3 mb-3">
         <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center text-sm font-semibold text-neutral-500">
           {user?.nickname?.charAt(0) ?? "?"}

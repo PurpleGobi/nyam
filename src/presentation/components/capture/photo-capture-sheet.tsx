@@ -63,7 +63,7 @@ export function PhotoCaptureSheet({
         <div className="flex gap-2">
           <label
             className={cn(
-              "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white py-3 text-sm text-neutral-600",
+              "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 py-3 text-sm text-neutral-600",
               "hover:bg-neutral-50 active:scale-[0.98] transition-all",
             )}
           >
@@ -80,7 +80,7 @@ export function PhotoCaptureSheet({
           </label>
           <label
             className={cn(
-              "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white py-3 text-sm text-neutral-600",
+              "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-card dark:bg-neutral-100 py-3 text-sm text-neutral-600",
               "hover:bg-neutral-50 active:scale-[0.98] transition-all",
             )}
           >

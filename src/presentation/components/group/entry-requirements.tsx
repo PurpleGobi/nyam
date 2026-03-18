@@ -21,7 +21,7 @@ export function EntryRequirements({
   sharingType,
 }: EntryRequirementsProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+    <div className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
       {/* Access type */}
       <div className="flex items-center gap-2.5">
         {accessType === "private" ? (

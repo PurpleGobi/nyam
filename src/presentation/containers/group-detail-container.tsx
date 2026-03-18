@@ -59,7 +59,7 @@ export function GroupDetailContainer({ groupId }: GroupDetailContainerProps) {
       </div>
 
       {/* Group info card */}
-      <div className="mx-4 rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="mx-4 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
         {group.description && (
           <p className="text-sm text-neutral-600">{group.description}</p>
         )}

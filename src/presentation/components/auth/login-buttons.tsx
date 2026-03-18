@@ -23,7 +23,7 @@ const PROVIDERS = [
   {
     id: "google" as const,
     label: "Google로 시작하기",
-    bg: "bg-white border border-neutral-200",
+    bg: "bg-card border border-neutral-200",
     text: "text-neutral-700",
   },
   {

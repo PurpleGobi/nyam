@@ -37,7 +37,7 @@ export function ComparisonResult({
       </div>
 
       {/* Winner card */}
-      <div className="w-full max-w-xs rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="w-full max-w-xs rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
         {winner.thumbnailUrl ? (
           <div className="relative h-40 w-full overflow-hidden rounded-xl">
             <Image

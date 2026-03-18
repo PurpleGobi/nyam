@@ -124,7 +124,7 @@ export function CompatibilityContainer() {
       </div>
 
       {/* Member search */}
-      <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
         <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2">
           <Search className="h-4 w-4 text-neutral-400" />
           <input
@@ -177,7 +177,7 @@ export function CompatibilityContainer() {
 
       {/* Result */}
       {score !== null && (
-        <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)]">
+        <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-sm)]">
           <ScoreGauge score={score} />
           {breakdown && (
             <div className="mt-4 rounded-xl bg-neutral-50 p-3">

@@ -318,7 +318,7 @@ export function SettingsContainer() {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="탈퇴합니다"
-                className="w-full rounded-xl border border-neutral-200 dark:border-neutral-300 bg-white dark:bg-neutral-100 px-3 py-2.5 text-sm outline-none focus:border-red-400"
+                className="w-full rounded-xl border border-neutral-200 dark:border-neutral-300 bg-card dark:bg-neutral-100 px-3 py-2.5 text-sm outline-none focus:border-red-400"
               />
             </div>
           </div>

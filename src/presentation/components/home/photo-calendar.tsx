@@ -41,7 +41,7 @@ export function PhotoCalendar({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+    <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between mb-3">
         <button type="button" onClick={handlePrevMonth} className="p-1 text-neutral-400 hover:text-neutral-600">
           <ChevronLeft className="h-4 w-4" />

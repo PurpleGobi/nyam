@@ -108,7 +108,7 @@ export function HomeContainer() {
           ))}
         </div>
       ) : friendsRecords.length === 0 ? (
-        <div className="rounded-2xl bg-white p-6 shadow-[var(--shadow-sm)] text-center">
+        <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-sm)] text-center">
           <p className="text-sm text-neutral-400">
             버블에 가입하면 친구들의 기록을 볼 수 있어요
           </p>

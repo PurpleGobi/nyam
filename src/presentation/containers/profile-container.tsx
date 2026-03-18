@@ -68,7 +68,7 @@ export function ProfileContainer() {
       <StatsSummary stats={stats} />
 
       {/* DNA Tabs */}
-      <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
+      <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
         <div className="flex gap-1 mb-3">
           {(["food", "wine", "cooking"] as const).map((tab) => (
             <button
