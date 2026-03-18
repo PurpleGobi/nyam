@@ -7,6 +7,7 @@ import { useDiscoverEngine } from "@/application/hooks/use-discover-engine"
 import { useDiscoverOnboarding } from "@/application/hooks/use-discover-onboarding"
 import type { OnboardingSelections } from "@/application/hooks/use-discover-onboarding"
 import { useGeolocation } from "@/application/hooks/use-geolocation"
+import { DiscoverDebugLog } from "@/presentation/components/discover/discover-debug-log"
 import { DiscoverOnboarding } from "@/presentation/components/discover/discover-onboarding"
 import { DiscoverResultCard } from "@/presentation/components/discover/discover-result-card"
 import { EmptyState } from "@/presentation/components/ui/empty-state"
@@ -367,29 +368,13 @@ export function DiscoverContainer() {
 
       {/* Results list */}
       {isLoading ? (
-        <div className="flex flex-col gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl bg-white shadow-[var(--shadow-sm)] p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-7 w-7 rounded-lg bg-neutral-200" />
-                <div className="flex-1">
-                  <div className="h-4 w-32 rounded bg-neutral-200" />
-                  <div className="mt-2 h-3 w-48 rounded bg-neutral-100" />
-                </div>
-                <div className="h-5 w-8 rounded bg-neutral-200" />
-              </div>
-              <div className="mt-3 flex gap-2">
-                <div className="h-3 w-16 rounded bg-neutral-100" />
-                <div className="h-3 w-20 rounded bg-neutral-100" />
-              </div>
-            </div>
-          ))}
-          <p className="text-center text-sm text-neutral-500">
-            {recordCount === 0
-              ? "맞집을 찾고 있어요..."
-              : "취향 분석 중..."}
-          </p>
-        </div>
+        <DiscoverDebugLog
+          isLoading={isLoading}
+          isNearby={isNearbyMode}
+          scenes={filters.scenes}
+          areas={filters.areas}
+          resultCount={results.length}
+        />
       ) : error ? (
         <EmptyState
           icon={Compass}
