@@ -232,10 +232,9 @@ export async function GET(request: NextRequest) {
     console.log(`[Discover]   User: records=${recordCount} tasteDna=${userTasteDna ? "real" : "none"} seedGenres=[${seedGenres.join(",")}]`)
     console.log(`[Discover]   Candidates: ${candidates.length} (blacklisted ${blacklisted.size})`)
 
-    // Blending weights: LLM score vs DNA score
-    // More records = more DNA weight (user has established taste profile)
-    const dnaWeight = recordCount >= 20 ? 0.4 : recordCount >= 5 ? 0.25 : 0.1
-    const llmWeight = 1 - dnaWeight
+    // Blending weights: LLM 70% + DNA 30% (DNA adjusts for personal taste)
+    const dnaWeight = 0.3
+    const llmWeight = 0.7
 
     console.log(`[Discover]   Blend: LLM=${Math.round(llmWeight * 100)}% DNA=${Math.round(dnaWeight * 100)}%`)
 
