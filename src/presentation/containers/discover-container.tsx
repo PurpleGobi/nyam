@@ -128,6 +128,10 @@ export function DiscoverContainer() {
     setManualView("results")
   }, [queryText, setQuery, search])
 
+  const handleSearchInputFocus = useCallback(() => {
+    setQueryText("")
+  }, [])
+
   const handleBackToSearch = useCallback(() => {
     setManualView("search")
   }, [])
@@ -137,6 +141,22 @@ export function DiscoverContainer() {
       sendFeedback(restaurantName, kakaoId, feedback)
     }
   }, [sendFeedback])
+
+  // --- Search Bar (shared between search & results views) ---
+  const searchBar = (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+      <input
+        type="text"
+        value={queryText}
+        onChange={(e) => setQueryText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
+        onFocus={handleSearchInputFocus}
+        placeholder="강남 파스타, 비 오는 날 따뜻한 거..."
+        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
+      />
+    </div>
+  )
 
   // --- Filter Bar (shared between search & results views) ---
   const filterBar = (
@@ -231,21 +251,8 @@ export function DiscoverContainer() {
   if (viewState === "search") {
     return (
       <div className="flex flex-col gap-4 px-4 pt-4 pb-4">
-        {/* Filter bar at top */}
         {filterBar}
-
-        {/* Natural language input bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input
-            type="text"
-            value={queryText}
-            onChange={(e) => setQueryText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
-            placeholder="강남 파스타, 비 오는 날 따뜻한 거..."
-            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
-          />
-        </div>
+        {searchBar}
 
         {/* Search button */}
         {(filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()) && (
@@ -267,7 +274,10 @@ export function DiscoverContainer() {
       {/* Filter bar at top */}
       {filterBar}
 
-      {/* Results header */}
+      {/* Search bar (persists in results view) */}
+      {searchBar}
+
+      {/* Results header with re-search button */}
       <div className="flex items-center justify-between mt-1">
         <h1 className="text-lg font-bold text-neutral-800">
           {(() => {
@@ -284,8 +294,9 @@ export function DiscoverContainer() {
         </h1>
         <button
           type="button"
-          onClick={handleBackToSearch}
-          className="text-xs text-primary-500 font-medium hover:text-primary-600"
+          onClick={handleSearch}
+          disabled={isLoading}
+          className="shrink-0 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
         >
           다시 검색
         </button>

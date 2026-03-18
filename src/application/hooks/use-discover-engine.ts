@@ -210,19 +210,10 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     setFilters((prev) => ({ ...prev, query }))
   }, [])
 
-  // Genre: auto-commit (post-filter in results view)
+  // Genre: pending only (client-side post-filter, no re-fetch)
   const setGenre = useCallback((genre: string | null) => {
     interactedRef.current = true
     setFilters((prev) => ({ ...prev, genre }))
-    setCommitted((prev) => {
-      if (!prev) return null
-      versionRef.current += 1
-      return {
-        ...prev,
-        filters: { ...prev.filters, genre },
-        version: versionRef.current,
-      }
-    })
   }, [])
 
   // Nearby: pending only (no auto-commit, same as area/scene)
@@ -272,8 +263,15 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     }
   }, [committed, effectiveFilters])
 
+  // Client-side genre filtering (no re-fetch needed)
+  const filteredResults = useMemo(() => {
+    const all = data?.results ?? []
+    if (!filters.genre) return all
+    return all.filter((r) => r.restaurant.genre === filters.genre)
+  }, [data?.results, filters.genre])
+
   return {
-    results: data?.results ?? [],
+    results: filteredResults,
     isLoading,
     error: error?.message ?? feedbackError,
     filters: effectiveFilters,
@@ -303,6 +301,22 @@ function logDiscoverResponse(res: DiscoverResponse, fetchMs: number): void {
   }
 
   console.group(`%c[Discover] === 파이프라인 결과 (${fetchMs}ms) ===`, "color:#6366f1;font-weight:bold;font-size:13px")
+
+  // Input context
+  if (d.inputContext) {
+    console.log(
+      `%c[Input] %c${d.inputContext}`,
+      "color:#f59e0b;font-weight:bold",
+      "color:#e5e7eb",
+    )
+  }
+
+  // LLM prompt
+  if (d.prompt) {
+    console.groupCollapsed(`%c[Prompt] LLM 프롬프트 전문 (클릭하여 펼치기)`, "color:#ec4899;font-weight:bold")
+    console.log(d.prompt)
+    console.groupEnd()
+  }
 
   // Pipeline steps
   for (const step of d.pipeline) {

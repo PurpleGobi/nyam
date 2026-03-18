@@ -195,14 +195,38 @@ export async function GET(request: NextRequest) {
       distance: s.candidate.distance,
     }))
 
-    return NextResponse.json({
+    const scoredDebugResults = top5.map((s, i) => ({
+      rank: i + 1,
+      name: s.candidate.name,
+      blended: s.scores.overall,
+      llmScore: 0,
+      dnaScore: s.debug.rawScores.taste,
+      category: "nearby",
+      reason: s.reason,
+    }))
+
+    const response = NextResponse.json({
       success: true,
       source: "realtime",
       computedAt: new Date().toISOString(),
       results,
       filters: { area: null, scene, genre },
       cacheStatus: "ready",
+      debug: {
+        pipeline: [
+          { step: "카카오 주변 검색", detail: `lat=${lat} lng=${lng} radius=${radius} → ${kakaoResults.length}개`, durationMs: 0 },
+          { step: "내부 DB + DNA", detail: `records=${recordCount} tasteDna=${tasteDna ? "real" : "none"} blacklisted=${blacklisted.size}`, durationMs: 0 },
+          { step: "DNA 스코어링", detail: `${candidates.length}개 후보 → Top ${top5.length}`, durationMs: 0 },
+        ],
+        blendRatio: { llm: 0, dna: 100 },
+        llmCandidates: 0,
+        verifiedCandidates: kakaoResults.length,
+        scoredResults: scoredDebugResults,
+        inputContext: `내주변 (${lat.toFixed(4)}, ${lng.toFixed(4)}) ${radius}m${scene ? ` | 씬: ${scene}` : ""}${genre ? ` | 장르: ${genre}` : ""}`,
+      },
     })
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate")
+    return response
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error"
     console.error("[Discover Nearby] Error:", message)

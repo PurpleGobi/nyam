@@ -80,9 +80,10 @@ export async function GET(request: NextRequest) {
     console.log(`[Discover]   area=${area} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}"`)
 
     let t0 = Date.now()
-    const llmRecommendations = await getLlmRecommendations({
+    const llmResult = await getLlmRecommendations({
       area, scenes, genreLabel, query,
     })
+    const llmRecommendations = llmResult.recommendations
     const step1Ms = Date.now() - t0
 
     const llmNames = llmRecommendations.map((r) => `#${r.rank} ${r.name}(${r.totalScore}점,${r.confidence},${r.category})`).join(", ")
@@ -425,6 +426,8 @@ export async function GET(request: NextRequest) {
         llmCandidates: llmRecommendations.length,
         verifiedCandidates: verifiedCandidates.length,
         scoredResults: scoredDebugResults,
+        prompt: llmResult.prompt,
+        inputContext: llmResult.inputContext,
       },
     })
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -509,12 +512,19 @@ function inferPartySize(scene: string | null): string {
   return map[scene ?? ""] ?? "2~4명"
 }
 
+/** Return type for LLM recommendations including prompt for debug */
+interface LlmResult {
+  recommendations: LlmRecommendation[]
+  prompt: string
+  inputContext: string
+}
+
 async function getLlmRecommendations(params: {
   area: string | null
   scenes: string[]
   genreLabel: string | null
   query: string | null
-}): Promise<LlmRecommendation[]> {
+}): Promise<LlmResult> {
   const { area, scenes, genreLabel, query } = params
   const primaryScene = scenes[0] ?? null
 
@@ -622,6 +632,8 @@ category 구분:
 반드시 8~10개를 추천하세요. 카카오맵 검증에서 탈락할 수 있으니 넉넉히.
 실존 확인이 안 되는 식당은 절대 포함하지 마세요.`
 
+  const inputContext = contextParts.join(" | ")
+
   console.log("\n[Discover] ──── LLM 프롬프트 입력값 ────")
   console.log(`[Discover] 입력 컨텍스트:\n${contextParts.map((p) => `  ${p}`).join("\n")}`)
   console.log(`[Discover] 씬 가중치: ${primaryScene ?? "기본"}`)
@@ -637,19 +649,20 @@ category 구분:
 
     if (!result.recommendations || !Array.isArray(result.recommendations)) {
       console.warn("[Discover] LLM returned invalid format, using fallback")
-      return []
+      return { recommendations: [], prompt, inputContext }
     }
 
-    return result.recommendations
+    const recommendations = result.recommendations
       .filter((r) =>
         typeof r.name === "string" && r.name.length > 0 &&
         typeof r.searchKeyword === "string" && r.searchKeyword.length > 0 &&
         typeof r.totalScore === "number",
       )
       .slice(0, 10)
+    return { recommendations, prompt, inputContext }
   } catch (err) {
     console.error("[Discover] LLM recommendation failed:", err)
-    return []
+    return { recommendations: [], prompt, inputContext }
   }
 }
 

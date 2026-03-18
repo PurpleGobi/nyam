@@ -283,23 +283,25 @@ export function getTopTasteAxis(dna: TasteProfileAxis | null): string | null {
  */
 export function inferGenreFromCategory(category: string): string | null {
   const lower = category.toLowerCase()
+  // Order matters: specific subcategories BEFORE broad ones (e.g. "고기" before "한식")
+  // Kakao categories look like "음식점 > 한식 > 육류,고기요리"
   const map: [string[], string][] = [
-    [["한식", "korean"], "korean"],
-    [["중식", "중국", "chinese"], "chinese"],
-    [["일식", "초밥", "라멘", "japanese", "sushi"], "japanese"],
-    [["양식", "이탈리안", "프랑스", "western", "pasta", "italian"], "western"],
+    [["고기", "구이", "삼겹", "갈비", "bbq", "소고기", "육류", "곱창", "대창", "양갈비"], "bbq"],
+    [["족발", "보쌈", "jokbal"], "jokbal"],
+    [["찌개", "탕", "전골", "국밥", "설렁탕", "감자탕", "stew"], "stew"],
+    [["돈까스", "카츠", "katsu"], "katsu"],
+    [["해물", "해산물", "회", "생선", "seafood", "조개", "수산"], "seafood"],
+    [["분식", "떡볶이", "snack"], "snack"],
     [["치킨", "chicken"], "chicken"],
     [["피자", "pizza"], "pizza"],
     [["버거", "햄버거", "burger"], "burger"],
-    [["분식", "떡볶이", "snack"], "snack"],
-    [["족발", "보쌈", "jokbal"], "jokbal"],
-    [["찌개", "탕", "전골", "stew"], "stew"],
-    [["돈까스", "카츠", "katsu"], "katsu"],
-    [["고기", "구이", "삼겹", "갈비", "bbq", "소고기"], "bbq"],
-    [["해물", "해산물", "회", "생선", "seafood"], "seafood"],
-    [["아시안", "베트남", "태국", "인도", "asian", "thai"], "asian"],
+    [["초밥", "라멘", "스시", "오마카세", "우동", "소바", "일식", "japanese", "sushi"], "japanese"],
+    [["중식", "중국", "짜장", "짬뽕", "chinese"], "chinese"],
+    [["이탈리안", "프랑스", "파스타", "스테이크", "양식", "western", "pasta", "italian"], "western"],
+    [["아시안", "베트남", "태국", "인도", "asian", "thai", "쌀국수"], "asian"],
     [["카페", "디저트", "베이커리", "cafe", "dessert"], "cafe"],
     [["샐러드", "salad"], "salad"],
+    [["한식", "korean"], "korean"],
   ]
 
   for (const [keywords, genre] of map) {

@@ -99,6 +99,10 @@ export interface DiscoverDebugInfo {
     category: string
     reason: string
   }[]
+  /** LLM prompt text (for browser console debugging) */
+  prompt?: string
+  /** Input context summary */
+  inputContext?: string
 }
 
 /** Full discover API response */
