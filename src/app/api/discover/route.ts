@@ -3,6 +3,7 @@ import { createClient } from "@/infrastructure/supabase/server"
 import { searchRestaurantsByKeyword, searchNearbyRestaurants, searchNearbyGrid } from "@/infrastructure/api/kakao-local"
 import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 import { searchGooglePlaces } from "@/infrastructure/api/google-places"
+import { searchNaverLocal } from "@/infrastructure/api/naver-local"
 import { callGemini } from "@/infrastructure/api/gemini"
 import { SupabaseDiscoverRepository } from "@/infrastructure/repositories/supabase-discover-repository"
 import {
@@ -36,6 +37,21 @@ interface LlmEvaluation {
   weaknesses: string[]
   confidence: "high" | "medium" | "low"
   category: "safe" | "adventure" | "uncertain"
+}
+
+/** 식당의 외부 평판 시그널 (LLM 수집) */
+interface ReputationSignal {
+  michelin: string | null       // "1star", "2star", "3star", "bib"
+  blue_ribbon: number | null    // 0, 1, 2, 3
+  tv_shows: string[] | null     // ["수요미식회", "줄서는식당"]
+  catch_table: boolean | null
+  waiting_level: string | null  // "none", "short", "long", "extreme"
+  estimated_years: number | null
+  is_specialty: boolean | null
+  sns_buzz: string | null       // "high", "medium", "low"
+  owner_philosophy: boolean | null
+  price_range: string | null    // "~1만", "1~2만", "2~3만", "3~5만", "5만+"
+  notable: string | null
 }
 
 /**
@@ -117,9 +133,16 @@ export async function GET(request: NextRequest) {
       searchGooglePlaces(q, searchLat, searchLng, 2000),
     )
 
-    const [keywordResultsSettled, gridResults, ...googleResultsSettled] = await Promise.all([
+    // [D] 네이버 지역 검색 (크로스플랫폼 교차 검증)
+    const naverQuery = searchQueries[0] ?? (area ? `${area} 맛집` : null)
+    const naverTask = naverQuery
+      ? searchNaverLocal(naverQuery, 5).catch(() => [] as NearbyPlace[])
+      : Promise.resolve([] as NearbyPlace[])
+
+    const [keywordResultsSettled, gridResults, naverResults, ...googleResultsSettled] = await Promise.all([
       Promise.allSettled(keywordTasks),
       gridTask,
+      naverTask,
       ...googleTasks.map((t) => t.catch(() => [] as NearbyPlace[])),
     ])
 
@@ -138,15 +161,15 @@ export async function GET(request: NextRequest) {
     }
 
     const keywordNames = new Set(keywordResults.map((r) => r.name))
-    const allSearchResults = [...keywordResults, ...googleResults, ...gridResults]
+    const allSearchResults = [...keywordResults, ...googleResults, ...gridResults, ...naverResults]
 
     const step1Ms = Date.now() - t0
     pipelineSteps.push({
       step: "크로스플랫폼 검색",
-      detail: `카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length}건 (쿼리: ${searchQueries.slice(0, 3).join(", ")}...)`,
+      detail: `카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length} + 네이버 ${naverResults.length}건 (쿼리: ${searchQueries.slice(0, 3).join(", ")}...)`,
       durationMs: step1Ms,
     })
-    console.log(`[Discover] Step 1: 검색 완료 (${step1Ms}ms) - 카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length}`)
+    console.log(`[Discover] Step 1: 검색 완료 (${step1Ms}ms) - 카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length} + 네이버 ${naverResults.length}`)
 
     // ═══ Step 2: 중복 제거 + 체인 필터 + 사전 랭킹 ═══
     t0 = Date.now()
@@ -177,12 +200,29 @@ export async function GET(request: NextRequest) {
     })
     console.log(`[Discover] Step 2: 필터+랭킹 (${step2Ms}ms) - ${filtered.length} → Top ${ranked.length}`)
 
-    // ═══ Step 3: LLM 평가 (실제 후보만 평가, 환각 0%) ═══
+    // ═══ Step 3: 평판 시그널 수집 + LLM 평가 ═══
     t0 = Date.now()
 
     const candidatePlaces = ranked.map((r) => r.place)
+
+    // 평판 시그널 수집 (LLM이 미슐랭/블루리본/TV 등 수집)
+    const signals = await collectReputationSignals(candidatePlaces, area)
+    const signalMs = Date.now() - t0
+    const signalCount = [...signals.values()].filter((s) =>
+      s.michelin || s.blue_ribbon || s.tv_shows?.length || s.estimated_years || s.is_specialty,
+    ).length
+    console.log(`[Discover]   시그널 수집: ${signals.size}개 중 유의미 ${signalCount}개 (${signalMs}ms)`)
+
+    pipelineSteps.push({
+      step: "평판 시그널 수집",
+      detail: `${signals.size}개 식당, 유의미 시그널 ${signalCount}개`,
+      durationMs: signalMs,
+    })
+
+    // LLM 평가 (시그널 주입)
+    const llmT0 = Date.now()
     const { evaluations, prompt: llmPrompt } = await evaluateWithLlm(
-      candidatePlaces, scene, area, query, genreLabel,
+      candidatePlaces, scene, area, query, genreLabel, signals,
     )
 
     // Map LLM evaluations to places by name
@@ -219,13 +259,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const llmMs = Date.now() - llmT0
     const step3Ms = Date.now() - t0
     pipelineSteps.push({
-      step: "LLM 평가 (환각 0%)",
-      detail: `${evaluations.length}개 평가 완료`,
+      step: "LLM 평가 (시그널 통합, 환각 0%)",
+      detail: `${evaluations.length}개 평가 완료 (LLM ${llmMs}ms)`,
       durationMs: step3Ms,
     })
-    console.log(`[Discover] Step 3: LLM 평가 (${step3Ms}ms) - ${evaluations.length}개`)
+    console.log(`[Discover] Step 3: 시그널+LLM 평가 (${step3Ms}ms, LLM ${llmMs}ms) - ${evaluations.length}개`)
     for (const ev of evaluations.slice(0, 5)) {
       console.log(`[Discover]   ${ev.name}: ${ev.totalScore}점 (${ev.confidence}, ${ev.category})`)
     }
@@ -713,12 +754,107 @@ function getSceneNegativeRules(scene: string | null): string {
   return rules[scene ?? ""] ?? "- 특별한 부정 규칙 없음"
 }
 
+/** LLM(Gemini)으로 식당들의 외부 평판 시그널 수집 */
+async function collectReputationSignals(
+  places: NearbyPlace[],
+  area: string | null,
+): Promise<Map<string, ReputationSignal>> {
+  if (places.length === 0) return new Map()
+
+  const names = places.slice(0, 25).map((p) => p.name)
+  const namesText = names.map((n) => `- ${n}`).join("\n")
+
+  const prompt = `아래 식당들에 대해 알고 있는 평판 정보를 정리해라.
+모르는 항목은 반드시 null로. 추측하지 말 것. 확실한 정보만.
+
+지역: ${area ?? "서울"}
+
+식당 목록:
+${namesText}
+
+JSON 형식으로 응답:
+{
+  "signals": {
+    "식당이름": {
+      "michelin": null,
+      "blue_ribbon": null,
+      "tv_shows": null,
+      "catch_table": null,
+      "waiting_level": null,
+      "estimated_years": null,
+      "is_specialty": null,
+      "sns_buzz": null,
+      "owner_philosophy": null,
+      "price_range": null,
+      "notable": null
+    }
+  }
+}
+
+필드 설명:
+- michelin: "3star"|"2star"|"1star"|"bib" 또는 null
+- blue_ribbon: 블루리본 서베이 리본 수 (0~3) 또는 null
+- tv_shows: 출연 TV 프로그램 이름 목록 또는 null (예: ["수요미식회", "줄서는식당"])
+- catch_table: 캐치테이블/예약 앱에 등록되어 있는지 (true/false/null)
+- waiting_level: 평소 대기 수준 "none"|"short"|"long"|"extreme" 또는 null
+- estimated_years: 추정 영업 기간 (년 단위, 정수) 또는 null
+- is_specialty: 전문점 여부 (메인 메뉴 3개 이하) true/false 또는 null
+- sns_buzz: SNS(인스타/유튜브) 화제성 "high"|"medium"|"low" 또는 null
+- owner_philosophy: 사장님 철학/스토리가 알려진 곳인지 true/false 또는 null
+- price_range: "~1만"|"1~2만"|"2~3만"|"3~5만"|"5만+" 또는 null
+- notable: 기타 특이사항 한 줄 메모 또는 null`
+
+  try {
+    const result = await callGemini([{ text: prompt }], 0.1) as {
+      signals?: Record<string, Partial<ReputationSignal>>
+    }
+
+    const signalMap = new Map<string, ReputationSignal>()
+    const raw = result.signals ?? {}
+    for (const [name, sig] of Object.entries(raw)) {
+      signalMap.set(name, {
+        michelin: sig.michelin ?? null,
+        blue_ribbon: sig.blue_ribbon ?? null,
+        tv_shows: sig.tv_shows ?? null,
+        catch_table: sig.catch_table ?? null,
+        waiting_level: sig.waiting_level ?? null,
+        estimated_years: sig.estimated_years ?? null,
+        is_specialty: sig.is_specialty ?? null,
+        sns_buzz: sig.sns_buzz ?? null,
+        owner_philosophy: sig.owner_philosophy ?? null,
+        price_range: sig.price_range ?? null,
+        notable: sig.notable ?? null,
+      })
+    }
+    return signalMap
+  } catch (err) {
+    console.error("[Discover] 시그널 수집 실패:", err instanceof Error ? err.message : err)
+    return new Map()
+  }
+}
+
+/** 이름 퍼지 매칭으로 시그널 찾기 */
+function findSignal(name: string, signals: Map<string, ReputationSignal>): ReputationSignal | null {
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, "").replace(/[^가-힣a-zA-Z0-9]/g, "").toLowerCase()
+
+  const nameN = normalize(name)
+  for (const [sigName, sig] of signals) {
+    const sigN = normalize(sigName)
+    if (nameN === sigN || nameN.includes(sigN) || sigN.includes(nameN)) {
+      return sig
+    }
+  }
+  return null
+}
+
 async function evaluateWithLlm(
   places: NearbyPlace[],
   scene: string | null,
   area: string | null,
   query: string | null,
   genreLabel: string | null,
+  signals: Map<string, ReputationSignal>,
 ): Promise<{ evaluations: LlmEvaluation[]; prompt: string }> {
   if (places.length === 0) return { evaluations: [], prompt: "" }
 
@@ -733,6 +869,25 @@ async function evaluateWithLlm(
       if (p.googleReviewCount != null) info += ` (${p.googleReviewCount}건)`
     }
     if (p.sources.length > 1) info += ` | ${p.sources.length}개 플랫폼(${p.sources.join(",")})`
+
+    // 수집된 평판 시그널 주입
+    const sig = findSignal(p.name, signals)
+    if (sig) {
+      const sigParts: string[] = []
+      if (sig.michelin) sigParts.push(`미슐랭 ${sig.michelin}`)
+      if (sig.blue_ribbon) sigParts.push(`블루리본 ${sig.blue_ribbon}개`)
+      if (sig.tv_shows?.length) sigParts.push(`TV: ${sig.tv_shows.join(", ")}`)
+      if (sig.estimated_years && sig.estimated_years >= 5) sigParts.push(`노포 ${sig.estimated_years}년`)
+      if (sig.is_specialty) sigParts.push("전문점")
+      if (sig.catch_table) sigParts.push("캐치테이블")
+      if (sig.waiting_level) sigParts.push(`웨이팅: ${sig.waiting_level}`)
+      if (sig.sns_buzz) sigParts.push(`SNS: ${sig.sns_buzz}`)
+      if (sig.owner_philosophy) sigParts.push("사장님 철학")
+      if (sig.price_range) sigParts.push(`${sig.price_range}원대`)
+      if (sig.notable) sigParts.push(sig.notable)
+      if (sigParts.length > 0) info += ` | ${sigParts.join(" / ")}`
+    }
+
     return info
   }).join("\n")
 
@@ -752,17 +907,18 @@ async function evaluateWithLlm(
 1단계) 각 식당에 대해 네가 알고 있는 정보를 활용하라:
   - 미슐랭/블루리본 인증 여부
   - TV 프로그램(수요미식회, 줄서는식당, 백종원 등) 출연 여부
-  - 노포 여부 (5년+ 영업)
+  - 캐치테이블/예약 앱 등록 여부
+  - 추정 영업 기간 (노포 여부)
   - 전문점 여부 (메인 메뉴 3개 이하)
   - SNS 화제성, 사장님 철학/스토리
-2단계) 위 정보 + 제공된 실제 데이터(구글 별점, 리뷰 수 등)를 종합하여 채점하라.
+2단계) 위 정보 + 제공된 실제 데이터(구글 별점, 리뷰 수, 수집된 시그널 등)를 종합하여 채점하라.
 
 ★ 채점 가이드 (각 항목 0-100):
 - 구글 별점 4.0+ & 리뷰 100+ → reputation 70점 이상
 - 미슐랭/블루리본 인증 → authority 80점 이상
 - TV 프로그램 출연 → trend/authority 가점
 - 노포 (5년+) → reputation, review_trust 가점
-- 전문점 → context_fit 가점
+- 전문점 (메뉴 3개 이하) → context_fit 가점 (특히 혼밥)
 - 3개 플랫폼 출현 → reputation, review_trust 가점
 - 리뷰 적은데 별점 극단적 → review_trust 감점 (조작 의심)
 - 항목 간 점수 차이를 두어 순위가 명확히 나오게 하라
@@ -781,11 +937,11 @@ ${restaurantList}
 평가 기준과 가중치 (총 100점)
 ────────────────
 - context_fit (${weights.context_fit}점): ${getSceneDescription(scene)}
-- reputation (${weights.reputation}점): 대중 평판 (별점, 리뷰 수, 플랫폼 간 일관성)
+- reputation (${weights.reputation}점): 대중 평판 (구글 별점, 리뷰 수, 플랫폼 간 일관성)
 - accessibility (${weights.accessibility}점): 접근성 (예약, 웨이팅, 방문 난이도)
-- authority (${weights.authority}점): 권위 신호 (미슐랭, 블루리본, 매체 선정)
-- trend (${weights.trend}점): 최근성 (최근 후기, SNS 화제성)
-- review_trust (${weights.review_trust}점): 리뷰 신뢰도 (광고성 감점, 실방문 우대)
+- authority (${weights.authority}점): 권위 신호 (미슐랭, 블루리본, TV 출연)
+- trend (${weights.trend}점): 최근성 (SNS 화제성, 최근 후기)
+- review_trust (${weights.review_trust}점): 리뷰 신뢰도 (크로스플랫폼 검증, 광고성 감점)
 
 ────────────────
 ★ 감점 규칙 (필수 적용) ★
@@ -795,8 +951,6 @@ ${getSceneNegativeRules(scene)}
 공통 규칙:
 - 프랜차이즈 대형 체인은 authority 감점
 - 카페, 베이커리, 편의점은 context_fit 감점
-- 씬과 맞지 않는 식당은 context_fit 감점
-- 유명 맛집/인기 식당은 reputation 70점 이상으로 채점
 - ★ 순위가 명확히 나올 만큼 점수 차를 줘라 (1등과 10등 차이 최소 20점)
 
 ────────────────
@@ -831,6 +985,10 @@ ${getSceneNegativeRules(scene)}
       evaluations?: LlmEvaluation[]
     }
 
+    if (!result || !result.evaluations || result.evaluations.length === 0) {
+      console.error("[Discover] LLM 평가 0개 — raw response:", JSON.stringify(result).slice(0, 500))
+    }
+
     const evaluations = (result.evaluations ?? []).map((ev) => {
       // Recalculate total with our weights (don't trust LLM arithmetic)
       const scores = ev.scores ?? {}
@@ -845,7 +1003,10 @@ ${getSceneNegativeRules(scene)}
     evaluations.sort((a, b) => b.totalScore - a.totalScore)
     return { evaluations, prompt }
   } catch (err) {
-    console.error("[Discover] LLM evaluation failed:", err)
+    const errMsg = err instanceof Error ? err.message : String(err)
+    const errStack = err instanceof Error ? err.stack : ""
+    console.error(`[Discover] LLM evaluation failed: ${errMsg}`)
+    console.error(`[Discover] LLM error detail:`, errStack)
     return { evaluations: [], prompt }
   }
 }
