@@ -101,6 +101,12 @@ export async function GET(request: NextRequest) {
         return candidate
       })
 
+    // --- Scoring log header ---
+    console.log("\n[Discover Nearby] ═══════════════════════════════════════")
+    console.log(`[Discover Nearby] Query: lat=${lat} lng=${lng} radius=${radius} scene=${scene} genre=${genre}`)
+    console.log(`[Discover Nearby] User: records=${recordCount} tasteDna=${tasteDna ? "real" : "none"} seedGenres=[${seedGenres.join(",")}]`)
+    console.log(`[Discover Nearby] Candidates: ${candidates.length} (blacklisted ${blacklisted.size}, kakao ${kakaoResults.length})`)
+
     // Score and rank
     const scored = candidates.map((candidate) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
@@ -109,7 +115,7 @@ export async function GET(request: NextRequest) {
         ?? null
       const isNew = !visitedSet.has(candidate.kakaoId)
 
-      const { scores, dominantFactor } = calculateFinalScore({
+      const { scores, dominantFactor, debug } = calculateFinalScore({
         candidate,
         userTasteDna: tasteDna,
         userStyleDna: styleDna,
@@ -129,12 +135,36 @@ export async function GET(request: NextRequest) {
       })
       const reason = `여기서 ${distanceStr}, ${baseReason}`
 
-      return { candidate, scores, reason, candidateGenre, isNew }
+      return { candidate, scores, reason, candidateGenre, isNew, dominantFactor, debug }
     })
 
     scored.sort((a, b) => b.scores.overall - a.scores.overall)
 
     const top5 = scored.slice(0, 5)
+
+    // --- Scoring log detail ---
+    console.log(`[Discover Nearby] Weights: taste=${top5[0]?.debug.weights.taste} style=${top5[0]?.debug.weights.style} quality=${top5[0]?.debug.weights.quality} novelty=${top5[0]?.debug.weights.novelty}`)
+    console.log(`[Discover Nearby] TasteDNA source: ${top5[0]?.debug.tasteSource}`)
+    console.log("[Discover Nearby] ───────────────────────────────────────")
+    console.log("[Discover Nearby]  #  Score  Taste  Style  Qual  Novel  Dist    Genre       Dominant  Name")
+    for (const s of top5) {
+      const d = s.debug
+      const g = (d.candidateGenre ?? "?").padEnd(10)
+      const dist = `${s.candidate.distance}m`.padEnd(6)
+      console.log(
+        `[Discover Nearby]  ${top5.indexOf(s) + 1}  ` +
+        `${String(s.scores.overall).padStart(4)}   ` +
+        `${String(d.rawScores.taste).padStart(4)}   ` +
+        `${String(d.rawScores.style).padStart(4)}   ` +
+        `${String(d.rawScores.quality).padStart(4)}   ` +
+        `${String(d.rawScores.novelty).padStart(4)}   ` +
+        `${dist}  ${g}  ${s.dominantFactor.padEnd(8)}  ${s.candidate.name}`,
+      )
+    }
+    if (scored.length > 5) {
+      console.log(`[Discover Nearby]  ... +${scored.length - 5} more candidates`)
+    }
+    console.log("[Discover Nearby] ═══════════════════════════════════════\n")
 
     const results: DiscoverResult[] = top5.map((s, i) => ({
       rank: i + 1,

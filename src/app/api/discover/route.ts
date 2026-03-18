@@ -112,6 +112,12 @@ export async function GET(request: NextRequest) {
     const topTasteAxis = getTopTasteAxis(userTasteDna)
     const frequentAreas = styleDnaResult?.areas.slice(0, 5).map((a) => a.area) ?? []
 
+    // --- Scoring log header ---
+    console.log("\n[Discover] ═══════════════════════════════════════")
+    console.log(`[Discover] Query: area=${area} scene=${scene} genre=${genre}`)
+    console.log(`[Discover] User: records=${recordCount} tasteDna=${userTasteDna ? "real" : "none"} seedGenres=[${seedGenres.join(",")}]`)
+    console.log(`[Discover] Candidates: ${candidates.length} (blacklisted ${blacklisted.size}, kakao ${kakaoResults.length})`)
+
     const scored = candidates.map((candidate) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
         ?? internalMap.get(candidate.kakaoId)?.genre
@@ -119,7 +125,7 @@ export async function GET(request: NextRequest) {
         ?? null
       const isNew = !visitedSet.has(candidate.kakaoId)
 
-      const { scores, dominantFactor } = calculateFinalScore({
+      const { scores, dominantFactor, debug } = calculateFinalScore({
         candidate,
         userTasteDna,
         userStyleDna: styleDnaResult,
@@ -138,7 +144,7 @@ export async function GET(request: NextRequest) {
         scene, area, candidateGenre, topTasteAxis, isFrequentArea,
       })
 
-      return { candidate, scores, reason, candidateGenre, isNew }
+      return { candidate, scores, reason, candidateGenre, isNew, dominantFactor, debug }
     })
 
     // Sort by overall score descending
@@ -153,6 +159,29 @@ export async function GET(request: NextRequest) {
         top5[top5.length - 1] = noveltyPick
       }
     }
+
+    // --- Scoring log detail ---
+    console.log(`[Discover] Weights: taste=${top5[0]?.debug.weights.taste} style=${top5[0]?.debug.weights.style} quality=${top5[0]?.debug.weights.quality} novelty=${top5[0]?.debug.weights.novelty}`)
+    console.log(`[Discover] TasteDNA source: ${top5[0]?.debug.tasteSource}`)
+    console.log("[Discover] ───────────────────────────────────────")
+    console.log("[Discover]  #  Score  Taste  Style  Qual  Novel  Genre       Dominant  Name")
+    for (const s of top5) {
+      const d = s.debug
+      const g = (d.candidateGenre ?? "?").padEnd(10)
+      console.log(
+        `[Discover]  ${top5.indexOf(s) + 1}  ` +
+        `${String(s.scores.overall).padStart(4)}   ` +
+        `${String(d.rawScores.taste).padStart(4)}   ` +
+        `${String(d.rawScores.style).padStart(4)}   ` +
+        `${String(d.rawScores.quality).padStart(4)}   ` +
+        `${String(d.rawScores.novelty).padStart(4)}   ` +
+        `${g}  ${s.dominantFactor.padEnd(8)}  ${s.candidate.name}`,
+      )
+    }
+    if (scored.length > 5) {
+      console.log(`[Discover]  ... +${scored.length - 5} more candidates (scores ${scored[5]?.scores.overall}~${scored[scored.length - 1]?.scores.overall})`)
+    }
+    console.log("[Discover] ═══════════════════════════════════════\n")
 
     // --- Step 6: Package results ---
     const results: DiscoverResult[] = top5.map((s, i) => ({

@@ -139,9 +139,19 @@ function buildPseudoTasteDna(seedGenres: string[]): TasteProfileAxis | null {
  * Calculate final score for a candidate.
  * Returns scores breakdown + dominant factor for reason generation.
  */
+export interface ScoringDebug {
+  weights: { taste: number; style: number; quality: number; novelty: number }
+  rawScores: { taste: number; style: number; quality: number; novelty: number }
+  weighted: { taste: number; style: number; quality: number; novelty: number }
+  tasteSource: "real" | "pseudo" | "none"
+  candidateGenre: string | null
+  genrePreferenceBonus: number
+}
+
 export function calculateFinalScore(input: ScoringInput): {
   scores: DiscoverScores
   dominantFactor: "taste" | "style" | "quality" | "novelty"
+  debug: ScoringDebug
 } {
   const {
     candidate, userTasteDna, userStyleDna, userRecordCount,
@@ -190,7 +200,21 @@ export function calculateFinalScore(input: ScoringInput): {
   ]
   const dominantFactor = factorScores.sort((a, b) => b.value - a.value)[0].factor
 
-  return { scores, dominantFactor }
+  const debug: ScoringDebug = {
+    weights,
+    rawScores: { taste: tasteScore, style: styleScore, quality: qualityScore, novelty: noveltyScore },
+    weighted: {
+      taste: Math.round(tasteScore * weights.taste * 100) / 100,
+      style: Math.round(styleScore * weights.style * 100) / 100,
+      quality: Math.round(qualityScore * weights.quality * 100) / 100,
+      novelty: Math.round(noveltyScore * weights.novelty * 100) / 100,
+    },
+    tasteSource: userTasteDna ? "real" : (effectiveTasteDna ? "pseudo" : "none"),
+    candidateGenre,
+    genrePreferenceBonus,
+  }
+
+  return { scores, dominantFactor, debug }
 }
 
 /**
