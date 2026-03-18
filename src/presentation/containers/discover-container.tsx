@@ -46,10 +46,12 @@ export function DiscoverContainer() {
     isLoading,
     error,
     filters,
+    committedFilters,
     toggleArea,
     toggleScene,
     setGenre,
     setQuery,
+    search,
     searchNearby,
     sendFeedback,
     isNearbyMode,
@@ -85,8 +87,12 @@ export function DiscoverContainer() {
     const firstScene = selections.scenes[0] ?? null
     if (firstArea) toggleArea(firstArea)
     if (firstScene) toggleScene(firstScene)
+    search({
+      areas: firstArea ? [firstArea] : [],
+      scenes: firstScene ? [firstScene] : [],
+    })
     setManualView("results")
-  }, [completeOnboarding, toggleArea, toggleScene])
+  }, [completeOnboarding, toggleArea, toggleScene, search])
 
   const handleOnboardingSkip = useCallback(async () => {
     await skipOnboarding()
@@ -107,17 +113,20 @@ export function DiscoverContainer() {
 
   const handleSearch = useCallback(() => {
     if (filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()) {
-      if (queryText.trim()) setQuery(queryText.trim())
+      const queryVal = queryText.trim() || null
+      if (queryVal) setQuery(queryVal)
+      search(queryVal ? { query: queryVal } : undefined)
       setManualView("results")
     }
-  }, [filters.areas, filters.scenes, isNearbyMode, queryText, setQuery])
+  }, [filters.areas, filters.scenes, isNearbyMode, queryText, setQuery, search])
 
   const handleQueryTextSubmit = useCallback(() => {
     const trimmed = queryText.trim()
     if (!trimmed) return
     setQuery(trimmed)
+    search({ query: trimmed })
     setManualView("results")
-  }, [queryText, setQuery])
+  }, [queryText, setQuery, search])
 
   const handleBackToSearch = useCallback(() => {
     setManualView("search")
@@ -261,12 +270,17 @@ export function DiscoverContainer() {
       {/* Results header */}
       <div className="flex items-center justify-between mt-1">
         <h1 className="text-lg font-bold text-neutral-800">
-          {isNearbyMode
-            ? `내 주변${filters.scenes.length > 0 ? ` ${filters.scenes.join(" ")}` : ""}`
-            : [
-                ...filters.areas,
-                ...filters.scenes,
-              ].join(" ") || "추천 결과"}
+          {(() => {
+            const cf = committedFilters ?? filters
+            const parts: string[] = []
+            if (isNearbyMode) {
+              parts.push("내 주변")
+            } else {
+              parts.push(...cf.areas, ...cf.scenes)
+            }
+            if (cf.query) parts.push(`"${cf.query}"`)
+            return parts.join(" ") || "추천 결과"
+          })()}
         </h1>
         <button
           type="button"

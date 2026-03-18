@@ -1,5 +1,5 @@
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-const GEMINI_TIMEOUT_MS = 30_000
+const GEMINI_TIMEOUT_MS = 60_000
 
 export async function fetchImageAsBase64(url: string): Promise<{ mimeType: string; data: string } | null> {
   try {
@@ -32,7 +32,8 @@ export async function callGemini(parts: Array<Record<string, unknown>>, temperat
   clearTimeout(timer)
 
   if (!response.ok) {
-    throw new Error("Gemini API request failed")
+    const errBody = await response.text().catch(() => "")
+    throw new Error(`Gemini API ${response.status}: ${errBody.slice(0, 200)}`)
   }
 
   const data = await response.json()

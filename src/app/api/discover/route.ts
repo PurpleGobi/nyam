@@ -122,22 +122,48 @@ export async function GET(request: NextRequest) {
     // Fallback: if too few verified, supplement with keyword search
     if (verifiedCandidates.length < 3) {
       console.log(`[Discover]   Fallback: 키워드 검색 보충`)
-      const fallbackQuery = [area, genreLabel, "맛집"].filter(Boolean).join(" ")
-      const fallbackResults = await searchRestaurantsByKeyword(fallbackQuery)
       const existingIds = new Set(verifiedCandidates.map((v) => v.kakaoPlace.externalId))
-      for (const r of fallbackResults) {
-        if (!existingIds.has(r.externalId)) {
-          verifiedCandidates.push({
-            kakaoPlace: r,
-            llmScore: 0,
-            llmReason: null,
-            llmCategory: null,
-            llmStrengths: [],
-            llmWeaknesses: [],
-          })
-          existingIds.add(r.externalId)
+
+      // Primary fallback: user query + area (e.g. "종로 라멘")
+      if (query) {
+        const queryFallback = [area, query].filter(Boolean).join(" ")
+        console.log(`[Discover]   Fallback query (primary): "${queryFallback}"`)
+        const queryResults = await searchRestaurantsByKeyword(queryFallback)
+        for (const r of queryResults) {
+          if (!existingIds.has(r.externalId)) {
+            verifiedCandidates.push({
+              kakaoPlace: r,
+              llmScore: 0,
+              llmReason: null,
+              llmCategory: null,
+              llmStrengths: [],
+              llmWeaknesses: [],
+            })
+            existingIds.add(r.externalId)
+          }
         }
       }
+
+      // Secondary fallback: area + genre + 맛집 (only if still not enough)
+      if (verifiedCandidates.length < 5) {
+        const genericFallback = [area, genreLabel ?? query, "맛집"].filter(Boolean).join(" ")
+        console.log(`[Discover]   Fallback query (secondary): "${genericFallback}"`)
+        const fallbackResults = await searchRestaurantsByKeyword(genericFallback)
+        for (const r of fallbackResults) {
+          if (!existingIds.has(r.externalId)) {
+            verifiedCandidates.push({
+              kakaoPlace: r,
+              llmScore: 0,
+              llmReason: null,
+              llmCategory: null,
+              llmStrengths: [],
+              llmWeaknesses: [],
+            })
+            existingIds.add(r.externalId)
+          }
+        }
+      }
+
       pipelineSteps.push({
         step: "Fallback 키워드 검색",
         detail: `보충 후 ${verifiedCandidates.length}개`,
@@ -261,7 +287,8 @@ export async function GET(request: NextRequest) {
       })
 
       // LLM score is the base (0-100)
-      const llmScore = llmData?.llmScore ?? 0
+      // When LLM fails (fallback), estimate a base score from keyword/category relevance
+      const llmScore = llmData?.llmScore ?? estimateFallbackScore(candidate, { query, area, scene, genreLabel })
 
       // DNA match: convert DNA overall (0-100) to a bonus/penalty (-DNA_BONUS_MAX ~ +DNA_BONUS_MAX)
       // DNA overall 50 = neutral (no bonus), >50 = bonus, <50 = penalty
@@ -278,8 +305,9 @@ export async function GET(request: NextRequest) {
         overall: finalScore,
       }
 
-      // Use LLM reason if available
+      // Use LLM reason if available, then query-aware fallback, then template
       const reason = llmData?.llmReason
+        ?? generateFallbackReason(candidate, { query, scene, area, candidateGenre })
         ?? generateTemplateReason(dominantFactor, {
           scene, area, candidateGenre, topTasteAxis,
           isFrequentArea: frequentAreas.some((fa) =>
@@ -378,7 +406,7 @@ export async function GET(request: NextRequest) {
       sourceCount: s.candidate.internalRecordCount > 0 ? 2 : 1,
     }))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       source: "realtime",
       computedAt: new Date().toISOString(),
@@ -399,6 +427,8 @@ export async function GET(request: NextRequest) {
         scoredResults: scoredDebugResults,
       },
     })
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate")
+    return response
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error"
     console.error("[Discover API] Error:", message)
@@ -713,6 +743,69 @@ function isNameMatch(kakaoName: string, llmName: string): boolean {
 // ─────────────────────────────────────────────────────────
 // Helper functions
 // ─────────────────────────────────────────────────────────
+
+/** Estimate a base score for fallback candidates (when LLM fails) */
+function estimateFallbackScore(
+  candidate: CandidateRaw,
+  context: { query: string | null; area: string | null; scene: string | null; genreLabel: string | null },
+): number {
+  let score = 40 // base: decent default for a kakao-verified place
+
+  const nameAndCategory = `${candidate.name} ${candidate.category}`.toLowerCase()
+
+  // Query relevance bonus (most important)
+  if (context.query) {
+    const queryLower = context.query.toLowerCase()
+    if (nameAndCategory.includes(queryLower)) {
+      score += 30
+    } else {
+      // Partial match: check if any keyword in query matches
+      const keywords = queryLower.split(/\s+/)
+      const matchCount = keywords.filter((kw) => nameAndCategory.includes(kw)).length
+      score += Math.min(20, matchCount * 10)
+    }
+  }
+
+  // Area match bonus
+  if (context.area) {
+    const addr = `${candidate.address} ${candidate.roadAddress}`
+    if (addr.includes(context.area.split("/")[0])) {
+      score += 10
+    }
+  }
+
+  // Genre match bonus
+  if (context.genreLabel && nameAndCategory.includes(context.genreLabel.toLowerCase())) {
+    score += 10
+  }
+
+  // Internal data bonus
+  if (candidate.internalRecordCount > 0) score += 5
+
+  return Math.min(85, score) // cap: fallback shouldn't score higher than good LLM results
+}
+
+/** Generate a context-aware reason for fallback candidates */
+function generateFallbackReason(
+  candidate: CandidateRaw,
+  context: { query: string | null; scene: string | null; area: string | null; candidateGenre: string | null },
+): string | null {
+  const nameAndCategory = `${candidate.name} ${candidate.category}`.toLowerCase()
+
+  if (context.query) {
+    const queryLower = context.query.toLowerCase()
+    if (nameAndCategory.includes(queryLower)) {
+      const parts = [context.area, context.query].filter(Boolean)
+      return `${parts.join(" ")} 검색에 딱 맞는 곳이에요`
+    }
+  }
+
+  if (context.scene && context.area) {
+    return `${context.area}에서 ${context.scene}하기 좋은 곳이에요`
+  }
+
+  return null // fall through to generateTemplateReason
+}
 
 function generateTemplateReason(
   dominantFactor: "taste" | "style" | "quality" | "novelty",

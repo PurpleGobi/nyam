@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import type { DiscoverResult, DiscoverResponse } from "@/domain/entities/discover"
 import { useAuth } from "@/application/hooks/use-auth"
@@ -17,11 +17,21 @@ interface DiscoverSeed {
   scene?: string
 }
 
+/** Committed state that triggers SWR fetch */
+interface CommittedState {
+  filters: DiscoverFilters
+  nearby: { lat: number; lng: number; radius: number } | null
+  version: number
+}
+
 interface UseDiscoverEngineReturn {
   results: DiscoverResult[]
   isLoading: boolean
   error: string | null
+  /** Pending filters for UI display (buttons, inputs) */
   filters: DiscoverFilters
+  /** Committed filters used for the current/last search */
+  committedFilters: DiscoverFilters | null
   source: "cache" | "realtime" | null
   isSeedActive: boolean
   setAreas: (areas: string[]) => void
@@ -30,6 +40,8 @@ interface UseDiscoverEngineReturn {
   toggleScene: (scene: string) => void
   setGenre: (genre: string | null) => void
   setQuery: (query: string | null) => void
+  /** Commit current filters and trigger API fetch. Pass overrides for values set in the same handler. */
+  search: (overrides?: Partial<DiscoverFilters>) => void
   searchNearby: (lat: number, lng: number, radius?: number) => void
   sendFeedback: (restaurantName: string, kakaoId: string | null, feedback: "good" | "bad") => Promise<void>
   isNearbyMode: boolean
@@ -65,6 +77,8 @@ function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; 
 
 export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn {
   const { isAuthenticated } = useAuth()
+
+  // Pending filters (UI state - not yet committed for fetch)
   const [filters, setFilters] = useState<DiscoverFilters>({
     areas: [],
     scenes: [],
@@ -74,6 +88,10 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
   const [nearby, setNearby] = useState<{ lat: number; lng: number; radius: number } | null>(null)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
   const interactedRef = useRef(false)
+  const versionRef = useRef(0)
+
+  // Committed state: only this triggers SWR fetch
+  const [committed, setCommitted] = useState<CommittedState | null>(null)
 
   // Derived state: use seed values until user manually interacts with filters
   const effectiveFilters: DiscoverFilters = useMemo(() => {
@@ -89,15 +107,41 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
   }, [seed, filters])
   const isSeedActive = !interactedRef.current && seed != null && (seed.area != null || seed.scene != null)
 
-  const queryKey = isAuthenticated ? buildQueryKey(effectiveFilters, nearby) : null
+  // Auto-commit for seed (first load with records)
+  const seedKey = seed ? `${seed.area}-${seed.scene}` : null
+  useEffect(() => {
+    if (isSeedActive && seed && !committed) {
+      versionRef.current += 1
+      setCommitted({
+        filters: {
+          areas: seed.area ? [seed.area] : [],
+          scenes: seed.scene ? [seed.scene] : [],
+          genre: null,
+          query: null,
+        },
+        nearby: null,
+        version: versionRef.current,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedKey, isSeedActive])
+
+  // SWR key: only from committed state
+  const queryKey = useMemo(() => {
+    if (!isAuthenticated || !committed) return null
+    const base = buildQueryKey(committed.filters, committed.nearby)
+    if (!base) return null
+    return `${base}-v${committed.version}`
+  }, [isAuthenticated, committed])
 
   const { data, error, isLoading } = useSWR<DiscoverResponse>(
     queryKey,
     async () => {
-      const url = buildUrl(effectiveFilters, nearby)
-      console.log(`%c[Discover] 🔍 요청 시작`, "color:#6366f1;font-weight:bold", { url, filters: effectiveFilters })
+      if (!committed) throw new Error("unreachable")
+      const url = buildUrl(committed.filters, committed.nearby)
+      console.log(`%c[Discover] 요청 시작`, "color:#6366f1;font-weight:bold", { url, filters: committed.filters })
       const fetchStart = Date.now()
-      const res = await fetch(url)
+      const res = await fetch(url, { cache: "no-store" })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -107,8 +151,27 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
       logDiscoverResponse(json, fetchMs)
       return json
     },
-    { revalidateOnFocus: false, dedupingInterval: 5000 },
+    { revalidateOnFocus: false, dedupingInterval: 0 },
   )
+
+  // --- search: commit current filters and trigger fetch ---
+  const search = useCallback((overrides?: Partial<DiscoverFilters>) => {
+    const finalFilters = overrides
+      ? { ...effectiveFilters, ...overrides }
+      : effectiveFilters
+    // Also update pending filters with overrides
+    if (overrides) {
+      setFilters((prev) => ({ ...prev, ...overrides }))
+    }
+    versionRef.current += 1
+    setCommitted({
+      filters: finalFilters,
+      nearby,
+      version: versionRef.current,
+    })
+  }, [effectiveFilters, nearby])
+
+  // --- Filter setters (pending only, no auto-fetch) ---
 
   const setAreas = useCallback((areas: string[]) => {
     interactedRef.current = true
@@ -142,16 +205,27 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     }))
   }, [])
 
-  const setGenre = useCallback((genre: string | null) => {
-    interactedRef.current = true
-    setFilters((prev) => ({ ...prev, genre }))
-  }, [])
-
   const setQuery = useCallback((query: string | null) => {
     interactedRef.current = true
     setFilters((prev) => ({ ...prev, query }))
   }, [])
 
+  // Genre: auto-commit (post-filter in results view)
+  const setGenre = useCallback((genre: string | null) => {
+    interactedRef.current = true
+    setFilters((prev) => ({ ...prev, genre }))
+    setCommitted((prev) => {
+      if (!prev) return null
+      versionRef.current += 1
+      return {
+        ...prev,
+        filters: { ...prev.filters, genre },
+        version: versionRef.current,
+      }
+    })
+  }, [])
+
+  // Nearby: pending only (no auto-commit, same as area/scene)
   const searchNearby = useCallback((lat: number, lng: number, radius = 1000) => {
     interactedRef.current = true
     setNearby({ lat, lng, radius })
@@ -172,6 +246,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     feedback: "good" | "bad",
   ) => {
     setFeedbackError(null)
+    const ctx = committed?.filters ?? effectiveFilters
     try {
       const res = await fetch("/api/discover/feedback", {
         method: "POST",
@@ -181,9 +256,9 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
           kakaoId,
           feedback,
           queryContext: {
-            area: effectiveFilters.areas[0] ?? null,
-            scene: effectiveFilters.scenes[0] ?? null,
-            genre: effectiveFilters.genre,
+            area: ctx.areas[0] ?? null,
+            scene: ctx.scenes[0] ?? null,
+            genre: ctx.genre,
           },
         }),
       })
@@ -195,13 +270,14 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
       const msg = err instanceof Error ? err.message : "Unknown error"
       setFeedbackError(msg)
     }
-  }, [effectiveFilters])
+  }, [committed, effectiveFilters])
 
   return {
     results: data?.results ?? [],
     isLoading,
     error: error?.message ?? feedbackError,
     filters: effectiveFilters,
+    committedFilters: committed?.filters ?? null,
     source: data?.source ?? null,
     isSeedActive,
     setAreas,
@@ -210,6 +286,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     toggleScene,
     setGenre,
     setQuery,
+    search,
     searchNearby,
     sendFeedback,
     isNearbyMode: nearby !== null,
@@ -221,17 +298,17 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
 function logDiscoverResponse(res: DiscoverResponse, fetchMs: number): void {
   const d = res.debug
   if (!d) {
-    console.log(`%c[Discover] ✅ 완료 (${fetchMs}ms) - ${res.results.length}건`, "color:#22c55e;font-weight:bold")
+    console.log(`%c[Discover] 완료 (${fetchMs}ms) - ${res.results.length}건`, "color:#22c55e;font-weight:bold")
     return
   }
 
-  console.group(`%c[Discover] ═══ 파이프라인 결과 (${fetchMs}ms) ═══`, "color:#6366f1;font-weight:bold;font-size:13px")
+  console.group(`%c[Discover] === 파이프라인 결과 (${fetchMs}ms) ===`, "color:#6366f1;font-weight:bold;font-size:13px")
 
   // Pipeline steps
   for (const step of d.pipeline) {
     const ms = step.durationMs ? `${step.durationMs}ms` : ""
     console.log(
-      `%c[Step] %c${step.step} %c${ms}\n%c  → ${step.detail}`,
+      `%c[Step] %c${step.step} %c${ms}\n%c  -> ${step.detail}`,
       "color:#f59e0b;font-weight:bold",
       "color:#e5e7eb",
       "color:#6b7280",
@@ -241,7 +318,7 @@ function logDiscoverResponse(res: DiscoverResponse, fetchMs: number): void {
 
   // Scoring method
   console.log(
-    `%c[Score] %cLLM base (100점) + DNA match bonus (±${d.blendRatio.dna}점)`,
+    `%c[Score] %cLLM base (100점) + DNA match bonus (+-${d.blendRatio.dna}점)`,
     "color:#8b5cf6;font-weight:bold",
     "color:#e5e7eb",
   )
