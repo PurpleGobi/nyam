@@ -592,6 +592,14 @@ category 구분:
 반드시 8~10개를 추천하세요. 카카오맵 검증에서 탈락할 수 있으니 넉넉히.
 실존 확인이 안 되는 식당은 절대 포함하지 마세요.`
 
+  console.log("\n[Discover] ──── LLM 프롬프트 입력값 ────")
+  console.log(`[Discover] 입력 컨텍스트:\n${contextParts.map((p) => `  ${p}`).join("\n")}`)
+  console.log(`[Discover] 씬 가중치: ${primaryScene ?? "기본"}`)
+  console.log(`[Discover] 프롬프트 길이: ${prompt.length}자`)
+  console.log("[Discover] ──── 프롬프트 전문 ────")
+  console.log(prompt)
+  console.log("[Discover] ──── 프롬프트 끝 ────\n")
+
   try {
     const result = await callGemini([{ text: prompt }], 0.3) as {
       recommendations?: LlmRecommendation[]
