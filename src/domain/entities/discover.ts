@@ -57,6 +57,28 @@ export interface DiscoverScores {
   novelty: number
 }
 
+/** 식당의 외부 플랫폼 링크 + 별점 */
+export interface PlatformLink {
+  platform: "kakao" | "naver" | "google"
+  url: string
+  rating: number | null
+  reviewCount: number | null
+}
+
+/** 명성 배지 (미슐랭, 블루리본, TV 등) */
+export interface ReputationBadge {
+  type: "michelin" | "blue_ribbon" | "tv" | "nofo" | "specialty" | "catch_table"
+  label: string      // "미슐랭 1스타", "블루리본 2", "수요미식회", "15년 노포"
+  icon?: string      // 아이콘 이름 또는 이모지
+}
+
+/** 블로그/리뷰 한 줄 */
+export interface ReviewSnippet {
+  summary: string    // 한 줄 요약
+  source: string     // "네이버 블로그", "구글 리뷰" 등
+  url?: string       // 원본 링크
+}
+
 /** Single discover result returned to client */
 export interface DiscoverResult {
   rank: number
@@ -78,6 +100,14 @@ export interface DiscoverResult {
   hasVisited: boolean
   sourceCount: number
   distance?: number
+  /** 대표 사진 URL 목록 */
+  photos: string[]
+  /** 외부 플랫폼 링크 + 별점 */
+  platformLinks: PlatformLink[]
+  /** 명성 배지 */
+  badges: ReputationBadge[]
+  /** 리뷰 스니펫 */
+  reviewSnippet: ReviewSnippet | null
 }
 
 /** Pipeline debug info returned to client */

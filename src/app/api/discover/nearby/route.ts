@@ -193,6 +193,12 @@ export async function GET(request: NextRequest) {
       hasVisited: visitedSet.has(s.candidate.kakaoId),
       sourceCount: s.candidate.internalRecordCount > 0 ? 2 : 1,
       distance: s.candidate.distance,
+      photos: [],
+      platformLinks: [
+        { platform: "kakao" as const, url: s.candidate.kakaoUrl, rating: null, reviewCount: null },
+      ],
+      badges: [],
+      reviewSnippet: null,
     }))
 
     const scoredDebugResults = top5.map((s, i) => ({

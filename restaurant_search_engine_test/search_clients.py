@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import httpx
 from dataclasses import dataclass, field
-from config import KAKAO_REST_API_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+from config import KAKAO_REST_API_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, GOOGLE_PLACES_API_KEY
 
 
 @dataclass
@@ -172,6 +172,69 @@ async def naver_local_search(
     return results
 
 
+# ── Google Places API (New) ────────────────────────────────
+
+async def google_places_search(
+    query: str,
+    lat: float | None = None,
+    lng: float | None = None,
+    radius: int = 2000,
+    max_results: int = 20,
+) -> list[Restaurant]:
+    """Google Places Text Search API. 별점 + 리뷰 수를 함께 수집."""
+    if not GOOGLE_PLACES_API_KEY:
+        return []
+
+    url = "https://places.googleapis.com/v1/places:searchText"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": (
+            "places.displayName,places.formattedAddress,places.location,"
+            "places.rating,places.userRatingCount,places.priceLevel,"
+            "places.types,places.id,places.googleMapsUri,places.nationalPhoneNumber"
+        ),
+    }
+    body: dict = {
+        "textQuery": query,
+        "languageCode": "ko",
+        "maxResultCount": max_results,
+        "includedType": "restaurant",
+    }
+    if lat and lng:
+        body["locationBias"] = {
+            "circle": {
+                "center": {"latitude": lat, "longitude": lng},
+                "radius": float(radius),
+            }
+        }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.post(url, json=body, headers=headers, timeout=15)
+        res.raise_for_status()
+        data = res.json()
+
+    results = []
+    for place in data.get("places", []):
+        loc = place.get("location", {})
+        display_name = place.get("displayName", {}).get("text", "")
+        results.append(Restaurant(
+            name=display_name,
+            address=place.get("formattedAddress", ""),
+            road_address=place.get("formattedAddress", ""),
+            category=", ".join(place.get("types", [])),
+            lat=loc.get("latitude", 0),
+            lng=loc.get("longitude", 0),
+            phone=place.get("nationalPhoneNumber", ""),
+            place_url=place.get("googleMapsUri", ""),
+            source="google",
+            external_id=place.get("id", ""),
+            rating=place.get("rating"),
+            review_count=place.get("userRatingCount"),
+        ))
+    return results
+
+
 # ── Grid-based Category Search ─────────────────────────────
 
 async def kakao_category_grid_search(
@@ -225,9 +288,17 @@ def deduplicate(restaurants: list[Restaurant]) -> list[Restaurant]:
             existing = seen[matched_key]
             if r.source not in existing.sources:
                 existing.sources.append(r.source)
+            # 구글 별점/리뷰 수 병합 (구글 데이터가 있으면 기존 데이터에 반영)
+            if r.source == "google" and r.rating is not None:
+                existing.rating = r.rating
+                existing.review_count = r.review_count
             # Prefer kakao data (has external_id, distance)
             if r.source == "kakao" and existing.source != "kakao":
+                rating_bak = existing.rating
+                review_bak = existing.review_count
                 r.sources = existing.sources
+                r.rating = r.rating or rating_bak
+                r.review_count = r.review_count or review_bak
                 seen[matched_key] = r
         else:
             r.sources = [r.source]

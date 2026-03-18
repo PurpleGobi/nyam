@@ -9,6 +9,7 @@ KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 
 # ── Test Cases ──────────────────────────────────────────
 # Each test case defines a search scenario to evaluate pipelines against.

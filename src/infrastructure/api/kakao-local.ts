@@ -34,6 +34,12 @@ export interface NearbyPlace {
   longitude: number
   placeUrl: string
   distance: number
+  /** 구글 별점 (크로스플랫폼 병합 시 채워짐) */
+  googleRating: number | null
+  /** 구글 리뷰 수 */
+  googleReviewCount: number | null
+  /** 출현 플랫폼 목록 (dedup 시 병합) */
+  sources: string[]
 }
 
 async function kakaoFetch(endpoint: string, params: Record<string, string>): Promise<KakaoSearchResponse> {
@@ -76,6 +82,9 @@ export async function searchNearbyRestaurants(
     longitude: Number(doc.x),
     placeUrl: doc.place_url,
     distance: Number(doc.distance ?? 0),
+    googleRating: null,
+    googleReviewCount: null,
+    sources: ["kakao"],
   }))
 }
 
@@ -142,5 +151,8 @@ export async function searchRestaurantsByKeyword(
     longitude: Number(doc.x),
     placeUrl: doc.place_url,
     distance: Number(doc.distance ?? 0),
+    googleRating: null,
+    googleReviewCount: null,
+    sources: ["kakao"],
   }))
 }

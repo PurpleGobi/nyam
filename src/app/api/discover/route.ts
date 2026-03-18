@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
 import { searchRestaurantsByKeyword, searchNearbyRestaurants, searchNearbyGrid } from "@/infrastructure/api/kakao-local"
 import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
+import { searchGooglePlaces } from "@/infrastructure/api/google-places"
 import { callGemini } from "@/infrastructure/api/gemini"
 import { SupabaseDiscoverRepository } from "@/infrastructure/repositories/supabase-discover-repository"
 import {
@@ -13,7 +14,8 @@ import type { CandidateRaw, DiscoverResult, TasteProfileAxis } from "@/domain/en
 import { FOOD_CATEGORIES } from "@/shared/constants/categories"
 
 // ─────────────────────────────────────────────────────────
-// Pipeline F: 템플릿 키워드 검색 → 체인 필터 → 사전 랭킹 → LLM 평가
+// Pipeline G: 크로스플랫폼 검색 → 체인 필터 → 사전 랭킹 → LLM 평가
+// 검색 = 메뉴/장르 중심 맛집 발굴, 평가 = LLM이 씬 적합성 판단
 // 환각 0%: LLM이 식당을 "생성"하지 않고 실제 검색 결과만 "평가"
 // ─────────────────────────────────────────────────────────
 
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
       : null
 
     console.log("\n[Discover] ═══════════════════════════════════════")
-    console.log(`[Discover] Pipeline F: 키워드 검색 → 체인 필터 → LLM 평가`)
+    console.log(`[Discover] Pipeline G: 크로스플랫폼 검색 → 체인 필터 → LLM 평가`)
     console.log(`[Discover]   area=${area} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}" nearby=${isNearbyMode}`)
 
     // ═══ Step 1: 템플릿 키워드 생성 + 검색 ═══
@@ -96,19 +98,26 @@ export async function GET(request: NextRequest) {
     const searchLat = nearbyLat ?? getAreaCoordinates(area)?.lat
     const searchLng = nearbyLng ?? getAreaCoordinates(area)?.lng
 
-    // 키워드 검색 (주력)
+    // [A] 카카오 키워드 검색 (주력)
     const keywordTasks = searchQueries.map((q) =>
       searchRestaurantsByKeyword(q, searchLat, searchLng),
     )
 
-    // 그리드 카테고리 검색 (교차 검증용, 좌표가 있을 때만)
+    // [B] 그리드 카테고리 검색 (교차 검증용)
     const gridTask = searchLat != null && searchLng != null
       ? searchNearbyGrid(searchLat, searchLng, { radius: 500, gridStep: 0.004, gridSize: 1 })
       : Promise.resolve([])
 
-    const [keywordResultsSettled, gridResults] = await Promise.all([
+    // [C] 구글 Places 검색 (핵심 쿼리 3개, 별점/리뷰 수집)
+    const googleQueries = searchQueries.slice(0, 3)
+    const googleTasks = googleQueries.map((q) =>
+      searchGooglePlaces(q, searchLat, searchLng, 2000),
+    )
+
+    const [keywordResultsSettled, gridResults, ...googleResultsSettled] = await Promise.all([
       Promise.allSettled(keywordTasks),
       gridTask,
+      ...googleTasks.map((t) => t.catch(() => [] as NearbyPlace[])),
     ])
 
     const keywordResults: NearbyPlace[] = []
@@ -118,16 +127,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const googleResults: NearbyPlace[] = []
+    for (const result of googleResultsSettled) {
+      if (Array.isArray(result)) {
+        googleResults.push(...result)
+      }
+    }
+
     const keywordNames = new Set(keywordResults.map((r) => r.name))
-    const allSearchResults = [...keywordResults, ...gridResults]
+    const allSearchResults = [...keywordResults, ...googleResults, ...gridResults]
 
     const step1Ms = Date.now() - t0
     pipelineSteps.push({
-      step: "키워드+그리드 검색",
-      detail: `키워드 ${keywordResults.length}건 + 그리드 ${gridResults.length}건 (쿼리: ${searchQueries.slice(0, 3).join(", ")}...)`,
+      step: "크로스플랫폼 검색",
+      detail: `카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length}건 (쿼리: ${searchQueries.slice(0, 3).join(", ")}...)`,
       durationMs: step1Ms,
     })
-    console.log(`[Discover] Step 1: 검색 완료 (${step1Ms}ms) - 키워드 ${keywordResults.length} + 그리드 ${gridResults.length}`)
+    console.log(`[Discover] Step 1: 검색 완료 (${step1Ms}ms) - 카카오 ${keywordResults.length} + 구글 ${googleResults.length} + 그리드 ${gridResults.length}`)
 
     // ═══ Step 2: 중복 제거 + 체인 필터 + 사전 랭킹 ═══
     t0 = Date.now()
@@ -431,6 +447,13 @@ export async function GET(request: NextRequest) {
       ...(isNearbyMode && nearbyLat != null && nearbyLng != null ? {
         distance: Math.round(haversineDistance(nearbyLat, nearbyLng, s.candidate.lat, s.candidate.lng)),
       } : {}),
+      // Pipeline G 준비: 현재 빈 값, 향후 구글/네이버 연동 시 채워짐
+      photos: [],
+      platformLinks: [
+        { platform: "kakao" as const, url: s.candidate.kakaoUrl, rating: null, reviewCount: null },
+      ],
+      badges: [],
+      reviewSnippet: null,
     }))
 
     const response = NextResponse.json({
@@ -469,40 +492,27 @@ export async function GET(request: NextRequest) {
 // Step 1: 템플릿 키워드 생성
 // ─────────────────────────────────────────────────────────
 
-/** 씬/장르별 검색 키워드 (core + extra) */
-const SCENE_KEYWORDS: Record<string, { core: string[]; extra: string[] }> = {
-  "혼밥": {
-    core: ["{area} 혼밥 맛집", "{area} 1인 식당", "{area} 혼밥"],
-    extra: ["{area} 돈까스", "{area} 라멘", "{area} 덮밥", "{area} 국수"],
-  },
-  "데이트": {
-    core: ["{area} 데이트 맛집", "{area} 분위기 좋은 식당", "{area} 인기 맛집"],
-    extra: ["{area} 레스토랑", "{area} 파스타", "{area} 브런치"],
-  },
-  "비즈니스": {
-    core: ["{area} 접대 맛집", "{area} 비즈니스 식당", "{area} 코스요리"],
-    extra: ["{area} 한정식", "{area} 오마카세", "{area} 룸 식당"],
-  },
-  "친구모임": {
-    core: ["{area} 친구 모임 맛집", "{area} 단체 식당", "{area} 맛집"],
-    extra: ["{area} 고기 맛집", "{area} 삼겹살", "{area} 회식"],
-  },
-  "가족": {
-    core: ["{area} 가족 식사", "{area} 한식 맛집", "{area} 맛집"],
-    extra: ["{area} 갈비", "{area} 한정식", "{area} 뷔페"],
-  },
-  "술자리": {
-    core: ["{area} 술집", "{area} 이자카야", "{area} 안주 맛집"],
-    extra: ["{area} 호프", "{area} 포차", "{area} 와인바"],
-  },
+/**
+ * Pipeline G 키워드: 메뉴/장르 중심 (씬 키워드 제거)
+ * 씬은 검색에 쓸모없음 → LLM 평가에서 판단
+ */
+const MENU_KEYWORDS: Record<string, string[]> = {
+  "일식": ["{area} 라멘", "{area} 돈까스", "{area} 우동", "{area} 스시", "{area} 소바", "{area} 오마카세", "{area} 카츠"],
+  "한식": ["{area} 국밥", "{area} 백반", "{area} 찌개", "{area} 칼국수", "{area} 국수", "{area} 한정식", "{area} 냉면"],
+  "중식": ["{area} 짜장면", "{area} 마라탕", "{area} 딤섬", "{area} 양꼬치", "{area} 중식당"],
+  "양식": ["{area} 파스타", "{area} 스테이크", "{area} 피자", "{area} 브런치", "{area} 레스토랑"],
+  "고기/구이": ["{area} 삼겹살", "{area} 갈비", "{area} 소고기", "{area} 고기 구이"],
+  "아시안": ["{area} 쌀국수", "{area} 카레", "{area} 태국", "{area} 베트남"],
+  "술집": ["{area} 이자카야", "{area} 호프", "{area} 포차", "{area} 와인바"],
 }
 
-const GENRE_KEYWORDS: Record<string, string[]> = {
-  "일식": ["{area} 라멘", "{area} 스시", "{area} 우동", "{area} 일식"],
-  "한식": ["{area} 한식", "{area} 백반", "{area} 찌개", "{area} 국밥"],
-  "중식": ["{area} 중식", "{area} 짜장면", "{area} 마라탕"],
-  "양식": ["{area} 파스타", "{area} 스테이크", "{area} 양식"],
-  "고기/구이": ["{area} 고기 맛집", "{area} 삼겹살", "{area} 갈비"],
+const SCENE_TO_GENRES: Record<string, string[]> = {
+  "혼밥": ["일식", "한식", "아시안"],
+  "데이트": ["양식", "일식"],
+  "비즈니스": ["한식", "일식", "양식"],
+  "친구모임": ["고기/구이", "한식"],
+  "가족": ["한식", "중식"],
+  "술자리": ["술집", "일식"],
 }
 
 function generateSearchQueries(
@@ -514,34 +524,36 @@ function generateSearchQueries(
   const areaStr = area ?? "맛집"
   const queries: string[] = []
 
-  // 사용자 직접 검색어 (최우선)
+  // 1. 사용자 직접 검색어 (최우선)
   if (query) {
     queries.push(`${areaStr} ${query}`)
-    queries.push(`${areaStr} ${query} 맛집`)
+    queries.push(`${areaStr} ${query} 전문점`)
   }
 
-  // 씬 키워드 (core 우선)
-  const sceneConfig = SCENE_KEYWORDS[scene ?? ""] ?? { core: ["{area} 맛집"], extra: [] }
-  for (const tmpl of sceneConfig.core) {
-    queries.push(tmpl.replace("{area}", areaStr))
-  }
-
-  // 장르가 지정되면 장르 키워드, 아니면 씬 extra
+  // 2. 장르가 지정된 경우: 해당 장르 메뉴 키워드
   if (genreLabel) {
-    const genreTemplates = GENRE_KEYWORDS[genreLabel] ?? [`{area} ${genreLabel}`]
-    for (const tmpl of genreTemplates) {
+    const templates = MENU_KEYWORDS[genreLabel] ?? [`{area} ${genreLabel}`]
+    for (const tmpl of templates) {
       queries.push(tmpl.replace("{area}", areaStr))
     }
   } else {
-    for (const tmpl of sceneConfig.extra) {
-      queries.push(tmpl.replace("{area}", areaStr))
+    // 3. 장르 미지정: 씬에 맞는 장르들의 메뉴 키워드
+    const relatedGenres = SCENE_TO_GENRES[scene ?? ""] ?? ["한식", "일식"]
+    for (const g of relatedGenres) {
+      const templates = MENU_KEYWORDS[g] ?? []
+      for (const tmpl of templates.slice(0, 4)) {
+        queries.push(tmpl.replace("{area}", areaStr))
+      }
     }
   }
 
-  // 기본 키워드
+  // 4. 발굴 키워드
+  queries.push(`${areaStr} 노포`)
+  queries.push(`${areaStr} 현지인 식당`)
+
+  // 5. 최후 폴백
   queries.push(`${areaStr} 맛집`)
 
-  // 중복 제거 (순서 유지)
   return [...new Set(queries)]
 }
 
@@ -570,14 +582,24 @@ function isChain(name: string): boolean {
 function deduplicatePlaces(places: NearbyPlace[]): NearbyPlace[] {
   const seen = new Map<string, NearbyPlace>()
   for (const place of places) {
-    if (!seen.has(place.externalId)) {
-      seen.set(place.externalId, place)
+    const existing = seen.get(place.name.replace(/\s+/g, "").toLowerCase())
+    if (existing) {
+      // 크로스플랫폼 병합: 출처 합치고, 구글 별점 반영
+      if (!existing.sources.includes(place.sources[0])) {
+        existing.sources.push(place.sources[0])
+      }
+      if (place.googleRating != null && existing.googleRating == null) {
+        existing.googleRating = place.googleRating
+        existing.googleReviewCount = place.googleReviewCount
+      }
+    } else {
+      seen.set(place.name.replace(/\s+/g, "").toLowerCase(), { ...place })
     }
   }
   return [...seen.values()]
 }
 
-/** 사전 랭킹: 맛집 시그널 > 씬 키워드 (우선순위: 할루시네이션X > 지역O > 맛집 > 씬) */
+/** Pipeline G 사전 랭킹: 키워드 히트 + 크로스플랫폼 + 구글 별점 + 거리 + 장르 */
 function preRankScore(
   place: NearbyPlace,
   scene: string | null,
@@ -585,27 +607,40 @@ function preRankScore(
 ): number {
   let score = 0
 
-  // 키워드 검색에서 나온 식당 = 씬 관련성 확보
+  // 1. 키워드 검색 히트 (30점) — 검색에 잡힘 = 관련성 확보
   if (keywordNames.has(place.name)) score += 30
 
-  // 거리 가점
-  if (place.distance > 0) {
-    score += Math.max(0, 20 - place.distance / 100)
+  // 2. 크로스플랫폼 출현 (20점)
+  if (place.sources.length >= 3) score += 20
+  else if (place.sources.length >= 2) score += 12
+
+  // 3. 구글 별점 × 리뷰 수 (20점)
+  if (place.googleRating != null && place.googleReviewCount != null) {
+    if (place.googleReviewCount >= 100 && place.googleRating >= 4.0) score += 20
+    else if (place.googleReviewCount >= 30 && place.googleRating >= 3.8) score += 12
+    else if (place.googleReviewCount >= 10) score += 5
+  } else if (place.googleRating != null && place.googleRating >= 4.0) {
+    score += 8
   }
 
-  // 씬 키워드 매칭
+  // 4. 거리 (15점)
+  if (place.distance > 0) {
+    score += Math.max(0, 15 - place.distance / 150)
+  }
+
+  // 5. 장르 매칭 (15점)
   const text = `${place.categoryName} ${place.name}`.toLowerCase()
-  const sceneKeywords: Record<string, string[]> = {
-    "혼밥": ["국수", "라멘", "우동", "돈까스", "카레", "덮밥", "1인", "소바"],
-    "데이트": ["이탈리", "프렌치", "파스타", "와인", "레스토랑", "비스트로", "다이닝"],
-    "비즈니스": ["한정식", "일식", "오마카세", "프렌치", "코스", "스시"],
-    "친구모임": ["고기", "구이", "삼겹", "치킨", "닭갈비", "솥뚜껑"],
-    "가족": ["한식", "중식", "뷔페", "갈비", "한정식"],
+  const genreKeywords: Record<string, string[]> = {
+    "혼밥": ["국수", "라멘", "우동", "돈까스", "카레", "덮밥", "소바", "카츠", "백반", "국밥"],
+    "데이트": ["이탈리", "프렌치", "파스타", "와인", "레스토랑", "비스트로", "다이닝", "오마카세"],
+    "비즈니스": ["한정식", "오마카세", "프렌치", "코스", "스시", "스테이크"],
+    "친구모임": ["고기", "구이", "삼겹", "치킨", "닭갈비", "갈비"],
+    "가족": ["한식", "중식", "뷔페", "갈비", "한정식", "국밥"],
     "술자리": ["호프", "포차", "이자카야", "바", "술집"],
   }
-  for (const kw of sceneKeywords[scene ?? ""] ?? []) {
+  for (const kw of genreKeywords[scene ?? ""] ?? []) {
     if (text.includes(kw)) {
-      score += 5
+      score += 15
       break
     }
   }
@@ -681,6 +716,11 @@ async function evaluateWithLlm(
     let info = `- ${p.name} | 카테고리: ${p.categoryName}`
     if (p.address) info += ` | 주소: ${p.address}`
     if (p.distance > 0) info += ` | 거리: ${p.distance}m`
+    if (p.googleRating != null) {
+      info += ` | 구글 ${p.googleRating}★`
+      if (p.googleReviewCount != null) info += ` (${p.googleReviewCount}건)`
+    }
+    if (p.sources.length > 1) info += ` | ${p.sources.length}개 플랫폼(${p.sources.join(",")})`
     return info
   }).join("\n")
 
@@ -695,14 +735,24 @@ async function evaluateWithLlm(
 아래 실제 검색된 식당들을 씬에 맞게 평가하고 순위를 매겨라.
 
 중요: 아래 식당만 평가하라. 새로운 식당을 추가하지 마라.
-당신의 지식을 활용하여 각 식당의 실제 평판, 특성을 반영하라.
+
+★ 2단계 평가를 수행하라:
+1단계) 각 식당에 대해 네가 알고 있는 정보를 활용하라:
+  - 미슐랭/블루리본 인증 여부
+  - TV 프로그램(수요미식회, 줄서는식당, 백종원 등) 출연 여부
+  - 노포 여부 (5년+ 영업)
+  - 전문점 여부 (메인 메뉴 3개 이하)
+  - SNS 화제성, 사장님 철학/스토리
+2단계) 위 정보 + 제공된 실제 데이터(구글 별점, 리뷰 수 등)를 종합하여 채점하라.
 
 ★ 채점 가이드 (각 항목 0-100):
-- 각 평가 항목(context_fit, reputation 등)을 0-100으로 독립 채점
-- 해당 식당이 유명 맛집이면 해당 항목 70-90점
-- 보통 수준이면 50-70점
-- 정보 부족하면 50점 (중립)
-- 씬에 부적합하거나 명백히 나쁜 경우만 30점 이하
+- 구글 별점 4.0+ & 리뷰 100+ → reputation 70점 이상
+- 미슐랭/블루리본 인증 → authority 80점 이상
+- TV 프로그램 출연 → trend/authority 가점
+- 노포 (5년+) → reputation, review_trust 가점
+- 전문점 → context_fit 가점
+- 3개 플랫폼 출현 → reputation, review_trust 가점
+- 리뷰 적은데 별점 극단적 → review_trust 감점 (조작 의심)
 - 항목 간 점수 차이를 두어 순위가 명확히 나오게 하라
 
 ────────────────

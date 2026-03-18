@@ -17,6 +17,7 @@ from test_pipeline_c import run_pipeline_c
 from test_pipeline_d import run_pipeline_d
 from test_pipeline_e import run_pipeline_e
 from test_pipeline_f import run_pipeline_f
+from test_pipeline_g import run_pipeline_g
 from ground_truth import evaluate_pipeline_result, GROUND_TRUTH
 
 console = Console()
@@ -51,7 +52,7 @@ async def main():
     console.print("\n[dim]Running pipelines...[/]")
 
     results = {}
-    for name, runner in [("B", run_pipeline_b), ("E", run_pipeline_e), ("F", run_pipeline_f)]:
+    for name, runner in [("B", run_pipeline_b), ("F", run_pipeline_f), ("G", run_pipeline_g)]:
         console.print(f"  [cyan]Pipeline {name}[/] ...", end=" ")
         t0 = time.time()
         try:

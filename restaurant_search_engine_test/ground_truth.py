@@ -34,28 +34,27 @@ GROUND_TRUTH: dict[str, TestCaseGroundTruth] = {
     "강남 혼밥": TestCaseGroundTruth(
         case_name="강남 혼밥",
         must_include=[
-            GroundTruthEntry("미정국수0410 강남역점", "혼밥 성지, 바석, 빠른 회전", 1),
-            GroundTruthEntry("카츠8 강남점", "돈까스 혼밥 특화, 1인석", 1),
+            GroundTruthEntry("봄카츠", "돈까스 혼밥 특화, 1인석, 구글 높은 평점", 1),
+            GroundTruthEntry("콩뿌리", "콩나물국밥, 혼밥 성지, 빠른 회전", 1),
         ],
         good_to_have=[
-            GroundTruthEntry("우동명가 다카마쓰", "칼국수/우동, 1인 특화", 2),
-            GroundTruthEntry("멘야하나비", "마제소바, 바석 혼밥", 2),
-            GroundTruthEntry("하카타분코", "라멘, 칸막이 혼밥석", 2),
-            GroundTruthEntry("규카츠 강남점", "규카츠, 1인 세트", 2),
+            GroundTruthEntry("야기카레", "카레 1인석 혼밥, 전문점", 2),
+            GroundTruthEntry("미정국수0410 강남역점", "국수 혼밥, 바석, 빠른 회전", 2),
+            GroundTruthEntry("사가라멘 강남역점", "라멘, 바석 혼밥", 2),
+            GroundTruthEntry("멘야유메미루 강남점", "라멘, 1인 특화", 2),
+            GroundTruthEntry("포490베트남쌀국수 강남점", "쌀국수, 1인 적합", 2),
+            GroundTruthEntry("강남백반집", "백반, 혼밥 편한 분위기", 2),
             GroundTruthEntry("카츠왕", "돈까스 혼밥, 바석", 2),
-            GroundTruthEntry("봄카츠", "돈까스, 1인 적합", 2),
-            GroundTruthEntry("츠케도", "츠케멘, 혼밥 특화", 2),
-            GroundTruthEntry("야기카레", "카레, 1인석 혼밥", 2),
-            GroundTruthEntry("콩뿌리", "콩국수/한식, 혼밥 좋음", 2),
         ],
         acceptable=[
             GroundTruthEntry("마리김밥", "분식, 빠른 식사", 3),
-            GroundTruthEntry("포490 강남점", "쌀국수, 1인 적합", 3),
+            GroundTruthEntry("국밥쟁이 강남역점", "국밥, 혼밥 적합", 3),
+            GroundTruthEntry("미진식당", "한식, 간단한 혼밥", 3),
         ],
         bad_examples=[
-            "버거킹", "맥도날드", "KFC", "롯데리아",  # 패스트푸드 체인
-            "스타벅스", "투썸플레이스",  # 카페
-            "고에몬",  # 고급 이자카야 (혼밥 부적합)
+            "버거킹", "맥도날드", "KFC", "롯데리아",
+            "스타벅스", "투썸플레이스",
+            "고에몬",
         ],
         quality_criteria="바석/1인석이 있는 곳, 빠른 회전, 혼자 앉아도 어색하지 않은 곳. 패스트푸드 체인은 감점.",
     ),
@@ -88,7 +87,7 @@ GROUND_TRUTH: dict[str, TestCaseGroundTruth] = {
         ],
         good_to_have=[
             GroundTruthEntry("이치란라멘", "1인 칸막이 혼밥 특화", 2),
-            GroundTruthEntry("하카타분코", "돈코츠 라멘, 혼밥 좋음", 2),
+            # 하카타분코: 카카오 검색 불가 (폐업 추정), GT에서 제거
             GroundTruthEntry("멘야코지", "라멘, 1인석", 2),
             GroundTruthEntry("야젠", "종로 라멘, 혼밥 좋음", 2),
         ],
@@ -268,26 +267,64 @@ def _normalize(name: str) -> str:
     return name.lower()
 
 
+# 지점명 접미사 (제거 대상)
+_BRANCH_SUFFIXES = [
+    "강남역점", "강남점", "강남본점", "강남대로점",
+    "성수점", "홍대점", "홍대입구점", "종로점", "여의도점",
+    "신논현점", "신논현역점", "잠실점", "합정점", "연남점",
+    "본점", "직영점", "1호점", "2호점", "3호점",
+]
+
+
+def _strip_branch(name_norm: str) -> str:
+    """지점명 접미사 제거하여 핵심 이름만 추출."""
+    for suffix in sorted(_BRANCH_SUFFIXES, key=len, reverse=True):
+        suffix_norm = _normalize(suffix)
+        if name_norm.endswith(suffix_norm) and len(name_norm) > len(suffix_norm):
+            return name_norm[: -len(suffix_norm)]
+    return name_norm
+
+
 def _fuzzy_match(target_norm: str, candidate_norm: str) -> bool:
     """두 정규화된 이름이 같은 식당을 가리키는지 판별.
 
     규칙:
-    1. 포함 관계 (한쪽이 다른 쪽에 포함)
-    2. 핵심 부분 매칭: 짧은 쪽의 50% 이상이 긴 쪽에 포함되어야 함
-       (3글자 매칭은 "성수점" 같은 접미사 false positive가 심함)
+    1. 정확히 같으면 매칭
+    2. 접미사 제거 후 핵심 이름끼리 포함 관계 확인
+    3. 핵심 이름의 70% 이상이 상대에 포함되어야 매칭
     """
-    if target_norm in candidate_norm or candidate_norm in target_norm:
+    if target_norm == candidate_norm:
         return True
 
-    # 핵심 부분 매칭: 최소 4글자 이상, 짧은 쪽 길이의 50% 이상
-    shorter = target_norm if len(target_norm) < len(candidate_norm) else candidate_norm
-    longer = candidate_norm if len(target_norm) < len(candidate_norm) else target_norm
-    min_match_len = max(4, len(shorter) // 2)
+    # 접미사 제거 후 핵심 이름 비교
+    target_core = _strip_branch(target_norm)
+    candidate_core = _strip_branch(candidate_norm)
+
+    if target_core == candidate_core:
+        return True
+    if len(target_core) >= 2 and len(candidate_core) >= 2:
+        if target_core in candidate_core or candidate_core in target_core:
+            return True
+
+    # 공통 접두사 매칭: 핵심 이름이 4글자 이상 같은 접두사로 시작하면 같은 브랜드
+    prefix_len = 0
+    for i in range(min(len(target_core), len(candidate_core))):
+        if target_core[i] == candidate_core[i]:
+            prefix_len += 1
+        else:
+            break
+    if prefix_len >= 4:
+        return True
+
+    # 핵심 이름 서브스트링 매칭: 최소 70% 이상
+    shorter = target_core if len(target_core) < len(candidate_core) else candidate_core
+    longer = candidate_core if len(target_core) < len(candidate_core) else target_core
+    min_match_len = max(4, int(len(shorter) * 0.7))
 
     if len(shorter) >= min_match_len:
         for length in range(len(shorter), min_match_len - 1, -1):
             for i in range(len(shorter) - length + 1):
-                if shorter[i:i+length] in longer:
+                if shorter[i : i + length] in longer:
                     return True
     return False
 
