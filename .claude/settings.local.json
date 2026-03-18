@@ -70,7 +70,11 @@
       "Bash(cat:*)",
       "Bash(git -C /Users/jk_mini/github/nyam status)",
       "Bash(git -C /Users/jk_mini/github/nyam log --oneline -3)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(wc -l /Users/jk_mini/github/nyam/src/application/hooks/*.ts)",
+      "Bash(git mv:*)",
+      "Bash(md5:*)",
+      "Bash(grep -o \"SourceBadge\\\\|EmptyAiField\\\\|시스템 정보\\\\|보조 장르\\\\|분위기 태그\\\\|ReadOnlyField\\\\|atmosphereTags\\\\|wineUserTasting\" /Users/jk_mini/github/nyam/.next/server/app/\\\\\\(main\\\\\\)/records/[id]/edit/page.js)"
     ]
   },
   "enableAllProjectMcpServers": true,

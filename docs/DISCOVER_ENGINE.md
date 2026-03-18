@@ -22,6 +22,16 @@ Nyam Discover:
 
 **차별점**: 검색이 아니라 **큐레이션**. 결과가 10개가 아니라 **3~5개, 이유와 함께**.
 
+### 기존 기능과의 역할 분담
+
+| 기능 | 위치 | 데이터 범위 | 성격 |
+|------|------|------------|------|
+| **Today's Pick** | 홈 화면 | 내 기록 안에서 | 패시브 — 열면 바로 보임 |
+| **Discover** | 발견 탭 | 내 기록 + 외부 소스 | 액티브 — 검색/탐색 |
+| ~~/api/recommend~~ | ~~별도~~ | ~~DNA 기반~~ | **Discover에 흡수** |
+
+> **Note**: 기존 TECH_SPEC의 `POST /api/recommend`는 Discover Engine의 DNA 개인화(2차)에 통합한다. 별도 API로 유지하지 않는다.
+
 ---
 
 ## 2. 아키텍처 개요
@@ -88,16 +98,23 @@ B. 필터:   scene=혼밥, genre=japanese, area=강남
 **LLM이 자연어를 구조화**:
 
 ```
-Input:  "강남에서 혼밥하기 좋은 일식집, 근데 너무 비싸지 않은 곳"
+Input:  "강남에서 혼밥하기 좋은 일식집, 근데 너무 비싸지 않은 곳, 바삭한 튀김"
 Output: {
   area: "강남",
   scene: "혼밥",
   genre: "japanese",
   priceRange: "mid",        // 추론
-  keywords: ["일식", "혼밥", "강남"],
+  tags: {
+    flavor: ["고소한"],             // FLAVOR_TAGS에서 매칭
+    texture: ["바삭한"],            // TEXTURE_TAGS에서 매칭
+    atmosphere: []                  // ATMOSPHERE_TAGS에서 매칭
+  },
+  keywords: ["일식", "혼밥", "강남", "튀김"],
   negativeKeywords: ["고급", "오마카세"]  // "비싸지 않은" → 제외 조건 추론
 }
 ```
+
+> **태그 매칭**: 자연어에서 FLAVOR_TAGS / TEXTURE_TAGS / ATMOSPHERE_TAGS에 해당하는 키워드를 추출하여 구조화. 내부 DB 검색 시 records.flavor_tags, texture_tags, atmosphere_tags와 배열 교집합(&&) 쿼리에 사용.
 
 ### 3-2. 병렬 소스 검색
 
@@ -120,6 +137,8 @@ Source 3: 내부 DB (records + restaurants)
     AND restaurants.region = '강남'
     AND visibility = 'public'
     AND rating_overall >= 70
+    AND flavor_tags && ARRAY['고소한']     -- 태그 교집합 (있으면)
+    AND texture_tags && ARRAY['바삭한']    -- 태그 교집합 (있으면)
   → 결과: 내부 사용자 기록 기반 식당 목록
 ```
 
@@ -207,11 +226,18 @@ Source 3: 내부 DB (records + restaurants)
 ### 4-3. 최종 스코어링 + 추천 이유
 
 ```typescript
-function finalScore(candidate, user): {score: number, reason: string} {
-  const taste   = tasteSimilarity(user.tasteDna, candidate.tasteProfile) * 0.35
-  const style   = styleMatch(user.styleDna, candidate, query.scene) * 0.25
-  const quality = candidate.internalRating ?? candidate.confidence * 70   * 0.25
-  const novelty = isNewForUser(user, candidate) ? 10 : 0                  * 0.15
+function finalScore(candidate, user, recordCount): {score: number, reason: string} {
+  // 기록 수에 따라 가중치 동적 조정 (콜드 스타트 대응)
+  const weights = getWeights(recordCount)
+  // weights: { taste, style, quality, novelty }
+  //   records < 5:  { 0.10, 0.10, 0.60, 0.20 }
+  //   records 5~19: { 0.20, 0.20, 0.40, 0.20 }
+  //   records 20+:  { 0.35, 0.25, 0.25, 0.15 }
+
+  const taste   = tasteSimilarity(user.tasteDna, candidate.tasteProfile) * weights.taste
+  const style   = styleMatch(user.styleDna, candidate, query.scene) * weights.style
+  const quality = (candidate.internalRating ?? candidate.confidence * 70) * weights.quality
+  const novelty = (isNewForUser(user, candidate) ? 10 : 0) * weights.novelty
 
   return {
     score: taste + style + quality + novelty,
@@ -220,7 +246,20 @@ function finalScore(candidate, user): {score: number, reason: string} {
 }
 ```
 
-**추천 이유 생성 (LLM)**:
+**추천 이유 생성**:
+
+> **Phase별 구현**: MVP는 템플릿 기반 (LLM 미호출, 속도 우선). Phase 2+에서 LLM 생성으로 전환.
+
+**템플릿 기반 (MVP)**:
+```
+dominant factor에 따라 선택:
+  taste 우세 → "{맛 축} 좋아하시잖아요. 여기 {맛 축} 맛집이에요"
+  style 우세 → "{지역} 자주 가시는데, 아직 안 가본 곳이에요"
+  quality 우세 → "이 지역 평점 최상위 식당이에요"
+  novelty 우세 → "새로운 {장르} 맛집이 생겼어요"
+```
+
+**LLM 기반 (Phase 2+)**:
 
 ```
 프롬프트:
@@ -267,29 +306,23 @@ function finalScore(candidate, user): {score: number, reason: string} {
 
 ### 5-2. 사전 계산 대상
 
-사용자의 **Style DNA에서 추출한 핵심 축** 기반으로 미리 검색해둔다:
+사전 계산의 **조합 결정 로직은 섹션 6(사전 리서치 설정)**에서 관리한다. 자동 모드면 Style DNA 기반으로, 수동 모드면 사용자 설정 기반으로 조합이 결정된다.
 
 ```
 사전 계산 트리거 조건:
   ① 신규 기록 저장 시 (post-process 완료 후)
-  ② 하루 1회 야간 배치 (02:00~05:00)
+  ② discover_preferences의 갱신 주기/시간대에 따라 (pg_cron)
   ③ 발견 페이지 첫 진입 시 (캐시 미스)
 
-추출 기준:
-  style_dna_restaurant_areas  → 상위 3개 지역
-  style_dna_restaurant_scenes → 상위 3개 상황
-  style_dna_restaurant_genres → 상위 3개 장르
+조합 단위: area × scene (장르는 1차 후보에서 후필터)
 
-조합 생성:
-  3 지역 × 3 상황 = 9개 쿼리 (장르는 필터로 적용)
+예시 (자동 모드, 사용자 A):
+  auto_areas:  [성수, 강남, 을지로]
+  auto_scenes: [혼밥, 데이트, 친구모임]
 
-예시 (사용자 A):
-  areas:  [성수, 강남, 을지로]
-  scenes: [혼밥, 데이트, 친구모임]
-
-  → "성수 혼밥", "성수 데이트", "성수 친구모임"
-  → "강남 혼밥", "강남 데이트", "강남 친구모임"
-  → "을지로 혼밥", "을지로 데이트", "을지로 친구모임"
+  → "성수_혼밥", "성수_데이트", "성수_친구모임"
+  → "강남_혼밥", "강남_데이트", "강남_친구모임"
+  → "을지로_혼밥", "을지로_데이트", "을지로_친구모임"
   → 9개 검색을 미리 실행 → 결과 캐싱
 ```
 
@@ -306,7 +339,8 @@ area            VARCHAR NULL
 scene           VARCHAR NULL
 genre           VARCHAR NULL
 -- 결과
-candidates      JSONB NOT NULL         -- 1차 교차 검증 완료된 후보 10~15개
+candidates      JSONB NULL             -- 1차 후보 (MVP: 직접 저장 / Phase 2: NULL, shared_cache_key로 참조)
+shared_cache_key VARCHAR NULL           -- Phase 2: discover_shared_cache.query_key 참조 (candidates 대체)
 personalized    JSONB NULL             -- 2차 DNA 적용된 최종 3~5개 + 추천 이유
 -- 메타
 source_versions JSONB NULL             -- {kakao: "2026-03-18", naver: "2026-03-18", internal: 1234}
@@ -324,6 +358,9 @@ CREATE INDEX idx_discover_cache_expiry
   WHERE status = 'ready';
 ```
 
+> **MVP**: candidates에 직접 저장, shared_cache_key = NULL.
+> **Phase 2 (공유 캐시 도입 시)**: candidates = NULL, shared_cache_key로 discover_shared_cache 참조. personalized만 사용자별 보관.
+
 ### 5-4. 캐시 TTL 및 무효화
 
 ```
@@ -340,9 +377,171 @@ TTL: 24시간 (음식점 정보 변동 주기 고려)
 
 ---
 
-## 6. 콜드 스타트 전략
+## 6. 사전 리서치 설정 (`/discover/settings`)
 
-### 6-1. 기록 0건 — 완전 신규 사용자
+### 6-1. 개요
+
+사전 리서치(Pre-computation)의 조건을 **자동 또는 수동**으로 설정하는 페이지. 발견 탭 내 설정 아이콘으로 진입.
+
+> **강요하지 않는다.** 설정하지 않아도 자동 모드가 기본값으로 잘 동작한다. 설정 페이지는 "더 정밀하게 제어하고 싶은 사용자"를 위한 옵션.
+
+### 6-2. 모드 선택
+
+```
+┌─────────────────────────────────────┐
+│  사전 리서치 설정                      │
+│                                       │
+│  ┌─────────────┐  ┌─────────────┐   │
+│  │  ● 자동     │  │  ○ 수동     │   │
+│  │  내 패턴에   │  │  직접       │   │
+│  │  맞게 알아서 │  │  조건 설정   │   │
+│  └─────────────┘  └─────────────┘   │
+│                                       │
+│  자동 모드: 기록 패턴을 분석해서       │
+│  최적의 조건으로 미리 검색해둡니다.     │
+└─────────────────────────────────────┘
+```
+
+### 6-3. 자동 모드 (기본값)
+
+사용자 데이터를 기반으로 **모든 조건을 자동 결정**:
+
+```
+분석 대상:
+  ├─ style_dna_restaurant_areas  → 자주 가는 지역 상위 3개
+  ├─ style_dna_restaurant_scenes → 자주 가는 상황 상위 3개
+  ├─ style_dna_restaurant_genres → 선호 장르 상위 3개
+  ├─ records.created_at 패턴     → 주로 검색할 시간대 추정
+  └─ user_stats.avg_weekly_frequency → 갱신 빈도 결정
+
+자동 결정 항목:
+  ① 지역: DNA 상위 3개 + 최근 2주 신규 방문 지역 1개
+  ② 상황: DNA 상위 3개
+  ③ 장르: 후필터 (별도 계산 불필요)
+  ④ 갱신 빈도:
+     주 5회+ 기록 → 매일 갱신
+     주 2~4회 기록 → 2일마다 갱신
+     주 1회 이하   → 3일마다 갱신
+  ⑤ 시간대: 기록 생성 시간 분포에서 피크 시간 ±1시간에 갱신 완료
+     예: 주로 12시에 기록 → 11시에 점심 추천 사전 계산
+         주로 19시에 기록 → 18시에 저녁 추천 사전 계산
+
+표시 (읽기 전용):
+  "현재 자동 설정: 성수·강남·을지로 × 혼밥·데이트·친구모임
+   2일마다 갱신 / 점심·저녁 시간대 중심"
+```
+
+### 6-4. 수동 모드
+
+사용자가 모든 조건을 직접 설정:
+
+```
+┌─────────────────────────────────────┐
+│  사전 리서치 조건                      │
+│                                       │
+│  지역 (최대 5개)                      │
+│  [성수] [강남] [을지로] [+추가]       │
+│                                       │
+│  상황 (최대 5개)                      │
+│  [혼밥] [데이트] [+추가]              │
+│                                       │
+│  갱신 빈도                            │
+│  ○ 매일  ● 2일마다  ○ 3일마다  ○ 주1회│
+│                                       │
+│  시간대 (언제 추천이 준비되면 좋을지)   │
+│  ☑ 점심 (11시)                        │
+│  ☑ 저녁 (17시)                        │
+│  ☐ 야식 (21시)                        │
+│                                       │
+│  가격대                               │
+│  ○ 상관없음  ● 보통  ○ 저렴한 곳만    │
+│                                       │
+│  제외 조건                            │
+│  [프랜차이즈 제외] [+추가]             │
+│                                       │
+│          [저장]                        │
+└─────────────────────────────────────┘
+```
+
+**수동 설정 항목**:
+
+| 항목 | 선택지 | 저장 위치 |
+|------|--------|----------|
+| 지역 | 칩 선택 (최대 5개) | discover_preferences.areas |
+| 상황 | 칩 선택 (최대 5개) | discover_preferences.scenes |
+| 갱신 빈도 | 매일 / 2일 / 3일 / 주1회 | discover_preferences.refresh_interval |
+| 시간대 | 점심 / 저녁 / 야식 (복수 선택) | discover_preferences.time_slots |
+| 가격대 | 상관없음 / 보통 / 저렴한 곳만 | discover_preferences.price_preference |
+| 제외 조건 | 자유 텍스트 태그 (프랜차이즈, 특정 장르 등) | discover_preferences.exclusions |
+
+### 6-5. discover_preferences 테이블
+
+```sql
+user_id             UUID PK FK → auth.users ON DELETE CASCADE
+mode                VARCHAR DEFAULT 'auto' CHECK (mode IN ('auto', 'manual'))
+-- 수동 모드 설정 (mode='manual'일 때만 사용)
+areas               TEXT[] DEFAULT '{}'        -- ['성수', '강남', '을지로']
+scenes              TEXT[] DEFAULT '{}'        -- ['혼밥', '데이트']
+refresh_interval    SMALLINT DEFAULT 2         -- 갱신 주기 (일 단위)
+time_slots          TEXT[] DEFAULT '{lunch,dinner}'  -- ['lunch', 'dinner', 'late_night']
+price_preference    VARCHAR DEFAULT 'any' CHECK (price_preference IN ('any', 'mid', 'budget'))
+exclusions          TEXT[] DEFAULT '{}'        -- ['프랜차이즈']
+-- 자동 모드 계산 결과 (mode='auto'일 때 시스템이 채움)
+auto_areas          TEXT[] DEFAULT '{}'
+auto_scenes         TEXT[] DEFAULT '{}'
+auto_refresh_interval SMALLINT NULL
+auto_time_slots     TEXT[] DEFAULT '{}'
+-- 메타
+updated_at          TIMESTAMPTZ DEFAULT now()
+```
+
+### 6-6. 사전 리서치 실행 흐름
+
+```
+모드 확인:
+  ├─ auto → auto_* 필드 기반으로 조합 생성
+  └─ manual → areas, scenes 등 수동 설정 기반으로 조합 생성
+
+조합 수:
+  auto:   시스템이 최적 조합 수 결정 (보통 6~12개)
+  manual: areas × scenes (예: 3지역 × 2상황 = 6개)
+
+갱신 타이밍:
+  auto:   기록 패턴 기반 시간대에 맞춰 실행
+  manual: time_slots 설정 시간 1시간 전에 실행
+          예: lunch 선택 → 10:00에 사전 계산 → 11:00에 결과 준비
+
+트리거:
+  ① pg_cron: 매 시간 정각에 "이 시간에 갱신 대상인 사용자" 조회
+     → discover_preferences.time_slots + refresh_interval 기준
+  ② record 저장 시: post-process에서 자동 트리거 (모드 무관)
+```
+
+### 6-7. 자동 모드 패턴 갱신
+
+```
+자동 모드의 auto_* 필드는 주기적으로 재계산:
+
+갱신 시점:
+  ① 새 기록 저장 시 (post-process 후)
+  ② 주 1회 (일요일 야간 배치)
+
+갱신 로직:
+  auto_areas = style_dna_restaurant_areas 상위 3 + 최근 신규 지역 1
+  auto_scenes = style_dna_restaurant_scenes 상위 3
+  auto_refresh_interval = avg_weekly_frequency 기반
+    5+/주 → 1일 | 2~4/주 → 2일 | 1이하/주 → 3일
+  auto_time_slots = records.created_at 시간 분포 피크에서 결정
+    11~14시 피크 → ['lunch']
+    17~21시 피크 → ['dinner']
+    양쪽 피크 → ['lunch', 'dinner']
+```
+
+---
+
+## 7. 콜드 스타트 전략
+
+### 7-1. 기록 0건 — 완전 신규 사용자
 
 ```
 ① 온보딩 필터 유도
@@ -358,29 +557,29 @@ TTL: 24시간 (음식점 정보 변동 주기 고려)
    "첫 검색은 30초~1분 정도 걸릴 수 있어요.
     기록이 쌓이면 더 정확하고 빠른 추천을 받을 수 있어요!"
 
-④ 백그라운드 사전 계산 시작
+④ 온보딩 선택 → discover_preferences 초기화
+   → mode = 'auto'
+   → auto_areas = 선택한 지역, auto_scenes = 선택한 상황
+   → (사용자가 선택한 값을 auto_*에 seed로 저장. 기록이 쌓이면 데이터 기반으로 덮어씀)
+
+⑤ 백그라운드 사전 계산 시작
    → 선택한 필터 조합으로 즉시 사전 계산 트리거
    → 앱을 닫아도 서버에서 계속 진행
    → 완료 시 push 알림: "맞춤 추천이 준비됐어요!"
 ```
 
-### 6-2. 기록 1~4건 — 초기 사용자
+### 7-2. 기록 1~4건 — 초기 사용자
 
 ```
-DNA가 불안정한 상태 → DNA 가중치를 낮추고 일반 품질 가중치를 높임
+DNA가 불안정한 상태 → finalScore의 가중치가 자동 조정됨 (섹션 4-3 참조)
 
-finalScore 가중치 조정:
-  records < 5:  taste 0.10, style 0.10, quality 0.60, novelty 0.20
-  records 5~19: taste 0.20, style 0.20, quality 0.40, novelty 0.20
-  records 20+:  taste 0.35, style 0.25, quality 0.25, novelty 0.15  ← 정상
-
-추천 이유도 달라짐:
-  "이 지역 평점 최상위 식당이에요" (품질 기반)
-  vs
-  "매운맛 좋아하시잖아요. 여기 딱이에요" (DNA 기반, 20건 이후)
+추천 이유도 단계별로 달라짐:
+  records < 5:  "이 지역 평점 최상위 식당이에요" (품질 기반)
+  records 5~19: "한식 자주 드시네요. 여기 평점 높아요" (약한 DNA + 품질)
+  records 20+:  "매운맛 좋아하시잖아요. 여기 딱이에요" (강한 DNA 기반)
 ```
 
-### 6-3. 기록 있지만 발견 페이지 첫 진입
+### 7-3. 기록 있지만 발견 페이지 첫 진입
 
 ```
 ① 기존 기록에서 seed 데이터 추출
@@ -395,9 +594,9 @@ finalScore 가중치 조정:
 
 ---
 
-## 7. 백그라운드 처리
+## 8. 백그라운드 처리
 
-### 7-1. 서버 사이드 Job Queue
+### 8-1. 서버 사이드 Job Queue
 
 앱을 닫아도 서버에서 계속 실행되어야 하므로 **클라이언트 의존 없는 서버 Job**.
 
@@ -417,9 +616,9 @@ Job 유형:
 
 ```sql
 id              UUID PK DEFAULT gen_random_uuid()
-user_id         UUID FK → auth.users NOT NULL
+user_id         UUID FK → auth.users ON DELETE CASCADE NOT NULL
 job_type        VARCHAR NOT NULL CHECK (job_type IN ('precompute', 'refresh', 'cold_start'))
-query_key       VARCHAR NULL           -- "성수_혼밥" (precompute/refresh 시)
+query_key       VARCHAR NULL           -- "성수_혼밥" (precompute/refresh 시, 조합당 1 Job)
 status          VARCHAR DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed'))
 priority        SMALLINT DEFAULT 5     -- 1=최고 (콜드스타트), 5=보통 (야간배치), 10=최저
 attempts        SMALLINT DEFAULT 0
@@ -430,10 +629,15 @@ started_at      TIMESTAMPTZ NULL
 completed_at    TIMESTAMPTZ NULL
 ```
 
-### 7-2. Job 실행 흐름
+> **Job 분리 원칙**: 사전 계산 시 9개 조합이면 9개 별도 Job으로 INSERT. Vercel Background Functions 5분 제한 대비. 1 Job = 1 query_key = 약 15~30초.
+
+> **Job 정리**: pg_cron으로 매일 04:00에 `DELETE FROM discover_jobs WHERE status IN ('completed', 'failed') AND completed_at < now() - interval '7 days'` 실행.
+
+### 8-2. Job 실행 흐름
 
 ```
-① 트리거 (record 저장 / 페이지 진입 / 야간 배치)
+① 트리거 (record 저장 / 페이지 진입 / 야간 배치 / 사전 리서치 설정 기반 스케줄)
+   → discover_preferences 조회 (auto/manual 모드에 따라 조합 결정)
    → discover_jobs INSERT (status='pending')
 
 ② Worker (Vercel Background Function)
@@ -455,7 +659,7 @@ completed_at    TIMESTAMPTZ NULL
    → status = 'expired' → 기존 결과 표시 + 백그라운드 갱신 트리거
 ```
 
-### 7-3. 파생 작업 (Cascade Precompute)
+### 8-3. 파생 작업 (Cascade Precompute)
 
 하나의 검색 결과에서 **관련 검색을 자동으로 파생**:
 
@@ -475,9 +679,9 @@ completed_at    TIMESTAMPTZ NULL
 
 ---
 
-## 8. API 설계
+## 9. API 설계
 
-### 8-1. 발견 페이지 메인
+### 9-1. 발견 페이지 메인
 
 #### GET /api/discover
 
@@ -524,7 +728,7 @@ Response:
 }
 ```
 
-### 8-2. 자연어 검색
+### 9-2. 자연어 검색
 
 #### POST /api/discover/search
 
@@ -545,7 +749,7 @@ Flow:
 Response: GET /api/discover와 동일 형식
 ```
 
-### 8-3. 사전 계산 트리거
+### 9-3. 사전 계산 트리거
 
 #### POST /api/discover/precompute
 
@@ -570,7 +774,74 @@ Flow:
 Response: { success: true, jobCount: 9 }
 ```
 
-### 8-4. 와인 발견
+### 9-4. 내 주변 실시간 검색
+
+#### GET /api/discover/nearby
+
+GPS 기반 실시간 검색. **사전 계산 불가** (위치가 매번 다름) → 항상 실시간 처리.
+
+```
+Query: ?lat=37.5445&lng=127.0567&radius=500&scene=혼밥&genre=japanese
+Auth: 필수
+
+Flow:
+  ① 카카오 nearby API로 반경 내 식당 검색
+  ② 내부 DB에서 해당 식당 records 조회 (있으면)
+  ③ LLM 교차 검증 스킵 (속도 우선) — 카카오 + 내부 DB만
+  ④ DNA 개인화 적용 (가벼운 점수 재정렬, LLM 호출 없이)
+  ⑤ 추천 이유는 템플릿 기반 (LLM 미호출)
+     → "여기서 200m, 감칠맛 선호에 맞는 곳이에요"
+
+Response: GET /api/discover와 동일 형식 + distance 필드 추가
+  results[].distance: 150  // 미터 단위
+```
+
+> **성능 목표**: 1.5초 이내 (LLM 호출 없이). 네이버 블로그 검색도 스킵.
+> **사전 계산 연계**: nearby 결과에서 자주 등장하는 지역 → 해당 area의 사전 계산 트리거.
+
+---
+
+### 9-5. 추천 피드백
+
+#### POST /api/discover/feedback
+
+추천 결과에 대한 사용자 피드백. DNA 개인화 가중치 보정에 사용.
+
+```
+Input: {
+  discoverResultId: UUID,              // discover_cache 내 결과 항목 ID
+  restaurantName: string,
+  feedback: "good" | "bad",            // 👍 / 👎
+  reason?: string                      // "너무 비쌌어요" (선택)
+}
+
+Flow:
+  ① discover_feedback INSERT
+  ② feedback = "bad" → 해당 식당의 개인화 가중치 하향
+     → discover_cache 갱신 시 반영
+  ③ 동일 식당에 bad 3회+ → 해당 사용자 추천에서 제외
+
+Output: { success: true }
+```
+
+#### discover_feedback 테이블
+
+```sql
+id              UUID PK DEFAULT gen_random_uuid()
+user_id         UUID FK → auth.users ON DELETE CASCADE NOT NULL
+restaurant_name VARCHAR NOT NULL
+kakao_id        VARCHAR NULL
+feedback        VARCHAR NOT NULL CHECK (feedback IN ('good', 'bad'))
+reason          TEXT NULL
+query_context   JSONB NULL             -- 어떤 검색에서 추천됐는지 {area, scene, genre}
+created_at      TIMESTAMPTZ DEFAULT now()
+```
+
+> **개인화 반영**: bad 피드백이 쌓인 식당의 맛 프로필 → 사용자 DNA와의 "반-선호" 신호로 처리. 해당 식당뿐 아니라 유사한 맛 프로필의 식당도 약하게 감점.
+
+---
+
+### 9-6. 와인 발견
 
 #### GET /api/discover/wine
 
@@ -592,9 +863,28 @@ Response: GET /api/discover와 동일 형식 (restaurant → wine 치환)
 
 ---
 
-## 9. 비용 관리
+### 9-7. Rate Limiting
 
-### 9-1. API 호출 비용
+```
+Discover API는 LLM 호출을 트리거하므로 비용 보호가 필수.
+
+사용자당 제한:
+  /api/discover          → 분당 10회, 일 100회
+  /api/discover/search   → 분당 5회, 일 50회 (LLM 호출 더 많으므로 엄격)
+  /api/discover/nearby   → 분당 10회, 일 200회 (LLM 미호출이므로 여유)
+  /api/discover/feedback → 분당 20회, 일 500회
+
+구현: Vercel Edge Middleware + Upstash Redis (sliding window)
+초과 시: 429 Too Many Requests + Retry-After 헤더
+
+비인증 요청: 차단 (모든 Discover API는 Auth 필수)
+```
+
+---
+
+## 10. 비용 관리
+
+### 10-1. API 호출 비용
 
 ```
 1건의 사전 계산:
@@ -612,19 +902,20 @@ Response: GET /api/discover와 동일 형식 (restaurant → wine 치환)
   15,000 × $0.18 = $2,700/일 = $81,000/월 ← 비쌈!
 ```
 
-### 9-2. 비용 최적화
+### 10-2. 비용 최적화
 
 ```
-① 공유 캐시 (같은 조합은 1번만 계산)
-  "강남 혼밥 일식" → 1차 후보는 모든 사용자 공통
+① 공유 캐시 (같은 area×scene 조합은 1번만 계산)
+  "강남 혼밥" → 1차 후보는 모든 사용자 공통 (장르는 후필터)
   → 2차 DNA 개인화만 사용자별 처리
   → LLM 호출 3회 → 1회 (교차 검증) + 사용자별 0.5회 (추천 이유)
 
   공유 캐시 적용 시:
-  고유 조합 수 ≈ 500개 (지역 50 × 상황 8 × 장르 2)
-  500 × $0.02 = $10/일 (1차)
+  고유 조합 수 ≈ 400개 (주요 지역 50 × 상황 8)
+  장르는 1차 후보에서 후필터 → 별도 조합 불필요
+  400 × $0.02 = $8/일 (1차)
   15,000 × $0.005 = $75/일 (2차 개인화)
-  총: $85/일 = $2,550/월 ← 96% 절감
+  총: $83/일 = $2,490/월 ← 97% 절감
 
 ② 활성도 기반 계산 빈도
   매일 접속: 매일 갱신
@@ -640,16 +931,15 @@ Response: GET /api/discover와 동일 형식 (restaurant → wine 치환)
   $800~1,500/월 (5만 유저, 활성 30%)
 ```
 
-### 9-3. 공유 캐시 구조
+### 10-3. 공유 캐시 구조
 
 #### discover_shared_cache 테이블
 
 ```sql
 id              UUID PK DEFAULT gen_random_uuid()
-query_key       VARCHAR UNIQUE NOT NULL  -- "강남_혼밥_japanese"
-area            VARCHAR NULL
-scene           VARCHAR NULL
-genre           VARCHAR NULL
+query_key       VARCHAR UNIQUE NOT NULL  -- "강남_혼밥" (area_scene 조합, 장르 미포함 — 후필터)
+area            VARCHAR NOT NULL
+scene           VARCHAR NOT NULL
 -- 1차 교차 검증 결과 (사용자 무관, 공통)
 candidates      JSONB NOT NULL           -- 후보 10~15개 (DNA 미적용)
 source_versions JSONB NULL
@@ -668,7 +958,7 @@ hit_count       INTEGER DEFAULT 0        -- 조회 횟수 (인기도 추적)
 
 ---
 
-## 10. 푸시 알림 연동
+## 11. 푸시 알림 연동
 
 ```
 ① 콜드 스타트 완료
@@ -686,33 +976,52 @@ hit_count       INTEGER DEFAULT 0        -- 조회 횟수 (인기도 추적)
 
 ---
 
-## 11. 데이터 모델 요약
+## 12. 데이터 모델 요약
 
 ### 신규 테이블
 
 | 테이블 | 역할 | 크기 (5만 유저 기준) |
 |--------|------|---------------------|
-| `discover_shared_cache` | 공통 1차 후보 캐시 | ~500행 (조합 수) |
+| `discover_preferences` | 사전 리서치 설정 (자동/수동) | ~5만행 (사용자당 1행) |
+| `discover_shared_cache` | 공통 1차 후보 캐시 | ~400행 (area×scene 조합) |
 | `discover_cache` | 사용자별 개인화 결과 | ~45만행 (사용자 × 9조합) |
 | `discover_jobs` | 백그라운드 Job Queue | 롤링 (완료 건 7일 후 삭제) |
+| `discover_feedback` | 추천 피드백 (good/bad) | 사용자 행동에 비례 |
+
+### FK Cascade 정책
+
+| 자식 테이블 | FK 컬럼 | 삭제 정책 |
+|------------|---------|-----------|
+| discover_preferences | user_id (→ auth.users) | CASCADE |
+| discover_cache | user_id (→ auth.users) | CASCADE |
+| discover_jobs | user_id (→ auth.users) | CASCADE |
+| discover_feedback | user_id (→ auth.users) | CASCADE |
+| discover_shared_cache | — (FK 없음) | 만료 시 배치 삭제 |
 
 ### 기존 테이블 의존성
 
 ```
+discover_preferences
+  └─ user_id FK → auth.users ON DELETE CASCADE
+
 discover_cache
-  ├─ user_id FK → auth.users
+  ├─ user_id FK → auth.users ON DELETE CASCADE
+  ├─ shared_cache_key → discover_shared_cache.query_key (논리적 참조)
   └─ 참조: taste_dna_*, style_dna_* (개인화 시)
 
 discover_shared_cache
   └─ 참조: restaurants, records, record_taste_profiles (1차 후보 생성 시)
 
 discover_jobs
-  └─ user_id FK → auth.users
+  └─ user_id FK → auth.users ON DELETE CASCADE
+
+discover_feedback
+  └─ user_id FK → auth.users ON DELETE CASCADE
 ```
 
 ---
 
-## 12. 구현 우선순위
+## 13. 구현 우선순위
 
 ### Phase 1 (MVP)
 
@@ -720,42 +1029,57 @@ discover_jobs
 ① GET /api/discover — 필터 기반 검색 (캐시 없이, 실시간)
   → 카카오 + 내부 DB만 (네이버 블로그 크롤링은 후순위)
   → DNA 개인화 적용 (있으면)
-  → 추천 이유 1줄
+  → 추천 이유 1줄 (템플릿 기반)
 
-② 콜드 스타트 필터 UI
+② GET /api/discover/nearby — 내 주변 실시간 검색
+  → 카카오 + 내부 DB, LLM 미호출 (속도 우선)
+
+③ 콜드 스타트 필터 UI
   → 장르/지역/상황 선택 → 결과 표시
   → "분석 중..." 로딩 (실시간 5~7초 허용)
+
+④ POST /api/discover/feedback — 추천 피드백 (👍/👎)
 ```
 
 ### Phase 2
 
 ```
-③ discover_shared_cache + discover_cache 도입
+⑤ discover_shared_cache + discover_cache 도입
   → 사전 계산으로 즉시 응답
 
-④ POST /api/discover/search — 자연어 검색
+⑥ /discover/settings — 사전 리서치 설정 페이지 (자동/수동)
+  → discover_preferences 테이블
+  → 자동 모드 패턴 분석 로직
 
-⑤ 네이버 블로그 교차 검증 추가
+⑦ POST /api/discover/search — 자연어 검색
 
-⑥ 파생 작업 (cascade precompute)
+⑧ 네이버 블로그 교차 검증 추가
+
+⑨ 파생 작업 (cascade precompute)
+
+⑩ Rate Limiting (Upstash Redis)
 ```
 
 ### Phase 3
 
 ```
-⑦ 푸시 알림 연동 (시간대 맞춤 추천)
-⑧ 와인 발견 (/api/discover/wine)
-⑨ 야간 배치 최적화 + 비용 모니터링 대시보드
+⑪ 푸시 알림 연동 (시간대 맞춤 추천)
+⑫ 와인 발견 (/api/discover/wine)
+⑬ 요리 발견 검토 (외부 레시피 API 연동 or 내부 요리 기록 기반)
+⑭ 야간 배치 최적화 + 비용 모니터링 대시보드
 ```
+
+> **요리 발견**: 식당/와인과 달리 외부 검색 소스가 제한적 (레시피 DB 없음). Phase 3에서 (1) 내부 공개 요리 기록 탐색 + (2) 만개의레시피 등 외부 API 연동 가능성을 검토한다. MVP에서는 요리 발견 미지원.
 
 ---
 
-## 13. 성공 지표
+## 14. 성공 지표
 
 | 지표 | 목표 | 측정 방법 |
 |------|------|----------|
 | 검색→기록 전환율 | > 15% | 발견에서 찾은 식당에 실제 기록 생성 |
-| 평균 응답 시간 | < 1초 (캐시 히트) | API 응답 시간 모니터링 |
-| 추천 만족도 | > 4.0/5.0 | 추천 결과에 별점/피드백 |
+| 평균 응답 시간 | < 1초 (캐시 히트), < 1.5초 (nearby) | API 응답 시간 모니터링 |
+| 추천 만족도 | 👍 비율 > 70% | discover_feedback good/(good+bad) |
 | 콜드 스타트 이탈률 | < 30% | 필터 선택 후 결과 보기 전 이탈 |
 | DAU 중 발견 사용률 | > 40% | 발견 페이지 진입 / DAU |
+| 비용 효율 | < $0.01/검색 | LLM 비용 / 총 검색 수 |
