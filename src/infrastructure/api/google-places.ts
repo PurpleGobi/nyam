@@ -27,7 +27,10 @@ export async function searchGooglePlaces(
   maxResults = 20,
 ): Promise<NearbyPlace[]> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
-  if (!apiKey) return []
+  if (!apiKey) {
+    console.warn("[Google Places] GOOGLE_PLACES_API_KEY 미설정 — 구글 검색 건너뜀")
+    return []
+  }
 
   const body: Record<string, unknown> = {
     textQuery: query,
@@ -68,7 +71,8 @@ export async function searchGooglePlaces(
   })
 
   if (!response.ok) {
-    console.error(`[Google Places] Error: ${response.status}`)
+    const errorBody = await response.text().catch(() => "(읽기 실패)")
+    console.error(`[Google Places] Error ${response.status}: ${errorBody}`)
     return []
   }
 

@@ -108,8 +108,11 @@ export async function GET(request: NextRequest) {
       ? searchNearbyGrid(searchLat, searchLng, { radius: 500, gridStep: 0.004, gridSize: 1 })
       : Promise.resolve([])
 
-    // [C] 구글 Places 검색 (핵심 쿼리 3개, 별점/리뷰 수집)
-    const googleQueries = searchQueries.slice(0, 3)
+    // [C] 구글 Places 검색 (별점/리뷰 수집)
+    // area=null(내주변 모드): 키워드 없이 "식당"으로 근처 검색
+    const googleQueries = searchQueries.length > 0
+      ? searchQueries.slice(0, 3)
+      : (searchLat != null && searchLng != null ? ["식당", "맛집"] : [])
     const googleTasks = googleQueries.map((q) =>
       searchGooglePlaces(q, searchLat, searchLng, 2000),
     )
@@ -521,20 +524,29 @@ function generateSearchQueries(
   genreLabel: string | null,
   query: string | null,
 ): string[] {
-  const areaStr = area ?? "맛집"
+  // area=null (내주변 모드): 키워드 검색 무의미 → 빈 배열 반환
+  // 그리드 카테고리 검색 + 구글 근처 검색에만 의존
+  if (!area) {
+    if (query) {
+      // 사용자가 직접 입력한 검색어는 유지
+      return [query, `${query} 전문점`]
+    }
+    return []
+  }
+
   const queries: string[] = []
 
   // 1. 사용자 직접 검색어 (최우선)
   if (query) {
-    queries.push(`${areaStr} ${query}`)
-    queries.push(`${areaStr} ${query} 전문점`)
+    queries.push(`${area} ${query}`)
+    queries.push(`${area} ${query} 전문점`)
   }
 
   // 2. 장르가 지정된 경우: 해당 장르 메뉴 키워드
   if (genreLabel) {
     const templates = MENU_KEYWORDS[genreLabel] ?? [`{area} ${genreLabel}`]
     for (const tmpl of templates) {
-      queries.push(tmpl.replace("{area}", areaStr))
+      queries.push(tmpl.replace("{area}", area))
     }
   } else {
     // 3. 장르 미지정: 씬에 맞는 장르들의 메뉴 키워드
@@ -542,17 +554,17 @@ function generateSearchQueries(
     for (const g of relatedGenres) {
       const templates = MENU_KEYWORDS[g] ?? []
       for (const tmpl of templates.slice(0, 4)) {
-        queries.push(tmpl.replace("{area}", areaStr))
+        queries.push(tmpl.replace("{area}", area))
       }
     }
   }
 
   // 4. 발굴 키워드
-  queries.push(`${areaStr} 노포`)
-  queries.push(`${areaStr} 현지인 식당`)
+  queries.push(`${area} 노포`)
+  queries.push(`${area} 현지인 식당`)
 
   // 5. 최후 폴백
-  queries.push(`${areaStr} 맛집`)
+  queries.push(`${area} 맛집`)
 
   return [...new Set(queries)]
 }
