@@ -17,3 +17,4 @@ public/sw.js
 public/workbox-*.js
 public/sw.js.map
 public/workbox-*.js.map
+restaurant_search_engine_test/__pycache__/
