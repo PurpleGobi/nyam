@@ -807,47 +807,223 @@ Output: {
 
 ### 4-1. Phase 1 저장 후 AI 파이프라인 (비동기)
 
-Phase 1에서 사용자는 사진 + 만족도만 기록하고 즉시 저장한다. 이후 아래 파이프라인이 백그라운드에서 순차 실행된다.
+Phase 1에서 사용자는 사진 + 만족도만 기록하고 즉시 저장한다. 이후 아래 파이프라인이 백그라운드에서 **순차 실행**된다. 각 Step은 이전 Step의 결과에 의존하므로 순서가 중요하다.
 
-#### Step 1: 식당·메뉴 특정 — POST /api/records/enrich
+> **설계 원칙**: ① 대상 특정(식당/와인) → ② 외부 데이터 수집(카카오/리뷰) → ③ AI 사진 분석(확정된 맥락 위에서) → ④ 맛 프로필 산출 → ⑤ DNA 반영. 대상이 먼저 확정되어야 이후 분석의 정확도가 올라간다.
+
+#### Step 1: 대상 특정 — POST /api/records/identify
+
+사진 OCR + 사진 메타데이터 + 사용자 GPS를 종합하여 **식당/와인을 정확히 특정**하는 것이 이 Step의 유일한 목표. 메뉴 추정, 태그 추출 등은 하지 않는다.
 
 ```
 Input: { recordId, photoUrls, location }
 ```
 
-**프롬프트 (Gemini 2.5 Flash)**:
+**🍽️ 식당 특정 시퀀스**:
 
 ```
-당신은 음식점 방문 분석 전문가입니다. 사진을 분석하여 JSON으로 응답하세요.
+1-1. 사진 분석 (Gemini)
+  - 간판 사진 OCR → 식당명 후보 추출
+  - 사진 메타데이터 → 촬영 시간/위치 (EXIF)
 
-## 주변 식당 (GPS 기반)
-{nearbyPlaces}
+1-2. GPS 교차 검증
+  - 사용자 GPS 위치 + 카카오 주변 검색 API → 반경 500m 식당 목록
+  - OCR 식당명 후보 vs 주변 식당 목록 → fuzzy match
+  - 매칭 confidence 산출
 
-## 필수 규칙
-- "genre"는 반드시 허용 목록의 영문 key를 사용하세요.
-- "flavorTags", "textureTags"는 허용 목록에서만 선택하세요.
+1-3. 식당 확정
+  - confidence > 0.7 → 카카오 external_id로 확정
+  - confidence 0.3~0.7 → 사용자에게 후보 제시 (수정 가능)
+  - confidence < 0.3 → 미특정 (사용자 직접 검색 유도)
 
-## genre 허용 목록
-{FOOD_CATEGORIES.map(c => `"${c.value}" → ${c.label}`)}
+Output:
+  - restaurants UPSERT (매칭 성공 시)
+  - records.restaurant_id 연결
+  - record_ai_analyses INSERT: identified_restaurant = {name, matchedPlaceId, confidence}
+```
 
-## 응답 형식
+**프롬프트 (Gemini 2.5 Flash — 식당 특정 전용)**:
+
+```
+당신은 식당 식별 전문가입니다. 사진에서 식당명을 추출하세요.
+
+## 사진 메타데이터
+- 촬영 위치: {location.lat}, {location.lng}
+- 촬영 시간: {exifTime}
+
+## 주변 식당 (GPS 기반, 카카오 API)
+{nearbyPlaces.map(p => `${p.name} (${p.address}) [ID: ${p.externalId}]`)}
+
+## 분석 규칙
+1. 간판/로고/메뉴판에서 식당명 OCR
+2. OCR 결과가 주변 식당 목록과 매칭되면 해당 ID 반환
+3. 매칭 안 되면 OCR 텍스트만 반환 (강제 매칭 금지)
+
+## 응답 형식 (JSON)
 {
-  "restaurantName": "식당 이름 (간판 OCR 또는 주변 매칭)",
-  "genre": "korean | chinese | japanese | western | chicken | pizza | burger | snack | jokbal | stew | katsu | bbq | seafood | asian | cafe | salad | lunchbox",
-  "orderedItems": ["주문 메뉴 추정"],
-  "menuItems": [{"name": "메뉴명", "price": 숫자}],
-  "totalCost": 총액 | null,
-  "companionCount": 인원수(기본 1)
+  "restaurantName": "OCR로 읽은 식당명" | null,
+  "matchedPlaceId": "카카오 external_id" | null,
+  "confidence": 0.0-1.0,
+  "ocrTexts": ["간판에서 읽은 텍스트들"]
 }
 ```
 
-**검증**: genre는 `FOOD_CATEGORIES`에서만 허용. 범위 외 → 무시.
+**🍷 와인 특정 시퀀스**:
 
-**상권명 추출**: 카카오 API 응답의 `address_name`에서 구/동 단위를 추출하여 restaurants.region에 저장. 예: "서울 성동구 성수동1가" → "성수", "서울 강남구 역삼동" → "강남". 매핑 테이블(`shared/constants/areas.ts`)에서 동 → 상권명 변환. 매핑에 없으면 구 단위로 저장.
+```
+1-1. 라벨 OCR (Gemini)
+  - 와인 라벨 사진 → 텍스트 추출
 
-#### Step 2: 객관적 맛 프로필 산출 — POST /api/records/taste-profile
+1-2. 와인 식별 (LLM)
+  - 라벨 텍스트 → 와인명, 빈티지, 와이너리, 산지, 품종 추정
+  - 적정 가격대, 비평가 점수 검색
 
-Step 1에서 식당·메뉴(또는 와인)가 특정된 후 호출. **DNA의 핵심 입력값**이므로 정확성이 매우 중요하다.
+1-3. 부가 정보 추출
+  - 영수증 사진 있으면 → 구입가 추출
+  - 음식 사진 있으면 → 페어링 음식 추출
+
+Output:
+  - record_ai_analyses INSERT: wine_info = {name, vintage, winery, origin, variety, estimated_price_krw, critic_score}
+  - record_ai_analyses.pairing_food (있으면)
+```
+
+**🍳 요리**: Step 1 스킵 (특정할 외부 대상이 없음).
+
+---
+
+#### Step 2: 외부 데이터 수집 — POST /api/records/enrich
+
+Step 1에서 대상이 특정된 후, **카카오 API 등 외부 소스에서 상세 정보를 수집**한다.
+
+```
+Input: { recordId }  // 내부에서 record + record_ai_analyses.identified_restaurant 조회
+```
+
+**🍽️ 식당**:
+
+```
+2-1. 카카오 API 식당 상세 조회
+  - external_id 기반 → 상세 주소, 전화, 영업시간, 카테고리, 메뉴 목록
+  - restaurants 테이블 UPDATE (synced_at = now)
+
+2-2. 상권명 추출
+  - 카카오 address_name에서 구/동 → 상권명 변환
+  - 매핑 테이블(shared/constants/areas.ts): "서울 성동구 성수동1가" → "성수"
+  - 매핑에 없으면 구 단위로 저장
+  - → restaurants.region UPDATE
+
+2-3. 장르 매칭
+  - 카카오 categoryName → FOOD_CATEGORIES key 변환
+  - → records.genre UPDATE
+```
+
+**🍷 와인**: Step 1에서 이미 수집 완료 (외부 API 의존 없음). 스킵.
+
+**🍳 요리**: 스킵.
+
+---
+
+#### Step 3: AI 사진 분석 — POST /api/records/analyze-photos
+
+**식당/와인이 확정된 상태에서** 사진을 상세 분석한다. 대상이 확정되어 있으므로 정확도가 높아진다.
+
+```
+Input: { recordId }  // 내부에서 record + restaurants + record_ai_analyses 조회
+```
+
+**🍽️ 식당** (카카오 메뉴 목록을 참고하여 정확도 향상):
+
+```
+3-1. 사진 분류
+  - 각 사진 → 음식/간판/영수증/분위기/메뉴판 분류
+  - → record_ai_analyses.photo_classifications UPDATE
+
+3-2. 주문 메뉴 추정
+  - 음식 사진 + 카카오 등록 메뉴 목록 → 교차 대조하여 주문 추정
+  - → record_ai_analyses.ordered_items UPDATE
+
+3-3. 메뉴판 OCR
+  - 메뉴판 사진 → 메뉴명 + 가격 추출
+  - → record_ai_analyses.extracted_menu_items UPDATE
+
+3-4. 영수증 분석
+  - 영수증 사진 → 총액, 인당 비용, 항목 수
+  - → record_ai_analyses.receipt_data UPDATE
+
+3-5. 방문 맥락 추정
+  - 인원수 추정 (접시/의자/음식 양)
+  - 상황 추정 (혼밥/데이트/모임 등)
+  - 방문 시간 (사진 메타데이터)
+  - → record_ai_analyses.companion_data, estimated_visit_time UPDATE
+  - → records.scene UPDATE
+```
+
+**프롬프트 (Gemini 2.5 Flash — 사진 분석 전용)**:
+
+```
+당신은 음식점 방문 사진 분석 전문가입니다.
+
+## 확정 정보 (Step 1~2에서 특정 완료)
+- 식당: {restaurant.name}
+- 주소: {restaurant.address}
+- 장르: {record.genre}
+- 카카오 등록 메뉴: {restaurant.menu_items}
+
+## 사진
+{photos}
+
+## 분석 항목
+1. 각 사진을 분류하세요: food / signage / receipt / ambiance / menu_board
+2. 음식 사진에서 주문 메뉴를 추정하세요 (카카오 메뉴 목록 참고)
+3. 영수증이 있으면 총액/인당 비용을 추출하세요
+4. 인원수와 상황(혼밥/데이트/모임 등)을 추정하세요
+5. 맛 관련 태그를 추출하세요 (FLAVOR_TAGS, TEXTURE_TAGS에서만 선택)
+
+## 태그 허용 목록
+FLAVOR_TAGS: 매운, 달콤한, 짭짤한, 시큼한, 감칠맛, 담백한, 기름진, 고소한, 향긋한, 깔끔한
+TEXTURE_TAGS: 바삭한, 부드러운, 쫄깃한, 크리미한, 아삭한, 촉촉한
+
+## 응답 형식 (JSON)
+{
+  "photos": [{"index": 0, "type": "food", "description": "짬뽕", "confidence": 0.9}],
+  "orderedItems": [{"name": "짬뽕", "estimatedPrice": 9000}],
+  "menuItems": [{"name": "짜장면", "price": 7000}],
+  "receipt": {"totalCost": 18000, "perPersonCost": 9000, "itemCount": 2} | null,
+  "companions": {"count": 2, "occasion": "친구모임"},
+  "estimatedVisitHour": 12,
+  "scene": "친구모임",
+  "flavorTags": ["짭짤한", "감칠맛"],
+  "textureTags": ["쫄깃한"]
+}
+```
+
+**🍷 와인**:
+
+```
+3-1. 사진 분류 (음식/와인라벨/영수증/분위기)
+3-2. AI WSET 테이스팅 노트 산출 (7축)
+  - Step 1에서 특정된 와인 정보(품종, 산지, 빈티지) 기반
+  - → record_ai_analyses.wine_tasting_ai UPDATE
+3-3. 상황 추정 (혼술/데이트/페어링/파티 등)
+  - → records.scene UPDATE
+```
+
+**🍳 요리**:
+
+```
+3-1. 사진 분류 + 요리명 추정
+3-2. 장르 추정 → COOKING_GENRES key
+  - → records.genre UPDATE
+3-3. 맛/식감 태그 추출
+3-4. 상황 추정 (일상식사/밀프렙/손님초대 등)
+  - → records.scene UPDATE
+```
+
+**검증 (공통)**: genre는 `FOOD_CATEGORIES`/`COOKING_GENRES`, scene은 유형별 `SCENES`, 태그는 `FLAVOR_TAGS`/`TEXTURE_TAGS` 상수로 필터링. 범위 외 → 무시.
+
+#### Step 4: 객관적 맛 프로필 산출 — POST /api/records/taste-profile
+
+Step 1~3에서 식당·메뉴(또는 와인)가 특정되고 사진 분석이 완료된 후 호출. **DNA의 핵심 입력값**이므로 정확성이 매우 중요하다.
 
 ```
 Input: { recordId }  // 내부에서 record + record_ai_analyses 조회
@@ -858,7 +1034,7 @@ Output: record_taste_profiles INSERT (source='ai')
 
 ---
 
-#### Step 2-A: 식당 맛 프로필 산출
+#### Step 4-A: 식당 맛 프로필 산출
 
 **시퀀스 (3단계 파이프라인)**:
 
@@ -986,23 +1162,17 @@ Output: record_taste_profiles INSERT (source='ai')
 
 ---
 
-#### Step 2-B: 와인 WSET 테이스팅 + 정보 산출
+#### Step 4-B: 와인 WSET 테이스팅 + 맛 프로필 산출
 
-**시퀀스 (3단계 파이프라인)**:
+> **와인 식별(Step 1)과 WSET 테이스팅(Step 3)은 이미 완료된 상태.** 이 Step에서는 사용자 테이스팅 노트와 병합하여 최종 맛 프로필을 산출한다.
+
+**시퀀스**:
 
 ```
-2-B-1. 와인 식별 + 객관적 정보 수집
-  - record_ai_analyses에서 와인 라벨 OCR 추출
-  - LLM에게 와인 식별 요청: 와인명, 빈티지, 와이너리, 산지, 품종 추정
-  - 추정된 와인으로 적정 가격대, 비평가 점수 검색
-  - 영수증/음식 사진이 있으면: 구입가, 페어링 음식도 자동 추출
-  - → record_ai_analyses.wine_info + pairing_food에 저장
+4-B-1. AI WSET 테이스팅 노트 확인
+  - record_ai_analyses.wine_tasting_ai (Step 3에서 산출 완료)
 
-2-B-2. AI WSET 테이스팅 노트 산출 (LLM)
-  - 와인 정보(품종, 산지, 빈티지, 생산자) 기반으로 7축 테이스팅 점수 산출
-  - → record_ai_analyses.wine_tasting_ai에 저장
-
-2-B-3. 사용자 테이스팅 노트 수집 후 병합
+4-B-2. 사용자 테이스팅 노트 병합
   - 사용자가 기록한 WSET 7축 + AI 산출 7축 → 평균
   - → record_taste_profiles에 저장 (source='ai_user_avg')
   - 사용자가 테이스팅 노트를 기록하지 않은 경우: AI 값만 사용 (source='ai')
@@ -1093,9 +1263,9 @@ Output: record_taste_profiles INSERT (source='ai')
 - confidence < 0.3이면 DNA 반영 시 가중치 대폭 하향
 - wine_info.estimated_price_krw가 있으면 record_ai_analyses.wine_info에 저장
 
-#### Step 3: DNA 반영 — POST /api/records/post-process
+#### Step 5: DNA 반영 — POST /api/records/post-process
 
-Step 2 완료 후 호출. Taste DNA와 Style DNA를 모두 업데이트하고, `phase_status = 2`로 마킹하여 AI 분석 완료를 표시. 이 단계는 try/finally로 보장되어 앞 단계 실패 시에도 반드시 실행된다.
+Step 4 완료 후 호출. Taste DNA와 Style DNA를 모두 업데이트하고, `phase_status = 2`로 마킹하여 AI 분석 완료를 표시. 이 단계는 try/finally로 보장되어 앞 단계 실패 시에도 반드시 실행된다.
 
 ```
 Input: recordId (내부에서 record + taste_profile 조회)
@@ -1227,7 +1397,7 @@ Output: { success: boolean }
 ```
 
 #### POST /api/records/[id]/reanalyze
-AI 재분석. enrich → taste-profile → post-process 파이프라인을 재실행한다.
+AI 재분석. identify → enrich → analyze-photos → taste-profile → post-process 파이프라인을 재실행한다.
 사용자 수동 수정 필드는 클라이언트에서 보존 여부 확인 후 호출.
 
 ```
@@ -1562,22 +1732,29 @@ nyam_level = f(user_stats.points)
 6c. 🍳 요리 전용: record_taste_profiles에 사용자 맛 특성 6축 저장 (source='manual')
 → 저장 완료, 사용자에게 즉시 응답
 
-비동기 (백그라운드 — 유형별 분기, try/finally로 post-process 보장):
+비동기 (백그라운드 — 5단계 순차 실행, try/finally로 post-process 보장):
+
   🍽️ 식당:
-  7. POST /api/records/enrich → 식당·메뉴 특정, record_ai_analyses 저장 (실패 시 non-fatal)
-  8. POST /api/records/taste-profile → 웹 리뷰 교차 검증 → record_taste_profiles (source='ai') (실패 시 non-fatal)
-  9. POST /api/records/post-process → taste_dna + style_dna 업데이트 + phase_status=2 (항상 실행)
+  7.  POST /api/records/identify       → 사진 OCR + GPS → 식당 특정 (실패 시 non-fatal)
+  8.  POST /api/records/enrich         → 카카오 API 상세 정보 수집 + restaurants UPSERT (실패 시 non-fatal)
+  9.  POST /api/records/analyze-photos → 메뉴 추정 + 영수증 + 인원수 + 사진 분류 (실패 시 non-fatal)
+  10. POST /api/records/taste-profile  → 웹 리뷰 교차 검증 → record_taste_profiles (source='ai') (실패 시 non-fatal)
+  11. POST /api/records/post-process   → taste_dna + style_dna 업데이트 + phase_status=2 (항상 실행)
 
   🍷 와인:
-  7. POST /api/records/enrich → 와인 식별 + 객관적 정보 수집 (실패 시 non-fatal)
-  8. POST /api/records/taste-profile → WSET 7축 AI 산출 + 사용자 기록 평균 (실패 시 non-fatal)
-  9. POST /api/records/post-process → taste_dna_wine + style_dna_wine_* 업데이트 + phase_status=2 (항상 실행)
+  7.  POST /api/records/identify       → 라벨 OCR → 와인 식별 + 객관적 정보 수집 (실패 시 non-fatal)
+  8.  스킵 (외부 API 의존 없음)
+  9.  POST /api/records/analyze-photos → WSET 7축 AI 산출 + 사진 분류 + 상황 추정 (실패 시 non-fatal)
+  10. POST /api/records/taste-profile  → AI + 사용자 WSET 병합 → record_taste_profiles (실패 시 non-fatal)
+  11. POST /api/records/post-process   → taste_dna_wine + style_dna_wine_* 업데이트 + phase_status=2 (항상 실행)
 
   🍳 요리:
-  7-8. 스킵
-  9. POST /api/records/post-process → taste_dna_cooking + style_dna_cooking_* 업데이트 + phase_status=2 (항상 실행)
+  7-8. 스킵 (특정할 외부 대상 없음)
+  9.  POST /api/records/analyze-photos → 요리명 + 장르 + 태그 추출 + 상황 추정 (실패 시 non-fatal)
+  10. 스킵 (사용자가 Phase 1에서 수동 입력 완료)
+  11. POST /api/records/post-process   → taste_dna_cooking + style_dna_cooking_* 업데이트 + phase_status=2 (항상 실행)
 
-  ※ enrich/taste-profile 실패 시에도 post-process는 반드시 실행되어 phase_status를 업데이트.
+  ※ 각 Step 실패 시에도 post-process(Step 11)는 반드시 실행되어 phase_status를 업데이트.
   ※ 기록 상세 페이지에서 SWR 폴링(3초)으로 phase_status 변화를 감지 → 토스트 알림 + Phase 2 CTA 표시.
 ```
 

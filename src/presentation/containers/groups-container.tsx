@@ -19,9 +19,14 @@ export function GroupsContainer() {
   const { createGroup, isLoading: actionLoading } = useGroupActions()
 
   const handleCreate = async (data: { name: string; description: string; accessType: "private" | "public" }) => {
-    await createGroup(data)
-    setShowCreate(false)
-    mutate()
+    try {
+      await createGroup(data)
+      setShowCreate(false)
+      mutate()
+    } catch (err) {
+      console.error("Group creation failed:", err)
+      alert(`버블 생성 실패: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   const groups = tab === "my" ? myGroups : publicGroups
