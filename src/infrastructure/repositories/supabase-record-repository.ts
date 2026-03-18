@@ -1,5 +1,5 @@
 import { createClient } from "@/infrastructure/supabase/client"
-import type { FoodRecord, RecordPhoto, RecordTasteProfile, RecordAiAnalysis, RecordWithPhotos } from "@/domain/entities/record"
+import type { FoodRecord, RecordPhoto, PhotoCropData, RecordTasteProfile, RecordAiAnalysis, RecordWithPhotos } from "@/domain/entities/record"
 import type { RecordRepository, CreateRecordInput, RecordFilters, UpdateAiAnalysisInput, UpdateTasteProfileInput, UpdateJournalInput } from "@/domain/repositories/record-repository"
 
 function calculateOverallRating(input: CreateRecordInput): number | null {
@@ -78,6 +78,7 @@ function mapDbPhoto(data: Record<string, unknown>): RecordPhoto {
     thumbnailUrl: data.thumbnail_url as string | null,
     orderIndex: data.order_index as number,
     aiLabels: (data.ai_labels as string[]) ?? [],
+    cropData: (data.crop_data as RecordPhoto["cropData"]) ?? null,
   }
 }
 
@@ -417,5 +418,14 @@ export class SupabaseRecordRepository implements RecordRepository {
       .eq("record_id", recordId)
 
     if (error) throw new Error(`Failed to update journal: ${error.message}`)
+  }
+
+  async updatePhotoCrop(photoId: string, cropData: PhotoCropData | null): Promise<void> {
+    const { error } = await this.supabase
+      .from("record_photos")
+      .update({ crop_data: cropData })
+      .eq("id", photoId)
+
+    if (error) throw new Error(`Failed to update photo crop: ${error.message}`)
   }
 }

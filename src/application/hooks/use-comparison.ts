@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react"
 import useSWR from "swr"
 import { createClient } from "@/infrastructure/supabase/client"
-import type { RecordWithPhotos } from "@/domain/entities/record"
+import type { RecordPhoto, RecordWithPhotos } from "@/domain/entities/record"
 
 interface Matchup {
   recordA: RecordWithPhotos
@@ -171,6 +171,7 @@ function mapRecord(item: Record<string, unknown>): RecordWithPhotos {
       thumbnailUrl: p.thumbnail_url as string | null,
       orderIndex: p.order_index as number,
       aiLabels: (p.ai_labels as string[]) ?? [],
+      cropData: (p.crop_data as RecordPhoto["cropData"]) ?? null,
     })),
     restaurant: item.restaurants
       ? {

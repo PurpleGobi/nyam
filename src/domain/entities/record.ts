@@ -55,6 +55,12 @@ export interface FoodRecord {
   createdAt: string
 }
 
+export interface PhotoCropData {
+  x: number  // focal point X (0-100%)
+  y: number  // focal point Y (0-100%)
+  scale: number  // zoom level (1.0-2.0)
+}
+
 export interface RecordPhoto {
   id: string
   recordId: string
@@ -62,6 +68,7 @@ export interface RecordPhoto {
   thumbnailUrl: string | null
   orderIndex: number
   aiLabels: string[]
+  cropData: PhotoCropData | null
 }
 
 export interface RecordTasteProfile {

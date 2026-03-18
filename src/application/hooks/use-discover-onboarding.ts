@@ -47,7 +47,7 @@ export function useDiscoverOnboarding(): UseDiscoverOnboardingReturn {
         .from("discover_preferences")
         .select("onboarding_completed, seed_genres, seed_areas, seed_scenes")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (!data) return null
       return {

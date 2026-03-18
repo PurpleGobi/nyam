@@ -10,12 +10,12 @@ export interface FriendsFeedRecord extends RecordWithPhotos {
   authorAvatarUrl: string | null
 }
 
-export function useFriendsFeed(limit = 20) {
+export function useFriendsFeed(userId: string | null, limit = 20) {
   const supabase = createClient()
   const recordRepo = getRecordRepository()
 
   const { data, error, isLoading, mutate } = useSWR<FriendsFeedRecord[]>(
-    `friends-feed/${limit}`,
+    userId ? `friends-feed/${userId}/${limit}` : null,
     async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return []

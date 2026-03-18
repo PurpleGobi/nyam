@@ -2,7 +2,7 @@
 
 import useSWR from "swr"
 import { createClient } from "@/infrastructure/supabase/client"
-import type { RecordWithPhotos } from "@/domain/entities/record"
+import type { RecordPhoto, RecordWithPhotos } from "@/domain/entities/record"
 
 export interface Bookmark {
   userId: string
@@ -23,6 +23,7 @@ function mapDbRecordFromBookmark(record: Record<string, unknown>): RecordWithPho
       thumbnailUrl: p.thumbnail_url as string | null,
       orderIndex: p.order_index as number,
       aiLabels: (p.ai_labels as string[]) ?? [],
+      cropData: (p.crop_data as RecordPhoto["cropData"]) ?? null,
     }))
     .sort((a, b) => a.orderIndex - b.orderIndex)
 

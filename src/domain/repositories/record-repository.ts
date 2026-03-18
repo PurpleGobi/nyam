@@ -1,4 +1,4 @@
-import type { FoodRecord, RecordPhoto, RecordTasteProfile, RecordAiAnalysis, RecordWithPhotos } from "@/domain/entities/record"
+import type { FoodRecord, RecordPhoto, PhotoCropData, RecordTasteProfile, RecordAiAnalysis, RecordWithPhotos } from "@/domain/entities/record"
 import type { RecordType, Visibility } from "@/infrastructure/supabase/types"
 
 export interface CreateRecordInput {
@@ -97,4 +97,5 @@ export interface RecordRepository {
   updateAiAnalysis(recordId: string, data: UpdateAiAnalysisInput): Promise<void>
   updateTasteProfile(recordId: string, data: UpdateTasteProfileInput): Promise<void>
   updateJournal(recordId: string, data: UpdateJournalInput): Promise<void>
+  updatePhotoCrop(photoId: string, cropData: PhotoCropData | null): Promise<void>
 }

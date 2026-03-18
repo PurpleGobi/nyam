@@ -1,9 +1,18 @@
 "use client"
 
 import Image from "next/image"
+import type { PhotoCropData } from "@/domain/entities/record"
 
 interface PhotoPickerProps {
-  photos: Array<{ photoUrl: string; thumbnailUrl: string | null }>
+  photos: Array<{ photoUrl: string; thumbnailUrl: string | null; cropData?: PhotoCropData | null }>
+}
+
+function cropStyle(cropData?: PhotoCropData | null): React.CSSProperties | undefined {
+  if (!cropData) return undefined
+  return {
+    objectPosition: `${cropData.x}% ${cropData.y}%`,
+    transform: `scale(${cropData.scale})`,
+  }
 }
 
 export function PhotoPicker({ photos }: PhotoPickerProps) {
@@ -17,6 +26,7 @@ export function PhotoPicker({ photos }: PhotoPickerProps) {
           alt="기록 사진"
           fill
           className="object-cover"
+          style={cropStyle(photos[0].cropData)}
         />
       </div>
     )
@@ -34,6 +44,7 @@ export function PhotoPicker({ photos }: PhotoPickerProps) {
             alt={`기록 사진 ${index + 1}`}
             fill
             className="object-cover"
+            style={cropStyle(photo.cropData)}
           />
         </div>
       ))}

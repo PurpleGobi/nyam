@@ -1,11 +1,11 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ArrowLeft, Store, Star, Brain, BookOpen, RotateCcw,
+  ArrowLeft, Store, Star, Brain, BookOpen,
   Camera, Trash2, Plus, Info, ChevronDown, ChevronUp,
-  MapPin, Lock,
+  MapPin, Crop, Check, Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -13,17 +13,15 @@ import { toast } from "sonner"
 import { useRecordDetail } from "@/application/hooks/use-record-detail"
 import { useEditRecord } from "@/application/hooks/use-edit-record"
 import { RatingScales } from "@/presentation/components/capture/rating-scales"
+import { PhotoCropEditor } from "@/presentation/components/record/photo-crop-editor"
 import { Button } from "@/presentation/components/ui/button"
 import { Input } from "@/presentation/components/ui/input"
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-} from "@/presentation/components/ui/dialog"
 import { ROUTES } from "@/shared/constants/routes"
 import { FOOD_CATEGORIES, COOKING_GENRES, WINE_TYPES } from "@/shared/constants/categories"
 import { RESTAURANT_SCENES, WINE_SCENES, COOKING_SCENES } from "@/shared/constants/scenes"
 import { FLAVOR_TAGS, TEXTURE_TAGS, ATMOSPHERE_TAGS } from "@/shared/constants/tags"
 import type { RecordType, Visibility } from "@/infrastructure/supabase/types"
-import type { RecordAiAnalysis } from "@/domain/entities/record"
+import type { RecordAiAnalysis, PhotoCropData } from "@/domain/entities/record"
 
 interface RecordEditContainerProps {
   recordId: string
@@ -94,7 +92,7 @@ function computeOverallRating(recordType: RecordType, ratings: Record<string, nu
 export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
   const router = useRouter()
   const { record, tasteProfile, aiAnalysis, journal, isLoading, mutate } = useRecordDetail(recordId)
-  const { updateRecord, updateAiAnalysis, updateTasteProfile, updateJournal, reanalyze, isUpdating, isReanalyzing } = useEditRecord()
+  const { updateRecord, updateAiAnalysis, updateTasteProfile, updateJournal, updatePhotoCrop, isUpdating } = useEditRecord()
 
   // Form state
   const [ratings, setRatings] = useState<Record<string, number>>({})
@@ -136,9 +134,19 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
 
   // UI state
   const [initialized, setInitialized] = useState(false)
-  const [reanalyzeDialogOpen, setReanalyzeDialogOpen] = useState(false)
   const [systemInfoOpen, setSystemInfoOpen] = useState(false)
   const [wineUserTastingTab, setWineUserTastingTab] = useState<"ai" | "user">("ai")
+
+  // Photo crop state
+  const [cropEditorOpen, setCropEditorOpen] = useState(false)
+  const [cropEditingPhotoId, setCropEditingPhotoId] = useState<string | null>(null)
+  const [cropEditingPhotoUrl, setCropEditingPhotoUrl] = useState("")
+  const [cropEditingInitial, setCropEditingInitial] = useState<PhotoCropData | null>(null)
+
+  // Auto-save
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const formChangeCountRef = useRef(0)
 
   // Toast debounce
   const lastToastRef = useRef<{ msg: string; time: number }>({ msg: "", time: 0 })
@@ -251,95 +259,128 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
     toast(message, { duration: 2000 })
   }, [])
 
-  const handleSave = useCallback(async () => {
+  // Auto-save function
+  const performSave = useCallback(async () => {
     if (!record) return
-
-    // Update main record fields
-    await updateRecord(recordId, {
-      recordType: record.recordType,
-      menuName: menuName || undefined,
-      genre: genre || undefined,
-      subGenre: subGenre || undefined,
-      scene: scene || undefined,
-      visibility,
-      companionCount: companionCount ?? undefined,
-      totalCost: totalCost ?? undefined,
-      visitTime: visitTime || undefined,
-      comment: comment || undefined,
-      flavorTags,
-      textureTags,
-      atmosphereTags,
-      pairingFood: pairingFood || undefined,
-      purchasePrice: purchasePrice ?? undefined,
-      ratingTaste: ratings.taste,
-      ratingValue: ratings.value,
-      ratingService: ratings.service,
-      ratingAtmosphere: ratings.atmosphere,
-      ratingCleanliness: ratings.cleanliness,
-      ratingPortion: ratings.portion,
-      ratingBalance: ratings.balance,
-      ratingDifficulty: ratings.difficulty,
-      ratingTimeSpent: ratings.timeSpent,
-      ratingReproducibility: ratings.reproducibility,
-      ratingPlating: ratings.plating,
-      ratingMaterialCost: ratings.materialCost,
-    })
-
-    // Update AI analysis if exists
-    if (aiAnalysis) {
-      await updateAiAnalysis(recordId, {
-        identifiedRestaurant: aiRestaurantName
-          ? { name: aiRestaurantName, matchedPlaceId: aiAnalysis.identifiedRestaurant?.matchedPlaceId ?? null, confidence: aiAnalysis.identifiedRestaurant?.confidence ?? 0 }
-          : null,
-        orderedItems: aiOrderedItems.length > 0 ? aiOrderedItems : null,
-        extractedMenuItems: aiMenuItems.length > 0 ? aiMenuItems : null,
-        wineInfo,
-        wineTastingAi: Object.keys(wineTastingValues).length > 0
-          ? { acidity: wineTastingValues.acidity ?? 0, body: wineTastingValues.body ?? 0, tannin: wineTastingValues.tannin ?? 0, sweetness: wineTastingValues.sweetness ?? 0, balance: wineTastingValues.balance ?? 0, finish: wineTastingValues.finish ?? 0, aroma: wineTastingValues.aroma ?? 0 }
-          : null,
+    setSaveStatus("saving")
+    try {
+      await updateRecord(recordId, {
+        recordType: record.recordType,
+        menuName: menuName || undefined,
+        genre: genre || undefined,
+        subGenre: subGenre || undefined,
+        scene: scene || undefined,
+        visibility,
+        companionCount: companionCount ?? undefined,
+        totalCost: totalCost ?? undefined,
+        visitTime: visitTime || undefined,
+        comment: comment || undefined,
+        flavorTags,
+        textureTags,
+        atmosphereTags,
+        pairingFood: pairingFood || undefined,
+        purchasePrice: purchasePrice ?? undefined,
+        ratingTaste: ratings.taste,
+        ratingValue: ratings.value,
+        ratingService: ratings.service,
+        ratingAtmosphere: ratings.atmosphere,
+        ratingCleanliness: ratings.cleanliness,
+        ratingPortion: ratings.portion,
+        ratingBalance: ratings.balance,
+        ratingDifficulty: ratings.difficulty,
+        ratingTimeSpent: ratings.timeSpent,
+        ratingReproducibility: ratings.reproducibility,
+        ratingPlating: ratings.plating,
+        ratingMaterialCost: ratings.materialCost,
       })
-    }
 
-    // Update taste profile
-    const tasteData: Record<string, number | null> = {}
-    if (Object.values(tasteValues).some((v) => v > 0)) {
-      Object.assign(tasteData, tasteValues)
-    }
-    // Include wine user WSET values
-    if (record.recordType === "wine" && Object.values(wineUserTastingValues).some((v) => v > 0)) {
-      tasteData.wineAcidityUser = wineUserTastingValues.acidity ?? null
-      tasteData.wineBodyUser = wineUserTastingValues.body ?? null
-      tasteData.wineTanninUser = wineUserTastingValues.tannin ?? null
-      tasteData.wineSweetnessUser = wineUserTastingValues.sweetness ?? null
-      tasteData.wineBalanceUser = wineUserTastingValues.balance ?? null
-      tasteData.wineFinishUser = wineUserTastingValues.finish ?? null
-      tasteData.wineAromaUser = wineUserTastingValues.aroma ?? null
-    }
-    if (Object.keys(tasteData).length > 0) {
-      await updateTasteProfile(recordId, tasteData as Record<string, number>)
-    }
+      if (aiAnalysis) {
+        await updateAiAnalysis(recordId, {
+          identifiedRestaurant: aiRestaurantName
+            ? { name: aiRestaurantName, matchedPlaceId: aiAnalysis.identifiedRestaurant?.matchedPlaceId ?? null, confidence: aiAnalysis.identifiedRestaurant?.confidence ?? 0 }
+            : null,
+          orderedItems: aiOrderedItems.length > 0 ? aiOrderedItems : null,
+          extractedMenuItems: aiMenuItems.length > 0 ? aiMenuItems : null,
+          wineInfo,
+          wineTastingAi: Object.keys(wineTastingValues).length > 0
+            ? { acidity: wineTastingValues.acidity ?? 0, body: wineTastingValues.body ?? 0, tannin: wineTastingValues.tannin ?? 0, sweetness: wineTastingValues.sweetness ?? 0, balance: wineTastingValues.balance ?? 0, finish: wineTastingValues.finish ?? 0, aroma: wineTastingValues.aroma ?? 0 }
+            : null,
+        })
+      }
 
-    // Update journal if exists
-    if (journal && (blogTitle || blogContent)) {
-      await updateJournal(recordId, { blogTitle: blogTitle || null, blogContent: blogContent || null })
-    }
+      const tasteData: Record<string, number | null> = {}
+      if (Object.values(tasteValues).some((v) => v > 0)) {
+        Object.assign(tasteData, tasteValues)
+      }
+      if (record.recordType === "wine" && Object.values(wineUserTastingValues).some((v) => v > 0)) {
+        tasteData.wineAcidityUser = wineUserTastingValues.acidity ?? null
+        tasteData.wineBodyUser = wineUserTastingValues.body ?? null
+        tasteData.wineTanninUser = wineUserTastingValues.tannin ?? null
+        tasteData.wineSweetnessUser = wineUserTastingValues.sweetness ?? null
+        tasteData.wineBalanceUser = wineUserTastingValues.balance ?? null
+        tasteData.wineFinishUser = wineUserTastingValues.finish ?? null
+        tasteData.wineAromaUser = wineUserTastingValues.aroma ?? null
+      }
+      if (Object.keys(tasteData).length > 0) {
+        await updateTasteProfile(recordId, tasteData as Record<string, number>)
+      }
 
-    router.push(ROUTES.recordDetail(recordId))
+      if (journal && (blogTitle || blogContent)) {
+        await updateJournal(recordId, { blogTitle: blogTitle || null, blogContent: blogContent || null })
+      }
+
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2000)
+    } catch {
+      setSaveStatus("idle")
+      toast.error("저장에 실패했습니다")
+    }
   }, [
     record, recordId, updateRecord, menuName, genre, subGenre, scene, visibility,
     companionCount, totalCost, visitTime, comment, flavorTags, textureTags, atmosphereTags,
     pairingFood, purchasePrice, ratings, aiAnalysis, updateAiAnalysis,
     aiRestaurantName, aiOrderedItems, aiMenuItems, wineInfo, wineTastingValues,
     wineUserTastingValues, tasteValues, updateTasteProfile,
-    journal, blogTitle, blogContent, updateJournal, router,
+    journal, blogTitle, blogContent, updateJournal,
   ])
 
-  const handleReanalyze = useCallback(async () => {
-    setReanalyzeDialogOpen(false)
-    await reanalyze(recordId)
+  // Debounced auto-save: trigger after 1.5s of inactivity
+  const scheduleAutoSave = useCallback(() => {
+    if (!initialized) return
+    formChangeCountRef.current += 1
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      performSave()
+    }, 1500)
+  }, [initialized, performSave])
+
+  // Track form changes for auto-save
+  useEffect(() => {
+    if (!initialized) return
+    scheduleAutoSave()
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    menuName, genre, subGenre, scene, visibility, companionCount, totalCost, visitTime,
+    comment, flavorTags, textureTags, atmosphereTags, pairingFood, purchasePrice, ratings,
+    aiRestaurantName, aiOrderedItems, aiMenuItems, wineInfo, wineTastingValues,
+    wineUserTastingValues, tasteValues, blogTitle, blogContent,
+  ])
+
+  const handleOpenCropEditor = useCallback((photoId: string, photoUrl: string, cropData: PhotoCropData | null) => {
+    setCropEditingPhotoId(photoId)
+    setCropEditingPhotoUrl(photoUrl)
+    setCropEditingInitial(cropData)
+    setCropEditorOpen(true)
+  }, [])
+
+  const handleCropApply = useCallback(async (cropData: PhotoCropData) => {
+    if (!cropEditingPhotoId) return
+    await updatePhotoCrop(cropEditingPhotoId, cropData)
     await mutate()
-    setInitialized(false)
-  }, [reanalyze, recordId, mutate])
+  }, [cropEditingPhotoId, updatePhotoCrop, mutate])
 
   if (isLoading || !record) {
     return (
@@ -355,7 +396,7 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
   const pricePerPerson = totalCost && companionCount ? Math.round(totalCost / companionCount) : null
 
   return (
-    <div className="flex flex-col gap-6 px-4 pt-4 pb-24">
+    <div className="flex flex-col gap-6 px-4 pt-4 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -363,6 +404,18 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="text-lg font-semibold text-neutral-800">기록 수정</h1>
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1 text-[10px] text-neutral-400">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              저장 중
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-500">
+              <Check className="h-3 w-3" />
+              저장됨
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <SourceBadge type="system" label={getPhaseLabel(record.phaseStatus)} />
@@ -370,37 +423,46 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
         </div>
       </div>
 
-      {/* Photo preview */}
+      {/* Photo preview - tap to edit crop */}
       <div className="space-y-2">
         {record.photos.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {record.photos.map((photo) => {
               const classification = aiAnalysis?.photoClassifications?.find((c) => c.photoIndex === photo.orderIndex)
               return (
-                <div key={photo.id} className="relative shrink-0">
+                <button
+                  key={photo.id}
+                  type="button"
+                  className="relative shrink-0 group"
+                  onClick={() => handleOpenCropEditor(photo.id, photo.photoUrl, photo.cropData)}
+                >
                   <Image
                     src={photo.thumbnailUrl ?? photo.photoUrl}
                     alt=""
                     width={80}
                     height={80}
-                    className="h-20 w-20 rounded-xl object-cover opacity-80"
+                    className="h-20 w-20 rounded-xl object-cover"
+                    style={photo.cropData ? {
+                      objectPosition: `${photo.cropData.x}% ${photo.cropData.y}%`,
+                      transform: `scale(${photo.cropData.scale})`,
+                    } : undefined}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/10">
-                    <Lock className="h-3.5 w-3.5 text-white/80" />
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/0 group-active:bg-black/10 transition-colors">
+                    <Crop className="h-3.5 w-3.5 text-white/80 drop-shadow-[0_0_2px_rgba(0,0,0,0.5)]" />
                   </div>
                   {classification && (
                     <span className="absolute bottom-1 left-1 rounded bg-black/50 px-1 py-0.5 text-[9px] text-white">
                       {PHOTO_TYPE_LABELS[classification.type] ?? classification.type}
                     </span>
                   )}
-                </div>
+                </button>
               )
             })}
           </div>
         )}
         <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3.5 py-2.5">
           <Camera className="h-4 w-4 shrink-0 text-neutral-400" />
-          <p className="text-xs text-neutral-500">사진은 수정할 수 없습니다. 사진을 바꾸려면 삭제 후 재기록해주세요.</p>
+          <p className="text-xs text-neutral-500">사진을 탭하여 크롭을 조정할 수 있습니다</p>
         </div>
       </div>
 
@@ -989,51 +1051,14 @@ export function RecordEditContainer({ recordId }: RecordEditContainerProps) {
         )}
       </div>
 
-      {/* Section: Actions */}
-      <EditSection icon={<RotateCcw className="h-4 w-4" />} title="액션">
-        <Button
-          variant="outline"
-          onClick={() => setReanalyzeDialogOpen(true)}
-          disabled={isReanalyzing}
-          className="w-full justify-center gap-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          {isReanalyzing ? "재분석 중..." : "AI 재분석"}
-        </Button>
-        <p className="text-[10px] text-neutral-400">
-          사진을 기반으로 AI 분석을 다시 실행합니다. 수동 수정한 AI 필드가 덮어씌워질 수 있습니다.
-        </p>
-      </EditSection>
-
-      {/* Reanalyze Confirmation Dialog */}
-      <Dialog open={reanalyzeDialogOpen} onOpenChange={setReanalyzeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>AI 재분석</DialogTitle>
-            <DialogDescription>
-              AI가 사진을 다시 분석합니다. 수동으로 수정한 AI 분석 결과(맛 프로필, 추정 메뉴 등)가 새 결과로 덮어씌워집니다. 계속하시겠습니까?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              취소
-            </DialogClose>
-            <Button onClick={handleReanalyze}>재분석 실행</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Save button (fixed bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-100 bg-white px-4 py-3">
-        <button
-          type="button"
-          disabled={isUpdating}
-          onClick={handleSave}
-          className="h-12 w-full rounded-xl bg-primary-500 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] disabled:opacity-50 transition-all"
-        >
-          {isUpdating ? "저장 중..." : "수정하기"}
-        </button>
-      </div>
+      {/* Photo Crop Editor */}
+      <PhotoCropEditor
+        open={cropEditorOpen}
+        onOpenChange={setCropEditorOpen}
+        photoUrl={cropEditingPhotoUrl}
+        initialCrop={cropEditingInitial}
+        onApply={handleCropApply}
+      />
     </div>
   )
 }

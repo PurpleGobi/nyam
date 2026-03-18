@@ -3,10 +3,10 @@
 import { useCallback, useState } from "react"
 import { getRecordRepository } from "@/di/repositories"
 import type { CreateRecordInput, UpdateAiAnalysisInput, UpdateTasteProfileInput, UpdateJournalInput } from "@/domain/repositories/record-repository"
+import type { PhotoCropData } from "@/domain/entities/record"
 
 export function useEditRecord() {
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isReanalyzing, setIsReanalyzing] = useState(false)
 
   const updateRecord = useCallback(async (id: string, data: Partial<CreateRecordInput>) => {
     setIsUpdating(true)
@@ -53,19 +53,9 @@ export function useEditRecord() {
     }
   }, [])
 
-  const reanalyze = useCallback(async (recordId: string) => {
-    setIsReanalyzing(true)
-    try {
-      const res = await fetch(`/api/records/${recordId}/reanalyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordId }),
-      })
-      if (!res.ok) throw new Error("Reanalyze failed")
-    } finally {
-      setIsReanalyzing(false)
-    }
+  const updatePhotoCrop = useCallback(async (photoId: string, cropData: PhotoCropData | null) => {
+    await getRecordRepository().updatePhotoCrop(photoId, cropData)
   }, [])
 
-  return { updateRecord, deleteRecord, updateAiAnalysis, updateTasteProfile, updateJournal, reanalyze, isUpdating, isReanalyzing }
+  return { updateRecord, deleteRecord, updateAiAnalysis, updateTasteProfile, updateJournal, updatePhotoCrop, isUpdating }
 }

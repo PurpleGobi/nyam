@@ -44,7 +44,7 @@ export function HomeContainer() {
   }, [tasteDnaRestaurant])
 
   const { pick, reason, refresh } = useTodaysPick(user?.id ?? null, tasteDnaTopAxis)
-  const { records: friendsRecords, isLoading: friendsLoading } = useFriendsFeed(5)
+  const { records: friendsRecords, isLoading: friendsLoading } = useFriendsFeed(user?.id ?? null, 5)
 
   const handleMonthChange = (year: number, month: number) => {
     setCalendarYear(year)
