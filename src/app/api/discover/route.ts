@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
-import { searchRestaurantsByKeyword, searchNearbyRestaurants } from "@/infrastructure/api/kakao-local"
+import { searchRestaurantsByKeyword, searchNearbyRestaurants, searchNearbyGrid } from "@/infrastructure/api/kakao-local"
+import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 import { callGemini } from "@/infrastructure/api/gemini"
 import { SupabaseDiscoverRepository } from "@/infrastructure/repositories/supabase-discover-repository"
 import {
@@ -11,23 +12,24 @@ import {
 import type { CandidateRaw, DiscoverResult, TasteProfileAxis } from "@/domain/entities/discover"
 import { FOOD_CATEGORIES } from "@/shared/constants/categories"
 
-/** LLM recommendation item - structured output from the ranking engine */
-interface LlmRecommendation {
-  rank: number
+// ─────────────────────────────────────────────────────────
+// Pipeline F: 템플릿 키워드 검색 → 체인 필터 → 사전 랭킹 → LLM 평가
+// 환각 0%: LLM이 식당을 "생성"하지 않고 실제 검색 결과만 "평가"
+// ─────────────────────────────────────────────────────────
+
+/** LLM evaluation result for a single restaurant */
+interface LlmEvaluation {
   name: string
-  searchKeyword: string
-  area: string
-  genre: string | null
-  totalScore: number
   scores: {
-    contextFit: number
-    authority: number
-    publicReputation: number
+    context_fit: number
+    reputation: number
     accessibility: number
-    recency: number
-    reviewReliability: number
+    authority: number
+    trend: number
+    review_trust: number
   }
-  oneLiner: string
+  totalScore: number
+  reason: string
   strengths: string[]
   weaknesses: string[]
   confidence: "high" | "medium" | "low"
@@ -37,11 +39,12 @@ interface LlmRecommendation {
 /**
  * GET /api/discover?area=성수&scene=데이트&genre=japanese&query=조용한 오마카세
  *
- * Pipeline:
- * 1. LLM 맛집 랭킹 엔진 (씬별 가중치 적용, 다출처 종합 평가)
- * 2. 카카오맵 실존 검증
- * 3. 내부 DB 보강 + 사용자 DNA 매칭
- * 4. LLM 점수 + DNA 점수 블렌딩 → 최종 순위
+ * Pipeline F:
+ * 1. 템플릿 키워드 생성 + 카카오/네이버 검색 + 그리드 카테고리 검색
+ * 2. 중복 제거 + 체인 필터 + 사전 랭킹
+ * 3. LLM 평가 (실제 후보만 평가, 환각 0%)
+ * 4. 내부 DB + 사용자 DNA 매칭 보너스
+ * 5. 결과 패키징
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -78,141 +81,137 @@ export async function GET(request: NextRequest) {
     const pipelineSteps: { step: string; detail: string; durationMs: number }[] = []
     const pipelineStart = Date.now()
 
-    // ═══ Step 1: LLM 랭킹 엔진 ═══
     const genreLabel = genre
       ? FOOD_CATEGORIES.find((c) => c.value === genre)?.label ?? genre
       : null
 
-    // For nearby mode without area, use "현재 위치 주변" as area context for LLM
-    const llmArea = area ?? (isNearbyMode ? "현재 위치 주변" : null)
-
     console.log("\n[Discover] ═══════════════════════════════════════")
-    console.log(`[Discover] Step 1: LLM 랭킹 엔진`)
-    console.log(`[Discover]   area=${llmArea} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}" nearby=${isNearbyMode}`)
+    console.log(`[Discover] Pipeline F: 키워드 검색 → 체인 필터 → LLM 평가`)
+    console.log(`[Discover]   area=${area} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}" nearby=${isNearbyMode}`)
 
+    // ═══ Step 1: 템플릿 키워드 생성 + 검색 ═══
     let t0 = Date.now()
-    const llmResult = await getLlmRecommendations({
-      area: llmArea, scenes, genreLabel, query,
-    })
-    const llmRecommendations = llmResult.recommendations
-    const step1Ms = Date.now() - t0
 
-    const llmNames = llmRecommendations.map((r) => `#${r.rank} ${r.name}(${r.totalScore}점,${r.confidence},${r.category})`).join(", ")
-    pipelineSteps.push({
-      step: "LLM 랭킹 엔진",
-      detail: `${llmRecommendations.length}개 추천: ${llmNames}`,
-      durationMs: step1Ms,
-    })
+    const searchQueries = generateSearchQueries(area, scene, genreLabel, query)
+    const searchLat = nearbyLat ?? getAreaCoordinates(area)?.lat
+    const searchLng = nearbyLng ?? getAreaCoordinates(area)?.lng
 
-    console.log(`[Discover]   LLM returned ${llmRecommendations.length} recommendations (${step1Ms}ms):`)
-    for (const r of llmRecommendations) {
-      console.log(`[Discover]     #${r.rank} ${r.name} (${r.totalScore}점, ${r.confidence}, ${r.category}) keyword="${r.searchKeyword}"`)
+    // 키워드 검색 (주력)
+    const keywordTasks = searchQueries.map((q) =>
+      searchRestaurantsByKeyword(q, searchLat, searchLng),
+    )
+
+    // 그리드 카테고리 검색 (교차 검증용, 좌표가 있을 때만)
+    const gridTask = searchLat != null && searchLng != null
+      ? searchNearbyGrid(searchLat, searchLng, { radius: 500, gridStep: 0.004, gridSize: 1 })
+      : Promise.resolve([])
+
+    const [keywordResultsSettled, gridResults] = await Promise.all([
+      Promise.allSettled(keywordTasks),
+      gridTask,
+    ])
+
+    const keywordResults: NearbyPlace[] = []
+    for (const result of keywordResultsSettled) {
+      if (result.status === "fulfilled") {
+        keywordResults.push(...result.value)
+      }
     }
 
-    // ═══ Step 2: 카카오맵 실존 검증 ═══
-    console.log(`[Discover] Step 2: 카카오맵 실존 검증`)
+    const keywordNames = new Set(keywordResults.map((r) => r.name))
+    const allSearchResults = [...keywordResults, ...gridResults]
 
-    t0 = Date.now()
-    const verifiedCandidates = await verifyWithKakao(llmRecommendations)
-    const step2Ms = Date.now() - t0
-
-    const verifiedNames = verifiedCandidates.map((v) => v.kakaoPlace.name).join(", ")
-    const failedNames = llmRecommendations
-      .filter((r) => !verifiedCandidates.some((v) => isNameMatch(v.kakaoPlace.name, r.name)))
-      .map((r) => r.name)
+    const step1Ms = Date.now() - t0
     pipelineSteps.push({
-      step: "카카오맵 실존 검증",
-      detail: `통과 ${verifiedCandidates.length}/${llmRecommendations.length}: [${verifiedNames}]${failedNames.length > 0 ? ` | 탈락: [${failedNames.join(", ")}]` : ""}`,
+      step: "키워드+그리드 검색",
+      detail: `키워드 ${keywordResults.length}건 + 그리드 ${gridResults.length}건 (쿼리: ${searchQueries.slice(0, 3).join(", ")}...)`,
+      durationMs: step1Ms,
+    })
+    console.log(`[Discover] Step 1: 검색 완료 (${step1Ms}ms) - 키워드 ${keywordResults.length} + 그리드 ${gridResults.length}`)
+
+    // ═══ Step 2: 중복 제거 + 체인 필터 + 사전 랭킹 ═══
+    t0 = Date.now()
+
+    // Dedup by externalId
+    const deduped = deduplicatePlaces(allSearchResults)
+    const beforeFilter = deduped.length
+
+    // Chain filter
+    const filtered = deduped.filter((r) => !isChain(r.name))
+    const chainRemoved = beforeFilter - filtered.length
+
+    // Pre-rank: quality signals > scene keywords
+    const CANDIDATE_CAP = 20
+    const ranked = filtered
+      .map((place) => ({
+        place,
+        preScore: preRankScore(place, scene, keywordNames),
+      }))
+      .sort((a, b) => b.preScore - a.preScore)
+      .slice(0, CANDIDATE_CAP)
+
+    const step2Ms = Date.now() - t0
+    pipelineSteps.push({
+      step: "중복 제거 + 체인 필터 + 사전 랭킹",
+      detail: `${allSearchResults.length} → ${deduped.length} (dedup) → ${filtered.length} (체인 ${chainRemoved}개 제거) → 상위 ${ranked.length}개`,
       durationMs: step2Ms,
     })
+    console.log(`[Discover] Step 2: 필터+랭킹 (${step2Ms}ms) - ${filtered.length} → Top ${ranked.length}`)
 
-    console.log(`[Discover]   Verified: ${verifiedCandidates.length}/${llmRecommendations.length} (${step2Ms}ms)`)
-    for (const v of verifiedCandidates) {
-      console.log(`[Discover]     [OK] ${v.kakaoPlace.name} (kakaoId=${v.kakaoPlace.externalId}, LLM=${v.llmScore}점)`)
+    // ═══ Step 3: LLM 평가 (실제 후보만 평가, 환각 0%) ═══
+    t0 = Date.now()
+
+    const candidatePlaces = ranked.map((r) => r.place)
+    const { evaluations, prompt: llmPrompt } = await evaluateWithLlm(
+      candidatePlaces, scene, area, query, genreLabel,
+    )
+
+    // Map LLM evaluations to places by name
+    const evalMap = new Map<string, LlmEvaluation>()
+    for (const ev of evaluations) {
+      evalMap.set(ev.name, ev)
+      // Also try fuzzy match for slight name differences
+      for (const place of candidatePlaces) {
+        if (isNameMatch(place.name, ev.name)) {
+          evalMap.set(place.name, ev)
+        }
+      }
     }
 
     // Nearby supplement: merge in Kakao nearby results when coordinates provided
     if (isNearbyMode && nearbyLat != null && nearbyLng != null) {
-      console.log(`[Discover]   Nearby supplement: searching ${nearbyRadius}m around (${nearbyLat}, ${nearbyLng})`)
-      const existingIds = new Set(verifiedCandidates.map((v) => v.kakaoPlace.externalId))
+      const existingIds = new Set(candidatePlaces.map((p) => p.externalId))
       const nearbyResults = await searchNearbyRestaurants(nearbyLat, nearbyLng, Math.min(nearbyRadius, 2000))
       let added = 0
       for (const r of nearbyResults) {
-        if (!existingIds.has(r.externalId)) {
-          verifiedCandidates.push({
-            kakaoPlace: r,
-            llmScore: 0,
-            llmReason: null,
-            llmCategory: null,
-            llmStrengths: [],
-            llmWeaknesses: [],
-          })
+        if (!existingIds.has(r.externalId) && !isChain(r.name)) {
+          candidatePlaces.push(r)
           existingIds.add(r.externalId)
           added++
         }
       }
-      console.log(`[Discover]   Nearby: added ${added} nearby candidates (total ${verifiedCandidates.length})`)
-      pipelineSteps.push({
-        step: "주변 식당 보충",
-        detail: `${nearbyRadius}m 반경 ${nearbyResults.length}개 중 ${added}개 추가`,
-        durationMs: 0,
-      })
+      if (added > 0) {
+        console.log(`[Discover]   Nearby supplement: ${added} added`)
+        pipelineSteps.push({
+          step: "주변 식당 보충",
+          detail: `${nearbyRadius}m 반경 ${nearbyResults.length}개 중 ${added}개 추가`,
+          durationMs: 0,
+        })
+      }
     }
 
-    // Fallback: if too few verified, supplement with keyword search
-    if (verifiedCandidates.length < 3) {
-      console.log(`[Discover]   Fallback: 키워드 검색 보충`)
-      const existingIds = new Set(verifiedCandidates.map((v) => v.kakaoPlace.externalId))
-
-      // Primary fallback: user query + area (e.g. "종로 라멘")
-      if (query) {
-        const queryFallback = [area, query].filter(Boolean).join(" ")
-        console.log(`[Discover]   Fallback query (primary): "${queryFallback}"`)
-        const queryResults = await searchRestaurantsByKeyword(queryFallback)
-        for (const r of queryResults) {
-          if (!existingIds.has(r.externalId)) {
-            verifiedCandidates.push({
-              kakaoPlace: r,
-              llmScore: 0,
-              llmReason: null,
-              llmCategory: null,
-              llmStrengths: [],
-              llmWeaknesses: [],
-            })
-            existingIds.add(r.externalId)
-          }
-        }
-      }
-
-      // Secondary fallback: area + genre + 맛집 (only if still not enough)
-      if (verifiedCandidates.length < 5) {
-        const genericFallback = [area, genreLabel ?? query, "맛집"].filter(Boolean).join(" ")
-        console.log(`[Discover]   Fallback query (secondary): "${genericFallback}"`)
-        const fallbackResults = await searchRestaurantsByKeyword(genericFallback)
-        for (const r of fallbackResults) {
-          if (!existingIds.has(r.externalId)) {
-            verifiedCandidates.push({
-              kakaoPlace: r,
-              llmScore: 0,
-              llmReason: null,
-              llmCategory: null,
-              llmStrengths: [],
-              llmWeaknesses: [],
-            })
-            existingIds.add(r.externalId)
-          }
-        }
-      }
-
-      pipelineSteps.push({
-        step: "Fallback 키워드 검색",
-        detail: `보충 후 ${verifiedCandidates.length}개`,
-        durationMs: 0,
-      })
-      console.log(`[Discover]   After fallback: ${verifiedCandidates.length} candidates`)
+    const step3Ms = Date.now() - t0
+    pipelineSteps.push({
+      step: "LLM 평가 (환각 0%)",
+      detail: `${evaluations.length}개 평가 완료`,
+      durationMs: step3Ms,
+    })
+    console.log(`[Discover] Step 3: LLM 평가 (${step3Ms}ms) - ${evaluations.length}개`)
+    for (const ev of evaluations.slice(0, 5)) {
+      console.log(`[Discover]   ${ev.name}: ${ev.totalScore}점 (${ev.confidence}, ${ev.category})`)
     }
 
-    if (verifiedCandidates.length === 0) {
+    if (candidatePlaces.length === 0) {
       return NextResponse.json({
         success: true,
         source: "realtime",
@@ -223,10 +222,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // ═══ Step 3: 내부 DB + 사용자 DNA ═══
-    const externalIds = verifiedCandidates.map((v) => v.kakaoPlace.externalId)
+    // ═══ Step 4: 내부 DB + 사용자 DNA ═══
+    const externalIds = candidatePlaces.map((p) => p.externalId)
 
-    console.log(`[Discover] Step 3: 내부 DB + DNA 로딩`)
+    console.log(`[Discover] Step 4: 내부 DB + DNA 로딩`)
 
     t0 = Date.now()
     const [
@@ -246,37 +245,31 @@ export async function GET(request: NextRequest) {
       fetchStyleDna(supabase, user.id),
       fetchSeedGenres(supabase, user.id),
     ])
-    const step3Ms = Date.now() - t0
+    const step4Ms = Date.now() - t0
 
     pipelineSteps.push({
       step: "내부 DB + DNA 로딩",
       detail: `records=${recordCount} tasteDna=${tasteDnaResult ? "real" : "none"} internalMatch=${internalCandidates.length} blacklisted=${blacklisted.size}`,
-      durationMs: step3Ms,
+      durationMs: step4Ms,
     })
 
     const internalMap = new Map(internalCandidates.map((c) => [c.externalId, c]))
 
-    // Build verified data maps
-    const llmDataMap = new Map(
-      verifiedCandidates.map((v) => [v.kakaoPlace.externalId, v]),
-    )
-
     // Merge into CandidateRaw[]
-    const candidates: CandidateRaw[] = verifiedCandidates
-      .filter((v) => !blacklisted.has(v.kakaoPlace.externalId))
-      .map((v) => {
-        const k = v.kakaoPlace
-        const internal = internalMap.get(k.externalId)
+    const candidates: CandidateRaw[] = candidatePlaces
+      .filter((p) => !blacklisted.has(p.externalId))
+      .map((p) => {
+        const internal = internalMap.get(p.externalId)
         return {
-          kakaoId: k.externalId,
-          name: k.name,
-          address: k.addressName,
-          roadAddress: k.address,
-          lat: k.latitude,
-          lng: k.longitude,
-          phone: k.phone || null,
-          kakaoUrl: k.placeUrl,
-          category: k.categoryName,
+          kakaoId: p.externalId,
+          name: p.name,
+          address: p.addressName,
+          roadAddress: p.address,
+          lat: p.latitude,
+          lng: p.longitude,
+          phone: p.phone || null,
+          kakaoUrl: p.placeUrl,
+          category: p.categoryName,
           hours: null,
           menuItems: [],
           imageUrl: null,
@@ -289,20 +282,15 @@ export async function GET(request: NextRequest) {
         }
       })
 
-    // ═══ Step 4: LLM 기반 + DNA 매칭 보너스 스코어링 ═══
+    // ═══ Step 5: LLM 평가 + DNA 매칭 보너스 스코어링 ═══
     const userTasteDna = tasteDnaResult
     const topTasteAxis = getTopTasteAxis(userTasteDna)
     const frequentAreas = styleDnaResult?.areas.slice(0, 5).map((a) => a.area) ?? []
 
-    console.log(`[Discover] Step 4: LLM 기반 + DNA 매칭 보너스`)
+    console.log(`[Discover] Step 5: LLM 평가 + DNA 매칭 보너스`)
     console.log(`[Discover]   User: records=${recordCount} tasteDna=${userTasteDna ? "real" : "none"} seedGenres=[${seedGenres.join(",")}]`)
-    console.log(`[Discover]   Candidates: ${candidates.length} (blacklisted ${blacklisted.size})`)
 
-    // DNA matching: LLM score is the base (100점 만점)
-    // DNA similarity bonus: up to +15 or penalty: down to -15 (max ±15% of 100)
     const DNA_BONUS_MAX = 15
-
-    console.log(`[Discover]   Scoring: LLM base + DNA match bonus (±${DNA_BONUS_MAX}점)`)
 
     t0 = Date.now()
 
@@ -312,9 +300,12 @@ export async function GET(request: NextRequest) {
         ?? genre
         ?? null
       const isNew = !visitedSet.has(candidate.kakaoId)
-      const llmData = llmDataMap.get(candidate.kakaoId)
 
-      // DNA match calculation (taste similarity + style match)
+      // LLM evaluation score (0-100) — from real search results, not hallucinated
+      const llmEval = evalMap.get(candidate.name)
+      const llmScore = llmEval?.totalScore ?? estimateFallbackScore(candidate, { query, area, scene, genreLabel })
+
+      // DNA match calculation
       const { scores: dnaScores, dominantFactor, debug } = calculateFinalScore({
         candidate,
         userTasteDna,
@@ -326,18 +317,12 @@ export async function GET(request: NextRequest) {
         seedGenres,
       })
 
-      // LLM score is the base (0-100)
-      // When LLM fails (fallback), estimate a base score from keyword/category relevance
-      const llmScore = llmData?.llmScore ?? estimateFallbackScore(candidate, { query, area, scene, genreLabel })
-
-      // DNA match: convert DNA overall (0-100) to a bonus/penalty (-DNA_BONUS_MAX ~ +DNA_BONUS_MAX)
-      // DNA overall 50 = neutral (no bonus), >50 = bonus, <50 = penalty
+      // DNA bonus
       const dnaMatchRatio = dnaScores.overall > 0
-        ? (dnaScores.overall - 50) / 50  // -1.0 ~ +1.0
+        ? (dnaScores.overall - 50) / 50
         : 0
       const dnaBonus = Math.round(dnaMatchRatio * DNA_BONUS_MAX)
 
-      // Final score = LLM base + DNA bonus, clamped to 0-100
       const finalScore = Math.max(0, Math.min(100, llmScore + dnaBonus))
 
       const scores = {
@@ -345,8 +330,7 @@ export async function GET(request: NextRequest) {
         overall: finalScore,
       }
 
-      // Use LLM reason if available, then query-aware fallback, then template
-      const reason = llmData?.llmReason
+      const reason = llmEval?.reason
         ?? generateFallbackReason(candidate, { query, scene, area, candidateGenre })
         ?? generateTemplateReason(dominantFactor, {
           scene, area, candidateGenre, topTasteAxis,
@@ -357,9 +341,10 @@ export async function GET(request: NextRequest) {
 
       return {
         candidate, scores, reason, candidateGenre, isNew, dominantFactor, debug,
-        llmScore, dnaBonus, llmCategory: llmData?.llmCategory ?? null,
-        llmStrengths: llmData?.llmStrengths ?? [],
-        llmWeaknesses: llmData?.llmWeaknesses ?? [],
+        llmScore, dnaBonus,
+        llmCategory: llmEval?.category ?? null,
+        llmStrengths: llmEval?.strengths ?? [],
+        llmWeaknesses: llmEval?.weaknesses ?? [],
       }
     })
 
@@ -376,7 +361,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const step4Ms = Date.now() - t0
+    const step5Ms = Date.now() - t0
 
     // --- Scoring log ---
     console.log("[Discover]   #  Final  LLM  DNA(overall)  Bonus  Cat        Name")
@@ -396,7 +381,6 @@ export async function GET(request: NextRequest) {
     console.log(`[Discover]   Total: ${totalMs}ms`)
     console.log("[Discover] ═══════════════════════════════════════\n")
 
-    // Build debug scoring results
     const scoredDebugResults = top5.map((s, i) => ({
       rank: i + 1,
       name: s.candidate.name,
@@ -408,12 +392,12 @@ export async function GET(request: NextRequest) {
     }))
 
     pipelineSteps.push({
-      step: "LLM 기반 + DNA 매칭 보너스",
+      step: "LLM 평가 + DNA 매칭 보너스",
       detail: `LLM base + DNA match bonus (±${DNA_BONUS_MAX}점) | ${candidates.length}개 후보 → Top 5 선별`,
-      durationMs: step4Ms,
+      durationMs: step5Ms,
     })
 
-    // ═══ Step 5: 결과 패키징 ═══
+    // ═══ Step 6: 결과 패키징 ═══
     const results: DiscoverResult[] = top5.map((s, i) => ({
       rank: i + 1,
       restaurant: {
@@ -458,18 +442,18 @@ export async function GET(request: NextRequest) {
       cacheStatus: "ready",
       meta: {
         blendRatio: { llm: 100, dna: DNA_BONUS_MAX },
-        llmCandidates: llmRecommendations.length,
-        verifiedCandidates: verifiedCandidates.length,
-        scoreDisclaimer: "점수는 LLM 평가 기반이며 개인 취향 매칭도에 따라 보정됩니다.",
+        llmCandidates: candidatePlaces.length,
+        verifiedCandidates: candidatePlaces.length,
+        scoreDisclaimer: "점수는 실제 검색 결과의 LLM 평가 기반이며 개인 취향에 따라 보정됩니다.",
       },
       debug: {
         pipeline: pipelineSteps,
         blendRatio: { llm: 100, dna: DNA_BONUS_MAX },
-        llmCandidates: llmRecommendations.length,
-        verifiedCandidates: verifiedCandidates.length,
+        llmCandidates: candidatePlaces.length,
+        verifiedCandidates: candidatePlaces.length,
         scoredResults: scoredDebugResults,
-        prompt: llmResult.prompt,
-        inputContext: llmResult.inputContext,
+        prompt: llmPrompt,
+        inputContext: `area=${area} scene=${scene} genre=${genre} query=${query}`,
       },
     })
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -482,182 +466,294 @@ export async function GET(request: NextRequest) {
 }
 
 // ─────────────────────────────────────────────────────────
-// Step 1: LLM 랭킹 엔진
+// Step 1: 템플릿 키워드 생성
 // ─────────────────────────────────────────────────────────
 
-/** 씬별 가중치 프롬프트 블록 */
-function getSceneWeights(scene: string | null): string {
-  const weights: Record<string, string> = {
-    "혼밥": `[씬 가중치: 혼밥]
-- 맥락 적합성 35 (1인석, 바석, 회전율, 대기 스트레스 낮음)
-- 대중 평판 25
-- 예약/웨이팅 접근성 20 (웨이팅 없거나 짧은 곳 우대)
-- 권위 신호 5
-- 최근성/트렌드성 10
-- 리뷰 신뢰도 5`,
-    "데이트": `[씬 가중치: 데이트]
-- 맥락 적합성 35 (분위기, 소음도, 동선, 2인 테이블)
-- 권위 신호 20
-- 대중 평판 20
-- 예약/웨이팅 접근성 10 (예약 안정성 중요)
-- 최근성/트렌드성 10
-- 리뷰 신뢰도 5`,
-    "비즈니스": `[씬 가중치: 비즈니스/회식]
-- 맥락 적합성 35 (단체석, 룸, 예약 편의성)
-- 예약/웨이팅 접근성 25
-- 대중 평판 20
-- 권위 신호 10
-- 최근성/트렌드성 5
-- 리뷰 신뢰도 5`,
-    "친구모임": `[씬 가중치: 친구모임]
-- 맥락 적합성 30
-- 대중 평판 25
-- 예약/웨이팅 접근성 15
-- 최근성/트렌드성 15
-- 권위 신호 10
-- 리뷰 신뢰도 5`,
-    "가족": `[씬 가중치: 가족모임]
-- 맥락 적합성 35 (주차, 아이동반, 메뉴 폭, 편안한 좌석)
-- 대중 평판 25
-- 예약/웨이팅 접근성 15
-- 권위 신호 15
-- 최근성/트렌드성 5
-- 리뷰 신뢰도 5`,
-    "술자리": `[씬 가중치: 술자리]
-- 맥락 적합성 30 (늦은 영업, 안주력, 2차 연계성, 대화 가능)
-- 예약/웨이팅 접근성 20
-- 대중 평판 20
-- 최근성/트렌드성 15
-- 권위 신호 10
-- 리뷰 신뢰도 5`,
+/** 씬/장르별 검색 키워드 (core + extra) */
+const SCENE_KEYWORDS: Record<string, { core: string[]; extra: string[] }> = {
+  "혼밥": {
+    core: ["{area} 혼밥 맛집", "{area} 1인 식당", "{area} 혼밥"],
+    extra: ["{area} 돈까스", "{area} 라멘", "{area} 덮밥", "{area} 국수"],
+  },
+  "데이트": {
+    core: ["{area} 데이트 맛집", "{area} 분위기 좋은 식당", "{area} 인기 맛집"],
+    extra: ["{area} 레스토랑", "{area} 파스타", "{area} 브런치"],
+  },
+  "비즈니스": {
+    core: ["{area} 접대 맛집", "{area} 비즈니스 식당", "{area} 코스요리"],
+    extra: ["{area} 한정식", "{area} 오마카세", "{area} 룸 식당"],
+  },
+  "친구모임": {
+    core: ["{area} 친구 모임 맛집", "{area} 단체 식당", "{area} 맛집"],
+    extra: ["{area} 고기 맛집", "{area} 삼겹살", "{area} 회식"],
+  },
+  "가족": {
+    core: ["{area} 가족 식사", "{area} 한식 맛집", "{area} 맛집"],
+    extra: ["{area} 갈비", "{area} 한정식", "{area} 뷔페"],
+  },
+  "술자리": {
+    core: ["{area} 술집", "{area} 이자카야", "{area} 안주 맛집"],
+    extra: ["{area} 호프", "{area} 포차", "{area} 와인바"],
+  },
+}
+
+const GENRE_KEYWORDS: Record<string, string[]> = {
+  "일식": ["{area} 라멘", "{area} 스시", "{area} 우동", "{area} 일식"],
+  "한식": ["{area} 한식", "{area} 백반", "{area} 찌개", "{area} 국밥"],
+  "중식": ["{area} 중식", "{area} 짜장면", "{area} 마라탕"],
+  "양식": ["{area} 파스타", "{area} 스테이크", "{area} 양식"],
+  "고기/구이": ["{area} 고기 맛집", "{area} 삼겹살", "{area} 갈비"],
+}
+
+function generateSearchQueries(
+  area: string | null,
+  scene: string | null,
+  genreLabel: string | null,
+  query: string | null,
+): string[] {
+  const areaStr = area ?? "맛집"
+  const queries: string[] = []
+
+  // 사용자 직접 검색어 (최우선)
+  if (query) {
+    queries.push(`${areaStr} ${query}`)
+    queries.push(`${areaStr} ${query} 맛집`)
   }
 
-  return weights[scene ?? ""] ?? `[기본 가중치]
-- 맥락 적합성 30
-- 권위 신호 20
-- 대중 평판 20
-- 예약/웨이팅 접근성 15
-- 최근성/트렌드성 10
-- 리뷰 신뢰도 5`
-}
-
-/** 씬 → 추정 인원 */
-function inferPartySize(scene: string | null): string {
-  const map: Record<string, string> = {
-    "혼밥": "1명",
-    "데이트": "2명",
-    "술자리": "2~4명",
-    "비즈니스": "4~8명",
-    "가족": "3~6명",
-    "친구모임": "3~6명",
+  // 씬 키워드 (core 우선)
+  const sceneConfig = SCENE_KEYWORDS[scene ?? ""] ?? { core: ["{area} 맛집"], extra: [] }
+  for (const tmpl of sceneConfig.core) {
+    queries.push(tmpl.replace("{area}", areaStr))
   }
-  return map[scene ?? ""] ?? "2~4명"
+
+  // 장르가 지정되면 장르 키워드, 아니면 씬 extra
+  if (genreLabel) {
+    const genreTemplates = GENRE_KEYWORDS[genreLabel] ?? [`{area} ${genreLabel}`]
+    for (const tmpl of genreTemplates) {
+      queries.push(tmpl.replace("{area}", areaStr))
+    }
+  } else {
+    for (const tmpl of sceneConfig.extra) {
+      queries.push(tmpl.replace("{area}", areaStr))
+    }
+  }
+
+  // 기본 키워드
+  queries.push(`${areaStr} 맛집`)
+
+  // 중복 제거 (순서 유지)
+  return [...new Set(queries)]
 }
 
-/** Return type for LLM recommendations including prompt for debug */
-interface LlmResult {
-  recommendations: LlmRecommendation[]
-  prompt: string
-  inputContext: string
+// ─────────────────────────────────────────────────────────
+// Step 2: 체인 필터 + 사전 랭킹
+// ─────────────────────────────────────────────────────────
+
+const CHAIN_BLACKLIST = new Set([
+  "맥도날드", "버거킹", "롯데리아", "kfc", "파파이스", "맘스터치",
+  "노브랜드버거", "쉐이크쉑", "모스버거",
+  "스타벅스", "투썸플레이스", "이디야", "빽다방", "메가커피",
+  "컴포즈커피", "할리스", "탐앤탐스", "커피빈", "폴바셋",
+  "편의점", "cu", "gs25", "세븐일레븐", "이마트24",
+  "파리바게뜨", "뚜레쥬르", "던킨", "크리스피크림",
+  "김밥천국", "김가네", "바르다김선생",
+])
+
+function isChain(name: string): boolean {
+  const normalized = name.replace(/\s+/g, "").toLowerCase()
+  for (const chain of CHAIN_BLACKLIST) {
+    if (normalized.includes(chain)) return true
+  }
+  return false
 }
 
-async function getLlmRecommendations(params: {
-  area: string | null
-  scenes: string[]
-  genreLabel: string | null
-  query: string | null
-}): Promise<LlmResult> {
-  const { area, scenes, genreLabel, query } = params
-  const primaryScene = scenes[0] ?? null
+function deduplicatePlaces(places: NearbyPlace[]): NearbyPlace[] {
+  const seen = new Map<string, NearbyPlace>()
+  for (const place of places) {
+    if (!seen.has(place.externalId)) {
+      seen.set(place.externalId, place)
+    }
+  }
+  return [...seen.values()]
+}
+
+/** 사전 랭킹: 맛집 시그널 > 씬 키워드 (우선순위: 할루시네이션X > 지역O > 맛집 > 씬) */
+function preRankScore(
+  place: NearbyPlace,
+  scene: string | null,
+  keywordNames: Set<string>,
+): number {
+  let score = 0
+
+  // 키워드 검색에서 나온 식당 = 씬 관련성 확보
+  if (keywordNames.has(place.name)) score += 30
+
+  // 거리 가점
+  if (place.distance > 0) {
+    score += Math.max(0, 20 - place.distance / 100)
+  }
+
+  // 씬 키워드 매칭
+  const text = `${place.categoryName} ${place.name}`.toLowerCase()
+  const sceneKeywords: Record<string, string[]> = {
+    "혼밥": ["국수", "라멘", "우동", "돈까스", "카레", "덮밥", "1인", "소바"],
+    "데이트": ["이탈리", "프렌치", "파스타", "와인", "레스토랑", "비스트로", "다이닝"],
+    "비즈니스": ["한정식", "일식", "오마카세", "프렌치", "코스", "스시"],
+    "친구모임": ["고기", "구이", "삼겹", "치킨", "닭갈비", "솥뚜껑"],
+    "가족": ["한식", "중식", "뷔페", "갈비", "한정식"],
+    "술자리": ["호프", "포차", "이자카야", "바", "술집"],
+  }
+  for (const kw of sceneKeywords[scene ?? ""] ?? []) {
+    if (text.includes(kw)) {
+      score += 5
+      break
+    }
+  }
+
+  return score
+}
+
+// ─────────────────────────────────────────────────────────
+// Step 3: LLM 평가 (실제 후보만 평가)
+// ─────────────────────────────────────────────────────────
+
+/** 씬별 가중치 */
+const SCENE_WEIGHTS: Record<string, Record<string, number>> = {
+  "혼밥": { context_fit: 35, reputation: 25, accessibility: 20, authority: 5, trend: 10, review_trust: 5 },
+  "데이트": { context_fit: 35, reputation: 20, accessibility: 10, authority: 20, trend: 10, review_trust: 5 },
+  "비즈니스": { context_fit: 35, reputation: 20, accessibility: 25, authority: 10, trend: 5, review_trust: 5 },
+  "친구모임": { context_fit: 30, reputation: 25, accessibility: 15, authority: 10, trend: 15, review_trust: 5 },
+  "가족": { context_fit: 35, reputation: 25, accessibility: 15, authority: 15, trend: 5, review_trust: 5 },
+  "술자리": { context_fit: 30, reputation: 20, accessibility: 20, authority: 10, trend: 15, review_trust: 5 },
+}
+const DEFAULT_WEIGHTS: Record<string, number> = {
+  context_fit: 30, reputation: 20, accessibility: 15, authority: 15, trend: 10, review_trust: 10,
+}
+
+function getSceneDescription(scene: string | null): string {
+  const descriptions: Record<string, string> = {
+    "혼밥": "1인석/바석, 빠른 회전, 대기 스트레스 낮음, 혼자 편한 분위기",
+    "데이트": "분위기, 소음도, 2인 테이블, 동선, 예약 안정성",
+    "비즈니스": "단체석/룸, 예약 편의성, 격식, 접대에 적합",
+    "친구모임": "4-6인 단체석, 활기찬 분위기, 다양한 메뉴, 가성비",
+    "가족": "주차, 아이 동반, 메뉴 폭, 편안한 좌석",
+    "술자리": "늦은 영업, 안주력, 2차 연계, 대화 가능",
+  }
+  return descriptions[scene ?? ""] ?? "일반적인 식사 적합성"
+}
+
+/** 씬별 감점 규칙 */
+function getSceneNegativeRules(scene: string | null): string {
+  const rules: Record<string, string> = {
+    "혼밥": `- 프랜차이즈 체인은 context_fit 최대 30점
+- 고급 이자카야/바는 혼밥에 어색할 수 있으므로 context_fit 감점
+- 단체 전용 식당은 context_fit 20점 이하`,
+    "데이트": `- 프랜차이즈/패스트푸드는 context_fit 최대 20점
+- 시끌벅적한 호프집/주점은 데이트에 부적합
+- 1인 전문점은 데이트에 부적합`,
+    "비즈니스": `- 프랜차이즈/패스트푸드는 context_fit 최대 10점
+- 분식집/포장마차는 context_fit 20점 이하
+- 고급 한식, 일식 오마카세, 프렌치/이탈리안이 적합`,
+    "친구모임": `- 1인 전문점은 context_fit 20점 이하
+- 4인 이상 단체석이 있는 곳 우대
+- 인당 5만원 이상은 감점`,
+    "가족": `- 술집/바/이자카야는 가족에 부적합
+- 주차 가능 여부 중요
+- 아이 메뉴가 있거나 소음에 관대한 곳 우대`,
+    "술자리": `- 주류를 팔지 않는 곳은 context_fit 최대 20점
+- 안주가 다양한 곳 우대`,
+  }
+  return rules[scene ?? ""] ?? "- 특별한 부정 규칙 없음"
+}
+
+async function evaluateWithLlm(
+  places: NearbyPlace[],
+  scene: string | null,
+  area: string | null,
+  query: string | null,
+  genreLabel: string | null,
+): Promise<{ evaluations: LlmEvaluation[]; prompt: string }> {
+  if (places.length === 0) return { evaluations: [], prompt: "" }
+
+  const weights = SCENE_WEIGHTS[scene ?? ""] ?? DEFAULT_WEIGHTS
+
+  const restaurantList = places.map((p) => {
+    let info = `- ${p.name} | 카테고리: ${p.categoryName}`
+    if (p.address) info += ` | 주소: ${p.address}`
+    if (p.distance > 0) info += ` | 거리: ${p.distance}m`
+    return info
+  }).join("\n")
 
   const contextParts: string[] = []
-  if (query) contextParts.push(`★ 사용자 요청: "${query}" ← 이것이 가장 중요한 검색 의도입니다. 이 요청을 최우선으로 반영하세요.`)
-  if (primaryScene) contextParts.push(`씬: ${scenes.join(", ")}`)
-  if (area) contextParts.push(`장소: ${area}`)
-  if (genreLabel) contextParts.push(`음식 장르: ${genreLabel}`)
-  contextParts.push(`추정 인원: ${inferPartySize(primaryScene)}`)
+  if (query) contextParts.push(`★ 사용자 요청: "${query}"`)
+  if (scene) contextParts.push(`씬: ${scene}`)
+  if (area) contextParts.push(`지역: ${area}`)
+  if (genreLabel) contextParts.push(`장르: ${genreLabel}`)
 
   const prompt = `[역할]
-당신은 한국 식당 추천을 위한 "랭킹 엔진 + 평가자 + 큐레이터"다.
-사용자가 입력한 씬과 장소를 바탕으로 식당 후보를 탐색하고, 여러 출처를 종합 평가하여 점수화한 뒤, 가장 적합한 순서대로 추천한다.
+당신은 한국 외식 큐레이터다.
+아래 실제 검색된 식당들을 씬에 맞게 평가하고 순위를 매겨라.
+
+중요: 아래 식당만 평가하라. 새로운 식당을 추가하지 마라.
+당신의 지식을 활용하여 각 식당의 실제 평판, 특성을 반영하라.
+
+★ 채점 가이드 (각 항목 0-100):
+- 각 평가 항목(context_fit, reputation 등)을 0-100으로 독립 채점
+- 해당 식당이 유명 맛집이면 해당 항목 70-90점
+- 보통 수준이면 50-70점
+- 정보 부족하면 50점 (중립)
+- 씬에 부적합하거나 명백히 나쁜 경우만 30점 이하
+- 항목 간 점수 차이를 두어 순위가 명확히 나오게 하라
 
 ────────────────
-입력값
+검색 조건
 ────────────────
 ${contextParts.join("\n")}
 
 ────────────────
-평가 출처 (종합 참고)
+평가 대상 식당 (${places.length}개)
 ────────────────
-[예약/웨이팅/실수요 신호] 캐치테이블, 테이블링
-[권위/전문가 신호] 미쉐린 가이드, 블루리본, 식신 등
-[대중 평판 신호] 네이버/카카오/구글/포스퀘어 별점 및 리뷰
-[비광고성 실사용 후기] 네이버 블로그, 유튜브, 인스타그램, 커뮤니티
-
-중요: 광고/협찬/체험단 리뷰는 신뢰도를 낮춘다. 단순 노출량보다 "실제 방문 신호"와 "씬 적합성"을 우선한다.
+${restaurantList}
 
 ────────────────
-최우선 원칙
+평가 기준과 가중치 (총 100점)
 ────────────────
-1) 단순 유명세가 아니라 "이 씬에 얼마나 잘 맞는지"를 최우선으로 평가
-2) 평점만 보지 말고 리뷰 수, 최근성, 플랫폼 간 일관성을 함께 평가
-3) 오래된 명성보다 최근 3개월 내 실제 반응을 우선
-4) 정보가 부족하면 억지로 확신하지 말고 confidence를 "low"로 표시
-5) 결과는 반드시 "씬 적합성 중심"으로 정렬
+- context_fit (${weights.context_fit}점): ${getSceneDescription(scene)}
+- reputation (${weights.reputation}점): 대중 평판 (별점, 리뷰 수, 플랫폼 간 일관성)
+- accessibility (${weights.accessibility}점): 접근성 (예약, 웨이팅, 방문 난이도)
+- authority (${weights.authority}점): 권위 신호 (미슐랭, 블루리본, 매체 선정)
+- trend (${weights.trend}점): 최근성 (최근 후기, SNS 화제성)
+- review_trust (${weights.review_trust}점): 리뷰 신뢰도 (광고성 감점, 실방문 우대)
 
 ────────────────
-평가 항목과 씬별 가중치 (총 100점)
+★ 감점 규칙 (필수 적용) ★
 ────────────────
-${getSceneWeights(primaryScene)}
+${getSceneNegativeRules(scene)}
+
+공통 규칙:
+- 프랜차이즈 대형 체인은 authority 감점
+- 카페, 베이커리, 편의점은 context_fit 감점
+- 씬과 맞지 않는 식당은 context_fit 감점
+- 유명 맛집/인기 식당은 reputation 70점 이상으로 채점
+- ★ 순위가 명확히 나올 만큼 점수 차를 줘라 (1등과 10등 차이 최소 20점)
 
 ────────────────
-세부 평가 기준
-────────────────
-[맥락 적합성] 인원 수용, 분위기, 메뉴 구성, 좌석 구조(바석/1인석/2인 테이블/단체석/룸), 대화 편의성, 회전율, 시간대 적합성
-[권위 신호] 미쉐린(3스타→매우높음, 1스타→높음, 빕구르망→중상), 블루리본(3개→높음, 1개→보통이상). 씬에 안 맞으면 권위가 높아도 상위 배치 금지
-[대중 평판] 여러 플랫폼 평점 비교, 리뷰 수 함께 고려, 리뷰 수 적은 고평점은 보수적 해석
-[예약/웨이팅 접근성] 예약 가능 여부, 웨이팅 시간, 현실적 방문 난이도
-[최근성/트렌드성] 최근 3개월 후기 존재, 최근 오픈/리뉴얼, 최신 반복 언급 장단점
-[리뷰 신뢰도] 광고성 감점, 플랫폼 간 일관성 가점, 구체적 실경험 리뷰 우대
-
-────────────────
-랭킹 보정 규칙
-────────────────
-- 웨이팅 과도하면 감점
-- 리뷰 수 매우 적으면 보수적 순위
-- 혼밥: 1인 친화성, 회전 속도, 대기 스트레스 강하게 반영
-- 데이트: 분위기, 소음도, 동선, 예약 안정성 강하게 반영
-- 비즈니스/회식: 단체석, 룸, 예약 편의성 강하게 반영
-- 술자리: 늦은 영업, 안주력, 2차 연계성 반영
-- 가족: 주차, 아이 동반, 메뉴 폭, 편안한 좌석 반영
-- 정보 충돌 시 충돌 사실을 약점에 명시
-
-────────────────
-탐색 절차
-────────────────
-1) 입력 해석 (★ "사용자 요청"이 있으면 그것이 핵심 검색 의도 — 장소/씬 필터는 보조 조건) → 2) 후보 15~30개 수집 → 3) 씬에 안 맞는 곳 제거 → 4) 6개 항목 점수화 + 가중치 적용 → 5) TOP 10 선별 (안전픽/모험픽 구분)
-
-────────────────
-출력 형식 (반드시 JSON만 출력)
+출력 형식 (JSON만)
 ────────────────
 {
-  "recommendations": [
+  "evaluations": [
     {
-      "rank": 1,
-      "name": "식당 정확한 이름 (실존 확인된 곳만)",
-      "searchKeyword": "카카오맵 검색 키워드 (지역명+식당이름, 예: '성수 스시코지')",
-      "area": "구체적 동네/역명",
-      "genre": "한식/일식/양식/중식/고기/해산물/카페 등",
-      "totalScore": 82,
+      "name": "식당 이름 (입력과 정확히 동일하게)",
       "scores": {
-        "contextFit": 28,
-        "authority": 15,
-        "publicReputation": 17,
-        "accessibility": 12,
-        "recency": 7,
-        "reviewReliability": 3
+        "context_fit": 85,
+        "reputation": 70,
+        "accessibility": 60,
+        "authority": 40,
+        "trend": 75,
+        "review_trust": 65
       },
-      "oneLiner": "이 식당을 추천하는 핵심 이유 (1문장, 씬 맥락 포함)",
+      "totalScore": 72,
+      "reason": "씬 맥락 포함 추천 이유 (1문장)",
       "strengths": ["강점1", "강점2"],
       "weaknesses": ["약점1"],
       "confidence": "high",
@@ -666,111 +762,70 @@ ${getSceneWeights(primaryScene)}
   ]
 }
 
-category 구분:
-- "safe": 안전픽 (실패 확률 낮음)
-- "adventure": 모험픽 (취향 타면 만족도 높음)
-- "uncertain": 정보 부족하지만 가능성 있음
-
-반드시 8~10개를 추천하세요. 카카오맵 검증에서 탈락할 수 있으니 넉넉히.
-실존 확인이 안 되는 식당은 절대 포함하지 마세요.`
-
-  const inputContext = contextParts.join(" | ")
-
-  console.log("\n[Discover] ──── LLM 프롬프트 입력값 ────")
-  console.log(`[Discover] 입력 컨텍스트:\n${contextParts.map((p) => `  ${p}`).join("\n")}`)
-  console.log(`[Discover] 씬 가중치: ${primaryScene ?? "기본"}`)
-  console.log(`[Discover] 프롬프트 길이: ${prompt.length}자`)
-  console.log("[Discover] ──── 프롬프트 전문 ────")
-  console.log(prompt)
-  console.log("[Discover] ──── 프롬프트 끝 ────\n")
+상위 10개만 평가. totalScore 내림차순 정렬.`
 
   try {
-    const result = await callGemini([{ text: prompt }], 0.3) as {
-      recommendations?: LlmRecommendation[]
+    const result = await callGemini([{ text: prompt }], 0.2) as {
+      evaluations?: LlmEvaluation[]
     }
 
-    if (!result.recommendations || !Array.isArray(result.recommendations)) {
-      console.warn("[Discover] LLM returned invalid format, using fallback")
-      return { recommendations: [], prompt, inputContext }
-    }
-
-    const recommendations = result.recommendations
-      .filter((r) =>
-        typeof r.name === "string" && r.name.length > 0 &&
-        typeof r.searchKeyword === "string" && r.searchKeyword.length > 0 &&
-        typeof r.totalScore === "number",
-      )
-      .slice(0, 10)
-    return { recommendations, prompt, inputContext }
-  } catch (err) {
-    console.error("[Discover] LLM recommendation failed:", err)
-    return { recommendations: [], prompt, inputContext }
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-// Step 2: 카카오맵 실존 검증
-// ─────────────────────────────────────────────────────────
-
-interface VerifiedCandidate {
-  kakaoPlace: {
-    externalId: string
-    name: string
-    address: string
-    addressName: string
-    categoryName: string
-    phone: string
-    latitude: number
-    longitude: number
-    placeUrl: string
-    distance: number
-  }
-  llmScore: number
-  llmReason: string | null
-  llmCategory: string | null
-  llmStrengths: string[]
-  llmWeaknesses: string[]
-}
-
-async function verifyWithKakao(
-  recommendations: LlmRecommendation[],
-): Promise<VerifiedCandidate[]> {
-  if (recommendations.length === 0) return []
-
-  const searchResults = await Promise.all(
-    recommendations.map(async (rec) => {
-      try {
-        const results = await searchRestaurantsByKeyword(rec.searchKeyword)
-        return { rec, results }
-      } catch {
-        return { rec, results: [] }
+    const evaluations = (result.evaluations ?? []).map((ev) => {
+      // Recalculate total with our weights (don't trust LLM arithmetic)
+      const scores = ev.scores ?? {}
+      let total = 0
+      for (const [key, weight] of Object.entries(weights)) {
+        const s = (scores as Record<string, number>)[key] ?? 50
+        total += s * weight / 100
       }
-    }),
-  )
+      return { ...ev, totalScore: Math.round(total) }
+    })
 
-  const verified: VerifiedCandidate[] = []
-  const seenIds = new Set<string>()
-
-  for (const { rec, results } of searchResults) {
-    if (results.length === 0) continue
-
-    const match = results.find((r) => isNameMatch(r.name, rec.name))
-      ?? results[0]
-
-    if (match && !seenIds.has(match.externalId)) {
-      seenIds.add(match.externalId)
-      verified.push({
-        kakaoPlace: match,
-        llmScore: rec.totalScore,
-        llmReason: rec.oneLiner,
-        llmCategory: rec.category,
-        llmStrengths: rec.strengths ?? [],
-        llmWeaknesses: rec.weaknesses ?? [],
-      })
-    }
+    evaluations.sort((a, b) => b.totalScore - a.totalScore)
+    return { evaluations, prompt }
+  } catch (err) {
+    console.error("[Discover] LLM evaluation failed:", err)
+    return { evaluations: [], prompt }
   }
+}
 
-  return verified
+// ─────────────────────────────────────────────────────────
+// Helper functions
+// ─────────────────────────────────────────────────────────
+
+/** 주요 지역명 → 좌표 매핑 (키워드 검색 시 좌표 보정용) */
+function getAreaCoordinates(area: string | null): { lat: number; lng: number } | null {
+  if (!area) return null
+  const coords: Record<string, { lat: number; lng: number }> = {
+    "강남": { lat: 37.4979, lng: 127.0276 },
+    "강남역": { lat: 37.4979, lng: 127.0276 },
+    "성수": { lat: 37.5445, lng: 127.0567 },
+    "성수동": { lat: 37.5445, lng: 127.0567 },
+    "홍대": { lat: 37.5563, lng: 126.9236 },
+    "홍대입구": { lat: 37.5563, lng: 126.9236 },
+    "이태원": { lat: 37.5340, lng: 126.9948 },
+    "여의도": { lat: 37.5219, lng: 126.9245 },
+    "종로": { lat: 37.5704, lng: 126.9922 },
+    "광화문": { lat: 37.5760, lng: 126.9769 },
+    "신촌": { lat: 37.5598, lng: 126.9425 },
+    "잠실": { lat: 37.5133, lng: 127.1001 },
+    "합정": { lat: 37.5496, lng: 126.9139 },
+    "연남": { lat: 37.5660, lng: 126.9246 },
+    "연남동": { lat: 37.5660, lng: 126.9246 },
+    "망원": { lat: 37.5564, lng: 126.9104 },
+    "을지로": { lat: 37.5660, lng: 126.9910 },
+    "압구정": { lat: 37.5270, lng: 127.0286 },
+    "청담": { lat: 37.5243, lng: 127.0474 },
+    "서울숲": { lat: 37.5444, lng: 127.0374 },
+    "건대": { lat: 37.5406, lng: 127.0694 },
+    "건대입구": { lat: 37.5406, lng: 127.0694 },
+  }
+  // Exact match
+  if (coords[area]) return coords[area]
+  // Partial match
+  for (const [key, coord] of Object.entries(coords)) {
+    if (area.includes(key) || key.includes(area)) return coord
+  }
+  return null
 }
 
 function isNameMatch(kakaoName: string, llmName: string): boolean {
@@ -785,62 +840,52 @@ function isNameMatch(kakaoName: string, llmName: string): boolean {
   if (a === b) return true
   if (a.includes(b) || b.includes(a)) return true
 
+  // Meaningful substring match (min 4 chars or 50% of shorter)
   const shorter = a.length < b.length ? a : b
   const longer = a.length < b.length ? b : a
-  if (shorter.length >= 3) {
-    for (let i = 0; i <= shorter.length - 3; i++) {
-      if (longer.includes(shorter.slice(i, i + 3))) return true
+  const minLen = Math.max(4, Math.floor(shorter.length / 2))
+  if (shorter.length >= minLen) {
+    for (let len = shorter.length; len >= minLen; len--) {
+      for (let i = 0; i <= shorter.length - len; i++) {
+        if (longer.includes(shorter.slice(i, i + len))) return true
+      }
     }
   }
   return false
 }
 
-// ─────────────────────────────────────────────────────────
-// Helper functions
-// ─────────────────────────────────────────────────────────
-
-/** Estimate a base score for fallback candidates (when LLM fails) */
 function estimateFallbackScore(
   candidate: CandidateRaw,
   context: { query: string | null; area: string | null; scene: string | null; genreLabel: string | null },
 ): number {
-  let score = 40 // base: decent default for a kakao-verified place
-
+  let score = 40
   const nameAndCategory = `${candidate.name} ${candidate.category}`.toLowerCase()
 
-  // Query relevance bonus (most important)
   if (context.query) {
     const queryLower = context.query.toLowerCase()
     if (nameAndCategory.includes(queryLower)) {
       score += 30
     } else {
-      // Partial match: check if any keyword in query matches
       const keywords = queryLower.split(/\s+/)
       const matchCount = keywords.filter((kw) => nameAndCategory.includes(kw)).length
       score += Math.min(20, matchCount * 10)
     }
   }
 
-  // Area match bonus
   if (context.area) {
     const addr = `${candidate.address} ${candidate.roadAddress}`
-    if (addr.includes(context.area.split("/")[0])) {
-      score += 10
-    }
+    if (addr.includes(context.area.split("/")[0])) score += 10
   }
 
-  // Genre match bonus
   if (context.genreLabel && nameAndCategory.includes(context.genreLabel.toLowerCase())) {
     score += 10
   }
 
-  // Internal data bonus
   if (candidate.internalRecordCount > 0) score += 5
 
-  return Math.min(85, score) // cap: fallback shouldn't score higher than good LLM results
+  return Math.min(85, score)
 }
 
-/** Generate a context-aware reason for fallback candidates */
 function generateFallbackReason(
   candidate: CandidateRaw,
   context: { query: string | null; scene: string | null; area: string | null; candidateGenre: string | null },
@@ -859,7 +904,7 @@ function generateFallbackReason(
     return `${context.area}에서 ${context.scene}하기 좋은 곳이에요`
   }
 
-  return null // fall through to generateTemplateReason
+  return null
 }
 
 function generateTemplateReason(
@@ -993,7 +1038,6 @@ function buildHighlights(candidate: CandidateRaw): string[] {
   return highlights.slice(0, 3)
 }
 
-/** Haversine distance in meters between two coordinates */
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000
   const toRad = (d: number) => (d * Math.PI) / 180

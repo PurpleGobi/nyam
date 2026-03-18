@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import httpx
 from dataclasses import dataclass, field
 from config import KAKAO_REST_API_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
@@ -169,6 +170,40 @@ async def naver_local_search(
             external_id=f"naver-{name}",
         ))
     return results
+
+
+# ── Grid-based Category Search ─────────────────────────────
+
+async def kakao_category_grid_search(
+    center_lat: float,
+    center_lng: float,
+    radius: int = 500,
+    grid_step: float = 0.004,  # ~400m 간격
+    grid_size: int = 1,  # center ± grid_size = (2n+1)² 포인트
+) -> list[Restaurant]:
+    """고배율 지도 검색 시뮬레이션: 중심점 주변을 그리드로 나눠 카테고리 검색.
+
+    사람이 지도를 이동하며 검색하는 것을 프로그래밍적으로 구현.
+    - grid_size=1: 3x3 = 9개 포인트 (반경 ~500m x 9)
+    - grid_size=2: 5x5 = 25개 포인트 (더 넓은 지역)
+    """
+    tasks = []
+    for dy in range(-grid_size, grid_size + 1):
+        for dx in range(-grid_size, grid_size + 1):
+            lat = center_lat + dy * grid_step
+            lng = center_lng + dx * grid_step
+            # 각 포인트에서 page 1, 2 가져오기 (최대 30개)
+            tasks.append(kakao_category_search(lat, lng, radius=radius, page=1, size=15))
+            tasks.append(kakao_category_search(lat, lng, radius=radius, page=2, size=15))
+
+    results_lists = await asyncio.gather(*tasks, return_exceptions=True)
+    all_results = []
+    for result in results_lists:
+        if isinstance(result, Exception):
+            continue
+        all_results.extend(result)
+
+    return all_results
 
 
 # ── Deduplication ────────────────────────────────────────

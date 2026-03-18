@@ -1,5 +1,5 @@
 """
-Run a single test case across pipelines B, C, D and compare against ground truth.
+Run a single test case across pipelines B, C, D, E and compare against ground truth.
 Usage: python compare_all.py [test_index]
   test_index: 0=강남혼밥, 1=성수데이트, 2=종로라멘, 3=홍대친구, 4=여의도비즈니스
 """
@@ -15,6 +15,8 @@ from config import TEST_CASES
 from test_pipeline_b import run_pipeline_b
 from test_pipeline_c import run_pipeline_c
 from test_pipeline_d import run_pipeline_d
+from test_pipeline_e import run_pipeline_e
+from test_pipeline_f import run_pipeline_f
 from ground_truth import evaluate_pipeline_result, GROUND_TRUTH
 
 console = Console()
@@ -49,7 +51,7 @@ async def main():
     console.print("\n[dim]Running pipelines...[/]")
 
     results = {}
-    for name, runner in [("B", run_pipeline_b), ("C", run_pipeline_c), ("D", run_pipeline_d)]:
+    for name, runner in [("B", run_pipeline_b), ("E", run_pipeline_e), ("F", run_pipeline_f)]:
         console.print(f"  [cyan]Pipeline {name}[/] ...", end=" ")
         t0 = time.time()
         try:

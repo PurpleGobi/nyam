@@ -79,6 +79,39 @@ export async function searchNearbyRestaurants(
   }))
 }
 
+/**
+ * 그리드 기반 카테고리 검색: 고배율 지도 검색 시뮬레이션.
+ * 중심점 주변을 3x3 그리드로 나눠 카테고리 검색 수행.
+ * 키워드 검색보다 누락이 적음 (좌표 기반).
+ */
+export async function searchNearbyGrid(
+  centerLat: number,
+  centerLng: number,
+  options?: { radius?: number; gridStep?: number; gridSize?: number },
+): Promise<NearbyPlace[]> {
+  const radius = options?.radius ?? 500
+  const gridStep = options?.gridStep ?? 0.004  // ~400m
+  const gridSize = options?.gridSize ?? 1      // 3x3
+
+  const tasks: Promise<NearbyPlace[]>[] = []
+  for (let dy = -gridSize; dy <= gridSize; dy++) {
+    for (let dx = -gridSize; dx <= gridSize; dx++) {
+      const lat = centerLat + dy * gridStep
+      const lng = centerLng + dx * gridStep
+      tasks.push(searchNearbyRestaurants(lat, lng, radius))
+    }
+  }
+
+  const results = await Promise.allSettled(tasks)
+  const allPlaces: NearbyPlace[] = []
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      allPlaces.push(...result.value)
+    }
+  }
+  return allPlaces
+}
+
 export async function searchRestaurantsByKeyword(
   query: string,
   lat?: number,
