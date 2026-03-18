@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { Compass, MapPin, Loader2, Search } from "lucide-react"
 import { useDiscoverEngine } from "@/application/hooks/use-discover-engine"
@@ -33,9 +33,12 @@ export function DiscoverContainer() {
   } = useDiscoverOnboarding()
 
   // Compute seed for discover engine (section 8-3)
-  const seed = (needsOnboarding === false && recordCount != null && recordCount > 0 && seedFromRecords)
-    ? { area: seedFromRecords.areas[0], scene: seedFromRecords.scenes[0] }
-    : undefined
+  const seed = useMemo(() => {
+    if (needsOnboarding === false && recordCount != null && recordCount > 0 && seedFromRecords) {
+      return { area: seedFromRecords.areas[0], scene: seedFromRecords.scenes[0] }
+    }
+    return undefined
+  }, [needsOnboarding, recordCount, seedFromRecords])
 
   const {
     results,
@@ -107,26 +110,61 @@ export function DiscoverContainer() {
     }
   }, [filters.area, filters.scene, isNearbyMode])
 
-  const handleQueryTextSubmit = useCallback(() => {
-    // MVP: extract keywords and set as area filter
-    // Phase 2: POST /api/discover/search for full NLP parsing
+  const [isParsing, setIsParsing] = useState(false)
+
+  const handleQueryTextSubmit = useCallback(async () => {
     const trimmed = queryText.trim()
     if (!trimmed) return
 
-    // Simple keyword extraction for MVP
-    const areaMatch = QUICK_AREAS.find((a) => trimmed.includes(a))
-    if (areaMatch) setArea(areaMatch)
+    setIsParsing(true)
+    try {
+      const res = await fetch("/api/discover/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: trimmed }),
+      })
 
-    const sceneMatch = RESTAURANT_SCENES.find((s) => trimmed.includes(s.value))
-    if (sceneMatch) setScene(sceneMatch.value)
+      if (!res.ok) {
+        // Fallback: use raw text as area
+        setArea(trimmed)
+        setManualView("results")
+        return
+      }
 
-    // If no specific match, use as area keyword
-    if (!areaMatch && !sceneMatch) {
+      const { parsed } = await res.json() as {
+        parsed: { area: string | null; scene: string | null; genre: string | null }
+      }
+
+      if (parsed.area) setArea(parsed.area)
+      if (parsed.scene) setScene(parsed.scene)
+      if (parsed.genre) setGenre(parsed.genre)
+
+      // No area parsed → use GPS location for nearby search
+      if (!parsed.area && location) {
+        searchNearby(location.lat, location.lng)
+      } else if (!parsed.area && !location) {
+        // No area + no GPS → request location, or use seed area as last resort
+        if (seed?.area) {
+          setArea(seed.area)
+        } else {
+          requestLocation()
+        }
+      }
+
+      // If nothing at all was parsed, use raw text as area
+      if (!parsed.area && !parsed.scene && !parsed.genre) {
+        setArea(trimmed)
+      }
+
+      setManualView("results")
+    } catch {
+      // Network error fallback
       setArea(trimmed)
+      setManualView("results")
+    } finally {
+      setIsParsing(false)
     }
-
-    setManualView("results")
-  }, [queryText, setArea, setScene])
+  }, [queryText, setArea, setScene, setGenre, location, searchNearby, requestLocation, seed])
 
   const handleBackToSearch = useCallback(() => {
     setManualView("search")
@@ -172,14 +210,19 @@ export function DiscoverContainer() {
 
         {/* Natural language input bar (section 3-2) */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          {isParsing ? (
+            <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-500 animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          )}
           <input
             type="text"
             value={queryText}
             onChange={(e) => setQueryText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
-            placeholder="강남에서 가벼운 일식..."
-            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
+            disabled={isParsing}
+            placeholder="점심 아무거나, 강남 파스타, 비 오는 날 따뜻한 거..."
+            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors disabled:opacity-60"
           />
         </div>
 
