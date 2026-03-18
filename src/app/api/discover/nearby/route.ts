@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       })
 
     // Score and rank
-    const scored = candidates.map((candidate, index) => {
+    const scored = candidates.map((candidate) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
         ?? internalMap.get(candidate.kakaoId)?.genre
         ?? genre
@@ -118,7 +118,6 @@ export async function GET(request: NextRequest) {
         candidateGenre,
         isNewForUser: isNew,
         seedGenres,
-        searchRank: index,
       })
 
       // Distance-based reason for nearby

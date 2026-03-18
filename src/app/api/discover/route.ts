@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     const topTasteAxis = getTopTasteAxis(userTasteDna)
     const frequentAreas = styleDnaResult?.areas.slice(0, 5).map((a) => a.area) ?? []
 
-    const scored = candidates.map((candidate, index) => {
+    const scored = candidates.map((candidate) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
         ?? internalMap.get(candidate.kakaoId)?.genre
         ?? genre
@@ -128,7 +128,6 @@ export async function GET(request: NextRequest) {
         candidateGenre,
         isNewForUser: isNew,
         seedGenres,
-        searchRank: index,
       })
 
       const isFrequentArea = frequentAreas.some((fa) =>
