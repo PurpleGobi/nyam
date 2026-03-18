@@ -2,10 +2,11 @@
 
 import { useCallback, useState } from "react"
 import { getRecordRepository } from "@/di/repositories"
-import type { CreateRecordInput } from "@/domain/repositories/record-repository"
+import type { CreateRecordInput, UpdateAiAnalysisInput, UpdateTasteProfileInput, UpdateJournalInput } from "@/domain/repositories/record-repository"
 
 export function useEditRecord() {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isReanalyzing, setIsReanalyzing] = useState(false)
 
   const updateRecord = useCallback(async (id: string, data: Partial<CreateRecordInput>) => {
     setIsUpdating(true)
@@ -25,5 +26,46 @@ export function useEditRecord() {
     }
   }, [])
 
-  return { updateRecord, deleteRecord, isUpdating }
+  const updateAiAnalysis = useCallback(async (recordId: string, data: UpdateAiAnalysisInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateAiAnalysis(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updateTasteProfile = useCallback(async (recordId: string, data: UpdateTasteProfileInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateTasteProfile(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updateJournal = useCallback(async (recordId: string, data: UpdateJournalInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateJournal(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const reanalyze = useCallback(async (recordId: string) => {
+    setIsReanalyzing(true)
+    try {
+      const res = await fetch(`/api/records/${recordId}/reanalyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId }),
+      })
+      if (!res.ok) throw new Error("Reanalyze failed")
+    } finally {
+      setIsReanalyzing(false)
+    }
+  }, [])
+
+  return { updateRecord, deleteRecord, updateAiAnalysis, updateTasteProfile, updateJournal, reanalyze, isUpdating, isReanalyzing }
 }
