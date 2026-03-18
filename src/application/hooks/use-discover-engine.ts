@@ -239,9 +239,9 @@ function logDiscoverResponse(res: DiscoverResponse, fetchMs: number): void {
     )
   }
 
-  // Blend ratio
+  // Scoring method
   console.log(
-    `%c[Blend] %cLLM ${d.blendRatio.llm}% + DNA ${d.blendRatio.dna}%`,
+    `%c[Score] %cLLM base (100점) + DNA match bonus (±${d.blendRatio.dna}점)`,
     "color:#8b5cf6;font-weight:bold",
     "color:#e5e7eb",
   )

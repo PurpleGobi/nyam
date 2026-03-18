@@ -15,7 +15,7 @@ const STEPS: LogStep[] = [
   { label: "카카오맵 실존 검증", delay: 2000 },
   { label: "내부 DB 기록 매칭", delay: 3000 },
   { label: "사용자 DNA 로딩 (taste + style)", delay: 3500 },
-  { label: "LLM 점수 + DNA 점수 블렌딩", delay: 4000 },
+  { label: "DNA 매칭 보너스 적용", delay: 4000 },
   { label: "Top 5 선별 (안전픽/모험픽)", delay: 4500 },
 ]
 

@@ -223,20 +223,20 @@ export async function GET(request: NextRequest) {
         }
       })
 
-    // ═══ Step 4: LLM + DNA 블렌딩 스코어링 ═══
+    // ═══ Step 4: LLM 기반 + DNA 매칭 보너스 스코어링 ═══
     const userTasteDna = tasteDnaResult
     const topTasteAxis = getTopTasteAxis(userTasteDna)
     const frequentAreas = styleDnaResult?.areas.slice(0, 5).map((a) => a.area) ?? []
 
-    console.log(`[Discover] Step 4: LLM + DNA 블렌딩`)
+    console.log(`[Discover] Step 4: LLM 기반 + DNA 매칭 보너스`)
     console.log(`[Discover]   User: records=${recordCount} tasteDna=${userTasteDna ? "real" : "none"} seedGenres=[${seedGenres.join(",")}]`)
     console.log(`[Discover]   Candidates: ${candidates.length} (blacklisted ${blacklisted.size})`)
 
-    // Blending weights: LLM 70% + DNA 30% (DNA adjusts for personal taste)
-    const dnaWeight = 0.3
-    const llmWeight = 0.7
+    // DNA matching: LLM score is the base (100점 만점)
+    // DNA similarity bonus: up to +15 or penalty: down to -15 (max ±15% of 100)
+    const DNA_BONUS_MAX = 15
 
-    console.log(`[Discover]   Blend: LLM=${Math.round(llmWeight * 100)}% DNA=${Math.round(dnaWeight * 100)}%`)
+    console.log(`[Discover]   Scoring: LLM base + DNA match bonus (±${DNA_BONUS_MAX}점)`)
 
     t0 = Date.now()
 
@@ -248,7 +248,7 @@ export async function GET(request: NextRequest) {
       const isNew = !visitedSet.has(candidate.kakaoId)
       const llmData = llmDataMap.get(candidate.kakaoId)
 
-      // DNA-based score (existing algorithm)
+      // DNA match calculation (taste similarity + style match)
       const { scores: dnaScores, dominantFactor, debug } = calculateFinalScore({
         candidate,
         userTasteDna,
@@ -260,15 +260,22 @@ export async function GET(request: NextRequest) {
         seedGenres,
       })
 
-      // Blend LLM score (0-100) with DNA score (0-100)
+      // LLM score is the base (0-100)
       const llmScore = llmData?.llmScore ?? 0
-      const blendedOverall = Math.round(
-        llmScore * llmWeight + dnaScores.overall * dnaWeight,
-      )
+
+      // DNA match: convert DNA overall (0-100) to a bonus/penalty (-DNA_BONUS_MAX ~ +DNA_BONUS_MAX)
+      // DNA overall 50 = neutral (no bonus), >50 = bonus, <50 = penalty
+      const dnaMatchRatio = dnaScores.overall > 0
+        ? (dnaScores.overall - 50) / 50  // -1.0 ~ +1.0
+        : 0
+      const dnaBonus = Math.round(dnaMatchRatio * DNA_BONUS_MAX)
+
+      // Final score = LLM base + DNA bonus, clamped to 0-100
+      const finalScore = Math.max(0, Math.min(100, llmScore + dnaBonus))
 
       const scores = {
         ...dnaScores,
-        overall: blendedOverall,
+        overall: finalScore,
       }
 
       // Use LLM reason if available
@@ -282,7 +289,7 @@ export async function GET(request: NextRequest) {
 
       return {
         candidate, scores, reason, candidateGenre, isNew, dominantFactor, debug,
-        llmScore, llmCategory: llmData?.llmCategory ?? null,
+        llmScore, dnaBonus, llmCategory: llmData?.llmCategory ?? null,
         llmStrengths: llmData?.llmStrengths ?? [],
         llmWeaknesses: llmData?.llmWeaknesses ?? [],
       }
@@ -304,14 +311,16 @@ export async function GET(request: NextRequest) {
     const step4Ms = Date.now() - t0
 
     // --- Scoring log ---
-    console.log("[Discover]   #  Blended  LLM  DNA  Cat        Name")
+    console.log("[Discover]   #  Final  LLM  DNA(overall)  Bonus  Cat        Name")
     for (const s of top5) {
       const cat = (s.llmCategory ?? "fallback").padEnd(9)
+      const bonus = s.dnaBonus >= 0 ? `+${s.dnaBonus}` : `${s.dnaBonus}`
       console.log(
         `[Discover]   ${top5.indexOf(s) + 1}  ` +
         `${String(s.scores.overall).padStart(5)}   ` +
         `${String(s.llmScore).padStart(3)}  ` +
-        `${String(s.debug.rawScores.taste).padStart(3)}  ` +
+        `${String(s.debug.rawScores.taste).padStart(7)}       ` +
+        `${bonus.padStart(4)}   ` +
         `${cat}  ${s.candidate.name}`,
       )
     }
@@ -331,8 +340,8 @@ export async function GET(request: NextRequest) {
     }))
 
     pipelineSteps.push({
-      step: "LLM + DNA 블렌딩 스코어링",
-      detail: `LLM ${Math.round(llmWeight * 100)}% + DNA ${Math.round(dnaWeight * 100)}% | ${candidates.length}개 후보 → Top 5 선별`,
+      step: "LLM 기반 + DNA 매칭 보너스",
+      detail: `LLM base + DNA match bonus (±${DNA_BONUS_MAX}점) | ${candidates.length}개 후보 → Top 5 선별`,
       durationMs: step4Ms,
     })
 
@@ -377,14 +386,14 @@ export async function GET(request: NextRequest) {
       filters: { area, scene, genre, query },
       cacheStatus: "ready",
       meta: {
-        blendRatio: { llm: Math.round(llmWeight * 100), dna: Math.round(dnaWeight * 100) },
+        blendRatio: { llm: 100, dna: DNA_BONUS_MAX },
         llmCandidates: llmRecommendations.length,
         verifiedCandidates: verifiedCandidates.length,
-        scoreDisclaimer: "점수는 씬 적합성, 평판, 개인 취향을 종합한 상대적 지표이며 절대 기준이 아닙니다.",
+        scoreDisclaimer: "점수는 LLM 평가 기반이며 개인 취향 매칭도에 따라 보정됩니다.",
       },
       debug: {
         pipeline: pipelineSteps,
-        blendRatio: { llm: Math.round(llmWeight * 100), dna: Math.round(dnaWeight * 100) },
+        blendRatio: { llm: 100, dna: DNA_BONUS_MAX },
         llmCandidates: llmRecommendations.length,
         verifiedCandidates: verifiedCandidates.length,
         scoredResults: scoredDebugResults,
@@ -480,10 +489,10 @@ async function getLlmRecommendations(params: {
   const primaryScene = scenes[0] ?? null
 
   const contextParts: string[] = []
+  if (query) contextParts.push(`★ 사용자 요청: "${query}" ← 이것이 가장 중요한 검색 의도입니다. 이 요청을 최우선으로 반영하세요.`)
   if (primaryScene) contextParts.push(`씬: ${scenes.join(", ")}`)
   if (area) contextParts.push(`장소: ${area}`)
   if (genreLabel) contextParts.push(`음식 장르: ${genreLabel}`)
-  if (query) contextParts.push(`추가 요청: "${query}"`)
   contextParts.push(`추정 인원: ${inferPartySize(primaryScene)}`)
 
   const prompt = `[역할]
@@ -544,7 +553,7 @@ ${getSceneWeights(primaryScene)}
 ────────────────
 탐색 절차
 ────────────────
-1) 입력 해석 → 2) 후보 15~30개 수집 → 3) 씬에 안 맞는 곳 제거 → 4) 6개 항목 점수화 + 가중치 적용 → 5) TOP 10 선별 (안전픽/모험픽 구분)
+1) 입력 해석 (★ "사용자 요청"이 있으면 그것이 핵심 검색 의도 — 장소/씬 필터는 보조 조건) → 2) 후보 15~30개 수집 → 3) 씬에 안 맞는 곳 제거 → 4) 6개 항목 점수화 + 가중치 적용 → 5) TOP 10 선별 (안전픽/모험픽 구분)
 
 ────────────────
 출력 형식 (반드시 JSON만 출력)
