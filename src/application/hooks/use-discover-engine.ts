@@ -152,7 +152,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     setFilters((prev) => ({ ...prev, query }))
   }, [])
 
-  const searchNearby = useCallback((lat: number, lng: number, radius = 500) => {
+  const searchNearby = useCallback((lat: number, lng: number, radius = 1000) => {
     interactedRef.current = true
     setNearby({ lat, lng, radius })
   }, [])
@@ -162,7 +162,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     if (nearby) {
       setNearby(null)
     } else {
-      setNearby({ lat, lng, radius: 500 })
+      setNearby({ lat, lng, radius: 1000 })
     }
   }, [nearby])
 

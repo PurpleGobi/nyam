@@ -53,11 +53,11 @@ export function DiscoverDebugLog({
     }
   }, [isLoading])
 
-  // Mark done when loading finishes
+  // Mark done when loading finishes (keep visible for 2s after completion)
   useEffect(() => {
     if (!isLoading && visibleCount > 0) {
       setVisibleCount(STEPS.length)
-      const t = setTimeout(() => setDone(true), 300)
+      const t = setTimeout(() => setDone(true), 2000)
       return () => clearTimeout(t)
     }
   }, [isLoading, visibleCount])
