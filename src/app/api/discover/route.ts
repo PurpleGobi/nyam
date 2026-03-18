@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
-import { searchRestaurantsByKeyword } from "@/infrastructure/api/kakao-local"
+import { searchRestaurantsByKeyword, searchNearbyRestaurants } from "@/infrastructure/api/kakao-local"
 import { callGemini } from "@/infrastructure/api/gemini"
 import { SupabaseDiscoverRepository } from "@/infrastructure/repositories/supabase-discover-repository"
 import {
@@ -58,9 +58,17 @@ export async function GET(request: NextRequest) {
   const genre = searchParams.get("genre")
   const query = searchParams.get("query")
 
-  if (!area && scenes.length === 0 && !query) {
+  // Nearby mode: lat/lng coordinates for proximity-based search
+  const latParam = searchParams.get("lat")
+  const lngParam = searchParams.get("lng")
+  const nearbyLat = latParam ? Number(latParam) : null
+  const nearbyLng = lngParam ? Number(lngParam) : null
+  const nearbyRadius = Number(searchParams.get("radius")) || 1000
+  const isNearbyMode = nearbyLat != null && nearbyLng != null && !isNaN(nearbyLat) && !isNaN(nearbyLng)
+
+  if (!area && scenes.length === 0 && !query && !isNearbyMode) {
     return NextResponse.json(
-      { error: "area, scene, query 중 최소 1개가 필요합니다" },
+      { error: "area, scene, query, 또는 lat/lng 중 최소 1개가 필요합니다" },
       { status: 400 },
     )
   }
@@ -75,13 +83,16 @@ export async function GET(request: NextRequest) {
       ? FOOD_CATEGORIES.find((c) => c.value === genre)?.label ?? genre
       : null
 
+    // For nearby mode without area, use "현재 위치 주변" as area context for LLM
+    const llmArea = area ?? (isNearbyMode ? "현재 위치 주변" : null)
+
     console.log("\n[Discover] ═══════════════════════════════════════")
     console.log(`[Discover] Step 1: LLM 랭킹 엔진`)
-    console.log(`[Discover]   area=${area} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}"`)
+    console.log(`[Discover]   area=${llmArea} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}" nearby=${isNearbyMode}`)
 
     let t0 = Date.now()
     const llmResult = await getLlmRecommendations({
-      area, scenes, genreLabel, query,
+      area: llmArea, scenes, genreLabel, query,
     })
     const llmRecommendations = llmResult.recommendations
     const step1Ms = Date.now() - t0
@@ -118,6 +129,34 @@ export async function GET(request: NextRequest) {
     console.log(`[Discover]   Verified: ${verifiedCandidates.length}/${llmRecommendations.length} (${step2Ms}ms)`)
     for (const v of verifiedCandidates) {
       console.log(`[Discover]     [OK] ${v.kakaoPlace.name} (kakaoId=${v.kakaoPlace.externalId}, LLM=${v.llmScore}점)`)
+    }
+
+    // Nearby supplement: merge in Kakao nearby results when coordinates provided
+    if (isNearbyMode && nearbyLat != null && nearbyLng != null) {
+      console.log(`[Discover]   Nearby supplement: searching ${nearbyRadius}m around (${nearbyLat}, ${nearbyLng})`)
+      const existingIds = new Set(verifiedCandidates.map((v) => v.kakaoPlace.externalId))
+      const nearbyResults = await searchNearbyRestaurants(nearbyLat, nearbyLng, Math.min(nearbyRadius, 2000))
+      let added = 0
+      for (const r of nearbyResults) {
+        if (!existingIds.has(r.externalId)) {
+          verifiedCandidates.push({
+            kakaoPlace: r,
+            llmScore: 0,
+            llmReason: null,
+            llmCategory: null,
+            llmStrengths: [],
+            llmWeaknesses: [],
+          })
+          existingIds.add(r.externalId)
+          added++
+        }
+      }
+      console.log(`[Discover]   Nearby: added ${added} nearby candidates (total ${verifiedCandidates.length})`)
+      pipelineSteps.push({
+        step: "주변 식당 보충",
+        detail: `${nearbyRadius}m 반경 ${nearbyResults.length}개 중 ${added}개 추가`,
+        durationMs: 0,
+      })
     }
 
     // Fallback: if too few verified, supplement with keyword search
@@ -405,6 +444,9 @@ export async function GET(request: NextRequest) {
       internalRecordCount: s.candidate.internalRecordCount,
       hasVisited: visitedSet.has(s.candidate.kakaoId),
       sourceCount: s.candidate.internalRecordCount > 0 ? 2 : 1,
+      ...(isNearbyMode && nearbyLat != null && nearbyLng != null ? {
+        distance: Math.round(haversineDistance(nearbyLat, nearbyLng, s.candidate.lat, s.candidate.lng)),
+      } : {}),
     }))
 
     const response = NextResponse.json({
@@ -949,4 +991,14 @@ function buildHighlights(candidate: CandidateRaw): string[] {
   }
 
   return highlights.slice(0, 3)
+}
+
+/** Haversine distance in meters between two coordinates */
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }

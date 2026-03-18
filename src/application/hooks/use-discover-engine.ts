@@ -49,25 +49,20 @@ interface UseDiscoverEngineReturn {
 }
 
 function buildQueryKey(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string | null {
-  if (nearby) {
-    return `discover-nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}-${filters.scenes.join(",")}-${filters.genre}-${filters.query}`
-  }
-  if (filters.areas.length === 0 && filters.scenes.length === 0 && !filters.query) return null
-  return `discover-${filters.areas.join(",")}-${filters.scenes.join(",")}-${filters.genre}-${filters.query}`
+  const hasFilters = filters.areas.length > 0 || filters.scenes.length > 0 || filters.query
+  if (!nearby && !hasFilters) return null
+  const nearbyPart = nearby ? `nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}` : ""
+  return `discover-${nearbyPart}-${filters.areas.join(",")}-${filters.scenes.join(",")}-${filters.genre}-${filters.query}`
 }
 
 function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string {
+  // Always use main route - it handles both area-based and nearby searches with LLM
+  const params = new URLSearchParams()
   if (nearby) {
-    const params = new URLSearchParams()
     params.set("lat", String(nearby.lat))
     params.set("lng", String(nearby.lng))
     params.set("radius", String(nearby.radius))
-    if (filters.scenes.length > 0) params.set("scene", filters.scenes.join(","))
-    if (filters.genre) params.set("genre", filters.genre)
-    return `/api/discover/nearby?${params}`
   }
-
-  const params = new URLSearchParams()
   if (filters.areas.length > 0) params.set("area", filters.areas[0])
   if (filters.scenes.length > 0) params.set("scene", filters.scenes.join(","))
   if (filters.genre) params.set("genre", filters.genre)

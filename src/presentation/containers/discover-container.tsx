@@ -46,7 +46,6 @@ export function DiscoverContainer() {
     isLoading,
     error,
     filters,
-    committedFilters,
     toggleArea,
     toggleScene,
     setGenre,
@@ -142,6 +141,9 @@ export function DiscoverContainer() {
     }
   }, [sendFeedback])
 
+  const hasSearchCondition = filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()
+  const isResultsView = viewState === "results"
+
   // --- Search Bar (shared between search & results views) ---
   const searchBar = (
     <div className="relative">
@@ -153,8 +155,18 @@ export function DiscoverContainer() {
         onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
         onFocus={handleSearchInputFocus}
         placeholder="강남 파스타, 비 오는 날 따뜻한 거..."
-        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
+        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-24 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
       />
+      {hasSearchCondition && (
+        <button
+          type="button"
+          onClick={handleSearch}
+          disabled={isLoading}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600 disabled:opacity-50 active:scale-95 transition-all"
+        >
+          {isResultsView ? "다시 검색" : "추천 받기"}
+        </button>
+      )}
     </div>
   )
 
@@ -253,17 +265,6 @@ export function DiscoverContainer() {
       <div className="flex flex-col gap-4 px-4 pt-4 pb-4">
         {filterBar}
         {searchBar}
-
-        {/* Search button */}
-        {(filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()) && (
-          <button
-            type="button"
-            onClick={handleSearch}
-            className="w-full rounded-xl bg-primary-500 py-3 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] transition-all"
-          >
-            추천 받기
-          </button>
-        )}
       </div>
     )
   }
@@ -276,31 +277,6 @@ export function DiscoverContainer() {
 
       {/* Search bar (persists in results view) */}
       {searchBar}
-
-      {/* Results header with re-search button */}
-      <div className="flex items-center justify-between mt-1">
-        <h1 className="text-lg font-bold text-neutral-800">
-          {(() => {
-            const cf = committedFilters ?? filters
-            const parts: string[] = []
-            if (isNearbyMode) {
-              parts.push("내 주변")
-            } else {
-              parts.push(...cf.areas, ...cf.scenes)
-            }
-            if (cf.query) parts.push(`"${cf.query}"`)
-            return parts.join(" ") || "추천 결과"
-          })()}
-        </h1>
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={isLoading}
-          className="shrink-0 rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
-        >
-          다시 검색
-        </button>
-      </div>
 
       {/* Genre post-filter tabs */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
