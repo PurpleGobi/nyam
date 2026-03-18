@@ -737,6 +737,10 @@ status          VARCHAR DEFAULT 'pending' CHECK (status IN ('pending', 'cancelle
 | notifications | user_id (→ auth.users) | CASCADE |
 | notifications | actor_id (→ auth.users) | SET NULL |
 | account_deletions | user_id (→ auth.users) | CASCADE |
+| discover_preferences | user_id (→ auth.users) | CASCADE |
+| discover_cache | user_id (→ auth.users) | CASCADE |
+| discover_jobs | user_id (→ auth.users) | CASCADE |
+| discover_feedback | user_id (→ auth.users) | CASCADE |
 
 ---
 
@@ -1267,6 +1271,8 @@ Output: record_taste_profiles INSERT (source='ai')
 
 Step 4 완료 후 호출. Taste DNA와 Style DNA를 모두 업데이트하고, `phase_status = 2`로 마킹하여 AI 분석 완료를 표시. 이 단계는 try/finally로 보장되어 앞 단계 실패 시에도 반드시 실행된다.
 
+**Discover 연동**: DNA 업데이트 완료 후, `POST /api/discover/precompute` (trigger='new_record')를 호출하여 사전 계산을 트리거한다. discover_preferences를 참조하여 auto/manual 모드에 따라 조합을 결정. 실패 시 non-fatal (Discover는 부가 기능).
+
 ```
 Input: recordId (내부에서 record + taste_profile 조회)
 ```
@@ -1328,7 +1334,7 @@ Output: { places: [{ externalId, name, address, categoryName, lat, lng, phone, u
 
 #### GET /api/restaurants/search
 
-키워드 기반으로 카카오 API에서 음식점을 검색한다. 발견 페이지 등에서 사용.
+키워드 기반으로 카카오 API에서 음식점을 검색한다. Discover Engine의 Source 1(카카오 Places)으로 내부 호출됨. 독립 API로도 사용 가능 (기록 작성 시 식당 수동 검색 등).
 
 ```
 Query: ?query=마라탕&x=126.9780&y=37.5665&radius=1000
@@ -1407,22 +1413,8 @@ Output: { success: boolean }
 
 ### 4-3. AI 맛집 추천
 
-#### POST /api/recommend
-Taste DNA 기반 AI 맛집 추천. 사용자의 맛 선호 프로필 + 상황 + 위치를 종합하여 추천.
-
-```
-Input: {
-  tasteDna: { flavorSpicy, flavorSweet, flavorSalty, flavorSour, flavorUmami, flavorRich, tasteTypeName }
-  situation: "혼밥" | "데이트" | ...
-  location?: "강남" (선택)
-  additionalContext?: "매운 거 빼고" (선택)
-}
-
-Output: {
-  success: boolean
-  recommendations: [{ food, reason, tip }]  -- 3건
-}
-```
+> **폐기**: `POST /api/recommend`는 Discover Engine에 통합되었다. 자세한 내용은 [DISCOVER_ENGINE.md](./DISCOVER_ENGINE.md) 참조.
+> Discover API: `GET /api/discover` (필터 기반) + `POST /api/discover/search` (자연어) + `GET /api/discover/nearby` (GPS 기반)
 
 ### 4-4. 버블 초대
 
@@ -1524,7 +1516,8 @@ Vercel Cron 또는 Supabase Edge Function.
    g. taste_dna_restaurant / wine / cooking DELETE
    h. style_dna_restaurant_* / wine_* / cooking_* DELETE
    i. user_stats DELETE
-   j. users DELETE
+   j. discover_preferences / discover_cache / discover_jobs / discover_feedback DELETE (CASCADE)
+   k. users DELETE
    k. supabase.auth.admin.deleteUser(userId)
 3. account_deletions.status = 'completed', completed_at = now
 ```
@@ -1563,6 +1556,10 @@ WINE_PRICE_RANGES: [
   { key: '50k_100k',  label: '5~10만원', min: 50000, max: 100000 },
   { key: 'over_100k', label: '10만원~', min: 100000 },
 ]
+RESTAURANT_AREAS:  // shared/constants/areas.ts — 동 → 상권명 매핑
+                   // 카카오 API address_name에서 추출. restaurants.region + style_dna_restaurant_areas.area + discover_preferences.areas에 사용
+                   // 예: 성수, 강남, 을지로, 이태원, 홍대, 잠실, 여의도, 종로, 명동, 신촌 등
+                   // 매핑에 없는 동은 구 단위로 저장
 ```
 
 ### 5-2. Taste DNA 산출
@@ -1739,20 +1736,20 @@ nyam_level = f(user_stats.points)
   8.  POST /api/records/enrich         → 카카오 API 상세 정보 수집 + restaurants UPSERT (실패 시 non-fatal)
   9.  POST /api/records/analyze-photos → 메뉴 추정 + 영수증 + 인원수 + 사진 분류 (실패 시 non-fatal)
   10. POST /api/records/taste-profile  → 웹 리뷰 교차 검증 → record_taste_profiles (source='ai') (실패 시 non-fatal)
-  11. POST /api/records/post-process   → taste_dna + style_dna 업데이트 + phase_status=2 (항상 실행)
+  11. POST /api/records/post-process   → taste_dna + style_dna 업데이트 + phase_status=2 + Discover 사전 계산 트리거 (항상 실행)
 
   🍷 와인:
   7.  POST /api/records/identify       → 라벨 OCR → 와인 식별 + 객관적 정보 수집 (실패 시 non-fatal)
   8.  스킵 (외부 API 의존 없음)
   9.  POST /api/records/analyze-photos → WSET 7축 AI 산출 + 사진 분류 + 상황 추정 (실패 시 non-fatal)
   10. POST /api/records/taste-profile  → AI + 사용자 WSET 병합 → record_taste_profiles (실패 시 non-fatal)
-  11. POST /api/records/post-process   → taste_dna_wine + style_dna_wine_* 업데이트 + phase_status=2 (항상 실행)
+  11. POST /api/records/post-process   → taste_dna_wine + style_dna_wine_* 업데이트 + phase_status=2 + Discover 사전 계산 트리거 (항상 실행)
 
   🍳 요리:
   7-8. 스킵 (특정할 외부 대상 없음)
   9.  POST /api/records/analyze-photos → 요리명 + 장르 + 태그 추출 + 상황 추정 (실패 시 non-fatal)
   10. 스킵 (사용자가 Phase 1에서 수동 입력 완료)
-  11. POST /api/records/post-process   → taste_dna_cooking + style_dna_cooking_* 업데이트 + phase_status=2 (항상 실행)
+  11. POST /api/records/post-process   → taste_dna_cooking + style_dna_cooking_* 업데이트 + phase_status=2 + Discover 사전 계산 트리거 (항상 실행)
 
   ※ 각 Step 실패 시에도 post-process(Step 11)는 반드시 실행되어 phase_status를 업데이트.
   ※ 기록 상세 페이지에서 SWR 폴링(3초)으로 phase_status 변화를 감지 → 토스트 알림 + Phase 2 CTA 표시.
@@ -1800,6 +1797,11 @@ nyam_level = f(user_stats.points)
 | group_stats | 멤버 | service_role | service_role | — |
 | notifications | 본인 (수신자) | service_role / 본인 | 본인 (is_read만) | 본인 |
 | account_deletions | 본인 | 본인 | 본인 (cancel만) | — |
+| discover_preferences | 본인 | 본인 | 본인 | — |
+| discover_cache | 본인 | service_role | service_role | service_role |
+| discover_shared_cache | 모두 (읽기) | service_role | service_role | service_role |
+| discover_jobs | 본인 | service_role | service_role | service_role |
+| discover_feedback | 본인 | 본인 | — | 본인 |
 
 ---
 
