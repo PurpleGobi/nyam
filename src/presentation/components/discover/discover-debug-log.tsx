@@ -10,13 +10,13 @@ interface LogStep {
 }
 
 const STEPS: LogStep[] = [
-  { label: "LLM 맛집 추천 요청 (필터 + 쿼리 전달)", delay: 0 },
-  { label: "LLM 응답 파싱 (JSON 구조화)", delay: 800 },
-  { label: "카카오맵 실존 검증", delay: 1800 },
-  { label: "내부 DB 기록 매칭", delay: 2800 },
-  { label: "취향/스타일 DNA 로딩", delay: 3300 },
-  { label: "후보 스코어링 (taste + style + quality + novelty)", delay: 3800 },
-  { label: "Top 5 선별 + novelty 보정", delay: 4300 },
+  { label: "LLM 랭킹 엔진 (씬 가중치 + 다출처 평가)", delay: 0 },
+  { label: "후보 10개 JSON 구조화", delay: 1000 },
+  { label: "카카오맵 실존 검증", delay: 2000 },
+  { label: "내부 DB 기록 매칭", delay: 3000 },
+  { label: "사용자 DNA 로딩 (taste + style)", delay: 3500 },
+  { label: "LLM 점수 + DNA 점수 블렌딩", delay: 4000 },
+  { label: "Top 5 선별 (안전픽/모험픽)", delay: 4500 },
 ]
 
 interface DiscoverDebugLogProps {

@@ -339,8 +339,11 @@ export function DiscoverContainer() {
             />
           ))}
 
-          {/* Feedback prompt */}
-          <div className="mt-2 text-center">
+          {/* Score disclaimer + feedback */}
+          <div className="mt-2 text-center space-y-1">
+            <p className="text-[10px] text-neutral-400">
+              점수는 씬 적합성, 평판, 개인 취향을 종합한 상대적 지표이며 절대 기준이 아닙니다
+            </p>
             <p className="text-xs text-neutral-400">결과가 마음에 드셨나요?</p>
           </div>
         </div>
