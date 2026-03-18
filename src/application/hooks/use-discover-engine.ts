@@ -95,12 +95,17 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     queryKey,
     async () => {
       const url = buildUrl(effectiveFilters, nearby)
+      console.log(`%c[Discover] 🔍 요청 시작`, "color:#6366f1;font-weight:bold", { url, filters: effectiveFilters })
+      const fetchStart = Date.now()
       const res = await fetch(url)
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
       }
-      return res.json()
+      const json = await res.json() as DiscoverResponse
+      const fetchMs = Date.now() - fetchStart
+      logDiscoverResponse(json, fetchMs)
+      return json
     },
     { revalidateOnFocus: false, dedupingInterval: 5000 },
   )
@@ -210,4 +215,67 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     isNearbyMode: nearby !== null,
     toggleNearby,
   }
+}
+
+/** Browser console debug output */
+function logDiscoverResponse(res: DiscoverResponse, fetchMs: number): void {
+  const d = res.debug
+  if (!d) {
+    console.log(`%c[Discover] ✅ 완료 (${fetchMs}ms) - ${res.results.length}건`, "color:#22c55e;font-weight:bold")
+    return
+  }
+
+  console.group(`%c[Discover] ═══ 파이프라인 결과 (${fetchMs}ms) ═══`, "color:#6366f1;font-weight:bold;font-size:13px")
+
+  // Pipeline steps
+  for (const step of d.pipeline) {
+    const ms = step.durationMs ? `${step.durationMs}ms` : ""
+    console.log(
+      `%c[Step] %c${step.step} %c${ms}\n%c  → ${step.detail}`,
+      "color:#f59e0b;font-weight:bold",
+      "color:#e5e7eb",
+      "color:#6b7280",
+      "color:#9ca3af",
+    )
+  }
+
+  // Blend ratio
+  console.log(
+    `%c[Blend] %cLLM ${d.blendRatio.llm}% + DNA ${d.blendRatio.dna}%`,
+    "color:#8b5cf6;font-weight:bold",
+    "color:#e5e7eb",
+  )
+
+  // Scored results table
+  if (d.scoredResults.length > 0) {
+    console.log(`%c[결과] Top ${d.scoredResults.length}`, "color:#22c55e;font-weight:bold")
+    console.table(
+      d.scoredResults.map((r) => ({
+        순위: r.rank,
+        식당명: r.name,
+        최종점수: r.blended,
+        "LLM점수": r.llmScore,
+        "DNA점수": r.dnaScore,
+        유형: r.category,
+        추천이유: r.reason,
+      })),
+    )
+  }
+
+  // Final results
+  if (res.results.length > 0) {
+    console.log(`%c[최종 응답]`, "color:#22c55e;font-weight:bold")
+    for (const r of res.results) {
+      console.log(
+        `  #${r.rank} %c${r.restaurant.name}%c (${r.scores.overall}점) - ${r.reason}`,
+        "font-weight:bold",
+        "font-weight:normal",
+      )
+      if (r.highlights.length > 0) {
+        console.log(`    highlights: ${r.highlights.join(" | ")}`)
+      }
+    }
+  }
+
+  console.groupEnd()
 }

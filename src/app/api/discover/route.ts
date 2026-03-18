@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const repo = new SupabaseDiscoverRepository(supabase)
+    const pipelineSteps: { step: string; detail: string; durationMs: number }[] = []
+    const pipelineStart = Date.now()
 
     // ═══ Step 1: LLM 랭킹 엔진 ═══
     const genreLabel = genre
@@ -77,11 +79,20 @@ export async function GET(request: NextRequest) {
     console.log(`[Discover] Step 1: LLM 랭킹 엔진`)
     console.log(`[Discover]   area=${area} scenes=[${scenes.join(",")}] genre=${genre} query="${query ?? ""}"`)
 
+    let t0 = Date.now()
     const llmRecommendations = await getLlmRecommendations({
       area, scenes, genreLabel, query,
     })
+    const step1Ms = Date.now() - t0
 
-    console.log(`[Discover]   LLM returned ${llmRecommendations.length} recommendations:`)
+    const llmNames = llmRecommendations.map((r) => `#${r.rank} ${r.name}(${r.totalScore}점,${r.confidence},${r.category})`).join(", ")
+    pipelineSteps.push({
+      step: "LLM 랭킹 엔진",
+      detail: `${llmRecommendations.length}개 추천: ${llmNames}`,
+      durationMs: step1Ms,
+    })
+
+    console.log(`[Discover]   LLM returned ${llmRecommendations.length} recommendations (${step1Ms}ms):`)
     for (const r of llmRecommendations) {
       console.log(`[Discover]     #${r.rank} ${r.name} (${r.totalScore}점, ${r.confidence}, ${r.category}) keyword="${r.searchKeyword}"`)
     }
@@ -89,9 +100,21 @@ export async function GET(request: NextRequest) {
     // ═══ Step 2: 카카오맵 실존 검증 ═══
     console.log(`[Discover] Step 2: 카카오맵 실존 검증`)
 
+    t0 = Date.now()
     const verifiedCandidates = await verifyWithKakao(llmRecommendations)
+    const step2Ms = Date.now() - t0
 
-    console.log(`[Discover]   Verified: ${verifiedCandidates.length}/${llmRecommendations.length}`)
+    const verifiedNames = verifiedCandidates.map((v) => v.kakaoPlace.name).join(", ")
+    const failedNames = llmRecommendations
+      .filter((r) => !verifiedCandidates.some((v) => isNameMatch(v.kakaoPlace.name, r.name)))
+      .map((r) => r.name)
+    pipelineSteps.push({
+      step: "카카오맵 실존 검증",
+      detail: `통과 ${verifiedCandidates.length}/${llmRecommendations.length}: [${verifiedNames}]${failedNames.length > 0 ? ` | 탈락: [${failedNames.join(", ")}]` : ""}`,
+      durationMs: step2Ms,
+    })
+
+    console.log(`[Discover]   Verified: ${verifiedCandidates.length}/${llmRecommendations.length} (${step2Ms}ms)`)
     for (const v of verifiedCandidates) {
       console.log(`[Discover]     [OK] ${v.kakaoPlace.name} (kakaoId=${v.kakaoPlace.externalId}, LLM=${v.llmScore}점)`)
     }
@@ -115,6 +138,11 @@ export async function GET(request: NextRequest) {
           existingIds.add(r.externalId)
         }
       }
+      pipelineSteps.push({
+        step: "Fallback 키워드 검색",
+        detail: `보충 후 ${verifiedCandidates.length}개`,
+        durationMs: 0,
+      })
       console.log(`[Discover]   After fallback: ${verifiedCandidates.length} candidates`)
     }
 
@@ -134,6 +162,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Discover] Step 3: 내부 DB + DNA 로딩`)
 
+    t0 = Date.now()
     const [
       internalCandidates,
       visitedSet,
@@ -151,6 +180,13 @@ export async function GET(request: NextRequest) {
       fetchStyleDna(supabase, user.id),
       fetchSeedGenres(supabase, user.id),
     ])
+    const step3Ms = Date.now() - t0
+
+    pipelineSteps.push({
+      step: "내부 DB + DNA 로딩",
+      detail: `records=${recordCount} tasteDna=${tasteDnaResult ? "real" : "none"} internalMatch=${internalCandidates.length} blacklisted=${blacklisted.size}`,
+      durationMs: step3Ms,
+    })
 
     const internalMap = new Map(internalCandidates.map((c) => [c.externalId, c]))
 
@@ -202,6 +238,8 @@ export async function GET(request: NextRequest) {
     const llmWeight = 1 - dnaWeight
 
     console.log(`[Discover]   Blend: LLM=${Math.round(llmWeight * 100)}% DNA=${Math.round(dnaWeight * 100)}%`)
+
+    t0 = Date.now()
 
     const scored = candidates.map((candidate) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
@@ -264,6 +302,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const step4Ms = Date.now() - t0
+
     // --- Scoring log ---
     console.log("[Discover]   #  Blended  LLM  DNA  Cat        Name")
     for (const s of top5) {
@@ -276,7 +316,26 @@ export async function GET(request: NextRequest) {
         `${cat}  ${s.candidate.name}`,
       )
     }
+    const totalMs = Date.now() - pipelineStart
+    console.log(`[Discover]   Total: ${totalMs}ms`)
     console.log("[Discover] ═══════════════════════════════════════\n")
+
+    // Build debug scoring results
+    const scoredDebugResults = top5.map((s, i) => ({
+      rank: i + 1,
+      name: s.candidate.name,
+      blended: s.scores.overall,
+      llmScore: s.llmScore,
+      dnaScore: s.debug.rawScores.taste,
+      category: s.llmCategory ?? "fallback",
+      reason: s.reason,
+    }))
+
+    pipelineSteps.push({
+      step: "LLM + DNA 블렌딩 스코어링",
+      detail: `LLM ${Math.round(llmWeight * 100)}% + DNA ${Math.round(dnaWeight * 100)}% | ${candidates.length}개 후보 → Top 5 선별`,
+      durationMs: step4Ms,
+    })
 
     // ═══ Step 5: 결과 패키징 ═══
     const results: DiscoverResult[] = top5.map((s, i) => ({
@@ -323,6 +382,13 @@ export async function GET(request: NextRequest) {
         llmCandidates: llmRecommendations.length,
         verifiedCandidates: verifiedCandidates.length,
         scoreDisclaimer: "점수는 씬 적합성, 평판, 개인 취향을 종합한 상대적 지표이며 절대 기준이 아닙니다.",
+      },
+      debug: {
+        pipeline: pipelineSteps,
+        blendRatio: { llm: Math.round(llmWeight * 100), dna: Math.round(dnaWeight * 100) },
+        llmCandidates: llmRecommendations.length,
+        verifiedCandidates: verifiedCandidates.length,
+        scoredResults: scoredDebugResults,
       },
     })
   } catch (err) {

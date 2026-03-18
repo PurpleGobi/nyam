@@ -80,6 +80,27 @@ export interface DiscoverResult {
   distance?: number
 }
 
+/** Pipeline debug info returned to client */
+export interface DiscoverDebugInfo {
+  pipeline: {
+    step: string
+    detail: string
+    durationMs?: number
+  }[]
+  blendRatio: { llm: number; dna: number }
+  llmCandidates: number
+  verifiedCandidates: number
+  scoredResults: {
+    rank: number
+    name: string
+    blended: number
+    llmScore: number
+    dnaScore: number
+    category: string
+    reason: string
+  }[]
+}
+
 /** Full discover API response */
 export interface DiscoverResponse {
   success: boolean
@@ -92,6 +113,13 @@ export interface DiscoverResponse {
     genre: string | null
   }
   cacheStatus: "ready" | "computing" | "expired"
+  meta?: {
+    blendRatio: { llm: number; dna: number }
+    llmCandidates: number
+    verifiedCandidates: number
+    scoreDisclaimer: string
+  }
+  debug?: DiscoverDebugInfo
 }
 
 /** Discover feedback input */
