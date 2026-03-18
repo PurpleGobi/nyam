@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const externalIds = kakaoResults.map((r) => r.externalId)
 
-    // Parallel: internal DB enrichment + user data + blacklist
+    // Parallel: internal DB enrichment + user data + blacklist + seed prefs
     const [
       internalCandidates,
       visitedSet,
@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       blacklisted,
       tasteDnaResult,
       styleDnaResult,
+      seedGenres,
     ] = await Promise.all([
       repo.getInternalCandidates(externalIds),
       repo.getUserVisitedRestaurants(user.id, externalIds),
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
       repo.getBlacklistedRestaurants(user.id),
       fetchTasteDna(supabase, user.id),
       fetchStyleDna(supabase, user.id),
+      fetchSeedGenres(supabase, user.id),
     ])
 
     const internalMap = new Map(internalCandidates.map((c) => [c.externalId, c]))
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
     const topTasteAxis = getTopTasteAxis(userTasteDna)
     const frequentAreas = styleDnaResult?.areas.slice(0, 5).map((a) => a.area) ?? []
 
-    const scored = candidates.map((candidate) => {
+    const scored = candidates.map((candidate, index) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
         ?? internalMap.get(candidate.kakaoId)?.genre
         ?? genre
@@ -125,6 +127,8 @@ export async function GET(request: NextRequest) {
         scene,
         candidateGenre,
         isNewForUser: isNew,
+        seedGenres,
+        searchRank: index,
       })
 
       const isFrequentArea = frequentAreas.some((fa) =>
@@ -261,6 +265,18 @@ async function fetchStyleDna(
 
   if (areas.length === 0 && scenes.length === 0 && genres.length === 0) return null
   return { areas, scenes, genres }
+}
+
+async function fetchSeedGenres(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("discover_preferences")
+    .select("seed_genres")
+    .eq("user_id", userId)
+    .single()
+  return (data?.seed_genres as string[] | null) ?? []
 }
 
 function buildHighlights(candidate: CandidateRaw): string[] {

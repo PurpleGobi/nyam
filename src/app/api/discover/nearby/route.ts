@@ -54,13 +54,14 @@ export async function GET(request: NextRequest) {
     const externalIds = kakaoResults.map((r) => r.externalId)
 
     // Parallel fetches
-    const [internalCandidates, visitedSet, recordCount, blacklisted, tasteDna, styleDna] = await Promise.all([
+    const [internalCandidates, visitedSet, recordCount, blacklisted, tasteDna, styleDna, seedGenres] = await Promise.all([
       repo.getInternalCandidates(externalIds),
       repo.getUserVisitedRestaurants(user.id, externalIds),
       repo.getUserRecordCount(user.id),
       repo.getBlacklistedRestaurants(user.id),
       fetchTasteDna(supabase, user.id),
       fetchStyleDnaLight(supabase, user.id),
+      fetchSeedGenres(supabase, user.id),
     ])
 
     const internalMap = new Map(internalCandidates.map((c) => [c.externalId, c]))
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       })
 
     // Score and rank
-    const scored = candidates.map((candidate) => {
+    const scored = candidates.map((candidate, index) => {
       const candidateGenre = inferGenreFromCategory(candidate.category)
         ?? internalMap.get(candidate.kakaoId)?.genre
         ?? genre
@@ -116,6 +117,8 @@ export async function GET(request: NextRequest) {
         scene,
         candidateGenre,
         isNewForUser: isNew,
+        seedGenres,
+        searchRank: index,
       })
 
       // Distance-based reason for nearby
@@ -229,4 +232,16 @@ async function fetchStyleDnaLight(
 
   if (areas.length === 0 && scenes.length === 0 && genres.length === 0) return null
   return { areas, scenes, genres }
+}
+
+async function fetchSeedGenres(
+  supabase: Awaited<ReturnType<typeof import("@/infrastructure/supabase/server").createClient>>,
+  userId: string,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("discover_preferences")
+    .select("seed_genres")
+    .eq("user_id", userId)
+    .single()
+  return (data?.seed_genres as string[] | null) ?? []
 }

@@ -98,6 +98,37 @@ interface ScoringInput {
   scene: string | null
   candidateGenre: string | null
   isNewForUser: boolean
+  /** Onboarding seed genres for pseudo taste DNA (cold start) */
+  seedGenres?: string[]
+  /** Kakao search result rank (0-based index), used for quality differentiation */
+  searchRank?: number
+}
+
+/**
+ * Build a pseudo taste DNA from onboarding genre selections.
+ * Averages the genre default profiles to create a rough user preference.
+ */
+function buildPseudoTasteDna(seedGenres: string[]): TasteProfileAxis | null {
+  if (seedGenres.length === 0) return null
+  const profiles = seedGenres.map(getGenreProfile)
+  const sum: TasteProfileAxis = { spicy: 0, sweet: 0, salty: 0, sour: 0, umami: 0, rich: 0 }
+  for (const p of profiles) {
+    sum.spicy += p.spicy
+    sum.sweet += p.sweet
+    sum.salty += p.salty
+    sum.sour += p.sour
+    sum.umami += p.umami
+    sum.rich += p.rich
+  }
+  const n = profiles.length
+  return {
+    spicy: Math.round(sum.spicy / n),
+    sweet: Math.round(sum.sweet / n),
+    salty: Math.round(sum.salty / n),
+    sour: Math.round(sum.sour / n),
+    umami: Math.round(sum.umami / n),
+    rich: Math.round(sum.rich / n),
+  }
 }
 
 /**
@@ -108,17 +139,25 @@ export function calculateFinalScore(input: ScoringInput): {
   scores: DiscoverScores
   dominantFactor: "taste" | "style" | "quality" | "novelty"
 } {
-  const { candidate, userTasteDna, userStyleDna, userRecordCount, scene, candidateGenre, isNewForUser } = input
+  const {
+    candidate, userTasteDna, userStyleDna, userRecordCount,
+    scene, candidateGenre, isNewForUser, seedGenres, searchRank,
+  } = input
   const weights = getWeights(userRecordCount)
 
-  // Taste profile: use internal or fallback to genre default
+  // Taste: use real DNA, or fall back to pseudo DNA from onboarding genres
+  const effectiveTasteDna = userTasteDna ?? (seedGenres ? buildPseudoTasteDna(seedGenres) : null)
   const candidateProfile = candidate.tasteProfile ?? (candidateGenre ? getGenreProfile(candidateGenre) : null)
-  const tasteScore = tasteSimilarity(userTasteDna, candidateProfile)
+  const tasteScore = tasteSimilarity(effectiveTasteDna, candidateProfile)
 
   const styleScore = styleMatch(userStyleDna, candidate, scene, candidateGenre)
 
-  // Quality: internal rating if available, else confidence-based estimate
-  const qualityScore = candidate.internalRating ?? Math.min(candidate.internalRecordCount * 10 + 50, 85)
+  // Quality: internal rating → internal record count boost → search rank decay
+  // Kakao returns results roughly by relevance, so higher rank = slightly higher quality
+  const baseQuality = candidate.internalRating
+    ?? Math.min(candidate.internalRecordCount * 10 + 50, 85)
+  const rankBonus = searchRank != null ? Math.max(15 - searchRank * 3, 0) : 0
+  const qualityScore = Math.min(baseQuality + rankBonus, 100)
 
   const noveltyScore = isNewForUser ? 80 : 10
 
