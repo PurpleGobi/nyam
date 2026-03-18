@@ -49,6 +49,7 @@ export function DiscoverContainer() {
     toggleArea,
     toggleScene,
     setGenre,
+    setQuery,
     searchNearby,
     sendFeedback,
     isNearbyMode,
@@ -105,72 +106,18 @@ export function DiscoverContainer() {
   }, [location, toggleNearby, requestLocation])
 
   const handleSearch = useCallback(() => {
-    if (filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode) {
+    if (filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()) {
+      if (queryText.trim()) setQuery(queryText.trim())
       setManualView("results")
     }
-  }, [filters.areas, filters.scenes, isNearbyMode])
+  }, [filters.areas, filters.scenes, isNearbyMode, queryText, setQuery])
 
-  const [isParsing, setIsParsing] = useState(false)
-
-  const handleQueryTextSubmit = useCallback(async () => {
+  const handleQueryTextSubmit = useCallback(() => {
     const trimmed = queryText.trim()
     if (!trimmed) return
-
-    setIsParsing(true)
-    try {
-      const res = await fetch("/api/discover/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: trimmed,
-          filterContext: {
-            scenes: filters.scenes,
-            areas: filters.areas,
-            isNearby: isNearbyMode,
-          },
-        }),
-      })
-
-      if (!res.ok) {
-        // Fallback: use raw text as area
-        toggleArea(trimmed)
-        setManualView("results")
-        return
-      }
-
-      const { parsed } = await res.json() as {
-        parsed: { area: string | null; scene: string | null; genre: string | null }
-      }
-
-      if (parsed.area) toggleArea(parsed.area)
-      if (parsed.scene) toggleScene(parsed.scene)
-      if (parsed.genre) setGenre(parsed.genre)
-
-      // No area parsed -> use GPS location for nearby search
-      if (!parsed.area && location) {
-        searchNearby(location.lat, location.lng)
-      } else if (!parsed.area && !location) {
-        if (seed?.area) {
-          toggleArea(seed.area)
-        } else {
-          requestLocation()
-        }
-      }
-
-      // If nothing at all was parsed, use raw text as area
-      if (!parsed.area && !parsed.scene && !parsed.genre) {
-        toggleArea(trimmed)
-      }
-
-      setManualView("results")
-    } catch {
-      // Network error fallback
-      toggleArea(trimmed)
-      setManualView("results")
-    } finally {
-      setIsParsing(false)
-    }
-  }, [queryText, toggleArea, toggleScene, setGenre, location, searchNearby, requestLocation, seed, filters.scenes, filters.areas, isNearbyMode])
+    setQuery(trimmed)
+    setManualView("results")
+  }, [queryText, setQuery])
 
   const handleBackToSearch = useCallback(() => {
     setManualView("search")
@@ -280,24 +227,19 @@ export function DiscoverContainer() {
 
         {/* Natural language input bar */}
         <div className="relative">
-          {isParsing ? (
-            <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-500 animate-spin" />
-          ) : (
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          )}
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
             value={queryText}
             onChange={(e) => setQueryText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleQueryTextSubmit() }}
-            disabled={isParsing}
             placeholder="강남 파스타, 비 오는 날 따뜻한 거..."
-            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors disabled:opacity-60"
+            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3 pl-10 pr-4 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 transition-colors"
           />
         </div>
 
         {/* Search button */}
-        {(filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode) && (
+        {(filters.areas.length > 0 || filters.scenes.length > 0 || isNearbyMode || queryText.trim()) && (
           <button
             type="button"
             onClick={handleSearch}

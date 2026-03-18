@@ -9,6 +9,7 @@ interface DiscoverFilters {
   areas: string[]
   scenes: string[]
   genre: string | null
+  query: string | null
 }
 
 interface DiscoverSeed {
@@ -28,6 +29,7 @@ interface UseDiscoverEngineReturn {
   setScenes: (scenes: string[]) => void
   toggleScene: (scene: string) => void
   setGenre: (genre: string | null) => void
+  setQuery: (query: string | null) => void
   searchNearby: (lat: number, lng: number, radius?: number) => void
   sendFeedback: (restaurantName: string, kakaoId: string | null, feedback: "good" | "bad") => Promise<void>
   isNearbyMode: boolean
@@ -36,10 +38,10 @@ interface UseDiscoverEngineReturn {
 
 function buildQueryKey(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string | null {
   if (nearby) {
-    return `discover-nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}-${filters.scenes.join(",")}-${filters.genre}`
+    return `discover-nearby-${nearby.lat}-${nearby.lng}-${nearby.radius}-${filters.scenes.join(",")}-${filters.genre}-${filters.query}`
   }
-  if (filters.areas.length === 0 && filters.scenes.length === 0) return null
-  return `discover-${filters.areas.join(",")}-${filters.scenes.join(",")}-${filters.genre}`
+  if (filters.areas.length === 0 && filters.scenes.length === 0 && !filters.query) return null
+  return `discover-${filters.areas.join(",")}-${filters.scenes.join(",")}-${filters.genre}-${filters.query}`
 }
 
 function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; radius: number } | null): string {
@@ -57,6 +59,7 @@ function buildUrl(filters: DiscoverFilters, nearby: { lat: number; lng: number; 
   if (filters.areas.length > 0) params.set("area", filters.areas[0])
   if (filters.scenes.length > 0) params.set("scene", filters.scenes.join(","))
   if (filters.genre) params.set("genre", filters.genre)
+  if (filters.query) params.set("query", filters.query)
   return `/api/discover?${params}`
 }
 
@@ -66,6 +69,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     areas: [],
     scenes: [],
     genre: null,
+    query: null,
   })
   const [nearby, setNearby] = useState<{ lat: number; lng: number; radius: number } | null>(null)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
@@ -78,6 +82,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
         areas: seed.area ? [seed.area] : [],
         scenes: seed.scene ? [seed.scene] : [],
         genre: null,
+        query: null,
       }
     }
     return filters
@@ -137,6 +142,11 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     setFilters((prev) => ({ ...prev, genre }))
   }, [])
 
+  const setQuery = useCallback((query: string | null) => {
+    interactedRef.current = true
+    setFilters((prev) => ({ ...prev, query }))
+  }, [])
+
   const searchNearby = useCallback((lat: number, lng: number, radius = 500) => {
     interactedRef.current = true
     setNearby({ lat, lng, radius })
@@ -194,6 +204,7 @@ export function useDiscoverEngine(seed?: DiscoverSeed): UseDiscoverEngineReturn 
     setScenes,
     toggleScene,
     setGenre,
+    setQuery,
     searchNearby,
     sendFeedback,
     isNearbyMode: nearby !== null,
