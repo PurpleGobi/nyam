@@ -13,6 +13,8 @@ export interface Restaurant {
   externalUrl: string | null
   menuItems: Record<string, unknown> | null
   syncedAt: string | null
+  isClosed: boolean
+  closedAt: string | null
   createdAt: string
 }
 

@@ -145,6 +145,8 @@ export interface RecordAiAnalysis {
   }> | null
   estimatedVisitTime: string | null
   confidenceScore: number
+  verifiedAt: string | null
+  verifiedFields: string[]
   createdAt: string
 }
 

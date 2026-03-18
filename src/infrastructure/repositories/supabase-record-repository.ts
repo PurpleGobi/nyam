@@ -316,6 +316,8 @@ export class SupabaseRecordRepository implements RecordRepository {
       photoClassifications: data.photo_classifications,
       estimatedVisitTime: data.estimated_visit_time,
       confidenceScore: data.confidence_score,
+      verifiedAt: data.verified_at as string | null,
+      verifiedFields: (data.verified_fields as string[]) ?? [],
       createdAt: data.created_at,
     }
   }
@@ -334,13 +336,26 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (data.wineInfo !== undefined) updateData.wine_info = data.wineInfo
     if (data.wineTastingAi !== undefined) updateData.wine_tasting_ai = data.wineTastingAi
 
-    // Update the latest AI analysis row
-    const { error } = await this.supabase
+    // Auto-track verified fields
+    const changedFields = Object.keys(updateData)
+    updateData.verified_at = new Date().toISOString()
+    updateData.verified_fields = changedFields // empty array = "verified without changes"
+
+    // SELECT latest row ID first, then UPDATE that specific row
+    const { data: latest } = await this.supabase
       .from("record_ai_analyses")
-      .update(updateData)
+      .select("id")
       .eq("record_id", recordId)
       .order("created_at", { ascending: false })
       .limit(1)
+      .single()
+
+    if (!latest) throw new Error("No AI analysis found for record")
+
+    const { error } = await this.supabase
+      .from("record_ai_analyses")
+      .update(updateData)
+      .eq("id", latest.id)
 
     if (error) throw new Error(`Failed to update AI analysis: ${error.message}`)
   }

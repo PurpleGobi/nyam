@@ -204,38 +204,24 @@ export function useCreateRecord() {
         })
       }
 
-      // Trigger async AI pipeline (fire and forget)
+      // Trigger async AI pipeline (fire and forget) — 5 steps
       setProgress("AI 분석 요청 중...")
-      const photoUrls = data.photos.length > 0
-        ? (await supabase.from("record_photos").select("photo_url").eq("record_id", record.id)).data?.map((p) => p.photo_url) ?? []
-        : []
 
       const runPipeline = async () => {
+        const headers = { "Content-Type": "application/json" }
+        const body = JSON.stringify({ recordId: record.id })
         try {
-          if (data.recordType !== "cooking" && photoUrls.length > 0) {
-            await fetch("/api/records/enrich", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                recordId: record.id,
-                photoUrls,
-                location: data.locationLat ? { lat: data.locationLat, lng: data.locationLng } : null,
-              }),
-            }).catch(() => {/* enrich failure is non-fatal */})
-
-            await fetch("/api/records/taste-profile", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ recordId: record.id }),
-            }).catch(() => {/* taste-profile failure is non-fatal */})
-          }
+          // Step 1: identify (each API skips internally if not applicable)
+          await fetch("/api/records/identify", { method: "POST", headers, body }).catch(() => {})
+          // Step 2: enrich (Kakao data collection)
+          await fetch("/api/records/enrich", { method: "POST", headers, body }).catch(() => {})
+          // Step 3: analyze-photos
+          await fetch("/api/records/analyze-photos", { method: "POST", headers, body }).catch(() => {})
+          // Step 4: taste-profile
+          await fetch("/api/records/taste-profile", { method: "POST", headers, body }).catch(() => {})
         } finally {
-          // post-process always runs to update phase_status
-          await fetch("/api/records/post-process", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ recordId: record.id }),
-          }).catch(console.error)
+          // Step 5: post-process (always runs)
+          await fetch("/api/records/post-process", { method: "POST", headers, body }).catch(console.error)
         }
       }
       runPipeline()

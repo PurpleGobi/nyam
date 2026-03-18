@@ -142,27 +142,15 @@ export function useRecordDetail(recordId: string | null) {
     setIsAnalysisTimedOut(false)
 
     try {
-      const photoUrls = record.photos.map((p) => p.photoUrl)
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ recordId: record.id })
 
-      if (record.recordType !== "cooking" && photoUrls.length > 0) {
-        await fetch("/api/records/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: record.id, photoUrls }),
-        }).catch(() => {/* non-fatal */})
-
-        await fetch("/api/records/taste-profile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: record.id }),
-        }).catch(() => {/* non-fatal */})
-      }
-
-      await fetch("/api/records/post-process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordId: record.id }),
-      })
+      // 5-step pipeline (each API skips internally if not applicable)
+      await fetch("/api/records/identify", { method: "POST", headers, body }).catch(() => {})
+      await fetch("/api/records/enrich", { method: "POST", headers, body }).catch(() => {})
+      await fetch("/api/records/analyze-photos", { method: "POST", headers, body }).catch(() => {})
+      await fetch("/api/records/taste-profile", { method: "POST", headers, body }).catch(() => {})
+      await fetch("/api/records/post-process", { method: "POST", headers, body })
 
       await mutate()
       mutateTasteProfile()

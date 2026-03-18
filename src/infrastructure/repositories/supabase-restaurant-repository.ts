@@ -18,6 +18,8 @@ function mapDbRestaurant(data: Record<string, unknown>): Restaurant {
     externalUrl: data.external_url as string | null,
     menuItems: data.menu_items as Record<string, unknown> | null,
     syncedAt: data.synced_at as string | null,
+    isClosed: (data.is_closed as boolean) ?? false,
+    closedAt: data.closed_at as string | null,
     createdAt: data.created_at as string,
   }
 }

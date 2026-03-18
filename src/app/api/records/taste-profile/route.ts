@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/infrastructure/supabase/server"
 import { createAdminClient } from "@/infrastructure/supabase/admin"
-
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-const GEMINI_TIMEOUT_MS = 30_000
+import { callGemini } from "@/infrastructure/api/gemini"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -35,7 +33,9 @@ export async function POST(request: NextRequest) {
   }
 
   const analyses = record.record_ai_analyses as Array<Record<string, unknown>> | null
-  const latestAnalysis = analyses?.[0]
+  const latestAnalysis = analyses?.sort((a, b) =>
+    new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime()
+  )[0]
 
   if (!latestAnalysis) {
     return NextResponse.json({ error: "No AI analysis found. Run enrich first." }, { status: 400 })
@@ -61,31 +61,11 @@ export async function POST(request: NextRequest) {
   "confidence": 0.0-1.0
 }`
 
-    const controller1 = new AbortController()
-    const timer1 = setTimeout(() => controller1.abort(), GEMINI_TIMEOUT_MS)
-    const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
-      }),
-      signal: controller1.signal,
-    })
-    clearTimeout(timer1)
-
-    if (!geminiResponse.ok) {
-      return NextResponse.json({ error: "AI taste profile generation failed" }, { status: 500 })
-    }
-
-    const geminiData = await geminiResponse.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}"
-
     let profile: Record<string, unknown>
     try {
-      profile = JSON.parse(rawText)
+      profile = await callGemini([{ text: prompt }], 0.3)
     } catch {
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 })
+      return NextResponse.json({ error: "AI taste profile generation failed" }, { status: 500 })
     }
 
     await admin.from("record_taste_profiles").upsert({
@@ -104,72 +84,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, profile })
   }
 
-  // Wine type - WSET tasting
+  // Wine type - merge AI tasting (from analyze-photos) with user input
   if (record.record_type === "wine") {
-    const wineInfo = latestAnalysis.wine_info as Record<string, unknown> | null
+    const aiTasting = latestAnalysis.wine_tasting_ai as Record<string, unknown> | null
 
-    const prompt = `당신은 와인 테이스팅 전문가(WSET Advanced)입니다. 와인 "${wineInfo?.name ?? "unknown"}"의 WSET 기준 테이스팅 노트를 0-100 점수로 평가하세요.
+    // Get existing user WSET input from record_taste_profiles
+    const { data: existingProfile } = await admin
+      .from("record_taste_profiles")
+      .select("*")
+      .eq("record_id", recordId)
+      .single()
 
-응답 형식 (JSON):
-{
-  "acidity": 0-100,
-  "body": 0-100,
-  "tannin": 0-100,
-  "sweetness": 0-100,
-  "balance": 0-100,
-  "finish": 0-100,
-  "aroma": 0-100,
-  "summary": "한줄 요약",
-  "confidence": 0.0-1.0
-}`
+    // Merge AI + user: average when both exist
+    const axes = ["acidity", "body", "tannin", "sweetness", "balance", "finish", "aroma"] as const
+    const mergedData: Record<string, unknown> = { record_id: recordId }
+    let hasUserInput = false
 
-    const controller2 = new AbortController()
-    const timer2 = setTimeout(() => controller2.abort(), GEMINI_TIMEOUT_MS)
-    const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
-      }),
-      signal: controller2.signal,
-    })
-    clearTimeout(timer2)
+    for (const axis of axes) {
+      const aiValue = aiTasting?.[axis] as number | null ?? null
+      const userValue = existingProfile?.[`wine_${axis}_user`] as number | null ?? null
 
-    if (!geminiResponse.ok) {
-      return NextResponse.json({ error: "AI wine tasting failed" }, { status: 500 })
+      if (aiValue != null && userValue != null) {
+        mergedData[`wine_${axis}`] = Math.round((aiValue + userValue) / 2)
+        hasUserInput = true
+      } else {
+        mergedData[`wine_${axis}`] = aiValue ?? userValue ?? null
+      }
     }
 
-    const geminiData = await geminiResponse.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}"
+    mergedData.source = hasUserInput ? "ai_user_avg" : "ai"
+    mergedData.confidence = aiTasting ? 0.7 : 0.3
 
-    let profile: Record<string, unknown>
-    try {
-      profile = JSON.parse(rawText)
-    } catch {
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 })
-    }
+    await admin.from("record_taste_profiles").upsert(mergedData, { onConflict: "record_id" })
 
-    // Update AI tasting in analysis
-    await admin.from("record_ai_analyses")
-      .update({ wine_tasting_ai: profile })
-      .eq("id", latestAnalysis.id)
-
-    await admin.from("record_taste_profiles").upsert({
-      record_id: recordId,
-      wine_acidity: profile.acidity ?? null,
-      wine_body: profile.body ?? null,
-      wine_tannin: profile.tannin ?? null,
-      wine_sweetness: profile.sweetness ?? null,
-      wine_balance: profile.balance ?? null,
-      wine_finish: profile.finish ?? null,
-      wine_aroma: profile.aroma ?? null,
-      source: "ai",
-      confidence: profile.confidence ?? 0.5,
-      summary: profile.summary ?? null,
-    }, { onConflict: "record_id" })
-
-    return NextResponse.json({ success: true, profile })
+    return NextResponse.json({ success: true, merged: true, source: mergedData.source })
   }
 
   return NextResponse.json({ error: "Unknown record type" }, { status: 400 })
