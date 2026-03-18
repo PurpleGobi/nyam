@@ -1,6 +1,7 @@
 import type { NearbyPlace } from "./kakao-local"
 
 const NAVER_SEARCH_URL = "https://openapi.naver.com/v1/search/local.json"
+const NAVER_BLOG_SEARCH_URL = "https://openapi.naver.com/v1/search/blog.json"
 
 interface NaverItem {
   title: string
@@ -16,6 +17,25 @@ interface NaverItem {
 
 interface NaverSearchResponse {
   items?: NaverItem[]
+}
+
+interface NaverBlogItem {
+  title: string
+  link: string
+  description: string
+  bloggername: string
+  postdate: string
+}
+
+interface NaverBlogResponse {
+  items?: NaverBlogItem[]
+}
+
+/** 블로그 리뷰 스니펫 */
+export interface BlogReviewSnippet {
+  summary: string
+  source: string
+  url: string
 }
 
 /**
@@ -73,4 +93,52 @@ export async function searchNaverLocal(
       sources: ["naver"],
     }
   })
+}
+
+/**
+ * 네이버 블로그 검색으로 식당 리뷰 스니펫 수집.
+ * 식당 이름으로 검색 → 첫 번째 블로그 글의 description을 요약으로 사용.
+ */
+export async function searchNaverBlogReview(
+  restaurantName: string,
+  area: string | null,
+): Promise<BlogReviewSnippet | null> {
+  const clientId = process.env.NAVER_CLIENT_ID
+  const clientSecret = process.env.NAVER_CLIENT_SECRET
+  if (!clientId || !clientSecret) return null
+
+  const searchQuery = area ? `${area} ${restaurantName} 후기` : `${restaurantName} 맛집 후기`
+  const params = new URLSearchParams({
+    query: searchQuery,
+    display: "1",
+    sort: "sim",
+  })
+
+  try {
+    const response = await fetch(`${NAVER_BLOG_SEARCH_URL}?${params}`, {
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
+      signal: AbortSignal.timeout(5_000),
+    })
+
+    if (!response.ok) return null
+
+    const data: NaverBlogResponse = await response.json()
+    const item = data.items?.[0]
+    if (!item) return null
+
+    // HTML 태그 제거 + 80자로 자르기
+    const raw = item.description.replace(/<\/?b>/g, "").replace(/&[a-z]+;/g, " ").trim()
+    const summary = raw.length > 80 ? raw.slice(0, 77) + "..." : raw
+
+    return {
+      summary,
+      source: "네이버 블로그",
+      url: item.link,
+    }
+  } catch {
+    return null
+  }
 }

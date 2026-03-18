@@ -3,7 +3,7 @@ import { createClient } from "@/infrastructure/supabase/server"
 import { searchRestaurantsByKeyword, searchNearbyRestaurants, searchNearbyGrid } from "@/infrastructure/api/kakao-local"
 import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 import { searchGooglePlaces } from "@/infrastructure/api/google-places"
-import { searchNaverLocal } from "@/infrastructure/api/naver-local"
+import { searchNaverLocal, searchNaverBlogReview } from "@/infrastructure/api/naver-local"
 import { callGemini } from "@/infrastructure/api/gemini"
 import { SupabaseDiscoverRepository } from "@/infrastructure/repositories/supabase-discover-repository"
 import {
@@ -11,7 +11,7 @@ import {
   getTopTasteAxis,
   inferGenreFromCategory,
 } from "@/domain/services/discover-scoring"
-import type { CandidateRaw, DiscoverResult, TasteProfileAxis } from "@/domain/entities/discover"
+import type { CandidateRaw, DiscoverResult, TasteProfileAxis, ReputationBadge, PlatformLink, ReviewSnippet } from "@/domain/entities/discover"
 import { FOOD_CATEGORIES } from "@/shared/constants/categories"
 
 // ─────────────────────────────────────────────────────────
@@ -342,6 +342,9 @@ export async function GET(request: NextRequest) {
         }
       })
 
+    // NearbyPlace 데이터 보존 (구글 사진/링크/별점 → Step 6에서 사용)
+    const placeMap = new Map(candidatePlaces.map((p) => [p.externalId, p]))
+
     // ═══ Step 5: LLM 평가 + DNA 매칭 보너스 스코어링 ═══
     const userTasteDna = tasteDnaResult
     const topTasteAxis = getTopTasteAxis(userTasteDna)
@@ -457,48 +460,104 @@ export async function GET(request: NextRequest) {
       durationMs: step5Ms,
     })
 
-    // ═══ Step 6: 결과 패키징 ═══
-    const results: DiscoverResult[] = top5.map((s, i) => ({
-      rank: i + 1,
-      restaurant: {
-        name: s.candidate.name,
-        address: s.candidate.roadAddress || s.candidate.address,
-        genre: s.candidateGenre ?? "other",
-        kakaoId: s.candidate.kakaoId,
-        kakaoUrl: s.candidate.kakaoUrl,
-        photo: s.candidate.imageUrl,
-        phone: s.candidate.phone,
-        hours: s.candidate.hours,
-      },
-      practicalInfo: {
-        parking: null,
-        reservation: null,
-        waiting: null,
-        priceRange: null,
-        popularMenus: [],
-      },
-      scores: s.scores,
-      reason: s.reason,
-      highlights: [
-        ...buildHighlights(s.candidate),
-        ...(s.llmCategory === "safe" ? ["안전픽"] : []),
-        ...(s.llmCategory === "adventure" ? ["모험픽"] : []),
-        ...(s.llmStrengths.length > 0 ? [s.llmStrengths[0]] : []),
-      ].slice(0, 4),
-      internalRecordCount: s.candidate.internalRecordCount,
-      hasVisited: visitedSet.has(s.candidate.kakaoId),
-      sourceCount: s.candidate.internalRecordCount > 0 ? 2 : 1,
-      ...(isNearbyMode && nearbyLat != null && nearbyLng != null ? {
-        distance: Math.round(haversineDistance(nearbyLat, nearbyLng, s.candidate.lat, s.candidate.lng)),
-      } : {}),
-      // Pipeline G 준비: 현재 빈 값, 향후 구글/네이버 연동 시 채워짐
-      photos: [],
-      platformLinks: [
-        { platform: "kakao" as const, url: s.candidate.kakaoUrl, rating: null, reviewCount: null },
-      ],
-      badges: [],
-      reviewSnippet: null,
-    }))
+    // ═══ Step 6: 결과 패키징 (사진/배지/플랫폼링크/리뷰 스니펫 포함) ═══
+    t0 = Date.now()
+
+    // 블로그 리뷰 스니펫 병렬 수집 (Top 5만)
+    const blogSnippets = await Promise.all(
+      top5.map((s) =>
+        searchNaverBlogReview(s.candidate.name, area).catch(() => null),
+      ),
+    )
+
+    const results: DiscoverResult[] = top5.map((s, i) => {
+      const place = placeMap.get(s.candidate.kakaoId)
+      const sig = findSignal(s.candidate.name, signals)
+
+      // 사진: 구글 Places에서 수집한 사진 URL
+      const photos = place?.photoUrls ?? []
+
+      // 플랫폼 링크: 카카오 + 구글 + 네이버 (별점 포함)
+      const platformLinks: PlatformLink[] = [
+        { platform: "kakao", url: s.candidate.kakaoUrl, rating: null, reviewCount: null },
+      ]
+      if (place?.googleMapsUrl) {
+        platformLinks.push({
+          platform: "google",
+          url: place.googleMapsUrl,
+          rating: place.googleRating ?? null,
+          reviewCount: place.googleReviewCount ?? null,
+        })
+      }
+      // 네이버 지도 링크 (이름으로 검색 URL 생성)
+      const naverMapUrl = `https://map.naver.com/p/search/${encodeURIComponent(s.candidate.name)}`
+      platformLinks.push({
+        platform: "naver",
+        url: naverMapUrl,
+        rating: null,
+        reviewCount: null,
+      })
+
+      // 명성 배지: signals에서 변환
+      const badges: ReputationBadge[] = buildBadges(sig)
+
+      // 리뷰 스니펫: 네이버 블로그 검색 결과
+      const reviewSnippet: ReviewSnippet | null = blogSnippets[i] ?? null
+
+      // 실용 정보: signals에서 추출
+      const priceRange = sig?.price_range
+        ? mapPriceRange(sig.price_range)
+        : null
+      const waiting = sig?.waiting_level && sig.waiting_level !== "none"
+        ? sig.waiting_level
+        : null
+
+      return {
+        rank: i + 1,
+        restaurant: {
+          name: s.candidate.name,
+          address: s.candidate.roadAddress || s.candidate.address,
+          genre: s.candidateGenre ?? "other",
+          kakaoId: s.candidate.kakaoId,
+          kakaoUrl: s.candidate.kakaoUrl,
+          photo: photos[0] ?? s.candidate.imageUrl,
+          phone: s.candidate.phone,
+          hours: s.candidate.hours,
+        },
+        practicalInfo: {
+          parking: null,
+          reservation: sig?.catch_table ?? null,
+          waiting,
+          priceRange,
+          popularMenus: [],
+        },
+        scores: s.scores,
+        reason: s.reason,
+        highlights: [
+          ...buildHighlights(s.candidate),
+          ...(s.llmCategory === "safe" ? ["안전픽"] : []),
+          ...(s.llmCategory === "adventure" ? ["모험픽"] : []),
+          ...(s.llmStrengths.length > 0 ? [s.llmStrengths[0]] : []),
+        ].slice(0, 4),
+        internalRecordCount: s.candidate.internalRecordCount,
+        hasVisited: visitedSet.has(s.candidate.kakaoId),
+        sourceCount: place?.sources.length ?? 1,
+        ...(isNearbyMode && nearbyLat != null && nearbyLng != null ? {
+          distance: Math.round(haversineDistance(nearbyLat, nearbyLng, s.candidate.lat, s.candidate.lng)),
+        } : {}),
+        photos,
+        platformLinks,
+        badges,
+        reviewSnippet,
+      }
+    })
+
+    const step6Ms = Date.now() - t0
+    pipelineSteps.push({
+      step: "결과 패키징 (사진/배지/리뷰)",
+      detail: `사진 ${results.filter((r) => r.photos.length > 0).length}건, 배지 ${results.reduce((n, r) => n + r.badges.length, 0)}개, 리뷰 ${results.filter((r) => r.reviewSnippet).length}건`,
+      durationMs: step6Ms,
+    })
 
     const response = NextResponse.json({
       success: true,
@@ -637,13 +696,19 @@ function deduplicatePlaces(places: NearbyPlace[]): NearbyPlace[] {
   for (const place of places) {
     const existing = seen.get(place.name.replace(/\s+/g, "").toLowerCase())
     if (existing) {
-      // 크로스플랫폼 병합: 출처 합치고, 구글 별점 반영
+      // 크로스플랫폼 병합: 출처 합치고, 구글 별점/사진/링크 반영
       if (!existing.sources.includes(place.sources[0])) {
         existing.sources.push(place.sources[0])
       }
       if (place.googleRating != null && existing.googleRating == null) {
         existing.googleRating = place.googleRating
         existing.googleReviewCount = place.googleReviewCount
+      }
+      if (place.googleMapsUrl && !existing.googleMapsUrl) {
+        existing.googleMapsUrl = place.googleMapsUrl
+      }
+      if (place.photoUrls?.length && !existing.photoUrls?.length) {
+        existing.photoUrls = place.photoUrls
       }
     } else {
       seen.set(place.name.replace(/\s+/g, "").toLowerCase(), { ...place })
@@ -1268,4 +1333,51 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const dLng = toRad(lng2 - lng1)
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+/** 평판 시그널 → ReputationBadge[] 변환 */
+function buildBadges(sig: ReputationSignal | null): ReputationBadge[] {
+  if (!sig) return []
+  const badges: ReputationBadge[] = []
+
+  if (sig.michelin) {
+    const label = sig.michelin === "bib" ? "미슐랭 빕구르망"
+      : sig.michelin === "1star" ? "미슐랭 1스타"
+      : sig.michelin === "2star" ? "미슐랭 2스타"
+      : sig.michelin === "3star" ? "미슐랭 3스타"
+      : `미슐랭 ${sig.michelin}`
+    badges.push({ type: "michelin", label })
+  }
+
+  if (sig.blue_ribbon && sig.blue_ribbon > 0) {
+    badges.push({ type: "blue_ribbon", label: `블루리본 ${sig.blue_ribbon}` })
+  }
+
+  if (sig.tv_shows?.length) {
+    badges.push({ type: "tv", label: sig.tv_shows[0] })
+  }
+
+  if (sig.estimated_years && sig.estimated_years >= 5) {
+    badges.push({ type: "nofo", label: `${sig.estimated_years}년 노포` })
+  }
+
+  if (sig.is_specialty) {
+    badges.push({ type: "specialty", label: "전문점" })
+  }
+
+  if (sig.catch_table) {
+    badges.push({ type: "catch_table", label: "캐치테이블" })
+  }
+
+  return badges
+}
+
+/** 시그널 가격대 → practicalInfo.priceRange 변환 */
+function mapPriceRange(price: string): string | null {
+  if (price.includes("~1만") || price.includes("1만 이하")) return "budget"
+  if (price.includes("1~2만")) return "budget"
+  if (price.includes("2~3만")) return "mid"
+  if (price.includes("3~5만")) return "high"
+  if (price.includes("5만")) return "premium"
+  return null
 }

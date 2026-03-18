@@ -40,6 +40,10 @@ export interface NearbyPlace {
   googleReviewCount: number | null
   /** 출현 플랫폼 목록 (dedup 시 병합) */
   sources: string[]
+  /** 구글맵 URL (크로스플랫폼 병합 시 채워짐) */
+  googleMapsUrl?: string
+  /** 대표 사진 URL 목록 (구글 Places에서 수집) */
+  photoUrls?: string[]
 }
 
 async function kakaoFetch(endpoint: string, params: Record<string, string>): Promise<KakaoSearchResponse> {

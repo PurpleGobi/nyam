@@ -13,6 +13,7 @@ interface GooglePlace {
   types?: string[]
   googleMapsUri?: string
   nationalPhoneNumber?: string
+  photos?: { name: string; widthPx?: number; heightPx?: number }[]
 }
 
 interface GoogleSearchResponse {
@@ -64,6 +65,7 @@ export async function searchGooglePlaces(
         "places.types",
         "places.googleMapsUri",
         "places.nationalPhoneNumber",
+        "places.photos",
       ].join(","),
     },
     body: JSON.stringify(body),
@@ -78,19 +80,28 @@ export async function searchGooglePlaces(
 
   const data: GoogleSearchResponse = await response.json()
 
-  return (data.places ?? []).map((place) => ({
-    externalId: place.id,
-    name: place.displayName?.text ?? "",
-    address: place.formattedAddress ?? "",
-    addressName: place.formattedAddress ?? "",
-    categoryName: (place.types ?? []).join(", "),
-    phone: place.nationalPhoneNumber ?? "",
-    latitude: place.location?.latitude ?? 0,
-    longitude: place.location?.longitude ?? 0,
-    placeUrl: place.googleMapsUri ?? "",
-    distance: 0,
-    googleRating: place.rating ?? null,
-    googleReviewCount: place.userRatingCount ?? null,
-    sources: ["google"],
-  }))
+  return (data.places ?? []).map((place) => {
+    // 사진 URL 생성 (최대 3장)
+    const photoUrls = (place.photos ?? []).slice(0, 3).map((photo) =>
+      `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=400&key=${apiKey}`,
+    )
+
+    return {
+      externalId: place.id,
+      name: place.displayName?.text ?? "",
+      address: place.formattedAddress ?? "",
+      addressName: place.formattedAddress ?? "",
+      categoryName: (place.types ?? []).join(", "),
+      phone: place.nationalPhoneNumber ?? "",
+      latitude: place.location?.latitude ?? 0,
+      longitude: place.location?.longitude ?? 0,
+      placeUrl: place.googleMapsUri ?? "",
+      distance: 0,
+      googleRating: place.rating ?? null,
+      googleReviewCount: place.userRatingCount ?? null,
+      sources: ["google"],
+      googleMapsUrl: place.googleMapsUri ?? undefined,
+      photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
+    }
+  })
 }
