@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nyam 홈화면 목업 v2 — Minimal</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{
+  --bg:#faf8f5;--panel:#fff;--text:#1a1a1a;--muted:#999;--line:#ebe6df;
+  --accent:#ff6b35;--accent2:#e85d2c;--good:#16a34a;--purple:#7c3aed;
+  --card-bg:#fff;--card-shadow:0 1px 3px rgba(0,0,0,0.05);
+  --nav-bg:rgba(255,255,255,0.92);--nav-border:#ebe6df;
+  --tag-bg:#f0ebe4;--tag-text:#8a7e70;
+  --expand-bg:#fef7f2;--expand-border:#fde0cc;
+  --sans:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  --r:14px;
+}
+[data-theme="dark"]{
+  --bg:#0a0d11;--panel:#111820;--text:#e0e8f0;--muted:#6a7e94;--line:#1a2636;
+  --card-bg:#141c28;--card-shadow:0 1px 3px rgba(0,0,0,0.25);
+  --nav-bg:rgba(14,20,28,0.92);--nav-border:#1a2636;
+  --tag-bg:#1a2636;--tag-text:#6a7e94;
+  --expand-bg:#1a1208;--expand-border:#2a1e10;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;transition:background .3s,color .3s;}
+.page{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+h1{font-size:22px;margin-bottom:4px;}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:20px;}
+
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;padding:6px 14px;border-radius:18px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .3s;display:flex;align-items:center;gap:5px;}
+
+.mockups{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;}
+.mockup-label{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:4px;}
+.mockup-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+
+.phone{border:2px solid var(--line);border-radius:28px;padding:8px;background:var(--panel);max-width:360px;transition:all .3s;}
+.phone .notch{width:80px;height:20px;background:var(--bg);border-radius:0 0 12px 12px;margin:0 auto 4px;}
+.phone .screen{min-height:580px;background:var(--bg);border-radius:18px;overflow:hidden;position:relative;}
+
+/* bottom nav - 심플 */
+.bnav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;height:48px;background:var(--nav-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--nav-border);font-size:8px;color:var(--muted);z-index:10;}
+.bnav .item{display:flex;flex-direction:column;align-items:center;gap:1px;opacity:0.5;}
+.bnav .item.active{opacity:1;color:var(--accent);}
+.bnav .item i{width:18px;height:18px;}
+.bnav .fab{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(255,107,53,0.3);margin-top:-12px;}
+.bnav .fab i{width:20px;height:20px;}
+
+/* record card - 심플 */
+.rcard{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);}
+.rcard:last-child{border-bottom:none;}
+.rcard .thumb{width:42px;height:42px;border-radius:10px;background:var(--tag-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.rcard .thumb i{width:18px;height:18px;}
+.rcard .info{flex:1;min-width:0;}
+.rcard .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rcard .meta{font-size:10px;color:var(--muted);margin-top:1px;}
+.rcard .score{font-size:17px;font-weight:800;color:var(--accent);flex-shrink:0;}
+.rcard .wscore{color:var(--purple);}
+
+.sec{padding:12px 14px;}
+
+/* expand section */
+.expand-trigger{display:flex;align-items:center;gap:6px;padding:10px 14px;background:var(--expand-bg);border:1px solid var(--expand-border);border-radius:12px;margin:0 14px 8px;font-size:12px;color:var(--accent);cursor:pointer;transition:all .2s;}
+.expand-trigger i{width:16px;height:16px;}
+.expand-trigger .hint{color:var(--muted);font-size:10px;margin-left:auto;}
+.expand-content{margin:0 14px 8px;padding:10px;border:1px solid var(--expand-border);border-radius:12px;background:var(--expand-bg);display:none;}
+.expand-content.open{display:block;}
+
+/* rec cards inside expand */
+.rec-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 0;}
+.rec-row::-webkit-scrollbar{display:none;}
+.rec-item{min-width:120px;background:var(--card-bg);border-radius:10px;padding:8px;box-shadow:var(--card-shadow);flex-shrink:0;}
+.rec-item .ri-name{font-size:11px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rec-item .ri-meta{font-size:9px;color:var(--muted);}
+.rec-item .ri-score{font-size:14px;font-weight:800;color:var(--accent);margin-top:4px;}
+
+/* wine rec inside expand */
+.wine-rec{padding:8px;background:var(--card-bg);border-radius:10px;box-shadow:var(--card-shadow);margin-bottom:6px;display:flex;gap:8px;align-items:center;}
+.wine-rec .wr-color{width:8px;height:32px;border-radius:4px;flex-shrink:0;}
+.wine-rec .wr-info{flex:1;}
+.wine-rec .wr-name{font-size:11px;font-weight:600;}
+.wine-rec .wr-meta{font-size:9px;color:var(--muted);}
+
+/* header area */
+.home-header{padding:16px 14px 8px;display:flex;justify-content:space-between;align-items:center;}
+.home-header .greeting{font-size:16px;font-weight:700;}
+.home-header .stat{text-align:right;}
+.home-header .stat-num{font-size:20px;font-weight:800;color:var(--accent);}
+.home-header .stat-label{font-size:9px;color:var(--muted);}
+
+/* view tabs */
+.vtabs{display:flex;gap:12px;font-size:10px;color:var(--muted);padding:4px 0 8px;}
+.vtabs span{cursor:pointer;}
+.vtabs span.on{color:var(--text);font-weight:600;border-bottom:2px solid var(--accent);padding-bottom:2px;}
+
+/* empty */
+.empty{text-align:center;padding:60px 20px 20px;}
+.empty i{width:40px;height:40px;color:var(--muted);margin-bottom:10px;}
+.empty .e-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+.empty .e-desc{font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.empty .e-btn{display:inline-block;padding:10px 28px;background:var(--accent);color:#fff;border-radius:12px;font-size:13px;font-weight:600;}
+
+/* bubble feed compact */
+.bfeed-compact{padding:8px 0;border-bottom:1px solid var(--line);}
+.bfeed-compact:last-child{border-bottom:none;}
+.bfc-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.bfc-avatar{width:22px;height:22px;border-radius:50%;background:var(--tag-bg);flex-shrink:0;}
+.bfc-name{font-size:10px;font-weight:600;}
+.bfc-time{font-size:9px;color:var(--muted);margin-left:auto;}
+.bfc-body{font-size:12px;line-height:1.5;margin-bottom:4px;}
+.bfc-actions{display:flex;gap:12px;font-size:10px;color:var(--muted);}
+.bfc-actions span{display:flex;align-items:center;gap:2px;}
+.bfc-actions i{width:12px;height:12px;}
+
+/* section title */
+.stitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.stitle i{width:13px;height:13px;}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()"><i data-lucide="moon" style="width:13px;height:13px;"></i> <span id="tl">Dark</span></button>
+
+<div class="page">
+<h1>Nyam 홈화면 v2</h1>
+<p class="subtitle">미니멀 재설계 — 추천은 필요할 때만 expand</p>
+
+<div class="mockups">
+
+<!-- ======== 안 A: 미니멀 대시보드 ======== -->
+<div>
+<div class="mockup-label">안 A: 미니멀 (기록 중심)</div>
+<div class="mockup-desc">홈 = 내 기록 타임라인. 깔끔하게 최근 기록만. 추천은 접혀있다가 필요할 때 펼침.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="home-header">
+      <div class="greeting">내 식도락</div>
+      <div class="stat">
+        <div class="stat-num">47</div>
+        <div class="stat-label">총 기록</div>
+      </div>
+    </div>
+
+    <!-- 추천: 식당 (접힘) -->
+    <div class="expand-trigger" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i data-lucide="map-pin"></i>
+      <span>오늘 뭐 먹지?</span>
+      <span class="hint">탭하여 추천 <i data-lucide="chevron-down" style="width:12px;height:12px;"></i></span>
+    </div>
+    <div class="expand-content">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">내 경험 기반 추천</div>
+      <div class="rec-row">
+        <div class="rec-item">
+          <div class="ri-name">도쿄등심</div>
+          <div class="ri-meta">회식 · 강남</div>
+          <div class="ri-score">92</div>
+        </div>
+        <div class="rec-item">
+          <div class="ri-name">여문식당</div>
+          <div class="ri-meta">친구 · 을지로</div>
+          <div class="ri-score">91</div>
+        </div>
+        <div class="rec-item">
+          <div class="ri-name">미진</div>
+          <div class="ri-meta">혼밥 · 광화문</div>
+          <div class="ri-score">88</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추천: 와인 (접힘) -->
+    <div class="expand-trigger" onclick="this.nextElementSibling.classList.toggle('open')" style="border-color:rgba(124,58,237,0.2);background:rgba(124,58,237,0.03);">
+      <i data-lucide="wine" style="color:var(--purple);"></i>
+      <span style="color:var(--purple);">와인 고르기</span>
+      <span class="hint">탭하여 열기 <i data-lucide="chevron-down" style="width:12px;height:12px;"></i></span>
+    </div>
+    <div class="expand-content" style="border-color:rgba(124,58,237,0.2);background:rgba(124,58,237,0.03);">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">오늘 메뉴에 어울리는 와인</div>
+      <div style="padding:6px 0;font-size:11px;color:var(--muted);margin-bottom:6px;">
+        <span style="font-size:10px;">메뉴 입력:</span>
+        <span style="padding:3px 8px;border:1px solid var(--line);border-radius:6px;font-size:10px;margin-left:4px;">스테이크</span>
+      </div>
+      <div class="wine-rec">
+        <div class="wr-color" style="background:#4a0e1a;"></div>
+        <div class="wr-info">
+          <div class="wr-name">Ch. Margaux 2018</div>
+          <div class="wr-meta">보르도 · 내 점수 94 · 블랙베리</div>
+        </div>
+      </div>
+      <div class="wine-rec">
+        <div class="wr-color" style="background:#6b1530;"></div>
+        <div class="wr-info">
+          <div class="wr-name">Penfolds Bin 389</div>
+          <div class="wr-meta">바로사 밸리 · 내 점수 87 · 자두</div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:6px;padding:4px;border:1px solid var(--line);border-radius:6px;text-align:center;">
+        내 보유 와인에서 찾기
+      </div>
+    </div>
+
+    <!-- 기록 타임라인 -->
+    <div class="sec" style="padding-bottom:60px;">
+      <div class="vtabs">
+        <span class="on">리스트</span>
+        <span>캘린더</span>
+        <span>지도</span>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="utensils"></i></div>
+        <div class="info"><div class="name">스시코우지</div><div class="meta">3/18 · 데이트 · 교대 · 가격 72% 분위기 72%</div></div>
+        <div class="score">87</div>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="soup"></i></div>
+        <div class="info"><div class="name">여문식당</div><div class="meta">3/16 · 친구 · 을지로 · 가격 28% 분위기 35%</div></div>
+        <div class="score">91</div>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="wine"></i></div>
+        <div class="info"><div class="name">Ch. Margaux 2018</div><div class="meta">3/15 · 페어링 · 산미 38% 바디 72%</div></div>
+        <div class="score wscore">94</div>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="utensils"></i></div>
+        <div class="info"><div class="name">도쿄등심</div><div class="meta">3/12 · 회식 · 강남 · 가격 80% 분위기 85%</div></div>
+        <div class="score">92</div>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="coffee"></i></div>
+        <div class="info"><div class="name">카페 장</div><div class="meta">3/10 · 혼밥 · 을지로 · 가격 15% 분위기 50%</div></div>
+        <div class="score">78</div>
+      </div>
+    </div>
+
+    <div class="bnav">
+      <div class="item active"><i data-lucide="home"></i>홈</div>
+      <div class="item"><i data-lucide="compass"></i>탐색</div>
+      <div class="fab"><i data-lucide="plus"></i></div>
+      <div class="item"><i data-lucide="users"></i>버블</div>
+      <div class="item"><i data-lucide="user"></i>나</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ======== 안 B: 콜드스타트 ======== -->
+<div>
+<div class="mockup-label">안 B: 콜드스타트 (기록 0개)</div>
+<div class="mockup-desc">깔끔한 빈 화면. 한 가지 메시지 + 한 가지 행동.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="empty">
+      <i data-lucide="utensils-crossed"></i>
+      <div class="e-title">식도락 여정을 시작해보세요</div>
+      <div class="e-desc">식당과 와인을 기록하면<br/>사분면 위에 나의 취향이 그려집니다</div>
+      <div class="e-btn">첫 기록 시작</div>
+      <div style="margin-top:10px;font-size:10px;color:var(--muted);">검색 또는 사진으로 1분이면 완료</div>
+    </div>
+
+    <div class="bnav">
+      <div class="item active"><i data-lucide="home"></i>홈</div>
+      <div class="item"><i data-lucide="compass"></i>탐색</div>
+      <div class="fab"><i data-lucide="plus"></i></div>
+      <div class="item"><i data-lucide="users"></i>버블</div>
+      <div class="item"><i data-lucide="user"></i>나</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ======== 안 C: Phase 2 버블 피드 ======== -->
+<div>
+<div class="mockup-label">안 C: Phase 2 (버블 피드)</div>
+<div class="mockup-desc">내 기록은 그대로. 아래에 버블 피드가 자연스럽게 이어짐. 추천은 접혀있음.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="home-header">
+      <div class="greeting">내 식도락</div>
+      <div class="stat">
+        <div class="stat-num">127</div>
+        <div class="stat-label">총 기록</div>
+      </div>
+    </div>
+
+    <!-- 추천 (접힘) -->
+    <div class="expand-trigger" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i data-lucide="map-pin"></i>
+      <span>오늘 뭐 먹지?</span>
+      <span class="hint"><i data-lucide="chevron-down" style="width:12px;height:12px;"></i></span>
+    </div>
+    <div class="expand-content">
+      <div class="rec-row">
+        <div class="rec-item"><div class="ri-name">미진</div><div class="ri-meta">혼밥 · 광화문</div><div class="ri-score">88</div></div>
+        <div class="rec-item"><div class="ri-name">도쿄등심</div><div class="ri-meta">회식 · 강남</div><div class="ri-score">92</div></div>
+      </div>
+    </div>
+
+    <!-- 최근 내 기록 (2개만) -->
+    <div class="sec" style="padding-bottom:4px;">
+      <div class="stitle"><i data-lucide="clock"></i> 최근 기록</div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="utensils"></i></div>
+        <div class="info"><div class="name">스시코우지</div><div class="meta">3/18 · 데이트</div></div>
+        <div class="score">87</div>
+      </div>
+      <div class="rcard">
+        <div class="thumb"><i data-lucide="wine"></i></div>
+        <div class="info"><div class="name">Ch. Margaux 2018</div><div class="meta">3/15 · 페어링</div></div>
+        <div class="score wscore">94</div>
+      </div>
+    </div>
+
+    <!-- 버블 피드 -->
+    <div class="sec" style="padding-bottom:60px;">
+      <div class="stitle"><i data-lucide="users"></i> 버블</div>
+      <div class="bfeed-compact">
+        <div class="bfc-head">
+          <div class="bfc-avatar"></div>
+          <div class="bfc-name">김영수</div>
+          <div class="bfc-time">2시간 전</div>
+        </div>
+        <div class="bfc-body"><strong>미진</strong> — 메밀국수 93점</div>
+        <div class="bfc-actions">
+          <span><i data-lucide="heart"></i> 4</span>
+          <span><i data-lucide="message-circle"></i> 2</span>
+          <span><i data-lucide="bookmark"></i></span>
+        </div>
+      </div>
+      <div class="bfeed-compact">
+        <div class="bfc-head">
+          <div class="bfc-avatar"></div>
+          <div class="bfc-name">박소연</div>
+          <div class="bfc-time">5시간 전</div>
+        </div>
+        <div class="bfc-body"><strong>Penfolds Grange</strong> — 96점</div>
+        <div class="bfc-actions">
+          <span><i data-lucide="heart"></i> 8</span>
+          <span><i data-lucide="message-circle"></i> 5</span>
+          <span><i data-lucide="bookmark"></i></span>
+        </div>
+      </div>
+      <div class="bfeed-compact">
+        <div class="bfc-head">
+          <div class="bfc-avatar"></div>
+          <div class="bfc-name">이준호</div>
+          <div class="bfc-time">어제</div>
+        </div>
+        <div class="bfc-body"><strong>미소야</strong> — 의외로 괜찮았어요 81점</div>
+        <div class="bfc-actions">
+          <span><i data-lucide="heart"></i> 2</span>
+          <span><i data-lucide="message-circle"></i> 1</span>
+          <span><i data-lucide="bookmark"></i></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnav">
+      <div class="item active"><i data-lucide="home"></i>홈</div>
+      <div class="item"><i data-lucide="compass"></i>탐색</div>
+      <div class="fab"><i data-lucide="plus"></i></div>
+      <div class="item"><i data-lucide="users"></i>버블</div>
+      <div class="item"><i data-lucide="user"></i>나</div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+lucide.createIcons();
+function toggleTheme(){
+  const d=document.documentElement, l=document.getElementById('tl');
+  if(d.getAttribute('data-theme')==='dark'){d.removeAttribute('data-theme');l.textContent='Dark';}
+  else{d.setAttribute('data-theme','dark');l.textContent='Light';}
+}
+</script>
+</body>
+</html>

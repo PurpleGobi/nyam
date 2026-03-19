@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Letterboxd 딥리서치 분석 보고서 (2026-03)</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#0f1620; --panel2:#0c121b; --text:#e8eef7; --muted:#a9b6c7;
+      --line:#1f2c3b; --accent:#61dafb; --accent2:#8b5cf6; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    }
+    html,body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55;}
+    body{margin:0;}
+    a{color:var(--accent); text-decoration:none;}
+    a:hover{text-decoration:underline;}
+    .wrap{max-width:1080px; margin:0 auto; padding:28px 18px 80px;}
+    header{padding:18px 18px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,var(--panel),var(--panel2));}
+    header h1{margin:0 0 8px; font-size:22px;}
+    header .meta{color:var(--muted); font-size:13px; display:flex; gap:14px; flex-wrap:wrap;}
+
+    .toc{margin-top:18px; padding:16px 18px; border:1px solid var(--line); border-radius:16px; background:var(--panel);}
+    .toc h2{margin:0 0 10px; font-size:16px;}
+    .toc ul{margin:0; padding-left:18px; color:var(--muted);}
+    .toc li{margin:6px 0;}
+
+    section{margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--panel);}
+    section h2{margin:0 0 10px; font-size:18px;}
+    section h3{margin:16px 0 8px; font-size:15px; color:#d8e6ff;}
+    p{margin:8px 0;}
+
+    .grid{display:grid; grid-template-columns:1fr; gap:12px;}
+    @media (min-width: 900px){ .grid{grid-template-columns:1fr 1fr;} }
+
+    .card{padding:14px; border:1px solid var(--line); border-radius:14px; background:rgba(0,0,0,0.18);}
+    .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); color:var(--muted);}
+    .badge.good{color:#bbf7d0; border-color:#14532d; background:rgba(34,197,94,0.12);} 
+    .badge.warn{color:#fde68a; border-color:#7c2d12; background:rgba(245,158,11,0.12);} 
+    .badge.bad{color:#fecaca; border-color:#7f1d1d; background:rgba(239,68,68,0.12);} 
+
+    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid var(--line); border-radius:12px;}
+    th,td{padding:10px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+    th{background:rgba(97,218,251,0.08); text-align:left; font-weight:700; font-size:13px;}
+    td{color:var(--text); font-size:13px;}
+    tr:last-child td{border-bottom:none;}
+
+    .hl{padding:10px 12px; border-radius:12px; border:1px dashed rgba(97,218,251,0.4); background:rgba(97,218,251,0.06);}
+    .note{color:var(--muted); font-size:12.5px;}
+    .quote{border-left:3px solid rgba(139,92,246,0.9); padding:10px 12px; background:rgba(139,92,246,0.10); border-radius:10px;}
+
+    .kpi{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+    .kpi .pill{padding:9px 12px; border-radius:999px; border:1px solid var(--line); background:rgba(0,0,0,0.18); font-size:13px; color:#dbe7ff;}
+    .kpi .pill code{font-family:var(--mono); color:#d1fae5;}
+
+    .footer{margin-top:18px; color:var(--muted); font-size:12.5px;}
+    .muted{color:var(--muted);} 
+    code{font-family:var(--mono); font-size:12.5px;}
+    .hr{height:1px; background:var(--line); margin:14px 0;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <h1>레터박스(Letterboxd) 딥리서치 분석 보고서</h1>
+      <div class="meta">
+        <span>작성일: 2026-03-19 (KST)</span>
+        <span>목적: Nyam(식도락 레터박스) 제품/비즈니스 설계 참고</span>
+        <span>원칙: 근거 기반 · 불확실한 부분은 <span class="badge warn">추측/가정</span>으로 표시</span>
+      </div>
+      <div class="kpi" aria-label="핵심 요약">
+        <div class="pill">핵심 UX: <code>log(날짜)</code> + <code>평점</code> + <code>짧은 리뷰</code>를 최소 행동으로</div>
+        <div class="pill">핵심 성장: <code>리스트/피드</code>가 발견·커뮤니티를 동시에 해결</div>
+        <div class="pill">핵심 BM: <code>구독(Pro/Patron)</code> + <code>무료 유저 광고</code> + <code>Video Store(대여)</code></div>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="목차">
+      <h2>목차</h2>
+      <ul>
+        <li><a href="#sec1">1. 기능 전수 분석</a></li>
+        <li><a href="#sec2">2. 심리적 장벽 해결 분석</a></li>
+        <li><a href="#sec3">3. 사용자에게 진짜 먹히는 포인트</a></li>
+        <li><a href="#sec4">4. 사업성 분석</a></li>
+        <li><a href="#sec5">5. Nyam 적용 시사점</a></li>
+        <li><a href="#sources">출처(링크)</a></li>
+      </ul>
+      <p class="note">참고: Letterboxd 일부 페이지는 프로그램적 fetch가 403(봇 차단)로 막혀 브라우저 스냅샷 기반으로 확인했습니다.</p>
+    </nav>
+
+    <section id="sec1">
+      <h2>1. 기능 전수 분석</h2>
+
+      <div class="hl">
+        <strong>기능 구조의 핵심:</strong> Letterboxd는 “리뷰 사이트”가 아니라 <strong>개인 기록(다이어리) + 공개 공유(소셜) + 큐레이션(리스트)</strong>를 하나의 데이터 모델로 묶었습니다.
+        <div class="note">공식 FAQ/Welcome에서 “다이어리/워치리스트/리스트/활동 피드”를 핵심 섹션으로 명시.</div>
+      </div>
+
+      <h3>1-1. 핵심 기능(Logging/Review/Rating/List/Diary/Watchlist)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:20%">기능</th>
+            <th>정의/행동(사용자 관점)</th>
+            <th style="width:25%">제품적 의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Watched(봤음)</strong></td>
+            <td>영화 포스터의 ‘눈(eye)’로 <strong>봤다고 표시</strong> (날짜 없이 백필 용도).<br/><span class="muted">공식 FAQ: watched는 “언젠가 봤다” 표시이며 날짜 회상 없이 대량 백필에 적합.</span></td>
+            <td>콜드스타트 완화: <strong>초기 데이터 입력 비용을 낮춰</strong> 추천/스포일러 제어/필터에 즉시 활용.</td>
+          </tr>
+          <tr>
+            <td><strong>Log(기록)</strong></td>
+            <td><strong>날짜를 포함해 Diary에 남기는 행위</strong>(옵션으로 리뷰/평점/태그 동반).<br/><span class="muted">공식 FAQ: ‘+ Log’(웹) / ‘+’(앱)로 다이어리에 기록.</span></td>
+            <td>습관 형성의 중심: “내가 언제 무엇을 봤는지”가 <strong>연간 회고/통계/소셜 피드</strong>로 연결.</td>
+          </tr>
+          <tr>
+            <td><strong>Rating(별점)</strong></td>
+            <td>0.5~5점(하프 포함)로 반응을 저장·공유. (과거 기록/리뷰에도 붙음)</td>
+            <td>커뮤니티 집단평가(평점) 데이터 축적. 개별 사용자는 “취향 프로필”이 쌓임.</td>
+          </tr>
+          <tr>
+            <td><strong>Like(하트)</strong></td>
+            <td>별점과 별개로 “좋아했다” 신호. <span class="muted">Year in Review FAQ: Like는 ‘인기 점수’에 기여(평점 평균은 아님).</span></td>
+            <td>저마찰 반응(리뷰 없이도 참여). 논쟁적 평점 대신 호감 신호로 참여 가능.</td>
+          </tr>
+          <tr>
+            <td><strong>Review(리뷰)</strong></td>
+            <td>긴 평론부터 한 줄 농담까지 UGC. 댓글/좋아요로 확산.</td>
+            <td>콘텐츠 공급(UGC) → 발견/유입. “읽는 재미”가 재방문 트리거.</td>
+          </tr>
+          <tr>
+            <td><strong>Diary(다이어리)</strong></td>
+            <td>Log된 항목이 쌓이는 연대기. 재관람은 여러 번 기록 가능.</td>
+            <td>개인 아카이브 + 연간 리포트(Year in Review)의 기반.</td>
+          </tr>
+          <tr>
+            <td><strong>Watchlist</strong></td>
+            <td>보고 싶은 영화 저장. watched/log하면 자동 제거. <span class="muted">Welcome: ‘가장 사랑받는 기능’ 중 하나로 직접 언급.</span></td>
+            <td>발견→행동(시청) 전환을 축적. Pro 이상에선 <strong>스트리밍 도착 알림</strong>으로 재활성화.</td>
+          </tr>
+          <tr>
+            <td><strong>Lists(리스트)</strong></td>
+            <td>주제별/랭킹/컬렉션 형태로 영화 묶음. 공개 시 팔로워에게 노출/알림.</td>
+            <td>큐레이션이 곧 발견 기능. 사용자들이 “추천 알고리즘” 역할을 수행.</td>
+          </tr>
+          <tr>
+            <td><strong>Tags(태그)</strong></td>
+            <td>Log/Review/List에 태그로 맥락 부여(예: with:mom 같은 중첩 태그).</td>
+            <td>개인 검색/분류 + 커뮤니티 크로스레퍼런스. 도메인 확장(식도락)에 특히 중요.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>1-2. 소셜 기능(팔로우/좋아요/댓글/피드/알림)</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="badge good">팔로우 모델</div>
+          <p><strong>“X/Twitter처럼 작동”</strong>: 팔로우하면 상대의 리뷰/좋아요/댓글 활동이 내 Activity 타임라인에 노출(공식 FAQ 명시).</p>
+          <p class="note">의미: 관계 그래프가 곧 개인화 피드(추천)가 됨. 알고리즘 추천보다 “사람 추천”으로 신뢰 확보.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">알림(Notifications)</div>
+          <p>이메일/푸시 알림 범주(신규 팔로워, 댓글 스레드 구독, 내 리뷰/리스트 좋아요 등).<br/>유료 기능으로 <strong>Watchlist 알림</strong>(특정 스트리밍 서비스에 ‘도착’ 시 통지) 제공(공식 FAQ).</p>
+          <p class="note">의미: “이 앱을 다시 열 이유”를 시스템이 제공(리텐션 레버).</p>
+        </div>
+      </div>
+
+      <h3>1-3. 발견 기능(추천/인기/필터/통계)</h3>
+      <table>
+        <thead>
+          <tr><th style="width:22%">영역</th><th>구현(관찰/공식 근거)</th><th style="width:28%">사용자 가치</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>인기/평점 기반 탐색</strong></td>
+            <td>Popular / Highly rated / Most anticipated 등 정렬·탐색(Welcome, 앱스토어 소개).</td>
+            <td>처음 들어온 사용자에게 “볼 것”을 제공(콜드스타트 완화).</td>
+          </tr>
+          <tr>
+            <td><strong>필터(웹/앱)</strong></td>
+            <td>watched 숨김, 서비스/장르/연도/국가/언어 등 다중 필터. (유료는 스트리밍 필터 강화)</td>
+            <td>“내가 안 본 것만” 같은 즉시 행동형 탐색을 지원.</td>
+          </tr>
+          <tr>
+            <td><strong>통계(Stats)</strong></td>
+            <td>Pro/Patron에 올타임/연간 통계 제공(Welcome/앱스토어/FAQ).</td>
+            <td>자기표현·게임화·회고. 연말 공유(Year in Review)로 외부 바이럴.</td>
+          </tr>
+          <tr>
+            <td><strong>유기적 추천 엔진</strong></td>
+            <td>공식 FAQ: “Letterboxd 전체가 유기적 추천 엔진”이며 별도 ‘추천’ 탭은 없음. Similar films / nanogenres 등으로 탐색.</td>
+            <td>알고리즘을 전면에 내세우지 않으면서도 추천을 ‘발견’으로 체감.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>1-4. 프리미엄 기능(Pro/Patron) 정리</h3>
+      <div class="note">근거: 공식 FAQ(유료 혜택 요약) + App Store 설명(기능 리스트). 가격은 iOS 인앱 결제 기준(지역/세금에 따라 변동 가능).</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26%">기능</th>
+            <th style="width:20%">Pro</th>
+            <th style="width:20%">Patron</th>
+            <th>비고/의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>광고 제거</td>
+            <td>지원</td>
+            <td>지원</td>
+            <td>무료 유저 광고 모델(후술)과 자연스러운 업셀로 연결.</td>
+          </tr>
+          <tr>
+            <td>올타임/연간 통계</td>
+            <td>지원</td>
+            <td>지원(+추가 통계)</td>
+            <td>개인 ‘정체성’ 강화 + 연말 공유 콘텐츠.</td>
+          </tr>
+          <tr>
+            <td>스트리밍 서비스 선택/필터</td>
+            <td>지원</td>
+            <td>지원</td>
+            <td>JustWatch 데이터 기반(앱스토어 설명). “어디서 볼 수 있나” 문제 해결.</td>
+          </tr>
+          <tr>
+            <td>Watchlist 알림</td>
+            <td>지원(유료)</td>
+            <td>지원(유료)</td>
+            <td>FAQ: ‘즐겨찾는 서비스에 도착’ 시 1일 1회(이메일/푸시) 통지.</td>
+          </tr>
+          <tr>
+            <td>Activity 필터(디바이스별)</td>
+            <td>지원</td>
+            <td>지원</td>
+            <td>피드 과부하를 줄여 “읽을 만한 피드” 유지.</td>
+          </tr>
+          <tr>
+            <td>리스트 클론</td>
+            <td>지원</td>
+            <td>지원</td>
+            <td>좋은 큐레이션을 내 컬렉션으로 흡수 → 행동 비용 감소.</td>
+          </tr>
+          <tr>
+            <td>포스터/백드롭 커스터마이징</td>
+            <td>일부/제한적</td>
+            <td>핵심 혜택</td>
+            <td>FAQ: Patron/HQ는 Change Poster/Backdrop 옵션 제공, 프로필/리뷰/리스트에도 적용 가능.</td>
+          </tr>
+          <tr>
+            <td>Patrons 디렉토리 노출/얼리액세스</td>
+            <td>-</td>
+            <td>지원</td>
+            <td>상징적 혜택(커뮤니티에서 ‘후원자 배지’ 역할).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>1-5. 2024~2025(최근) 추가·강화 기능</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="badge warn">2025-12: Video Store</div>
+          <p>공식 FAQ에 따르면 2025년 12월 이전에는 “Letterboxd에서 영화를 볼 수 없었으나”, 이후 <strong>큐레이션 기반 디지털 대여 서비스</strong>인 <em>Letterboxd Video Store</em>를 발표(일부 국가부터).</p>
+          <p class="note">의미: ‘발견 → 시청(거래)’로 가치사슬을 확장. 단, 초기에는 국가/라이선스 제한.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">Watchlist 알림(유료)</div>
+          <p>공식 FAQ에서 ‘New’로 언급: <strong>유료 회원에게 워치리스트 알림</strong>을 제공(좋아하는 서비스에 영화가 도착했을 때).</p>
+          <p class="note">의미: “찜해놓고 잊음”을 해결해 리텐션·구독 가치를 강화.</p>
+        </div>
+      </div>
+
+      <h3>1-6. 모바일/웹 차이(관찰 기반 요약)</h3>
+      <table>
+        <thead>
+          <tr><th style="width:22%">항목</th><th>모바일 앱(iOS 기준)</th><th>웹(데스크톱)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>지원 범위</td>
+            <td>웹 경험의 핵심을 대부분 지원(로그/리뷰/피드/리스트/검색/프로필 등) — App Store에 기능 목록 명시</td>
+            <td>풀 기능(설정/데이터 내보내기/일부 고급 기능이 더 편함)</td>
+          </tr>
+          <tr>
+            <td>작성 UX</td>
+            <td>네이티브 입력(툴바로 서식 지원), 빠른 로깅 동선</td>
+            <td>키보드 기반 대량 편집/정리(리스트 관리, 데이터 export/import 등) 유리</td>
+          </tr>
+          <tr>
+            <td>탐색 UX</td>
+            <td>피드 소비/즉시 반응(좋아요/댓글) 중심</td>
+            <td>필터·정렬·리스트 편집 등 ‘관리 작업’이 상대적으로 편함</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+
+    <section id="sec2">
+      <h2>2. 심리적 장벽 해결 분석</h2>
+
+      <h3>2-1. ‘기록의 귀찮음’을 어떻게 줄였나</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="badge good">저마찰 입력</div>
+          <p><strong>Watched(눈 아이콘)</strong> 하나로 “봤음”을 빠르게 축적 → 나중에 필요할 때만 Log(날짜/리뷰)를 추가.</p>
+          <p class="note">공식 FAQ: watched는 날짜 없이 백필에 적합, log는 다이어리 구축.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">행동 단위 분리</div>
+          <p>평점/하트/리뷰/태그를 <strong>옵션</strong>으로 둬서 ‘최소 행동’만으로도 참여 가능.</p>
+          <p class="note">특히 하트(Like)는 리뷰/별점 없이도 커뮤니티 참여 신호로 작동.</p>
+        </div>
+      </div>
+
+      <h3>2-2. 첫 사용자의 온보딩(콜드스타트) 경험</h3>
+      <div class="hl">
+        <strong>온보딩의 출발점은 “내가 본 영화 몇 개 체크”</strong>입니다.
+        <div class="note">Welcome 페이지: Popular 섹션에서 이미 본 작품을 ‘eye’로 표시하라고 안내 → 이후 스포일러 표시, watched 숨김 등 ‘즉시 체감’ 효용이 생김.</div>
+      </div>
+
+      <h3>2-3. 콜드스타트(유저 데이터 부족) 해결 메커니즘</h3>
+      <table>
+        <thead>
+          <tr><th style="width:28%">문제</th><th>Letterboxd 해법</th><th style="width:30%">Nyam 적용 힌트</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>초기 취향 데이터 없음</td>
+            <td>Popular/Highly rated 등 <strong>공용 히트리스트</strong>로 시작 + watched 체크로 즉시 개인화 기반 마련</td>
+            <td>초기에는 “서울 맛집 Top”, “카테고리별 베스트” 같은 공용 리스트가 필수</td>
+          </tr>
+          <tr>
+            <td>팔로우할 사람 없음</td>
+            <td>리뷰/리스트를 읽다가 “목소리(취향)”를 발견하고 팔로우하도록 안내(Welcome)</td>
+            <td>가게/메뉴 단위보다 “취향 큐레이터”를 먼저 보이게 설계</td>
+          </tr>
+          <tr>
+            <td>과거 기록 이전 비용</td>
+            <td>IMDb 등 외부 서비스에서 <strong>import</strong> 지원(Welcome/FAQ)</td>
+            <td>식도락은 영수증/지도/카드결제/사진 등 ‘기존 데이터’ 연결이 경쟁력</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2-4. 습관 형성(Hook 모델 관점)</h3>
+      <div class="grid">
+        <div class="card">
+          <h4 style="margin:0 0 6px">Trigger(트리거)</h4>
+          <ul class="muted" style="margin:0; padding-left:18px;">
+            <li>새 팔로워/좋아요/댓글 알림(푸시/이메일)</li>
+            <li>Watchlist 알림(유료): “이제 볼 수 있음”</li>
+            <li>연말/월말 회고(Year in Review)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 6px">Action(행동)</h4>
+          <ul class="muted" style="margin:0; padding-left:18px;">
+            <li>eye로 watched 체크(초저마찰)</li>
+            <li>+Log로 날짜 기록(저마찰)</li>
+            <li>하트/별점/한 줄 리뷰(선택적)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 6px">Variable Reward(가변 보상)</h4>
+          <ul class="muted" style="margin:0; padding-left:18px;">
+            <li>피드에서 “웃긴/날카로운” 리뷰 발견</li>
+            <li>리스트에서 숨은 명작 발굴</li>
+            <li>통계/프로필이 성장하는 쾌감(구독 업셀)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 6px">Investment(투자)</h4>
+          <ul class="muted" style="margin:0; padding-left:18px;">
+            <li>다이어리/태그/리스트가 쌓일수록 이탈 비용 증가</li>
+            <li>팔로우 그래프가 내 “취향 신문”이 됨</li>
+            <li>포스터/프로필 커스터마이징(Patron)으로 정체성 강화</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">Hook 모델은 해석 프레임이며, Letterboxd의 의도/내부 설계를 직접 입증하는 자료는 제한적입니다. 따라서 위는 관찰 기반 구조적 해석입니다.</p>
+
+      <h3>2-5. 꾸준히 쓰게 만드는 요인(정리)</h3>
+      <ol class="muted">
+        <li><strong>기록의 누적 가치</strong>: 연간 회고/통계가 누적될수록 “내 아카이브”가 됨</li>
+        <li><strong>사람 기반 추천</strong>: 알고리즘보다 팔로우 그래프가 신뢰를 만듦</li>
+        <li><strong>큐레이션 경쟁</strong>: 리스트/리뷰가 ‘나도 만들고 싶게’ 만드는 창작 욕구를 자극</li>
+        <li><strong>외부 공유 가능성</strong>: Year in Review와 같은 공유 자산이 외부 유입을 반복 생성</li>
+      </ol>
+
+    </section>
+
+    <section id="sec3">
+      <h2>3. 사용자에게 진짜 먹히는 포인트</h2>
+
+      <h3>3-1. 커뮤니티 반응(정성) — Reddit에서 반복되는 이유</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="badge good">“트래킹 자체가 즐겁다”</div>
+          <p class="quote">"I just use it for tracking what I have watched. Gives me a sense of pleasure when I go back and see what I have seen…"</p>
+          <p class="note">출처: r/Letterboxd 스레드(‘love and hate’ 유형)에서 흔한 발언 패턴.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">“리스트가 숨은 영화 찾기에 최고”</div>
+          <p class="quote">"I found so many amazing and underrated movies… because there are so many great people creating lists with hidden gems…"</p>
+          <p class="note">출처: r/Letterboxd ‘Why do you love Letterboxd?’ 스레드.</p>
+        </div>
+        <div class="card">
+          <div class="badge warn">“웃긴 리뷰/밈도 가치”</div>
+          <p class="quote">"…reading the hilarious joke reviews in Letterboxd, it doubles my enjoyment"</p>
+          <p class="note">출처: r/movies 등 타 서브레딧에서도 ‘재미있는 한 줄 리뷰’가 반복 언급됨.</p>
+        </div>
+        <div class="card">
+          <div class="badge warn">불만 포인트(기회)</div>
+          <p>‘영화만 되고 TV는 제한’ 같은 불만이 자주 언급(FAQ에서도 returning TV show 미지원 명시, 향후 확장 언급).</p>
+          <p class="note">의미: 도메인 확장(식도락)에서는 “범위를 어디까지 허용하나”가 제품 정체성에 직결.</p>
+        </div>
+      </div>
+      <p class="note">정성 커뮤니티 데이터는 대표성 한계가 있습니다(특정 커뮤니티/활동 유저 편향). 다만 반복적으로 나타나는 ‘가치 진술’을 제품 가설로 활용할 수 있습니다.</p>
+
+      <h3>3-2. 리텐션을 만드는 핵심 가치(압축)</h3>
+      <ul class="muted">
+        <li><strong>정체성:</strong> 프로필(취향) + 통계(나의 서사) + 커스터마이징(미학)이 “나”를 만든다</li>
+        <li><strong>발견:</strong> 리스트/피드/필터가 “다음에 볼 것”을 끊임없이 공급한다</li>
+        <li><strong>사회적 증폭:</strong> 리뷰/댓글/좋아요로 “내 반응”이 타인에게 가치를 가진다</li>
+      </ul>
+
+      <h3>3-3. ‘아하 모먼트’ 후보</h3>
+      <table>
+        <thead><tr><th style="width:28%">아하 순간</th><th>발생 조건</th><th style="width:30%">왜 강력한가</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>내 피드가 취향 신문처럼 변하는 순간</strong></td>
+            <td>좋은 리뷰어 몇 명을 팔로우하고, 내 활동이 쌓여 홈/Activity가 개인화됨</td>
+            <td>알고리즘보다 “사람의 취향”이 신뢰를 줌. 리텐션이 관계 기반으로 고정됨.</td>
+          </tr>
+          <tr>
+            <td><strong>연말 회고/통계가 나오는 순간</strong></td>
+            <td>한 해에 일정 수 이상 Log를 쌓음(FAQ: Year in Review는 다이어리 로그 기반)</td>
+            <td>내 기록이 ‘결과물’이 되어 공유·보관 가치가 급상승.</td>
+          </tr>
+          <tr>
+            <td><strong>리스트를 통해 “숨은 명작”을 찾는 순간</strong></td>
+            <td>특정 취향 큐레이터/태그 기반 탐색</td>
+            <td>발견의 반복 보상이 형성되며, 다음 액션(Watchlist/시청)을 유도.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3-4. 경쟁 서비스 대비 차별점(IMDb/Rotten Tomatoes/JustWatch 등)</h3>
+      <table>
+        <thead><tr><th style="width:18%">축</th><th>Letterboxd</th><th>IMDb</th><th>Rotten Tomatoes</th><th>JustWatch</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>핵심 목적</strong></td>
+            <td>개인 다이어리 + 소셜 토론 + 발견</td>
+            <td>데이터베이스(정보), 평점/리뷰는 있으나 소셜/다이어리 약함</td>
+            <td>평론/관객 평점 ‘집계’ 중심</td>
+            <td>스트리밍 가용성(어디서 볼 수 있나) 중심</td>
+          </tr>
+          <tr>
+            <td><strong>UGC 형태</strong></td>
+            <td>리뷰/리스트/태그(큐레이션이 제품 코어)</td>
+            <td>리뷰는 있으나 리스트/피드 중심성 낮음</td>
+            <td>개별 리뷰보다 점수/지표 중심</td>
+            <td>UGC보다는 카탈로그/링크아웃</td>
+          </tr>
+          <tr>
+            <td><strong>소셜 그래프</strong></td>
+            <td>팔로우 기반 Activity 피드(공식 FAQ)</td>
+            <td>제한적</td>
+            <td>제한적</td>
+            <td>거의 없음</td>
+          </tr>
+          <tr>
+            <td><strong>수익화 연결</strong></td>
+            <td>구독 + 광고(무료만) + 대여(Video Store)로 확장</td>
+            <td>광고/아마존 생태계 연계 등</td>
+            <td>광고/제휴 등</td>
+            <td>제휴/광고/구독 연계</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">비교는 일반적 시장 인식 기반 요약이며, 각 서비스의 세부 기능은 국가/버전별로 상이할 수 있습니다.</p>
+
+    </section>
+
+    <section id="sec4">
+      <h2>4. 사업성 분석</h2>
+
+      <h3>4-1. 비즈니스 모델(관찰 + 근거)</h3>
+      <table>
+        <thead><tr><th style="width:24%">수익원</th><th>근거(출처)</th><th>해석</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>구독(Pro/Patron)</strong></td>
+            <td>공식 FAQ: “membership fees가 chief source of income(주요 수입원)”라고 명시.</td>
+            <td>UGC/커뮤니티 서비스에서 광고 의존도를 낮추고, 파워유저가 비용을 부담.</td>
+          </tr>
+          <tr>
+            <td><strong>광고(무료만)</strong></td>
+            <td>공식 저널(Art & Copy): “Ads will be visible for free members only… Pro/Patron은 광고 제거”</td>
+            <td>프리미엄 업셀을 방해하지 않도록 광고를 ‘세컨더리’로 설계.</td>
+          </tr>
+          <tr>
+            <td><strong>광고 매출 최적화 파트너십</strong></td>
+            <td>Playwire 케이스 스터디: 웹/앱 광고 수익 증가(490% 등) 사례 제시</td>
+            <td>광고는 ‘없앨 수 있는 불편’으로 남겨 구독 전환을 촉진할 수 있음.</td>
+          </tr>
+          <tr>
+            <td><strong>Video Store(대여)</strong></td>
+            <td>App Store 인앱 구매 항목에 ‘Video Store Rental’ 가격대 표기 + 공식 FAQ에 서비스 언급</td>
+            <td>발견/큐레이션이 강할수록 거래 전환이 유리. 다만 라이선스/국가 제한이 큼.</td>
+          </tr>
+          <tr>
+            <td><strong>스폰서십/브랜드 협업</strong></td>
+            <td>Year in Review 2024가 “presented by NEON”으로 표기(저널 페이지)</td>
+            <td>커뮤니티 이벤트/콘텐츠에 스폰서십을 붙여 광고보다 자연스럽게 수익화.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4-2. 사용자/활동 규모(공개 수치 범위)</h3>
+      <div class="card">
+        <p><strong>공개 기사/저널에서 확인되는 2024 활동량(집계 수치):</strong></p>
+        <ul class="muted" style="margin:0; padding-left:18px;">
+          <li>2024년: 리뷰 9,640만, watched 표시 7억 100만, 리스트 680만 (Deadline 기사에 인용, Letterboxd Year in Review 글을 재인용하는 형태)</li>
+        </ul>
+        <p class="note">정확한 MAU/매출은 비상장/비공개로 추정치가 많습니다. 공개된 수치(활동량, 인수 금액, 광고 케이스스터디 등)만 근거로 사용했습니다.</p>
+      </div>
+
+      <h3>4-3. Tiny 인수 배경과 가치평가</h3>
+      <div class="hl">
+        <p><strong>중요 정정:</strong> “Tiny가 2022년에 Letterboxd를 인수”라는 서술이 종종 돌지만, 공식 저널 공지 기준으로는 <strong>2023-09-29에 Tiny가 60% 지분 인수</strong>를 발표했습니다.</p>
+        <p class="note">근거: Letterboxd Journal 글(<em>A Tiny Announcement</em>)에 “Tiny to acquire a 60 percent stake” 명시.</p>
+      </div>
+      <p class="muted">인수 배경(공식 글의 메시지 요약): 플랫폼 성장 속도를 지속가능하게 유지하고, 독립 운영을 유지한 채(창업자/팀 유지) 제품 기능 확장을 ‘지속가능한 속도’로 추진하기 위한 자본/운영 지원.</p>
+
+      <h3>4-4. 수익성 분석(가능한 범위)</h3>
+      <ul class="muted">
+        <li><strong>구독 중심:</strong> 고정비(서버/인력/콘텐츠 운영)를 커버하는 구조로 설계(FAQ)</li>
+        <li><strong>광고는 보완재:</strong> 무료 유저에만 노출 → 구독 업셀과 양립(Art & Copy)</li>
+        <li><strong>광고 최적화 역량:</strong> Playwire 자료는 ‘수익 증대’ 사례를 주장하나, 외부 마케팅 자료이므로 <span class="badge warn">과장 가능성</span>을 염두에 둬야 함</li>
+        <li><strong>거래(대여) 확장:</strong> Video Store는 단가/마진 잠재력이 있으나, 영화 라이선스는 협상력/국가규제가 크고 운영 난도가 높음</li>
+      </ul>
+
+      <h3>4-5. 식음료 도메인에 이 모델 적용: 가능성과 한계</h3>
+      <table>
+        <thead><tr><th style="width:28%">요소</th><th>가능성</th><th>한계/리스크</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>구독(프리미엄)</strong></td>
+            <td>통계/리포트(연간 결산), 저장/필터/알림(예약/재입고/시즌 메뉴) 등으로 명확한 가치 구성 가능</td>
+            <td>음식은 ‘반복 방문’이 잦아 데이터가 금방 쌓이지만, 무료로도 충분하다고 느끼면 전환이 낮을 수 있음</td>
+          </tr>
+          <tr>
+            <td><strong>광고(무료만)</strong></td>
+            <td>로컬 상점/브랜드 광고 수요 존재. 구독 업셀과 양립 가능(무료만 노출)</td>
+            <td>광고가 커뮤니티 신뢰를 훼손할 위험(‘돈 받은 추천’ 의심). 운영 정책/표기/투명성 필수</td>
+          </tr>
+          <tr>
+            <td><strong>거래 연계</strong></td>
+            <td>예약/픽업/배달/쿠폰 등으로 전환 가능</td>
+            <td>플랫폼이 거래를 먹으려면 오프라인 운영(재고/예약/CS)까지 난도 상승</td>
+          </tr>
+          <tr>
+            <td><strong>UGC 기반 큐레이션</strong></td>
+            <td>리스트(예: “성수 라멘 7선”, “혼밥 가능”)가 강력한 성장 루프</td>
+            <td>리뷰 조작, 악성 후기, 업주 개입 등 ‘게임화/조작’ 문제 심각. 강한 정책/모더레이션 필요</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+
+    <section id="sec5">
+      <h2>5. Nyam(식도락 레터박스) 적용 시사점</h2>
+
+      <h3>5-1. Letterboxd에서 “가져올 수 있는 것”(우선순위 순)</h3>
+      <ol class="muted">
+        <li><strong>핵심 행동 3종</strong>: <code>방문 기록(Log)</code> + <code>점수(별점)</code> + <code>짧은 한 줄</code> (나머지는 옵션)</li>
+        <li><strong>Watchlist → Wish/To-eat</strong>: 가고 싶은 곳/먹고 싶은 메뉴 저장 + “지금 가능” 알림(예: 시즌 메뉴/예약 오픈/재입고)</li>
+        <li><strong>Lists = 성장 엔진</strong>: 유저가 만드는 테마 리스트가 SEO/공유/커뮤니티를 동시에 견인</li>
+        <li><strong>사람 기반 피드</strong>: ‘맛집’보다 ‘취향 사람’을 팔로우하게 만들면 신뢰가 쌓임</li>
+        <li><strong>Year in Review</strong>: 연말 결산(내가 올해 가장 많이 간 동네/카테고리/단골) → 공유 유입</li>
+      </ol>
+
+      <h3>5-2. 구조적으로 “그대로는 불가능한 것”(또는 위험한 것)</h3>
+      <ul class="muted">
+        <li><strong>평점의 객관성 환상</strong>: 음식점은 변동(셰프/재료/시간/대기) 요소가 크고, 악성 리뷰·리뷰 조작 리스크가 더 큼</li>
+        <li><strong>개인정보/위치 민감도</strong>: 다이어리는 곧 이동 패턴. 공개 기본값은 위험(프라이버시 설계가 영화보다 중요)</li>
+        <li><strong>거래 연계의 난도</strong>: 예약/결제까지 가면 CS/분쟁/정산이 폭증. 초기에는 ‘발견/기록’에 집중하는 편이 유리</li>
+      </ul>
+
+      <h3>5-3. 식도락만의 기회(레터박스보다 유리한 점)</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="badge good">빈도</div>
+          <p>영화보다 “식사”는 더 자주 일어나므로 기록 데이터가 빨리 쌓입니다. → 통계/회고의 가치가 빠르게 발생.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">맥락 데이터</div>
+          <p>함께 간 사람, 예산, 대기시간, 메뉴, 날씨/기분 등 맥락이 풍부합니다. 태그/템플릿으로 기록 UX를 압축 가능.</p>
+        </div>
+        <div class="card">
+          <div class="badge warn">상권/지역성</div>
+          <p>로컬 광고/파트너십이 현실적인 매출로 이어지기 쉽습니다. 단, 신뢰 훼손 방지를 위한 명확한 스폰서 표기 필요.</p>
+        </div>
+        <div class="card">
+          <div class="badge good">실행 가능한 알림</div>
+          <p>‘지금 갈 수 있음’ 알림이 강력합니다(예약 오픈, 재입고, 팝업 시작, 시즌 메뉴). Letterboxd의 Watchlist 알림을 그대로 번역 가능.</p>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="hl">
+        <strong>Nyam MVP 추천(1문장):</strong>
+        “식당/메뉴를 <code>로그(날짜)</code> + <code>별점</code> + <code>한 줄</code>로 기록하고, <code>리스트</code>와 <code>팔로우 기반 피드</code>로 발견을 돌리며, 유료는 <code>통계/필터/알림</code>으로 설계”가 Letterboxd에서 검증된 핵심 공식을 가장 잘 가져오는 조합입니다.
+      </div>
+    </section>
+
+    <section id="sources">
+      <h2>출처(링크)</h2>
+      <ul class="muted">
+        <li>Letterboxd Welcome: <a href="https://letterboxd.com/welcome/" target="_blank" rel="noreferrer">https://letterboxd.com/welcome/</a></li>
+        <li>Letterboxd FAQ(기능/유료/알림/Video Store 등): <a href="https://letterboxd.com/about/faq/" target="_blank" rel="noreferrer">https://letterboxd.com/about/faq/</a></li>
+        <li>Letterboxd Journal – A Tiny Announcement (2023-09-29, Tiny 60% 지분 인수 공지): <a href="https://letterboxd.com/journal/a-tiny-announcement-matthew-buchanan/" target="_blank" rel="noreferrer">https://letterboxd.com/journal/a-tiny-announcement-matthew-buchanan/</a></li>
+        <li>Letterboxd Journal – Art & Copy (광고 정책: 무료만 노출): <a href="https://letterboxd.com/journal/art-and-copy/" target="_blank" rel="noreferrer">https://letterboxd.com/journal/art-and-copy/</a></li>
+        <li>Letterboxd Journal – 2025 Year in Review FAQ (watched vs logged 등): <a href="https://letterboxd.com/journal/2025-letterboxd-year-in-review-faq/" target="_blank" rel="noreferrer">https://letterboxd.com/journal/2025-letterboxd-year-in-review-faq/</a></li>
+        <li>App Store – Letterboxd (iOS 기능/Pro·Patron 설명/가격/Video Store Rental 항목): <a href="https://apps.apple.com/us/app/letterboxd/id1054271011" target="_blank" rel="noreferrer">https://apps.apple.com/us/app/letterboxd/id1054271011</a></li>
+        <li>Playwire Case Study (광고 수익 증대 사례): <a href="https://www.playwire.com/case-studies/letterboxd" target="_blank" rel="noreferrer">https://www.playwire.com/case-studies/letterboxd</a></li>
+        <li>Deadline (2024 활동량 수치 인용 기사): <a href="https://deadline.com/2025/01/letterboxd-indie-films-members-surge-in-2024-favorite-films-1236251217/" target="_blank" rel="noreferrer">https://deadline.com/2025/01/letterboxd-indie-films-members-surge-in-2024-favorite-films-1236251217/</a></li>
+        <li>Reddit 예시(정성 반응):
+          <ul>
+            <li><a href="https://www.reddit.com/r/Letterboxd/comments/1lllfdq/why_do_you_love_letterboxd/" target="_blank" rel="noreferrer">Why do you love Letterboxd?</a></li>
+          </ul>
+        </li>
+      </ul>
+      <p class="footer">면책: 본 문서는 공개 자료 기반 리서치 요약입니다. 비공개(매출, MAU, CAC/LTV 등) 수치는 추정하지 않거나, 추정이 필요한 경우 명시적으로 <span class="badge warn">추측</span>으로 표기하는 것이 원칙입니다.</p>
+    </section>
+
+  </div>
+</body>
+</html>

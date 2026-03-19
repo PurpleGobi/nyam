@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nyam PRD v2.0</title>
+  <style>
+    :root{
+      --bg:#0a0e13; --panel:#0f1620; --panel2:#0c121b; --text:#e8eef7; --muted:#a0afc2;
+      --line:#1f2c3b; --accent:#ff6b35; --accent2:#ffa62b; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --blue:#61dafb; --purple:#8b5cf6;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    html,body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.65; margin:0;}
+    a{color:var(--blue); text-decoration:none;} a:hover{text-decoration:underline;}
+    .wrap{max-width:1100px; margin:0 auto; padding:28px 18px 80px;}
+
+    header{padding:28px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg, #1a0e05 0%, var(--panel) 50%, #0a1520 100%);}
+    header h1{margin:0 0 4px; font-size:26px; color:var(--accent);}
+    header .sub{font-size:16px; color:var(--accent2); margin-bottom:14px;}
+    header .meta{color:var(--muted); font-size:13px; display:flex; gap:14px; flex-wrap:wrap;}
+
+    .toc{margin-top:18px; padding:16px 18px; border:1px solid var(--line); border-radius:16px; background:var(--panel);}
+    .toc h2{margin:0 0 10px; font-size:16px; color:var(--accent2);}
+    .toc ol{margin:0; padding-left:22px; color:var(--muted); font-size:14px;}
+    .toc li{margin:5px 0;}
+
+    section{margin-top:20px; padding:20px; border:1px solid var(--line); border-radius:16px; background:var(--panel);}
+    section h2{margin:0 0 14px; font-size:19px; color:var(--accent2); border-bottom:1px solid var(--line); padding-bottom:8px;}
+    section h3{margin:18px 0 10px; font-size:15px; color:#d8e6ff;}
+    section h4{margin:14px 0 6px; font-size:14px; color:var(--accent);}
+    p{margin:8px 0; font-size:14px;}
+    ul,ol{margin:6px 0; padding-left:22px; font-size:14px;}
+    li{margin:4px 0;}
+
+    .grid{display:grid; grid-template-columns:1fr; gap:12px;}
+    @media(min-width:760px){.grid{grid-template-columns:1fr 1fr;}}
+
+    .card{padding:14px; border:1px solid var(--line); border-radius:14px; background:rgba(0,0,0,0.2);}
+    .card h4{margin:0 0 6px; font-size:14px;}
+    .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid var(--line);}
+    .badge.core{color:#ffcba4; border-color:#7c2d12; background:rgba(255,107,53,0.15);}
+    .badge.p1{color:#bbf7d0; border-color:#14532d; background:rgba(34,197,94,0.12);}
+    .badge.p2{color:#e9d5ff; border-color:#4c1d95; background:rgba(139,92,246,0.12);}
+    .badge.p3{color:#bfdbfe; border-color:#1e3a5f; background:rgba(59,130,246,0.1);}
+    .badge.risk{color:#fecaca; border-color:#7f1d1d; background:rgba(239,68,68,0.12);}
+
+    table{width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:13px;}
+    th,td{padding:10px; border-bottom:1px solid var(--line); vertical-align:top;}
+    th{background:rgba(255,107,53,0.08); text-align:left; font-weight:700;}
+    tr:last-child td{border-bottom:none;}
+
+    .hl{padding:14px 16px; border-radius:12px; border:1px dashed rgba(255,107,53,0.4); background:rgba(255,107,53,0.05); margin:10px 0;}
+    .hl2{padding:14px 16px; border-radius:12px; border:1px dashed rgba(139,92,246,0.4); background:rgba(139,92,246,0.05); margin:10px 0;}
+    .quote{border-left:3px solid var(--purple); padding:10px 12px; background:rgba(139,92,246,0.08); border-radius:10px; font-style:italic;}
+    .note{color:var(--muted); font-size:12.5px;}
+    .muted{color:var(--muted);}
+    code{font-family:var(--mono); font-size:12.5px; color:#d1fae5;}
+    .hr{height:1px; background:var(--line); margin:18px 0;}
+
+    .flow{padding:18px; background:rgba(0,0,0,0.25); border-radius:12px; font-family:var(--mono); font-size:13px; line-height:2; color:var(--muted);}
+    .flow .step{color:var(--accent2); font-weight:700;}
+    .flow .opt{color:#666;}
+    .flow .arrow{color:var(--accent);}
+
+    .journey{position:relative; padding-left:30px; margin:14px 0;}
+    .journey::before{content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--line);}
+    .journey .jstep{position:relative; margin-bottom:16px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,0.15);}
+    .journey .jstep::before{content:''; position:absolute; left:-24px; top:16px; width:10px; height:10px; border-radius:50%; background:var(--accent); border:2px solid var(--bg);}
+    .journey .jstep h4{margin:0 0 4px; color:var(--accent2); font-size:14px;}
+
+    .footer{margin-top:24px; color:var(--muted); font-size:12.5px; border-top:1px solid var(--line); padding-top:14px;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Nyam — Product Requirements Document</h1>
+  <div class="sub">v2.0 — 정체성 재정립</div>
+  <div class="meta">
+    <span>작성일: 2026-03-19</span>
+    <span>이전 버전: PRD v1.0 (2026-03-17)</span>
+    <span>범위: 식당 + 와인 (요리는 제외)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#s1">제품 정체성</a></li>
+    <li><a href="#s2">문제 정의</a></li>
+    <li><a href="#s3">해결 전략</a></li>
+    <li><a href="#s4">사용자 저니 — Phase 1: 나의 기록</a></li>
+    <li><a href="#s5">사용자 저니 — Phase 2: 버블 & 소셜</a></li>
+    <li><a href="#s6">핵심 기능 명세</a></li>
+    <li><a href="#s7">데이터 아키텍처</a></li>
+    <li><a href="#s8">경험치 & 게이미피케이션</a></li>
+    <li><a href="#s9">프라이버시 & 위치 정보 정책</a></li>
+    <li><a href="#s10">비즈니스 모델</a></li>
+    <li><a href="#s11">리스크 & 미해결 과제</a></li>
+    <li><a href="#s12">Phase별 로드맵</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section id="s1">
+  <h2>1. 제품 정체성</h2>
+
+  <div class="hl" style="text-align:center; padding:28px;">
+    <div style="font-size:13px; color:var(--muted); margin-bottom:6px;">Nyam은</div>
+    <div style="font-size:22px; font-weight:700; color:var(--accent); margin-bottom:10px;">
+      나의 식도락 여정을 기록하고, 분석하고, 신뢰할 수 있는 사람들과 공유하는 플랫폼
+    </div>
+    <div style="font-size:14px; color:var(--muted); line-height:1.7;">
+      선택만으로 기록이 시작되고, 쌓일수록 나를 알아가며,<br/>
+      버블 안에서 오염 없는 진짜 추천을 주고받는다.
+    </div>
+  </div>
+
+  <h3>정체성 우선순위</h3>
+  <table>
+    <thead><tr><th style="width:8%">순위</th><th style="width:30%">가치</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>나를 위한 기록</strong></td><td>나의 식도락 경험을 DB화. 언제, 어디서, 누구랑, 뭘 먹었고, 어땠는지. 콜드스타트 없이 첫날부터 풍성한 리스트.</td></tr>
+      <tr><td>2</td><td><strong>나를 아는 분석</strong></td><td>기록이 쌓이면 상황별 취향이 드러난다. 혼밥의 나와 접대의 나는 다르다. 와인도 마찬가지.</td></tr>
+      <tr><td>3</td><td><strong>오염 없는 공유</strong></td><td>버블(폐쇄형 그룹) 안에서만 공유. 광고 리뷰, 가짜 평가가 구조적으로 불가능.</td></tr>
+      <tr><td>4</td><td><strong>신뢰 기반 발견</strong></td><td>아는 사람들의 기록으로 만드는 추천. 낯선 동네에서 현지인 가이드가 된다.</td></tr>
+      <tr><td>5</td><td><strong>식도락 정체성</strong></td><td>기록이 곧 나의 프로필. 취향이 명함이 되고, 경험치가 신뢰의 근거.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Nyam이 아닌 것</h3>
+  <ul class="muted">
+    <li><strong>리뷰 플랫폼이 아니다</strong> — 불특정 다수에게 공개되는 리뷰를 쓰는 곳이 아님</li>
+    <li><strong>예약 서비스가 아니다</strong> — 거래/결제를 직접 처리하지 않음</li>
+    <li><strong>맛집 검색 엔진이 아니다</strong> — 인터넷 정보 기반 추천은 최소한으로</li>
+    <li><strong>다이어트/영양 앱이 아니다</strong> — 식도락을 즐기는 사람을 위한 도구</li>
+  </ul>
+
+  <h3>도메인 범위</h3>
+  <table>
+    <thead><tr><th>포함</th><th>제외 (v2.0)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>식당</strong> — 모든 외식 경험 (레스토랑, 카페, 바, 프랜차이즈, 포장마차 등)<br/>
+          <strong>와인</strong> — 기호식품/취미로서의 와인 경험
+        </td>
+        <td>
+          <strong>요리(쿠킹)</strong> — 향후 확장 가능성은 열어두되, v2에서는 제외<br/>
+          <strong>배달</strong> — 외식 경험에 집중. 배달은 추후 검토
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s2">
+  <h2>2. 문제 정의</h2>
+
+  <h3>2-1. 핵심 페인포인트</h3>
+  <div class="hl">
+    <strong>"나의 식도락 여정을 기록하고 싶다."</strong><br/>
+    언제 누구랑 어디서 뭘 먹었고, 어땠는지. 와인도 마찬가지.<br/><br/>
+    <strong>"그런데 기록은 너무 귀찮다."</strong><br/>
+    사진 찍는 것도 까먹고, 앱 열어서 입력하는 건 더 귀찮다.
+  </div>
+
+  <h3>2-2. 확장 페인포인트</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>"낯선 동네에서 뭐 먹지?"</h4>
+      <p>출장, 여행, 처음 가는 동네. 네이버 검색하면 광고와 협찬 리뷰뿐. 진짜 믿을 만한 추천이 없다.</p>
+    </div>
+    <div class="card">
+      <h4>"맛집 리뷰를 믿을 수 없다"</h4>
+      <p>광고 리뷰, 블로그 체험단, 별점 조작. 정보가 많을수록 오히려 신뢰가 떨어진다.</p>
+    </div>
+    <div class="card">
+      <h4>"와인 뭐 마실지 모르겠다"</h4>
+      <p>와인은 취향이 뚜렷한 기호식품인데, 내 취향을 체계적으로 파악할 방법이 없다.</p>
+    </div>
+    <div class="card">
+      <h4>"내가 예전에 갔던 그 집이 뭐였지?"</h4>
+      <p>기록이 흩어져 있다. 카톡, 인스타, 메모앱, 머릿속. 검색도 정리도 안 됨.</p>
+    </div>
+  </div>
+
+  <h3>2-3. 기존 서비스의 한계</h3>
+  <table>
+    <thead><tr><th>서비스</th><th>하는 것</th><th>못하는 것</th></tr></thead>
+    <tbody>
+      <tr><td>네이버/카카오맵</td><td>검색, 공개 리뷰</td><td>개인 기록, 취향 분석, 오염 없는 추천</td></tr>
+      <tr><td>인스타그램</td><td>사진 공유, 팔로우</td><td>구조화된 기록, 검색/필터, 분석</td></tr>
+      <tr><td>Vivino</td><td>와인 스캔/기록</td><td>식당 통합, 상황별 분석, 소셜 깊이</td></tr>
+      <tr><td>캐치테이블</td><td>예약</td><td>기록 도구 아님, 대상 식당 제한</td></tr>
+      <tr><td>망고플레이트</td><td>리뷰/평점</td><td>오픈 리뷰의 신뢰 문제, 개인화 약함</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s3">
+  <h2>3. 해결 전략</h2>
+
+  <h3>3-1. 핵심 전환: "기록해라" → "골라라"</h3>
+  <div class="hl">
+    <strong>레터박스 전략의 식도락 적용</strong><br/><br/>
+    레터박스: 인기 영화 리스트에서 "봤던 거 체크" → 한 번에 수십 개 기록 생성<br/>
+    Nyam: <strong>지역 기반 식당 리스트에서 "가봤던 곳 체크" → 한 번에 수십 개 기록 생성</strong><br/><br/>
+    사용자가 "쓰는" 게 아니라 <strong>"고르는"</strong> 것. 마찰이 근본적으로 다르다.
+  </div>
+
+  <h3>3-2. 전략 3단계</h3>
+  <table>
+    <thead><tr><th style="width:8%">단계</th><th style="width:28%">전략</th><th>설명</th><th style="width:15%">참고 모델</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge p1">1</span></td>
+        <td><strong>나의 식도락 DB 구축</strong></td>
+        <td>선택 기반 기록으로 콜드스타트 해결. 개인 식도락 아카이브를 만든다. 재방문마다 디테일이 쌓인다.</td>
+        <td>레터박스 Watched/Log</td>
+      </tr>
+      <tr>
+        <td><span class="badge p2">2</span></td>
+        <td><strong>버블로 오염 없이 공유</strong></td>
+        <td>폐쇄형 그룹 안에서만 공유. 필터링된 내 기록을 신뢰할 수 있는 사람들에게. 리뷰의 리뷰로 토론.</td>
+        <td>당근 동네 인증 + 레터박스 소셜</td>
+      </tr>
+      <tr>
+        <td><span class="badge p3">3</span></td>
+        <td><strong>경험치로 신뢰 구축</strong></td>
+        <td>지역별/와인 종류별 활동량 기반 경험치. 기록이 많은 사용자의 추천이 더 무게를 갖는 구조.</td>
+        <td>Nyam 고유</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3-3. 와인 — 왜 식당과 함께인가</h3>
+  <div class="hl2">
+    와인은 식도락보다 <strong>더 강한 기록 동기</strong>를 가진다:
+    <ul>
+      <li><strong>기호식품/취미</strong> — 취향이 더 뚜렷하고 탐구 욕구가 있음</li>
+      <li><strong>객관적 축이 존재</strong> — 품종, 산지, 빈티지, 스타일이 구조화되어 있음</li>
+      <li><strong>기록 동기 검증됨</strong> — Vivino 사용자가 이미 와인 기록을 함 (단, 소셜이 약함)</li>
+      <li><strong>식당 경험과 자연스럽게 연결</strong> — "이 식당에서 이 와인을 마셨다"</li>
+    </ul>
+    식당과 와인을 통합 관리함으로써 Vivino에도 네이버에도 없는 <strong>"식도락 전체 경험의 아카이브"</strong>가 된다.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s4">
+  <h2>4. 사용자 저니 — Phase 1: 나의 기록</h2>
+
+  <h3>4-1. 온보딩</h3>
+  <div class="quote">
+    목표: 5분 안에 "나의 취향"이 대략 파악되고, "나의 맛집 리스트"가 10개 이상 채워진 상태로 시작.
+  </div>
+
+  <div class="journey">
+    <div class="jstep">
+      <h4>Step 1: 취향 카드 선택</h4>
+      <p>설문지 형태가 아닌 <strong>2지선다 이미지 카드</strong>로 빠르게 취향 파악.</p>
+      <ul class="muted">
+        <li>"새로운 도전 vs 익숙한 맛" (이미지: 이국적 요리 vs 한식)</li>
+        <li>"분위기 중시 vs 맛 중시" (이미지: 파인다이닝 vs 허름한 맛집)</li>
+        <li>"가성비 vs 프리미엄" (이미지: 백반집 vs 오마카세)</li>
+        <li>"혼밥 OK vs 무조건 같이" (이미지: 카운터석 vs 단체테이블)</li>
+      </ul>
+      <p class="muted">와인: "레드 vs 화이트", "가볍게 vs 묵직하게", "가격대 선택" 등 별도 카드 세트</p>
+    </div>
+
+    <div class="jstep">
+      <h4>Step 2: 주요 활동 지역 선택</h4>
+      <p>지도에서 주요 활동 지역 1~3곳 선택 (직장 동네, 집 동네, 자주 가는 동네)</p>
+      <p class="muted">당근식 동네 인증 방식. 인증 없이도 사용 가능하지만, 인증 시 해당 동네 경험치에 가산.</p>
+    </div>
+
+    <div class="jstep">
+      <h4>Step 3: 가본 곳 체크 (핵심 — 콜드스타트 해결)</h4>
+      <p>선택한 지역의 <strong>대표 식당 리스트</strong>를 보여주고 가본 곳 체크.</p>
+      <ul class="muted">
+        <li>미슐랭/블루리본 선정 식당</li>
+        <li>유명 프랜차이즈</li>
+        <li>지역 대표 맛집 (카카오/네이버 상위 랭킹)</li>
+      </ul>
+      <p>체크한 식당에 바로 <strong>Nyam 평가 툴</strong>(후술)로 간단 평가.</p>
+      <p class="note">목표: 온보딩 완료 시 최소 10~30개 식당이 "나의 리스트"에 있는 상태.</p>
+    </div>
+
+    <div class="jstep">
+      <h4>Step 4: 와인 취향 (선택)</h4>
+      <p>와인 관심 있는 사용자에게만. 지역/국가별 인기 와인 선택 + 점수 부여.</p>
+      <p class="muted">품종/산지/스타일 태그가 자동 할당됨.</p>
+    </div>
+
+    <div class="jstep">
+      <h4>Step 5: 직접 검색 추가 (선택)</h4>
+      <p>리스트에 없지만 기억나는 식당/와인을 직접 검색해서 추가 가능.</p>
+    </div>
+  </div>
+
+  <h3>4-2. 홈 화면 — 나의 식도락 대시보드</h3>
+  <div class="hl">
+    <strong>홈 = 나의 식도락 기록 관리 & 열람 페이지</strong>
+  </div>
+
+  <h4>상단: 추천 영역</h4>
+  <table>
+    <thead><tr><th style="width:25%">탭</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><strong>내 경험에서</strong></td><td>내가 높게 평가한 곳 중 재방문 추천. 상황별 필터 가능 ("오늘 데이트인데...")</td></tr>
+      <tr><td><strong>새로운 도전</strong></td><td>찜(Wishlist) 목록, 버블에서 추천받은 곳, 권위 리뷰(미슐랭/블루리본) 기반</td></tr>
+      <tr><td><strong>와인</strong></td><td>내 취향 기반 와인 추천 + 와인 버블 추천</td></tr>
+    </tbody>
+  </table>
+  <p class="note">인터넷 정보 기반 추천은 최소한. 특히 콜드스타트 때는 권위 있는 리뷰 업체 정보(미슐랭, 블루리본) + 네이버/다음/구글맵 평점 정도만 제공.</p>
+
+  <h4>메인: 나의 기록 타임라인</h4>
+  <ul>
+    <li>최근 식당 & 와인 기록이 시간순으로 표시</li>
+    <li><strong>뷰 전환</strong>: 캘린더 뷰 / 리스트 뷰 / 썸네일(그리드) 뷰 / 지도 뷰</li>
+    <li>필터: 장르, 지역, 상황, 평점 범위, 기간</li>
+    <li>정렬: 최신순, 평점순, 방문 횟수순</li>
+  </ul>
+
+  <h3>4-3. 새로운 기록 등록</h3>
+  <p>두 가지 진입점:</p>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="badge p1">방법 1</span> 검색으로 시작</h4>
+      <p>식당/와인 이름 검색 → 선택 → Nyam 평가 툴로 평가</p>
+      <p class="muted">가장 기본적이고 확실한 방법.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge p1">방법 2</span> 사진으로 시작</h4>
+      <p>사진 선택 → EXIF(GPS/날짜) + Vision AI로 식당/메뉴 자동 추정 → 확인 → 평가</p>
+      <p class="muted">와인은 라벨 사진 → Vision AI로 와인 정보 자동 인식.</p>
+    </div>
+  </div>
+
+  <h4>지역 기반 푸시 알림 (새로운 지역 접근 시)</h4>
+  <div class="hl2">
+    새로운 지역에 갔을 때 푸시:  <strong>"○○동에 오셨네요! 이 동네 맛집 둘러볼까요?"</strong><br/>
+    <ul class="muted">
+      <li>해당 지역의 대표 식당 리스트 제시</li>
+      <li>가본 곳 체크 유도 (컬렉션 확장 동기)</li>
+      <li>못 가본 곳은 찜(Wishlist) 유도</li>
+      <li>추천 역할 겸용 — 찜한 곳은 나중에 추천 영역에 노출</li>
+    </ul>
+  </div>
+
+  <h3>4-4. 식당/와인 상세 페이지</h3>
+  <div class="quote">
+    레터박스의 영화 상세 페이지와 같은 구조. 정보 + 나의 기록 + 커뮤니티 반응.
+  </div>
+
+  <h4>식당 상세 페이지 구성</h4>
+  <table>
+    <thead><tr><th style="width:25%">영역</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><strong>기본 정보</strong></td><td>가게명, 주소, 장르, 영업시간, 가격대, 대표 사진 — 카카오/네이버/구글 교차 취합</td></tr>
+      <tr><td><strong>외부 평가</strong></td><td>미슐랭/블루리본 선정 여부, 네이버/다음/구글맵 평점 (각각 표시)</td></tr>
+      <tr><td><strong>나의 기록</strong></td><td>방문 횟수, 날짜별 기록, 평가 점수, 한줄평, 메뉴별 별표, 사용팁 등</td></tr>
+      <tr><td><strong>재방문 기록</strong></td><td>방문마다 새 기록 추가 가능. 상황/경험/메뉴가 매번 다를 수 있음.</td></tr>
+      <tr><td><strong>버블 리뷰</strong></td><td>(Phase 2) 내가 속한 버블에서 이 식당에 대한 다른 멤버들의 리뷰</td></tr>
+    </tbody>
+  </table>
+
+  <h4>와인 상세 페이지 구성</h4>
+  <table>
+    <thead><tr><th style="width:25%">영역</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><strong>기본 정보</strong></td><td>와인명, 품종, 산지, 빈티지, 타입(레드/화이트/스파클링 등), 알코올 도수</td></tr>
+      <tr><td><strong>나의 기록</strong></td><td>마신 날짜, 장소(식당과 연결 가능), 평가, 페어링 메모, 한줄평</td></tr>
+      <tr><td><strong>재음용 기록</strong></td><td>같은 와인도 빈티지/상황에 따라 경험이 다름. 매번 새 기록.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4-5. Nyam 평가 툴 (독창적 개발)</h3>
+  <div class="hl">
+    <strong>설계 원칙:</strong>
+    <ul>
+      <li><strong>모바일 UI 사용성 최고</strong> — 한 손으로, 3초 안에 평가 가능</li>
+      <li><strong>재미</strong> — 평가 자체가 즐거운 경험 (게임적 요소)</li>
+      <li><strong>풍부한 정보</strong> — 단순 별점이 아니라, 맛/분위기/가성비 등 다축 정보 수집</li>
+      <li><strong>유연한 깊이</strong> — 최소 1탭(총점)부터, 원하면 상세 평가까지</li>
+    </ul>
+  </div>
+  <p class="note">구체적 UI 디자인은 DESIGN_SPEC에서 정의. 여기서는 요구사항만 명시.</p>
+
+  <h4>평가 항목 (식당)</h4>
+  <table>
+    <thead><tr><th style="width:8%">필수</th><th style="width:25%">항목</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>필수</td><td><strong>총점 (100점)</strong></td><td>전체 경험에 대한 종합 평가. 가장 기본이자 핵심.</td></tr>
+      <tr><td>필수</td><td><strong>상황 태그</strong></td><td>혼밥 / 데이트 / 친구 / 가족 / 회식·접대 / 술자리 — 1개 선택</td></tr>
+      <tr><td>선택</td><td>맛 / 분위기 / 서비스 / 가성비</td><td>세부 축 평가. 각각 독립적으로 입력 가능.</td></tr>
+      <tr><td>선택</td><td>한줄평</td><td>자유 텍스트</td></tr>
+      <tr><td>선택</td><td>메뉴별 별표 / 사용팁</td><td>"여기는 A세트가 진짜 맛있다", "예약 필수", "2층이 조용함"</td></tr>
+      <tr><td>선택</td><td>사진</td><td>음식/분위기 사진</td></tr>
+      <tr><td>선택</td><td>함께 간 사람</td><td>태그 (Nyam 사용자이면 연결, 아니면 닉네임)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>평가 항목 (와인)</h4>
+  <table>
+    <thead><tr><th style="width:8%">필수</th><th style="width:25%">항목</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>필수</td><td><strong>총점 (100점)</strong></td><td>전체 만족도</td></tr>
+      <tr><td>필수</td><td><strong>상황 태그</strong></td><td>혼술 / 데이트 / 모임 / 페어링(식사와 함께) / 선물받은</td></tr>
+      <tr><td>선택</td><td>아로마 / 맛 / 여운 / 밸런스</td><td>WSET 기반 축 (간소화)</td></tr>
+      <tr><td>선택</td><td>페어링 메모</td><td>"스테이크와 잘 어울렸다", "치즈와 마시면 좋겠다"</td></tr>
+      <tr><td>선택</td><td>가격 / 구매처</td><td>가격 기록 + 어디서 마셨는지 (식당 연결 가능)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4-6. 재방문 — 기록의 깊이가 쌓이는 구조</h3>
+  <div class="hl2">
+    <strong>같은 식당이라도 매 방문은 새로운 경험.</strong><br/>
+    <ul>
+      <li>방문마다 독립된 기록 생성 (날짜, 상황, 평가가 매번 다를 수 있음)</li>
+      <li>총점은 최신 방문 기준 + 과거 방문 이력 한눈에 열람</li>
+      <li>"3번 갔는데, 혼밥 95점, 회식 70점, 데이트 85점" — 상황별 경험 차이가 데이터로 쌓임</li>
+      <li>이 데이터가 상황별 취향 분석(Taste DNA × Scene)의 원천</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s5">
+  <h2>5. 사용자 저니 — Phase 2: 버블 & 소셜</h2>
+
+  <h3>5-1. 버블 개념</h3>
+  <div class="hl">
+    <strong>버블 = 초대제 폐쇄형 맛집 공유 그룹</strong><br/>
+    오염(광고 리뷰, 가짜 평가) 문제를 구조적으로 해결하는 핵심 장치.
+  </div>
+
+  <h4>버블 유형</h4>
+  <table>
+    <thead><tr><th style="width:25%">유형</th><th>설명</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><strong>양방향 버블</strong></td><td>모든 멤버가 기록 공유 + 리뷰 + 리액션</td><td>직장 동료 맛집 버블, 동네 맘 버블, 와인 동호회</td></tr>
+      <tr><td><strong>열람 전용 버블</strong></td><td>운영자의 기록만 공개. 구독자는 보기/찜만 가능</td><td>맛잘알의 큐레이션 채널, 소믈리에 추천</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5-2. 공유 플로우</h3>
+  <div class="journey">
+    <div class="jstep">
+      <h4>Step 1: 공유할 기록 필터링</h4>
+      <p>내 기록 중 공유하고 싶은 식당/와인을 필터로 추린다.</p>
+      <p class="muted">예: "광화문" + "90점 이상" → 내가 광화문에서 높게 평가한 곳만 추출</p>
+    </div>
+    <div class="jstep">
+      <h4>Step 2: 버블에 공유</h4>
+      <p>선택된 기록을 특정 버블에 공유. 버블 멤버들의 피드에 노출.</p>
+    </div>
+    <div class="jstep">
+      <h4>Step 3: 반응 & 토론</h4>
+      <ul>
+        <li><strong>찜</strong> — 가보고 싶으면 내 Wishlist에 추가</li>
+        <li><strong>좋아요 / 싫어요</strong> — 가벼운 리액션 (익명 선택 가능)</li>
+        <li><strong>리뷰</strong> — 같은 식당에 대한 본인의 리뷰 작성 (독립된 리뷰 ID)</li>
+        <li><strong>댓글</strong> — 공유자의 리뷰에 대한 댓글 (리뷰의 리뷰)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>5-3. 리뷰 구조 (중요)</h3>
+  <div class="hl2">
+    <strong>식당 1개 = 고유 ID 1개</strong><br/>
+    <strong>리뷰는 개별 ID</strong> — 한 식당에 여러 사용자의 리뷰가 독립적으로 달림.<br/>
+    <strong>댓글은 리뷰에 대한 댓글</strong> — 식당 자체가 아니라, 특정 리뷰에 대한 반응/토론.<br/><br/>
+    <span class="muted">구조: 식당(1) → 리뷰(N) → 댓글(N per 리뷰)</span>
+  </div>
+
+  <h3>5-4. 프로필 & 가시성</h3>
+  <table>
+    <thead><tr><th style="width:25%">항목</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>개인 프로필</strong></td><td>닉네임, 경험치/레벨, 주요 활동 지역, 취향 요약. 숨김 가능.</td></tr>
+      <tr><td><strong>소속 버블 표시</strong></td><td>리뷰어 클릭 시 소속 버블 확인 가능. 숨김 가능.</td></tr>
+      <tr><td><strong>익명 옵션</strong></td><td>리뷰/반응 시 익명 요청 가능 (버블 내에서만).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5-5. 버블 페이지</h3>
+  <ul>
+    <li>버블 내 공유된 <strong>전체 식당/와인 목록</strong> 열람</li>
+    <li><strong>소팅</strong>: 최신순, 평점순, 리뷰수순, 찜 수순</li>
+    <li><strong>필터</strong>: 지역, 장르, 상황, 평점 범위</li>
+    <li><strong>재미 요소 / 통계</strong>:
+      <ul class="muted">
+        <li>누가 가장 많이 공유했는지 (공유 랭킹)</li>
+        <li>어떤 식당이 리뷰가 가장 많은지</li>
+        <li>누구의 리뷰가 좋아요/댓글이 가장 많은지</li>
+        <li>버블 전체 방문 트렌드 (이번 달 핫한 동네/장르)</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>5-6. 팔로우 (버블 외)</h3>
+  <ul>
+    <li>버블과 별도로 <strong>개인 팔로우</strong> 가능</li>
+    <li>팔로우한 사람의 공개 기록이 피드에 노출</li>
+    <li>취향이 비슷한 사용자 자동 추천 (Phase 3)</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s6">
+  <h2>6. 핵심 기능 명세</h2>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:22%">기능</th><th>Phase</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>F01</td><td><strong>온보딩 취향 카드</strong></td><td><span class="badge p1">P1</span></td><td>2지선다 이미지 카드로 취향 빠르게 파악. 식당/와인 각각.</td></tr>
+      <tr><td>F02</td><td><strong>지역 선택 & 인증</strong></td><td><span class="badge p1">P1</span></td><td>주요 활동 지역 선택. 인증(당근식)은 선택사항, 인증 시 경험치 가산.</td></tr>
+      <tr><td>F03</td><td><strong>리스트 체크 (가본 곳 선택)</strong></td><td><span class="badge p1">P1</span></td><td>지역 대표 식당/와인 리스트에서 가본 곳 체크 → 일괄 기록 생성. 콜드스타트 핵심.</td></tr>
+      <tr><td>F04</td><td><strong>Nyam 평가 툴</strong></td><td><span class="badge p1">P1</span></td><td>독창적 평가 UI. 100점 총점 + 상황 태그(필수) + 세부 축(선택). 재미있고 빠르게.</td></tr>
+      <tr><td>F05</td><td><strong>식당/와인 검색 & 매칭</strong></td><td><span class="badge p1">P1</span></td><td>카카오/네이버/구글 교차검색. 와인은 라벨 DB 연동.</td></tr>
+      <tr><td>F06</td><td><strong>사진 기반 등록</strong></td><td><span class="badge p1">P1</span></td><td>사진 → EXIF/Vision AI → 자동 식당/메뉴/와인 추정 → 확인 → 평가</td></tr>
+      <tr><td>F07</td><td><strong>다이어리 (타임라인)</strong></td><td><span class="badge p1">P1</span></td><td>캘린더/리스트/썸네일/지도 뷰 전환. 필터/정렬.</td></tr>
+      <tr><td>F08</td><td><strong>찜 (Wishlist)</strong></td><td><span class="badge p1">P1</span></td><td>가고 싶은 곳 / 마시고 싶은 와인 저장. 방문/음용 시 자동 이동.</td></tr>
+      <tr><td>F09</td><td><strong>재방문 기록</strong></td><td><span class="badge p1">P1</span></td><td>같은 식당/와인 재방문 시 독립 기록. 상황/경험 차이 축적.</td></tr>
+      <tr><td>F10</td><td><strong>상세 페이지</strong></td><td><span class="badge p1">P1</span></td><td>기본 정보(외부 DB) + 외부 평가 + 나의 기록. 레터박스 영화 상세와 동일 구조.</td></tr>
+      <tr><td>F11</td><td><strong>기본 통계</strong></td><td><span class="badge p1">P1</span></td><td>총 방문 수, 장르 분포, 상황별 선호, 동네별 활동. 와인: 품종/산지/스타일 분포.</td></tr>
+      <tr><td>F12</td><td><strong>추천 (홈 상단)</strong></td><td><span class="badge p1">P1</span></td><td>내 경험 기반 재방문 추천 + 찜 목록 + 권위 리뷰 기반 신규 추천. 인터넷 추천은 최소.</td></tr>
+      <tr><td>F13</td><td><strong>지역 푸시 알림</strong></td><td><span class="badge p1">P1</span></td><td>새 지역 접근 시 해당 지역 맛집 리스트 + 체크/찜 유도. 추천 겸용.</td></tr>
+      <tr><td>F14</td><td><strong>버블 생성/참여</strong></td><td><span class="badge p2">P2</span></td><td>양방향/열람전용 버블. 초대제.</td></tr>
+      <tr><td>F15</td><td><strong>필터 공유</strong></td><td><span class="badge p2">P2</span></td><td>내 기록에 필터 적용 → 조건에 맞는 기록만 버블에 공유</td></tr>
+      <tr><td>F16</td><td><strong>리뷰 & 댓글</strong></td><td><span class="badge p2">P2</span></td><td>독립 리뷰 ID. 리뷰에 대한 댓글. 익명 옵션.</td></tr>
+      <tr><td>F17</td><td><strong>버블 통계 & 재미 요소</strong></td><td><span class="badge p2">P2</span></td><td>공유 랭킹, 인기 식당, 좋아요 랭킹, 트렌드.</td></tr>
+      <tr><td>F18</td><td><strong>팔로우 & 피드</strong></td><td><span class="badge p2">P2</span></td><td>개인 팔로우. 공개 기록 피드.</td></tr>
+      <tr><td>F19</td><td><strong>경험치 시스템</strong></td><td><span class="badge p2">P2</span></td><td>지역별/와인 종류별 활동 기반 경험치 & 레벨. 차등 신뢰.</td></tr>
+      <tr><td>F20</td><td><strong>프로필 & 프라이버시</strong></td><td><span class="badge p2">P2</span></td><td>프로필 공개/비공개, 버블 소속 숨김, 익명 리뷰 옵션.</td></tr>
+      <tr><td>F21</td><td><strong>연말 결산</strong></td><td><span class="badge p3">P3</span></td><td>연간 식도락 통계 인포그래픽 → SNS 공유 → 바이럴</td></tr>
+      <tr><td>F22</td><td><strong>프리미엄 구독</strong></td><td><span class="badge p3">P3</span></td><td>고급 통계, 고급 필터, 알림, 광고 제거.</td></tr>
+      <tr><td>F23</td><td><strong>크리에이터 채널</strong></td><td><span class="badge p3">P3</span></td><td>열람 전용 유료 버블 = 크리에이터 수익화.</td></tr>
+      <tr><td>F24</td><td><strong>리스트 (큐레이션)</strong></td><td><span class="badge p2">P2</span></td><td>테마별 식당/와인 리스트 만들기 & 공유. 레터박스 Lists.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s7">
+  <h2>7. 데이터 아키텍처</h2>
+
+  <h3>7-1. Nyam이 소유하는 데이터 vs 외부 위임</h3>
+  <div class="grid">
+    <div class="card">
+      <h4 style="color:var(--good);">Nyam 소유 (핵심 자산)</h4>
+      <ul class="muted">
+        <li>사용자의 기록 (방문/음용 히스토리)</li>
+        <li>평가 데이터 (총점, 상황, 세부축)</li>
+        <li>상황별 취향 프로필 (Taste DNA × Scene)</li>
+        <li>소셜 그래프 (팔로우, 버블 관계)</li>
+        <li>리뷰/댓글 UGC</li>
+        <li>리스트/큐레이션 콘텐츠</li>
+        <li>경험치/활동 데이터</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--muted);">외부 위임 (API 활용)</h4>
+      <ul class="muted">
+        <li>식당 기본 정보 — 카카오/네이버/구글 교차 취합</li>
+        <li>와인 기본 정보 — 와인 DB API</li>
+        <li>외부 평점 — 네이버/다음/구글 맵 평점</li>
+        <li>권위 리뷰 — 미슐랭/블루리본 선정 정보</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>7-2. 외부 데이터 캐싱 전략</h3>
+  <div class="hl">
+    <strong>원칙: 실시간 API 호출 최소화. 사용자가 추가한 식당/와인만 캐싱.</strong>
+    <ul>
+      <li>사용자가 식당/와인을 처음 추가할 때 → 외부 API 호출 → 정보 캐싱</li>
+      <li><strong>2주 간격</strong>으로 캐싱 데이터 업데이트</li>
+      <li>업데이트는 <strong>일괄 처리하지 않음</strong> — 데이터 첫 입력 시점 기준으로 2주+ 시간차를 두고 분산</li>
+      <li>대기열 방식으로 API 호출 분산 (과부하 방지)</li>
+      <li>모든 식당을 크롤링하지 않음 — 사용자가 추가한 것만 관리</li>
+    </ul>
+  </div>
+
+  <h3>7-3. 식당 ID 통합</h3>
+  <table>
+    <thead><tr><th>과제</th><th>접근</th></tr></thead>
+    <tbody>
+      <tr><td>동일 식당의 카카오/네이버/구글 ID 매칭</td><td>가게명 + 주소 기반 fuzzy matching → 수동 검증 보완</td></tr>
+      <tr><td>폐업/이전 감지</td><td>2주 업데이트 시 상태 확인. 폐업 시 사용자에게 알림 + 기록은 유지(아카이브)</td></tr>
+      <tr><td>동명 식당 구분</td><td>주소(지역) 기반 구분. 사용자 선택 시 지도 위치로 확인 유도</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s8">
+  <h2>8. 경험치 & 게이미피케이션</h2>
+
+  <h3>8-1. 경험치 체계</h3>
+  <div class="hl">
+    <strong>지역별 + 와인 종류별 독립 경험치</strong><br/>
+    "을지로 Lv.7" / "내추럴 와인 Lv.4" — 활동 영역마다 별도 레벨.
+  </div>
+
+  <h4>경험치 획득 기준</h4>
+  <table>
+    <thead><tr><th style="width:30%">활동</th><th style="width:15%">경험치</th><th>조건</th></tr></thead>
+    <tbody>
+      <tr><td>식당/와인 기록 추가</td><td>기본</td><td>해당 지역/종류에 경험치 부여</td></tr>
+      <tr><td>상세 리뷰 작성</td><td>추가</td><td>한줄평 이상, 세부 평가 포함 시 가산</td></tr>
+      <tr><td>사진 포함</td><td>추가</td><td>사진이 있는 기록</td></tr>
+      <tr><td>버블 공유</td><td>추가</td><td>기록을 버블에 공유</td></tr>
+      <tr><td>리뷰가 좋아요/댓글 받음</td><td>추가</td><td>커뮤니티 가치 기여</td></tr>
+      <tr><td>재방문 기록</td><td>추가</td><td>같은 곳 재방문 기록 시 약간의 가산</td></tr>
+      <tr><td>동네 인증</td><td>보너스</td><td>해당 지역 인증 시 일회성 보너스</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8-2. 경험치의 의미</h3>
+  <ul>
+    <li><strong>신뢰 지표</strong> — "을지로 Lv.7"인 사람의 을지로 맛집 추천은 무게가 다름</li>
+    <li><strong>프로필 정체성</strong> — 나의 식도락 전문 영역이 시각적으로 드러남</li>
+    <li><strong>버블 내 차등</strong> — 경험치 높은 멤버의 리뷰가 상위 노출 (옵션)</li>
+    <li><strong>기록 동기</strong> — 레벨업이 기록을 계속하게 만드는 동기</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s9">
+  <h2>9. 프라이버시 & 위치 정보 정책</h2>
+
+  <div class="hl">
+    <strong>핵심 원칙: 위치 정보는 수집하되, 절대 외부 활용하지 않는다.</strong>
+  </div>
+
+  <table>
+    <thead><tr><th style="width:28%">항목</th><th>정책</th></tr></thead>
+    <tbody>
+      <tr><td><strong>위치 수집 목적</strong></td><td>지역 식당 리스트 제공, 새 지역 푸시 알림, 동네 인증 — 이것만.</td></tr>
+      <tr><td><strong>수동 선택 디폴트</strong></td><td>위치 권한 없어도 사용 가능. 지역을 수동으로 선택하는 것이 기본.</td></tr>
+      <tr><td><strong>백그라운드 위치</strong></td><td>사용자가 명시적으로 켜야만 동작. 기본 OFF.</td></tr>
+      <tr><td><strong>배터리/데이터 최소화</strong></td><td>geofencing 방식으로 지속 GPS 추적 없이 영역 진입만 감지. 배터리/데이터 영향 최소화.</td></tr>
+      <tr><td><strong>데이터 비공유</strong></td><td>위치 데이터는 제3자에게 절대 공유/판매하지 않음. 개인 식별 불가능한 통계만 내부 서비스 개선에 사용.</td></tr>
+      <tr><td><strong>삭제 권한</strong></td><td>사용자가 언제든 위치 기록 삭제 가능.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s10">
+  <h2>10. 비즈니스 모델</h2>
+
+  <table>
+    <thead><tr><th style="width:22%">수익원</th><th>설명</th><th style="width:12%">Phase</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>프리미엄 구독</strong></td>
+        <td>
+          고급 통계 (상황별 DNA 상세, 지출 추정, 와인 포트폴리오 분석)<br/>
+          고급 필터, 광고 제거, 알림 (시즌 메뉴, 예약 오픈)<br/>
+          <span class="muted">레터박스 Pro/Patron 모델 참고. 주 수입원으로 설계.</span>
+        </td>
+        <td><span class="badge p3">P3</span></td>
+      </tr>
+      <tr>
+        <td><strong>광고 (무료만)</strong></td>
+        <td>
+          무료 사용자에게만 노출. 스폰서 표기 필수. 커뮤니티 신뢰 훼손 방지 최우선.<br/>
+          <span class="muted">레터박스 Art & Copy 정책 참고.</span>
+        </td>
+        <td><span class="badge p3">P3</span></td>
+      </tr>
+      <tr>
+        <td><strong>크리에이터 수수료</strong></td>
+        <td>
+          맛잘알/소믈리에의 유료 열람 전용 버블 → 구독 수수료<br/>
+          <span class="muted">"진짜 맛잘알이 수익을 얻는 생태계"</span>
+        </td>
+        <td><span class="badge p3">P3+</span></td>
+      </tr>
+      <tr>
+        <td><strong>로컬 파트너십</strong></td>
+        <td>
+          식당/와인샵과의 자연스러운 협업. 예약 연결, 쿠폰 등. 거래 직접 개입은 최소화.<br/>
+          <span class="muted">신뢰 유지를 위해 스폰서십 표기 의무.</span>
+        </td>
+        <td><span class="badge p3">P3+</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s11">
+  <h2>11. 리스크 & 미해결 과제</h2>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:25%">리스크</th><th style="width:10%">심각도</th><th>대응 / 상태</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>R1</td>
+        <td><strong>기록 동기 부족</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>
+          <strong>대응:</strong> 선택 기반 기록(마찰↓) + 경험치/레벨(게이미피케이션) + 지역 푸시(컬렉션 동기) + 재방문 구조(깊이 동기)<br/>
+          <span class="muted">미해결: 첫 온보딩 이후 지속적 기록 습관 형성 검증 필요</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R2</td>
+        <td><strong>콜드스타트</strong></td>
+        <td><span class="badge" style="color:var(--good);">완화됨</span></td>
+        <td>
+          온보딩 리스트 체크로 첫날부터 10~30개 기록 확보. Import 기능 추가 예정.<br/>
+          <span class="muted">단, 버블/소셜의 콜드스타트는 별도 — 사용자 확보 전략 필요</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R3</td>
+        <td><strong>외부 DB 의존</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>
+          카카오/네이버/구글 교차로 단일 의존 회피. 캐싱 + 분산 업데이트.<br/>
+          <span class="muted">API 정책 변경 리스크 존재. 대체 소스 확보 계획 필요.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R4</td>
+        <td><strong>네이버/카카오 직접 진출</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>
+          대기업이 못하는 것에 집중: 폐쇄형 신뢰 네트워크(버블), 상황별 추천, 커뮤니티 문화.<br/>
+          <span class="muted">"기능"이 아니라 "문화"가 해자(moat).</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R5</td>
+        <td><strong>Nyam 평가 툴 UX</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>
+          <span class="muted">미해결: "재미있고 빠르면서 풍부한 정보를 수집하는" 평가 UI 구체 설계 필요. DESIGN_SPEC에서 프로토타이핑.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R6</td>
+        <td><strong>와인 DB 확보</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>
+          식당은 카카오/네이버로 해결 가능하나, 와인 DB는 별도 소스 필요.<br/>
+          <span class="muted">후보: Wine-Searcher API, 자체 크롤링, 사용자 입력 기반 축적</span>
+        </td>
+      </tr>
+      <tr>
+        <td>R7</td>
+        <td><strong>네이티브 앱 필요성</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>
+          위치 푸시, 백그라운드 geofencing, 사진 EXIF → 네이티브 or PWA 결정 필요.<br/>
+          <span class="muted">MVP는 웹앱으로 시작, 검증 후 네이티브 전환 검토.</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="s12">
+  <h2>12. Phase별 로드맵 (요약)</h2>
+
+  <table>
+    <thead><tr><th style="width:12%">Phase</th><th style="width:25%">테마</th><th>핵심 기능</th><th style="width:18%">성공 지표</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge p1">Phase 1</span></td>
+        <td><strong>나의 식도락 DB</strong></td>
+        <td>온보딩, 리스트 체크, 평가 툴, 다이어리, 찜, 검색, 사진 등록, 재방문, 통계, 지역 푸시</td>
+        <td>온보딩 완료율 70%+, 평균 초기 기록 15개+, WAU 리텐션</td>
+      </tr>
+      <tr>
+        <td><span class="badge p2">Phase 2</span></td>
+        <td><strong>버블 & 소셜</strong></td>
+        <td>버블, 필터 공유, 리뷰/댓글, 팔로우/피드, 경험치, 리스트, 프로필</td>
+        <td>버블 생성 수, 공유 빈도, 리뷰 참여율, 팔로우 그래프 밀도</td>
+      </tr>
+      <tr>
+        <td><span class="badge p3">Phase 3</span></td>
+        <td><strong>수익화 & 확장</strong></td>
+        <td>프리미엄 구독, 연말 결산, 크리에이터 채널, 로컬 파트너십</td>
+        <td>구독 전환율, MRR, 크리에이터 채널 수</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<div class="footer">
+  <p><strong>관련 문서:</strong></p>
+  <ul>
+    <li><a href="./letterboxd_analysis.html">레터박스 딥리서치 분석 보고서</a></li>
+    <li><a href="./nyam_strategy_v2.html">Nyam 전략 & 기능 정의서 v2.0</a></li>
+    <li>DESIGN_SPEC — Nyam 평가 툴 UI, 온보딩 카드, 버블 UX (작성 예정)</li>
+    <li>TECH_SPEC — 아키텍처, DB 스키마, API 설계, 캐싱 전략 (작성 예정)</li>
+  </ul>
+  <p>본 PRD는 2026-03-19 전략 브레인스토밍 세션의 결과물입니다.</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nyam 상세페이지 목업 — Minimal</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{
+  --bg:#faf8f5;--panel:#fff;--text:#1a1a1a;--muted:#999;--line:#ebe6df;
+  --accent:#ff6b35;--accent2:#e85d2c;--good:#16a34a;--purple:#7c3aed;
+  --card-bg:#fff;--card-shadow:0 1px 3px rgba(0,0,0,0.05);
+  --nav-bg:rgba(255,255,255,0.92);--nav-border:#ebe6df;
+  --tag-bg:#f0ebe4;--tag-text:#8a7e70;
+  --expand-bg:#fef7f2;--expand-border:#fde0cc;
+  --wine-accent:#7c3aed;--wine-bg:#f9f5ff;--wine-border:#e9ddf7;
+  --sans:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  --r:14px;
+}
+[data-theme="dark"]{
+  --bg:#0a0d11;--panel:#111820;--text:#e0e8f0;--muted:#6a7e94;--line:#1a2636;
+  --card-bg:#141c28;--card-shadow:0 1px 3px rgba(0,0,0,0.25);
+  --nav-bg:rgba(14,20,28,0.92);--nav-border:#1a2636;
+  --tag-bg:#1a2636;--tag-text:#6a7e94;
+  --expand-bg:#1a1208;--expand-border:#2a1e10;
+  --wine-bg:#130e1e;--wine-border:#2a1e3a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;transition:background .3s,color .3s;}
+.page{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+h1{font-size:22px;margin-bottom:4px;}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:20px;}
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;padding:6px 14px;border-radius:18px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .3s;display:flex;align-items:center;gap:5px;}
+.mockups{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;}
+.mockup-label{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:4px;}
+.mockup-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+
+/* phone */
+.phone{border:2px solid var(--line);border-radius:28px;padding:8px;background:var(--panel);max-width:360px;transition:all .3s;}
+.phone .notch{width:80px;height:20px;background:var(--bg);border-radius:0 0 12px 12px;margin:0 auto 4px;}
+.phone .screen{min-height:680px;background:var(--bg);border-radius:18px;overflow-y:auto;overflow-x:hidden;position:relative;}
+
+/* hero photo */
+.hero{position:relative;height:200px;background:var(--tag-bg);overflow:hidden;}
+.hero .hero-img{width:100%;height:100%;object-fit:cover;display:block;}
+.hero .hero-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.hero .hero-placeholder i{width:40px;height:40px;opacity:0.4;}
+.hero-overlay{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;}
+.hero-overlay .back,.hero-overlay .actions{display:flex;align-items:center;gap:6px;}
+.hero-btn{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;color:#fff;border:none;cursor:pointer;}
+.hero-btn i{width:16px;height:16px;}
+.hero-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;}
+.hero-dots span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);}
+.hero-dots span.on{background:#fff;}
+
+/* identity */
+.identity{padding:12px 14px 0;}
+.identity .rest-name{font-size:18px;font-weight:700;line-height:1.3;}
+.identity .rest-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:4px;}
+.identity .rest-meta i{width:12px;height:12px;}
+
+/* score row */
+.score-row{display:flex;align-items:center;gap:12px;padding:10px 14px;}
+.nyam-score{display:flex;align-items:baseline;gap:4px;}
+.nyam-score .big{font-size:28px;font-weight:800;color:var(--accent);}
+.nyam-score .label{font-size:9px;color:var(--muted);}
+.ext-scores{display:flex;gap:8px;margin-left:auto;}
+.ext-badge{display:flex;align-items:center;gap:2px;font-size:10px;padding:2px 6px;border-radius:6px;background:var(--tag-bg);color:var(--tag-text);}
+.ext-badge .platform{font-weight:700;font-size:9px;}
+.authority-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:600;margin-left:8px;}
+.authority-badge i{width:10px;height:10px;}
+
+/* action bar */
+.action-bar{display:flex;gap:8px;padding:4px 14px 12px;}
+.action-bar .primary-btn{flex:1;height:38px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--sans);}
+.action-bar .primary-btn i{width:14px;height:14px;}
+.action-bar .ghost-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card-bg);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;}
+.action-bar .ghost-btn i{width:16px;height:16px;}
+
+/* divider */
+.divider{height:1px;background:var(--line);margin:0 14px;}
+
+/* section */
+.sec{padding:12px 14px;}
+.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.sec-title i{width:12px;height:12px;}
+.sec-title .count{color:var(--accent);font-weight:800;}
+
+/* my records timeline */
+.timeline{position:relative;padding-left:16px;}
+.timeline::before{content:'';position:absolute;left:4px;top:6px;bottom:6px;width:1.5px;background:var(--line);}
+.tl-item{position:relative;padding:8px 0;padding-left:6px;}
+.tl-item::before{content:'';position:absolute;left:-14px;top:14px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
+.tl-head{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.tl-date{font-size:10px;color:var(--muted);}
+.tl-scene{font-size:9px;padding:1px 6px;border-radius:4px;background:var(--tag-bg);color:var(--tag-text);font-weight:600;}
+.tl-score{font-size:16px;font-weight:800;color:var(--accent);margin-left:auto;}
+.tl-comment{font-size:11px;color:var(--text);line-height:1.5;margin-top:1px;}
+.tl-photos{display:flex;gap:4px;margin-top:4px;}
+.tl-photos .ph{width:36px;height:36px;border-radius:6px;background:var(--tag-bg);flex-shrink:0;}
+
+/* info rows */
+.info-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:12px;}
+.info-row i{width:14px;height:14px;color:var(--muted);flex-shrink:0;margin-top:1px;}
+.info-row .value{flex:1;}
+.info-row .status-open{color:var(--good);font-weight:600;font-size:11px;}
+.info-row .status-closed{color:var(--muted);font-size:11px;}
+
+/* expand */
+.expand-trigger2{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:11px;color:var(--muted);cursor:pointer;margin-top:6px;transition:all .2s;}
+.expand-trigger2 i{width:12px;height:12px;}
+.expand-trigger2:hover{border-color:var(--accent);color:var(--accent);}
+.expand-content2{display:none;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card-bg);font-size:11px;}
+.expand-content2.open{display:block;}
+.menu-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);}
+.menu-row:last-child{border:none;}
+.menu-row .mn{color:var(--text);}
+.menu-row .mp{color:var(--muted);font-size:10px;}
+
+/* minimap */
+.minimap{width:100%;height:80px;border-radius:10px;background:var(--tag-bg);margin-top:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;}
+
+/* taste profile */
+.taste-radar{display:flex;align-items:center;gap:12px;}
+.radar-svg{width:100px;height:100px;flex-shrink:0;}
+.taste-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.taste-tag{font-size:9px;padding:2px 7px;border-radius:5px;font-weight:500;}
+.taste-tag.flavor{background:#fff7ed;color:#c2410c;}
+.taste-tag.texture{background:#f0fdf4;color:#15803d;}
+.taste-tag.atmo{background:#faf5ff;color:#7e22ce;}
+.popular-menu{margin-top:8px;font-size:10px;color:var(--muted);}
+.popular-menu strong{color:var(--text);}
+
+/* quadrant 2D chart */
+.quad-wrap{display:flex;align-items:flex-start;gap:12px;margin-top:4px;}
+.quad-chart{position:relative;width:130px;height:130px;flex-shrink:0;border:1px solid var(--line);border-radius:10px;background:var(--card-bg);}
+.quad-chart .axis-h{position:absolute;top:50%;left:0;right:0;height:1px;background:var(--line);}
+.quad-chart .axis-v{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line);}
+.quad-chart .dot{position:absolute;border-radius:50%;transform:translate(-50%,-50%);transition:all .3s;box-shadow:0 1px 3px rgba(0,0,0,0.15);}
+.quad-chart .dot.wine-dot{background:var(--purple);}
+.quad-chart .axis-label{position:absolute;font-size:7px;color:var(--muted);}
+.quad-chart .ax-top{top:3px;left:50%;transform:translateX(-50%);}
+.quad-chart .ax-bottom{bottom:3px;left:50%;transform:translateX(-50%);}
+.quad-chart .ax-left{left:3px;top:50%;transform:translateY(-50%);}
+.quad-chart .ax-right{right:3px;top:50%;transform:translateY(-50%);}
+.quad-chart .q-zone{position:absolute;font-size:6px;color:var(--muted);opacity:0.5;}
+.quad-info{font-size:9px;color:var(--muted);display:flex;flex-direction:column;gap:4px;padding-top:4px;}
+.quad-info .qi-row{display:flex;align-items:center;gap:4px;}
+.quad-info .qi-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.quad-info .qi-label{font-size:8px;}
+
+/* mini quad coords in timeline */
+.tl-quad{display:flex;gap:8px;margin-top:3px;font-size:9px;color:var(--muted);}
+.tl-quad .tq-item{display:flex;align-items:center;gap:2px;}
+.tl-quad .tq-val{font-weight:700;color:var(--text);}
+
+/* linked items */
+.linked-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch;}
+.linked-row::-webkit-scrollbar{display:none;}
+.linked-card{min-width:130px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--card-bg);flex-shrink:0;}
+.linked-card .lc-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.linked-card .lc-meta{font-size:9px;color:var(--muted);margin-top:1px;}
+.linked-card .lc-score{font-size:14px;font-weight:800;margin-top:3px;}
+.linked-card .lc-score.wine{color:var(--purple);}
+.linked-card .lc-score.rest{color:var(--accent);}
+
+/* empty state */
+.empty-sec{text-align:center;padding:20px 0;color:var(--muted);font-size:11px;}
+.empty-sec i{width:24px;height:24px;margin-bottom:4px;opacity:0.4;}
+.empty-sec .cta{display:inline-block;margin-top:8px;padding:6px 16px;background:var(--accent);color:#fff;border-radius:8px;font-size:11px;font-weight:600;}
+
+/* wine detail specific */
+.wine-identity{display:flex;gap:14px;padding:14px;align-items:flex-start;}
+.wine-label-img{width:70px;height:120px;border-radius:8px;background:linear-gradient(135deg,#2a0a14 0%,#4a1028 50%,#1a0510 100%);flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.wine-label-img .wl-text{color:rgba(255,255,255,0.6);font-size:7px;text-align:center;line-height:1.3;padding:4px;}
+.wine-label-img.white{background:linear-gradient(135deg,#f5f0d0 0%,#e8dfa8 50%,#d4c878 100%);}
+.wine-label-img.white .wl-text{color:rgba(0,0,0,0.4);}
+.wine-label-img.rose{background:linear-gradient(135deg,#f5c6c6 0%,#e8a0a8 50%,#d48090 100%);}
+.wine-info-text{flex:1;min-width:0;}
+.wine-info-text .wi-name{font-size:16px;font-weight:700;line-height:1.3;}
+.wine-info-text .wi-producer{font-size:11px;color:var(--muted);margin-top:2px;}
+.wine-info-text .wi-region{font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:3px;}
+.wine-info-text .wi-region i{width:10px;height:10px;}
+.wine-type-chip{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 7px;border-radius:5px;font-weight:600;margin-top:6px;}
+.wine-type-chip.red{background:#fef2f2;color:#991b1b;}
+.wine-type-chip.white-type{background:#fefce8;color:#854d0e;}
+.wine-type-chip.rose-type{background:#fdf2f8;color:#9d174d;}
+.wine-type-chip.sparkling{background:#f0f9ff;color:#0c4a6e;}
+
+/* wine score (purple) */
+.nyam-score .big.wine{color:var(--purple);}
+
+/* wine DNA bars */
+.dna-bar{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:10px;}
+.dna-bar .dna-label{width:36px;color:var(--muted);text-align:right;flex-shrink:0;}
+.dna-bar .dna-track{flex:1;height:4px;background:var(--tag-bg);border-radius:2px;overflow:hidden;}
+.dna-bar .dna-fill{height:100%;border-radius:2px;transition:width .3s;}
+.dna-bar .dna-fill.wine-fill{background:var(--purple);}
+.dna-bar .dna-fill.food-fill{background:var(--accent);}
+.dna-bar .dna-val{width:20px;font-size:9px;color:var(--muted);text-align:right;}
+
+/* pairing tags */
+.pairing-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.pairing-tag{font-size:9px;padding:3px 8px;border-radius:6px;background:var(--wine-bg);color:var(--purple);font-weight:500;border:1px solid var(--wine-border);}
+
+/* wine facts table */
+.facts-table{font-size:11px;}
+.facts-row{display:flex;padding:5px 0;border-bottom:1px solid var(--line);}
+.facts-row:last-child{border:none;}
+.facts-row .fk{width:70px;color:var(--muted);flex-shrink:0;}
+.facts-row .fv{flex:1;font-weight:500;}
+
+/* bubble record */
+.bubble-rec{padding:8px 0;border-bottom:1px solid var(--line);}
+.bubble-rec:last-child{border:none;}
+.br-head{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.br-avatar{width:20px;height:20px;border-radius:50%;background:var(--tag-bg);flex-shrink:0;}
+.br-name{font-size:10px;font-weight:600;}
+.br-bubble{font-size:8px;padding:1px 5px;border-radius:3px;background:#eff6ff;color:#1d4ed8;}
+.br-time{font-size:9px;color:var(--muted);margin-left:auto;}
+.br-body{display:flex;align-items:baseline;gap:6px;}
+.br-score{font-size:14px;font-weight:800;color:var(--accent);}
+.br-comment{font-size:11px;color:var(--text);}
+.br-scene{font-size:8px;padding:1px 5px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);}
+
+/* sticky cta */
+.sticky-cta{position:sticky;bottom:0;left:0;right:0;padding:8px 14px;background:linear-gradient(transparent,var(--bg) 30%);z-index:5;padding-top:20px;}
+.sticky-cta button{width:100%;height:40px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 2px 12px rgba(255,107,53,0.3);}
+.sticky-cta button i{width:14px;height:14px;}
+.sticky-cta button.wine-cta{background:var(--purple);box-shadow:0 2px 12px rgba(124,58,237,0.3);}
+
+/* wine page bg hint */
+.wine-page{background:var(--wine-bg);}
+[data-theme="dark"] .wine-page{background:var(--bg);}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()"><i data-lucide="moon" style="width:13px;height:13px;"></i> <span id="tl">Dark</span></button>
+
+<div class="page">
+<h1>Nyam 상세페이지 목업</h1>
+<p class="subtitle">식당 + 와인 — 미니멀 철학 적용. 내 기록이 주인공, 나머지는 맥락.</p>
+
+<div class="mockups">
+
+<!-- ======== 식당 상세: 기록 있음 ======== -->
+<div>
+<div class="mockup-label">식당 상세 — 기록 있음</div>
+<div class="mockup-desc">재방문 3회. 내 기록 타임라인 + 맛 프로필 + 실용 정보. 추천/외부정보는 절제.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <!-- hero -->
+    <div class="hero">
+      <div class="hero-placeholder"><i data-lucide="image"></i></div>
+      <div class="hero-overlay">
+        <div class="back"><button class="hero-btn"><i data-lucide="arrow-left"></i></button></div>
+        <div class="actions">
+          <button class="hero-btn"><i data-lucide="heart"></i></button>
+          <button class="hero-btn"><i data-lucide="more-horizontal"></i></button>
+        </div>
+      </div>
+      <div class="hero-dots"><span class="on"></span><span></span><span></span></div>
+    </div>
+
+    <!-- identity -->
+    <div class="identity">
+      <div class="rest-name">도쿄등심</div>
+      <div class="rest-meta">
+        <i data-lucide="utensils"></i> 일식 · 강남
+        <span style="margin-left:4px;color:var(--muted);">₩₩₩</span>
+      </div>
+    </div>
+
+    <!-- score -->
+    <div class="score-row">
+      <div class="nyam-score">
+        <span class="big">87</span>
+        <span class="label">3회 방문</span>
+      </div>
+      <div class="ext-scores">
+        <div class="ext-badge"><span class="platform" style="color:#03c75a;">N</span> 4.3</div>
+        <div class="ext-badge"><span class="platform" style="color:#fee500;text-shadow:0 0 1px rgba(0,0,0,0.3);">K</span> 4.1</div>
+        <div class="ext-badge"><span class="platform" style="color:#4285f4;">G</span> 4.4</div>
+      </div>
+    </div>
+
+    <!-- quadrant 2D (all my records as dots) -->
+    <div class="sec" style="padding-bottom:4px;">
+      <div class="sec-title"><i data-lucide="grid-2x2"></i> 사분면</div>
+      <div class="quad-wrap">
+        <div class="quad-chart">
+          <div class="axis-h"></div>
+          <div class="axis-v"></div>
+          <!-- axis labels -->
+          <span class="axis-label ax-top">포멀</span>
+          <span class="axis-label ax-bottom">캐주얼</span>
+          <span class="axis-label ax-left">저렴</span>
+          <span class="axis-label ax-right">고가</span>
+          <!-- dots: left=가격%, top=(100-분위기)% inverted, size=만족도 -->
+          <!-- 3/12 회식: 가격78%, 분위기82%, 만족도92 → purple border -->
+          <div class="dot" style="left:78%;top:18%;width:16px;height:16px;background:var(--accent);border:2px solid #8b5cf6;opacity:0.9;"></div>
+          <!-- 2/28 데이트: 가격72%, 분위기85%, 만족도85 → pink border -->
+          <div class="dot" style="left:72%;top:15%;width:13px;height:13px;background:var(--accent);border:2px solid #ec4899;opacity:0.9;"></div>
+          <!-- 1/10 혼밥: 가격35%, 분위기40%, 만족도83 → blue border -->
+          <div class="dot" style="left:35%;top:60%;width:12px;height:12px;background:var(--accent);border:2px solid #3b82f6;opacity:0.9;"></div>
+          <!-- ref dots (other users, faint) -->
+          <div class="dot" style="left:75%;top:20%;width:8px;height:8px;background:var(--muted);opacity:0.15;"></div>
+          <div class="dot" style="left:80%;top:25%;width:10px;height:10px;background:var(--muted);opacity:0.15;"></div>
+        </div>
+        <div class="quad-info">
+          <div style="font-size:8px;font-weight:600;color:var(--text);margin-bottom:2px;">내 기록 3회</div>
+          <div class="qi-row"><div class="qi-dot" style="background:#8b5cf6;"></div><span class="qi-label">회식 · 맛 92</span></div>
+          <div class="qi-row"><div class="qi-dot" style="background:#ec4899;"></div><span class="qi-label">데이트 · 맛 85</span></div>
+          <div class="qi-row"><div class="qi-dot" style="background:#3b82f6;"></div><span class="qi-label">혼밥 · 맛 83</span></div>
+          <div style="margin-top:6px;font-size:7px;color:var(--muted);">점 크기 = 맛 만족도<br/>점 테두리 = 상황</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- action bar -->
+    <div class="action-bar">
+      <button class="primary-btn"><i data-lucide="plus"></i> 재방문 기록</button>
+      <button class="ghost-btn"><i data-lucide="bookmark"></i></button>
+      <button class="ghost-btn"><i data-lucide="share-2"></i></button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- my records -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="clock"></i> 나의 기록 <span class="count">3</span></div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-head">
+            <span class="tl-date">3/12</span>
+            <span class="tl-scene">회식</span>
+            <span class="tl-score">92</span>
+          </div>
+          <div class="tl-comment">코스 A가 확실히 낫다. 사케 페어링 추천.</div>
+          <div class="tl-quad">
+            <span class="tq-item">가격 <span class="tq-val">78%</span></span>
+            <span class="tq-item">분위기 <span class="tq-val">82%</span></span>
+            <span class="tq-item">맛 <span class="tq-val">92</span></span>
+          </div>
+          <div class="tl-photos"><div class="ph"></div><div class="ph"></div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-head">
+            <span class="tl-date">2/28</span>
+            <span class="tl-scene">데이트</span>
+            <span class="tl-score">85</span>
+          </div>
+          <div class="tl-comment">분위기 좋은데 코스가 좀 아쉬움</div>
+          <div class="tl-quad">
+            <span class="tq-item">가격 <span class="tq-val">72%</span></span>
+            <span class="tq-item">분위기 <span class="tq-val">85%</span></span>
+            <span class="tq-item">맛 <span class="tq-val">85</span></span>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-head">
+            <span class="tl-date">1/10</span>
+            <span class="tl-scene">혼밥</span>
+            <span class="tl-score">83</span>
+          </div>
+          <div class="tl-comment">런치 오마카세 가성비 좋다</div>
+          <div class="tl-quad">
+            <span class="tq-item">가격 <span class="tq-val">35%</span></span>
+            <span class="tq-item">분위기 <span class="tq-val">40%</span></span>
+            <span class="tq-item">맛 <span class="tq-val">83</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- popular menu -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="utensils"></i> 추천 메뉴</div>
+      <div class="popular-menu" style="margin-top:0;">
+        <strong>코스 A</strong> ★3 · <strong>런치 오마카세</strong> ★2 · <strong>사케 페어링</strong> ★1
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- info -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="info"></i> 정보</div>
+      <div class="info-row">
+        <i data-lucide="map-pin"></i>
+        <div class="value">서울 강남구 테헤란로 123<div class="minimap"><i data-lucide="map" style="width:16px;height:16px;opacity:0.3;"></i></div></div>
+      </div>
+      <div class="info-row">
+        <i data-lucide="clock"></i>
+        <div class="value"><span class="status-open">영업 중</span> · 22:00 마감</div>
+      </div>
+      <div class="info-row">
+        <i data-lucide="phone"></i>
+        <div class="value">02-1234-5678</div>
+      </div>
+
+      <!-- menu expand -->
+      <div class="expand-trigger2" onclick="this.nextElementSibling.classList.toggle('open')">
+        <i data-lucide="menu"></i> 메뉴판 보기 <i data-lucide="chevron-down" style="margin-left:auto;"></i>
+      </div>
+      <div class="expand-content2">
+        <div class="menu-row"><span class="mn">오마카세 코스 A</span><span class="mp">120,000</span></div>
+        <div class="menu-row"><span class="mn">오마카세 코스 B</span><span class="mp">80,000</span></div>
+        <div class="menu-row"><span class="mn">런치 오마카세</span><span class="mp">55,000</span></div>
+        <div class="menu-row"><span class="mn">사케 페어링</span><span class="mp">40,000</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- linked wines -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="wine"></i> 여기서 마신 와인</div>
+      <div class="linked-row">
+        <div class="linked-card">
+          <div class="lc-name">Dassai 23</div>
+          <div class="lc-meta">준마이다이긴조 · 야마구치</div>
+          <div class="lc-score wine">91</div>
+        </div>
+        <div class="linked-card">
+          <div class="lc-name">쿠보타 만쥬</div>
+          <div class="lc-meta">준마이다이긴조 · 니가타</div>
+          <div class="lc-score wine">86</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- bubble records (P2 preview) -->
+    <div class="sec" style="padding-bottom:10px;">
+      <div class="sec-title"><i data-lucide="users"></i> 버블 기록 <span class="count">2</span></div>
+      <div class="bubble-rec">
+        <div class="br-head">
+          <div class="br-avatar"></div>
+          <span class="br-name">김영수</span>
+          <span class="br-bubble">직장 맛집</span>
+          <span class="br-time">3/15</span>
+        </div>
+        <div class="br-body">
+          <span class="br-score">90</span>
+          <span class="br-comment">여기 코스A 진짜 미침</span>
+          <span class="br-scene">회식</span>
+        </div>
+      </div>
+      <div class="bubble-rec">
+        <div class="br-head">
+          <div class="br-avatar"></div>
+          <span class="br-name">박소연</span>
+          <span class="br-bubble">와인 모임</span>
+          <span class="br-time">2/20</span>
+        </div>
+        <div class="br-body">
+          <span class="br-score">78</span>
+          <span class="br-comment">음식은 좋은데 와인 리스트가 좀...</span>
+          <span class="br-scene">모임</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+  </div>
+</div>
+</div>
+
+<!-- ======== 식당 상세: 기록 없음 ======== -->
+<div>
+<div class="mockup-label">식당 상세 — 기록 없음 (첫 방문 전)</div>
+<div class="mockup-desc">외부 정보만으로도 유용. 빈 상태에서도 기록 유도가 자연스럽게.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <div class="hero">
+      <div class="hero-placeholder"><i data-lucide="image"></i></div>
+      <div class="hero-overlay">
+        <div class="back"><button class="hero-btn"><i data-lucide="arrow-left"></i></button></div>
+        <div class="actions">
+          <button class="hero-btn"><i data-lucide="heart"></i></button>
+          <button class="hero-btn"><i data-lucide="more-horizontal"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="identity">
+      <div class="rest-name">미진</div>
+      <div class="rest-meta">
+        <i data-lucide="utensils"></i> 한식 · 광화문
+        <span style="margin-left:4px;">₩₩</span>
+        <span class="authority-badge"><i data-lucide="star"></i> 블루리본</span>
+      </div>
+    </div>
+
+    <div class="score-row">
+      <div class="nyam-score" style="opacity:0.3;">
+        <span class="big">—</span>
+        <span class="label">기록 없음</span>
+      </div>
+      <div class="ext-scores">
+        <div class="ext-badge"><span class="platform" style="color:#03c75a;">N</span> 4.5</div>
+        <div class="ext-badge"><span class="platform" style="color:#fee500;text-shadow:0 0 1px rgba(0,0,0,0.3);">K</span> 4.3</div>
+        <div class="ext-badge"><span class="platform" style="color:#4285f4;">G</span> 4.6</div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="primary-btn"><i data-lucide="plus"></i> 첫 기록 남기기</button>
+      <button class="ghost-btn" style="color:var(--accent);border-color:var(--accent);"><i data-lucide="heart"></i></button>
+      <button class="ghost-btn"><i data-lucide="share-2"></i></button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- empty my records -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="clock"></i> 나의 기록</div>
+      <div class="empty-sec">
+        <i data-lucide="utensils-crossed"></i>
+        <div>아직 방문 기록이 없어요</div>
+        <div style="margin-top:4px;font-size:10px;">방문하셨다면 기록을 남겨보세요</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- info (still useful without records) -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="info"></i> 정보</div>
+      <div class="info-row">
+        <i data-lucide="map-pin"></i>
+        <div class="value">서울 종로구 세종대로 175<div class="minimap"><i data-lucide="map" style="width:16px;height:16px;opacity:0.3;"></i></div></div>
+      </div>
+      <div class="info-row">
+        <i data-lucide="clock"></i>
+        <div class="value"><span class="status-closed">영업 종료</span> · 내일 11:00 오픈</div>
+      </div>
+      <div class="info-row">
+        <i data-lucide="phone"></i>
+        <div class="value">02-735-3131</div>
+      </div>
+
+      <div class="expand-trigger2" onclick="this.nextElementSibling.classList.toggle('open')">
+        <i data-lucide="menu"></i> 메뉴판 보기 <i data-lucide="chevron-down" style="margin-left:auto;"></i>
+      </div>
+      <div class="expand-content2">
+        <div class="menu-row"><span class="mn">메밀국수</span><span class="mp">12,000</span></div>
+        <div class="menu-row"><span class="mn">비빔국수</span><span class="mp">12,000</span></div>
+        <div class="menu-row"><span class="mn">메밀전병</span><span class="mp">15,000</span></div>
+        <div class="menu-row"><span class="mn">만두</span><span class="mp">13,000</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- bubble (P2 empty) -->
+    <div class="sec" style="padding-bottom:10px;">
+      <div class="sec-title"><i data-lucide="users"></i> 버블 기록</div>
+      <div class="empty-sec">
+        <i data-lucide="users"></i>
+        <div>아직 버블 멤버의 기록이 없어요</div>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+  </div>
+</div>
+</div>
+
+<!-- ======== 와인 상세: 기록 있음 ======== -->
+<div>
+<div class="mockup-label" style="color:var(--purple);">와인 상세 — 기록 있음</div>
+<div class="mockup-desc">라벨+텍스트 좌우 배치. Wine DNA는 바 차트로 직관적. 페어링이 DNA 바로 아래.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen wine-page">
+
+    <!-- wine identity (no hero carousel - label + text side by side) -->
+    <div style="padding:10px 12px 0;display:flex;justify-content:space-between;align-items:center;">
+      <button style="background:none;border:none;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--sans);font-size:12px;"><i data-lucide="arrow-left" style="width:16px;height:16px;"></i></button>
+      <div style="display:flex;gap:6px;">
+        <button style="background:none;border:none;color:var(--muted);cursor:pointer;"><i data-lucide="heart" style="width:18px;height:18px;"></i></button>
+        <button style="background:none;border:none;color:var(--muted);cursor:pointer;"><i data-lucide="more-horizontal" style="width:18px;height:18px;"></i></button>
+      </div>
+    </div>
+
+    <div class="wine-identity">
+      <div class="wine-label-img">
+        <div class="wl-text">CHÂTEAU<br/>MARGAUX<br/>2018<br/><span style="font-size:5px;">PREMIER GRAND CRU CLASSÉ</span></div>
+      </div>
+      <div class="wine-info-text">
+        <div class="wi-name">Château Margaux 2018</div>
+        <div class="wi-producer">Château Margaux</div>
+        <div class="wi-region"><i data-lucide="map-pin"></i> 보르도, 마고 · 프랑스</div>
+        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">
+          <span class="wine-type-chip red">레드</span>
+          <span style="font-size:9px;padding:2px 7px;border-radius:5px;background:var(--tag-bg);color:var(--tag-text);">2018</span>
+          <span style="font-size:9px;padding:2px 7px;border-radius:5px;background:var(--tag-bg);color:var(--tag-text);">14.5%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- score -->
+    <div class="score-row">
+      <div class="nyam-score">
+        <span class="big wine">91</span>
+        <span class="label">2회 기록</span>
+      </div>
+    </div>
+
+    <!-- action -->
+    <div class="action-bar">
+      <button class="primary-btn" style="background:var(--purple);"><i data-lucide="plus"></i> 재음용 기록</button>
+      <button class="ghost-btn"><i data-lucide="bookmark"></i></button>
+      <button class="ghost-btn"><i data-lucide="share-2"></i></button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Wine Quadrant -->
+    <div class="sec">
+      <div class="sec-title" style="color:var(--purple);"><i data-lucide="grid-2x2"></i> 사분면</div>
+      <div class="quad-wrap">
+        <div class="quad-chart" style="border-color:var(--wine-border);">
+          <div class="axis-h"></div>
+          <div class="axis-v"></div>
+          <span class="axis-label ax-top">Full Body</span>
+          <span class="axis-label ax-bottom">Light</span>
+          <span class="axis-label ax-left">산미↓</span>
+          <span class="axis-label ax-right">산미↑</span>
+          <!-- 3/15 페어링: 산미45%, 바디82%, 만족도94 → 향색=어두운자주 -->
+          <div class="dot" style="left:45%;top:18%;width:16px;height:16px;background:#3d0a2e;border:2px solid #22c55e;opacity:0.9;"></div>
+          <!-- 1/25 혼술: 산미40%, 바디78%, 만족도88 → 향색=자주적갈 -->
+          <div class="dot" style="left:40%;top:22%;width:13px;height:13px;background:#6b1530;border:2px solid #3b82f6;opacity:0.9;"></div>
+          <!-- ref dots -->
+          <div class="dot" style="left:42%;top:20%;width:7px;height:7px;background:var(--muted);opacity:0.12;"></div>
+        </div>
+        <div class="quad-info">
+          <div style="font-size:8px;font-weight:600;color:var(--purple);margin-bottom:2px;">내 기록 2회</div>
+          <div class="qi-row"><div class="qi-dot" style="background:#3d0a2e;border:1px solid #22c55e;"></div><span class="qi-label">페어링 · 94점 · 블랙베리</span></div>
+          <div class="qi-row"><div class="qi-dot" style="background:#6b1530;border:1px solid #3b82f6;"></div><span class="qi-label">혼술 · 88점 · 자두</span></div>
+          <div style="margin-top:6px;font-size:7px;color:var(--muted);">점 크기 = 만족도<br/>점 색상 = 향 팔레트<br/>점 테두리 = 상황</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- pairing (right below DNA) -->
+    <div class="sec" style="padding-top:0;">
+      <div class="sec-title"><i data-lucide="grape"></i> 음식 페어링</div>
+      <div class="pairing-tags">
+        <span class="pairing-tag">스테이크</span>
+        <span class="pairing-tag">양갈비</span>
+        <span class="pairing-tag">숙성 치즈</span>
+        <span class="pairing-tag">트러플 파스타</span>
+        <span class="pairing-tag">다크 초콜릿</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- my records -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="clock"></i> 나의 기록 <span class="count" style="color:var(--purple);">2</span></div>
+      <div class="timeline">
+        <div class="tl-item" style="--accent:var(--purple);">
+          <div class="tl-head">
+            <span class="tl-date">3/15</span>
+            <span class="tl-scene">페어링</span>
+            <span class="tl-score" style="color:var(--purple);">94</span>
+          </div>
+          <div class="tl-comment">스테이크와 환상 궁합. 20분 디캔팅 후 완벽.</div>
+          <div class="tl-quad">
+            <span class="tq-item">산미 <span class="tq-val">45%</span></span>
+            <span class="tq-item">바디 <span class="tq-val">82%</span></span>
+            <span class="tq-item" style="color:#3d0a2e;">향 블랙베리</span>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:3px;"><i data-lucide="map-pin" style="width:9px;height:9px;"></i> 도쿄등심</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-head">
+            <span class="tl-date">1/25</span>
+            <span class="tl-scene">혼술</span>
+            <span class="tl-score" style="color:var(--purple);">88</span>
+          </div>
+          <div class="tl-comment">혼자 마시기엔 좀 묵직하다. 반병이 적당.</div>
+          <div class="tl-quad">
+            <span class="tq-item">산미 <span class="tq-val">40%</span></span>
+            <span class="tq-item">바디 <span class="tq-val">78%</span></span>
+            <span class="tq-item" style="color:#6b1530;">향 자두</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- wine facts -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="info"></i> 와인 정보</div>
+      <div class="facts-table">
+        <div class="facts-row"><span class="fk">품종</span><span class="fv">Cabernet Sauvignon, Merlot, Petit Verdot</span></div>
+        <div class="facts-row"><span class="fk">산지</span><span class="fv">프랑스 보르도, 마고 AOC</span></div>
+        <div class="facts-row"><span class="fk">타입</span><span class="fv">레드 (드라이)</span></div>
+        <div class="facts-row"><span class="fk">알코올</span><span class="fv">14.5%</span></div>
+        <div class="facts-row"><span class="fk">적정 온도</span><span class="fv">16 – 18°C</span></div>
+        <div class="facts-row"><span class="fk">디캔팅</span><span class="fv">20 – 30분 권장</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- linked restaurants -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="utensils"></i> 이 와인을 마신 식당</div>
+      <div class="linked-row">
+        <div class="linked-card">
+          <div class="lc-name">도쿄등심</div>
+          <div class="lc-meta">일식 · 강남</div>
+          <div class="lc-score rest">92</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- bubble -->
+    <div class="sec" style="padding-bottom:10px;">
+      <div class="sec-title"><i data-lucide="users"></i> 버블 기록 <span class="count" style="color:var(--purple);">1</span></div>
+      <div class="bubble-rec">
+        <div class="br-head">
+          <div class="br-avatar"></div>
+          <span class="br-name">이준호</span>
+          <span class="br-bubble" style="background:#f5f3ff;color:#6d28d9;">와인 모임</span>
+          <span class="br-time">2/14</span>
+        </div>
+        <div class="br-body">
+          <span class="br-score" style="color:var(--purple);">96</span>
+          <span class="br-comment">2018 빈티지 역대급. 꼭 마셔봐라</span>
+          <span class="br-scene">모임</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+  </div>
+</div>
+</div>
+
+<!-- ======== 와인 상세: 기록 없음 ======== -->
+<div>
+<div class="mockup-label" style="color:var(--purple);">와인 상세 — 기록 없음</div>
+<div class="mockup-desc">와인 정보만으로도 가치. 찜 유도가 핵심 CTA.</div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen wine-page">
+
+    <div style="padding:10px 12px 0;display:flex;justify-content:space-between;align-items:center;">
+      <button style="background:none;border:none;color:var(--text);cursor:pointer;"><i data-lucide="arrow-left" style="width:16px;height:16px;"></i></button>
+      <div style="display:flex;gap:6px;">
+        <button style="background:none;border:none;color:var(--muted);cursor:pointer;"><i data-lucide="heart" style="width:18px;height:18px;"></i></button>
+        <button style="background:none;border:none;color:var(--muted);cursor:pointer;"><i data-lucide="more-horizontal" style="width:18px;height:18px;"></i></button>
+      </div>
+    </div>
+
+    <div class="wine-identity">
+      <div class="wine-label-img white">
+        <div class="wl-text">CLOUDY BAY<br/>Sauvignon<br/>Blanc<br/><span style="font-size:5px;">MARLBOROUGH 2023</span></div>
+      </div>
+      <div class="wine-info-text">
+        <div class="wi-name">Cloudy Bay<br/>Sauvignon Blanc 2023</div>
+        <div class="wi-producer">Cloudy Bay Vineyards</div>
+        <div class="wi-region"><i data-lucide="map-pin"></i> 말보로 · 뉴질랜드</div>
+        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">
+          <span class="wine-type-chip white-type">화이트</span>
+          <span style="font-size:9px;padding:2px 7px;border-radius:5px;background:var(--tag-bg);color:var(--tag-text);">2023</span>
+          <span style="font-size:9px;padding:2px 7px;border-radius:5px;background:var(--tag-bg);color:var(--tag-text);">13.5%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-row">
+      <div class="nyam-score" style="opacity:0.3;">
+        <span class="big wine">—</span>
+        <span class="label">기록 없음</span>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="primary-btn" style="background:var(--purple);"><i data-lucide="plus"></i> 첫 기록 남기기</button>
+      <button class="ghost-btn" style="color:var(--purple);border-color:var(--purple);"><i data-lucide="heart"></i></button>
+      <button class="ghost-btn"><i data-lucide="share-2"></i></button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- empty records -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="clock"></i> 나의 기록</div>
+      <div class="empty-sec">
+        <i data-lucide="wine"></i>
+        <div>아직 기록이 없어요</div>
+        <div style="margin-top:4px;font-size:10px;">이 와인을 마셨다면 기록을 남겨보세요</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- pairing (useful even without records) -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="grape"></i> 음식 페어링</div>
+      <div class="pairing-tags">
+        <span class="pairing-tag">해산물</span>
+        <span class="pairing-tag">새우</span>
+        <span class="pairing-tag">샐러드</span>
+        <span class="pairing-tag">가벼운 파스타</span>
+        <span class="pairing-tag">염소 치즈</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- wine facts -->
+    <div class="sec">
+      <div class="sec-title"><i data-lucide="info"></i> 와인 정보</div>
+      <div class="facts-table">
+        <div class="facts-row"><span class="fk">품종</span><span class="fv">Sauvignon Blanc</span></div>
+        <div class="facts-row"><span class="fk">산지</span><span class="fv">뉴질랜드 말보로</span></div>
+        <div class="facts-row"><span class="fk">타입</span><span class="fv">화이트 (드라이)</span></div>
+        <div class="facts-row"><span class="fk">알코올</span><span class="fv">13.5%</span></div>
+        <div class="facts-row"><span class="fk">적정 온도</span><span class="fv">8 – 10°C</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- bubble empty -->
+    <div class="sec" style="padding-bottom:10px;">
+      <div class="sec-title"><i data-lucide="users"></i> 버블 기록</div>
+      <div class="empty-sec">
+        <i data-lucide="users"></i>
+        <div>아직 버블 멤버의 기록이 없어요</div>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+lucide.createIcons();
+function toggleTheme(){
+  const d=document.documentElement, l=document.getElementById('tl');
+  if(d.getAttribute('data-theme')==='dark'){d.removeAttribute('data-theme');l.textContent='Dark';}
+  else{d.setAttribute('data-theme','dark');l.textContent='Light';}
+}
+</script>
+</body>
+</html>

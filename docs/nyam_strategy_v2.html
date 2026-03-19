@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nyam 전략 & 기능 정의서 v2.0</title>
+  <style>
+    :root{
+      --bg:#0a0e13; --panel:#0f1620; --panel2:#0c121b; --text:#e8eef7; --muted:#a0afc2;
+      --line:#1f2c3b; --accent:#ff6b35; --accent2:#ffa62b; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --blue:#61dafb; --purple:#8b5cf6;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    html,body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.6; margin:0;}
+    a{color:var(--blue); text-decoration:none;} a:hover{text-decoration:underline;}
+    .wrap{max-width:1100px; margin:0 auto; padding:28px 18px 80px;}
+
+    header{padding:24px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg, #1a0e05 0%, var(--panel) 50%, #0a1520 100%);}
+    header h1{margin:0 0 4px; font-size:24px; color:var(--accent);}
+    header .sub{font-size:15px; color:var(--accent2); margin-bottom:12px;}
+    header .meta{color:var(--muted); font-size:13px; display:flex; gap:14px; flex-wrap:wrap;}
+
+    .identity{margin-top:18px; padding:20px; border:2px solid var(--accent); border-radius:16px; background:rgba(255,107,53,0.06);}
+    .identity h2{margin:0 0 8px; color:var(--accent); font-size:18px;}
+    .identity .tagline{font-size:20px; font-weight:700; margin:8px 0;}
+    .identity .desc{color:var(--muted); font-size:14px;}
+
+    section{margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--panel);}
+    section h2{margin:0 0 12px; font-size:18px; color:var(--accent2);}
+    section h3{margin:16px 0 8px; font-size:15px; color:#d8e6ff;}
+    p{margin:8px 0;}
+
+    .grid{display:grid; grid-template-columns:1fr; gap:12px;}
+    @media(min-width:760px){.grid{grid-template-columns:1fr 1fr;}}
+    @media(min-width:1000px){.grid3{grid-template-columns:1fr 1fr 1fr;}}
+
+    .card{padding:14px; border:1px solid var(--line); border-radius:14px; background:rgba(0,0,0,0.2);}
+    .card h4{margin:0 0 6px; font-size:14px;}
+    .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid var(--line);}
+    .badge.core{color:#ffcba4; border-color:#7c2d12; background:rgba(255,107,53,0.15);}
+    .badge.mvp{color:#bbf7d0; border-color:#14532d; background:rgba(34,197,94,0.12);}
+    .badge.later{color:#bfdbfe; border-color:#1e3a5f; background:rgba(59,130,246,0.1);}
+    .badge.risk{color:#fecaca; border-color:#7f1d1d; background:rgba(239,68,68,0.12);}
+    .badge.insight{color:#e9d5ff; border-color:#4c1d95; background:rgba(139,92,246,0.12);}
+
+    table{width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+    th,td{padding:10px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13px;}
+    th{background:rgba(255,107,53,0.08); text-align:left; font-weight:700;}
+    tr:last-child td{border-bottom:none;}
+
+    .hl{padding:12px 14px; border-radius:12px; border:1px dashed rgba(255,107,53,0.4); background:rgba(255,107,53,0.05);}
+    .quote{border-left:3px solid var(--purple); padding:10px 12px; background:rgba(139,92,246,0.08); border-radius:10px; font-style:italic;}
+    .vs{display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:start;}
+    .vs .divider{color:var(--muted); font-size:20px; padding-top:20px;}
+    .note{color:var(--muted); font-size:12.5px;}
+    .muted{color:var(--muted);}
+    code{font-family:var(--mono); font-size:12.5px; color:#d1fae5;}
+    .hr{height:1px; background:var(--line); margin:16px 0;}
+    .flow{padding:16px; background:rgba(0,0,0,0.25); border-radius:12px; font-family:var(--mono); font-size:13px; line-height:1.8; color:var(--muted);}
+    .flow .step{color:var(--accent2);}
+    .footer{margin-top:18px; color:var(--muted); font-size:12.5px;}
+    ul,ol{margin:6px 0; padding-left:20px;}
+    li{margin:4px 0;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Nyam 전략 & 기능 정의서</h1>
+  <div class="sub">v2.0 — 정체성 재정립 & 기능 설계</div>
+  <div class="meta">
+    <span>작성일: 2026-03-19</span>
+    <span>기반: 레터박스 분석 + 당근마켓 인사이트 + 도메인 특성 분석</span>
+    <span>상태: 전략 수립 단계</span>
+  </div>
+</header>
+
+<!-- ========== 정체성 ========== -->
+<div class="identity">
+  <h2>정체성 선언</h2>
+  <div class="tagline">"내가 아는 사람들의 진짜 맛집 기록으로 만드는, 상황별 맛집 비서"</div>
+  <div class="desc">
+    기록은 개인의 것이지만, 모이면 동네의 맛집 지도가 된다.<br/>
+    낯선 동네에서는 그 동네 사람의 기록이 가장 믿을 만한 가이드가 된다.
+  </div>
+  <div style="margin-top:12px;">
+    <span class="badge core">핵심 가치 1: 최소 마찰 기록</span>
+    <span class="badge core">핵심 가치 2: 상황별 취향 분석</span>
+    <span class="badge core">핵심 가치 3: 신뢰 기반 로컬 추천</span>
+  </div>
+</div>
+
+<!-- ========== 1. 왜 Nyam인가 ========== -->
+<section>
+  <h2>1. 문제 정의 — 왜 Nyam이 필요한가</h2>
+
+  <h3>1-1. 핵심 페인포인트</h3>
+  <div class="hl">
+    <strong>"나의 식도락 여정을 기록하고 싶다. 언제, 누구랑, 어디서, 뭘 먹었고, 어땠는지."</strong><br/>
+    <strong>"그런데 기록은 너무 귀찮다."</strong>
+  </div>
+
+  <h3>1-2. 기존 솔루션이 해결 못하는 것</h3>
+  <table>
+    <thead><tr><th>기존 서비스</th><th>하는 것</th><th>안 되는 것</th></tr></thead>
+    <tbody>
+      <tr><td>네이버/카카오맵</td><td>식당 검색, 리뷰 열람</td><td>개인 기록, 취향 분석, 신뢰 기반 추천 없음. 광고/조작 리뷰</td></tr>
+      <tr><td>인스타그램</td><td>맛집 사진 공유, 팔로우</td><td>검색/필터 불가, 데이터 구조화 없음, 취향 분석 없음</td></tr>
+      <tr><td>메모앱/카톡</td><td>간단 기록</td><td>검색 어려움, 축적 가치 없음, 공유 구조 없음</td></tr>
+      <tr><td>캐치테이블</td><td>예약, 일부 큐레이션</td><td>개인 기록 도구 아님, 예약 가능 식당만 대상</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1-3. Nyam만의 기회 — 식도락 도메인의 구조적 강점</h3>
+  <table>
+    <thead><tr><th>축</th><th>영화 (레터박스)</th><th>식도락 (Nyam)</th><th>Nyam 우위</th></tr></thead>
+    <tbody>
+      <tr><td>빈도</td><td>주 1~2회</td><td>하루 2~3회</td><td>데이터가 빠르게 축적</td></tr>
+      <tr><td>취향 차원</td><td>"이 장르 좋아해" (1D)</td><td>"이 상황에서 이런 걸 좋아해" (2D)</td><td>더 정밀한 개인화 가능</td></tr>
+      <tr><td>상황 변수</td><td>거의 없음</td><td>혼밥/데이트/회식/가족 전부 다름</td><td>상황별 추천이라는 신규 가치</td></tr>
+      <tr><td>로컬 가치</td><td>전세계 동일 콘텐츠</td><td>동네마다 다름</td><td>현지인 추천 = 최고의 신뢰</td></tr>
+      <tr><td>맥락 데이터</td><td>제한적</td><td>누구랑, 예산, 대기, 메뉴, 분위기...</td><td>풍부한 태그/분류 가능</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 2. 전략 프레임워크 ========== -->
+<section>
+  <h2>2. 전략 프레임워크</h2>
+
+  <h3>2-1. 레터박스에서 가져오는 것</h3>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="badge mvp">채택</span> 최소 마찰 기록</h4>
+      <p>레터박스: 영화 검색 → 별점 → 끝<br/>
+      Nyam: <strong>식당 검색 → 별점 → 상황 태그 → 끝</strong><br/>
+      탭 3번이면 기록 완료. 리뷰/사진은 선택사항.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge mvp">채택</span> 리스트 = 성장 엔진</h4>
+      <p>유저가 만드는 리스트("을지로 혼밥 맛집", "강남 접대용 일식")가 SEO/공유/발견을 동시에 견인. 레터박스에서 가장 중독적인 기능.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge mvp">채택</span> 사람 기반 피드</h4>
+      <p>알고리즘 추천이 아니라 "취향이 비슷한 사람"을 팔로우. 그 사람의 기록이 곧 내 추천. 식당 리뷰 신뢰 문제를 구조적으로 해결.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge later">Phase 2</span> 연말 결산 (Year in Review)</h4>
+      <p>"올해 가장 많이 간 동네, 최애 장르, 단골 식당, 총 지출 추정" → 공유 → 바이럴. 기록의 보상.</p>
+    </div>
+  </div>
+
+  <h3>2-2. 당근마켓에서 배우는 것</h3>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="badge insight">인사이트</span> 지리적 제한 = 신뢰의 근거</h4>
+      <p>당근: 전국 → 동네로 좁히니 사기가 줄고 신뢰가 생김<br/>
+      Nyam: <strong>동네 사람의 기록 = 현지인 가이드</strong>. 지리적 한계가 핵심 가치.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge insight">인사이트</span> 한 동네부터 시작</h4>
+      <p>당근도 판교에서 시작. Nyam도 <strong>특정 동네 1~2곳에서 밀도 있게</strong> 시작하고, 그 동네 기록이 충분해지면 확장.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge insight">인사이트</span> 기록보다 네트워크가 본질</h4>
+      <p>당근의 핵심은 중고거래가 아니라 "동네 커뮤니티". Nyam도 <strong>"기록"이 수단이고, "동네 맛집 신뢰 네트워크"가 진짜 자산.</strong></p>
+    </div>
+    <div class="card">
+      <h4><span class="badge risk">주의</span> 즉각적 인센티브 부재</h4>
+      <p>당근은 "물건 팔면 돈"이라는 즉각 보상이 있었음. Nyam은 기록의 장기 보상만으로 초기 구동이 어려울 수 있음. 대안 필요.</p>
+    </div>
+  </div>
+
+  <h3>2-3. 레터박스와의 구조적 차이 — 솔직한 인정</h3>
+  <table>
+    <thead><tr><th>문제</th><th>레터박스는</th><th>Nyam은</th><th>대응 전략</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>DB 구축</td>
+        <td>TMDB에 모든 영화 완비</td>
+        <td>자체 식당 DB 불가능</td>
+        <td>카카오맵/네이버/구글 교차검증으로 위임. Nyam은 "관계 데이터"만 소유</td>
+      </tr>
+      <tr>
+        <td>콘텐츠 보편성</td>
+        <td>전세계가 같은 영화를 봄</td>
+        <td>내 동네 식당은 나만 관심</td>
+        <td>보편성 포기 → 로컬 밀도에 집중. "을지로의 레터박스"</td>
+      </tr>
+      <tr>
+        <td>통계적 의미</td>
+        <td>영화 1편에 수백만 평가</td>
+        <td>식당 1곳에 수십 평가</td>
+        <td>대중 평점 대신 "내가 아는 사람들의 평가"로 전환</td>
+      </tr>
+      <tr>
+        <td>기록 동기</td>
+        <td>영화 취향 = 정체성</td>
+        <td>식당 기록 동기가 약함</td>
+        <td>상황별 분석이라는 고유 가치 + 다른 사람에게 도움이 되는 보람</td>
+      </tr>
+      <tr>
+        <td>콜드스타트</td>
+        <td>인기 영화 체크로 시작</td>
+        <td>기록 쌓여야 가치</td>
+        <td>기존 데이터 import + 크리에이터 모델 (소수 기록, 다수 소비)</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 3. 기능 목록 ========== -->
+<section>
+  <h2>3. 기능 목록 — Phase별 로드맵</h2>
+
+  <h3>Phase 1: MVP — "기록이 쌓이면 나를 아는 맛집 비서"</h3>
+  <p class="note">목표: 혼자서도 가치 있는 개인 기록 도구. 소셜 없이도 쓸 이유가 있어야 함.</p>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:22%">기능</th><th>설명</th><th style="width:18%">레터박스 대응</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Quick Log (빠른 기록)</strong></td>
+        <td>
+          식당 검색 → 별점(0.5~5) → 상황 태그 1개 → 끝 (탭 3번)<br/>
+          <span class="muted">선택: 한줄평, 사진, 함께 간 사람, 메뉴, 가격대</span>
+        </td>
+        <td>Log + Rating</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>상황 태그 (Scene Tag)</strong></td>
+        <td>
+          6개 고정 태그: 혼밥 / 데이트 / 친구 / 가족 / 회식·접대 / 술자리<br/>
+          <span class="muted">기록할 때 하나만 탭. 이게 Taste DNA의 2차원 축이 됨.</span>
+        </td>
+        <td>Nyam 고유 (없음)</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>식당 검색 & 매칭</strong></td>
+        <td>
+          카카오맵 + 네이버 + 구글 교차검색<br/>
+          <span class="muted">가게명 입력 → 후보 리스트 → 선택. 레터박스의 TMDB 역할.</span>
+        </td>
+        <td>TMDB 연동</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>다이어리 (타임라인)</strong></td>
+        <td>
+          날짜별 기록이 쌓이는 타임라인 뷰<br/>
+          <span class="muted">"나의 식도락 일기" — 돌아보는 재미</span>
+        </td>
+        <td>Diary</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>가고 싶은 곳 (Wishlist)</strong></td>
+        <td>
+          저장해두고, 방문하면 자동으로 리스트에서 제거<br/>
+          <span class="muted">레터박스 Watchlist의 식도락 버전</span>
+        </td>
+        <td>Watchlist</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>기본 통계</strong></td>
+        <td>
+          총 방문 수, 장르 분포, 상황별 선호 패턴, 동네별 분포<br/>
+          <span class="muted">"혼밥 할 때 일식 선호도 4.3" 같은 인사이트</span>
+        </td>
+        <td>Stats (Pro)</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>사진 기반 자동완성 (보조)</strong></td>
+        <td>
+          사진 선택 시 EXIF(GPS/날짜) + Vision AI로 식당/메뉴 자동 추정<br/>
+          <span class="muted">기록 마찰을 더 줄이는 보조 수단. 필수 아님.</span>
+        </td>
+        <td>Nyam 고유</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><strong>기존 데이터 Import</strong></td>
+        <td>
+          카카오맵 저장 목록 / 네이버 마이플레이스 / 구글맵 리뷰 가져오기<br/>
+          <span class="muted">콜드스타트 해결. 첫 사용 시 "와, 내가 이만큼 다녔네" WOW 모먼트.</span>
+        </td>
+        <td>IMDb Import</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="hr"></div>
+
+  <h3>Phase 2: 소셜 — "내 사람들의 맛집 지도"</h3>
+  <p class="note">목표: 개인 기록에서 신뢰 네트워크로 확장. 기록의 사회적 가치 부여.</p>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:22%">기능</th><th>설명</th><th style="width:18%">레터박스 대응</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>9</td>
+        <td><strong>팔로우 & 피드</strong></td>
+        <td>
+          취향 비슷한 사람 팔로우 → Activity 피드에 그 사람의 기록 노출<br/>
+          <span class="muted">"이 사람이 별 4.5 줬으면 진짜 맛있는 거"</span>
+        </td>
+        <td>Follow + Activity</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><strong>리스트 (큐레이션)</strong></td>
+        <td>
+          사용자가 만드는 테마별 리스트 ("성수 브런치 5선", "강남역 혼밥")<br/>
+          <span class="muted">SEO/공유/발견의 성장 엔진. 레터박스의 가장 중독적인 기능.</span>
+        </td>
+        <td>Lists</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><strong>버블 (폐쇄형 그룹)</strong></td>
+        <td>
+          초대제 맛집 공유 그룹. 직장 동료 버블, 동네 맘 버블, 와인 모임 버블<br/>
+          <span class="muted">통계가 부족한 식도락 도메인에서 "아는 사람의 추천"이 대안</span>
+        </td>
+        <td>Nyam 고유</td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><strong>동네 맛집 지도</strong></td>
+        <td>
+          특정 동네의 기록이 모이면 지도 뷰로 시각화<br/>
+          <span class="muted">내 기록이 쌓이면 내 동네의 맛집 지도가 되고, 그 동네를 처음 가는 사람에게 가이드가 됨</span>
+        </td>
+        <td>당근 동네 모델</td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td><strong>상황별 추천</strong></td>
+        <td>
+          "오늘 데이트인데 을지로에서 어디 갈까?" → 데이트 상황에서 높은 평가를 받은 을지로 식당 추천<br/>
+          <span class="muted">Nyam만의 2차원 추천. 기록이 쌓여야 작동.</span>
+        </td>
+        <td>Nyam 고유</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="hr"></div>
+
+  <h3>Phase 3: 확장 — "식도락 생태계"</h3>
+  <p class="note">목표: 수익화 + 가치 사슬 확장. Phase 1~2 검증 후.</p>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:22%">기능</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>14</td><td><strong>연말 결산 (Year in Review)</strong></td><td>올해 식도락 총결산 → 인포그래픽 → SNS 공유 → 바이럴 유입</td></tr>
+      <tr><td>15</td><td><strong>프리미엄 구독</strong></td><td>고급 통계, 필터, 알림(예약 오픈/시즌 메뉴), 광고 제거</td></tr>
+      <tr><td>16</td><td><strong>크리에이터 채널</strong></td><td>맛잘알의 열람 전용 버블 = 유료 구독. 진짜 맛잘알이 수익을 얻는 구조</td></tr>
+      <tr><td>17</td><td><strong>로컬 파트너십</strong></td><td>동네 식당과의 자연스러운 협업 (스폰서 표기 필수). 커뮤니티 신뢰 훼손 방지 최우선</td></tr>
+      <tr><td>18</td><td><strong>와인/요리 확장</strong></td><td>와인 기록, 홈쿠킹 기록. Phase 1에서는 식당에 집중. 검증 후 확장</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 4. 콜드스타트 전략 ========== -->
+<section>
+  <h2>4. 콜드스타트 전략 — 닭이 먼저</h2>
+
+  <h3>4-1. 문제</h3>
+  <div class="hl">
+    기록이 쌓여야 가치 → 가치 없으면 기록 안 함 → 기록이 안 쌓임
+  </div>
+
+  <h3>4-2. 해결 접근</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>1. Import로 첫날부터 데이터 있게</h4>
+      <p>카카오맵 저장 / 네이버 마이플레이스 / 구글맵 리뷰 → 한 번에 수십~수백 개 기록 생성</p>
+      <p class="muted">첫 사용 시 "내가 3년간 이만큼 다녔구나" WOW 모먼트</p>
+    </div>
+    <div class="card">
+      <h4>2. 크리에이터 모델 (1%가 기록, 99%가 소비)</h4>
+      <p>위키피디아/인스타와 같은 구조. 동네별로 "맛잘알" 10~20명만 확보하면 동네 데이터가 만들어짐</p>
+      <p class="muted">맛잘알의 동기: 자기표현 + 팔로워 + (Phase 3) 수익</p>
+    </div>
+    <div class="card">
+      <h4>3. 기록 전에 "질문"부터</h4>
+      <p>"을지로에서 혼밥 어디 가?" → 기존 기록에서 답을 줌 → 가치 체감 → 그 다음에 기록</p>
+      <p class="muted">기록하라고 하지 말고, 물어보게 만들기</p>
+    </div>
+    <div class="card">
+      <h4>4. 한 동네부터 밀도 있게</h4>
+      <p>당근이 판교에서 시작한 것처럼. 특정 동네(을지로? 성수?)의 밀도를 먼저 확보</p>
+      <p class="muted">얇게 전국보다, 깊게 한 동네가 먼저</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5. UX 핵심 설계 ========== -->
+<section>
+  <h2>5. UX 핵심 설계</h2>
+
+  <h3>5-1. 기록 플로우 (최소 마찰)</h3>
+  <div class="flow">
+    <span class="step">[1단계]</span> 식당 이름 검색 (자동완성)<br/>
+    <span class="step">[2단계]</span> 별점 탭 (★★★★☆)<br/>
+    <span class="step">[3단계]</span> 상황 태그 탭 (혼밥 / 데이트 / 친구 / 가족 / 회식 / 술자리)<br/>
+    <span class="step">[완료]</span> 기록 저장 ✓<br/><br/>
+    <span style="color:var(--muted);">━━ 여기까지가 필수. 아래는 선택 ━━</span><br/><br/>
+    <span style="color:#666;">[선택]</span> 한줄평<br/>
+    <span style="color:#666;">[선택]</span> 사진 추가 (EXIF로 식당/날짜 자동 추정)<br/>
+    <span style="color:#666;">[선택]</span> 함께 간 사람 태그<br/>
+    <span style="color:#666;">[선택]</span> 메뉴, 가격대, 대기시간
+  </div>
+
+  <h3>5-2. 습관 형성 설계 (Hook 모델)</h3>
+  <table>
+    <thead><tr><th style="width:20%">단계</th><th>Nyam 구현</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Trigger (트리거)</strong></td>
+        <td>
+          • 점심/저녁 시간대 푸시: "오늘 뭐 드셨어요?" (짧고 가볍게)<br/>
+          • 팔로우한 사람의 새 기록 알림<br/>
+          • 위시리스트 식당 근처 갈 때 알림 (Phase 2)
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Action (행동)</strong></td>
+        <td>
+          • 탭 3번 기록 (초저마찰)<br/>
+          • 리스트 만들기 (창작 욕구)
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Variable Reward (보상)</strong></td>
+        <td>
+          • 통계가 채워지는 쾌감 ("혼밥 때 일식 4.3, 중식 3.1")<br/>
+          • 피드에서 맛집 발견<br/>
+          • 내 리스트에 좋아요/팔로우
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Investment (투자)</strong></td>
+        <td>
+          • 다이어리가 쌓일수록 이탈 비용 증가<br/>
+          • 팔로우 그래프가 "나의 맛집 신문"이 됨<br/>
+          • 상황별 DNA가 정교해질수록 추천 정확도 상승
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5-3. "아하 모먼트" 설계</h3>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="badge core">첫 번째</span> Import 후 타임라인</h4>
+      <p>"카카오맵 저장 목록을 가져왔더니, 2년간 내 식도락 히스토리가 한눈에..."</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge core">두 번째</span> 상황별 취향 발견</h4>
+      <p>10~20개 기록 후: "혼밥은 일식, 데이트는 이탈리안, 회식은 고기... 나 이렇구나"</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge core">세 번째</span> 낯선 동네에서 도움</h4>
+      <p>"출장 가서 을지로인데... Nyam에서 을지로 맛잘알의 회식 추천 보고 갔더니 대성공"</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6. 비즈니스 모델 ========== -->
+<section>
+  <h2>6. 비즈니스 모델</h2>
+
+  <h3>레터박스 검증 공식 적용</h3>
+  <table>
+    <thead><tr><th style="width:22%">수익원</th><th>Nyam 적용</th><th style="width:20%">Phase</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>프리미엄 구독</strong></td>
+        <td>
+          고급 통계 (상황별 DNA 상세, 지출 추정, 동선 분석)<br/>
+          고급 필터 (예산별, 대기시간별, 분위기별)<br/>
+          광고 제거<br/>
+          Wishlist 알림 (예약 오픈, 시즌 메뉴)
+        </td>
+        <td>Phase 3</td>
+      </tr>
+      <tr>
+        <td><strong>광고 (무료만)</strong></td>
+        <td>
+          로컬 식당/브랜드 광고. 무료 사용자에게만 노출.<br/>
+          <span class="muted">반드시 "스폰서" 표기. 커뮤니티 신뢰가 최우선.</span>
+        </td>
+        <td>Phase 3</td>
+      </tr>
+      <tr>
+        <td><strong>크리에이터 수익 분배</strong></td>
+        <td>
+          맛잘알의 유료 버블/채널 구독 → 수수료<br/>
+          <span class="muted">"진짜 맛잘알이 인정받고 수익을 얻는 생태계"</span>
+        </td>
+        <td>Phase 3+</td>
+      </tr>
+      <tr>
+        <td><strong>로컬 파트너십</strong></td>
+        <td>
+          예약/쿠폰 연동 수수료 (거래 개입은 최소화)<br/>
+          <span class="muted">캐치테이블과 경쟁하기보다, 연결해주는 역할</span>
+        </td>
+        <td>Phase 3+</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 7. 리스크 & 미해결 과제 ========== -->
+<section>
+  <h2>7. 리스크 & 미해결 과제</h2>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:28%">리스크</th><th>심각도</th><th>대응 방향</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>기록 동기 부족</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>Import로 초기 데이터 확보 + 상황별 분석이라는 고유 보상 + 크리에이터 모델</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>콜드스타트 (닭과 달걀)</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>한 동네 집중 전략 + 맛잘알 시딩 + "질문 먼저" 접근</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>네이버/카카오 진입 시 방어 불가</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>대기업이 못 하는 것에 집중: 폐쇄형 신뢰 네트워크, 상황별 추천, 커뮤니티 문화</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>리뷰 조작/악용</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>버블 + 팔로우 기반이라 오픈 리뷰보다 구조적으로 강함. 추가 모더레이션 정책 필요</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>외부 식당 DB 의존</strong></td>
+        <td><span class="badge" style="color:var(--warn);">중간</span></td>
+        <td>카카오/네이버/구글 교차검증으로 단일 의존 회피. 캐싱 전략</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>즉각적 인센티브 없음</strong></td>
+        <td><span class="badge risk">높음</span></td>
+        <td>
+          미해결. "돈"이 아닌 다른 즉각 보상 필요.<br/>
+          <span class="muted">후보: 상황별 취향 분석의 재미? 맛잘알 인정? 기록 자체의 게임화?</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 8. 데이터 아키텍처 ========== -->
+<section>
+  <h2>8. 데이터 아키텍처 — Nyam이 소유해야 할 것</h2>
+
+  <div class="vs">
+    <div class="card">
+      <h4 style="color:var(--bad);">Nyam이 소유하지 않는 것</h4>
+      <ul class="muted">
+        <li>식당 마스터 DB (카카오/네이버/구글에 위임)</li>
+        <li>메뉴/가격 실시간 데이터</li>
+        <li>예약/결제 시스템</li>
+      </ul>
+    </div>
+    <div class="divider">vs</div>
+    <div class="card">
+      <h4 style="color:var(--good);">Nyam이 소유하는 것</h4>
+      <ul class="muted">
+        <li>사용자의 기록 (언제, 누구랑, 어떤 상황, 평가)</li>
+        <li>상황별 취향 프로필 (Taste DNA × Scene)</li>
+        <li>소셜 그래프 (팔로우, 버블 관계)</li>
+        <li>리스트/큐레이션 콘텐츠 (UGC)</li>
+        <li>동네별 기록 밀도 데이터</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 9. 경쟁 포지셔닝 ========== -->
+<section>
+  <h2>9. 포지셔닝 맵</h2>
+
+  <table>
+    <thead><tr><th></th><th>Nyam</th><th>네이버/카카오맵</th><th>인스타 맛집</th><th>캐치테이블</th><th>망고플레이트</th></tr></thead>
+    <tbody>
+      <tr><td><strong>목적</strong></td><td>개인 기록 + 신뢰 추천</td><td>검색/정보</td><td>자기표현/공유</td><td>예약</td><td>리뷰/평점</td></tr>
+      <tr><td><strong>신뢰</strong></td><td>아는 사람 기반</td><td>광고 혼재</td><td>팔로워 기반</td><td>예약 검증</td><td>오픈 리뷰</td></tr>
+      <tr><td><strong>개인화</strong></td><td>상황별 2D</td><td>없음</td><td>없음</td><td>없음</td><td>제한적</td></tr>
+      <tr><td><strong>기록 도구</strong></td><td>핵심</td><td>부수적</td><td>게시물</td><td>없음</td><td>부수적</td></tr>
+      <tr><td><strong>소셜</strong></td><td>팔로우+버블</td><td>없음</td><td>강력</td><td>없음</td><td>제한적</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 10. 핵심 메시지 ========== -->
+<section>
+  <h2>10. 핵심 메시지 — 엘리베이터 피치</h2>
+
+  <div class="hl" style="text-align:center; padding:24px;">
+    <div style="font-size:14px; color:var(--muted); margin-bottom:8px;">For 식도락을 즐기는 사람들</div>
+    <div style="font-size:20px; font-weight:700; color:var(--accent); margin-bottom:12px;">
+      "탭 3번이면 기록, 쌓이면 나를 아는 맛집 비서"
+    </div>
+    <div style="font-size:14px; color:var(--muted);">
+      식당 이름 + 별점 + 상황 태그. 기록은 이게 전부.<br/>
+      쌓이면 내 취향이 보이고, 아는 사람들의 기록이 모이면<br/>
+      낯선 동네에서도 현지인 추천을 받을 수 있다.
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  <p>📎 참고 문서: <a href="./letterboxd_analysis.html">레터박스 딥리서치 분석 보고서</a></p>
+  <p>본 문서는 2026-03-19 전략 브레인스토밍 세션의 결과물입니다. Phase별 구체 일정 및 기술 스펙은 별도 TECH_SPEC에서 정의합니다.</p>
+</div>
+
+</div>
+</body>
+</html>

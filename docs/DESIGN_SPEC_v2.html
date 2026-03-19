@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nyam DESIGN SPEC v2.0 — 시스템 설계</title>
+  <style>
+    :root{
+      --bg:#0a0e13; --panel:#0f1620; --panel2:#0c121b; --text:#e8eef7; --muted:#a0afc2;
+      --line:#1f2c3b; --accent:#ff6b35; --accent2:#ffa62b; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --blue:#61dafb; --purple:#8b5cf6; --pink:#ec4899;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    }
+    html,body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;margin:0;}
+    a{color:var(--blue);text-decoration:none;} a:hover{text-decoration:underline;}
+    .wrap{max-width:1120px;margin:0 auto;padding:28px 18px 80px;}
+    header{padding:28px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#1a0e05 0%,var(--panel) 50%,#0a1520 100%);}
+    header h1{margin:0 0 4px;font-size:24px;color:var(--accent);}
+    header .sub{font-size:15px;color:var(--accent2);margin-bottom:12px;}
+    header .meta{color:var(--muted);font-size:13px;display:flex;gap:14px;flex-wrap:wrap;}
+
+    .toc{margin-top:18px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--panel);}
+    .toc h2{margin:0 0 10px;font-size:16px;color:var(--accent2);}
+    .toc ol{margin:0;padding-left:22px;color:var(--muted);font-size:14px;}
+    .toc li{margin:5px 0;}
+
+    section{margin-top:22px;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--panel);}
+    section h2{margin:0 0 14px;font-size:19px;color:var(--accent2);border-bottom:1px solid var(--line);padding-bottom:8px;}
+    section h3{margin:20px 0 10px;font-size:15px;color:#d8e6ff;}
+    section h4{margin:14px 0 6px;font-size:14px;color:var(--accent);}
+    p{margin:8px 0;font-size:14px;}
+    ul,ol{margin:6px 0;padding-left:22px;font-size:14px;}
+    li{margin:4px 0;}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media(min-width:760px){.grid{grid-template-columns:1fr 1fr;}}
+    @media(min-width:960px){.grid3{grid-template-columns:1fr 1fr 1fr;}}
+
+    .card{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,0.2);}
+    .card h4{margin:0 0 6px;font-size:14px;}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--line);}
+    .badge.core{color:#ffcba4;border-color:#7c2d12;background:rgba(255,107,53,0.15);}
+    .badge.p1{color:#bbf7d0;border-color:#14532d;background:rgba(34,197,94,0.12);}
+    .badge.p2{color:#e9d5ff;border-color:#4c1d95;background:rgba(139,92,246,0.12);}
+    .badge.alt{color:#bfdbfe;border-color:#1e3a5f;background:rgba(59,130,246,0.1);}
+    .badge.pick{color:#fde68a;border-color:#92400e;background:rgba(245,158,11,0.12);}
+
+    table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px;}
+    th,td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+    th{background:rgba(255,107,53,0.08);text-align:left;font-weight:700;}
+    tr:last-child td{border-bottom:none;}
+
+    .hl{padding:14px 16px;border-radius:12px;border:1px dashed rgba(255,107,53,0.4);background:rgba(255,107,53,0.05);margin:10px 0;}
+    .hl2{padding:14px 16px;border-radius:12px;border:1px dashed rgba(139,92,246,0.4);background:rgba(139,92,246,0.05);margin:10px 0;}
+    .hl3{padding:14px 16px;border-radius:12px;border:1px dashed rgba(236,72,153,0.4);background:rgba(236,72,153,0.05);margin:10px 0;}
+    .note{color:var(--muted);font-size:12.5px;}
+    .muted{color:var(--muted);}
+    code{font-family:var(--mono);font-size:12.5px;color:#d1fae5;}
+    .hr{height:1px;background:var(--line);margin:18px 0;}
+
+    .wireframe{padding:16px;background:#080c10;border:1px solid #1a2435;border-radius:14px;font-family:var(--mono);font-size:12px;line-height:1.7;color:#5a7a9a;overflow-x:auto;white-space:pre;}
+    .wireframe .label{color:var(--accent);font-weight:700;}
+    .wireframe .content{color:#7eb8da;}
+    .wireframe .dim{color:#2a3f55;}
+    .wireframe .highlight{color:var(--accent2);}
+    .wireframe .green{color:var(--good);}
+
+    .proposal{border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0;background:rgba(0,0,0,0.15);}
+    .proposal-title{font-size:15px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+    .proposal-title .num{background:var(--accent);color:#000;padding:2px 8px;border-radius:6px;font-size:12px;}
+
+    .flow{padding:16px;background:rgba(0,0,0,0.25);border-radius:12px;font-family:var(--mono);font-size:13px;line-height:2;color:var(--muted);}
+    .flow .step{color:var(--accent2);font-weight:700;}
+    .flow .arrow{color:var(--accent);}
+
+    .footer{margin-top:24px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px;}
+
+    .phone{max-width:340px;margin:12px auto;border:2px solid #2a3f55;border-radius:28px;padding:14px 10px;background:#060a0f;overflow:hidden;}
+    .phone .status-bar{display:flex;justify-content:space-between;font-size:10px;color:#4a6a8a;padding:2px 6px 8px;border-bottom:1px solid #1a2435;margin-bottom:8px;}
+    .phone .screen{min-height:200px;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Nyam DESIGN SPEC v2.0</h1>
+  <div class="sub">8개 핵심 시스템 설계 제안</div>
+  <div class="meta">
+    <span>작성일: 2026-03-19</span>
+    <span>기반: PRD v2.0</span>
+    <span>상태: 설계 제안 (확정 전)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#sys1">평가 시스템 & UI</a> — Nyam의 핵심 인터랙션</li>
+    <li><a href="#sys2">등록 시스템</a> — 검색/사진/선택 기반 등록 플로우</li>
+    <li><a href="#sys3">홈 화면 구성</a> — 대시보드 레이아웃</li>
+    <li><a href="#sys4">추천 알고리즘</a> — 식당 & 와인</li>
+    <li><a href="#sys5">식당/와인 상세 페이지</a></li>
+    <li><a href="#sys6">경험치 시스템</a></li>
+    <li><a href="#sys7">버블 시스템</a></li>
+    <li><a href="#sys8">소셜 시스템</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================================== -->
+<!-- 1. 평가 시스템 & UI -->
+<!-- ===================================================================== -->
+<section id="sys1">
+  <h2>1. 평가 시스템 & UI</h2>
+
+  <div class="hl">
+    <strong>설계 목표:</strong> 3초 안에 핵심 평가 완료 + 원하면 깊이 추가 + 평가 자체가 즐거운 경험
+  </div>
+
+  <h3>1-1. 평가 구조 — 점진적 확장 (Progressive Disclosure)</h3>
+  <table>
+    <thead><tr><th style="width:12%">레벨</th><th style="width:22%">이름</th><th>수집 항목</th><th style="width:15%">소요 시간</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge core">필수</span></td><td><strong>Quick Rate</strong></td><td>총점 (100점) + 상황 태그 (1개)</td><td>~3초</td></tr>
+      <tr><td><span class="badge alt">선택 1</span></td><td><strong>Taste Card</strong></td><td>맛/분위기/서비스/가성비 4축 (또는 와인 4축)</td><td>~5초</td></tr>
+      <tr><td><span class="badge alt">선택 2</span></td><td><strong>Story</strong></td><td>한줄평, 메뉴 별표, 사용팁, 사진, 함께 간 사람</td><td>원하는 만큼</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1-2. 총점 UI — 3가지 제안</h3>
+
+  <div class="proposal">
+    <div class="proposal-title"><span class="num">A</span> 슬라이더 바이트 (Slider Bite) <span class="badge pick">추천</span></div>
+    <p>화면 전체 너비를 사용하는 <strong>대형 수평 슬라이더</strong>. 엄지로 좌우 드래그.</p>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+      <div class="screen">
+        <div style="text-align:center;padding:20px 0 10px;">
+          <div style="font-size:11px;color:#4a6a8a;">스시코우지</div>
+          <div style="font-size:48px;font-weight:800;color:var(--accent);">87</div>
+          <div style="font-size:11px;color:#4a6a8a;">점</div>
+        </div>
+        <div style="padding:8px 12px;">
+          <div style="height:36px;border-radius:18px;background:linear-gradient(90deg,#ef4444 0%,#f59e0b 30%,#22c55e 60%,#3b82f6 100%);position:relative;">
+            <div style="position:absolute;left:87%;top:-2px;width:24px;height:40px;background:#fff;border-radius:12px;border:3px solid var(--accent);"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#4a6a8a;margin-top:4px;">
+            <span>별로</span><span>괜찮</span><span>맛있어</span><span>최고</span>
+          </div>
+        </div>
+        <div style="padding:14px 12px 0;">
+          <div style="font-size:10px;color:#4a6a8a;margin-bottom:6px;">상황</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">혼밥</span>
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;background:var(--accent);color:#000;font-weight:600;">데이트</span>
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">친구</span>
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">가족</span>
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">회식</span>
+            <span style="padding:6px 12px;border-radius:20px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">술자리</span>
+          </div>
+        </div>
+        <div style="text-align:center;padding:18px 12px;">
+          <span style="padding:10px 48px;background:var(--accent);color:#000;border-radius:12px;font-size:13px;font-weight:700;">기록하기</span>
+        </div>
+      </div>
+    </div>
+    <ul class="muted">
+      <li>장점: 직관적, 한 화면에 모든 필수 요소, 숫자가 크게 보여서 "내 점수" 느낌</li>
+      <li>장점: 그라데이션 컬러가 시각적 피드백 → 재미</li>
+      <li>단점: 100점 단위 세밀한 조정이 어려울 수 있음 → 5점 단위 스냅으로 해결</li>
+    </ul>
+  </div>
+
+  <div class="proposal">
+    <div class="proposal-title"><span class="num">B</span> 다이얼 스핀 (Dial Spin)</div>
+    <p>시계처럼 생긴 <strong>원형 다이얼</strong>을 손가락으로 돌려서 점수 설정. 햅틱 피드백.</p>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+      <div class="screen" style="text-align:center;padding:20px 0;">
+        <div style="font-size:11px;color:#4a6a8a;margin-bottom:8px;">스시코우지</div>
+        <div style="width:160px;height:160px;border-radius:50%;border:4px solid var(--accent);margin:0 auto;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,107,53,0.1),transparent);">
+          <div>
+            <div style="font-size:52px;font-weight:800;color:var(--accent);">87</div>
+            <div style="font-size:10px;color:#4a6a8a;">돌려서 조절</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#3a5a7a;margin-top:10px;">← 손가락으로 원을 따라 드래그 →</div>
+      </div>
+    </div>
+    <ul class="muted">
+      <li>장점: 게임적 재미, 독창적, 와인 테이스팅 휠과 시각적 연결 가능</li>
+      <li>단점: 원형 UI는 학습 비용이 있음, 좁은 화면에서 정밀도 이슈</li>
+    </ul>
+  </div>
+
+  <div class="proposal">
+    <div class="proposal-title"><span class="num">C</span> 틴더 스와이프 (Swipe Rate)</div>
+    <p>여러 기준(맛/분위기/서비스/가성비)이 카드로 나오고, <strong>좌우 스와이프 강도</strong>로 평가. 모든 카드를 넘기면 총점이 자동 산출.</p>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+      <div class="screen" style="padding:16px;">
+        <div style="text-align:center;font-size:11px;color:#4a6a8a;margin-bottom:8px;">스시코우지 — 1/4</div>
+        <div style="border:1px solid #2a3f55;border-radius:16px;padding:24px 16px;text-align:center;background:rgba(255,107,53,0.04);min-height:120px;">
+          <div style="font-size:28px;margin-bottom:6px;">🍽</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">맛</div>
+          <div style="font-size:11px;color:#4a6a8a;">← 별로 · 좋아 →</div>
+          <div style="margin-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#3a5a7a;">
+            <span>← 스와이프</span><span>스와이프 →</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:12px;">
+          <div style="display:flex;justify-content:center;gap:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#2a3f55;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#2a3f55;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#2a3f55;"></span>
+          </div>
+          <div style="font-size:10px;color:#3a5a7a;margin-top:8px;">스킵하려면 위로 ↑</div>
+        </div>
+      </div>
+    </div>
+    <ul class="muted">
+      <li>장점: 틴더/범블과 같은 익숙한 패턴, 하나씩 집중, 스킵 가능</li>
+      <li>장점: 세부 축 평가가 자연스럽게 통합됨 (별도 단계 불필요)</li>
+      <li>단점: 4장 넘기는 데 시간이 걸림 (Quick Rate 취지에 안 맞을 수 있음)</li>
+      <li>보완: 총점만 빠르게 할 수 있는 "빠른 평가" 옵션 병행</li>
+    </ul>
+  </div>
+
+  <h3>1-3. 와인 평가 특화</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>와인 Taste Card 축</h4>
+      <ul class="muted">
+        <li><strong>아로마</strong> — 향의 복합성/매력</li>
+        <li><strong>맛</strong> — 과일/산미/타닌/바디</li>
+        <li><strong>여운</strong> — 피니시의 길이와 품질</li>
+        <li><strong>밸런스</strong> — 전체적 조화</li>
+      </ul>
+      <p class="note">WSET 기반 간소화. 전문가가 아니어도 직관적으로 평가 가능하게.</p>
+    </div>
+    <div class="card">
+      <h4>와인 상황 태그</h4>
+      <ul class="muted">
+        <li>혼술</li>
+        <li>데이트</li>
+        <li>모임/파티</li>
+        <li>식사 페어링</li>
+        <li>선물/받은 것</li>
+        <li>시음회/와인바</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>1-4. 평가 UI 추천 조합</h3>
+  <div class="hl">
+    <strong>추천:</strong> <span class="badge pick">A안 (슬라이더 바이트)</span>를 Quick Rate로,<br/>
+    Taste Card는 <span class="badge pick">C안 (스와이프)</span>의 카드 방식을 선택적 확장으로 결합.<br/><br/>
+    <code>Quick Rate (슬라이더 + 상황태그 3초) → "더 평가하기?" → Taste Card (스와이프 카드 4장) → Story (자유 입력)</code>
+  </div>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 2. 등록 시스템 -->
+<!-- ===================================================================== -->
+<section id="sys2">
+  <h2>2. 등록 시스템</h2>
+
+  <h3>2-1. 등록 진입점 3가지</h3>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card">
+      <h4><span class="badge p1">A</span> 검색 등록</h4>
+      <p>식당/와인 이름 검색 → 선택 → 평가</p>
+      <p class="muted">가장 확실. 기억이 명확할 때.</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge p1">B</span> 사진 등록</h4>
+      <p>사진 → AI 분석 → 식당/와인 추정 → 확인 → 평가</p>
+      <p class="muted">음식 사진 or 와인 라벨 사진</p>
+    </div>
+    <div class="card">
+      <h4><span class="badge p1">C</span> 리스트 선택 등록</h4>
+      <p>지역 기반 식당 리스트 → 체크 → 일괄 평가</p>
+      <p class="muted">온보딩 + 새 지역 방문 시. 콜드스타트 핵심.</p>
+    </div>
+  </div>
+
+  <h3>2-2. 검색 시스템</h3>
+  <div class="flow">
+    <span class="step">[입력]</span> 사용자가 가게명/와인명 타이핑<br/>
+    <span class="arrow">→</span> <span class="step">[자동완성]</span> Nyam 캐시 DB 먼저 검색 (이미 다른 유저가 등록한 곳)<br/>
+    <span class="arrow">→</span> <span class="step">[외부 검색]</span> 캐시에 없으면 카카오 + 네이버 + 구글 동시 검색<br/>
+    <span class="arrow">→</span> <span class="step">[교차 매칭]</span> 3개 소스 결과를 가게명+주소로 fuzzy merge<br/>
+    <span class="arrow">→</span> <span class="step">[결과 리스트]</span> 통합 결과 표시 (지도 미니맵 + 주소 + 장르 + 외부 평점)<br/>
+    <span class="arrow">→</span> <span class="step">[선택]</span> 사용자가 식당 선택 → 평가 플로우로 이동
+  </div>
+
+  <h3>2-3. 사진 등록 플로우</h3>
+  <div class="flow">
+    <span class="step">[사진 선택]</span> 갤러리에서 사진 선택 or 카메라 촬영<br/>
+    <span class="arrow">→</span> <span class="step">[EXIF 추출]</span> GPS 좌표 + 촬영 날짜/시간<br/>
+    <span class="arrow">→</span> <span class="step">[Vision AI]</span> Gemini Vision으로 음식/와인 라벨 분석<br/>
+    <span class="arrow">→</span> <span class="step">[후보 매칭]</span><br/>
+    &nbsp;&nbsp;• GPS 있으면 → 반경 100m 식당 검색 + AI 분석 결과 교차<br/>
+    &nbsp;&nbsp;• GPS 없으면 → AI 분석 결과 + 사용자 활동 지역에서 검색<br/>
+    &nbsp;&nbsp;• 와인 라벨이면 → 와인 DB에서 매칭<br/>
+    <span class="arrow">→</span> <span class="step">[확인]</span> "여기 맞나요?" → 사용자 확인 → 평가 플로우
+  </div>
+
+  <h3>2-4. 리스트 선택 등록 (배치 모드)</h3>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+    <div class="screen" style="padding:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:4px;">을지로 맛집</div>
+      <div style="font-size:10px;color:#4a6a8a;margin-bottom:10px;">가본 곳을 체크하세요</div>
+      
+      <div style="border:1px solid #1a2435;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;background:rgba(34,197,94,0.05);">
+        <span style="width:18px;height:18px;border-radius:4px;background:var(--good);display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;">✓</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">여문식당</div>
+          <div style="font-size:10px;color:#4a6a8a;">중식 · 을지로3가</div>
+        </div>
+        <div style="font-size:10px;color:#4a6a8a;">미슐랭</div>
+      </div>
+      
+      <div style="border:1px solid #1a2435;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+        <span style="width:18px;height:18px;border-radius:4px;border:1px solid #2a3f55;"></span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">을지로골뱅이</div>
+          <div style="font-size:10px;color:#4a6a8a;">한식 · 을지로4가</div>
+        </div>
+        <div style="font-size:10px;color:#4a6a8a;">블루리본</div>
+      </div>
+      
+      <div style="border:1px solid #1a2435;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;background:rgba(34,197,94,0.05);">
+        <span style="width:18px;height:18px;border-radius:4px;background:var(--good);display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;">✓</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">카페 장</div>
+          <div style="font-size:10px;color:#4a6a8a;">카페 · 을지로3가</div>
+        </div>
+        <div style="font-size:10px;color:#4a6a8a;">네이버 4.5</div>
+      </div>
+      
+      <div style="text-align:center;padding:12px 0 4px;">
+        <span style="padding:8px 36px;background:var(--accent);color:#000;border-radius:10px;font-size:12px;font-weight:700;">2곳 평가하기</span>
+      </div>
+    </div>
+  </div>
+  <p class="muted">체크한 식당들을 연속으로 Quick Rate. 슬라이더+상황태그만 빠르게 진행.</p>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 3. 홈 화면 -->
+<!-- ===================================================================== -->
+<section id="sys3">
+  <h2>3. 홈 화면 구성</h2>
+
+  <h3>3-1. 레이아웃 구조</h3>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+    <div class="screen" style="padding:0;">
+      <!-- 추천 영역 -->
+      <div style="padding:12px;border-bottom:1px solid #1a2435;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <span style="padding:4px 12px;border-radius:16px;font-size:11px;background:var(--accent);color:#000;font-weight:600;">내 경험</span>
+          <span style="padding:4px 12px;border-radius:16px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">도전</span>
+          <span style="padding:4px 12px;border-radius:16px;font-size:11px;border:1px solid #2a3f55;color:#5a7a9a;">와인</span>
+        </div>
+        <div style="display:flex;gap:8px;overflow:hidden;">
+          <div style="min-width:120px;border:1px solid #1a2435;border-radius:10px;padding:8px;">
+            <div style="height:52px;background:#1a2435;border-radius:6px;margin-bottom:4px;"></div>
+            <div style="font-size:10px;font-weight:600;">스시코우지</div>
+            <div style="font-size:9px;color:var(--accent);">87점 · 데이트</div>
+          </div>
+          <div style="min-width:120px;border:1px solid #1a2435;border-radius:10px;padding:8px;">
+            <div style="height:52px;background:#1a2435;border-radius:6px;margin-bottom:4px;"></div>
+            <div style="font-size:10px;font-weight:600;">도쿄등심</div>
+            <div style="font-size:9px;color:var(--accent);">92점 · 회식</div>
+          </div>
+          <div style="min-width:40px;display:flex;align-items:center;justify-content:center;color:#3a5a7a;font-size:16px;">›</div>
+        </div>
+      </div>
+      <!-- 뷰 전환 탭 -->
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #1a2435;">
+        <div style="display:flex;gap:12px;font-size:10px;">
+          <span style="color:var(--accent);font-weight:600;">리스트</span>
+          <span style="color:#4a6a8a;">캘린더</span>
+          <span style="color:#4a6a8a;">썸네일</span>
+          <span style="color:#4a6a8a;">지도</span>
+        </div>
+        <span style="font-size:10px;color:#4a6a8a;">필터</span>
+      </div>
+      <!-- 기록 리스트 -->
+      <div style="padding:8px 12px;">
+        <div style="padding:8px 0;border-bottom:1px solid #0d1520;display:flex;align-items:center;gap:10px;">
+          <div style="width:44px;height:44px;background:#1a2435;border-radius:8px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;">스시코우지</div>
+            <div style="font-size:10px;color:#4a6a8a;">3/18 · 데이트 · 교대</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--accent);">87</div>
+        </div>
+        <div style="padding:8px 0;border-bottom:1px solid #0d1520;display:flex;align-items:center;gap:10px;">
+          <div style="width:44px;height:44px;background:#1a2435;border-radius:8px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;">여문식당</div>
+            <div style="font-size:10px;color:#4a6a8a;">3/16 · 친구 · 을지로</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--accent);">91</div>
+        </div>
+        <div style="padding:8px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:44px;height:44px;background:#1a2435;border-radius:8px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;">Ch. Margaux 2018</div>
+            <div style="font-size:10px;color:var(--purple);">3/15 · 페어링 · 와인</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--purple);">94</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>3-2. 4가지 뷰 모드</h3>
+  <table>
+    <thead><tr><th style="width:18%">뷰</th><th>용도</th><th>핵심 요소</th></tr></thead>
+    <tbody>
+      <tr><td><strong>리스트 뷰</strong></td><td>기본. 빠른 스캔</td><td>썸네일 + 가게명 + 점수 + 상황태그 + 날짜</td></tr>
+      <tr><td><strong>캘린더 뷰</strong></td><td>날짜별 기록 확인</td><td>달력에 기록 있는 날 마커. 날짜 탭하면 해당일 기록 열람</td></tr>
+      <tr><td><strong>썸네일 뷰</strong></td><td>사진 중심 열람</td><td>인스타 그리드처럼 사진 모자이크. 사진 없는 기록은 가게명 카드</td></tr>
+      <tr><td><strong>지도 뷰</strong></td><td>위치 기반 열람</td><td>지도 위에 내 기록 핀. 핀 색상=점수. 클러스터링</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-3. 하단 네비게이션</h3>
+  <table>
+    <thead><tr><th>탭</th><th>기능</th></tr></thead>
+    <tbody>
+      <tr><td><strong>홈</strong></td><td>추천 + 내 기록 타임라인</td></tr>
+      <tr><td><strong>탐색</strong></td><td>주변 식당 리스트, 검색, 권위 리뷰(미슐랭 등), 지역별 탐색</td></tr>
+      <tr><td><strong>+ (등록)</strong></td><td>중앙 FAB. 검색/사진/리스트 선택 등록</td></tr>
+      <tr><td><strong>버블</strong></td><td>내 버블 목록, 피드, 활동</td></tr>
+      <tr><td><strong>프로필</strong></td><td>통계, 경험치, 설정, 프로필 관리</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 4. 추천 알고리즘 -->
+<!-- ===================================================================== -->
+<section id="sys4">
+  <h2>4. 추천 알고리즘</h2>
+
+  <h3>4-1. 설계 원칙</h3>
+  <div class="hl">
+    <ul>
+      <li><strong>인터넷 정보 기반 추천은 최소한</strong> — 네이버/구글 크롤링 추천은 하지 않음</li>
+      <li><strong>나의 데이터 기반</strong> — 내 기록이 쌓일수록 정확해지는 구조</li>
+      <li><strong>신뢰 기반</strong> — 모르는 사람의 평가보다, 아는 사람(버블)의 평가 우선</li>
+      <li><strong>상황 인식</strong> — "오늘 데이트인데"와 "오늘 혼밥인데"는 완전히 다른 추천</li>
+    </ul>
+  </div>
+
+  <h3>4-2. 추천 소스별 알고리즘</h3>
+  <table>
+    <thead><tr><th style="width:22%">추천 탭</th><th>알고리즘</th><th style="width:15%">데이터 소스</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>"내 경험에서"</strong></td>
+        <td>
+          <strong>상황 필터 매칭</strong>: 현재 상황(사용자 선택 or 시간대 추정)에서 높은 점수를 준 곳<br/>
+          <strong>재방문 가치 점수</strong>: 총점 × 마지막 방문 이후 경과일 가중 (오래 안 간 고점수 식당)<br/>
+          <strong>계절/날씨 보정</strong>: 여름엔 냉면/빙수, 겨울엔 국물 등 (Phase 2+)
+        </td>
+        <td>내 기록</td>
+      </tr>
+      <tr>
+        <td><strong>"새로운 도전"</strong></td>
+        <td>
+          <strong>Wishlist 우선</strong>: 내가 찜해둔 곳<br/>
+          <strong>버블 인기</strong>: 내 버블에서 공유된 곳 중 내가 안 가본 곳 (Phase 2)<br/>
+          <strong>권위 리뷰</strong>: 미슐랭/블루리본 중 내가 안 가본 곳 (콜드스타트 용)<br/>
+          <strong>취향 유사 사용자</strong>: 나와 겹치는 기록이 많은 사용자가 좋게 평가한 곳 (Phase 3)
+        </td>
+        <td>Wishlist + 버블 + 외부 권위</td>
+      </tr>
+      <tr>
+        <td><strong>"와인"</strong></td>
+        <td>
+          <strong>품종/산지 패턴</strong>: 내가 높게 평가한 와인들의 공통 특성 → 유사 와인 추천<br/>
+          <strong>가격대 매칭</strong>: 평소 마시는 가격대 기반<br/>
+          <strong>페어링 추천</strong>: 식당 기록에 와인 페어링 정보가 있으면 역으로 추천
+        </td>
+        <td>내 와인 기록</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>4-3. 콜드스타트 추천 (기록 부족 시)</h3>
+  <table>
+    <thead><tr><th>기록 수</th><th>추천 전략</th></tr></thead>
+    <tbody>
+      <tr><td>0~5개</td><td>온보딩 취향 카드 기반 + 지역 권위 리뷰(미슐랭/블루리본) + 네이버/구글 평점 상위</td></tr>
+      <tr><td>5~20개</td><td>기록된 장르/지역 패턴 시작 + 권위 리뷰 보완</td></tr>
+      <tr><td>20개+</td><td>본격 개인화 추천 가동. 상황별 취향이 통계적으로 의미 있어짐</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 5. 상세 페이지 -->
+<!-- ===================================================================== -->
+<section id="sys5">
+  <h2>5. 식당/와인 상세 페이지</h2>
+
+  <h3>5-1. 식당 상세 페이지</h3>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>nyam</span><span>100%</span></div>
+    <div class="screen" style="padding:0;">
+      <!-- 히어로 -->
+      <div style="height:120px;background:linear-gradient(180deg,#1a2435,#0a1015);display:flex;align-items:flex-end;padding:12px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;">스시코우지</div>
+          <div style="font-size:10px;color:#4a6a8a;">일식 오마카세 · 교대역 · $$$$</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(255,107,53,0.15);color:var(--accent);">미슐랭 1★</span>
+            <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(97,218,251,0.1);color:var(--blue);">네이버 4.6</span>
+          </div>
+        </div>
+      </div>
+      <!-- 나의 요약 -->
+      <div style="padding:12px;border-bottom:1px solid #1a2435;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:10px;color:#4a6a8a;">나의 평가</div>
+            <div style="font-size:28px;font-weight:800;color:var(--accent);">87</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:#4a6a8a;">방문 3회</div>
+            <div style="font-size:10px;color:#4a6a8a;">최근 3/18</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:6px;">
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:var(--purple);">데이트 87</span>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,0.1);color:var(--blue);">회식 82</span>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.1);color:var(--good);">친구 90</span>
+        </div>
+      </div>
+      <!-- 나의 기록들 -->
+      <div style="padding:12px;border-bottom:1px solid #1a2435;">
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px;">나의 기록</div>
+        <div style="padding:6px 0;border-bottom:1px solid #0d1520;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;">
+            <span style="color:var(--accent2);">3/18 데이트</span>
+            <span style="color:var(--accent);font-weight:700;">87</span>
+          </div>
+          <div style="font-size:10px;color:#4a6a8a;margin-top:2px;">"오마카세 코스가 계절감이 좋았다"</div>
+        </div>
+        <div style="padding:6px 0;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;">
+            <span style="color:var(--accent2);">2/14 데이트</span>
+            <span style="color:var(--accent);font-weight:700;">85</span>
+          </div>
+          <div style="font-size:10px;color:#4a6a8a;margin-top:2px;">"대기가 좀 길었지만 맛은 확실"</div>
+        </div>
+      </div>
+      <!-- 버블 리뷰 -->
+      <div style="padding:12px;">
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px;color:var(--purple);">직장 맛집 버블 (3명 방문)</div>
+        <div style="padding:6px 0;font-size:10px;color:#4a6a8a;">
+          <span style="color:var(--text);">김영수</span> · 91점 · "접대로 완벽"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>5-2. 상세 페이지 섹션 구조</h3>
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:22%">섹션</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>히어로</strong></td><td>대표 사진 + 가게명 + 장르 + 위치 + 가격대 + 외부 인증 배지</td></tr>
+      <tr><td>2</td><td><strong>나의 요약</strong></td><td>총점(최신) + 방문 횟수 + 상황별 점수 태그 + 최근 방문일</td></tr>
+      <tr><td>3</td><td><strong>나의 기록 리스트</strong></td><td>방문별 기록 타임라인. 각각 날짜/상황/점수/한줄평</td></tr>
+      <tr><td>4</td><td><strong>메뉴 & 팁</strong></td><td>별표 메뉴, 사용팁, 추천 메뉴 (내 기록 기반)</td></tr>
+      <tr><td>5</td><td><strong>기본 정보</strong></td><td>주소, 전화, 영업시간, 외부 평점 (접히는 영역)</td></tr>
+      <tr><td>6</td><td><strong>버블 리뷰</strong></td><td>(P2) 내 버블 멤버들의 리뷰. 리뷰어별 점수/한줄평</td></tr>
+      <tr><td>7</td><td><strong>액션 바</strong></td><td>하단 고정: [새 기록 추가] [찜하기] [공유하기]</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 6. 경험치 시스템 -->
+<!-- ===================================================================== -->
+<section id="sys6">
+  <h2>6. 경험치 시스템</h2>
+
+  <h3>6-1. 경험치 구조</h3>
+  <div class="hl">
+    <strong>핵심: 하나의 통합 레벨이 아니라, 영역별 독립 경험치</strong><br/>
+    "을지로 Lv.7" + "강남 Lv.3" + "보르도 와인 Lv.5" — 각자 다른 전문성.
+  </div>
+
+  <h4>식당 경험치 축</h4>
+  <table>
+    <thead><tr><th style="width:22%">축</th><th>기준</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><strong>지역(동네)</strong></td><td>해당 지역 식당 기록 수 + 리뷰 깊이 + 활동 기간</td><td>을지로 Lv.7, 성수 Lv.4</td></tr>
+      <tr><td><strong>장르</strong></td><td>해당 장르 기록 수</td><td>일식 Lv.5, 이탈리안 Lv.3</td></tr>
+    </tbody>
+  </table>
+
+  <h4>와인 경험치 축</h4>
+  <table>
+    <thead><tr><th style="width:22%">축</th><th>기준</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><strong>산지</strong></td><td>해당 산지 와인 기록 수</td><td>보르도 Lv.5, 부르고뉴 Lv.3</td></tr>
+      <tr><td><strong>품종</strong></td><td>해당 품종 기록 수</td><td>까베르네 소비뇽 Lv.4, 피노 누아 Lv.6</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6-2. 레벨 체계</h3>
+  <table>
+    <thead><tr><th>레벨</th><th>이름</th><th>기준 (대략)</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td>1~2</td><td><strong>입문</strong></td><td>1~5개 기록</td><td>시작했다</td></tr>
+      <tr><td>3~4</td><td><strong>탐험가</strong></td><td>6~15개 기록</td><td>꽤 다녀봤다</td></tr>
+      <tr><td>5~6</td><td><strong>단골</strong></td><td>16~30개 기록 + 리뷰</td><td>이 동네/장르를 잘 안다</td></tr>
+      <tr><td>7~8</td><td><strong>전문가</strong></td><td>30~60개 + 상세 리뷰 + 버블 기여</td><td>추천을 믿을 수 있다</td></tr>
+      <tr><td>9~10</td><td><strong>마스터</strong></td><td>60개+ + 장기 활동 + 높은 커뮤니티 기여</td><td>이 영역의 권위자</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6-3. 경험치 표시 — 프로필 시각화</h3>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>프로필</span><span>100%</span></div>
+    <div class="screen" style="padding:14px;">
+      <div style="text-align:center;margin-bottom:12px;">
+        <div style="width:50px;height:50px;border-radius:50%;background:#1a2435;margin:0 auto 6px;"></div>
+        <div style="font-size:14px;font-weight:700;">맛탐험가_JK</div>
+        <div style="font-size:10px;color:#4a6a8a;">기록 127 · 버블 3</div>
+      </div>
+      
+      <div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--accent2);">식당 전문성</div>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+          <span>을지로</span><span style="color:var(--accent);">Lv.7 전문가</span>
+        </div>
+        <div style="height:6px;background:#1a2435;border-radius:3px;overflow:hidden;">
+          <div style="width:75%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+          <span>강남</span><span style="color:var(--blue);">Lv.4 탐험가</span>
+        </div>
+        <div style="height:6px;background:#1a2435;border-radius:3px;overflow:hidden;">
+          <div style="width:42%;height:100%;background:linear-gradient(90deg,var(--blue),#61dafb);border-radius:3px;"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+          <span>일식</span><span style="color:var(--purple);">Lv.5 단골</span>
+        </div>
+        <div style="height:6px;background:#1a2435;border-radius:3px;overflow:hidden;">
+          <div style="width:55%;height:100%;background:linear-gradient(90deg,var(--purple),#a78bfa);border-radius:3px;"></div>
+        </div>
+      </div>
+      
+      <div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--purple);">와인 전문성</div>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+          <span>보르도</span><span style="color:var(--pink);">Lv.5 단골</span>
+        </div>
+        <div style="height:6px;background:#1a2435;border-radius:3px;overflow:hidden;">
+          <div style="width:52%;height:100%;background:linear-gradient(90deg,var(--pink),#f472b6);border-radius:3px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 7. 버블 시스템 -->
+<!-- ===================================================================== -->
+<section id="sys7">
+  <h2>7. 버블 시스템</h2>
+
+  <h3>7-1. 버블 목록 화면</h3>
+  <div class="phone">
+    <div class="status-bar"><span>9:41</span><span>버블</span><span>100%</span></div>
+    <div class="screen" style="padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;">내 버블</div>
+        <span style="font-size:10px;padding:4px 10px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);">+ 만들기</span>
+      </div>
+      
+      <div style="border:1px solid #1a2435;border-radius:12px;padding:12px;margin-bottom:8px;background:rgba(139,92,246,0.04);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">광화문 직장 맛집</div>
+            <div style="font-size:10px;color:#4a6a8a;">12명 · 식당 34곳 공유</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;color:var(--accent2);">새 공유 3</div>
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:auto;margin-top:2px;"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:6px;">
+          <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,107,53,0.1);color:var(--accent);">이번주 HOT: 미진</span>
+        </div>
+      </div>
+      
+      <div style="border:1px solid #1a2435;border-radius:12px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">와인 동호회</div>
+            <div style="font-size:10px;color:#4a6a8a;">8명 · 와인 67개 공유</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="border:1px solid #1a2435;border-radius:12px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">성수 맛잘알 <span style="font-size:9px;color:var(--purple);">열람전용</span></div>
+            <div style="font-size:10px;color:#4a6a8a;">구독 42명 · 식당 89곳</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>7-2. 버블 내부 화면</h3>
+  <table>
+    <thead><tr><th style="width:22%">탭</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><strong>피드</strong></td><td>최신 공유 기록 타임라인. 좋아요/댓글 인라인.</td></tr>
+      <tr><td><strong>맛집 지도</strong></td><td>버블 내 공유된 식당 지도 뷰. 필터/소팅 가능.</td></tr>
+      <tr><td><strong>와인 셀러</strong></td><td>(와인 포함 버블) 공유된 와인 리스트. 품종/산지/점수 필터.</td></tr>
+      <tr><td><strong>멤버</strong></td><td>멤버 목록 + 경험치 + 공유 통계. 랭킹.</td></tr>
+      <tr><td><strong>통계</strong></td><td>버블 전체 트렌드. 이번달 인기 식당, 인기 리뷰어, 장르 분포 등.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7-3. 공유 필터 시스템</h3>
+  <div class="flow">
+    <span class="step">[내 기록에서]</span> 필터 적용<br/>
+    &nbsp;&nbsp;• 지역: "광화문/을지로"<br/>
+    &nbsp;&nbsp;• 점수: "90점 이상"<br/>
+    &nbsp;&nbsp;• 상황: "회식/접대"<br/>
+    &nbsp;&nbsp;• 기간: "최근 6개월"<br/>
+    <span class="arrow">→</span> <span class="step">[필터 결과]</span> 7개 식당 추출<br/>
+    <span class="arrow">→</span> <span class="step">[공유 대상 선택]</span> 전체 or 개별 선택<br/>
+    <span class="arrow">→</span> <span class="step">[버블 선택]</span> "광화문 직장 맛집" 버블에 공유<br/>
+    <span class="arrow">→</span> <span class="step">[완료]</span> 버블 피드에 노출
+  </div>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 8. 소셜 시스템 -->
+<!-- ===================================================================== -->
+<section id="sys8">
+  <h2>8. 소셜 시스템</h2>
+
+  <h3>8-1. 소셜 레이어 구조</h3>
+  <table>
+    <thead><tr><th style="width:22%">레이어</th><th>범위</th><th>신뢰도</th><th>기능</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>나</strong></td>
+        <td>개인</td>
+        <td>최고</td>
+        <td>내 기록 관리, 취향 분석, 추천</td>
+      </tr>
+      <tr>
+        <td><strong>버블</strong></td>
+        <td>초대제 그룹 (5~50명)</td>
+        <td>높음</td>
+        <td>공유, 리뷰, 댓글, 찜, 통계</td>
+      </tr>
+      <tr>
+        <td><strong>팔로우</strong></td>
+        <td>1:N 관계</td>
+        <td>중간</td>
+        <td>공개 기록 피드, 리스트 구독</td>
+      </tr>
+      <tr>
+        <td><strong>전체</strong></td>
+        <td>Nyam 사용자 전체</td>
+        <td>낮음</td>
+        <td>리스트 탐색, 경험치 프로필 열람 (공개 설정 시)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>8-2. 피드 시스템</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>버블 피드</h4>
+      <ul class="muted">
+        <li>버블 내 공유된 기록 시간순</li>
+        <li>좋아요/댓글 인라인</li>
+        <li>새 공유 알림 뱃지</li>
+        <li>핀 고정 (운영자가 중요 리뷰 상단 고정)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>팔로우 피드</h4>
+      <ul class="muted">
+        <li>팔로우한 사람의 공개 기록</li>
+        <li>새 리스트 발행 알림</li>
+        <li>좋아요로 반응 (댓글은 버블에서만)</li>
+        <li>추천 팔로우 ("취향이 비슷한 사용자")</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>8-3. 인터랙션 시스템</h3>
+  <table>
+    <thead><tr><th style="width:18%">액션</th><th>설명</th><th style="width:15%">범위</th></tr></thead>
+    <tbody>
+      <tr><td><strong>좋아요</strong></td><td>가볍게 동의/관심 표현. 카운트 공개.</td><td>버블 + 팔로우</td></tr>
+      <tr><td><strong>싫어요</strong></td><td>비공개 카운트 (리뷰어에게 안 보임). 추천 조정에만 사용.</td><td>버블</td></tr>
+      <tr><td><strong>찜</strong></td><td>내 Wishlist에 추가. 공유자에게 "1명이 찜했어요" 알림.</td><td>버블 + 팔로우</td></tr>
+      <tr><td><strong>리뷰</strong></td><td>같은 식당/와인에 대한 독립 리뷰 작성. 별도 ID.</td><td>버블</td></tr>
+      <tr><td><strong>댓글</strong></td><td>특정 리뷰에 대한 댓글. 토론/질문/정보 공유.</td><td>버블</td></tr>
+      <tr><td><strong>공유</strong></td><td>내 기록 → 특정 버블에 공유. 필터 적용 가능.</td><td>버블</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8-4. 알림 시스템</h3>
+  <table>
+    <thead><tr><th style="width:30%">알림 유형</th><th>설명</th><th style="width:15%">푸시 여부</th></tr></thead>
+    <tbody>
+      <tr><td>버블 새 공유</td><td>버블에 새 식당/와인이 공유됨</td><td>ON (설정 가능)</td></tr>
+      <tr><td>내 리뷰에 댓글</td><td>누군가 내 리뷰에 댓글 달음</td><td>ON</td></tr>
+      <tr><td>내 공유가 찜됨</td><td>내가 공유한 식당을 누가 찜함</td><td>ON</td></tr>
+      <tr><td>새 팔로워</td><td>누군가 나를 팔로우</td><td>ON</td></tr>
+      <tr><td>새 지역 도착</td><td>새로운 동네 감지 → 맛집 리스트 제안</td><td>ON (위치 동의 시)</td></tr>
+      <tr><td>경험치 레벨업</td><td>"을지로 Lv.7 달성!"</td><td>ON</td></tr>
+      <tr><td>위시리스트 근처</td><td>찜한 식당 근처 도착</td><td>ON (위치 동의 시)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8-5. 리스트 (큐레이션) 시스템</h3>
+  <div class="hl2">
+    <strong>레터박스에서 가장 중독적인 기능. 성장 엔진.</strong>
+  </div>
+  <table>
+    <thead><tr><th style="width:22%">요소</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>생성</strong></td><td>테마/제목 설정 → 내 기록에서 식당/와인 선택 → 순서 지정 → 설명 추가</td></tr>
+      <tr><td><strong>공개 범위</strong></td><td>비공개 / 버블 공유 / 전체 공개 (선택)</td></tr>
+      <tr><td><strong>반응</strong></td><td>좋아요, 저장(클론), 댓글</td></tr>
+      <tr><td><strong>탐색</strong></td><td>전체 공개 리스트 검색. 지역/장르/태그 필터. 인기순/최신순 정렬</td></tr>
+      <tr><td><strong>SEO/공유</strong></td><td>공개 리스트는 웹 URL 생성 → SNS 공유 → 외부 유입</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">리스트 예시: "을지로 혼밥 7선", "와인 초보를 위한 입문 10종", "강남역 접대 코스 베스트", "2026 내가 사랑한 내추럴 와인"</p>
+</section>
+
+<!-- ===================================================================== -->
+<div class="footer">
+  <p><strong>관련 문서:</strong></p>
+  <ul>
+    <li><a href="./PRD_v2.html">PRD v2.0</a></li>
+    <li><a href="./letterboxd_analysis.html">레터박스 딥리서치 분석 보고서</a></li>
+    <li><a href="./nyam_strategy_v2.html">Nyam 전략 & 기능 정의서 v2.0</a></li>
+    <li>TECH_SPEC — DB 스키마, API 설계, 캐싱 전략 (작성 예정)</li>
+  </ul>
+  <p>본 문서는 설계 제안 단계입니다. 확정 전 피드백/수정 후 구현에 반영합니다.</p>
+</div>
+
+</div>
+</body>
+</html>
