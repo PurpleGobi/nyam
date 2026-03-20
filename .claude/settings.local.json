@@ -81,7 +81,8 @@
       "Bash(sed -i '' 's/text-gray-700/text-neutral-600/g' components/capture/blog-preview.tsx)",
       "Bash(sed -i '' 's/text-gray-500/text-neutral-500/g' components/capture/blog-preview.tsx)",
       "Bash(git ls-tree:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(wc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
