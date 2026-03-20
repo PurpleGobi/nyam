@@ -94,8 +94,10 @@ CREATE TABLE wines (
   name VARCHAR(200) NOT NULL,
   producer VARCHAR(100),           -- 와이너리/생산자
   region VARCHAR(100),             -- 산지 (Bordeaux, Napa Valley 등)
+  sub_region VARCHAR(100),         -- 세부 산지 (Médoc, Pauillac 등) — 산지 지도 드릴다운용 (국가→산지→세부산지)
   country VARCHAR(50),             -- 국가
-  variety VARCHAR(100),            -- 품종 (Cabernet Sauvignon 등)
+  variety VARCHAR(100),            -- 대표 품종 (단일 품종 와인용, 블렌드는 grape_varieties 참조)
+  grape_varieties JSONB,           -- 블렌드 비율 포함 품종 배열. [{"name":"Cabernet Sauvignon","pct":60},{"name":"Merlot","pct":40}]
   type VARCHAR(20) NOT NULL,       -- 'red' | 'white' | 'rose' | 'sparkling' | 'orange' | 'fortified' | 'dessert'
   vintage INT,                     -- 빈티지 연도 (NULL = NV)
   abv DECIMAL(3,1),               -- 알코올 도수
@@ -115,6 +117,7 @@ CREATE TABLE wines (
 
 CREATE INDEX idx_wines_type ON wines(type);
 CREATE INDEX idx_wines_country ON wines(country);
+CREATE INDEX idx_wines_region ON wines(country, region, sub_region);  -- 산지 지도 드릴다운 쿼리용
 ```
 
 ### records (핵심 테이블)
@@ -127,6 +130,17 @@ CREATE TABLE records (
 
   -- 상태
   status VARCHAR(10) DEFAULT 'rated', -- 'checked' | 'rated' | 'draft'
+
+  -- 와인 분류 (와인 기록 전용) — 시음/셀러/찜 3분류
+  wine_status VARCHAR(10),         -- 'tasted' | 'cellar' | 'wishlist' (target_type='wine'일 때만 사용)
+                                   -- tasted: 시음 완료, cellar: 보유 와인, wishlist: 관심 와인(찜)
+
+  -- 카메라 모드 메타데이터 (와인 기록 전용) — 촬영 방식별 OCR 결과 저장
+  camera_mode VARCHAR(10),         -- 'individual' | 'shelf' | 'receipt' (개별/진열장/영수증)
+  ocr_data JSONB,                  -- 카메라 모드별 OCR 인식 결과
+                                   -- individual: {"wine_name":"...", "vintage":"...", "producer":"..."}
+                                   -- shelf: {"wines":[{"name":"...", "price":...}, ...]}
+                                   -- receipt: {"items":[{"name":"...", "price":..., "qty":1}], "total":...}
 
   -- 사분면 (본 기록은 필수, 온보딩 기록은 NULL 허용)
   axis_x DECIMAL(5,2),             -- 0~100 (식당: 가격%, 와인: 산미%)
@@ -148,7 +162,8 @@ CREATE TABLE records (
   menu_tags TEXT[],                -- 추천 메뉴/페어링 메모
   tips TEXT,                       -- 사용팁
   companions TEXT[],               -- 함께 간 사람
-  price INT,                       -- 가격 (원)
+  price INT,                       -- 가격 (원) — 식당 결제 금액
+  purchase_price INT,              -- 구매 가격 (원) — 와인 구매/병 단가. 월별 소비 추적용
 
   -- 날짜
   visit_date DATE,                 -- 방문/음용 날짜
@@ -165,6 +180,8 @@ CREATE INDEX idx_records_user ON records(user_id);
 CREATE INDEX idx_records_target ON records(target_id, target_type);
 CREATE INDEX idx_records_scene ON records(scene);
 CREATE INDEX idx_records_status ON records(status);
+CREATE INDEX idx_records_wine_status ON records(user_id, wine_status) WHERE target_type = 'wine';  -- 와인 탭 3분류 필터
+CREATE INDEX idx_records_purchase ON records(user_id, visit_date, purchase_price) WHERE purchase_price IS NOT NULL;  -- 월별 소비 집계
 ```
 
 ### record_photos
@@ -357,7 +374,50 @@ CREATE TABLE nudge_fatigue (
 
 ---
 
-## 6. 상황 태그 ENUM
+## 6. 와인 ENUM 및 연동 정의
+
+### wine_status ENUM (와인 기록 3분류)
+| 값 | 표시명 | 설명 |
+|----|--------|------|
+| `tasted` | 시음 | 마신 와인. 사분면 평가 가능 |
+| `cellar` | 셀러 | 보유 중인 와인. 영수증/진열장 촬영으로 등록 |
+| `wishlist` | 찜 | 관심 와인. 버블에서 발견하거나 직접 추가 |
+
+### camera_mode ENUM (촬영 모드)
+| 값 | 표시명 | OCR 결과 구조 | 설명 |
+|----|--------|---------------|------|
+| `individual` | 개별 | `{"wine_name", "vintage", "producer", "region"}` | 1병 라벨 촬영 → 와인 상세 정보 인식 |
+| `shelf` | 진열장 | `{"wines":[{"name", "price", "position"}]}` | 여러 병 촬영 → 가격 포함 리스트 생성 |
+| `receipt` | 영수증 | `{"items":[{"name", "price", "qty"}], "total", "store"}` | 구매 영수증 → 보유 와인 일괄 등록 |
+
+### 버블 와인 연동 (Bubble Wine Integration)
+
+버블 멤버가 같은 와인을 기록하면 조용히 연결되는 구조:
+
+```
+-- 같은 와인을 마신 버블 멤버 조회 (와인 카드의 "박소연 96 · 김영수 88" 표시용)
+-- bubble_shares를 통해 공유된 기록 중 같은 target_id(wine_id)를 가진 기록을 조회
+SELECT r.user_id, u.nickname, u.avatar_url, r.satisfaction, r.comment, r.purchase_price
+FROM records r
+  JOIN bubble_shares bs ON bs.record_id = r.id
+  JOIN bubble_members bm ON bm.bubble_id = bs.bubble_id AND bm.user_id = r.user_id
+  JOIN users u ON u.id = r.user_id
+WHERE r.target_id = :wine_id
+  AND r.target_type = 'wine'
+  AND bs.bubble_id IN (SELECT bubble_id FROM bubble_members WHERE user_id = :my_user_id)
+  AND r.user_id != :my_user_id;
+```
+
+**동작 규칙**:
+- 내가 와인 등록 시 → 버블 내 같은 와인 기록자가 있으면 나에게 1회 알림
+- 상대방 → 별도 알림 없이 와인 카드에 버블 인원 카운트 +1
+- 버블 내 다른 사용자의 시음기, 구입 가격, 점수 열람 가능
+- 익명 옵션 지원 (comments.is_anonymous 활용)
+- 와인 카드 UI: 버블 아바타 + "박소연 96 · 김영수 88" 형태
+
+---
+
+## 7. 상황 태그 ENUM
 
 ### 식당 상황 태그
 | 값 | 표시명 | 색상 |
@@ -379,14 +439,15 @@ CREATE TABLE nudge_fatigue (
 | `gift` | 선물 | `#a855f7` |
 | `tasting` | 시음회 | `#06b6d4` |
 
-### wishlists vs reactions.bookmark 구분
+### wishlists vs reactions.bookmark vs records.wine_status='wishlist' 구분
 - **wishlists 테이블**: 사용자가 직접 식당/와인을 "찜". 상세 페이지의 하트 버튼, 프로필의 위시리스트
 - **reactions.bookmark**: 버블에서 다른 멤버의 기록을 보고 해당 식당/와인을 찜 → wishlists에 INSERT하는 트리거
-- 즉, bookmark 리액션은 wishlists 생성의 진입점. 최종 저장소는 항상 wishlists
+- **records.wine_status='wishlist'**: 와인 탭 내 3분류(시음/셀러/찜) 중 "찜" 필터. wishlists 테이블에서 target_type='wine'인 항목과 동기화
+- 즉, bookmark 리액션은 wishlists 생성의 진입점. 와인 찜은 wishlists + records.wine_status 양쪽에 반영. 최종 저장소는 항상 wishlists
 
 ---
 
-## 7. Seed 데이터 (온보딩용)
+## 8. Seed 데이터 (온보딩용)
 
 ### Seed 데이터 (온보딩용)
 - 온보딩에서 사용할 대표 식당은 DB에 미리 INSERT 필요
