@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nyam v2 — Detail Pages</title>
+<title>Nyam Prototype — Detail Pages</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
     --bg: #F8F6F3;
@@ -25,6 +26,23 @@
     --positive: #7EAE8B;
     --caution: #C9A96E;
     --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --brand: #FF6038;
+
+    /* Gauge colors */
+    --gauge-1: #C4B5A8;
+    --gauge-2: #C9A96E;
+    --gauge-3: #B8A078;
+    --gauge-4: #7EAE8B;
+    --gauge-5: #7A9BAE;
+
+    /* Scene Tags */
+    --scene-solo: #7A9BAE;
+    --scene-romantic: #B8879B;
+    --scene-friends: #7EAE8B;
+    --scene-family: #C9A96E;
+    --scene-business: #8B7396;
+    --scene-drinks: #B87272;
   }
 
   body {
@@ -34,37 +52,44 @@
     align-items: center;
     min-height: 100vh;
     padding: 24px 16px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
     color: var(--text);
   }
 
-  h1.page-title {
+  /* Page header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .page-title {
     font-size: 14px;
     color: var(--text-sub);
-    margin-bottom: 16px;
     letter-spacing: 0.05em;
   }
 
   /* Tab switcher */
   .tab-switcher {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     margin-bottom: 16px;
-    background: var(--bg-elevated);
+    background: var(--bg-card);
     border-radius: 12px;
     padding: 4px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
   }
   .tab-btn {
     padding: 8px 20px;
     border-radius: 8px;
     border: none;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     background: transparent;
     color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .tab-btn.active {
     background: var(--primary);
@@ -74,39 +99,91 @@
     background: var(--wine);
   }
 
-  /* Device frame */
-  .device-frame {
+  /* =====================
+     DEVICE FRAME
+     ===================== */
+  .device {
     width: 390px;
     height: 844px;
-    background: var(--bg);
-    border-radius: 44px;
-    box-shadow: 0 0 0 10px #2A2725, 0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 2px #333;
-    overflow: hidden;
+    background: #2A2725;
+    border-radius: 52px;
+    padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
     position: relative;
+    flex-shrink: 0;
   }
-
-  .screen {
+  .device-inner {
     width: 100%;
     height: 100%;
-    overflow-y: auto;
-    scroll-behavior: smooth;
+    background: var(--bg);
+    border-radius: 42px;
+    overflow: hidden;
     position: relative;
-    display: none;
+    display: flex;
+    flex-direction: column;
   }
-  .screen.active { display: block; }
-  .screen::-webkit-scrollbar { display: none; }
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #2A2725;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
 
-  /* Scroll header */
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
+  }
+  .status-time { font-size: 15px; font-weight: 700; }
+
+  /* Screen system */
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* =====================
+     SCROLL HEADER
+     ===================== */
   .scroll-header {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 80;
     background: transparent;
     transition: background 0.3s, box-shadow 0.3s;
-    padding: 12px 16px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
   .scroll-header.solid {
     background: rgba(248,246,243,0.97);
@@ -119,48 +196,42 @@
   }
   .header-name {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     opacity: 0;
     transform: translateY(4px);
     transition: all 0.3s;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .header-back {
-    width: 32px; height: 32px;
+  .header-icon-btn {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(248,246,243,0.9);
     border: none;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-    flex-shrink: 0;
-    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text);
-  }
-  .header-heart {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: rgba(248,246,243,0.9);
-    border: none;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     flex-shrink: 0;
-    transition: transform 0.2s;
+    transition: all 0.2s;
   }
-  .header-heart:active { transform: scale(1.3); }
-  .header-heart.liked { color: #B87272; }
+  .header-icon-btn:active { transform: scale(0.9); }
+  .header-icon-btn.liked { color: var(--negative); }
 
-  /* ===================== HERO CAROUSEL ===================== */
+  /* =====================
+     HERO CAROUSEL
+     ===================== */
   .hero-carousel {
     position: relative;
     height: 224px;
     overflow: hidden;
     flex-shrink: 0;
-    /* negative margin to overlap scroll-header */
-    margin-top: -56px;
+    margin-top: -52px;
   }
   .carousel-track {
     display: flex;
@@ -168,7 +239,7 @@
     transition: transform 0.4s ease;
   }
   .carousel-slide {
-    width: 390px;
+    width: 366px;
     height: 224px;
     flex-shrink: 0;
     background-size: cover;
@@ -178,20 +249,11 @@
   .slide-2 { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
   .slide-3 { background: linear-gradient(135deg, #2d5016 0%, #4a7c59 50%, #7fb069 100%); }
 
-  /* Photo overlays for realism */
-  .slide-1::after {
-    content: '🍣';
-    position: absolute;
-    font-size: 48px;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.4;
-  }
   .carousel-overlay {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 80px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.5));
+    background: linear-gradient(transparent, rgba(0,0,0,0.4));
   }
   .carousel-dots {
     position: absolute;
@@ -211,7 +273,9 @@
   }
   .dot.active { background: #fff; width: 16px; border-radius: 3px; }
 
-  /* ===================== IDENTITY ===================== */
+  /* =====================
+     IDENTITY
+     ===================== */
   .identity-section {
     padding: 16px 20px 12px;
     background: var(--bg);
@@ -231,7 +295,9 @@
   .meta-cat { font-size: 13px; color: var(--text-sub); }
   .meta-price { font-size: 12px; color: var(--text-hint); }
 
-  /* ===================== SCORE SUMMARY ===================== */
+  /* =====================
+     SCORE SUMMARY
+     ===================== */
   .score-section {
     padding: 12px 20px 14px;
     background: var(--bg);
@@ -270,9 +336,9 @@
     gap: 2px;
     font-size: 12px;
   }
-  .pn { color: #7EAE8B; font-weight: 700; }
-  .pk { color: #C9A96E; font-weight: 700; }
-  .pg { color: #7A9BAE; font-weight: 700; }
+  .pn { color: var(--positive); font-weight: 700; }
+  .pk { color: var(--caution); font-weight: 700; }
+  .pg { color: var(--accent-social); font-weight: 700; }
   .p-val { color: var(--text-sub); }
   .badges-row {
     display: flex;
@@ -288,10 +354,12 @@
     font-size: 11px;
     font-weight: 500;
   }
-  .badge-michelin { background: #F5F0E8; color: #C9A96E; border: 1px solid #E8DDCA; }
+  .badge-michelin { background: #F5F0E8; color: var(--caution); border: 1px solid #E8DDCA; }
   .badge-wine-spec { background: var(--wine-light); color: var(--wine); border: 1px solid #DDD6E3; }
 
-  /* ===================== ACTION BAR ===================== */
+  /* =====================
+     ACTION BAR
+     ===================== */
   .action-bar {
     padding: 12px 20px;
     display: flex;
@@ -305,6 +373,8 @@
     box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
     z-index: 50;
     display: none;
+    border-bottom: none;
+    border-top: 1px solid var(--border);
   }
   .action-bar.floating.visible { display: flex; }
   .btn-primary {
@@ -313,11 +383,15 @@
     background: var(--primary);
     color: #fff;
     border: none;
-    border-radius: 12px;
+    border-radius: 50px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
   .btn-primary:active { transform: scale(0.97); }
   .btn-primary.wine-btn { background: var(--wine); }
@@ -328,14 +402,16 @@
     background: var(--bg);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    color: var(--text-sub);
     transition: all 0.2s;
     flex-shrink: 0;
   }
   .btn-icon:active { transform: scale(0.9); }
-  .btn-icon.liked { border-color: #B87272; color: #B87272; }
+  .btn-icon.liked { border-color: var(--negative); color: var(--negative); }
 
-  /* ===================== SECTIONS ===================== */
+  /* =====================
+     SECTIONS
+     ===================== */
   .section {
     padding: 16px 20px;
     background: var(--bg);
@@ -357,7 +433,9 @@
     color: var(--text-sub);
   }
 
-  /* ===================== TIMELINE ===================== */
+  /* =====================
+     TIMELINE
+     ===================== */
   .timeline {
     position: relative;
     padding-left: 20px;
@@ -369,6 +447,9 @@
     width: 2px;
     background: linear-gradient(to bottom, var(--primary), #D4A089, transparent);
     border-radius: 2px;
+  }
+  .timeline.wine-timeline::before {
+    background: linear-gradient(to bottom, var(--wine), #C0B3CA, transparent);
   }
   .timeline-item {
     position: relative;
@@ -399,13 +480,15 @@
     border-radius: 20px;
     font-size: 10px;
     font-weight: 600;
+    color: #fff;
   }
-  .chip-pink { background: #F5ECF0; color: #B8879B; }
-  .chip-purple { background: #F0ECF3; color: #8B7396; }
-  .chip-blue { background: #ECF1F5; color: #7A9BAE; }
-  .chip-orange { background: #F5F0E8; color: #C9A96E; }
-  .chip-green { background: #ECF5EF; color: #7EAE8B; }
-  .chip-coral { background: var(--primary-light); color: var(--primary); }
+  .chip-solo { background: var(--scene-solo); }
+  .chip-romantic { background: var(--scene-romantic); }
+  .chip-friends { background: var(--scene-friends); }
+  .chip-family { background: var(--scene-family); }
+  .chip-business { background: var(--scene-business); }
+  .chip-drinks { background: var(--scene-drinks); }
+  .chip-pairing { background: var(--caution); }
 
   .timeline-score {
     font-size: 13px;
@@ -432,12 +515,24 @@
   }
   .photo-thumb.t2 { background: linear-gradient(135deg, #2d5016, #7fb069); }
 
-  /* ===================== QUADRANT CHART ===================== */
+  .timeline-place {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* =====================
+     QUADRANT CHART
+     ===================== */
   .quadrant-wrap {
     background: var(--bg-card);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 10px;
+    border: 1px solid var(--border);
   }
   .quadrant-chart {
     position: relative;
@@ -453,7 +548,6 @@
     position: absolute;
     inset: 0;
   }
-  /* Crosshair lines */
   .crosshair-h {
     position: absolute;
     top: 50%; left: 8%; right: 8%;
@@ -489,12 +583,61 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
   .q-dot:hover { transform: translate(-50%, -50%) scale(1.2); }
-  .q-dot.high { width: 32px; height: 32px; background: var(--primary); border: 2px solid #F5EDE8; }
-  .q-dot.mid { width: 26px; height: 26px; background: #7A9BAE; border: 2px solid #D6E4EC; }
-  .q-dot.low { width: 24px; height: 24px; background: #8B7396; border: 2px solid #E0D8E5; }
-  /* Wine dots */
+  .q-dot.high { width: 32px; height: 32px; background: var(--primary); border: 2px solid var(--primary-light); }
+  .q-dot.mid { width: 26px; height: 26px; background: var(--accent-social); border: 2px solid #D6E4EC; }
+  .q-dot.low { width: 24px; height: 24px; background: var(--wine); border: 2px solid #E0D8E5; }
   .q-dot.wine-1 { width: 32px; height: 32px; background: var(--wine); border: 2px solid #DDD6E3; }
   .q-dot.wine-2 { width: 26px; height: 26px; background: #A08DAB; border: 2px solid #E8E0ED; }
+
+  /* Current restaurant/wine — hero dot */
+  .q-dot.current {
+    width: 38px; height: 38px;
+    background: var(--primary);
+    border: 3px solid var(--primary-light);
+    font-size: 11px;
+    font-weight: 800;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(193,123,94,0.4);
+  }
+  .q-dot.current.wine-current {
+    background: var(--wine);
+    border-color: #DDD6E3;
+    box-shadow: 0 2px 10px rgba(139,115,150,0.4);
+  }
+
+  /* Reference dots — other reviewed restaurants/wines */
+  .q-dot.ref {
+    width: 28px; height: 28px;
+    background: var(--border-bold);
+    border: 2px solid var(--border);
+    opacity: 0.35;
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text);
+    z-index: 5;
+  }
+  .q-dot.ref:hover {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+
+  /* Ref dot label (name underneath) */
+  .q-dot-label {
+    position: absolute;
+    font-size: 9px;
+    color: var(--text-hint);
+    white-space: nowrap;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Current dot name label */
+  .q-dot-label.current-label {
+    font-weight: 700;
+    color: var(--text-sub);
+    font-size: 10px;
+  }
+
   .popular-menu {
     font-size: 12px;
     color: var(--text-sub);
@@ -502,7 +645,9 @@
   }
   .popular-menu span { font-weight: 600; color: var(--text); }
 
-  /* ===================== PRACTICAL INFO ===================== */
+  /* =====================
+     PRACTICAL INFO
+     ===================== */
   .info-row {
     display: flex;
     align-items: flex-start;
@@ -512,9 +657,9 @@
     font-size: 13px;
   }
   .info-row:last-child { border-bottom: none; }
-  .info-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .info-icon { flex-shrink: 0; margin-top: 1px; color: var(--text-sub); }
   .info-text { flex: 1; color: var(--text); line-height: 1.4; }
-  .info-green { color: #7EAE8B; font-weight: 600; }
+  .info-green { color: var(--positive); font-weight: 600; }
   .info-action {
     font-size: 12px;
     color: var(--primary);
@@ -531,16 +676,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
     color: var(--text-hint);
     position: relative;
     overflow: hidden;
-  }
-  .map-placeholder::after {
-    content: '📍';
-    position: absolute;
-    font-size: 24px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   }
 
   /* Collapsible menu */
@@ -564,7 +702,8 @@
   .collapsible-btn:hover { background: #E8E4DF; }
   .collapsible-arrow {
     transition: transform 0.3s;
-    display: inline-block;
+    display: inline-flex;
+    color: var(--text-sub);
   }
   .collapsible-btn.open .collapsible-arrow { transform: rotate(180deg); }
   .collapsible-content {
@@ -583,7 +722,9 @@
   .menu-name { color: var(--text); }
   .menu-price { color: var(--text-sub); font-weight: 500; }
 
-  /* ===================== HORIZONTAL SCROLL CARDS ===================== */
+  /* =====================
+     HORIZONTAL SCROLL CARDS
+     ===================== */
   .hscroll-wrap {
     overflow-x: auto;
     padding-bottom: 8px;
@@ -612,7 +753,7 @@
     border-radius: 6px;
     margin-bottom: 6px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    color: rgba(255,255,255,0.7);
   }
   .wine-card-h .w-name {
     font-size: 11px;
@@ -640,7 +781,7 @@
     width: 100%; height: 60px;
     background: linear-gradient(135deg, #8b4513, #cd853f);
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    color: rgba(255,255,255,0.6);
   }
   .rest-card-h .rest-info {
     padding: 6px 8px;
@@ -649,7 +790,9 @@
   .rest-card-h .r-score { font-size: 11px; color: var(--text-sub); }
   .rest-card-h .r-score b { color: var(--primary); }
 
-  /* ===================== BUBBLE RECORDS ===================== */
+  /* =====================
+     BUBBLE RECORDS
+     ===================== */
   .bubble-filter {
     display: flex;
     gap: 6px;
@@ -701,12 +844,10 @@
     font-weight: 700;
     color: #fff;
   }
-  .av1 { background: linear-gradient(135deg, #C17B5E, #D4A089); }
-  .av2 { background: linear-gradient(135deg, #8B7396, #A08DAB); }
-  .av3 { background: linear-gradient(135deg, #7A9BAE, #9BB5C4); }
-  .bubble-user {
-    flex: 1;
-  }
+  .av1 { background: linear-gradient(135deg, var(--primary), #D4A089); }
+  .av2 { background: linear-gradient(135deg, var(--wine), #A08DAB); }
+  .av3 { background: linear-gradient(135deg, var(--accent-social), #9BB5C4); }
+  .bubble-user { flex: 1; }
   .bubble-name { font-size: 12px; font-weight: 600; color: var(--text); }
   .bubble-bubble-name { font-size: 10px; color: var(--text-sub); }
   .bubble-score {
@@ -741,7 +882,9 @@
   }
   .reaction:hover { color: var(--primary); }
 
-  /* ===================== WINE FACT TABLE ===================== */
+  /* =====================
+     WINE FACT TABLE
+     ===================== */
   .fact-table {
     width: 100%;
     border-collapse: collapse;
@@ -759,7 +902,9 @@
   .fact-table td:last-child { color: var(--text); font-weight: 500; }
   .fact-table tr:last-child td { border-bottom: none; }
 
-  /* ===================== FOOD PAIRING ===================== */
+  /* =====================
+     FOOD PAIRING
+     ===================== */
   .pairing-tags {
     display: flex;
     flex-wrap: wrap;
@@ -775,7 +920,9 @@
     color: var(--wine);
   }
 
-  /* ===================== WINE IDENTITY ===================== */
+  /* =====================
+     WINE IDENTITY
+     ===================== */
   .wine-identity-wrap {
     display: flex;
     gap: 14px;
@@ -792,13 +939,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    color: rgba(255,255,255,0.7);
     box-shadow: 0 4px 16px rgba(139,115,150,0.3);
     position: relative;
     overflow: hidden;
   }
   .wine-label-img::after {
-    content: 'CHÂTEAU\AMARGAUX';
+    content: 'CHATEAU\AMARGAUX';
     white-space: pre;
     position: absolute;
     font-size: 7px;
@@ -842,9 +989,9 @@
   }
   .wine-chip-red {
     padding: 3px 8px;
-    background: #F5ECEC;
-    color: #B87272;
-    border-radius: 20px;
+    background: #FAF0F0;
+    color: var(--negative);
+    border-radius: 6px;
     font-size: 10px;
     font-weight: 600;
     border: 1px solid #E8D6D6;
@@ -856,515 +1003,605 @@
     line-height: 1.4;
   }
 
-  /* Bottom spacer */
-  .bottom-spacer { height: 80px; }
-
-  /* ===================== NOTCH ===================== */
-  .notch {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px; height: 30px;
-    background: #2A2725;
-    border-radius: 0 0 20px 20px;
-    z-index: 999;
-  }
-
   /* Divider */
   .divider { height: 8px; background: #F0EDE8; }
+
+  /* Bottom spacer */
+  .bottom-spacer { height: 80px; }
 </style>
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-<h1 class="page-title">Nyam v2 — Detail Pages</h1>
+<div class="page-header">
+  <div class="page-title">Nyam v2 — Detail Pages</div>
+</div>
 
 <!-- Tab Switcher -->
 <div class="tab-switcher">
-  <button class="tab-btn active" onclick="switchTab('restaurant', this)">🍣 스시코우지</button>
-  <button class="tab-btn wine-tab" onclick="switchTab('wine', this)">🍷 Château Margaux</button>
+  <button class="tab-btn active" onclick="switchTab('restaurant', this)">
+    <i data-lucide="utensils" style="width:14px;height:14px;"></i> 스시코우지
+  </button>
+  <button class="tab-btn wine-tab" onclick="switchTab('wine', this)">
+    <i data-lucide="wine" style="width:14px;height:14px;"></i> Chateau Margaux
+  </button>
 </div>
 
 <!-- Device Frame -->
-<div class="device-frame">
+<div class="device">
   <div class="notch"></div>
+  <div class="device-inner">
 
-  <!-- ============================================================ -->
-  <!-- SCREEN 1: RESTAURANT DETAIL                                  -->
-  <!-- ============================================================ -->
-  <div class="screen active" id="screen-restaurant" onscroll="handleRestaurantScroll(this)">
-
-    <!-- Scroll Header (sticky, transparent → solid) -->
-    <div class="scroll-header" id="rest-header">
-      <a href="01_home.html" class="header-back">←</a>
-      <span class="header-name">스시코우지</span>
-      <button class="header-heart" id="header-heart-rest" onclick="toggleHeart('header-heart-rest', 'action-heart-rest')">♡</button>
-    </div>
-
-    <!-- Layer 1: Hero Carousel -->
-    <div class="hero-carousel" style="margin-top: -56px;">
-      <div class="carousel-track" id="rest-carousel">
-        <div class="carousel-slide slide-1"></div>
-        <div class="carousel-slide slide-2"></div>
-        <div class="carousel-slide slide-3"></div>
-      </div>
-      <div class="carousel-overlay"></div>
-      <div class="carousel-dots">
-        <div class="dot active" onclick="goToSlide('rest-carousel', 0, this.parentElement)"></div>
-        <div class="dot" onclick="goToSlide('rest-carousel', 1, this.parentElement)"></div>
-        <div class="dot" onclick="goToSlide('rest-carousel', 2, this.parentElement)"></div>
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
       </div>
     </div>
 
-    <!-- Layer 2: Identity -->
-    <div class="identity-section">
-      <div class="place-name">스시코우지</div>
-      <div class="place-meta">
-        <span class="meta-cat">일식 · 을지로</span>
-        <span class="meta-price">₩₩₩</span>
-      </div>
-    </div>
+    <!-- ============================================================ -->
+    <!-- SCREEN 1: RESTAURANT DETAIL                                  -->
+    <!-- ============================================================ -->
+    <div class="screen active" id="screen-restaurant">
+      <div class="scroll-content" id="rest-scroll" onscroll="handleRestaurantScroll(this)">
 
-    <!-- Layer 3: Score Summary -->
-    <div class="score-section">
-      <div class="score-row">
-        <div class="score-left">
-          <div class="big-score">87</div>
-          <div class="score-caption">3회 기록</div>
+        <!-- Scroll Header -->
+        <div class="scroll-header" id="rest-header">
+          <button class="header-icon-btn" onclick="history.back()">
+            <i data-lucide="chevron-left" style="width:20px;height:20px;"></i>
+          </button>
+          <span class="header-name">스시코우지</span>
+          <button class="header-icon-btn" id="header-heart-rest" onclick="toggleHeart('header-heart-rest', 'action-heart-rest')">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
         </div>
-        <div class="platform-scores">
-          <div class="platform-score"><span class="pn">N</span><span class="p-val"> 4.3</span></div>
-          <div class="platform-score"><span class="pk">K</span><span class="p-val"> 4.1</span></div>
-          <div class="platform-score"><span class="pg">G</span><span class="p-val"> 4.4</span></div>
-        </div>
-      </div>
-      <div class="badges-row">
-        <span class="badge badge-michelin">⭐ 미슐랭 1스타</span>
-      </div>
-    </div>
 
-    <!-- Layer 4: Action Bar (static) -->
-    <div class="action-bar" id="rest-action-bar-static">
-      <button class="btn-primary">+ 기록 남기기</button>
-      <button class="btn-icon" id="action-heart-rest" onclick="toggleHeart('action-heart-rest', 'header-heart-rest')">♡</button>
-      <button class="btn-icon">⇪</button>
-    </div>
-
-    <!-- Layer 5: My Records -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">나의 기록</span>
-        <span class="section-meta">방문 3회 · 최근 2026.03.15</span>
-      </div>
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="timeline-dot"></div>
-          <div class="timeline-date">
-            2026.03.15 &nbsp;
-            <span class="tag-chip chip-pink">데이트</span>
+        <!-- Layer 1: Hero Carousel -->
+        <div class="hero-carousel">
+          <div class="carousel-track" id="rest-carousel">
+            <div class="carousel-slide slide-1"></div>
+            <div class="carousel-slide slide-2"></div>
+            <div class="carousel-slide slide-3"></div>
           </div>
-          <div>
-            <span class="timeline-score">92점</span>
-            <span class="timeline-comment">"분위기 최고, 오마카세 감동"</span>
-          </div>
-          <div class="timeline-photos">
-            <div class="photo-thumb"></div>
-            <div class="photo-thumb t2"></div>
+          <div class="carousel-overlay"></div>
+          <div class="carousel-dots">
+            <div class="dot active" onclick="goToSlide('rest-carousel', 0, this.parentElement)"></div>
+            <div class="dot" onclick="goToSlide('rest-carousel', 1, this.parentElement)"></div>
+            <div class="dot" onclick="goToSlide('rest-carousel', 2, this.parentElement)"></div>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="timeline-dot" style="background: #8B7396; box-shadow: 0 0 0 2px #8B7396;"></div>
-          <div class="timeline-date">
-            2026.02.28 &nbsp;
-            <span class="tag-chip chip-purple">회식</span>
-          </div>
-          <div>
-            <span class="timeline-score" style="color: #8B7396;">78점</span>
-            <span class="timeline-comment">"코스가 아쉬움"</span>
+
+        <!-- Layer 2: Identity -->
+        <div class="identity-section">
+          <div class="place-name">스시코우지</div>
+          <div class="place-meta">
+            <span class="meta-cat">일식 · 을지로</span>
+            <span class="meta-price">₩₩₩</span>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="timeline-dot" style="background: #7A9BAE; box-shadow: 0 0 0 2px #7A9BAE;"></div>
-          <div class="timeline-date">
-            2026.01.10 &nbsp;
-            <span class="tag-chip chip-blue">혼밥</span>
-          </div>
-          <div>
-            <span class="timeline-score" style="color: #7A9BAE;">85점</span>
-            <span class="timeline-comment">"런치세트 가성비 좋다"</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="divider"></div>
-
-    <!-- Layer 6: Quadrant Distribution -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">방문 분포</span>
-      </div>
-      <div class="quadrant-wrap">
-        <div class="quadrant-chart">
-          <div class="quadrant-inner">
-            <div class="crosshair-h"></div>
-            <div class="crosshair-v"></div>
-            <span class="axis-label ax-left">저렴</span>
-            <span class="axis-label ax-right">고가</span>
-            <span class="axis-label ax-top">포멀</span>
-            <span class="axis-label ax-bottom">캐주얼</span>
-            <!-- dot positions: left%/top% from top-left -->
-            <div class="q-dot high" style="left: 72%; top: 28%;" title="92점 데이트">92</div>
-            <div class="q-dot mid" style="left: 38%; top: 50%;" title="85점 혼밥">85</div>
-            <div class="q-dot low" style="left: 68%; top: 35%;" title="78점 회식">78</div>
-          </div>
-        </div>
-        <div class="popular-menu">인기 메뉴: <span>오마카세 ★3</span> · <span>런치세트 ★2</span></div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 7: Practical Info -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">정보</span>
-      </div>
-      <div class="info-row">
-        <span class="info-icon">📍</span>
-        <div class="info-text">
-          서울 중구 을지로 XX길 12
-          <div class="map-placeholder">🗺</div>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-icon">🕐</span>
-        <div class="info-text">
-          <span class="info-green">영업 중</span> · 11:30–22:00
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-icon">📞</span>
-        <div class="info-text">02-1234-5678</div>
-        <span class="info-action">전화하기</span>
-      </div>
-      <button class="collapsible-btn" id="menu-btn" onclick="toggleCollapsible('menu-content', 'menu-btn')">
-        메뉴 보기 <span class="collapsible-arrow">▼</span>
-      </button>
-      <div class="collapsible-content" id="menu-content">
-        <div class="menu-row"><span class="menu-name">오마카세 코스</span><span class="menu-price">150,000원</span></div>
-        <div class="menu-row"><span class="menu-name">런치 오마카세</span><span class="menu-price">50,000원</span></div>
-        <div class="menu-row"><span class="menu-name">사케 페어링</span><span class="menu-price">80,000원</span></div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 8: Wine Connection -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">연결된 와인</span>
-        <span class="section-meta">같이 즐긴 와인</span>
-      </div>
-      <div class="hscroll-wrap">
-        <div class="hscroll-inner">
-          <div class="wine-card-h" onclick="switchTab('wine', document.querySelectorAll('.tab-btn')[1])">
-            <div class="wine-label-mini">🍶</div>
-            <div class="w-name">Masumi Junmai</div>
-            <div class="w-score"><b>88점</b></div>
-          </div>
-          <div class="wine-card-h" onclick="switchTab('wine', document.querySelectorAll('.tab-btn')[1])">
-            <div class="wine-label-mini">🍷</div>
-            <div class="w-name">Dom Perignon 2015</div>
-            <div class="w-score"><b>92점</b></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 9: Bubble Records -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">버블 기록</span>
-        <span class="section-meta">Phase 2</span>
-      </div>
-      <div class="bubble-filter">
-        <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
-        <button class="filter-chip" onclick="toggleFilter(this)">직장맛집</button>
-        <button class="filter-chip" onclick="toggleFilter(this)">와인 모임</button>
-      </div>
-      <div class="bubble-card">
-        <div class="bubble-top">
-          <div class="avatar av1">김</div>
-          <div class="bubble-user">
-            <div class="bubble-name">김영수</div>
-            <div class="bubble-bubble-name">직장 맛집 버블</div>
-          </div>
-          <div class="bubble-score">90점</div>
-        </div>
-        <div class="bubble-comment">"여기 사케 페어링 필수예요. 오마카세랑 완벽 조합 🍶"</div>
-        <div class="bubble-footer">
-          <span class="bubble-meta">회식 · 3일 전</span>
-          <div class="bubble-reactions">
-            <span class="reaction">♡ 4</span>
-            <span class="reaction">💬 2</span>
-          </div>
-        </div>
-      </div>
-      <div class="bubble-card">
-        <div class="bubble-top">
-          <div class="avatar av2">박</div>
-          <div class="bubble-user">
-            <div class="bubble-name">박소연</div>
-            <div class="bubble-bubble-name">와인 모임 버블</div>
-          </div>
-          <div class="bubble-score">82점</div>
-        </div>
-        <div class="bubble-comment">"음식은 좋은데 가격이 좀 부담... 특별한 날에만"</div>
-        <div class="bubble-footer">
-          <span class="bubble-meta">모임 · 1주 전</span>
-          <div class="bubble-reactions">
-            <span class="reaction">♡ 1</span>
-            <span class="reaction">💬 0</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Floating Action Bar (hidden by default) -->
-    <div class="action-bar floating" id="rest-floating-bar">
-      <button class="btn-primary">+ 기록 남기기</button>
-      <button class="btn-icon" onclick="toggleHeart(this)">♡</button>
-      <button class="btn-icon">⇪</button>
-    </div>
-
-    <div class="bottom-spacer"></div>
-  </div>
-
-  <!-- ============================================================ -->
-  <!-- SCREEN 2: WINE DETAIL                                        -->
-  <!-- ============================================================ -->
-  <div class="screen" id="screen-wine" onscroll="handleWineScroll(this)">
-
-    <!-- Scroll Header -->
-    <div class="scroll-header" id="wine-header">
-      <a href="01_home.html" class="header-back" style="background: rgba(240,236,243,0.95);">←</a>
-      <span class="header-name" style="color: var(--wine);">Château Margaux</span>
-      <button class="header-heart" id="header-heart-wine" onclick="toggleHeart('header-heart-wine', 'action-heart-wine')" style="background: rgba(240,236,243,0.95);">♡</button>
-    </div>
-
-    <!-- Layer 1+2: Label + Identity (side by side) -->
-    <div class="wine-identity-wrap" style="margin-top: -56px; padding-top: 72px;">
-      <div class="wine-label-img">🍷</div>
-      <div class="wine-info-right">
-        <div class="wine-name">Château Margaux</div>
-        <div class="wine-producer">Château Margaux</div>
-        <div class="wine-origin">Bordeaux, France</div>
-        <div class="wine-vintage">2018</div>
-        <div class="wine-chips">
-          <span class="wine-chip-red">레드</span>
-        </div>
-        <div class="wine-grape">Cabernet Sauvignon, Merlot</div>
-      </div>
-    </div>
-
-    <!-- Layer 3: Score -->
-    <div class="score-section" style="background: var(--wine-light);">
-      <div class="score-row">
-        <div class="score-left">
-          <div class="big-score wine-score">91</div>
-          <div class="score-caption">2회 기록</div>
-        </div>
-        <div>
-          <span class="badge badge-wine-spec">🏅 Grand Cru Classé</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Layer 4: Action Bar -->
-    <div class="action-bar" id="wine-action-bar-static" style="background: var(--wine-light); border-color: #DDD6E3;">
-      <button class="btn-primary wine-btn">+ 기록 남기기</button>
-      <button class="btn-icon" id="action-heart-wine" onclick="toggleHeart('action-heart-wine', 'header-heart-wine')" style="border-color: #DDD6E3;">♡</button>
-      <button class="btn-icon" style="border-color: #DDD6E3;">⇪</button>
-    </div>
-
-    <!-- Layer 5: Quadrant (wine axes) -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">테이스팅 분포</span>
-      </div>
-      <div class="quadrant-wrap" style="background: var(--wine-light); border: 1px solid #DDD6E3;">
-        <div class="quadrant-chart" style="border-color: #DDD6E3;">
-          <div class="quadrant-inner">
-            <div class="crosshair-h" style="background: #DDD6E3;"></div>
-            <div class="crosshair-v" style="background: #DDD6E3;"></div>
-            <span class="axis-label ax-left" style="color: var(--wine);">산미 낮음</span>
-            <span class="axis-label ax-right" style="color: var(--wine);">산미 높음</span>
-            <span class="axis-label ax-top" style="color: var(--wine);">Full Body</span>
-            <span class="axis-label ax-bottom" style="color: var(--wine);">Light Body</span>
-            <div class="q-dot wine-1" style="left: 60%; top: 28%;" title="94점 페어링">94</div>
-            <div class="q-dot wine-2" style="left: 55%; top: 38%;" title="88점 혼술">88</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Layer 5b: Food Pairing -->
-    <div class="section" style="padding-top: 0;">
-      <div class="section-header">
-        <span class="section-title">음식 페어링</span>
-      </div>
-      <div class="pairing-tags">
-        <span class="pairing-tag">🥩 스테이크</span>
-        <span class="pairing-tag">🍖 양갈비</span>
-        <span class="pairing-tag">🧀 숙성 치즈</span>
-        <span class="pairing-tag">🍝 트러플 파스타</span>
-        <span class="pairing-tag">🍫 다크 초콜릿</span>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 6: My Records -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">나의 기록</span>
-        <span class="section-meta">2회 · 최근 2026.03.10</span>
-      </div>
-      <div class="timeline">
-        <div class="timeline-item" style="cursor: pointer;">
-          <div class="timeline-dot" style="background: var(--wine); box-shadow: 0 0 0 2px var(--wine);"></div>
-          <div class="timeline-date">
-            2026.03.10 &nbsp;
-            <span class="tag-chip chip-orange">페어링</span>
-          </div>
-          <div>
-            <span class="timeline-score" style="color: var(--wine);">94점</span>
-            <span class="timeline-comment">"스테이크와 환상 궁합 🥩"</span>
-          </div>
-          <div style="margin-top: 4px; font-size: 11px; color: var(--text-sub);">📍 레스토랑 A</div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-dot" style="background: #7A9BAE; box-shadow: 0 0 0 2px #7A9BAE;"></div>
-          <div class="timeline-date">
-            2026.01.25 &nbsp;
-            <span class="tag-chip chip-blue">혼술</span>
-          </div>
-          <div>
-            <span class="timeline-score" style="color: #7A9BAE;">88점</span>
-            <span class="timeline-comment">"혼자 마시기엔 묵직한 편"</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 7: Wine Facts -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">와인 정보</span>
-      </div>
-      <table class="fact-table">
-        <tr><td>품종</td><td>Cabernet Sauvignon 75%, Merlot 20%, Petit Verdot 5%</td></tr>
-        <tr><td>산지</td><td>프랑스 보르도 메독</td></tr>
-        <tr><td>알코올</td><td>14.5%</td></tr>
-        <tr><td>적정 온도</td><td>16–18°C</td></tr>
-        <tr><td>디캔팅</td><td>2시간 권장</td></tr>
-      </table>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Layer 8: Connected Restaurants -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">함께한 레스토랑</span>
-      </div>
-      <div class="hscroll-wrap">
-        <div class="hscroll-inner">
-          <div class="rest-card-h" onclick="switchTab('restaurant', document.querySelectorAll('.tab-btn')[0])">
-            <div class="rest-photo">🍽</div>
-            <div class="rest-info">
-              <div class="r-name">레스토랑 A</div>
-              <div class="r-score"><b>92점</b> · 파인다이닝</div>
+        <!-- Layer 3: Score Summary -->
+        <div class="score-section">
+          <div class="score-row">
+            <div class="score-left">
+              <div class="big-score">87</div>
+              <div class="score-caption">3회 기록</div>
+            </div>
+            <div class="platform-scores">
+              <div class="platform-score"><span class="pn">N</span><span class="p-val"> 4.3</span></div>
+              <div class="platform-score"><span class="pk">K</span><span class="p-val"> 4.1</span></div>
+              <div class="platform-score"><span class="pg">G</span><span class="p-val"> 4.4</span></div>
             </div>
           </div>
-          <div class="rest-card-h">
-            <div class="rest-photo" style="background: linear-gradient(135deg, #1a1a2e, #0f3460);">🥂</div>
-            <div class="rest-info">
-              <div class="r-name">비스트로 블루</div>
-              <div class="r-score"><b>85점</b> · 비스트로</div>
+          <div class="badges-row">
+            <span class="badge badge-michelin">
+              <i data-lucide="star" style="width:12px;height:12px;"></i> 미슐랭 1스타
+            </span>
+          </div>
+        </div>
+
+        <!-- Layer 4: Action Bar (static) -->
+        <div class="action-bar" id="rest-action-bar-static">
+          <button class="btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon" id="action-heart-rest" onclick="toggleHeart('action-heart-rest', 'header-heart-rest')">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 5: My Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+            <span class="section-meta">방문 3회 · 최근 2026.03.15</span>
+          </div>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-date">
+                2026.03.15
+                <span class="tag-chip chip-romantic">데이트</span>
+              </div>
+              <div>
+                <span class="timeline-score">92점</span>
+                <span class="timeline-comment">"분위기 최고, 오마카세 감동"</span>
+              </div>
+              <div class="timeline-photos">
+                <div class="photo-thumb"></div>
+                <div class="photo-thumb t2"></div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--wine); box-shadow: 0 0 0 2px var(--wine);"></div>
+              <div class="timeline-date">
+                2026.02.28
+                <span class="tag-chip chip-business">회식</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--wine);">78점</span>
+                <span class="timeline-comment">"코스가 아쉬움"</span>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--accent-social); box-shadow: 0 0 0 2px var(--accent-social);"></div>
+              <div class="timeline-date">
+                2026.01.10
+                <span class="tag-chip chip-solo">혼밥</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--accent-social);">85점</span>
+                <span class="timeline-comment">"런치세트 가성비 좋다"</span>
+              </div>
             </div>
           </div>
         </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 6: Position Map — relative to other reviewed restaurants -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">내 식당 지도</span>
+            <span class="section-meta">리뷰한 식당 중 위치</span>
+          </div>
+          <div class="quadrant-wrap">
+            <div class="quadrant-chart">
+              <div class="quadrant-inner">
+                <div class="crosshair-h"></div>
+                <div class="crosshair-v"></div>
+                <span class="axis-label ax-left">저렴</span>
+                <span class="axis-label ax-right">고가</span>
+                <span class="axis-label ax-top">포멀</span>
+                <span class="axis-label ax-bottom">캐주얼</span>
+
+                <!-- Reference dots: other reviewed restaurants (semi-transparent) -->
+                <div class="q-dot ref" style="left: 28%; top: 65%;" title="을지로 골목집 · 85점">85</div>
+                <span class="q-dot-label" style="left: 28%; top: calc(65% + 18px);">골목집</span>
+
+                <div class="q-dot ref" style="left: 80%; top: 22%;" title="밍글스 · 95점">95</div>
+                <span class="q-dot-label" style="left: 80%; top: calc(22% + 18px);">밍글스</span>
+
+                <div class="q-dot ref" style="left: 55%; top: 55%;" title="몽탄 · 72점">72</div>
+                <span class="q-dot-label" style="left: 55%; top: calc(55% + 18px);">몽탄</span>
+
+                <div class="q-dot ref" style="left: 82%; top: 40%;" title="리스토란테 에오 · 88점">88</div>
+                <span class="q-dot-label" style="left: 82%; top: calc(40% + 18px);">에오</span>
+
+                <div class="q-dot ref" style="left: 62%; top: 48%;" title="비스트로 드 욘트빌 · 91점">91</div>
+                <span class="q-dot-label" style="left: 62%; top: calc(48% + 18px);">욘트빌</span>
+
+                <!-- Current restaurant: prominent -->
+                <div class="q-dot current" style="left: 72%; top: 28%;" title="스시코우지 · 87점">87</div>
+                <span class="q-dot-label current-label" style="left: 72%; top: calc(28% + 24px);">스시코우지</span>
+              </div>
+            </div>
+            <div class="popular-menu" style="text-align:left;display:flex;align-items:center;gap:6px;">
+              <i data-lucide="info" style="width:12px;height:12px;color:var(--text-hint);flex-shrink:0;"></i>
+              <span style="color:var(--text-hint);font-size:11px;">내가 리뷰한 비슷한 가격대·지역 식당과의 상대적 위치</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Practical Info -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">정보</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              서울 중구 을지로 XX길 12
+              <div class="map-placeholder">
+                <i data-lucide="map" style="width:24px;height:24px;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="clock" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              <span class="info-green">영업 중</span> · 11:30–22:00
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="phone" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">02-1234-5678</div>
+            <span class="info-action">전화하기</span>
+          </div>
+          <button class="collapsible-btn" id="menu-btn" onclick="toggleCollapsible('menu-content', 'menu-btn')">
+            메뉴 보기
+            <span class="collapsible-arrow"><i data-lucide="chevron-down" style="width:16px;height:16px;"></i></span>
+          </button>
+          <div class="collapsible-content" id="menu-content">
+            <div class="menu-row"><span class="menu-name">오마카세 코스</span><span class="menu-price">150,000원</span></div>
+            <div class="menu-row"><span class="menu-name">런치 오마카세</span><span class="menu-price">50,000원</span></div>
+            <div class="menu-row"><span class="menu-name">사케 페어링</span><span class="menu-price">80,000원</span></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 8: Wine Connection -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">연결된 와인</span>
+            <span class="section-meta">같이 즐긴 와인</span>
+          </div>
+          <div class="hscroll-wrap">
+            <div class="hscroll-inner">
+              <div class="wine-card-h" onclick="switchTab('wine', document.querySelectorAll('.tab-btn')[1])">
+                <div class="wine-label-mini"><i data-lucide="wine" style="width:20px;height:20px;"></i></div>
+                <div class="w-name">Masumi Junmai</div>
+                <div class="w-score"><b>88점</b></div>
+              </div>
+              <div class="wine-card-h" onclick="switchTab('wine', document.querySelectorAll('.tab-btn')[1])">
+                <div class="wine-label-mini"><i data-lucide="wine" style="width:20px;height:20px;"></i></div>
+                <div class="w-name">Dom Perignon 2015</div>
+                <div class="w-score"><b>92점</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <div class="bubble-filter">
+            <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
+            <button class="filter-chip" onclick="toggleFilter(this)">직장맛집</button>
+            <button class="filter-chip" onclick="toggleFilter(this)">와인 모임</button>
+          </div>
+          <div class="bubble-card">
+            <div class="bubble-top">
+              <div class="avatar av1">김</div>
+              <div class="bubble-user">
+                <div class="bubble-name">김영수</div>
+                <div class="bubble-bubble-name">직장 맛집 버블</div>
+              </div>
+              <div class="bubble-score">90점</div>
+            </div>
+            <div class="bubble-comment">"여기 사케 페어링 필수예요. 오마카세랑 완벽 조합"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">회식 · 3일 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 4</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 2</span>
+              </div>
+            </div>
+          </div>
+          <div class="bubble-card">
+            <div class="bubble-top">
+              <div class="avatar av2">박</div>
+              <div class="bubble-user">
+                <div class="bubble-name">박소연</div>
+                <div class="bubble-bubble-name">와인 모임 버블</div>
+              </div>
+              <div class="bubble-score">82점</div>
+            </div>
+            <div class="bubble-comment">"음식은 좋은데 가격이 좀 부담... 특별한 날에만"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">모임 · 1주 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 1</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Action Bar -->
+        <div class="action-bar floating" id="rest-floating-bar">
+          <button class="btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <div class="bottom-spacer"></div>
       </div>
     </div>
 
-    <div class="divider"></div>
+    <!-- ============================================================ -->
+    <!-- SCREEN 2: WINE DETAIL                                        -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-wine">
+      <div class="scroll-content" id="wine-scroll" onscroll="handleWineScroll(this)">
 
-    <!-- Layer 9: Bubble Records -->
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">버블 기록</span>
-        <span class="section-meta">Phase 2</span>
-      </div>
-      <div class="bubble-filter">
-        <button class="filter-chip wine-active" onclick="toggleFilterWine(this)">전체</button>
-        <button class="filter-chip" onclick="toggleFilterWine(this)">와인 모임</button>
-        <button class="filter-chip" onclick="toggleFilterWine(this)">소믈리에</button>
-      </div>
-      <div class="bubble-card" style="border-color: #DDD6E3;">
-        <div class="bubble-top">
-          <div class="avatar av2">이</div>
-          <div class="bubble-user">
-            <div class="bubble-name">이민준</div>
-            <div class="bubble-bubble-name">와인 모임 버블</div>
-          </div>
-          <div class="bubble-score wine">95점</div>
+        <!-- Scroll Header -->
+        <div class="scroll-header" id="wine-header">
+          <button class="header-icon-btn" onclick="history.back()" style="background: rgba(240,236,243,0.95);">
+            <i data-lucide="chevron-left" style="width:20px;height:20px;"></i>
+          </button>
+          <span class="header-name" style="color: var(--wine);">Chateau Margaux</span>
+          <button class="header-icon-btn" id="header-heart-wine" onclick="toggleHeart('header-heart-wine', 'action-heart-wine')" style="background: rgba(240,236,243,0.95);">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
         </div>
-        <div class="bubble-comment">"2018 빈티지 최전성기. 지금 마셔도 완벽, 10년 더 숙성하면 전설 💜"</div>
-        <div class="bubble-footer">
-          <span class="bubble-meta">디캔팅 · 2일 전</span>
-          <div class="bubble-reactions">
-            <span class="reaction" style="color: var(--wine);">♡ 12</span>
-            <span class="reaction">💬 5</span>
+
+        <!-- Layer 1+2: Label + Identity (side by side) -->
+        <div class="wine-identity-wrap" style="margin-top: -52px; padding-top: 68px;">
+          <div class="wine-label-img">
+            <i data-lucide="wine" style="width:28px;height:28px;"></i>
           </div>
-        </div>
-      </div>
-      <div class="bubble-card" style="border-color: #DDD6E3;">
-        <div class="bubble-top">
-          <div class="avatar av3">최</div>
-          <div class="bubble-user">
-            <div class="bubble-name">최지현</div>
-            <div class="bubble-bubble-name">소믈리에 버블</div>
-          </div>
-          <div class="bubble-score wine">89점</div>
-        </div>
-        <div class="bubble-comment">"탄닌이 아직 살아있어서 스테이크 필수. 단독으로는 조금 딱딱함"</div>
-        <div class="bubble-footer">
-          <span class="bubble-meta">페어링 · 5일 전</span>
-          <div class="bubble-reactions">
-            <span class="reaction" style="color: var(--wine);">♡ 7</span>
-            <span class="reaction">💬 3</span>
+          <div class="wine-info-right">
+            <div class="wine-name">Chateau Margaux</div>
+            <div class="wine-producer">Chateau Margaux</div>
+            <div class="wine-origin">Bordeaux, France</div>
+            <div class="wine-vintage">2018</div>
+            <div class="wine-chips">
+              <span class="wine-chip-red">레드</span>
+            </div>
+            <div class="wine-grape">Cabernet Sauvignon, Merlot</div>
           </div>
         </div>
+
+        <!-- Layer 3: Score -->
+        <div class="score-section" style="background: var(--wine-light);">
+          <div class="score-row">
+            <div class="score-left">
+              <div class="big-score wine-score">91</div>
+              <div class="score-caption">2회 기록</div>
+            </div>
+            <div>
+              <span class="badge badge-wine-spec">
+                <i data-lucide="award" style="width:12px;height:12px;"></i> Grand Cru Classe
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 4: Action Bar -->
+        <div class="action-bar" id="wine-action-bar-static" style="background: var(--wine-light); border-color: #DDD6E3;">
+          <button class="btn-primary wine-btn">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon" id="action-heart-wine" onclick="toggleHeart('action-heart-wine', 'header-heart-wine')" style="border-color: #DDD6E3;">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon" style="border-color: #DDD6E3;">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 5: Wine Position Map — relative to other reviewed wines -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">내 와인 지도</span>
+            <span class="section-meta">리뷰한 와인 중 위치</span>
+          </div>
+          <div class="quadrant-wrap" style="background: var(--wine-light); border-color: #DDD6E3;">
+            <div class="quadrant-chart" style="border-color: #DDD6E3;">
+              <div class="quadrant-inner">
+                <div class="crosshair-h" style="background: #DDD6E3;"></div>
+                <div class="crosshair-v" style="background: #DDD6E3;"></div>
+                <span class="axis-label ax-left" style="color: var(--wine);">산미 낮음</span>
+                <span class="axis-label ax-right" style="color: var(--wine);">산미 높음</span>
+                <span class="axis-label ax-top" style="color: var(--wine);">Full Body</span>
+                <span class="axis-label ax-bottom" style="color: var(--wine);">Light Body</span>
+
+                <!-- Reference dots: other reviewed wines (semi-transparent) -->
+                <div class="q-dot ref" style="left: 35%; top: 62%;" title="Cloudy Bay SB · 85점">85</div>
+                <span class="q-dot-label" style="left: 35%; top: calc(62% + 18px);">Cloudy Bay</span>
+
+                <div class="q-dot ref" style="left: 70%; top: 22%;" title="Barolo Monfortino · 96점">96</div>
+                <span class="q-dot-label" style="left: 70%; top: calc(22% + 18px);">Barolo</span>
+
+                <div class="q-dot ref" style="left: 50%; top: 45%;" title="Opus One · 94점">94</div>
+                <span class="q-dot-label" style="left: 50%; top: calc(45% + 18px);">Opus One</span>
+
+                <div class="q-dot ref" style="left: 42%; top: 58%;" title="Whispering Angel · 72점">72</div>
+                <span class="q-dot-label" style="left: 42%; top: calc(58% + 18px);">Rosé</span>
+
+                <!-- Current wine: prominent -->
+                <div class="q-dot current wine-current" style="left: 58%; top: 26%;" title="Chateau Margaux · 91점">91</div>
+                <span class="q-dot-label current-label" style="left: 58%; top: calc(26% + 24px); color: var(--wine);">Ch. Margaux</span>
+              </div>
+            </div>
+            <div class="popular-menu" style="text-align:left;display:flex;align-items:center;gap:6px;">
+              <i data-lucide="info" style="width:12px;height:12px;color:var(--text-hint);flex-shrink:0;"></i>
+              <span style="color:var(--text-hint);font-size:11px;">내가 리뷰한 와인과의 상대적 위치</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 5b: Food Pairing -->
+        <div class="section" style="padding-top: 0;">
+          <div class="section-header">
+            <span class="section-title">음식 페어링</span>
+          </div>
+          <div class="pairing-tags">
+            <span class="pairing-tag">스테이크</span>
+            <span class="pairing-tag">양갈비</span>
+            <span class="pairing-tag">숙성 치즈</span>
+            <span class="pairing-tag">트러플 파스타</span>
+            <span class="pairing-tag">다크 초콜릿</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 6: My Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+            <span class="section-meta">2회 · 최근 2026.03.10</span>
+          </div>
+          <div class="timeline wine-timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--wine); box-shadow: 0 0 0 2px var(--wine);"></div>
+              <div class="timeline-date">
+                2026.03.10
+                <span class="tag-chip chip-pairing">페어링</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--wine);">94점</span>
+                <span class="timeline-comment">"스테이크와 환상 궁합"</span>
+              </div>
+              <div class="timeline-place">
+                <i data-lucide="map-pin" style="width:12px;height:12px;"></i> 레스토랑 A
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--accent-social); box-shadow: 0 0 0 2px var(--accent-social);"></div>
+              <div class="timeline-date">
+                2026.01.25
+                <span class="tag-chip chip-solo">혼술</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--accent-social);">88점</span>
+                <span class="timeline-comment">"혼자 마시기엔 묵직한 편"</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Wine Facts -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">와인 정보</span>
+          </div>
+          <table class="fact-table">
+            <tr><td>품종</td><td>Cabernet Sauvignon 75%, Merlot 20%, Petit Verdot 5%</td></tr>
+            <tr><td>산지</td><td>프랑스 보르도 메독</td></tr>
+            <tr><td>알코올</td><td>14.5%</td></tr>
+            <tr><td>적정 온도</td><td>16–18°C</td></tr>
+            <tr><td>디캔팅</td><td>2시간 권장</td></tr>
+          </table>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 8: Connected Restaurants -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">함께한 레스토랑</span>
+          </div>
+          <div class="hscroll-wrap">
+            <div class="hscroll-inner">
+              <div class="rest-card-h" onclick="switchTab('restaurant', document.querySelectorAll('.tab-btn')[0])">
+                <div class="rest-photo"><i data-lucide="utensils" style="width:20px;height:20px;"></i></div>
+                <div class="rest-info">
+                  <div class="r-name">레스토랑 A</div>
+                  <div class="r-score"><b>92점</b> · 파인다이닝</div>
+                </div>
+              </div>
+              <div class="rest-card-h">
+                <div class="rest-photo" style="background: linear-gradient(135deg, #1a1a2e, #0f3460);"><i data-lucide="utensils" style="width:20px;height:20px;color:rgba(255,255,255,0.6);"></i></div>
+                <div class="rest-info">
+                  <div class="r-name">비스트로 블루</div>
+                  <div class="r-score"><b>85점</b> · 비스트로</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <div class="bubble-filter">
+            <button class="filter-chip wine-active" onclick="toggleFilterWine(this)">전체</button>
+            <button class="filter-chip" onclick="toggleFilterWine(this)">와인 모임</button>
+            <button class="filter-chip" onclick="toggleFilterWine(this)">소믈리에</button>
+          </div>
+          <div class="bubble-card" style="border-color: #DDD6E3;">
+            <div class="bubble-top">
+              <div class="avatar av2">이</div>
+              <div class="bubble-user">
+                <div class="bubble-name">이민준</div>
+                <div class="bubble-bubble-name">와인 모임 버블</div>
+              </div>
+              <div class="bubble-score wine">95점</div>
+            </div>
+            <div class="bubble-comment">"2018 빈티지 최전성기. 지금 마셔도 완벽, 10년 더 숙성하면 전설"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">디캔팅 · 2일 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction" style="color: var(--wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 12</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 5</span>
+              </div>
+            </div>
+          </div>
+          <div class="bubble-card" style="border-color: #DDD6E3;">
+            <div class="bubble-top">
+              <div class="avatar av3">최</div>
+              <div class="bubble-user">
+                <div class="bubble-name">최지현</div>
+                <div class="bubble-bubble-name">소믈리에 버블</div>
+              </div>
+              <div class="bubble-score wine">89점</div>
+            </div>
+            <div class="bubble-comment">"탄닌이 아직 살아있어서 스테이크 필수. 단독으로는 조금 딱딱함"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">페어링 · 5일 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction" style="color: var(--wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 7</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Action Bar for wine -->
+        <div class="action-bar floating" id="wine-floating-bar" style="background: var(--wine-light); border-top-color: #DDD6E3;">
+          <button class="btn-primary wine-btn">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon" style="border-color: #DDD6E3;">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon" style="border-color: #DDD6E3;">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <div class="bottom-spacer"></div>
       </div>
     </div>
 
-    <!-- Floating Action Bar for wine -->
-    <div class="action-bar floating" id="wine-floating-bar" style="background: var(--wine-light); border-top: 1px solid #DDD6E3;">
-      <button class="btn-primary wine-btn">+ 기록 남기기</button>
-      <button class="btn-icon" style="border-color: #DDD6E3;">♡</button>
-      <button class="btn-icon" style="border-color: #DDD6E3;">⇪</button>
-    </div>
-
-    <div class="bottom-spacer"></div>
   </div>
-
 </div>
 
 <script>
@@ -1372,16 +1609,15 @@
   // TAB SWITCHING
   // ============================================================
   function switchTab(screenId, btn) {
-    // Reset all screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
-    // Activate selected
     document.getElementById('screen-' + screenId).classList.add('active');
     btn.classList.add('active');
 
     // Scroll to top
-    document.getElementById('screen-' + screenId).scrollTop = 0;
+    const scroll = document.getElementById(screenId === 'restaurant' ? 'rest-scroll' : 'wine-scroll');
+    if (scroll) scroll.scrollTop = 0;
   }
 
   // ============================================================
@@ -1395,7 +1631,6 @@
     const scrolled = el.scrollTop > 160;
     header.classList.toggle('solid', scrolled);
 
-    // Show floating bar when scrolled past static action bar
     const staticBarBottom = staticBar.offsetTop + staticBar.offsetHeight;
     const showFloating = el.scrollTop > staticBarBottom - 100;
     floatingBar.classList.toggle('visible', showFloating);
@@ -1418,13 +1653,13 @@
   // CAROUSEL
   // ============================================================
   const carouselState = {};
+  const SLIDE_WIDTH = 366;
 
   function goToSlide(carouselId, idx, dotsEl) {
     const track = document.getElementById(carouselId);
-    track.style.transform = `translateX(-${idx * 390}px)`;
+    track.style.transform = `translateX(-${idx * SLIDE_WIDTH}px)`;
     carouselState[carouselId] = idx;
 
-    // Update dots
     const dots = dotsEl.querySelectorAll('.dot');
     dots.forEach((d, i) => d.classList.toggle('active', i === idx));
   }
@@ -1518,22 +1753,13 @@
     if (!el1) return;
     const isLiked = el1.classList.contains('liked');
 
-    // Toggle both the header and action bar hearts in sync
     [id1, id2].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
-      if (isLiked) {
-        el.classList.remove('liked');
-        el.textContent = el.textContent.includes('♡') ? '♡' : '♡';
-        el.innerHTML = '♡';
-      } else {
-        el.classList.add('liked');
-        el.innerHTML = '♥';
-      }
+      el.classList.toggle('liked', !isLiked);
     });
 
-    // Pulse animation
-    el1.style.transform = 'scale(1.4)';
+    el1.style.transform = 'scale(1.3)';
     setTimeout(() => { el1.style.transform = ''; }, 200);
   }
 
@@ -1553,7 +1779,7 @@
   }
 
   // Initialize Lucide icons
-  lucide.createIcons();
+  document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
 </script>
 </body>
 </html>

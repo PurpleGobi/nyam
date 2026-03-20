@@ -1246,12 +1246,16 @@
   }
 
   /* =====================
-     FAB (Floating Action Button)
+     FAB + Add Bottom Sheet
      ===================== */
-  .fab {
+  .fab-container {
     position: absolute;
     bottom: 28px;
     right: 20px;
+    z-index: 30;
+  }
+
+  .fab {
     width: 56px;
     height: 56px;
     background: var(--primary);
@@ -1260,15 +1264,447 @@
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 28px;
-    font-weight: 300;
     box-shadow: 0 4px 20px rgba(193,123,94,0.45);
     cursor: pointer;
-    transition: transform 0.15s;
-    z-index: 20;
+    transition: transform 0.2s, background 0.2s;
+    z-index: 31;
     border: none;
+    position: relative;
   }
   .fab:active { transform: scale(0.9); }
+  .fab.wine-style { background: var(--wine); box-shadow: 0 4px 20px rgba(139,115,150,0.45); }
+
+  .fab-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(61,56,51,0.3);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 29;
+    border-radius: 42px;
+  }
+  .fab-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* Add Bottom Sheet */
+  .add-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg-elevated);
+    border-radius: 20px 20px 0 0;
+    padding: 16px 20px 36px;
+    z-index: 35;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -4px 24px rgba(61,56,51,0.1);
+  }
+  .add-sheet.open { transform: translateY(0); }
+  .add-sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border); margin: 0 auto 16px;
+  }
+  .add-sheet-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    margin-bottom: 16px; text-align: center;
+  }
+  .add-sheet-cards {
+    display: flex; gap: 12px;
+  }
+  .add-sheet-card {
+    flex: 1; padding: 20px 16px; border-radius: 16px;
+    border: 2px solid var(--border); background: var(--bg-card);
+    cursor: pointer; text-align: center;
+    transition: all 0.2s; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+  }
+  .add-sheet-card:active { transform: scale(0.96); }
+  .add-sheet-card:hover { border-color: var(--border-bold); }
+  .add-sheet-card.food-card:hover, .add-sheet-card.food-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .add-sheet-card.wine-card:hover, .add-sheet-card.wine-card.selected { border-color: var(--wine); background: var(--wine-light); }
+  .add-sheet-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .add-sheet-icon.food-icon { background: var(--primary-light); color: var(--primary); }
+  .add-sheet-icon.wine-icon { background: var(--wine-light); color: var(--wine); }
+  .add-sheet-label { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  /* =====================
+     Nearby Restaurant List
+     ===================== */
+  .nearby-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 16px; color: var(--text-sub); font-size: 13px; font-weight: 600;
+  }
+  .nearby-list { padding: 0 16px; }
+  .nearby-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: opacity 0.1s;
+  }
+  .nearby-item:last-child { border-bottom: none; }
+  .nearby-item:active { opacity: 0.6; }
+  .nearby-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--primary-light); display: flex; align-items: center;
+    justify-content: center; color: var(--primary); flex-shrink: 0;
+  }
+  .nearby-info { flex: 1; }
+  .nearby-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .nearby-meta { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+  .nearby-dist { font-size: 12px; color: var(--text-hint); font-weight: 500; flex-shrink: 0; }
+
+  .nearby-register {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 16px; margin: 8px 16px;
+    border: 1.5px dashed var(--border); border-radius: 12px;
+    color: var(--text-sub); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .nearby-register:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* =====================
+     Wine Camera Screen
+     ===================== */
+  .wine-camera-area {
+    flex: 1; background: #1a1520; display: flex;
+    flex-direction: column; align-items: center;
+    justify-content: center; position: relative; margin: 0 16px;
+    border-radius: 16px; overflow: hidden;
+  }
+  .wine-camera-frame {
+    width: 160px; height: 220px; border: 2px dashed rgba(139,115,150,0.5);
+    border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; flex-direction: column; gap: 8px;
+    color: rgba(255,255,255,0.5);
+  }
+  .wine-camera-hint {
+    font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 16px;
+  }
+  .wine-camera-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--wine); border: 4px solid rgba(255,255,255,0.3);
+    cursor: pointer; margin-top: 20px; transition: transform 0.15s;
+    display: flex; align-items: center; justify-content: center; color: white;
+  }
+  .wine-camera-btn:active { transform: scale(0.9); }
+  .wine-camera-alt {
+    display: flex; gap: 16px; margin-top: 16px;
+  }
+  .wine-camera-alt-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 50px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .wine-camera-alt-btn:hover { background: rgba(255,255,255,0.15); }
+
+  /* Wine confirm */
+  .wine-confirm-card {
+    margin: 20px 16px; padding: 20px; background: var(--bg-card);
+    border: 2px solid var(--wine); border-radius: 16px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .wine-confirm-label {
+    width: 64px; height: 96px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(160deg, #2d1b4e, #4c1d95, #8B7396);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.7);
+  }
+  .wine-confirm-info { flex: 1; }
+  .wine-confirm-name { font-size: 16px; font-weight: 700; color: var(--wine); margin-bottom: 2px; }
+  .wine-confirm-meta { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+  .wine-confirm-vintage { font-size: 14px; font-weight: 700; color: var(--wine); }
+  .wine-confirm-btns {
+    display: flex; gap: 8px; margin: 0 16px;
+  }
+  .wine-confirm-yes {
+    flex: 1; padding: 14px; border-radius: 50px; border: none;
+    background: var(--wine); color: white; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .wine-confirm-yes:active { transform: scale(0.97); }
+  .wine-confirm-no {
+    flex: 1; padding: 14px; border-radius: 50px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text-sub); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .wine-confirm-no:active { transform: scale(0.97); }
+
+  /* =====================
+     Add Success Screen
+     ===================== */
+  .add-success-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 40px 24px;
+    text-align: center;
+  }
+  .add-success-check {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; color: white;
+  }
+  .add-success-check.food { background: var(--primary); }
+  .add-success-check.wine { background: var(--wine); }
+  .add-success-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .add-success-sub { font-size: 14px; color: var(--text-sub); margin-bottom: 32px; }
+  .add-success-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .add-success-btn {
+    padding: 14px; border-radius: 50px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform 0.15s; border: none; width: 100%;
+  }
+  .add-success-btn:active { transform: scale(0.97); }
+  .add-success-btn.primary-food { background: var(--primary); color: white; }
+  .add-success-btn.primary-wine { background: var(--wine); color: white; }
+  .add-success-btn.ghost {
+    background: var(--bg); border: 1.5px solid var(--border);
+    color: var(--text-sub); font-weight: 600;
+  }
+  .add-success-btn.text-only {
+    background: none; border: none; color: var(--text-hint);
+    font-weight: 600; font-size: 14px;
+  }
+
+  /* =====================
+     RECORD FLOW SCREENS
+     ===================== */
+  .record-nav {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+  .record-nav-back {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; cursor: pointer; color: var(--text);
+    transition: background 0.15s;
+  }
+  .record-nav-back:active { background: var(--bg-page); transform: scale(0.92); }
+  .record-nav-title {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    flex: 1; text-align: center;
+  }
+  .record-nav-close {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; cursor: pointer; color: var(--text-sub);
+  }
+  .record-nav-close:active { background: var(--bg-page); }
+
+  .record-bottom {
+    padding: 10px 16px 24px;
+    flex-shrink: 0;
+  }
+
+  .record-btn {
+    width: 100%; height: 54px;
+    background: var(--primary); color: white; border: none;
+    border-radius: 14px; font-size: 16px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .record-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .record-btn:disabled { background: var(--border-bold); cursor: not-allowed; transform: none; }
+  .record-btn.wine-style { background: var(--wine); }
+
+  .record-btn-ghost {
+    flex: 1; height: 54px;
+    background: var(--bg); color: var(--text-sub);
+    border: 1.5px solid var(--border); border-radius: 14px;
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .record-btn-ghost:active { transform: scale(0.97); background: var(--bg-page); }
+
+  .record-btn-row { display: flex; gap: 10px; }
+
+  /* Search */
+  .rec-search-wrap { padding: 8px 16px; position: relative; }
+  .rec-search-input {
+    width: 100%; height: 44px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 0 16px 0 42px; font-size: 15px; color: var(--text);
+    outline: none; background: var(--bg-card); font-family: inherit;
+  }
+  .rec-search-input:focus { border-color: var(--primary); }
+  .rec-search-input.wine-focus:focus { border-color: var(--wine); }
+  .rec-search-icon {
+    position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
+    color: var(--text-hint);
+  }
+  .rec-search-results { padding: 0 16px; }
+  .rec-search-item {
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  }
+  .rec-search-item:active { opacity: 0.6; }
+  .rec-search-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .rec-search-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .rec-search-register {
+    display: flex; align-items: center; gap: 8px; padding: 16px 0;
+    cursor: pointer; color: var(--primary); font-size: 14px; font-weight: 600;
+  }
+  .rec-search-register:active { opacity: 0.6; }
+
+  /* Quadrant */
+  .rec-quad-wrap { padding: 8px 16px 0; }
+  .rec-quad-header { text-align: center; margin-bottom: 8px; }
+  .rec-quad-name { font-size: 18px; font-weight: 800; color: var(--text); }
+  .rec-quad-meta { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+  .rec-quad-hint {
+    text-align: center; font-size: 13px; color: var(--text-hint);
+    margin-bottom: 6px; min-height: 18px;
+  }
+  .rec-quad-hint.active-hint { color: var(--primary); font-weight: 600; }
+  .rec-quad-canvas {
+    position: relative; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border); background: #F5F2ED;
+  }
+  .rec-quad-canvas canvas { display: block; cursor: crosshair; touch-action: none; }
+  .rec-quad-values {
+    display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .rec-quad-chip {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 100px; padding: 5px 12px; font-size: 13px;
+    color: var(--text-sub); font-weight: 500;
+  }
+  .rec-quad-chip span { font-weight: 700; }
+  .rec-quad-chip span.food { color: var(--primary); }
+  .rec-quad-chip span.wine { color: var(--wine); }
+  .rec-mode-indicator {
+    text-align: center; font-size: 12px; color: var(--text-hint);
+    margin-top: 6px; font-weight: 500; min-height: 18px;
+  }
+
+  /* Scene tags */
+  .rec-scene { padding: 16px; }
+  .rec-scene-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .rec-scene-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 16px; }
+  .rec-scene-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+  }
+  .rec-scene-tag {
+    padding: 16px 8px; border: 1.5px solid var(--border); border-radius: 14px;
+    text-align: center; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--text-sub); background: var(--bg-card);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .rec-scene-tag:active { transform: scale(0.95); }
+  .rec-scene-tag .tag-icon-wrap {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-page); color: var(--text-sub);
+  }
+  .rec-scene-tag.selected { transform: scale(1.02); color: white; border-width: 2px; }
+  .rec-scene-tag.selected .tag-icon-wrap { background: rgba(255,255,255,0.2); color: white; }
+
+  /* More fields (expandable) */
+  .rec-more-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 14px; cursor: pointer; color: var(--text-sub);
+    font-size: 14px; font-weight: 600; border-top: 1px solid var(--border);
+  }
+  .rec-more-toggle:active { color: var(--text); }
+  .rec-more-chevron { transition: transform 0.3s; color: var(--text-hint); }
+  .rec-more-toggle.open .rec-more-chevron { transform: rotate(180deg); }
+  .rec-more-fields { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); padding: 0 16px; }
+  .rec-more-fields.open { max-height: 600px; }
+  .rec-field { margin-bottom: 14px; }
+  .rec-field-label { font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+  .rec-field-textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; color: var(--text); resize: none;
+    outline: none; font-family: inherit; background: var(--bg-card);
+  }
+  .rec-field-textarea:focus { border-color: var(--primary); }
+  .rec-field-input {
+    width: 100%; height: 44px; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 0 12px; font-size: 14px; color: var(--text); outline: none;
+    font-family: inherit; background: var(--bg-card);
+  }
+  .rec-field-input:focus { border-color: var(--primary); }
+
+  /* Aroma */
+  .rec-aroma { padding: 8px 16px; text-align: center; }
+  .rec-aroma-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .rec-aroma-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 14px; }
+  #recAromaCanvas { border-radius: 50%; cursor: crosshair; touch-action: none; }
+  .rec-detected { margin-top: 12px; font-size: 13px; color: var(--text-sub); min-height: 20px; }
+  .rec-detected strong { color: var(--wine); }
+
+  /* Complexity */
+  .rec-complexity { padding: 16px; }
+  .rec-complexity-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+  .rec-complexity-toggles { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .rec-complexity-chip {
+    padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 100px;
+    font-size: 13px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; background: var(--bg-card); transition: all 0.2s;
+  }
+  .rec-complexity-chip:active { transform: scale(0.95); }
+  .rec-complexity-chip.active { background: var(--wine-light); border-color: var(--wine); color: var(--wine); }
+  .rec-slider-group { margin-bottom: 16px; }
+  .rec-slider-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-sub); }
+  .rec-slider-label span { color: var(--wine); }
+  .rec-slider {
+    -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--wine) 0%, var(--wine) var(--val,60%), var(--border) var(--val,60%));
+    outline: none;
+  }
+  .rec-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--wine); cursor: pointer; box-shadow: 0 2px 8px rgba(139,115,150,0.35);
+  }
+  .rec-sat-preview {
+    background: var(--wine-light); border: 1px solid rgba(139,115,150,0.15);
+    border-radius: 14px; padding: 14px 16px; margin-top: 12px; text-align: center;
+  }
+  .rec-sat-label { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+  .rec-sat-value { font-size: 32px; font-weight: 800; color: var(--wine); }
+
+  /* Completion */
+  .rec-complete-content {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 24px 16px; gap: 14px; flex: 1;
+  }
+  .rec-complete-check {
+    width: 72px; height: 72px; background: #E2F0E6; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: var(--positive);
+    animation: recPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes recPopIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+  .rec-complete-title { font-size: 22px; font-weight: 800; color: var(--text); text-align: center; }
+  .rec-complete-meta { font-size: 14px; color: var(--text-sub); }
+  .rec-complete-mini-quad {
+    width: 160px; height: 160px; border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; background: #F5F2ED;
+  }
+  .rec-xp-badge {
+    background: linear-gradient(135deg, var(--caution), var(--negative));
+    color: white; padding: 10px 20px; border-radius: 100px;
+    font-size: 14px; font-weight: 700;
+    animation: recSlideUp 0.5s ease 0.3s backwards;
+  }
+  @keyframes recSlideUp { 0%{transform:translateY(20px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+  .rec-complete-actions {
+    width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 0 24px 28px;
+  }
+  .rec-btn-outline {
+    width: 100%; height: 48px; background: var(--bg); color: var(--text);
+    border: 1.5px solid var(--border); border-radius: 14px;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .rec-btn-outline:active { transform: scale(0.97); background: var(--bg-page); }
 
   /* Header avatar */
   .header-avatar {
@@ -2965,7 +3401,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div class="nudge-strip-text"><strong>사진 감지</strong> · 3/19 12:34</div>
-            <button class="nudge-strip-action" onclick="alert('기록 → 02_record.html')">기록</button>
+            <button class="nudge-strip-action" onclick="startRecord('camera')">기록</button>
             <button class="nudge-strip-close" onclick="dismissNudge()">✕</button>
           </div>
 
@@ -3587,11 +4023,474 @@
         </div>
 
         <!-- FAB -->
-        <button class="fab" onclick="alert('기록하기 → 02_record.html')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
+        <div class="fab-container">
+          <button class="fab" id="fabBtn" onclick="openAddSheet()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Add Bottom Sheet -->
+        <div class="fab-overlay" id="fabOverlay" onclick="closeAddSheet()"></div>
+        <div class="add-sheet" id="addSheet">
+          <div class="add-sheet-handle"></div>
+          <div class="add-sheet-title">무엇을 추가할까요?</div>
+          <div class="add-sheet-cards">
+            <div class="add-sheet-card food-card" onclick="startAdd('restaurant')">
+              <div class="add-sheet-icon food-icon"><i data-lucide="utensils" style="width:24px;height:24px;"></i></div>
+              <div class="add-sheet-label">식당</div>
+            </div>
+            <div class="add-sheet-card wine-card" onclick="startAdd('wine')">
+              <div class="add-sheet-icon wine-icon"><i data-lucide="wine" style="width:24px;height:24px;"></i></div>
+              <div class="add-sheet-label">와인</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADD: RESTAURANT (Nearby + Search)
+           ========================================== -->
+      <div class="screen hidden" id="screen-add-restaurant">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">식당 추가</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <!-- Search bar -->
+          <div class="rec-search-wrap">
+            <span class="rec-search-icon"><i data-lucide="search" style="width:18px;height:18px;"></i></span>
+            <input class="rec-search-input" id="addRestSearchInput" placeholder="식당 이름 검색..." oninput="onAddRestSearch(this.value)" />
+          </div>
+
+          <!-- Search results (hidden by default) -->
+          <div id="addRestSearchResults" style="display:none">
+            <div class="rec-search-item" onclick="addRestaurant('스시코우지','일식 · 교대역', true)">
+              <div><div class="rec-search-name">스시코우지</div><div class="rec-search-meta">일식 · 교대역</div></div>
+              <div style="font-size:11px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
+            </div>
+            <div class="rec-search-item" onclick="addRestaurant('스시코우지 을지로점','일식 · 을지로3가', false)">
+              <div><div class="rec-search-name">스시코우지 을지로점</div><div class="rec-search-meta">일식 · 을지로3가</div></div>
+            </div>
+            <div class="rec-search-item" onclick="addRestaurant('스시야마','일식 · 강남역', false)">
+              <div><div class="rec-search-name">스시야마</div><div class="rec-search-meta">일식 · 강남역</div></div>
+            </div>
+          </div>
+
+          <!-- Nearby restaurants -->
+          <div id="addRestNearbySection">
+            <div class="nearby-header" style="margin-top:8px;">
+              <i data-lucide="map-pin" style="width:14px;height:14px;"></i> 근처 식당
+            </div>
+            <div class="nearby-list">
+              <div class="nearby-item" onclick="addRestaurant('스시코우지','일식 · 을지로', true)">
+                <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
+                <div class="nearby-info">
+                  <div class="nearby-name">스시코우지</div>
+                  <div class="nearby-meta">일식 · 을지로</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                  <div class="nearby-dist">120m</div>
+                  <div style="font-size:10px;color:var(--primary);font-weight:600;">기록 있음</div>
+                </div>
+              </div>
+              <div class="nearby-item" onclick="addRestaurant('몽탄','한식 · 을지로', false)">
+                <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
+                <div class="nearby-info">
+                  <div class="nearby-name">몽탄</div>
+                  <div class="nearby-meta">한식 · 을지로</div>
+                </div>
+                <div class="nearby-dist">350m</div>
+              </div>
+              <div class="nearby-item" onclick="addRestaurant('을지로 골목집','한식 · 을지로3가', false)">
+                <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
+                <div class="nearby-info">
+                  <div class="nearby-name">을지로 골목집</div>
+                  <div class="nearby-meta">한식 · 을지로3가</div>
+                </div>
+                <div class="nearby-dist">500m</div>
+              </div>
+              <div class="nearby-item" onclick="addRestaurant('비스트로 드 욘트빌','프렌치 · 을지로', false)">
+                <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
+                <div class="nearby-info">
+                  <div class="nearby-name">비스트로 드 욘트빌</div>
+                  <div class="nearby-meta">프렌치 · 을지로</div>
+                </div>
+                <div class="nearby-dist">650m</div>
+              </div>
+              <div class="nearby-item" onclick="addRestaurant('리스토란테 에오','이탈리안 · 청담', false)">
+                <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
+                <div class="nearby-info">
+                  <div class="nearby-name">리스토란테 에오</div>
+                  <div class="nearby-meta">이탈리안 · 청담</div>
+                </div>
+                <div class="nearby-dist">1.2km</div>
+              </div>
+            </div>
+            <div class="nearby-register" onclick="addRestaurant('직접 등록','', false)">
+              <i data-lucide="plus-circle" style="width:18px;height:18px;"></i>
+              <span>목록에 없나요? 직접 등록하기</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADD: WINE (Camera + Search)
+           ========================================== -->
+      <div class="screen hidden" id="screen-add-wine">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title" style="color:var(--wine);">와인 추가</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;padding-bottom:20px;">
+          <div class="wine-camera-area">
+            <div class="wine-camera-frame">
+              <i data-lucide="wine" style="width:40px;height:40px;"></i>
+              <span style="font-size:12px;">라벨을 맞춰주세요</span>
+            </div>
+            <div class="wine-camera-hint">와인 라벨을 촬영하면 자동으로 인식합니다</div>
+            <button class="wine-camera-btn" onclick="simulateWineScan()">
+              <i data-lucide="camera" style="width:24px;height:24px;"></i>
+            </button>
+            <div class="wine-camera-alt">
+              <button class="wine-camera-alt-btn" onclick="goToScreen('screen-add-wine-search')">
+                <i data-lucide="search" style="width:14px;height:14px;"></i> 이름으로 검색
+              </button>
+              <button class="wine-camera-alt-btn">
+                <i data-lucide="image" style="width:14px;height:14px;"></i> 앨범에서
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD: WINE CONFIRM (after scan) -->
+      <div class="screen hidden" id="screen-add-wine-confirm">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title" style="color:var(--wine);">와인 확인</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+          <div style="padding:0 20px;margin-bottom:12px;font-size:17px;font-weight:700;color:var(--text);text-align:center;">이 와인이 맞나요?</div>
+          <div class="wine-confirm-card">
+            <div class="wine-confirm-label"><i data-lucide="wine" style="width:24px;height:24px;"></i></div>
+            <div class="wine-confirm-info">
+              <div class="wine-confirm-name">Chateau Margaux</div>
+              <div class="wine-confirm-meta">Red · Bordeaux, France</div>
+              <div class="wine-confirm-vintage">2018</div>
+              <div style="display:flex;gap:4px;margin-top:4px;">
+                <span style="padding:2px 8px;background:#FAF0F0;color:var(--negative);border-radius:6px;font-size:10px;font-weight:600;border:1px solid #E8D6D6;">레드</span>
+              </div>
+            </div>
+          </div>
+          <div class="wine-confirm-btns">
+            <button class="wine-confirm-yes" onclick="addWine('Chateau Margaux','Red · Bordeaux', false)">맞아요</button>
+            <button class="wine-confirm-no" onclick="goBack()">다른 와인이에요</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD: WINE SEARCH -->
+      <div class="screen hidden" id="screen-add-wine-search">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title" style="color:var(--wine);">와인 검색</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-search-wrap">
+            <span class="rec-search-icon"><i data-lucide="search" style="width:18px;height:18px;"></i></span>
+            <input class="rec-search-input wine-focus" id="addWineSearchInput" placeholder="와인 이름을 입력하세요" oninput="onAddWineSearch(this.value)" />
+          </div>
+          <div id="addWineSearchResults" style="display:none">
+            <div class="rec-search-item" onclick="addWine('Chateau Margaux 2018','Red · Bordeaux', false)">
+              <div><div class="rec-search-name">Chateau Margaux 2018</div><div class="rec-search-meta">Red · Bordeaux, France</div></div>
+            </div>
+            <div class="rec-search-item" onclick="addWine('Chateau Margaux 2015','Red · Bordeaux', true)">
+              <div><div class="rec-search-name">Chateau Margaux 2015</div><div class="rec-search-meta">Red · Bordeaux, France</div></div>
+              <div style="font-size:11px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
+            </div>
+            <div class="rec-search-item" onclick="addWine('Chateau Margaux 2010','Red · Bordeaux', false)">
+              <div><div class="rec-search-name">Chateau Margaux 2010</div><div class="rec-search-meta">Red · Bordeaux, France</div></div>
+            </div>
+          </div>
+          <div style="padding:24px;text-align:center;color:var(--text-hint);font-size:13px;" id="addWineSearchHint">
+            와인 이름이나 생산자를 입력하세요
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADD: SUCCESS
+           ========================================== -->
+      <div class="screen hidden" id="screen-add-success">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="add-success-wrap">
+          <div class="add-success-check food" id="addSuccessIcon">
+            <i data-lucide="check" style="width:32px;height:32px;"></i>
+          </div>
+          <div class="add-success-title" id="addSuccessTitle">추가되었습니다!</div>
+          <div class="add-success-sub" id="addSuccessSub">몽탄 · 한식 · 을지로</div>
+          <div class="add-success-btns">
+            <button class="add-success-btn primary-food" id="addSuccessDetailBtn" onclick="exitRecord()">내용 추가하기</button>
+            <button class="add-success-btn ghost" onclick="restartAdd()">한 곳 더 추가</button>
+            <button class="add-success-btn text-only" onclick="exitRecord()">홈으로</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORD: QUADRANT (Restaurant) -->
+      <div class="screen hidden" id="screen-rec-quad">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">평가</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-quad-wrap">
+            <div class="rec-quad-header">
+              <div class="rec-quad-name" id="recQuadName">스시코우지</div>
+              <div class="rec-quad-meta" id="recQuadMeta">일식 · 교대역</div>
+            </div>
+            <div class="rec-quad-hint" id="recQuadHint">화면을 탭해서 위치를 설정하세요</div>
+            <div class="rec-quad-canvas"><canvas id="recQuadCanvas" width="334" height="334"></canvas></div>
+            <div class="rec-mode-indicator" id="recModeInd"></div>
+            <div class="rec-quad-values">
+              <div class="rec-quad-chip">가격 <span class="food" id="recPriceVal">-</span></div>
+              <div class="rec-quad-chip">분위기 <span class="food" id="recAtmVal">-</span></div>
+              <div class="rec-quad-chip">만족도 <span class="food" id="recSatVal">-</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <button class="record-btn" id="recQuadNext" disabled onclick="goToScreen('screen-rec-scene')">
+            다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- RECORD: SCENE TAGS (Restaurant) -->
+      <div class="screen hidden" id="screen-rec-scene">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">상황 태그</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-scene">
+            <div class="rec-scene-title">어떤 상황이었나요?</div>
+            <div class="rec-scene-sub">하나를 선택해주세요</div>
+            <div class="rec-scene-grid" id="recSceneTags">
+              <div class="rec-scene-tag" data-tag="혼밥" data-color="#7A9BAE" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="user" style="width:18px;height:18px;"></i></div><span>혼밥</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="데이트" data-color="#B8879B" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="heart" style="width:18px;height:18px;"></i></div><span>데이트</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="친구" data-color="#7EAE8B" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="users" style="width:18px;height:18px;"></i></div><span>친구</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="가족" data-color="#C9A96E" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="home" style="width:18px;height:18px;"></i></div><span>가족</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="회식" data-color="#8B7396" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="briefcase" style="width:18px;height:18px;"></i></div><span>회식</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="술자리" data-color="#B87272" onclick="recSelectScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="wine" style="width:18px;height:18px;"></i></div><span>술자리</span>
+              </div>
+            </div>
+            <div class="rec-more-toggle" id="recMoreToggle" onclick="recToggleMore()">
+              <span>더 추가하기</span>
+              <span class="rec-more-chevron"><i data-lucide="chevron-down" style="width:16px;height:16px;"></i></span>
+            </div>
+            <div class="rec-more-fields" id="recMoreFields">
+              <div style="height:8px"></div>
+              <div class="rec-field"><div class="rec-field-label">한줄평</div><textarea class="rec-field-textarea" rows="3" placeholder="이 식당에 대한 한 줄 코멘트..." maxlength="200"></textarea></div>
+              <div class="rec-field"><div class="rec-field-label">사진</div><div style="display:flex;gap:8px;"><div style="width:68px;height:68px;border:2px dashed var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-hint);cursor:pointer;"><i data-lucide="plus" style="width:20px;height:20px;"></i></div></div></div>
+              <div class="rec-field"><div class="rec-field-label">금액 (1인 기준)</div><input class="rec-field-input" placeholder="예: 85,000원"></div>
+              <div style="height:8px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <button class="record-btn" id="recSceneNext" disabled onclick="recGoToComplete()">
+            완료 <i data-lucide="check" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- RECORD: WINE QUADRANT -->
+      <div class="screen hidden" id="screen-rec-wine-quad">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">와인 특성</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-quad-wrap">
+            <div class="rec-quad-header">
+              <div class="rec-quad-name" id="recWineQuadName">샤또 마르고</div>
+              <div class="rec-quad-meta" id="recWineQuadMeta">Bordeaux · Red</div>
+            </div>
+            <div class="rec-quad-hint" id="recWineQuadHint">화면을 탭해서 와인 특성을 설정하세요</div>
+            <div class="rec-quad-canvas"><canvas id="recWineQuadCanvas" width="334" height="334"></canvas></div>
+            <div class="rec-mode-indicator" id="recWineModeInd"></div>
+            <div class="rec-quad-values">
+              <div class="rec-quad-chip">산미 <span class="wine" id="recAcidityVal">-</span></div>
+              <div class="rec-quad-chip">바디 <span class="wine" id="recBodyVal">-</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <button class="record-btn wine-style" id="recWineQuadNext" disabled onclick="goToScreen('screen-rec-aroma')">
+            다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- RECORD: AROMA PALETTE -->
+      <div class="screen hidden" id="screen-rec-aroma">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">아로마 팔레트</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-aroma">
+            <div class="rec-aroma-title">어떤 향이 느껴졌나요?</div>
+            <div class="rec-aroma-sub">손가락으로 영역을 칠해보세요</div>
+            <canvas id="recAromaCanvas" width="280" height="280"></canvas>
+            <div class="rec-detected" id="recDetectedAromas">감지된 향: —</div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <div class="record-btn-row">
+            <button class="record-btn-ghost" onclick="goToScreen('screen-rec-complexity')">건너뛰기</button>
+            <button class="record-btn wine-style" style="flex:2" onclick="goToScreen('screen-rec-complexity')">
+              다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORD: WINE COMPLEXITY -->
+      <div class="screen hidden" id="screen-rec-complexity">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">복합성 & 여운</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-complexity">
+            <div class="rec-complexity-title">복합성</div>
+            <div class="rec-complexity-toggles">
+              <div class="rec-complexity-chip active" onclick="this.classList.toggle('active');recUpdateWineSat()">1차 과일</div>
+              <div class="rec-complexity-chip" onclick="this.classList.toggle('active');recUpdateWineSat()">2차 효모</div>
+              <div class="rec-complexity-chip" onclick="this.classList.toggle('active');recUpdateWineSat()">3차 바닐라</div>
+              <div class="rec-complexity-chip" onclick="this.classList.toggle('active');recUpdateWineSat()">오크</div>
+              <div class="rec-complexity-chip" onclick="this.classList.toggle('active');recUpdateWineSat()">미네랄</div>
+              <div class="rec-complexity-chip" onclick="this.classList.toggle('active');recUpdateWineSat()">스파이스</div>
+            </div>
+            <div class="rec-slider-group">
+              <div class="rec-slider-label">여운 <span id="recFinishVal">60%</span></div>
+              <input type="range" class="rec-slider" min="0" max="100" value="60" style="--val:60%" oninput="recUpdateSlider(this,'recFinishVal')">
+            </div>
+            <div class="rec-slider-group">
+              <div class="rec-slider-label">균형 <span id="recBalanceVal">75%</span></div>
+              <input type="range" class="rec-slider" min="0" max="100" value="75" style="--val:75%" oninput="recUpdateSlider(this,'recBalanceVal')">
+            </div>
+            <div class="rec-sat-preview">
+              <div class="rec-sat-label">예상 만족도</div>
+              <div class="rec-sat-value" id="recWineSatPreview">82</div>
+            </div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <div class="record-btn-row">
+            <button class="record-btn-ghost" onclick="goToScreen('screen-rec-wine-scene')">건너뛰기</button>
+            <button class="record-btn wine-style" style="flex:2" onclick="goToScreen('screen-rec-wine-scene')">
+              다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORD: WINE SCENE TAGS -->
+      <div class="screen hidden" id="screen-rec-wine-scene">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">상황 태그</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+          <div class="rec-scene">
+            <div class="rec-scene-title">어떤 상황이었나요?</div>
+            <div class="rec-scene-sub">하나를 선택해주세요</div>
+            <div class="rec-scene-grid" id="recWineSceneTags">
+              <div class="rec-scene-tag" data-tag="혼술" data-color="#7A9BAE" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="glass-water" style="width:18px;height:18px;"></i></div><span>혼술</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="데이트" data-color="#B8879B" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="heart" style="width:18px;height:18px;"></i></div><span>데이트</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="모임" data-color="#7EAE8B" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="users" style="width:18px;height:18px;"></i></div><span>모임</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="페어링" data-color="#C9A96E" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div><span>페어링</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="선물" data-color="#8B7396" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="gift" style="width:18px;height:18px;"></i></div><span>선물</span>
+              </div>
+              <div class="rec-scene-tag" data-tag="시음회" data-color="#B87272" onclick="recSelectWineScene(this)">
+                <div class="tag-icon-wrap"><i data-lucide="trophy" style="width:18px;height:18px;"></i></div><span>시음회</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="record-bottom">
+          <button class="record-btn wine-style" id="recWineSceneNext" disabled onclick="recGoToComplete()">
+            완료 <i data-lucide="check" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- RECORD: COMPLETION -->
+      <div class="screen hidden" id="screen-rec-complete">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="rec-complete-content">
+          <div class="rec-complete-check"><i data-lucide="check" style="width:36px;height:36px;"></i></div>
+          <div class="rec-complete-title">기록이 저장되었습니다!</div>
+          <div class="rec-complete-meta" id="recCompleteMeta">스시코우지 · 92점 · 데이트</div>
+          <canvas id="recCompleteCanvas" width="160" height="160" class="rec-complete-mini-quad"></canvas>
+          <div class="rec-xp-badge" id="recXpBadge">을지로 +10 XP</div>
+        </div>
+        <div class="rec-complete-actions">
+          <button class="record-btn" onclick="exitRecord()"><i data-lucide="home" style="width:18px;height:18px;"></i> 홈으로</button>
+          <button class="rec-btn-outline" onclick="alert('버블에 공유!')">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="var(--accent-social)" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="3" fill="var(--accent-social)" opacity="0.4"/></svg>
+            버블에 공유
+          </button>
+          <button class="rec-btn-outline" onclick="exitRecord();setTimeout(()=>toggleFab(),300);">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 한 곳 더 기록
+          </button>
+        </div>
       </div>
 
       <!-- SCREEN 5: DISCOVER -->
@@ -4712,6 +5611,308 @@
     if (id) {
       alert('식당 상세 페이지로 이동: ' + id);
     }
+  }
+
+  // =============================================
+  // RECORD FLOW
+  // =============================================
+  let fabOpen = false;
+  const recState = {
+    type: 'restaurant',
+    place: null,
+    quadDot: null,
+    wineQuadDot: null,
+    scene: null,
+    wineScene: null,
+    aromaColor: null,
+  };
+
+  // FAB → Add Bottom Sheet
+  function openAddSheet() {
+    fabOpen = true;
+    document.getElementById('addSheet').classList.add('open');
+    document.getElementById('fabOverlay').classList.add('open');
+    // Update FAB color based on tab
+    const fab = document.getElementById('fabBtn');
+    if (currentHomeTab === 'wine') {
+      fab.classList.add('wine-style');
+    } else {
+      fab.classList.remove('wine-style');
+    }
+  }
+
+  function closeAddSheet() {
+    fabOpen = false;
+    document.getElementById('addSheet').classList.remove('open');
+    document.getElementById('fabOverlay').classList.remove('open');
+  }
+
+  function startAdd(type) {
+    closeAddSheet();
+    recState.type = type;
+    if (type === 'restaurant') {
+      goToScreen('screen-add-restaurant');
+    } else {
+      goToScreen('screen-add-wine');
+    }
+  }
+
+  // Add restaurant flow
+  function onAddRestSearch(val) {
+    const hasVal = val.trim().length > 1;
+    document.getElementById('addRestSearchResults').style.display = hasVal ? 'block' : 'none';
+    document.getElementById('addRestNearbySection').style.display = hasVal ? 'none' : 'block';
+  }
+
+  function addRestaurant(name, meta, alreadyExists) {
+    if (alreadyExists) {
+      // Already in collection → show toast and go to detail
+      showAddToast('다녀온 적 있어요 — 상세페이지로 이동합니다');
+      setTimeout(() => exitRecord(), 1500);
+      return;
+    }
+    // New add → success screen
+    showAddSuccess(name, meta, 'food');
+  }
+
+  // Add wine flow
+  function simulateWineScan() {
+    // Simulate camera scan → go to confirm
+    goToScreen('screen-add-wine-confirm');
+  }
+
+  function onAddWineSearch(val) {
+    const hasVal = val.trim().length > 1;
+    document.getElementById('addWineSearchResults').style.display = hasVal ? 'block' : 'none';
+    document.getElementById('addWineSearchHint').style.display = hasVal ? 'none' : 'block';
+  }
+
+  function addWine(name, meta, alreadyExists) {
+    if (alreadyExists) {
+      showAddToast('이미 기록한 와인이에요 — 상세페이지로 이동합니다');
+      setTimeout(() => exitRecord(), 1500);
+      return;
+    }
+    showAddSuccess(name, meta, 'wine');
+  }
+
+  // Success screen
+  function showAddSuccess(name, meta, type) {
+    const icon = document.getElementById('addSuccessIcon');
+    const btn = document.getElementById('addSuccessDetailBtn');
+    icon.className = 'add-success-check ' + type;
+    btn.className = 'add-success-btn primary-' + type;
+    document.getElementById('addSuccessTitle').textContent = '추가되었습니다!';
+    document.getElementById('addSuccessSub').textContent = name + (meta ? ' · ' + meta : '');
+    goToScreen('screen-add-success');
+  }
+
+  function restartAdd() {
+    if (recState.type === 'wine') {
+      goToScreen('screen-add-wine');
+    } else {
+      goToScreen('screen-add-restaurant');
+    }
+  }
+
+  // Toast
+  function showAddToast(msg) {
+    let toast = document.getElementById('addToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'addToast';
+      toast.style.cssText = 'position:absolute;bottom:80px;left:20px;right:20px;background:var(--text);color:var(--bg);padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;z-index:90;opacity:0;transition:opacity 0.3s;';
+      document.querySelector('.device-inner .screens-wrapper').appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+  }
+
+  // Legacy compat — keep startRecord for existing quadrant flow
+  function startRecord(method) {
+    recState.type = currentHomeTab === 'wine' ? 'wine' : 'restaurant';
+    if (method === 'search') {
+      startAdd(recState.type);
+    } else {
+      recState.place = recState.type === 'wine'
+        ? { name: '샤또 마르고', meta: 'Bordeaux · Red' }
+        : { name: '포시즌스 레스토랑', meta: '파인다이닝 · 용산' };
+      if (recState.type === 'wine') {
+        document.getElementById('recWineQuadName').textContent = recState.place.name;
+        document.getElementById('recWineQuadMeta').textContent = recState.place.meta;
+        goToScreen('screen-rec-wine-quad');
+        setTimeout(initRecWineQuad, 400);
+      } else {
+        document.getElementById('recQuadName').textContent = recState.place.name;
+        document.getElementById('recQuadMeta').textContent = recState.place.meta;
+        goToScreen('screen-rec-quad');
+        setTimeout(initRecQuad, 400);
+      }
+    }
+  }
+
+  function closeFab() { closeAddSheet(); }
+
+  function exitRecord() {
+    // Return to home
+    recResetAll();
+    const current = document.getElementById(currentScreen);
+    current.classList.remove('active');
+    current.classList.add('hidden');
+    const home = document.getElementById('screen-home');
+    home.classList.remove('hidden');
+    home.classList.add('active');
+    currentScreen = 'screen-home';
+    screenHistory = [];
+  }
+
+  // Search
+  function onRecSearch(val) {
+    document.getElementById('recSearchResults').style.display = val.trim().length > 0 ? 'block' : 'none';
+  }
+  function showRecSearch() {
+    const input = document.getElementById('recSearchInput');
+    if (!input.value) {
+      input.value = recState.type === 'wine' ? '샤또 마르고' : '스시코우지';
+      document.getElementById('recSearchResults').style.display = 'block';
+    }
+  }
+  function recSelectResult(name, meta) {
+    recState.place = { name, meta };
+    if (recState.type === 'wine') {
+      document.getElementById('recWineQuadName').textContent = name;
+      document.getElementById('recWineQuadMeta').textContent = meta;
+      goToScreen('screen-rec-wine-quad');
+      setTimeout(initRecWineQuad, 400);
+    } else {
+      document.getElementById('recQuadName').textContent = name;
+      document.getElementById('recQuadMeta').textContent = meta;
+      goToScreen('screen-rec-quad');
+      setTimeout(initRecQuad, 400);
+    }
+  }
+
+  // Quadrant drawing
+  function drawRecQuad(ctx, canvas, dot, isWine) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#F5F2ED'; ctx.fillRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle = '#E8E4DF'; ctx.lineWidth = 0.5;
+    for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(W/4*i,0);ctx.lineTo(W/4*i,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H/4*i);ctx.lineTo(W,H/4*i);ctx.stroke();}
+    // Cross
+    ctx.strokeStyle='#B5AFA8';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    // Labels
+    ctx.font='11px -apple-system,sans-serif';ctx.fillStyle='#D4CFC8';
+    if(!isWine){ctx.textAlign='left';ctx.fillText('합리적 격식집',8,18);ctx.textAlign='right';ctx.fillText('프리미엄 다이닝',W-8,18);ctx.textAlign='left';ctx.fillText('동네 맛집',8,H-8);ctx.textAlign='right';ctx.fillText('트렌디 핫플',W-8,H-8);}
+    else{ctx.textAlign='left';ctx.fillText('산미 낮은 풀바디',8,18);ctx.textAlign='right';ctx.fillText('산미 높은 풀바디',W-8,18);ctx.textAlign='left';ctx.fillText('산미 낮은 라이트',8,H-8);ctx.textAlign='right';ctx.fillText('산미 높은 라이트',W-8,H-8);}
+    // Axis
+    ctx.font='12px -apple-system,sans-serif';ctx.fillStyle='#8C8580';ctx.textAlign='center';
+    if(!isWine){ctx.fillText('저렴',40,H/2+16);ctx.fillText('고가',W-40,H/2+16);ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('캐주얼',40,0);ctx.fillText('포멀',-40,0);ctx.restore();}
+    else{ctx.fillText('산미 낮음',44,H/2+16);ctx.fillText('산미 높음',W-44,H/2+16);ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Light',40,0);ctx.fillText('Full',-40,0);ctx.restore();}
+    // Ref dots
+    [{x:.75,y:.2},{x:.82,y:.15},{x:.68,y:.28},{x:.55,y:.35},{x:.3,y:.3},{x:.4,y:.45},{x:.6,y:.6},{x:.72,y:.55},{x:.25,y:.65}].forEach(r=>{ctx.beginPath();ctx.arc(r.x*W,r.y*H,5,0,Math.PI*2);ctx.fillStyle='rgba(156,163,175,0.3)';ctx.fill();});
+    // Dot
+    if(dot){
+      const px=dot.x*W,py=dot.y*H,sat=dot.sat||50,radius=12+(sat/100)*42;
+      if(sat>=90){const g=ctx.createRadialGradient(px,py,0,px,py,radius*1.8);g.addColorStop(0,'rgba(122,155,174,0.4)');g.addColorStop(1,'rgba(122,155,174,0)');ctx.beginPath();ctx.arc(px,py,radius*1.8,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}
+      const c=(isWine&&recState.aromaColor)?recState.aromaColor:recSatColor(sat);
+      ctx.beginPath();ctx.arc(px,py,radius,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
+      ctx.beginPath();ctx.arc(px,py,radius,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=2;ctx.stroke();
+      if(!isWine){ctx.font=`bold ${Math.max(11,Math.min(16,radius*0.55))}px -apple-system,sans-serif`;ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(Math.round(sat),px,py);ctx.textBaseline='alphabetic';}
+    }
+  }
+  function recSatColor(s){if(s<=30)return'#C4B5A8';if(s<=50)return'#C9A96E';if(s<=70)return'#B8A078';if(s<=85)return'#7EAE8B';return'#7A9BAE';}
+  function recGetPos(canvas,e){const r=canvas.getBoundingClientRect();const sx=canvas.width/r.width,sy=canvas.height/r.height;const cx=e.touches?e.touches[0].clientX:e.clientX;const cy=e.touches?e.touches[0].clientY:e.clientY;return{x:(cx-r.left)*sx,y:(cy-r.top)*sy};}
+  function recNearDot(dot,px,py,W,H){if(!dot)return false;const dx=dot.x*W-px,dy=dot.y*H-py;return Math.sqrt(dx*dx+dy*dy)<=(12+((dot.sat||50)/100)*42)+12;}
+
+  // Restaurant quad
+  let recQC, recQCanvas, recQDot=null, recDrag=false, recDragMode='position', recLastY=0;
+  function initRecQuad(){
+    recQCanvas=document.getElementById('recQuadCanvas');recQC=recQCanvas.getContext('2d');recQDot=null;
+    document.getElementById('recPriceVal').textContent='-';document.getElementById('recAtmVal').textContent='-';document.getElementById('recSatVal').textContent='-';
+    document.getElementById('recModeInd').textContent='';document.getElementById('recQuadHint').textContent='화면을 탭해서 위치를 설정하세요';
+    document.getElementById('recQuadNext').disabled=true;
+    drawRecQuad(recQC,recQCanvas,null,false);
+    recQCanvas.onmousedown=recQDown;recQCanvas.onmousemove=recQMove;recQCanvas.onmouseup=recQUp;recQCanvas.onmouseleave=recQUp;
+    recQCanvas.ontouchstart=e=>{e.preventDefault();recQDown(e);};recQCanvas.ontouchmove=e=>{e.preventDefault();recQMove(e);};recQCanvas.ontouchend=e=>{e.preventDefault();recQUp(e);};
+  }
+  function recQDown(e){e.preventDefault();const p=recGetPos(recQCanvas,e);
+    if(recQDot&&recNearDot(recQDot,p.x,p.y,recQCanvas.width,recQCanvas.height)){recDrag=true;recLastY=p.y;recDragMode='satisfaction';document.getElementById('recModeInd').textContent='만족도 조절 중';document.getElementById('recQuadHint').textContent='위아래로 드래그해서 만족도를 조절하세요';document.getElementById('recQuadHint').classList.add('active-hint');}
+    else{recQDot={x:p.x/recQCanvas.width,y:p.y/recQCanvas.height,sat:recQDot?recQDot.sat:70};recState.quadDot=recQDot;recDrag=true;recLastY=p.y;recDragMode='position';document.getElementById('recModeInd').textContent='위치 조정 중';document.getElementById('recQuadHint').textContent='드래그해서 위치를 조정하세요';document.getElementById('recQuadHint').classList.remove('active-hint');recUpdateQVals();drawRecQuad(recQC,recQCanvas,recQDot,false);document.getElementById('recQuadNext').disabled=false;}
+  }
+  function recQMove(e){if(!recDrag)return;e.preventDefault();const p=recGetPos(recQCanvas,e);
+    if(recDragMode==='position'){recQDot.x=Math.max(.02,Math.min(.98,p.x/recQCanvas.width));recQDot.y=Math.max(.02,Math.min(.98,p.y/recQCanvas.height));}
+    else{recQDot.sat=Math.max(1,Math.min(100,(recQDot.sat||50)+(recLastY-p.y)*0.5));recLastY=p.y;}
+    recState.quadDot=recQDot;recUpdateQVals();drawRecQuad(recQC,recQCanvas,recQDot,false);
+  }
+  function recQUp(){if(!recDrag)return;recDrag=false;recDragMode='position';if(recQDot){document.getElementById('recModeInd').textContent='탭: 만족도 · 드래그: 위치';document.getElementById('recQuadHint').textContent='도트를 다시 탭하면 만족도를 조절합니다';document.getElementById('recQuadHint').classList.remove('active-hint');}}
+  function recUpdateQVals(){if(!recQDot)return;document.getElementById('recPriceVal').textContent=Math.round(recQDot.x*100)+'%';document.getElementById('recAtmVal').textContent=Math.round((1-recQDot.y)*100)+'%';document.getElementById('recSatVal').textContent=Math.round(recQDot.sat||70);}
+
+  // Wine quad
+  let recWQC,recWQCanvas,recWQDot=null,recWDrag=false;
+  function initRecWineQuad(){
+    recWQCanvas=document.getElementById('recWineQuadCanvas');recWQC=recWQCanvas.getContext('2d');recWQDot=null;
+    document.getElementById('recAcidityVal').textContent='-';document.getElementById('recBodyVal').textContent='-';
+    document.getElementById('recWineModeInd').textContent='';document.getElementById('recWineQuadHint').textContent='화면을 탭해서 와인 특성을 설정하세요';
+    document.getElementById('recWineQuadNext').disabled=true;
+    drawRecQuad(recWQC,recWQCanvas,null,true);
+    recWQCanvas.onmousedown=recWQDown;recWQCanvas.onmousemove=recWQMove;recWQCanvas.onmouseup=()=>{recWDrag=false;};recWQCanvas.onmouseleave=()=>{recWDrag=false;};
+    recWQCanvas.ontouchstart=e=>{e.preventDefault();recWQDown(e);};recWQCanvas.ontouchmove=e=>{e.preventDefault();recWQMove(e);};recWQCanvas.ontouchend=e=>{e.preventDefault();recWDrag=false;};
+  }
+  function recWQDown(e){e.preventDefault();const p=recGetPos(recWQCanvas,e);recWQDot={x:p.x/recWQCanvas.width,y:p.y/recWQCanvas.height,sat:70};recState.wineQuadDot=recWQDot;recWDrag=true;document.getElementById('recWineModeInd').textContent='위치 조정 중';document.getElementById('recWineQuadHint').textContent='드래그해서 특성을 조정하세요';recUpdateWQVals();drawRecQuad(recWQC,recWQCanvas,recWQDot,true);document.getElementById('recWineQuadNext').disabled=false;}
+  function recWQMove(e){if(!recWDrag)return;e.preventDefault();const p=recGetPos(recWQCanvas,e);recWQDot.x=Math.max(.02,Math.min(.98,p.x/recWQCanvas.width));recWQDot.y=Math.max(.02,Math.min(.98,p.y/recWQCanvas.height));recState.wineQuadDot=recWQDot;recUpdateWQVals();drawRecQuad(recWQC,recWQCanvas,recWQDot,true);}
+  function recUpdateWQVals(){if(!recWQDot)return;document.getElementById('recAcidityVal').textContent=Math.round(recWQDot.x*100)+'%';document.getElementById('recBodyVal').textContent=Math.round((1-recWQDot.y)*100)+'%';}
+
+  // Scene tags
+  function recSelectScene(el){document.querySelectorAll('#recSceneTags .rec-scene-tag').forEach(t=>{t.classList.remove('selected');t.style.background='';t.style.borderColor='';t.style.color='';});el.classList.add('selected');const c=el.dataset.color;el.style.background=c;el.style.borderColor=c;el.style.color='white';recState.scene=el.dataset.tag;document.getElementById('recSceneNext').disabled=false;}
+  function recSelectWineScene(el){document.querySelectorAll('#recWineSceneTags .rec-scene-tag').forEach(t=>{t.classList.remove('selected');t.style.background='';t.style.borderColor='';t.style.color='';});el.classList.add('selected');const c=el.dataset.color;el.style.background=c;el.style.borderColor=c;el.style.color='white';recState.wineScene=el.dataset.tag;document.getElementById('recWineSceneNext').disabled=false;}
+  function recToggleMore(){document.getElementById('recMoreToggle').classList.toggle('open');document.getElementById('recMoreFields').classList.toggle('open');}
+
+  // Aroma (simplified — init on screen entry)
+  const recAromaData=[{name:'블랙커런트',color:'#1a0a2e'},{name:'블랙베리',color:'#3d1a5e'},{name:'카시스',color:'#5a1e7a'},{name:'자두',color:'#7a2e3a'},{name:'블루베리',color:'#2a3a8a'},{name:'레드체리',color:'#cc1a2a'},{name:'라즈베리',color:'#e84a7a'},{name:'딸기',color:'#f08090'}];
+  let recPaintedSectors=new Set(),recAromaCtx,recAromaCanvas,recAromaPainting=false;
+  // Observer to init aroma when screen appears
+  new MutationObserver(muts=>{muts.forEach(m=>{if(m.target.id==='screen-rec-aroma'&&m.target.classList.contains('active'))setTimeout(initRecAroma,100);});}).observe(document.getElementById('screen-rec-aroma'),{attributes:true,attributeFilter:['class']});
+
+  function initRecAroma(){
+    recAromaCanvas=document.getElementById('recAromaCanvas');recAromaCtx=recAromaCanvas.getContext('2d');recPaintedSectors.clear();recState.aromaColor=null;document.getElementById('recDetectedAromas').innerHTML='감지된 향: —';drawRecAroma();
+    recAromaCanvas.onmousedown=e=>{e.preventDefault();recAromaPainting=true;recPaintAt(e);};recAromaCanvas.onmousemove=e=>{if(recAromaPainting){e.preventDefault();recPaintAt(e);}};recAromaCanvas.onmouseup=()=>{recAromaPainting=false;};recAromaCanvas.onmouseleave=()=>{recAromaPainting=false;};
+    recAromaCanvas.ontouchstart=e=>{e.preventDefault();recAromaPainting=true;recPaintAt(e);};recAromaCanvas.ontouchmove=e=>{if(recAromaPainting){e.preventDefault();recPaintAt(e);}};recAromaCanvas.ontouchend=e=>{e.preventDefault();recAromaPainting=false;};
+  }
+  function drawRecAroma(){
+    const W=recAromaCanvas.width,H=recAromaCanvas.height,cx=W/2,cy=H/2,outerR=W/2-10,innerR=40;recAromaCtx.clearRect(0,0,W,H);
+    const n=recAromaData.length,sa=Math.PI*2/n;
+    recAromaData.forEach((a,i)=>{const s=i*sa-Math.PI/2-sa/2,e=s+sa;const painted=recPaintedSectors.has(i);recAromaCtx.beginPath();recAromaCtx.moveTo(cx+innerR*Math.cos(s),cy+innerR*Math.sin(s));recAromaCtx.arc(cx,cy,outerR,s,e);recAromaCtx.arc(cx,cy,innerR,e,s,true);recAromaCtx.closePath();recAromaCtx.fillStyle=a.color;recAromaCtx.globalAlpha=painted?1:0.25;recAromaCtx.fill();recAromaCtx.globalAlpha=1;recAromaCtx.strokeStyle='rgba(255,255,255,0.3)';recAromaCtx.lineWidth=1;recAromaCtx.stroke();
+    const mid=s+sa/2,lr=(outerR+innerR)/2;recAromaCtx.fillStyle=painted?'white':'rgba(255,255,255,0.5)';recAromaCtx.font='bold 9px -apple-system,sans-serif';recAromaCtx.textAlign='center';recAromaCtx.textBaseline='middle';recAromaCtx.fillText(a.name,cx+lr*Math.cos(mid),cy+lr*Math.sin(mid));});
+    recAromaCtx.beginPath();recAromaCtx.arc(cx,cy,innerR-2,0,Math.PI*2);recAromaCtx.fillStyle='#F0ECF3';recAromaCtx.fill();recAromaCtx.fillStyle='#B5AFA8';recAromaCtx.font='10px sans-serif';recAromaCtx.textAlign='center';recAromaCtx.textBaseline='middle';recAromaCtx.fillText('향기',cx,cy);
+  }
+  function recPaintAt(e){const p=recGetPos(recAromaCanvas,e);const W=recAromaCanvas.width,cx=W/2,cy=W/2;const dx=p.x-cx,dy=p.y-cy,dist=Math.sqrt(dx*dx+dy*dy);if(dist<40||dist>W/2-10)return;let ang=Math.atan2(dy,dx)+Math.PI/2;if(ang<0)ang+=Math.PI*2;const idx=Math.floor(ang/(Math.PI*2/recAromaData.length))%recAromaData.length;recPaintedSectors.add(idx);drawRecAroma();const names=Array.from(recPaintedSectors).map(i=>recAromaData[i].name);document.getElementById('recDetectedAromas').innerHTML='감지된 향: <strong>'+names.join(', ')+'</strong>';if(recPaintedSectors.size>0){recState.aromaColor=recAromaData[Array.from(recPaintedSectors)[Math.floor(recPaintedSectors.size/2)]].color;}}
+
+  // Complexity
+  function recUpdateSlider(input,valId){input.style.setProperty('--val',input.value+'%');document.getElementById(valId).textContent=input.value+'%';recUpdateWineSat();}
+  function recUpdateWineSat(){const f=parseInt(document.getElementById('recFinishVal').textContent)||60;const b=parseInt(document.getElementById('recBalanceVal').textContent)||75;const c=document.querySelectorAll('.rec-complexity-chip.active').length;document.getElementById('recWineSatPreview').textContent=Math.min(99,Math.round(f*0.4+b*0.4+c*10*0.2));}
+
+  // Completion
+  function recGoToComplete(){
+    const name=recState.place?recState.place.name:(recState.type==='wine'?'샤또 마르고':'스시코우지');
+    const sat=recState.quadDot?Math.round(recState.quadDot.sat):92;
+    const scene=recState.scene||recState.wineScene||'데이트';
+    document.getElementById('recCompleteMeta').textContent=`${name} · ${sat}점 · ${scene}`;
+    document.getElementById('recXpBadge').textContent='을지로 +10 XP';
+    goToScreen('screen-rec-complete');
+    setTimeout(()=>{const mc=document.getElementById('recCompleteCanvas');const dot=recState.type==='wine'?recState.wineQuadDot:recState.quadDot;drawRecQuad(mc.getContext('2d'),mc,dot||{x:.72,y:.25,sat:sat},recState.type==='wine');},400);
+  }
+
+  function recResetAll(){
+    recState.quadDot=null;recState.wineQuadDot=null;recState.scene=null;recState.wineScene=null;recState.aromaColor=null;recState.place=null;recPaintedSectors=new Set();recQDot=null;recWQDot=null;
+    document.getElementById('recSearchInput').value='';document.getElementById('recSearchResults').style.display='none';
+    document.querySelectorAll('.rec-scene-tag').forEach(t=>{t.classList.remove('selected');t.style.background='';t.style.borderColor='';t.style.color='';});
+    document.getElementById('recSceneNext').disabled=true;document.getElementById('recWineSceneNext').disabled=true;
+    document.getElementById('recMoreToggle').classList.remove('open');document.getElementById('recMoreFields').classList.remove('open');
   }
 </script>
 </body>

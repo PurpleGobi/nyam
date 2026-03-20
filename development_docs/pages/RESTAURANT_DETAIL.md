@@ -86,10 +86,12 @@
 - 기록 0개: 이 영역 숨김
 
 ### Layer 4: 액션 바
-- [기록 남기기]: Primary (Coral Orange, flex-1). 기록 있으면 "재방문 기록"
+- [내용 추가하기]: Primary (Coral Orange, flex-1). 평가 완료 상태면 "다시 기록하기"
 - [♡]: Wishlist 토글
 - [공유]: Share2 아이콘
-- **스크롤 시**: 액션 바 지나면 "기록 남기기" 하단 고정 (floating)
+- **스크롤 시**: 액션 바 지나면 CTA 하단 고정 (floating)
+- **Phase 1(추가만) 상태**: "내용 추가하기" → 풍성화 플로우 (RECORD_FLOW Phase 2)
+- **기록 있음**: "다시 기록하기" → 재방문 기록 (RECORD_FLOW §4)
 
 ### Layer 5: 나의 기록
 **기록 있음**: 방문 N회 · 최근 날짜 → 타임라인 (최신순)

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — My Collection</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --brand: #FF6038;
+  }
+
+  body {
+    background: var(--bg-page);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  .device {
+    width: 390px; height: 844px; background: #2A2725;
+    border-radius: 52px; padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
+    position: relative; flex-shrink: 0;
+  }
+  .device-inner {
+    width: 100%; height: 100%; background: var(--bg);
+    border-radius: 42px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #2A2725;
+    border-radius: 0 0 20px 20px; z-index: 100;
+  }
+
+  .status-bar {
+    height: 44px; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 24px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    flex-shrink: 0; position: relative; z-index: 50;
+  }
+  .status-time { font-size: 15px; font-weight: 700; }
+
+  .scroll-content {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* =====================
+     HEADER
+     ===================== */
+  .list-header {
+    padding: 2px 16px 0; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
+  }
+  .list-header-left { display: flex; align-items: center; gap: 8px; }
+  .header-back {
+    width: 36px; height: 36px; display: flex; align-items: center;
+    justify-content: center; border-radius: 50%; cursor: pointer; color: var(--text);
+  }
+  .header-back:active { background: var(--bg-page); }
+  .list-header-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .header-icon-btn {
+    width: 36px; height: 36px; display: flex; align-items: center;
+    justify-content: center; border-radius: 50%; cursor: pointer;
+    color: var(--text-sub); background: none; border: none;
+  }
+  .header-icon-btn:active { background: var(--bg-page); }
+
+  /* =====================
+     CONTENT TABS
+     ===================== */
+  .content-tabs {
+    display: flex; padding: 0 16px; flex-shrink: 0;
+  }
+  .content-tab {
+    flex: 1; text-align: center; padding: 10px 0;
+    font-size: 15px; font-weight: 600; color: var(--text-hint);
+    border-bottom: 2px solid var(--border); cursor: pointer; transition: all 0.2s;
+  }
+  .content-tab.active { font-weight: 700; border-bottom-width: 2.5px; }
+  .content-tab.food-active { color: var(--primary); border-bottom-color: var(--primary); }
+  .content-tab.wine-active { color: var(--wine); border-bottom-color: var(--wine); }
+  .tab-count { font-size: 12px; font-weight: 700; margin-left: 4px; opacity: 0.6; }
+
+  /* =====================
+     NOTION-STYLE TOOLBAR
+     ===================== */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toolbar-left {
+    display: flex; align-items: center; gap: 2px;
+  }
+
+  .toolbar-btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px; border-radius: 4px;
+    font-size: 13px; font-weight: 500; color: var(--text-sub);
+    cursor: pointer; background: none; border: none;
+    font-family: inherit; transition: background 0.1s;
+    white-space: nowrap;
+  }
+  .toolbar-btn:hover { background: var(--bg-page); }
+  .toolbar-btn:active { background: var(--border); }
+  .toolbar-btn.has-value { color: var(--primary); }
+  .toolbar-btn.wine-has-value { color: var(--wine); }
+
+  .toolbar-divider {
+    width: 1px; height: 16px; background: var(--border); margin: 0 4px;
+  }
+
+  .toolbar-count {
+    font-size: 12px; color: var(--text-hint); font-weight: 500;
+  }
+
+  /* =====================
+     ACTIVE FILTER RULES (Notion style)
+     ===================== */
+  .filter-rules {
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  .filter-rules.open { display: block; }
+
+  .filter-rule {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 0; font-size: 13px;
+    border-bottom: 1px solid rgba(232,228,223,0.5);
+  }
+  .filter-rule:last-child { border-bottom: none; }
+
+  .filter-rule-prefix {
+    font-size: 12px; color: var(--text-hint); font-weight: 500;
+    min-width: 42px;
+  }
+  .filter-rule-prefix.clickable {
+    cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    color: var(--text-sub); font-weight: 600;
+    transition: background 0.1s;
+  }
+  .filter-rule-prefix.clickable:hover { background: var(--bg-page); }
+  .filter-rule-prefix.clickable:active { background: var(--border); }
+
+  .filter-rule-prop {
+    padding: 3px 8px; border-radius: 4px; font-size: 12px;
+    font-weight: 600; color: var(--text); background: var(--bg-page);
+    cursor: pointer; white-space: nowrap;
+  }
+  .filter-rule-prop:active { background: var(--border); }
+
+  .filter-rule-op {
+    font-size: 12px; color: var(--text-sub); font-weight: 500;
+  }
+
+  .filter-rule-value {
+    padding: 3px 8px; border-radius: 4px; font-size: 12px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .filter-rule-value.food-val { background: var(--primary-light); color: var(--primary); }
+  .filter-rule-value.wine-val { background: var(--wine-light); color: var(--wine); }
+
+  .filter-rule-remove {
+    margin-left: auto; width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; cursor: pointer; color: var(--text-hint);
+    flex-shrink: 0;
+  }
+  .filter-rule-remove:hover { background: var(--bg-page); color: var(--text-sub); }
+
+  .filter-add-rule {
+    padding: 6px 0; display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--text-hint); cursor: pointer;
+    font-weight: 500;
+  }
+  .filter-add-rule:hover { color: var(--text-sub); }
+
+  /* =====================
+     DROPDOWN (Notion popover style)
+     ===================== */
+  .dropdown-anchor { position: relative; }
+
+  .dropdown {
+    position: absolute; top: 100%; left: 0;
+    min-width: 200px; max-width: 260px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+    z-index: 40; padding: 4px 0;
+    opacity: 0; pointer-events: none;
+    transform: translateY(4px);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dropdown.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .dropdown.right { left: auto; right: 0; }
+
+  .dropdown-header {
+    padding: 6px 12px 4px; font-size: 11px; font-weight: 600;
+    color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .dropdown-item {
+    padding: 6px 12px; font-size: 13px; color: var(--text);
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; gap: 8px; transition: background 0.08s;
+  }
+  .dropdown-item:hover { background: var(--bg-page); }
+  .dropdown-item:active { background: var(--border); }
+  .dropdown-item.selected { color: var(--primary); font-weight: 600; }
+  .dropdown-item.wine-selected { color: var(--wine); font-weight: 600; }
+
+  .dropdown-item-icon {
+    color: var(--text-hint); display: flex; align-items: center;
+  }
+  .dropdown-item.selected .dropdown-item-icon { color: var(--primary); }
+  .dropdown-item.wine-selected .dropdown-item-icon { color: var(--wine); }
+
+  .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  .dropdown-search {
+    margin: 4px 8px; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; color: var(--text); width: calc(100% - 16px);
+    outline: none; font-family: inherit; background: var(--bg);
+  }
+  .dropdown-search:focus { border-color: var(--primary); }
+
+  /* =====================
+     COMPACT LIST
+     ===================== */
+  .compact-list { padding: 0 16px; }
+
+  .compact-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: opacity 0.1s;
+  }
+  .compact-item:last-child { border-bottom: none; }
+  .compact-item:active { opacity: 0.6; }
+
+  .compact-thumb {
+    width: 48px; height: 48px; border-radius: 10px;
+    flex-shrink: 0; overflow: hidden; position: relative;
+  }
+  .compact-thumb-bg {
+    position: absolute; inset: 0; border-radius: 10px;
+  }
+
+  .compact-thumb.wine-thumb { width: 36px; height: 52px; border-radius: 6px; }
+  .compact-thumb.wine-thumb .compact-thumb-bg { border-radius: 6px; }
+
+  .compact-info { flex: 1; min-width: 0; }
+
+  .compact-name {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .compact-meta {
+    font-size: 12px; color: var(--text-sub); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .compact-tags { display: flex; gap: 3px; margin-top: 3px; }
+
+  .compact-tag {
+    font-size: 10px; padding: 1px 6px; border-radius: 100px; font-weight: 600;
+  }
+  .compact-tag.scene { background: var(--bg-page); color: var(--text-sub); }
+  .compact-tag.source-me { background: var(--primary-light); color: var(--primary); }
+  .compact-tag.source-bubble { background: var(--wine-light); color: var(--wine); }
+  .compact-tag.source-web { background: var(--bg-page); color: var(--text-hint); }
+  .compact-tag.wine-variety { background: var(--wine-light); color: var(--wine); }
+
+  .compact-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 2px; flex-shrink: 0;
+  }
+
+  .compact-score { display: flex; align-items: center; gap: 4px; }
+
+  .compact-score-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .compact-score-num { font-size: 16px; font-weight: 800; }
+
+  .compact-date { font-size: 11px; color: var(--text-hint); }
+
+  /* =====================
+     SEARCH OVERLAY
+     ===================== */
+  .search-overlay {
+    position: absolute; inset: 0; background: var(--bg);
+    z-index: 60; display: flex; flex-direction: column;
+    transform: translateY(-10px); opacity: 0; pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 42px; overflow: hidden;
+  }
+  .search-overlay.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+
+  .search-header {
+    padding: 50px 16px 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .search-input-wrap { flex: 1; position: relative; }
+  .search-input {
+    width: 100%; height: 40px; border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 0 12px 0 36px; font-size: 14px;
+    color: var(--text); outline: none; background: var(--bg-card); font-family: inherit;
+  }
+  .search-input:focus { border-color: var(--primary); }
+  .search-input-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-hint);
+  }
+  .search-cancel {
+    font-size: 14px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; padding: 8px 4px;
+  }
+</style>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="device">
+  <div class="notch"></div>
+  <div class="device-inner">
+
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="list-header">
+      <div class="list-header-left">
+        <div class="header-back" onclick="alert('← 홈으로')">
+          <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+        </div>
+        <div class="list-header-title">내 컬렉션</div>
+      </div>
+      <button class="header-icon-btn" onclick="openSearch()">
+        <i data-lucide="search" style="width:20px;height:20px;"></i>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="content-tabs">
+      <div class="content-tab food-active active" id="tabFood" onclick="switchTab('food')">
+        식당<span class="tab-count">24</span>
+      </div>
+      <div class="content-tab" id="tabWine" onclick="switchTab('wine')">
+        와인<span class="tab-count">18</span>
+      </div>
+    </div>
+
+    <!-- Notion-style Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="dropdown-anchor">
+          <button class="toolbar-btn" id="filterBtn" onclick="toggleDropdown('filterDropdown')">
+            <i data-lucide="filter" style="width:14px;height:14px;"></i>
+            <span id="filterBtnLabel">필터</span>
+          </button>
+          <!-- Filter property picker dropdown -->
+          <div class="dropdown" id="filterDropdown">
+            <div class="dropdown-header">필터 추가</div>
+            <div class="dropdown-item" onclick="addFilter('status')">
+              <span>상태</span>
+              <span class="dropdown-item-icon"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" onclick="addFilter('scene')" id="filterOptScene">
+              <span>상황</span>
+              <span class="dropdown-item-icon"><i data-lucide="tag" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" onclick="addFilter('genre')" id="filterOptGenre">
+              <span id="filterOptGenreLabel">장르</span>
+              <span class="dropdown-item-icon"><i data-lucide="utensils" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" onclick="addFilter('area')" id="filterOptArea">
+              <span id="filterOptAreaLabel">지역</span>
+              <span class="dropdown-item-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" onclick="addFilter('score')">
+              <span>점수</span>
+              <span class="dropdown-item-icon"><i data-lucide="bar-chart-3" style="width:14px;height:14px;"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown-anchor">
+          <button class="toolbar-btn" id="sortBtn" onclick="toggleDropdown('sortDropdown')">
+            <i data-lucide="arrow-up-down" style="width:14px;height:14px;"></i>
+            <span id="sortBtnLabel">최신순</span>
+          </button>
+          <!-- Sort dropdown -->
+          <div class="dropdown" id="sortDropdown">
+            <div class="dropdown-header">정렬</div>
+            <div class="dropdown-item selected" data-sort="latest" onclick="selectSort(this,'최신순')">
+              최신순
+              <span class="dropdown-item-icon"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" data-sort="score-high" onclick="selectSort(this,'점수 높은순')">
+              점수 높은순
+              <span class="dropdown-item-icon" style="display:none;"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" data-sort="score-low" onclick="selectSort(this,'점수 낮은순')">
+              점수 낮은순
+              <span class="dropdown-item-icon" style="display:none;"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" data-sort="name" onclick="selectSort(this,'이름순')">
+              이름순
+              <span class="dropdown-item-icon" style="display:none;"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+            </div>
+            <div class="dropdown-item" data-sort="visits" onclick="selectSort(this,'방문순')">
+              방문 많은순
+              <span class="dropdown-item-icon" style="display:none;"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <span class="toolbar-count" id="resultCount">24건</span>
+    </div>
+
+    <!-- Active filter rules (Notion inline style) -->
+    <div class="filter-rules" id="filterRules">
+      <!-- Rules get added here dynamically -->
+    </div>
+
+    <!-- List -->
+    <div class="scroll-content">
+
+      <!-- FOOD LIST -->
+      <div class="compact-list" id="foodList">
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#fce7f3,#fecaca);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">밍글스</div>
+            <div class="compact-meta">한식 · 청담</div>
+            <div class="compact-tags"><span class="compact-tag scene">회식</span><span class="compact-tag source-web">미슐랭 2</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--text);">95</span></div>
+            <span class="compact-date">3달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">스시코우지</div>
+            <div class="compact-meta">일식 · 교대역</div>
+            <div class="compact-tags"><span class="compact-tag scene">데이트</span><span class="compact-tag source-bubble">버블 3</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--text);">92</span></div>
+            <span class="compact-date">3일 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#fef3c7,#fed7aa);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">비스트로 드 욘트빌</div>
+            <div class="compact-meta">프렌치 · 이태원</div>
+            <div class="compact-tags"><span class="compact-tag scene">술자리</span><span class="compact-tag source-bubble">버블 1</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--text);">91</span></div>
+            <span class="compact-date">2달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">리스토란테 에오</div>
+            <div class="compact-meta">이탈리안 · 청담</div>
+            <div class="compact-tags"><span class="compact-tag scene">회식</span><span class="compact-tag source-me">3회</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--positive);"></span><span class="compact-score-num" style="color:var(--text);">88</span></div>
+            <span class="compact-date">1주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">을지로 골목집</div>
+            <div class="compact-meta">한식 · 을지로3가</div>
+            <div class="compact-tags"><span class="compact-tag scene">친구</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--positive);"></span><span class="compact-score-num" style="color:var(--text);">85</span></div>
+            <span class="compact-date">2주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#fef3c7,#fde68a);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">정식당</div>
+            <div class="compact-meta">한식 · 강남</div>
+            <div class="compact-tags"><span class="compact-tag scene">가족</span><span class="compact-tag source-web">미슐랭</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--positive);"></span><span class="compact-score-num" style="color:var(--text);">83</span></div>
+            <span class="compact-date">3주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">몽탄</div>
+            <div class="compact-meta">한식 · 을지로</div>
+            <div class="compact-tags"><span class="compact-tag scene">데이트</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--caution);"></span><span class="compact-score-num" style="color:var(--text);">72</span></div>
+            <span class="compact-date">1달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#fce7f3,#fbcfe8);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">오마카세 하루</div>
+            <div class="compact-meta">일식 · 압구정</div>
+            <div class="compact-tags"><span class="compact-tag scene">혼밥</span><span class="compact-tag source-me">2회</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--caution);"></span><span class="compact-score-num" style="color:var(--text);">68</span></div>
+            <span class="compact-date">1달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">광화문 미진</div>
+            <div class="compact-meta">한식 · 광화문</div>
+            <div class="compact-tags"><span class="compact-tag scene">혼밥</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--caution);"></span><span class="compact-score-num" style="color:var(--text);">65</span></div>
+            <span class="compact-date">2달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb"><div class="compact-thumb-bg" style="background:var(--bg-page);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name" style="color:var(--text-sub);">새마을식당 강남점</div>
+            <div class="compact-meta">한식 · 강남역</div>
+            <div class="compact-tags"><span class="compact-tag source-web">네이버 4.2</span></div>
+          </div>
+          <div class="compact-right">
+            <span style="font-size:12px;color:var(--primary);font-weight:600;">평가하기</span>
+          </div>
+        </div>
+        <div style="height:24px;"></div>
+      </div>
+
+      <!-- WINE LIST -->
+      <div class="compact-list" id="wineList" style="display:none;">
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#9c6fc4,#6b3fa0);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Barolo Monfortino 2016</div>
+            <div class="compact-meta">Red · Piedmont</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">네비올로</span><span class="compact-tag scene">시음회</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--wine);">96</span></div>
+            <span class="compact-date">1달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#722F37,#4a1c24);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Opus One 2019</div>
+            <div class="compact-meta">Red · Napa Valley</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">카베르네 소비뇽</span><span class="compact-tag scene">데이트</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--wine);">94</span></div>
+            <span class="compact-date">1주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#E8D5A3,#c4b080);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Dom Pérignon 2012</div>
+            <div class="compact-meta">Sparkling · Champagne</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">샤르도네</span><span class="compact-tag scene">선물</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--wine);">93</span></div>
+            <span class="compact-date">2달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#8B4513,#5a2d0c);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Chateau Margaux 2015</div>
+            <div class="compact-meta">Red · Bordeaux</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">메를로 블렌드</span><span class="compact-tag source-bubble">버블 2</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--accent-social);"></span><span class="compact-score-num" style="color:var(--wine);">92</span></div>
+            <span class="compact-date">2주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#DAA520,#b8860b);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Cloudy Bay Sauvignon Blanc</div>
+            <div class="compact-meta">White · Marlborough</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">소비뇽 블랑</span><span class="compact-tag scene">페어링</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--positive);"></span><span class="compact-score-num" style="color:var(--wine);">85</span></div>
+            <span class="compact-date">3주 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:linear-gradient(180deg,#F5C6AA,#e8a980);"></div></div>
+          <div class="compact-info">
+            <div class="compact-name">Whispering Angel Rosé</div>
+            <div class="compact-meta">Rosé · Provence</div>
+            <div class="compact-tags"><span class="compact-tag wine-variety">그르나슈</span><span class="compact-tag scene">모임</span></div>
+          </div>
+          <div class="compact-right">
+            <div class="compact-score"><span class="compact-score-dot" style="background:var(--caution);"></span><span class="compact-score-num" style="color:var(--wine);">72</span></div>
+            <span class="compact-date">1달 전</span>
+          </div>
+        </div>
+        <div class="compact-item">
+          <div class="compact-thumb wine-thumb"><div class="compact-thumb-bg" style="background:var(--bg-page);border-radius:6px;"></div></div>
+          <div class="compact-info">
+            <div class="compact-name" style="color:var(--text-sub);">Sassicaia 2018</div>
+            <div class="compact-meta">Red · Toscana</div>
+            <div class="compact-tags"><span class="compact-tag" style="background:var(--bg-page);color:var(--text-hint);">찜</span></div>
+          </div>
+          <div class="compact-right">
+            <span style="font-size:12px;color:var(--wine);font-weight:600;">기록하기</span>
+          </div>
+        </div>
+        <div style="height:24px;"></div>
+      </div>
+    </div>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+      <div class="search-header">
+        <div class="search-input-wrap">
+          <span class="search-input-icon"><i data-lucide="search" style="width:16px;height:16px;"></i></span>
+          <input class="search-input" id="listSearchInput" placeholder="이름으로 검색..." />
+        </div>
+        <div class="search-cancel" onclick="closeSearch()">취소</div>
+      </div>
+      <div style="padding:24px;text-align:center;color:var(--text-hint);font-size:13px;">
+        이름을 입력하면 내 컬렉션에서 검색합니다
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentTab = 'food';
+let openDropdownId = null;
+let filterRuleCount = 0;
+
+// ===========================
+// Tabs
+// ===========================
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabFood').className = 'content-tab' + (tab === 'food' ? ' food-active active' : '');
+  document.getElementById('tabWine').className = 'content-tab' + (tab === 'wine' ? ' wine-active active' : '');
+  document.getElementById('foodList').style.display = tab === 'food' ? '' : 'none';
+  document.getElementById('wineList').style.display = tab === 'wine' ? '' : 'none';
+  document.getElementById('resultCount').textContent = tab === 'food' ? '24건' : '18건';
+
+  // Update filter options for tab context
+  document.getElementById('filterOptGenreLabel').textContent = tab === 'wine' ? '타입' : '장르';
+  document.getElementById('filterOptAreaLabel').textContent = tab === 'wine' ? '산지' : '지역';
+
+  // Clear filters on tab switch
+  clearAllFilters();
+
+  // Reset sort visual
+  document.querySelectorAll('#sortDropdown .dropdown-item').forEach(item => {
+    const isWine = tab === 'wine';
+    item.classList.remove('selected', 'wine-selected');
+    item.querySelector('.dropdown-item-icon').style.display = 'none';
+  });
+  const firstSort = document.querySelector('#sortDropdown .dropdown-item');
+  firstSort.classList.add(tab === 'wine' ? 'wine-selected' : 'selected');
+  firstSort.querySelector('.dropdown-item-icon').style.display = '';
+  document.getElementById('sortBtnLabel').textContent = '최신순';
+}
+
+// ===========================
+// Dropdowns
+// ===========================
+function toggleDropdown(id) {
+  const dd = document.getElementById(id);
+  if (openDropdownId && openDropdownId !== id) {
+    document.getElementById(openDropdownId).classList.remove('open');
+  }
+  dd.classList.toggle('open');
+  openDropdownId = dd.classList.contains('open') ? id : null;
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.dropdown-anchor') && openDropdownId) {
+    document.getElementById(openDropdownId).classList.remove('open');
+    openDropdownId = null;
+  }
+});
+
+// ===========================
+// Sort
+// ===========================
+function selectSort(el, label) {
+  const isWine = currentTab === 'wine';
+  document.querySelectorAll('#sortDropdown .dropdown-item').forEach(item => {
+    item.classList.remove('selected', 'wine-selected');
+    item.querySelector('.dropdown-item-icon').style.display = 'none';
+  });
+  el.classList.add(isWine ? 'wine-selected' : 'selected');
+  el.querySelector('.dropdown-item-icon').style.display = '';
+  document.getElementById('sortBtnLabel').textContent = label;
+  toggleDropdown('sortDropdown');
+}
+
+// ===========================
+// Filters (Notion-style rules)
+// ===========================
+const filterConfig = {
+  food: {
+    status: { label: '상태', values: ['방문', '찜', '추천'] },
+    scene: { label: '상황', values: ['혼밥', '데이트', '친구', '가족', '회식', '술자리'] },
+    genre: { label: '장르', values: ['한식', '일식', '양식', '중식', '이탈리안', '프렌치'] },
+    area: { label: '지역', values: ['강남', '을지로', '청담', '이태원', '홍대', '광화문'] },
+    score: { label: '점수', values: ['90+', '80~89', '70~79', '~69'] },
+  },
+  wine: {
+    status: { label: '상태', values: ['시음', '찜', '셀러'] },
+    scene: { label: '상황', values: ['혼술', '데이트', '모임', '페어링', '선물', '시음회'] },
+    genre: { label: '타입', values: ['Red', 'White', 'Rosé', 'Sparkling', 'Dessert'] },
+    area: { label: '산지', values: ['France', 'Italy', 'USA', 'Chile', 'Australia', 'NZ'] },
+    score: { label: '점수', values: ['90+', '80~89', '70~79', '~69'] },
+  },
+};
+
+let activeFilters = []; // { id, prop, value }
+let filterConjunction = 'and'; // 'and' | 'or' — Notion-style: all rules share same conjunction
+
+function addFilter(prop) {
+  toggleDropdown('filterDropdown');
+
+  const config = filterConfig[currentTab][prop];
+  if (!config) return;
+
+  const id = 'rule-' + (++filterRuleCount);
+  const defaultValue = config.values[0];
+  activeFilters.push({ id, prop, value: defaultValue });
+
+  renderFilterRules();
+  updateFilterBtn();
+}
+
+function toggleConjunction() {
+  // Notion logic: clicking any conjunction toggles ALL of them together
+  filterConjunction = filterConjunction === 'and' ? 'or' : 'and';
+  renderFilterRules();
+}
+
+function renderFilterRules() {
+  const container = document.getElementById('filterRules');
+  const isWine = currentTab === 'wine';
+  const valClass = isWine ? 'wine-val' : 'food-val';
+
+  if (activeFilters.length === 0) {
+    container.classList.remove('open');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.add('open');
+  const conjLabel = filterConjunction === 'and' ? 'And' : 'Or';
+
+  container.innerHTML = activeFilters.map((f, i) => {
+    const config = filterConfig[currentTab][f.prop];
+    let prefixHtml;
+    if (i === 0) {
+      prefixHtml = `<span class="filter-rule-prefix">Where</span>`;
+    } else {
+      prefixHtml = `<span class="filter-rule-prefix clickable" onclick="toggleConjunction()" title="클릭하여 And/Or 전환">${conjLabel}</span>`;
+    }
+    return `
+      <div class="filter-rule" id="${f.id}">
+        ${prefixHtml}
+        <span class="filter-rule-prop" onclick="cycleFilterProp('${f.id}')">${config.label}</span>
+        <span class="filter-rule-op">is</span>
+        <span class="filter-rule-value ${valClass}" onclick="cycleFilterValue('${f.id}')">${f.value}</span>
+        <span class="filter-rule-remove" onclick="removeFilter('${f.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+      </div>
+    `;
+  }).join('') + `
+    <div class="filter-add-rule" onclick="toggleDropdown('filterDropdown')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      필터 추가
+    </div>
+  `;
+}
+
+function removeFilter(id) {
+  activeFilters = activeFilters.filter(f => f.id !== id);
+  renderFilterRules();
+  updateFilterBtn();
+}
+
+function clearAllFilters() {
+  activeFilters = [];
+  renderFilterRules();
+  updateFilterBtn();
+}
+
+function cycleFilterValue(id) {
+  const filter = activeFilters.find(f => f.id === id);
+  if (!filter) return;
+  const config = filterConfig[currentTab][filter.prop];
+  const currentIdx = config.values.indexOf(filter.value);
+  filter.value = config.values[(currentIdx + 1) % config.values.length];
+  renderFilterRules();
+}
+
+function cycleFilterProp(id) {
+  const filter = activeFilters.find(f => f.id === id);
+  if (!filter) return;
+  const props = Object.keys(filterConfig[currentTab]);
+  const currentIdx = props.indexOf(filter.prop);
+  filter.prop = props[(currentIdx + 1) % props.length];
+  const config = filterConfig[currentTab][filter.prop];
+  filter.value = config.values[0];
+  renderFilterRules();
+}
+
+function updateFilterBtn() {
+  const btn = document.getElementById('filterBtn');
+  const label = document.getElementById('filterBtnLabel');
+  if (activeFilters.length > 0) {
+    btn.classList.add(currentTab === 'wine' ? 'wine-has-value' : 'has-value');
+    btn.classList.remove(currentTab === 'wine' ? 'has-value' : 'wine-has-value');
+    label.textContent = `필터 · ${activeFilters.length}`;
+  } else {
+    btn.classList.remove('has-value', 'wine-has-value');
+    label.textContent = '필터';
+  }
+}
+
+// ===========================
+// Search
+// ===========================
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('listSearchInput').focus(), 300);
+}
+function closeSearch() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('listSearchInput').value = '';
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+</body>
+</html>
