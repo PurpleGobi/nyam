@@ -1,56 +1,18 @@
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+
 export default function PrivacyPolicyPage() {
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="mb-6 text-2xl font-bold">개인정보 처리방침</h1>
-
-      <div className="prose prose-sm text-[var(--color-neutral-700)]">
-        <h2>1. 수집하는 개인정보 항목</h2>
-        <p>서비스는 회원가입 및 서비스 이용을 위해 다음 정보를 수집합니다:</p>
-        <ul>
-          <li><strong>필수항목:</strong> 이메일, 닉네임, 프로필 이미지 (OAuth 제공 정보)</li>
-          <li><strong>자동수집:</strong> 위치정보 (사용자 동의 시), 기기 정보, 접속 로그</li>
-          <li><strong>서비스 이용 시:</strong> 사진, 맛집 평가 기록, 리뷰 내용</li>
-        </ul>
-
-        <h2>2. 개인정보의 수집·이용 목적</h2>
-        <ul>
-          <li>회원 식별 및 서비스 제공</li>
-          <li>맛집 기록 저장 및 AI 분석</li>
-          <li>맞춤형 맛집 추천</li>
-          <li>서비스 개선 및 통계 분석</li>
-        </ul>
-
-        <h2>3. 개인정보의 보유 및 이용 기간</h2>
-        <p>
-          회원 탈퇴 시까지 보유하며, 탈퇴 즉시 파기합니다.
-          단, 관련 법령에 의해 보존이 필요한 경우 해당 기간 동안 보관합니다.
-        </p>
-
-        <h2>4. 개인정보의 제3자 제공</h2>
-        <p>
-          서비스는 이용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다.
-          단, 법령에 의해 요구되는 경우는 예외로 합니다.
-        </p>
-
-        <h2>5. 개인정보의 파기</h2>
-        <p>
-          보유 기간이 경과하거나 처리 목적이 달성된 개인정보는 지체 없이 파기합니다.
-          전자적 파일은 복구 불가능한 방법으로, 종이 문서는 분쇄 또는 소각합니다.
-        </p>
-
-        <h2>6. 이용자의 권리</h2>
-        <p>
-          이용자는 언제든지 자신의 개인정보를 조회·수정·삭제할 수 있으며,
-          회원 탈퇴를 통해 개인정보 처리에 대한 동의를 철회할 수 있습니다.
-        </p>
-
-        <h2>7. 개인정보 보호책임자</h2>
-        <p>
-          개인정보 관련 문의사항은 아래로 연락해 주세요.<br />
-          이메일: privacy@nyam.ai
-        </p>
-
-        <p className="mt-8 text-xs text-neutral-400">시행일: 2026년 3월 17일</p>
+    <div className="mx-auto max-w-lg px-5 py-6">
+      <div className="mb-6 flex items-center gap-3">
+        <Link href="/auth/login" className="text-neutral-500 hover:text-neutral-700">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-lg font-semibold text-neutral-800">개인정보처리방침</h1>
+      </div>
+      <div className="prose prose-sm text-neutral-600">
+        <p>nyam 개인정보처리방침입니다.</p>
+        <p>수집하는 개인정보: 이메일, 프로필 사진, 소셜 로그인 정보</p>
       </div>
     </div>
   )

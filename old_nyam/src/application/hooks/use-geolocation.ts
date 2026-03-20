@@ -1,46 +1,41 @@
-'use client'
+"use client"
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from "react"
 
-interface GeolocationState {
-  location: { lat: number; lng: number } | null
-  isLoading: boolean
-  error: string | null
+interface GeoLocation {
+  lat: number
+  lng: number
 }
 
 export function useGeolocation() {
-  const [state, setState] = useState<GeolocationState>({
-    location: null,
-    isLoading: true,
-    error: null,
-  })
-  const requested = useRef(false)
+  const [location, setLocation] = useState<GeoLocation | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (requested.current) return
-    requested.current = true
-
+  const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      // Use a microtask to avoid synchronous setState in effect
-      queueMicrotask(() => {
-        setState({ location: null, isLoading: false, error: 'Geolocation is not supported' })
-      })
+      setError("Geolocation is not supported")
       return
     }
 
+    setLoading(true)
+    setError(null)
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setState({
-          location: { lat: position.coords.latitude, lng: position.coords.longitude },
-          isLoading: false,
-          error: null,
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
         })
+        setLoading(false)
       },
       (err) => {
-        setState({ location: null, isLoading: false, error: err.message })
+        setError(err.message)
+        setLoading(false)
       },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     )
   }, [])
 
-  return state
+  return { location, loading, error, requestLocation }
 }

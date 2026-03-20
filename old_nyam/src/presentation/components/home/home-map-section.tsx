@@ -1,330 +1,84 @@
-'use client'
+"use client"
 
-import { useEffect, useRef, useState, useCallback } from 'react'
-import Script from 'next/script'
-import { cn } from '@/shared/utils/cn'
+import Image from "next/image"
+import { MapPin, Navigation } from "lucide-react"
+import { KakaoMap } from "./kakao-map"
 
-type Filter = 'all' | 'mine' | 'friends'
-type MapProvider = 'naver' | 'kakao'
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-declare global {
-  interface Window {
-    kakao: {
-      maps: {
-        load: (callback: () => void) => void
-        LatLng: new (lat: number, lng: number) => any
-        Map: new (container: HTMLElement, options: { center: any; level: number }) => any
-        ZoomControl: new () => any
-        CustomOverlay: new (options: {
-          position: any
-          content: string
-          yAnchor?: number
-          zIndex?: number
-        }) => any
-        ControlPosition: { RIGHT: any }
-        event: { addListener: (target: any, type: string, handler: () => void) => void }
-      }
-    }
-    naver: {
-      maps: {
-        Map: new (container: HTMLElement, options: any) => any
-        LatLng: new (lat: number, lng: number) => any
-        Marker: new (options: any) => any
-        InfoWindow: new (options: any) => any
-        Event: { addListener: (target: any, type: string, handler: () => void) => void }
-        Position: { RIGHT_CENTER: any }
-        ZoomControl: new () => any
-      }
-    }
-  }
-}
-
-const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY
-const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID
-const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
-
-interface Pin {
+interface MapRecord {
   id: string
-  lat: number
-  lng: number
-  rating: number
-  name: string
+  locationLat: number | null
+  locationLng: number | null
+  title: string
+  thumbnailUrl: string | null
 }
 
-interface FriendPin extends Pin {
-  friendName: string
-  color: string
+interface HomeMapSectionProps {
+  records: MapRecord[]
+  onRecordClick: (id: string) => void
 }
 
-export function HomeMapSection({
-  myLocation,
-  myPins,
-  friendPins,
-  filter,
-  onFilterChange,
-}: {
-  myLocation: { lat: number; lng: number } | null
-  myPins: Pin[]
-  friendPins: FriendPin[]
-  filter: Filter
-  onFilterChange: (f: Filter) => void
-}) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const [provider, setProvider] = useState<MapProvider>('naver')
-  const [mapLoaded, setMapLoaded] = useState(false)
-  const [sdkError, setSdkError] = useState(false)
-  const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
+const HAS_KAKAO_KEY = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY
 
-  const filterOptions: { key: Filter; label: string }[] = [
-    { key: 'all', label: '전체' },
-    { key: 'mine', label: '내 기록' },
-    { key: 'friends', label: '친구' },
-  ]
+export function HomeMapSection({ records, onRecordClick }: HomeMapSectionProps) {
+  const recordsWithLocation = records.filter(
+    (r) => r.locationLat != null && r.locationLng != null,
+  )
 
-  // Reset when provider changes
-  useEffect(() => {
-    try {
-      markersRef.current.forEach(m => {
-        try { if (m.setMap) m.setMap(null) } catch { /* ignore */ }
-      })
-    } catch { /* ignore */ }
-    markersRef.current = []
-    mapInstanceRef.current = null
-    setMapLoaded(false)
-    setSdkError(false)
-  }, [provider])
-
-  const clearMarkers = useCallback(() => {
-    markersRef.current.forEach(m => {
-      try { if (m.setMap) m.setMap(null) } catch { /* ignore */ }
-    })
-    markersRef.current = []
-  }, [])
-
-  // ─── Naver Maps ───
-  const initNaverMap = useCallback(() => {
-    if (!mapRef.current || !window.naver?.maps) return
-    try {
-      const center = myLocation
-        ? new window.naver.maps.LatLng(myLocation.lat, myLocation.lng)
-        : new window.naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
-
-      const map = new window.naver.maps.Map(mapRef.current, {
-        center,
-        zoom: 14,
-      })
-      mapInstanceRef.current = map
-      // Delay to let naver map fully initialize internally
-      setTimeout(() => setMapLoaded(true), 300)
-    } catch {
-      setSdkError(true)
-    }
-  }, [myLocation])
-
-  const addNaverMarkers = useCallback(() => {
-    if (!mapInstanceRef.current || !window.naver?.maps) return
-    try { clearMarkers() } catch { /* ignore */ }
-    const nmaps = window.naver.maps
-    const map = mapInstanceRef.current
-
-    try {
-      const visibleMyPins = filter === 'friends' ? [] : myPins
-      visibleMyPins.forEach(pin => {
-        const marker = new nmaps.Marker({
-          position: new nmaps.LatLng(pin.lat, pin.lng),
-          map,
-        })
-        markersRef.current.push(marker)
-      })
-
-      const visibleFriendPins = filter === 'mine' ? [] : friendPins
-      visibleFriendPins.forEach(pin => {
-        const marker = new nmaps.Marker({
-          position: new nmaps.LatLng(pin.lat, pin.lng),
-          map,
-        })
-        markersRef.current.push(marker)
-      })
-    } catch {
-      // Marker creation can fail if map not fully ready
-    }
-  }, [filter, myPins, friendPins, clearMarkers])
-
-  // ─── Kakao Maps ───
-  const initKakaoMap = useCallback(() => {
-    if (!mapRef.current || !window.kakao?.maps) return
-    try {
-      const { kakao } = window
-      const center = myLocation
-        ? new kakao.maps.LatLng(myLocation.lat, myLocation.lng)
-        : new kakao.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng)
-
-      const map = new kakao.maps.Map(mapRef.current, { center, level: 5 })
-      mapInstanceRef.current = map
-      setTimeout(() => setMapLoaded(true), 300)
-    } catch {
-      setSdkError(true)
-    }
-  }, [myLocation])
-
-  const addKakaoMarkers = useCallback(() => {
-    if (!mapInstanceRef.current || !window.kakao?.maps) return
-    clearMarkers()
-    try {
-    const { kakao } = window
-    const map = mapInstanceRef.current
-
-    if (myLocation) {
-      const loc = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(myLocation.lat, myLocation.lng),
-        content: `<div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(59,125,216,0.3);animation:map-ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>
-          <div style="width:12px;height:12px;border-radius:50%;background:#3B7DD8;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
-        </div><style>@keyframes map-ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2.5);opacity:0}}</style>`,
-        yAnchor: 0.5, zIndex: 10,
-      })
-      loc.setMap(map)
-      markersRef.current.push(loc)
-    }
-
-    const visibleMyPins = filter === 'friends' ? [] : myPins
-    visibleMyPins.forEach(pin => {
-      const o = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(pin.lat, pin.lng),
-        content: `<div style="display:flex;flex-direction:column;align-items:center;transform:translateY(-4px);">
-          <div style="background:#FF6038;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.15);">${Math.round(pin.rating)}</div>
-          <div style="margin-top:2px;font-size:8px;font-weight:500;color:#374151;white-space:nowrap;text-shadow:0 0 3px rgba(255,255,255,0.9);">${pin.name}</div>
-        </div>`,
-        yAnchor: 1.2, zIndex: 5,
-      })
-      o.setMap(map)
-      markersRef.current.push(o)
-    })
-
-    const visibleFriendPins = filter === 'mine' ? [] : friendPins
-    visibleFriendPins.forEach(pin => {
-      const o = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(pin.lat, pin.lng),
-        content: `<div style="display:flex;flex-direction:column;align-items:center;transform:translateY(-4px);">
-          <div style="background:${pin.color};color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.15);">${Math.round(pin.rating)}</div>
-          <div style="margin-top:2px;font-size:7px;font-weight:500;color:#374151;white-space:nowrap;text-shadow:0 0 3px rgba(255,255,255,0.9);">${pin.name}</div>
-        </div>`,
-        yAnchor: 1.2, zIndex: 3,
-      })
-      o.setMap(map)
-      markersRef.current.push(o)
-    })
-    } catch { /* ignore marker errors */ }
-  }, [filter, myPins, friendPins, myLocation, clearMarkers])
-
-  // Re-add markers when filter/pins change
-  useEffect(() => {
-    if (!mapLoaded) return
-    if (provider === 'naver') addNaverMarkers()
-    else addKakaoMarkers()
-  }, [mapLoaded, provider, filter, myPins, friendPins, addNaverMarkers, addKakaoMarkers])
-
-  const hasSdk = provider === 'naver' ? !!NAVER_CLIENT_ID : !!KAKAO_JS_KEY
-
-  if (!hasSdk) {
-    return <StaticFallback provider={provider} setProvider={setProvider} filter={filter} onFilterChange={onFilterChange} filterOptions={filterOptions} />
+  if (recordsWithLocation.length === 0) {
+    return (
+      <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
+        <div className="flex h-48 flex-col items-center justify-center gap-3 bg-neutral-50">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50">
+            <MapPin className="h-6 w-6 text-primary-500" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-neutral-700">
+              지도에서 내 기록 보기
+            </p>
+            <p className="mt-0.5 text-xs text-neutral-400">
+              위치가 포함된 기록이 없어요
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
+
+  const pins = recordsWithLocation.slice(0, 20).map((r) => ({
+    id: r.id,
+    lat: r.locationLat!,
+    lng: r.locationLng!,
+    title: r.title,
+    thumbnailUrl: r.thumbnailUrl,
+  }))
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-sm)]">
-      {/* SDK Script */}
-      {provider === 'naver' ? (
-        <Script
-          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_CLIENT_ID}`}
-          strategy="afterInteractive"
-          onLoad={initNaverMap}
-          onError={() => setSdkError(true)}
+    <div className="rounded-2xl bg-card shadow-[var(--shadow-sm)] overflow-hidden">
+      {HAS_KAKAO_KEY ? (
+        <KakaoMap
+          pins={pins}
+          onPinClick={onRecordClick}
+          className="h-48"
         />
       ) : (
-        <Script
-          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false`}
-          strategy="afterInteractive"
-          onLoad={() => {
-            if (window.kakao?.maps) {
-              window.kakao.maps.load(initKakaoMap)
-            } else {
-              setSdkError(true)
-            }
-          }}
-          onError={() => setSdkError(true)}
+        <PlaceholderMap
+          records={recordsWithLocation}
+          onRecordClick={onRecordClick}
         />
       )}
 
-      {/* Map container */}
-      <div className="relative h-48 w-full bg-[#f0ede7]">
-        {sdkError ? (
-          <div className="flex h-full items-center justify-center text-xs text-[var(--color-neutral-400)]">
-            지도를 불러올 수 없습니다
-          </div>
-        ) : !mapLoaded ? (
-          <div className="flex h-full items-center justify-center text-xs text-[var(--color-neutral-400)]">
-            지도를 불러오는 중...
-          </div>
-        ) : null}
-        <div ref={mapRef} className={cn('h-full w-full', !mapLoaded && 'invisible')} />
-
-        {/* Provider toggle */}
-        <div className="absolute top-2 left-2 z-10 flex rounded-lg bg-white/90 shadow-sm backdrop-blur-sm overflow-hidden text-[10px]">
-          <button
-            type="button"
-            onClick={() => setProvider('naver')}
-            className={cn(
-              'px-2 py-1 font-medium transition-colors',
-              provider === 'naver' ? 'bg-[#03C75A] text-white' : 'text-neutral-500',
-            )}
-          >
-            네이버
-          </button>
-          <button
-            type="button"
-            onClick={() => setProvider('kakao')}
-            className={cn(
-              'px-2 py-1 font-medium transition-colors',
-              provider === 'kakao' ? 'bg-[#FEE500] text-[#191919]' : 'text-neutral-500',
-            )}
-          >
-            카카오
-          </button>
-        </div>
-      </div>
-
-      {/* Legend bar + filter toggles */}
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="flex items-center gap-3 text-[10px] text-[var(--color-neutral-500)]">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-primary-500)]" />
-            내 기록
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-[#3B7DD8]" />
-            현재 위치
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-neutral-400)]" />
-            친구
-          </span>
-        </div>
-        <div className="flex gap-1">
-          {filterOptions.map((opt) => (
+      {/* Scrollable record tags */}
+      <div className="border-t border-neutral-100 p-3">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          {recordsWithLocation.slice(0, 8).map((record) => (
             <button
-              key={opt.key}
+              key={record.id}
               type="button"
-              onClick={() => onFilterChange(opt.key)}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors',
-                filter === opt.key
-                  ? 'bg-[var(--color-primary-500)] text-white'
-                  : 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]',
-              )}
+              onClick={() => onRecordClick(record.id)}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-50 px-3 py-1.5 text-xs text-neutral-600 transition-colors hover:bg-neutral-100 active:scale-[0.98]"
             >
-              {opt.label}
+              <MapPin className="h-3 w-3 text-primary-500" />
+              <span className="max-w-[100px] truncate">{record.title}</span>
             </button>
           ))}
         </div>
@@ -333,38 +87,50 @@ export function HomeMapSection({
   )
 }
 
-function StaticFallback({
-  provider,
-  setProvider,
-  filter,
-  onFilterChange,
-  filterOptions,
+function PlaceholderMap({
+  records,
+  onRecordClick,
 }: {
-  provider: MapProvider
-  setProvider: (p: MapProvider) => void
-  filter: Filter
-  onFilterChange: (f: Filter) => void
-  filterOptions: { key: Filter; label: string }[]
+  records: MapRecord[]
+  onRecordClick: (id: string) => void
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-sm)]">
-      <div className="relative flex h-48 w-full items-center justify-center" style={{ background: 'linear-gradient(135deg, #EDEAE4 0%, #E3DFD8 100%)' }}>
-        <span className="text-xs text-[var(--color-neutral-400)]">지도 API 키가 설정되지 않았습니다</span>
-        <div className="absolute top-2 left-2 flex rounded-lg bg-white/90 shadow-sm overflow-hidden text-[10px]">
-          <button type="button" onClick={() => setProvider('naver')} className={cn('px-2 py-1 font-medium', provider === 'naver' ? 'bg-[#03C75A] text-white' : 'text-neutral-500')}>네이버</button>
-          <button type="button" onClick={() => setProvider('kakao')} className={cn('px-2 py-1 font-medium', provider === 'kakao' ? 'bg-[#FEE500] text-[#191919]' : 'text-neutral-500')}>카카오</button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="flex items-center gap-3 text-[10px] text-[var(--color-neutral-500)]">
-          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-[var(--color-primary-500)]" />내 기록</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-[#3B7DD8]" />현재 위치</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-[var(--color-neutral-400)]" />친구</span>
-        </div>
-        <div className="flex gap-1">
-          {filterOptions.map(opt => (
-            <button key={opt.key} type="button" onClick={() => onFilterChange(opt.key)} className={cn('rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors', filter === opt.key ? 'bg-[var(--color-primary-500)] text-white' : 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]')}>{opt.label}</button>
-          ))}
+    <div className="relative h-48 bg-gradient-to-br from-green-50 via-blue-50 to-green-50">
+      {records.slice(0, 8).map((record, i) => {
+        const offsetX = 12 + ((i * 37 + 13) % 76)
+        const offsetY = 12 + ((i * 53 + 7) % 76)
+        return (
+          <button
+            key={record.id}
+            type="button"
+            onClick={() => onRecordClick(record.id)}
+            className="absolute group"
+            style={{ left: `${offsetX}%`, top: `${offsetY}%` }}
+          >
+            <div className="relative flex flex-col items-center">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 text-white shadow-md transition-transform group-hover:scale-110 overflow-hidden">
+                {record.thumbnailUrl ? (
+                  <Image
+                    src={record.thumbnailUrl}
+                    alt={record.title}
+                    width={32}
+                    height={32}
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+              </div>
+              <div className="absolute -bottom-1 h-2 w-2 rotate-45 bg-primary-500" />
+            </div>
+          </button>
+        )
+      })}
+
+      <div className="absolute inset-0 flex items-end justify-center pb-2">
+        <div className="flex items-center gap-1 rounded-full bg-card/90 px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur-sm">
+          <Navigation className="h-3 w-3 text-primary-500" />
+          {records.length}개의 위치 기록
         </div>
       </div>
     </div>

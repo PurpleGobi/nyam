@@ -1,126 +1,260 @@
-'use client'
+"use client"
 
-import { useMemo, useState } from 'react'
-import { useRecords } from '@/application/hooks/use-records'
-import { useNearbyRecords } from '@/application/hooks/use-nearby-records'
-import { useGeolocation } from '@/application/hooks/use-geolocation'
-import type { TodaysPick } from '@/domain/entities/todays-pick'
-import type { FoodRecord } from '@/domain/entities/record'
+import { useCallback, useMemo, useState } from "react"
+import useSWR from "swr"
+import { createClient } from "@/infrastructure/supabase/client"
+import type { RecordPhoto, RecordWithPhotos } from "@/domain/entities/record"
 
-const TWO_MONTHS_MS = 1000 * 60 * 60 * 24 * 60
-const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30
-const PLACEHOLDER_PHOTO = '/placeholder-food.svg'
-
-interface NearbyRecord {
-  id: string
-  menuName: string
-  category: string
-  ratingOverall: number
-  restaurantId: string | null
+interface ReasonPreset {
+  key: string
+  text: string
+  filter: (record: RecordWithPhotos, tasteDnaTopAxis: string | null) => boolean
 }
 
-function buildPicks(
-  records: FoodRecord[] | undefined,
-  nearbyRecords: NearbyRecord[] | undefined,
-  now: number,
-): TodaysPick[] {
-  const result: TodaysPick[] = []
+export interface PickReason {
+  key: string
+  text: string
+}
 
-  // From user's records: high-rated records not visited in 2+ months
-  if (records) {
-    const revisitCandidates = records.filter((r) => {
-      const age = now - new Date(r.createdAt).getTime()
-      return r.ratingOverall >= 4.0 && age >= TWO_MONTHS_MS
-    })
-    for (const r of revisitCandidates.slice(0, 2)) {
-      const monthsAgo = Math.round(
-        (now - new Date(r.createdAt).getTime()) / ONE_MONTH_MS,
-      )
-      result.push({
-        id: `revisit-${r.id}`,
-        type: 'revisit',
-        reason: '다시 가볼 때가 됐어요',
-        subtext: `${monthsAgo}개월 전 방문 · ★${r.ratingOverall.toFixed(1)}`,
-        restaurantName: r.menuName,
-        area: r.category,
-        score: r.ratingOverall.toFixed(1),
-        photoUrl: PLACEHOLDER_PHOTO,
-        recordId: r.id,
-        restaurantId: r.restaurantId,
-      })
-    }
-  }
+export interface TodaysPickResult {
+  pick: RecordWithPhotos | null
+  reason: PickReason | null
+  refresh: () => void
+  isLoading: boolean
+}
 
-  // From nearby records
-  if (nearbyRecords) {
-    for (const nr of nearbyRecords.slice(0, 2)) {
-      result.push({
-        id: `nearby-${nr.id}`,
-        type: 'dormant_regular',
-        reason: '근처에 있는 맛집',
-        subtext: `${nr.category} · ★${nr.ratingOverall.toFixed(1)}`,
-        restaurantName: nr.menuName,
-        area: nr.category,
-        score: nr.ratingOverall.toFixed(1),
-        photoUrl: PLACEHOLDER_PHOTO,
-        recordId: nr.id,
-        restaurantId: nr.restaurantId,
-      })
-    }
-  }
+const TIME_GENRES: Record<string, string[]> = {
+  morning: ["cafe", "salad", "lunchbox"],
+  lunch: ["korean", "japanese", "snack", "stew", "lunchbox", "katsu"],
+  afternoon: ["cafe"],
+  dinner: ["bbq", "western", "chinese", "seafood", "korean"],
+  latenight: ["chicken", "jokbal", "asian", "snack"],
+}
 
-  // Fallback static picks when data is sparse
-  if (result.length < 2) {
-    const fallbacks: TodaysPick[] = [
-      {
-        id: 'fallback-1',
-        type: 'taste_match',
-        reason: '기록을 남기면 추천이 정확해져요',
-        subtext: '첫 기록을 남겨보세요',
-        restaurantName: '나만의 맛집',
-        area: '',
-        score: '',
-        photoUrl: PLACEHOLDER_PHOTO,
-        recordId: null,
-        restaurantId: null,
+function getTimeSlot(): string {
+  const hour = new Date().getHours()
+  if (hour < 10) return "morning"
+  if (hour < 14) return "lunch"
+  if (hour < 17) return "afternoon"
+  if (hour < 21) return "dinner"
+  return "latenight"
+}
+
+function buildReasonPresets(timeSlot: string): ReasonPreset[] {
+  const genres = TIME_GENRES[timeSlot] ?? []
+  const genreLabel = genres[0] ?? ""
+
+  return [
+    {
+      key: "high_rating",
+      text: "만족도가 높았어요",
+      filter: (r) => (r.ratingOverall ?? 0) >= 80,
+    },
+    {
+      key: "genre_match",
+      text: `${genreLabel} 맛집`,
+      filter: (r) => r.genre != null && genres.includes(r.genre),
+    },
+    {
+      key: "long_ago",
+      text: "오래 안 갔던 곳",
+      filter: (r) => {
+        const twoMonthsAgo = Date.now() - 60 * 24 * 60 * 60 * 1000
+        return new Date(r.createdAt).getTime() < twoMonthsAgo
       },
-      {
-        id: 'fallback-2',
-        type: 'new_opening',
-        reason: '오늘의 한 끼를 기록해보세요',
-        subtext: '기록이 쌓이면 AI가 맛집을 추천해드려요',
-        restaurantName: '오늘 뭐 먹지?',
-        area: '',
-        score: '',
-        photoUrl: PLACEHOLDER_PHOTO,
-        recordId: null,
-        restaurantId: null,
+    },
+    {
+      key: "dna_match",
+      text: "이 맛 좋아할걸",
+      filter: (r, topAxis) => {
+        if (!topAxis) return false
+        const axisToTag: Record<string, string[]> = {
+          spicy: ["매운", "spicy", "辣"],
+          sweet: ["달콤", "sweet"],
+          salty: ["짭짤", "salty"],
+          sour: ["새콤", "sour"],
+          umami: ["감칠맛", "umami"],
+          rich: ["풍미", "rich", "진한"],
+        }
+        const keywords = axisToTag[topAxis] ?? []
+        const allTags = [...r.flavorTags, ...r.textureTags].map((t) => t.toLowerCase())
+        return keywords.some((kw) => allTags.some((t) => t.includes(kw)))
       },
-    ]
-    for (const fb of fallbacks) {
-      if (result.length >= 3) break
-      result.push(fb)
-    }
-  }
+    },
+    {
+      key: "random",
+      text: "오늘의 추천",
+      filter: () => true,
+    },
+  ]
+}
 
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
   return result
 }
 
-export function useTodaysPick(userId: string | undefined) {
-  const { data: recordsResult, isLoading: recordsLoading } = useRecords(userId, 50)
-  const { location } = useGeolocation()
-  const { data: nearbyRecords, isLoading: nearbyLoading } = useNearbyRecords(location)
+export function useTodaysPick(userId: string | null, tasteDnaTopAxis: string | null = null): TodaysPickResult {
+  const supabase = createClient()
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
-  // Stable timestamp that doesn't change across re-renders
-  const [now] = useState(() => Date.now())
+  const { data: allRecords, isLoading } = useSWR(
+    userId ? `todays-pick-records-${userId}` : null,
+    async (): Promise<RecordWithPhotos[]> => {
+      if (!userId) return []
 
-  const picks = useMemo(
-    () => buildPicks(recordsResult?.data, nearbyRecords, now),
-    [recordsResult, nearbyRecords, now],
+      const { data: records } = await supabase
+        .from("records")
+        .select("*, record_photos(*), restaurants(name, address)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+
+      if (!records?.length) return []
+
+      return records.map((picked) => {
+        const photos = ((picked.record_photos as Array<Record<string, unknown>>) ?? [])
+          .map((p) => ({
+            id: p.id as string,
+            recordId: p.record_id as string,
+            photoUrl: p.photo_url as string,
+            thumbnailUrl: p.thumbnail_url as string | null,
+            orderIndex: p.order_index as number,
+            aiLabels: (p.ai_labels as string[]) ?? [],
+            cropData: (p.crop_data as RecordPhoto["cropData"]) ?? null,
+          }))
+          .sort((a, b) => a.orderIndex - b.orderIndex)
+
+        const restaurant = picked.restaurants
+          ? { name: (picked.restaurants as Record<string, unknown>).name as string, address: (picked.restaurants as Record<string, unknown>).address as string | null }
+          : null
+
+        return {
+          id: picked.id,
+          userId: picked.user_id,
+          restaurantId: picked.restaurant_id,
+          recordType: picked.record_type,
+          menuName: picked.menu_name,
+          genre: picked.genre,
+          subGenre: picked.sub_genre,
+          ratingOverall: picked.rating_overall,
+          ratingTaste: picked.rating_taste,
+          ratingValue: picked.rating_value,
+          ratingService: picked.rating_service,
+          ratingAtmosphere: picked.rating_atmosphere,
+          ratingCleanliness: picked.rating_cleanliness,
+          ratingPortion: picked.rating_portion,
+          ratingBalance: picked.rating_balance,
+          ratingDifficulty: picked.rating_difficulty,
+          ratingTimeSpent: picked.rating_time_spent,
+          ratingReproducibility: picked.rating_reproducibility,
+          ratingPlating: picked.rating_plating,
+          ratingMaterialCost: picked.rating_material_cost,
+          comment: picked.comment,
+          tags: picked.tags ?? [],
+          flavorTags: picked.flavor_tags ?? [],
+          textureTags: picked.texture_tags ?? [],
+          atmosphereTags: picked.atmosphere_tags ?? [],
+          visibility: picked.visibility,
+          aiRecognized: picked.ai_recognized,
+          completenessScore: picked.completeness_score,
+          locationLat: picked.location_lat,
+          locationLng: picked.location_lng,
+          pricePerPerson: picked.price_per_person,
+          phaseStatus: picked.phase_status,
+          phase1CompletedAt: picked.phase1_completed_at,
+          phase2CompletedAt: picked.phase2_completed_at,
+          phase3CompletedAt: picked.phase3_completed_at,
+          scaledRating: picked.scaled_rating,
+          comparisonCount: picked.comparison_count,
+          scene: picked.scene,
+          pairingFood: picked.pairing_food,
+          purchasePrice: picked.purchase_price,
+          visitTime: picked.visit_time,
+          companionCount: picked.companion_count,
+          totalCost: picked.total_cost,
+          createdAt: picked.created_at,
+          photos,
+          restaurant,
+        }
+      })
+    },
+    { revalidateOnFocus: false },
   )
 
+  const result = useMemo(() => {
+    const records = allRecords ?? []
+    if (records.length === 0) return { pick: null, reason: null }
+
+    const timeSlot = getTimeSlot()
+    const genres = TIME_GENRES[timeSlot] ?? []
+
+    // 사진 있는 기록 우선
+    const withPhotos = records.filter((r) => r.photos.length > 0)
+    const basePool = withPhotos.length > 0 ? withPhotos : records
+
+    // 이미 본 기록 제외 (다 봤으면 리셋)
+    const unseen = basePool.filter((r) => !seenIds.has(r.id))
+    const pool = unseen.length > 0 ? unseen : basePool
+
+    // 시간대 장르 필터
+    const genreFiltered = pool.filter((r) => r.genre != null && genres.includes(r.genre))
+
+    const presets = buildReasonPresets(timeSlot)
+    const shuffledPresets = shuffle(presets)
+
+    // 풀에서 1건 뽑는 헬퍼 (항상 다른 것 우선)
+    const pickOne = (arr: RecordWithPhotos[]) => arr[Math.floor(Math.random() * arr.length)]
+
+    // Phase 1: 시간대 장르 + 프리셋
+    if (genreFiltered.length > 0) {
+      for (const preset of shuffledPresets) {
+        const matched = genreFiltered.filter((r) => preset.filter(r, tasteDnaTopAxis))
+        if (matched.length > 0) {
+          return { pick: pickOne(matched), reason: { key: preset.key, text: preset.text } }
+        }
+      }
+      const pick = pickOne(genreFiltered)
+      return { pick, reason: { key: "genre_match", text: `${pick.genre ?? "맛있는"} 맛집` } }
+    }
+
+    // Phase 2: 전체 풀 + 프리셋
+    for (const preset of shuffledPresets) {
+      const matched = pool.filter((r) => preset.filter(r, tasteDnaTopAxis))
+      if (matched.length > 0) {
+        return { pick: pickOne(matched), reason: { key: preset.key, text: preset.text } }
+      }
+    }
+
+    // Phase 3: 최종 폴백
+    return { pick: pickOne(pool), reason: { key: "random", text: "오늘의 추천" } }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRecords, tasteDnaTopAxis, refreshKey, seenIds])
+
+  const refresh = useCallback(() => {
+    if (result.pick) {
+      setSeenIds((prev) => {
+        const next = new Set(prev)
+        next.add(result.pick!.id)
+        // 전체 기록 다 봤으면 리셋 (현재 것만 남겨서 연속 중복 방지)
+        const total = allRecords?.length ?? 0
+        if (next.size >= total) {
+          return new Set([result.pick!.id])
+        }
+        return next
+      })
+    }
+    setRefreshKey((k) => k + 1)
+  }, [result.pick, allRecords?.length])
+
   return {
-    picks,
-    isLoading: recordsLoading || nearbyLoading,
+    pick: result.pick,
+    reason: result.reason,
+    refresh,
+    isLoading,
   }
 }

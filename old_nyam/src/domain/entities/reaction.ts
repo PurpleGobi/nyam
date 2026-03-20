@@ -1,10 +1,4 @@
-export type ReactionType = 'like' | 'comment'
-
-export interface Bookmark {
-  userId: string
-  recordId: string
-  createdAt: string
-}
+import type { ReactionType } from "@/infrastructure/supabase/types"
 
 export interface Reaction {
   id: string

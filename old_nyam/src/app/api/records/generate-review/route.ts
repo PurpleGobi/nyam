@@ -1,293 +1,320 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/infrastructure/supabase/server'
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/infrastructure/supabase/server"
+import { createAdminClient } from "@/infrastructure/supabase/admin"
+import { calculateNyamLevel } from "@/shared/utils/xp"
 
-export const maxDuration = 30
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
-interface GenerateReviewRequestBody {
-  recordId: string
-  answers: Record<string, string>
-}
-
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string
-      }>
-    }
-  }>
+interface ReviewQuestion {
+  id: string
+  question: string
+  options?: string[]
+  type: "select" | "freetext"
 }
 
 interface BlogSection {
-  type: 'text' | 'photo'
+  type: "text" | "photo"
   content: string
   photoIndex?: number
   caption?: string
 }
 
-interface AiQuestion {
-  id: string
-  question: string
-  options: string[]
-  type: 'select' | 'freetext'
-}
-
-interface BlogResult {
+interface GeneratedBlog {
   title: string
   sections: BlogSection[]
-  summary: string
-  recommendFor: string[]
+  tags: string[]
 }
 
-function buildQuestionsPrompt(record: Record<string, unknown>, analysis: Record<string, unknown> | null): string {
-  const restaurantName = (record.menu_name as string) || '이 식당'
-  const category = (record.category as string) || ''
-  const orderedItems = analysis
-    ? (analysis.ordered_items as string[]) ?? []
-    : []
-  const occasion = analysis
-    ? ((analysis.companion_data as Record<string, unknown>)?.occasion as string) ?? null
-    : null
+interface RequestBody {
+  recordId: string
+  answers?: Record<string, string>
+}
 
-  return `당신은 맛집 리뷰 작성을 도와주는 AI 어시스턴트입니다.
-사용자가 방문한 식당의 정보를 바탕으로, 블로그 리뷰를 작성하기 위한 질문 3~5개를 생성하세요.
+export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
-## 방문 정보
-- 식당: ${restaurantName}
-- 카테고리: ${category}
-- 주문 메뉴: ${orderedItems.join(', ') || '정보 없음'}
-- 방문 성격: ${occasion || '정보 없음'}
-- 평점: ${record.rating_overall ?? '정보 없음'}/100
+  const body = await request.json() as RequestBody
+  const { recordId, answers } = body
+  if (!recordId) {
+    return NextResponse.json({ error: "recordId is required" }, { status: 400 })
+  }
 
-## 질문 생성 규칙
-1. 질문은 3~5개 생성
-2. 각 질문은 블로그 글의 풍성한 내용을 위한 것
-3. 선택형 질문: 3~4개의 선택지 + 마지막에 "직접 입력" 옵션
-4. 자유 입력형 질문: 1~2개 포함 (짧은 한줄 답변 유도)
-5. 자연스럽고 친근한 톤
+  const { data: record } = await supabase
+    .from("records")
+    .select("*, record_photos(*), record_ai_analysis:record_ai_analyses(*)")
+    .eq("id", recordId)
+    .eq("user_id", user.id)
+    .single()
 
-## 응답 형식 (JSON)
-{
-  "questions": [
-    {
-      "id": "q1",
-      "question": "질문 내용",
-      "options": ["선택지1", "선택지2", "선택지3", "직접 입력"],
-      "type": "select"
-    },
-    {
-      "id": "q2",
-      "question": "질문 내용",
-      "options": [],
-      "type": "freetext"
+  if (!record) {
+    return NextResponse.json({ error: "Record not found" }, { status: 404 })
+  }
+
+  const hasAnswers = answers && Object.keys(answers).length > 0
+
+  if (!hasAnswers) {
+    return handleGenerateQuestions(record)
+  }
+
+  return handleGenerateBlog(record, answers, user.id)
+}
+
+async function callGemini(prompt: string): Promise<string> {
+  const response = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json",
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error("Gemini API call failed")
+  }
+
+  const data = await response.json()
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}"
+}
+
+function getRecordContext(record: Record<string, unknown>): string {
+  const type = record.record_type as string
+  const menuName = record.menu_name as string | null
+  const genre = record.genre as string | null
+  const rating = record.rating_overall as number | null
+  const comment = record.comment as string | null
+  const scene = record.scene as string | null
+  const photos = (record.record_photos as Array<Record<string, unknown>>) ?? []
+  const aiAnalysis = (record.record_ai_analysis as Array<Record<string, unknown>>)?.[0]
+
+  const typeLabel = type === "restaurant" ? "식당" : type === "wine" ? "와인" : "요리"
+
+  let context = `기록 유형: ${typeLabel}\n`
+  if (menuName) context += `메뉴: ${menuName}\n`
+  if (genre) context += `장르: ${genre}\n`
+  if (rating) context += `종합 점수: ${rating}/100\n`
+  if (comment) context += `코멘트: ${comment}\n`
+  if (scene) context += `상황: ${scene}\n`
+  context += `사진 수: ${photos.length}\n`
+
+  if (aiAnalysis) {
+    const restaurant = aiAnalysis.identified_restaurant as Record<string, unknown> | null
+    if (restaurant) context += `식당명: ${(restaurant.name as string) || "알 수 없음"}\n`
+
+    const menuItems = aiAnalysis.extracted_menu_items as Array<Record<string, unknown>> | null
+    if (menuItems?.length) {
+      context += `메뉴 항목: ${menuItems.map(m => m.name).join(", ")}\n`
     }
-  ]
+
+    const wineInfo = aiAnalysis.wine_info as Record<string, unknown> | null
+    if (wineInfo) {
+      context += `와인: ${wineInfo.name || "알 수 없음"}`
+      if (wineInfo.vintage) context += ` (${wineInfo.vintage})`
+      if (wineInfo.winery) context += `, ${wineInfo.winery}`
+      context += "\n"
+    }
+  }
+
+  return context
 }
 
-JSON만 반환하세요.`
+function buildQuestionsPrompt(record: Record<string, unknown>): string {
+  const type = record.record_type as string
+  const context = getRecordContext(record)
+
+  const typeGuide = type === "restaurant"
+    ? "식당 방문 경험에 대한 질문 (분위기, 서비스, 재방문 의향, 추천 대상, 특별한 점 등)"
+    : type === "wine"
+      ? "와인 시음 경험에 대한 질문 (향, 페어링, 인상, 구매 의향, 추천 상황 등)"
+      : "요리 경험에 대한 질문 (난이도, 레시피 출처, 개선점, 재도전 의향, 특별한 팁 등)"
+
+  return `당신은 음식 리뷰 인터뷰어입니다.
+아래 기록 정보를 바탕으로, 사용자에게 리뷰 블로그 작성을 위한 질문 3~5개를 생성해주세요.
+
+${context}
+
+질문 가이드:
+- ${typeGuide}
+- 각 질문은 선택지(select) 또는 자유 입력(freetext) 중 하나
+- 선택지 질문은 3~5개 선택지 제공
+- 자연스럽고 친근한 톤
+
+JSON 형식:
+[
+  {
+    "id": "q1",
+    "question": "질문 내용",
+    "type": "select",
+    "options": ["선택지1", "선택지2", "선택지3"]
+  },
+  {
+    "id": "q2",
+    "question": "질문 내용",
+    "type": "freetext"
+  }
+]`
+}
+
+async function handleGenerateQuestions(
+  record: Record<string, unknown>,
+): Promise<NextResponse> {
+  try {
+    const prompt = buildQuestionsPrompt(record)
+    const rawText = await callGemini(prompt)
+    const questions: ReviewQuestion[] = JSON.parse(rawText)
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return NextResponse.json({ error: "Failed to generate questions" }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, questions })
+  } catch {
+    return NextResponse.json({ error: "Failed to generate questions" }, { status: 500 })
+  }
 }
 
 function buildBlogPrompt(
   record: Record<string, unknown>,
-  analysis: Record<string, unknown> | null,
   answers: Record<string, string>,
-  photoCount: number,
 ): string {
-  const restaurantName = (record.menu_name as string) || '맛집'
-  const category = (record.category as string) || ''
-  const orderedItems = analysis
-    ? (analysis.ordered_items as string[]) ?? []
-    : []
-  const flavorTags = (record.flavor_tags as string[]) ?? []
-  const textureTags = (record.texture_tags as string[]) ?? []
-  const ratingOverall = record.rating_overall ?? 0
+  const context = getRecordContext(record)
+  const photos = (record.record_photos as Array<Record<string, unknown>>) ?? []
+  const photoCount = photos.length
 
-  return `당신은 잡지 스타일의 맛집 리뷰 작가입니다.
-아래 데이터를 바탕으로 매력적인 블로그 리뷰를 작성하세요.
+  const answersText = Object.entries(answers)
+    .map(([key, value]) => `- ${key}: ${value}`)
+    .join("\n")
 
-## 방문 데이터
-- 식당: ${restaurantName}
-- 카테고리: ${category}
-- 주문 메뉴: ${orderedItems.join(', ') || '정보 없음'}
-- 맛 태그: ${flavorTags.join(', ') || '정보 없음'}
-- 식감 태그: ${textureTags.join(', ') || '정보 없음'}
-- 평점: ${ratingOverall}/100
-- 사진 수: ${photoCount}장
+  return `당신은 음식 매거진 블로그 작성 전문가입니다.
+아래 기록 정보와 사용자 답변을 바탕으로 매거진 스타일의 블로그를 JSON으로 생성해주세요.
 
-## 사용자 답변
-${Object.entries(answers).map(([key, val]) => `- ${key}: ${val}`).join('\n')}
+${context}
 
-## 작성 규칙
-1. 제목: 매력적이고 클릭하고 싶은 제목 (15자 이내)
-2. 3~5개 섹션, 각 섹션 2~3문장
-3. 사진이 있으면 적절한 위치에 photo 섹션을 삽입 (photoIndex는 0부터 시작, 최대 ${photoCount - 1})
-4. 자연스럽고 친근한 문체 (반말 OK)
-5. 마지막에 한줄 총평
-6. 추천 대상 2~3개 (예: "친구모임", "데이트", "혼밥" 등)
+사용자 답변:
+${answersText}
 
-## 응답 형식 (JSON)
+사진 수: ${photoCount}장 (photoIndex는 0부터 ${photoCount - 1}까지 사용 가능)
+
+JSON 형식:
 {
-  "title": "블로그 제목",
+  "title": "매거진 스타일 블로그 제목",
   "sections": [
-    { "type": "text", "content": "본문 텍스트..." },
-    { "type": "photo", "content": "", "photoIndex": 0, "caption": "사진 설명" },
-    { "type": "text", "content": "본문 텍스트..." }
+    { "type": "text", "content": "도입부 텍스트 (2-3문장)" },
+    { "type": "photo", "content": "", "photoIndex": 0, "caption": "사진 캡션" },
+    { "type": "text", "content": "본문 텍스트 (2-3문장)" },
+    { "type": "photo", "content": "", "photoIndex": 1, "caption": "사진 캡션" },
+    { "type": "text", "content": "마무리 텍스트 (2-3문장)" }
   ],
-  "summary": "한줄 총평",
-  "recommendFor": ["추천 대상1", "추천 대상2"]
+  "tags": ["추천태그1", "추천태그2"]
 }
 
-JSON만 반환하세요.`
+규칙:
+- 텍스트와 사진 섹션을 교차 배치
+- photoIndex는 실제 사진 수 범위 내에서만 사용
+- 사진이 없으면 text 섹션만 사용
+- 자연스럽고 친근한 매거진 톤
+- 섹션은 5-8개로 구성`
 }
 
-export async function POST(request: NextRequest) {
+async function handleGenerateBlog(
+  record: Record<string, unknown>,
+  answers: Record<string, string>,
+  userId: string,
+): Promise<NextResponse> {
   try {
-    // Auth check — skip in development for testing
-    const supabase = await createClient()
-    if (process.env.NODE_ENV !== 'development') {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: 'Unauthorized' },
-          { status: 401 },
-        )
+    const prompt = buildBlogPrompt(record, answers)
+    const rawText = await callGemini(prompt)
+    const blog: GeneratedBlog = JSON.parse(rawText)
+
+    if (!blog.title || !Array.isArray(blog.sections)) {
+      return NextResponse.json({ error: "Failed to generate blog" }, { status: 500 })
+    }
+
+    const admin = createAdminClient()
+    const recordId = record.id as string
+
+    const blogContent = blog.sections
+      .filter(s => s.type === "text")
+      .map(s => s.content)
+      .join("\n\n")
+
+    // Insert record_journals
+    const { error: journalError } = await admin
+      .from("record_journals")
+      .insert({
+        record_id: recordId,
+        blog_title: blog.title,
+        blog_content: blogContent,
+        blog_sections: blog.sections,
+        ai_questions: answers, // Store answers as reference (questions were transient)
+        user_answers: answers,
+      })
+
+    if (journalError) {
+      // If journal already exists, update it
+      if (journalError.code === "23505") {
+        await admin
+          .from("record_journals")
+          .update({
+            blog_title: blog.title,
+            blog_content: blogContent,
+            blog_sections: blog.sections,
+            ai_questions: answers,
+            user_answers: answers,
+          })
+          .eq("record_id", recordId)
+      } else {
+        return NextResponse.json({ error: "Failed to save journal" }, { status: 500 })
       }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'AI service not configured' },
-        { status: 503 },
-      )
-    }
+    // Update record phase
+    await admin
+      .from("records")
+      .update({
+        phase_status: 3,
+        phase2_completed_at: new Date().toISOString(),
+      })
+      .eq("id", recordId)
 
-    let body: GenerateReviewRequestBody
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request body' },
-        { status: 400 },
-      )
-    }
+    // Insert phase completion
+    await admin
+      .from("phase_completions")
+      .insert({
+        user_id: userId,
+        record_id: recordId,
+        phase: 2,
+        xp_earned: 15,
+      })
 
-    const { recordId, answers } = body
-    if (!recordId) {
-      return NextResponse.json(
-        { success: false, error: 'recordId is required' },
-        { status: 400 },
-      )
-    }
-
-    // Fetch record
-    const { data: record, error: recordError } = await supabase
-      .from('records')
-      .select('*')
-      .eq('id', recordId)
+    // Update user_stats points
+    const { data: stats } = await admin
+      .from("user_stats")
+      .select("points")
+      .eq("user_id", userId)
       .single()
 
-    if (recordError || !record) {
-      return NextResponse.json(
-        { success: false, error: 'Record not found' },
-        { status: 404 },
-      )
+    if (stats) {
+      const newPoints = (stats.points ?? 0) + 15
+      await admin
+        .from("user_stats")
+        .update({
+          points: newPoints,
+          nyam_level: calculateNyamLevel(newPoints),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
     }
 
-    // Fetch AI analysis if available
-    const { data: analysisRows } = await supabase
-      .from('record_ai_analyses' as never)
-      .select('*')
-      .eq('record_id' as never, recordId as never)
-      .order('created_at' as never, { ascending: false } as never)
-      .limit(1)
-
-    const analysis = (analysisRows as Record<string, unknown>[] | null)?.[0] ?? null
-
-    // Fetch photo count
-    const { count: photoCount } = await supabase
-      .from('record_photos')
-      .select('id', { count: 'exact', head: true })
-      .eq('record_id', recordId)
-
-    const hasAnswers = answers && Object.keys(answers).length > 0
-
-    // Build prompt based on whether we need questions or blog
-    const prompt = hasAnswers
-      ? buildBlogPrompt(record as Record<string, unknown>, analysis as Record<string, unknown> | null, answers, photoCount ?? 0)
-      : buildQuestionsPrompt(record as Record<string, unknown>, analysis as Record<string, unknown> | null)
-
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { response_mime_type: 'application/json' },
-        }),
-      },
-    )
-
-    if (!geminiRes.ok) {
-      const errorBody = await geminiRes.text().catch(() => '')
-      console.error('[generate-review] Gemini API failed:', geminiRes.status, errorBody.slice(0, 500))
-      return NextResponse.json(
-        { success: false, error: 'AI generation failed' },
-        { status: 502 },
-      )
-    }
-
-    const geminiData: GeminiResponse = await geminiRes.json()
-    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
-
-    if (!text) {
-      console.error('[generate-review] No text in Gemini response')
-      return NextResponse.json(
-        { success: false, error: 'AI returned empty response' },
-        { status: 502 },
-      )
-    }
-
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(text)
-    } catch {
-      console.error('[generate-review] Failed to parse Gemini JSON:', text.slice(0, 500))
-      return NextResponse.json(
-        { success: false, error: 'AI returned invalid response format' },
-        { status: 502 },
-      )
-    }
-
-    if (hasAnswers) {
-      // Validate blog response
-      const blog = parsed as BlogResult
-      if (!blog.title || !Array.isArray(blog.sections) || !blog.summary) {
-        console.error('[generate-review] Invalid blog structure:', JSON.stringify(parsed).slice(0, 500))
-        return NextResponse.json(
-          { success: false, error: 'AI returned incomplete blog' },
-          { status: 502 },
-        )
-      }
-      return NextResponse.json({ success: true, blog })
-    } else {
-      // Validate questions response
-      const result = parsed as { questions: AiQuestion[] }
-      if (!Array.isArray(result.questions) || result.questions.length === 0) {
-        console.error('[generate-review] Invalid questions structure:', JSON.stringify(parsed).slice(0, 500))
-        return NextResponse.json(
-          { success: false, error: 'AI returned invalid questions' },
-          { status: 502 },
-        )
-      }
-      return NextResponse.json({ success: true, questions: result.questions })
-    }
-  } catch (error) {
-    console.error('[generate-review] Unexpected error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: true, blog })
+  } catch {
+    return NextResponse.json({ error: "Failed to generate blog" }, { status: 500 })
   }
 }

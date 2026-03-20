@@ -1,61 +1,69 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { Users } from 'lucide-react'
-import type { GroupRole } from '@/domain/entities/group'
+import Image from "next/image"
+import { Crown, Shield, User } from "lucide-react"
+
+interface GroupMember {
+  userId: string
+  nickname: string
+  profileImageUrl: string | null
+  role: "owner" | "moderator" | "member"
+}
 
 interface GroupMemberListProps {
-  members: Array<{ userId: string; role: GroupRole; joinedAt: string }>
-  currentUserId?: string
+  members: GroupMember[]
+  onMemberClick?: (userId: string) => void
 }
 
-const ROLE_CONFIG: Record<GroupRole, { label: string; className: string }> = {
-  owner: { label: '방장', className: 'bg-red-50 text-red-600 border-red-200' },
-  admin: { label: '관리자', className: 'bg-blue-50 text-blue-600 border-blue-200' },
-  member: { label: '멤버', className: 'bg-gray-50 text-gray-600 border-gray-200' },
-}
+const roleConfig = {
+  owner: { icon: Crown, label: "Owner", badgeClass: "bg-amber-100 text-amber-600" },
+  moderator: { icon: Shield, label: "Moderator", badgeClass: "bg-blue-100 text-blue-600" },
+  member: { icon: null, label: "Member", badgeClass: "" },
+} as const
 
-export function GroupMemberList({ members, currentUserId }: GroupMemberListProps) {
-  if (members.length === 0) {
-    return (
-      <p className="py-4 text-center text-sm text-[var(--color-neutral-400)]">
-        멤버가 없습니다
-      </p>
-    )
-  }
-
+export function GroupMemberList({ members, onMemberClick }: GroupMemberListProps) {
   return (
     <ul className="flex flex-col gap-2">
       {members.map((member) => {
-        const config = ROLE_CONFIG[member.role]
-        const isCurrentUser = member.userId === currentUserId
+        const config = roleConfig[member.role]
+        const RoleIcon = config.icon
+
         return (
-          <li
-            key={member.userId}
-            className="flex items-center justify-between rounded-lg border border-[var(--color-neutral-200)] bg-white px-4 py-3"
-          >
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--color-neutral-800)]">
-                {member.userId}
-              </span>
-              <span className="mt-0.5 text-xs text-[var(--color-neutral-400)]">
-                {new Date(member.joinedAt).toLocaleDateString('ko-KR')}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {!isCurrentUser && (
-                <Link
-                  href={`/compatibility?with=${member.userId}`}
-                  className="flex h-7 items-center gap-1 rounded-full border border-[#FF6038]/20 bg-[#FF6038]/5 px-2.5 text-xs font-medium text-[#FF6038] transition-colors hover:bg-[#FF6038]/10"
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  <span>궁합</span>
-                </Link>
+          <li key={member.userId}>
+            <button
+              type="button"
+              onClick={() => onMemberClick?.(member.userId)}
+              disabled={!onMemberClick}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-neutral-50 disabled:cursor-default disabled:hover:bg-transparent"
+            >
+              {/* Avatar */}
+              {member.profileImageUrl ? (
+                <Image
+                  src={member.profileImageUrl}
+                  alt={member.nickname}
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
+                  <User className="h-4 w-4 text-neutral-400" />
+                </div>
               )}
-              <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${config.className}`}>
-                {config.label}
+
+              {/* Name */}
+              <span className="flex-1 text-left text-sm font-medium text-neutral-800">
+                {member.nickname}
               </span>
-            </div>
+
+              {/* Role badge */}
+              {RoleIcon && (
+                <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${config.badgeClass}`}>
+                  <RoleIcon className="h-3 w-3" />
+                  {config.label}
+                </span>
+              )}
+            </button>
           </li>
         )
       })}

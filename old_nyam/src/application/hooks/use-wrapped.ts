@@ -1,218 +1,176 @@
-'use client'
+"use client"
 
-import useSWR from 'swr'
-import { createClient } from '@/infrastructure/supabase/client'
+import useSWR from "swr"
+import { createClient } from "@/infrastructure/supabase/client"
 
-export interface WrappedData {
-  year: number
+export interface WrappedStats {
   totalRecords: number
-  totalCategories: number
-  topCategory: { name: string; count: number } | null
-  topMenu: { name: string; count: number } | null
-  topRated: { menuName: string; rating: number } | null
-  monthlyDistribution: number[]
-  recordTypeBreakdown: { restaurant: number; wine: number; cooking: number }
-  topTags: Array<{ tag: string; count: number }>
-  topFlavorTags: Array<{ tag: string; count: number }>
-  averageRating: number
-  uniqueRestaurants: number
-  busiestMonth: { month: number; count: number } | null
-  longestGap: number
-  firstRecord: { menuName: string; date: string } | null
-  latestRecord: { menuName: string; date: string } | null
+  mostVisitedRestaurant: { name: string; visitCount: number } | null
+  topGenre: { genre: string; count: number } | null
+  tasteDnaAverages: {
+    spicy: number
+    sweet: number
+    salty: number
+    sour: number
+    umami: number
+    rich: number
+  } | null
+  recordStreak: number
 }
 
-interface RawRecord {
-  id: string
-  menu_name: string | null
-  category: string | null
-  record_type: string | null
-  rating_overall: number | null
-  created_at: string
-  tags: string[] | null
-  flavor_tags: string[] | null
-  restaurant_id: string | null
-  location_lat: number | null
-  location_lng: number | null
-}
+/**
+ * Fetches yearly summary stats for the "Wrapped" feature.
+ */
+export function useWrapped(userId: string | null, year: number) {
+  const supabase = createClient()
 
-function computeWrapped(records: RawRecord[], year: number): WrappedData {
-  const totalRecords = records.length
-
-  // Categories
-  const categoryCounts = new Map<string, number>()
-  for (const r of records) {
-    if (r.category) {
-      categoryCounts.set(r.category, (categoryCounts.get(r.category) ?? 0) + 1)
-    }
-  }
-  const totalCategories = categoryCounts.size
-  const topCategory = getTopEntry(categoryCounts)
-
-  // Menus
-  const menuCounts = new Map<string, number>()
-  for (const r of records) {
-    if (r.menu_name) {
-      menuCounts.set(r.menu_name, (menuCounts.get(r.menu_name) ?? 0) + 1)
-    }
-  }
-  const topMenuEntry = getTopEntry(menuCounts)
-  const topMenu = topMenuEntry ? { name: topMenuEntry.name, count: topMenuEntry.count } : null
-
-  // Top rated
-  let topRated: WrappedData['topRated'] = null
-  for (const r of records) {
-    if (r.rating_overall !== null && r.menu_name) {
-      if (!topRated || r.rating_overall > topRated.rating) {
-        topRated = { menuName: r.menu_name, rating: r.rating_overall }
-      }
-    }
-  }
-
-  // Monthly distribution
-  const monthlyDistribution = Array.from<number>({ length: 12 }).fill(0)
-  for (const r of records) {
-    const month = new Date(r.created_at).getMonth()
-    monthlyDistribution[month]++
-  }
-
-  // Busiest month
-  let busiestMonth: WrappedData['busiestMonth'] = null
-  for (let i = 0; i < 12; i++) {
-    if (monthlyDistribution[i] > 0 && (!busiestMonth || monthlyDistribution[i] > busiestMonth.count)) {
-      busiestMonth = { month: i + 1, count: monthlyDistribution[i] }
-    }
-  }
-
-  // Record type breakdown
-  const recordTypeBreakdown = { restaurant: 0, wine: 0, cooking: 0 }
-  for (const r of records) {
-    const rt = r.record_type ?? 'restaurant'
-    if (rt === 'restaurant') recordTypeBreakdown.restaurant++
-    else if (rt === 'wine') recordTypeBreakdown.wine++
-    else if (rt === 'cooking') recordTypeBreakdown.cooking++
-  }
-
-  // Tags
-  const tagCounts = new Map<string, number>()
-  for (const r of records) {
-    if (r.tags) {
-      for (const t of r.tags) {
-        tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1)
-      }
-    }
-  }
-  const topTags = getTopN(tagCounts, 5)
-
-  // Flavor tags
-  const flavorTagCounts = new Map<string, number>()
-  for (const r of records) {
-    if (r.flavor_tags) {
-      for (const t of r.flavor_tags) {
-        flavorTagCounts.set(t, (flavorTagCounts.get(t) ?? 0) + 1)
-      }
-    }
-  }
-  const topFlavorTags = getTopN(flavorTagCounts, 5)
-
-  // Average rating
-  const ratedRecords = records.filter((r) => r.rating_overall !== null)
-  const averageRating =
-    ratedRecords.length > 0
-      ? ratedRecords.reduce((sum, r) => sum + (r.rating_overall ?? 0), 0) / ratedRecords.length
-      : 0
-
-  // Unique restaurants
-  const restaurantIds = new Set<string>()
-  for (const r of records) {
-    if (r.restaurant_id) restaurantIds.add(r.restaurant_id)
-  }
-  const uniqueRestaurants = restaurantIds.size
-
-  // Longest gap
-  let longestGap = 0
-  if (records.length >= 2) {
-    for (let i = 1; i < records.length; i++) {
-      const prev = new Date(records[i - 1].created_at).getTime()
-      const curr = new Date(records[i].created_at).getTime()
-      const gapDays = Math.floor((curr - prev) / (1000 * 60 * 60 * 24))
-      if (gapDays > longestGap) longestGap = gapDays
-    }
-  }
-
-  // First and latest record
-  const firstRecord =
-    records.length > 0
-      ? { menuName: records[0].menu_name ?? '', date: records[0].created_at }
-      : null
-  const latestRecord =
-    records.length > 0
-      ? {
-          menuName: records[records.length - 1].menu_name ?? '',
-          date: records[records.length - 1].created_at,
-        }
-      : null
-
-  return {
-    year,
-    totalRecords,
-    totalCategories,
-    topCategory,
-    topMenu,
-    topRated,
-    monthlyDistribution,
-    recordTypeBreakdown,
-    topTags,
-    topFlavorTags,
-    averageRating,
-    uniqueRestaurants,
-    busiestMonth,
-    longestGap,
-    firstRecord,
-    latestRecord,
-  }
-}
-
-function getTopEntry(map: Map<string, number>): { name: string; count: number } | null {
-  let top: { name: string; count: number } | null = null
-  for (const [name, count] of map) {
-    if (!top || count > top.count) top = { name, count }
-  }
-  return top
-}
-
-function getTopN(map: Map<string, number>, n: number): Array<{ tag: string; count: number }> {
-  return [...map.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([tag, count]) => ({ tag, count }))
-}
-
-export function useWrapped(userId: string | undefined, year?: number) {
-  const targetYear = year ?? new Date().getFullYear()
-
-  const { data, isLoading } = useSWR(
-    userId ? ['wrapped', userId, targetYear] : null,
+  const { data, error, isLoading } = useSWR<WrappedStats | null>(
+    userId ? `wrapped/${userId}/${year}` : null,
     async () => {
-      const supabase = createClient()
-      const startDate = `${targetYear}-01-01T00:00:00Z`
-      const endDate = `${targetYear + 1}-01-01T00:00:00Z`
+      if (!userId) return null
 
-      const { data, error } = await supabase
-        .from('records')
-        .select(
-          'id, menu_name, category, record_type, rating_overall, created_at, tags, flavor_tags, restaurant_id, location_lat, location_lng',
-        )
-        .eq('user_id', userId!)
-        .gte('created_at', startDate)
-        .lt('created_at', endDate)
-        .order('created_at', { ascending: true })
+      const startDate = `${year}-01-01T00:00:00Z`
+      const endDate = `${year + 1}-01-01T00:00:00Z`
 
-      if (error) throw error
+      // Total records count
+      const { count: totalRecords } = await supabase
+        .from("records")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("created_at", startDate)
+        .lt("created_at", endDate)
 
-      return computeWrapped((data as RawRecord[]) ?? [], targetYear)
+      // Records with restaurant for most-visited calculation
+      const { data: recordsWithRestaurant } = await supabase
+        .from("records")
+        .select("restaurant_id, restaurants(name)")
+        .eq("user_id", userId)
+        .not("restaurant_id", "is", null)
+        .gte("created_at", startDate)
+        .lt("created_at", endDate)
+
+      // Calculate most visited restaurant
+      const restaurantCounts = new Map<string, { name: string; count: number }>()
+      for (const record of recordsWithRestaurant ?? []) {
+        const rid = record.restaurant_id as string
+        const name = (record.restaurants as unknown as Record<string, unknown>)?.name as string
+        if (!rid || !name) continue
+        const existing = restaurantCounts.get(rid)
+        restaurantCounts.set(rid, {
+          name,
+          count: (existing?.count ?? 0) + 1,
+        })
+      }
+
+      let mostVisitedRestaurant: WrappedStats["mostVisitedRestaurant"] = null
+      let maxVisits = 0
+      for (const entry of restaurantCounts.values()) {
+        if (entry.count > maxVisits) {
+          maxVisits = entry.count
+          mostVisitedRestaurant = { name: entry.name, visitCount: entry.count }
+        }
+      }
+
+      // Top genre
+      const { data: genreRecords } = await supabase
+        .from("records")
+        .select("genre")
+        .eq("user_id", userId)
+        .not("genre", "is", null)
+        .gte("created_at", startDate)
+        .lt("created_at", endDate)
+
+      const genreCounts = new Map<string, number>()
+      for (const record of genreRecords ?? []) {
+        const genre = record.genre as string
+        if (!genre) continue
+        genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1)
+      }
+
+      let topGenre: WrappedStats["topGenre"] = null
+      let maxGenreCount = 0
+      for (const [genre, count] of genreCounts.entries()) {
+        if (count > maxGenreCount) {
+          maxGenreCount = count
+          topGenre = { genre, count }
+        }
+      }
+
+      // Taste DNA averages
+      const { data: tasteDna } = await supabase
+        .from("taste_dna_restaurant")
+        .select("flavor_spicy, flavor_sweet, flavor_salty, flavor_sour, flavor_umami, flavor_rich")
+        .eq("user_id", userId)
+        .single()
+
+      const tasteDnaAverages = tasteDna
+        ? {
+            spicy: tasteDna.flavor_spicy,
+            sweet: tasteDna.flavor_sweet,
+            salty: tasteDna.flavor_salty,
+            sour: tasteDna.flavor_sour,
+            umami: tasteDna.flavor_umami,
+            rich: tasteDna.flavor_rich,
+          }
+        : null
+
+      // Record streak: consecutive days with records
+      const { data: streakRecords } = await supabase
+        .from("records")
+        .select("created_at")
+        .eq("user_id", userId)
+        .gte("created_at", startDate)
+        .lt("created_at", endDate)
+        .order("created_at", { ascending: false })
+
+      const recordStreak = calculateStreak(
+        (streakRecords ?? []).map((r) => r.created_at as string),
+      )
+
+      return {
+        totalRecords: totalRecords ?? 0,
+        mostVisitedRestaurant,
+        topGenre,
+        tasteDnaAverages,
+        recordStreak,
+      }
     },
   )
 
-  return { data: data ?? null, isLoading }
+  return {
+    stats: data ?? null,
+    isLoading,
+    error: error ? String(error) : null,
+  }
+}
+
+/**
+ * Calculates the longest streak of consecutive days with records.
+ */
+function calculateStreak(dates: string[]): number {
+  if (dates.length === 0) return 0
+
+  const uniqueDays = new Set(
+    dates.map((d) => new Date(d).toISOString().slice(0, 10)),
+  )
+  const sortedDays = Array.from(uniqueDays).sort()
+
+  let maxStreak = 1
+  let currentStreak = 1
+
+  for (let i = 1; i < sortedDays.length; i++) {
+    const prev = new Date(sortedDays[i - 1])
+    const curr = new Date(sortedDays[i])
+    const diffMs = curr.getTime() - prev.getTime()
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+
+    if (diffDays === 1) {
+      currentStreak++
+      maxStreak = Math.max(maxStreak, currentStreak)
+    } else {
+      currentStreak = 1
+    }
+  }
+
+  return maxStreak
 }

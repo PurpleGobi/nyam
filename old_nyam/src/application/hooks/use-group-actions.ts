@@ -1,66 +1,51 @@
-'use client'
+"use client"
 
-import { useCallback, useState } from 'react'
-import { getGroupRepository } from '@/di/repositories'
-import type { GroupType, GroupEntryRequirements } from '@/domain/entities/group'
-
-interface CreateGroupParams {
-  name: string
-  description: string
-  type: GroupType
-  ownerId: string
-  entryRequirements: GroupEntryRequirements
-}
+import { useCallback, useMemo, useState } from "react"
+import { createClient } from "@/infrastructure/supabase/client"
+import { SupabaseGroupRepository } from "@/infrastructure/repositories/supabase-group-repository"
 
 export function useGroupActions() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const repo = getGroupRepository()
+  const supabase = createClient()
+  const repo = useMemo(() => new SupabaseGroupRepository(), [])
 
-  const createGroup = useCallback(async (params: CreateGroupParams) => {
+  const createGroup = useCallback(async (input: {
+    name: string
+    description?: string
+    accessType?: "private" | "public"
+    sharingType?: "interactive" | "view_only"
+  }) => {
     setIsLoading(true)
-    setError(null)
     try {
-      const group = await repo.create(params)
-      return group
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create group'
-      setError(message)
-      return null
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+      return await repo.create(user.id, input)
     } finally {
       setIsLoading(false)
     }
-  }, [repo])
+  }, [supabase, repo])
 
-  const joinGroup = useCallback(async (groupId: string, userId: string) => {
+  const joinGroup = useCallback(async (groupId: string) => {
     setIsLoading(true)
-    setError(null)
     try {
-      await repo.join(groupId, userId)
-      return true
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to join group'
-      setError(message)
-      return false
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+      return await repo.join(groupId, user.id)
     } finally {
       setIsLoading(false)
     }
-  }, [repo])
+  }, [supabase, repo])
 
-  const leaveGroup = useCallback(async (groupId: string, userId: string) => {
+  const leaveGroup = useCallback(async (groupId: string) => {
     setIsLoading(true)
-    setError(null)
     try {
-      await repo.leave(groupId, userId)
-      return true
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to leave group'
-      setError(message)
-      return false
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+      await repo.leave(groupId, user.id)
     } finally {
       setIsLoading(false)
     }
-  }, [repo])
+  }, [supabase, repo])
 
-  return { createGroup, joinGroup, leaveGroup, isLoading, error }
+  return { createGroup, joinGroup, leaveGroup, isLoading }
 }

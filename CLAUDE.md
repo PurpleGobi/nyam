@@ -1,180 +1,215 @@
-# old_nyam 폴더는 참조하지 않는게 원칙이다. 단, 사용자가 명시적으로 참조하라고 할 때만 참조.
-
-## SSOT 문서 (Single Source of Truth)
-
-프로젝트의 모든 기획·기술·디자인 의사결정은 아래 3개 문서에서 관리한다.
-코드 변경 시 해당 문서와 불일치가 생기면 문서도 함께 업데이트한다.
-
-| 문서 | 역할 | 경로 |
-|------|------|------|
-| **PRD** | 제품 정체성, 차별점, 사업 모델, 마일스톤 | `docs/PRD.md` |
-| **TECH_SPEC** | 아키텍처, DB 스키마, API, 알고리즘 | `docs/TECH_SPEC.md` |
-| **DESIGN_SPEC** | 컬러·타이포, 레이아웃, 와이어프레임, 컴포넌트 상세 | `docs/DESIGN_SPEC.md` |
+# Nyam v2 — 프로젝트 대원칙
 
 ---
 
-## 수정 원칙 (절대 규칙)
+## ⚠️ 최우선 규칙: 폴더 구조 & 문서-목업 동기화
 
-- **근본 원인 해결**: 우회(workaround)가 아닌 근본적인 원인을 찾아 수정한다
-- **보안 절대 불가침**: SECURITY DEFINER, RLS 우회, 권한 상승 등 보안 메커니즘을 무력화하는 방식으로 문제를 해결하지 않는다
-- **부작용 최소화**: 수정이 다른 기능이나 보안 정책에 영향을 주지 않는지 반드시 검증한다
+prototype 의 목업 html 을 수정할때마다 해당 내용들이 개발 문서에 잘 반영됭어 있는지 확인하고 업데이트 한다. 
+
+### 프로젝트 폴더 구조
+
+```
+nyam/
+├── CLAUDE.md                    # 이 파일 (최상위 원칙)
+├── development_docs/            # 🔑 구현용 설계 문서 (SSOT)
+│   ├── 00_PRD.md               #   제품 정의
+│   ├── 00_IA.md                #   화면 맵, 스프린트 순서
+│   ├── systems/                #   횡단 시스템 규칙 (DB, 인증, 평가, XP, 추천, 디자인)
+│   ├── pages/                  #   페이지별 구현 스펙
+│   ├── prototype/              #   인터랙티브 목업 HTML
+│   └── POST_LAUNCH.md          #   개발 완료 후 문서 압축 가이드
+├── docs/                        # 기타 문서
+│   └── research/               #   리서치 자료 (개발에 직접 안 씀)
+├── old_nyam/                    # v1 코드 아카이브 (참조 금지)
+└── src/                         # (구현 시작 시 생성)
+```
+
+> **old_nyam/ 폴더는 참조하지 않는다.** 사용자가 명시적으로 요청할 때만 참조.
+
+### 문서-목업 동기화 원칙 (절대 규칙)
+
+코드 구현 시작 전까지는 아래 사이클을 반복한다:
+
+```
+목업 수정 → 문서 반영 → 일관성 확인 (어느 한쪽만 수정하는 것은 금지)
+```
+
+| 변경 대상 | 반영해야 할 곳 |
+|-----------|---------------|
+| `prototype/*.html` | → `pages/*.md` 또는 `systems/*.md` |
+| `pages/*.md` | → `prototype/*.html` |
+| `systems/*.md` | → 관련 `pages/*.md` + `prototype/*.html` 모두 |
+
+### 문서 우선순위
+```
+CLAUDE.md > systems/*.md > pages/*.md > 00_PRD.md
+```
+
+### 문서와 코드가 충돌할 때
+- 구현 중: **코드를 문서에 맞춘다**
+- 문서가 명백히 틀린 경우: 사용자에게 알리고 확인 후 수정
+- **문서에 없는 기능은 자의적으로 추가하지 않는다**
 
 ---
 
-## Commands
+## 커맨드
 
 ```bash
 pnpm dev          # localhost:7911
-pnpm build        # 프로덕션 빌드
-pnpm lint         # ESLint
+pnpm build        # 프로덕션 빌드 (스프린트 끝나면 반드시 확인)
+pnpm lint         # ESLint (경고 0개 유지)
 ```
 
+---
+
+## 수정 대원칙
+
+- **근본 원인 해결**: 우회(workaround)가 아닌 근본적인 원인을 찾아 수정
+- **보안 절대 불가침**: RLS 우회, 권한 상승 등 보안 무력화 금지
+- **부작용 최소화**: 수정이 다른 기능에 영향 주지 않는지 검증
+- **affects 3개 이상 변경** → 사용자에게 먼저 확인 → 승인 후 진행
+- **DB 스키마 변경** → 반드시 마이그레이션 파일로
+
+---
 
 ## Clean Architecture (절대 규칙)
 
-### 계층 구조
-
 ```
-┌──────────────────────────────────────────────────────┐
-│                  app/ (Entry Point)                   │
-│            페이지 라우팅만, 로직 없음                    │
-├──────────────────────────────────────────────────────┤
-│               presentation/ (UI Layer)                │
-│         components, containers, UI hooks              │
-│            ↓ 의존 (application 호출)                   │
-├──────────────────────────────────────────────────────┤
-│              application/ (Use Case Layer)             │
-│           hooks, useCases, DTOs                        │
-│            ↓ 의존 (domain 인터페이스 사용)               │
-├──────────────────────────────────────────────────────┤
-│                 domain/ (Core Layer)                   │
-│      entities, repository interfaces, services        │
-│            ✗ 외부 의존성 없음 (순수)                     │
-├──────────────────────────────────────────────────────┤
-│             infrastructure/ (Infra Layer)              │
-│        repository 구현, API 클라이언트, 외부 서비스       │
-│            ↑ domain 인터페이스 구현                      │
-└──────────────────────────────────────────────────────┘
+app → presentation → application → domain ← infrastructure
 ```
-
-**의존성 방향**: `app → presentation → application → domain ← infrastructure`
-
-### 핵심 규칙 (절대 위반 금지)
 
 | 규칙 | 설명 |
 |------|------|
-| **R1** | domain은 어떤 레이어에도 의존 금지. React, API 클라이언트 import 불가 |
+| **R1** | domain은 어떤 레이어에도 의존 금지. React, Supabase import 불가 |
 | **R2** | infrastructure는 domain 인터페이스를 구현 |
 | **R3** | application은 domain 인터페이스에만 의존. 구현체 직접 사용 금지 |
-| **R4** | presentation은 application hooks만 사용. API 직접 호출 금지 |
-| **R5** | app/은 라우팅만. page.tsx는 Container 렌더링만 (loading.tsx, error.tsx는 Next.js 컨벤션이므로 예외) |
+| **R4** | presentation은 application hooks만 사용. Supabase 직접 호출 금지 |
+| **R5** | app/은 라우팅만. page.tsx는 Container 렌더링만 |
 
-### 폴더 구조
+### src/ 폴더 구조
 
 ```
-app/                              # Next.js App Router (라우팅만)
-├── page.tsx                      # Container 렌더링만
-├── layout.tsx                    # Provider + 구조적 wrapper
-└── api/                          # API Routes
+src/
+├── app/                         # Next.js App Router (라우팅만)
+│   ├── (main)/                  # 홈, discover, record, restaurants/[id], wines/[id], bubbles, profile
+│   ├── auth/                    # 인증
+│   ├── onboarding/              # 온보딩
+│   └── api/                     # API Routes
+├── presentation/                # UI Layer — components(순수 UI), containers(hook+조합), hooks(UI상태)
+├── application/                 # Use Case Layer — hooks(비즈니스), useCases
+├── domain/                      # Core Layer (순수) — entities, repositories(인터페이스), services
+├── infrastructure/              # Infra Layer — repositories(Supabase 구현체), api, supabase
+└── shared/                      # utils, constants
+```
 
-presentation/                     # UI Layer
-├── components/
-│   ├── ui/                       # shadcn 기본 UI
-│   ├── layout/                   # 레이아웃 컴포넌트
-│   └── [feature]/                # 기능별 순수 UI 컴포넌트
-├── containers/                   # Container (hook 호출 + 조합)
-└── hooks/                        # UI 상태 hook (useModal, useTabs)
+### Component vs Container
 
-application/                      # Use Case Layer
-├── hooks/                        # 데이터/비즈니스 로직 hook
-└── useCases/                     # Use Case 로직
+| 구분 | 위치 | 규칙 |
+|------|------|------|
+| **Component** | `presentation/components/` | 순수 UI, props만. application hook 금지 |
+| **Container** | `presentation/containers/` | hook 호출 + Component 조합. 시각적 스타일링 금지 |
 
-domain/                           # Core Layer (순수, 의존성 없음)
-├── entities/                     # 엔티티 타입
-├── repositories/                 # 인터페이스만
-└── services/                     # 도메인 서비스
+### 기능별 개발 순서
 
-infrastructure/                   # Infra Layer
-├── repositories/                 # Repository 구현체
-└── api/                          # API 클라이언트
-
-shared/                           # 공유 유틸리티
-├── utils/
-└── constants/
+```
+domain/entities → domain/repositories → infrastructure → application/hooks → components → containers → app/page.tsx
 ```
 
 ---
 
-## Component vs Container 패턴
+## 바이브코딩 원칙
 
-| 구분 | 역할 | 위치 | 규칙 |
-|------|------|------|------|
-| **Component** | 순수 UI, props만 받음 | `presentation/components/` | 비즈니스 로직 금지, application hook 금지 |
-| **Container** | hook 호출, 상태 관리, Component 조합 | `presentation/containers/` | 시각적 스타일링 금지, 구조적 레이아웃만 |
+### 스프린트 워크플로
+```
+1. 문서 읽기 (CLAUDE.md → systems/ → pages/ → prototype/)
+2. domain 타입 정의
+3. 화면 만들기 (UI 먼저, 목 데이터로)
+4. 인프라 연결 (Supabase)
+5. pnpm build 확인
+```
 
-**Component 내 허용되는 React hook**: `useState`, `useEffect`, `useRef` 등 순수 UI 인터랙션 목적만 허용 (토글, hover, 애니메이션 등). application hook은 금지.
+### 속도 원칙
+- 동작하는 코드 먼저 → 리팩토링은 나중에
+- 3회 반복 전까지 추출 금지 (YAGNI)
+- 한 스프린트 = 하나의 온전한 기능
 
-**Container에서 허용되는 것**:
-- `flex`, `gap-*`, `grid`, `justify-between` 등 구조적 레이아웃 클래스
-- 간단한 인라인 빈 상태, 로딩 Skeleton (1~2회 사용이면 별도 컴포넌트 불필요)
+### "나중에" 허용되지 않는 것
+- 클린 아키텍처 레이어 위반 (R1~R5)
+- DB 스키마 구조 / RLS 정책
+- 타입 정의 (`any` 금지)
 
-### 코드 예시
+---
 
-```typescript
-// ❌ 잘못된 코드 - Component에서 API 직접 호출
-// presentation/components/cron/CronList.tsx
-import { gatewayClient } from '@/infrastructure/api/gateway-client'
-export function CronList() {
-  const [data, setData] = useState(null)
-  useEffect(() => { gatewayClient.getCrons().then(setData) }, [])
-}
+## 오류 대처
 
-// ✅ 올바른 코드
-// presentation/containers/CronListContainer.tsx
-import { useCron } from '@/application/hooks/use-cron'
-import { CronList } from '@/presentation/components/cron/CronList'
+```
+❌ 증상 숨기기 (as any, @ts-ignore, 빈 catch, ! 단언)
+✅ 원인 찾기 (타입 추적, 레이어 점검, 문서 affects 확인)
+```
 
-export function CronListContainer() {
-  const { data, isLoading, error } = useCron()
-  if (isLoading) return <LoadingState />
-  return <CronList jobs={data} />
-}
+- **타입 에러** → `domain/entities` 수정 또는 `infrastructure`에서 변환
+- **Supabase 에러** → RLS 정책 수정 (SECURITY DEFINER 금지) 또는 마이그레이션
+- **UI 깨짐** → props/null 처리, 모바일 우선, 디자인 토큰 확인
+- **빌드 에러** → 즉시 수정 (다음 작업 넘어가지 않음)
 
-// presentation/components/cron/CronList.tsx
-import type { CronJob } from '@/domain/entities/cron'
-interface CronListProps { jobs: CronJob[] }
-export function CronList({ jobs }: CronListProps) {
-  return jobs.map(job => <CronCard key={job.id} job={job} />)
-}
+---
+
+## Supabase 원칙
+
+- 스키마 변경은 `supabase/migrations/` 파일로만 (직접 SQL 금지)
+- 모든 테이블 RLS 활성화, SECURITY DEFINER 금지
+- `SUPABASE_SERVICE_ROLE_KEY`, 외부 API 키 → 서버 전용 (클라이언트 노출 금지)
+
+---
+
+## UI/UX 원칙
+
+- **모바일 퍼스트**: 360px 기준, 터치 타겟 44x44px, 하단 내비 h-20
+- **디자인 토큰 필수**: `bg-background`, `text-foreground` (하드코딩 금지)
+- **컬러 분리**: 식당 `#FF6038` / 와인 `#6B4C8A`
+- **빈 상태**: 모든 목록에 빈 상태 디자인 + CTA 필수
+
+---
+
+## 코딩 규칙
+
+- TypeScript strict, `any`/`as any`/`@ts-ignore` 금지
+- ESLint 경고 0개, `console.log` 금지
+- 절대 경로 `@/` 사용 (상대 경로는 같은 폴더 내에서만)
+
+```
+파일: kebab-case    컴포넌트: PascalCase    hook: use- prefix
+타입: PascalCase    상수: UPPER_SNAKE_CASE
 ```
 
 ---
 
-## 과도한 추상화 방지 (YAGNI)
+## 금지 사항
 
-- 동일 패턴 **3회 이상** 반복 → 컴포넌트 추출
-- 1~2회 사용 인라인 코드 → 그대로 유지
-- 프레임워크 컨벤션 파일을 감싸기만 하는 Container → 만들지 않음
-
----
-
-## 개발 순서
-
-```
-1. domain/entities/*.ts         → 타입 정의
-2. domain/repositories/*.ts     → 인터페이스 정의
-3. application/hooks/*.ts       → hook 구현 (또는 stub)
-4. presentation/components/*    → 순수 UI 구현
-5. presentation/containers/*    → Container 조합
-6. app/*/page.tsx               → Container 렌더링
-7. infrastructure/*             → API 연동
-```
+| 금지 | 이유 |
+|------|------|
+| `as any`, `@ts-ignore`, `!` 남발 | 타입 안전성 파괴 |
+| SECURITY DEFINER | RLS 우회 |
+| Component에서 Supabase 직접 호출 | R4 위반 |
+| `bg-white` 하드코딩 | 다크모드 깨짐 |
+| 문서에 없는 기능 추가 | 스코프 크립 |
+| 목업만 수정하고 문서 미반영 (또는 반대) | 문서-목업 불일치 |
+| 마이그레이션 없이 스키마 변경 | 환경 불일치 |
 
 ---
 
-## 품질 기준
+## 스프린트 순서 (P1+P2 통합, 9 스프린트)
 
-- TypeScript strict, `any` 사용 금지
-- ESLint 경고 0개
-- API 키/토큰 UI에서 마스킹 처리
-- 파일 저장 전 확인 모달 필수
+> S1에서 P2 테이블 포함 전체 스키마 생성. 온보딩은 마지막.
+
+| Sprint | 문서 | 산출물 |
+|--------|------|--------|
+| **S1** | DATA_MODEL + AUTH + DESIGN_SYSTEM | P1+P2 전체 DB, RLS, 인증, 디자인 토큰 |
+| **S2** | RATING_ENGINE + RECORD_FLOW | 사분면 UI, 아로마 팔레트, 기록 저장 |
+| **S3** | SEARCH_REGISTER | 검색/등록 + 평가 연결 |
+| **S4** | RESTAURANT_DETAIL + WINE_DETAIL | 상세 페이지 L1~L8 |
+| **S5** | HOME + RECOMMENDATION | 홈 타임라인, 추천 7종, Discover |
+| **S6** | XP_SYSTEM + PROFILE + SETTINGS | XP/레벨/뱃지, 프로필, 설정 |
+| **S7** | BUBBLE | 버블 전체 (생성/공유/피드/댓글/리액션/통계/알림) |
+| **S8** | BUBBLE 통합 + FOLLOW | 상세 L9, 홈 버블 피드, 공유 연결, 팔로우 |
+| **S9** | ONBOARDING + 마무리 | 온보딩 풀 플로우, 넛지, 전체 검증 |

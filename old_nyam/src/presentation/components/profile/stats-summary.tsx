@@ -1,66 +1,27 @@
-'use client'
-
-import { cn } from '@/shared/utils/cn'
+import type { UserStats } from "@/domain/entities/user"
 
 interface StatsSummaryProps {
-  stats: {
-    totalRecords?: number
-    recordsThisMonth?: number
-    currentStreakDays?: number
-    avgCompleteness?: number
-  }
-  className?: string
+  stats: UserStats | null
 }
 
-interface StatItem {
-  key: string
-  label: string
-  format: (v: number | undefined) => string
-}
+export function StatsSummary({ stats }: StatsSummaryProps) {
+  const items = [
+    { label: "총 기록", value: stats?.totalRecords ?? 0 },
+    { label: "연속 기록", value: `${stats?.currentStreakDays ?? 0}일` },
+    { label: "최장 연속", value: `${stats?.longestStreakDays ?? 0}일` },
+  ]
 
-const STAT_ITEMS: StatItem[] = [
-  {
-    key: 'totalRecords',
-    label: '총 기록',
-    format: (v) => (typeof v === 'number' ? String(v) : '--'),
-  },
-  {
-    key: 'recordsThisMonth',
-    label: '이번 달',
-    format: (v) => (typeof v === 'number' ? String(v) : '--'),
-  },
-  {
-    key: 'currentStreakDays',
-    label: '연속 기록',
-    format: (v) => (typeof v === 'number' ? `${v}일` : '--'),
-  },
-  {
-    key: 'avgCompleteness',
-    label: '완성도',
-    format: (v) =>
-      typeof v === 'number' ? `${Math.round(v * 100)}%` : '--',
-  },
-]
-
-export function StatsSummary({ stats, className }: StatsSummaryProps) {
   return (
-    <div className={cn('grid grid-cols-4 gap-2', className)}>
-      {STAT_ITEMS.map((item) => {
-        const value = stats[item.key as keyof typeof stats]
-        return (
-          <div
-            key={item.key}
-            className="flex flex-col items-center rounded-lg bg-neutral-50 p-3"
-          >
-            <span className="text-xl font-bold text-[#334E68]">
-              {item.format(value)}
-            </span>
-            <span className="mt-0.5 text-xs text-neutral-500">
-              {item.label}
-            </span>
-          </div>
-        )
-      })}
+    <div className="flex gap-2">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="flex-1 rounded-xl bg-neutral-50 p-3 text-center"
+        >
+          <p className="text-lg font-bold text-neutral-800">{item.value}</p>
+          <p className="text-[10px] text-neutral-400">{item.label}</p>
+        </div>
+      ))}
     </div>
   )
 }

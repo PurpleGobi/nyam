@@ -1,72 +1,44 @@
-export interface FoodCategory {
-  value: string
-  label: string
-  emoji: string
-}
-
-export const FOOD_CATEGORIES: FoodCategory[] = [
-  { value: "korean", label: "한식", emoji: "🍚" },
-  { value: "japanese", label: "일식", emoji: "🍣" },
-  { value: "chinese", label: "중식", emoji: "🥟" },
-  { value: "western", label: "양식", emoji: "🍝" },
-  { value: "cafe", label: "카페", emoji: "☕" },
-  { value: "dessert", label: "디저트", emoji: "🍰" },
-  { value: "wine", label: "와인", emoji: "🍷" },
-  { value: "cooking", label: "요리", emoji: "🍳" },
-  { value: "seafood", label: "해산물", emoji: "🦐" },
-  { value: "meat", label: "고기", emoji: "🥩" },
-  { value: "vegan", label: "비건", emoji: "🥗" },
-  { value: "street", label: "분식", emoji: "🍢" },
+export const FOOD_CATEGORIES = [
+  { value: "korean", label: "한식" },
+  { value: "chinese", label: "중식" },
+  { value: "japanese", label: "일식" },
+  { value: "western", label: "양식" },
+  { value: "chicken", label: "치킨" },
+  { value: "pizza", label: "피자" },
+  { value: "burger", label: "버거" },
+  { value: "snack", label: "분식" },
+  { value: "jokbal", label: "족발/보쌈" },
+  { value: "stew", label: "찌개/탕" },
+  { value: "katsu", label: "돈까스" },
+  { value: "bbq", label: "고기/구이" },
+  { value: "seafood", label: "해산물" },
+  { value: "asian", label: "아시안" },
+  { value: "cafe", label: "카페/디저트" },
+  { value: "salad", label: "샐러드" },
+  { value: "lunchbox", label: "도시락" },
 ] as const
 
-export const SITUATIONS = [
-  "혼밥",
-  "데이트",
-  "비즈니스",
-  "가족",
-  "친구모임",
-  "술자리",
-  "브런치",
-  "간단점심",
+export type FoodCategory = (typeof FOOD_CATEGORIES)[number]["value"]
+
+export const COOKING_GENRES = [
+  { value: "korean", label: "한식" },
+  { value: "western", label: "양식" },
+  { value: "chinese", label: "중식" },
+  { value: "japanese", label: "일식" },
+  { value: "baking", label: "베이킹" },
+  { value: "dessert", label: "디저트" },
+  { value: "beverage", label: "음료" },
 ] as const
 
-export type Situation = (typeof SITUATIONS)[number]
+export type CookingGenre = (typeof COOKING_GENRES)[number]["value"]
 
-export const FLAVOR_TAGS = [
-  "매운",
-  "달콤한",
-  "짭짤한",
-  "시큼한",
-  "감칠맛",
-  "담백한",
-  "기름진",
-  "고소한",
-  "향긋한",
-  "깔끔한",
+export const WINE_TYPES = [
+  { value: "red", label: "레드" },
+  { value: "white", label: "화이트" },
+  { value: "sparkling", label: "스파클링" },
+  { value: "rose", label: "로제" },
+  { value: "orange", label: "오렌지" },
+  { value: "natural", label: "내추럴" },
 ] as const
 
-export type FlavorTag = (typeof FLAVOR_TAGS)[number]
-
-export const TEXTURE_TAGS = [
-  "바삭한",
-  "부드러운",
-  "쫄깃한",
-  "크리미한",
-  "아삭한",
-  "촉촉한",
-] as const
-
-export type TextureTag = (typeof TEXTURE_TAGS)[number]
-
-export const ATMOSPHERE_TAGS = [
-  "조용한",
-  "활기찬",
-  "캐주얼",
-  "포멀",
-  "아늑한",
-  "개방적",
-  "감성적",
-  "모던한",
-] as const
-
-export type AtmosphereTag = (typeof ATMOSPHERE_TAGS)[number]
+export type WineType = (typeof WINE_TYPES)[number]["value"]

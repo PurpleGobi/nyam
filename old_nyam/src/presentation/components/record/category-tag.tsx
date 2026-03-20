@@ -1,34 +1,24 @@
-'use client'
-
-import { cn } from '@/shared/utils/cn'
-import { FOOD_CATEGORIES } from '@/shared/constants/categories'
+import { cn } from "@/shared/utils/cn"
 
 interface CategoryTagProps {
-  category: string
-  size?: 'sm' | 'md'
-  className?: string
+  label: string
+  variant?: "flavor" | "texture" | "atmosphere" | "scene"
 }
 
-export function CategoryTag({
-  category,
-  size = 'sm',
-  className,
-}: CategoryTagProps) {
-  const found = FOOD_CATEGORIES.find((c) => c.value === category)
-  const emoji = found?.emoji ?? '🍽️'
-  const label = found?.label ?? category
+const VARIANT_CLASSES = {
+  flavor: "bg-orange-50 text-orange-700",
+  texture: "bg-green-50 text-green-700",
+  atmosphere: "bg-purple-50 text-purple-700",
+  scene: "bg-blue-50 text-blue-700",
+} as const
 
+export function CategoryTag({ label, variant = "flavor" }: CategoryTagProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 bg-neutral-50 border border-neutral-200 rounded-full',
-        size === 'sm' && 'text-xs px-2 py-0.5',
-        size === 'md' && 'text-sm px-3 py-1',
-        className,
-      )}
-    >
-      <span>{emoji}</span>
-      <span>{label}</span>
+    <span className={cn(
+      "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium",
+      VARIANT_CLASSES[variant],
+    )}>
+      {label}
     </span>
   )
 }

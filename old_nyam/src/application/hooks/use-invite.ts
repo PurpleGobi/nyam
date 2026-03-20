@@ -1,64 +1,83 @@
-'use client'
+"use client"
 
-import { useCallback, useState } from 'react'
-import type { GroupType } from '@/domain/entities/group'
+import { useState, useCallback, useMemo } from "react"
+import useSWR from "swr"
+import { useSWRConfig } from "swr"
+import { createClient } from "@/infrastructure/supabase/client"
+import { SupabaseGroupRepository } from "@/infrastructure/repositories/supabase-group-repository"
+import type { Group } from "@/domain/entities/group"
 
-interface InviteGroupInfo {
-  id: string
-  name: string
-  description: string | null
-  type: GroupType
-  memberCount: number
-}
+export function useInvite(code: string | null) {
+  const supabase = createClient()
+  const groupRepo = useMemo(() => new SupabaseGroupRepository(), [])
+  const { mutate: globalMutate } = useSWRConfig()
+  const [isJoining, setIsJoining] = useState(false)
+  const [joinError, setJoinError] = useState<string | null>(null)
 
-export function useInvite() {
-  const [isLoading, setIsLoading] = useState(false)
+  const { data: group, error, isLoading } = useSWR<Group | null>(
+    code ? `invite/${code}` : null,
+    async () => {
+      if (!code) return null
+      return groupRepo.getByInviteCode(code)
+    },
+  )
 
-  const generateInviteLink = useCallback(async (groupId: string): Promise<string | null> => {
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/groups/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId }),
-      })
+  const joinGroup = useCallback(
+    async () => {
+      if (!group) return
 
-      if (!res.ok) {
-        const data: unknown = await res.json()
-        const message = data && typeof data === 'object' && 'error' in data
-          ? String((data as { error: string }).error)
-          : 'Failed to generate invite link'
-        throw new Error(message)
+      setIsJoining(true)
+      setJoinError(null)
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setJoinError("Not authenticated")
+          return
+        }
+
+        await groupRepo.join(group.id, user.id)
+
+        // Invalidate groups cache
+        await globalMutate("my-groups")
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to join group"
+        // Handle duplicate membership
+        if (message.includes("23505") || message.includes("duplicate")) {
+          setJoinError("Already a member of this group")
+        } else {
+          setJoinError(message)
+        }
+      } finally {
+        setIsJoining(false)
       }
+    },
+    [supabase, groupRepo, group, globalMutate],
+  )
 
-      const { inviteUrl } = (await res.json()) as { inviteUrl: string }
-      return inviteUrl
-    } catch (err) {
-      console.error('Failed to generate invite link:', err)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const generateInviteCode = useCallback(
+    async (groupId: string): Promise<string | null> => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("Not authenticated")
 
-  const getInviteInfo = useCallback(async (token: string): Promise<InviteGroupInfo | null> => {
-    setIsLoading(true)
-    try {
-      const res = await fetch(`/api/groups/invite?token=${encodeURIComponent(token)}`)
-
-      if (!res.ok) {
+        return await groupRepo.generateInviteCode(groupId)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to generate invite code"
+        setJoinError(message)
         return null
       }
+    },
+    [supabase, groupRepo],
+  )
 
-      const { group } = (await res.json()) as { group: InviteGroupInfo }
-      return group
-    } catch (err) {
-      console.error('Failed to get invite info:', err)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  return { generateInviteLink, getInviteInfo, isLoading }
+  return {
+    group: group ?? null,
+    isLoading,
+    isJoining,
+    error: error ? String(error) : null,
+    joinError,
+    joinGroup,
+    generateInviteCode,
+  }
 }

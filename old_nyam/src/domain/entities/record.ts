@@ -1,121 +1,163 @@
-export type RecordType = 'restaurant' | 'wine' | 'cooking'
-
-export type RecordVisibility = 'private' | 'group' | 'public'
-
-export interface RecordLocation {
-  lat: number
-  lng: number
-}
-
-export interface RestaurantRatings {
-  taste: number
-  value: number
-  service: number
-  atmosphere: number
-  cleanliness: number
-  portion: number
-}
-
-export interface WineRatings {
-  aroma: number
-  body: number
-  acidity: number
-  finish: number
-  balance: number
-  value: number
-}
-
-export interface CookingRatings {
-  taste: number
-  difficulty: number
-  timeSpent: number
-  reproducibility: number
-  plating: number
-  value: number
-}
-
-
-export type RecordRatings = RestaurantRatings | WineRatings | CookingRatings
+import type { RecordType, Visibility, TasteProfileSource } from "@/infrastructure/supabase/types"
 
 export interface FoodRecord {
   id: string
   userId: string
   restaurantId: string | null
   recordType: RecordType
-  createdAt: string
-
-  menuName: string
-  category: string
-  subCategory: string | null
-  pricePerPerson: number | null
-
-  ratings: RecordRatings
-  ratingOverall: number
-
+  menuName: string | null
+  genre: string | null
+  subGenre: string | null
+  // Ratings (0-100)
+  ratingOverall: number | null
+  ratingTaste: number | null
+  ratingValue: number | null
+  ratingService: number | null
+  ratingAtmosphere: number | null
+  ratingCleanliness: number | null
+  ratingPortion: number | null
+  // Cooking-only ratings
+  ratingBalance: number | null
+  ratingDifficulty: number | null
+  ratingTimeSpent: number | null
+  ratingReproducibility: number | null
+  ratingPlating: number | null
+  ratingMaterialCost: number | null
+  // Common
   comment: string | null
   tags: string[]
   flavorTags: string[]
   textureTags: string[]
   atmosphereTags: string[]
-
-  visibility: RecordVisibility
-
+  visibility: Visibility
   aiRecognized: boolean
   completenessScore: number
-  locationAtRecord: RecordLocation | null
-
-  phaseStatus: 1 | 2 | 3
+  locationLat: number | null
+  locationLng: number | null
+  pricePerPerson: number | null
+  // Phase
+  phaseStatus: number
   phase1CompletedAt: string | null
   phase2CompletedAt: string | null
   phase3CompletedAt: string | null
+  // Phase 3
   scaledRating: number | null
   comparisonCount: number
+  // Scene
+  scene: string | null
+  // Wine-only
+  pairingFood: string | null
+  purchasePrice: number | null
+  // Visit info
   visitTime: string | null
   companionCount: number | null
   totalCost: number | null
-
-  photos?: RecordPhoto[]
+  createdAt: string
 }
 
-export type PhotoType = 'signboard' | 'menu' | 'companion' | 'receipt' | 'food' | 'other'
+export interface PhotoCropData {
+  x: number  // focal point X (0-100%)
+  y: number  // focal point Y (0-100%)
+  scale: number  // zoom level (1.0-2.0)
+}
 
 export interface RecordPhoto {
   id: string
   recordId: string
   photoUrl: string
-  thumbnailUrl: string
+  thumbnailUrl: string | null
   orderIndex: number
   aiLabels: string[]
-  photoType: PhotoType
-  aiDescription: string | null
+  cropData: PhotoCropData | null
 }
 
-export interface BlogSection {
-  type: 'text' | 'photo'
-  content: string
-  photoIndex?: number
-  caption?: string
-}
-
-export interface AiQuestion {
-  id: string
-  question: string
-  options: string[]
-  type: 'select' | 'freetext'
-}
-
-export interface RecordJournal {
+export interface RecordTasteProfile {
   id: string
   recordId: string
-  companions: string[]
-  occasion: string | null
-  moodTags: string[]
-  memo: string | null
-  blogTitle: string | null
-  blogContent: string | null
-  blogSections: BlogSection[] | null
-  aiQuestions: AiQuestion[] | null
-  userAnswers: Record<string, string> | null
-  published: boolean
-  publishedAt: string | null
+  // Restaurant/Cooking common 6-axis
+  spicy: number | null
+  sweet: number | null
+  salty: number | null
+  sour: number | null
+  umami: number | null
+  rich: number | null
+  // Wine WSET 7-axis
+  wineAcidity: number | null
+  wineBody: number | null
+  wineTannin: number | null
+  wineSweetness: number | null
+  wineBalance: number | null
+  wineFinish: number | null
+  wineAroma: number | null
+  // Wine user WSET input
+  wineAcidityUser: number | null
+  wineBodyUser: number | null
+  wineTanninUser: number | null
+  wineSweetnessUser: number | null
+  wineBalanceUser: number | null
+  wineFinishUser: number | null
+  wineAromaUser: number | null
+  // Meta
+  source: TasteProfileSource
+  confidence: number
+  reviewCount: number
+  summary: string | null
+  createdAt: string
+}
+
+export interface RecordAiAnalysis {
+  id: string
+  recordId: string
+  rawResponse: Record<string, unknown> | null
+  identifiedRestaurant: {
+    name: string
+    matchedPlaceId: string | null
+    confidence: number
+  } | null
+  extractedMenuItems: Array<{ name: string; price: number }> | null
+  orderedItems: Array<{ name: string; estimatedPrice: number }> | null
+  receiptData: {
+    totalCost: number
+    perPersonCost: number
+    itemCount: number
+  } | null
+  companionData: {
+    count: number
+    occasion: string
+  } | null
+  wineInfo: {
+    name: string | null
+    vintage: number | null
+    winery: string | null
+    origin: string | null
+    variety: string | null
+    estimatedPriceKrw: number | null
+    criticScore: number | null
+  } | null
+  pairingFood: string | null
+  wineTastingAi: {
+    acidity: number
+    body: number
+    tannin: number
+    sweetness: number
+    balance: number
+    finish: number
+    aroma: number
+  } | null
+  photoClassifications: Array<{
+    photoIndex: number
+    type: string
+    confidence: number
+    description: string
+  }> | null
+  estimatedVisitTime: string | null
+  confidenceScore: number
+  verifiedAt: string | null
+  verifiedFields: string[]
+  createdAt: string
+}
+
+export interface RecordWithPhotos extends FoodRecord {
+  photos: RecordPhoto[]
+  restaurant: { name: string; address: string | null } | null
 }

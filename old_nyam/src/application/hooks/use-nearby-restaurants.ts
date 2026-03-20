@@ -1,65 +1,20 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useCallback } from 'react'
-import useSWR from 'swr'
-import type { KakaoPlaceResult } from '@/infrastructure/api/kakao-local'
+import useSWR from "swr"
+import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 
-interface NearbyResponse {
-  places: KakaoPlaceResult[]
-}
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-export function useNearbyRestaurants(radius = 500) {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
-
-  useEffect(() => {
-    if (!navigator.geolocation) return
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        })
-      },
-      () => {
-        // Permission denied or error — keep location null
-      },
-    )
-  }, [])
-
-  const { data, isLoading, error, mutate } = useSWR<NearbyResponse>(
-    location
-      ? [`/api/restaurants/nearby`, location.lat, location.lng, radius]
-      : null,
-    async () => {
-      if (!location) return { places: [] }
-
-      const params = new URLSearchParams({
-        lat: String(location.lat),
-        lng: String(location.lng),
-        radius: String(radius),
-      })
-
-      const res = await fetch(`/api/restaurants/nearby?${params}`)
-      if (!res.ok) return { places: [] }
-
-      return res.json()
-    },
-    {
-      refreshInterval: 0,
-      dedupingInterval: 300000,
-    },
+export function useNearbyRestaurants(lat: number | null, lng: number | null) {
+  const { data, error, isLoading } = useSWR<{ places: NearbyPlace[] }>(
+    lat && lng ? `/api/restaurants/nearby?lat=${lat}&lng=${lng}` : null,
+    fetcher,
+    { revalidateOnFocus: false },
   )
 
-  const refresh = useCallback(() => {
-    mutate()
-  }, [mutate])
-
   return {
-    nearbyPlaces: data?.places ?? [],
-    location,
+    places: data?.places ?? [],
     isLoading,
-    error,
-    refresh,
+    error: error ? String(error) : null,
   }
 }

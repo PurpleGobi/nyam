@@ -1,161 +1,82 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Users, AlertCircle, CheckCircle2, LogIn } from 'lucide-react'
-import { useAuthContext } from '@/presentation/providers/auth-provider'
-import { useInvite } from '@/application/hooks/use-invite'
-import { useGroupActions } from '@/application/hooks/use-group-actions'
-import type { GroupType } from '@/domain/entities/group'
-
-interface InviteGroupInfo {
-  id: string
-  name: string
-  description: string | null
-  type: GroupType
-  memberCount: number
-}
+import { useSearchParams } from "next/navigation"
+import { Users, Lock, Globe, UserPlus } from "lucide-react"
+import { useInvite } from "@/application/hooks/use-invite"
+import { EmptyState } from "@/presentation/components/ui/empty-state"
 
 export function GroupJoinContainer() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const token = searchParams.get('token')
+  const code = searchParams.get("code")
+  const { group, isLoading, isJoining, joinError, joinGroup } = useInvite(code)
 
-  const { user, isLoading: authLoading } = useAuthContext()
-  const { getInviteInfo, isLoading: inviteLoading } = useInvite()
-  const { joinGroup, isLoading: joinLoading } = useGroupActions()
-
-  const [groupInfo, setGroupInfo] = useState<InviteGroupInfo | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'joined' | 'error'>('loading')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (authLoading) return
-    if (!user && token) {
-      router.replace(`/auth/login?redirect=/groups/join?token=${encodeURIComponent(token)}`)
-    }
-  }, [authLoading, user, token, router])
-
-  // Fetch group info on mount
-  useEffect(() => {
-    if (!token || !user) return
-
-    async function fetchGroupInfo() {
-      const info = await getInviteInfo(token!)
-      if (info) {
-        setGroupInfo(info)
-        setStatus('ready')
-      } else {
-        setErrorMessage('유효하지 않은 초대 링크입니다')
-        setStatus('error')
-      }
-    }
-
-    fetchGroupInfo()
-  }, [token, user, getInviteInfo])
-
-  const handleJoin = async () => {
-    if (!user?.id || !groupInfo?.id) return
-
-    const success = await joinGroup(groupInfo.id, user.id)
-    if (success) {
-      setStatus('joined')
-      setTimeout(() => {
-        router.push(`/groups/${groupInfo.id}`)
-      }, 1500)
-    } else {
-      setErrorMessage('버블 참여에 실패했습니다. 이미 멤버이거나 오류가 발생했습니다.')
-      setStatus('error')
-    }
-  }
-
-  if (!token) {
+  if (!code) {
     return (
-      <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <AlertCircle className="h-10 w-10 text-[var(--color-neutral-300)]" />
-        <p className="mt-3 text-sm text-[var(--color-neutral-500)]">
-          초대 토큰이 없습니다
-        </p>
+      <div className="px-4 pt-6 pb-4">
+        <EmptyState
+          icon={UserPlus}
+          title="초대 코드가 없어요"
+          description="초대 링크를 다시 확인해주세요"
+        />
       </div>
     )
   }
 
-  if (authLoading || (status === 'loading' && !errorMessage)) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <div className="h-48 w-full max-w-sm animate-pulse rounded-xl bg-[var(--color-neutral-100)]" />
+      <div className="flex flex-col gap-4 px-4 pt-6 pb-4">
+        <div className="h-40 animate-pulse rounded-2xl bg-neutral-100" />
       </div>
     )
   }
 
-  if (status === 'error') {
+  if (!group) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 px-4 pt-20">
-        <AlertCircle className="h-10 w-10 text-red-400" />
-        <p className="text-sm text-[var(--color-neutral-500)]">{errorMessage}</p>
-        <button
-          type="button"
-          onClick={() => router.push('/groups')}
-          className="mt-2 text-sm font-medium text-[#FF6038]"
-        >
-          버블 목록으로 이동
-        </button>
+      <div className="px-4 pt-6 pb-4">
+        <EmptyState
+          icon={UserPlus}
+          title="버블을 찾을 수 없어요"
+          description="유효하지 않은 초대 코드예요"
+        />
       </div>
     )
   }
-
-  if (status === 'joined') {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 px-4 pt-20">
-        <CheckCircle2 className="h-10 w-10 text-green-500" />
-        <p className="text-sm font-medium text-[var(--color-neutral-700)]">
-          버블에 참여했습니다!
-        </p>
-        <p className="text-xs text-[var(--color-neutral-400)]">
-          잠시 후 버블 페이지로 이동합니다...
-        </p>
-      </div>
-    )
-  }
-
-  if (!groupInfo) return null
 
   return (
-    <div className="flex flex-col items-center justify-center px-4 pt-16">
-      <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-xl border border-[var(--color-neutral-200)] bg-white p-6">
-        {/* Group icon */}
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FF6038]/10">
-          <Users className="h-7 w-7 text-[#FF6038]" />
-        </div>
-
-        {/* Group info */}
-        <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-lg font-bold text-[var(--color-neutral-800)]">
-            {groupInfo.name}
-          </h1>
-          {groupInfo.description && (
-            <p className="text-sm text-[var(--color-neutral-500)]">
-              {groupInfo.description}
-            </p>
+    <div className="flex flex-col gap-6 px-4 pt-6 pb-4">
+      {/* Group preview */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-sm)]">
+        <div className="flex items-center gap-2 mb-2">
+          {group.accessType === "private" ? (
+            <Lock className="h-4 w-4 text-neutral-400" />
+          ) : (
+            <Globe className="h-4 w-4 text-neutral-400" />
           )}
-          <div className="flex items-center gap-1 text-xs text-[var(--color-neutral-400)]">
-            <Users className="h-3.5 w-3.5" />
-            <span>{groupInfo.memberCount}명</span>
-          </div>
+          <h2 className="text-lg font-semibold text-neutral-800">{group.name}</h2>
         </div>
-
-        {/* Join button */}
-        <button
-          type="button"
-          onClick={handleJoin}
-          disabled={joinLoading || inviteLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF6038] py-3 text-sm font-medium text-white transition-colors hover:bg-[#e8552f] disabled:opacity-50"
-        >
-          <LogIn className="h-4 w-4" />
-          {joinLoading ? '참여 중...' : '참여하기'}
-        </button>
+        {group.description && (
+          <p className="text-sm text-neutral-500">{group.description}</p>
+        )}
+        <div className="mt-3 flex items-center gap-1 text-xs text-neutral-400">
+          <Users className="h-3.5 w-3.5" />
+          <span>{group.accessType === "private" ? "비공개 버블" : "공개 버블"}</span>
+        </div>
       </div>
+
+      {/* Error */}
+      {joinError && (
+        <p className="text-center text-sm text-red-500">{joinError}</p>
+      )}
+
+      {/* Join button */}
+      <button
+        type="button"
+        onClick={joinGroup}
+        disabled={isJoining}
+        className="h-12 rounded-xl bg-primary-500 text-sm font-semibold text-white hover:bg-primary-600 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+      >
+        {isJoining ? "가입 중..." : "버블 가입하기"}
+      </button>
     </div>
   )
 }

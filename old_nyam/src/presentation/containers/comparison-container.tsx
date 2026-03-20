@@ -1,218 +1,121 @@
-'use client'
+"use client"
 
-import { Loader2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useAuthContext } from '@/presentation/providers/auth-provider'
-import { useComparison, ASPECT_LABELS } from '@/application/hooks/use-comparison'
-import { MatchupCard } from '@/presentation/components/comparison/matchup-card'
-import { ComparisonResult } from '@/presentation/components/comparison/comparison-result'
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  korean: '🍚',
-  japanese: '🍣',
-  chinese: '🥟',
-  western: '🍝',
-  cafe: '☕',
-  dessert: '🍰',
-  wine: '🍷',
-  seafood: '🦐',
-  meat: '🥩',
-  vegan: '🥗',
-  street: '🍢',
-}
-
-const CATEGORY_LABEL: Record<string, string> = {
-  korean: '한식',
-  japanese: '일식',
-  chinese: '중식',
-  western: '양식',
-  cafe: '카페',
-  dessert: '디저트',
-  wine: '와인',
-  seafood: '해산물',
-  meat: '고기',
-  vegan: '채식',
-  street: '분식',
-}
+import { useRouter } from "next/navigation"
+import { Trophy, Loader2 } from "lucide-react"
+import { useAuth } from "@/application/hooks/use-auth"
+import { useComparison } from "@/application/hooks/use-comparison"
+import { MatchupCard } from "@/presentation/components/comparison/matchup-card"
+import { ComparisonResult } from "@/presentation/components/comparison/comparison-result"
+import { EmptyState } from "@/presentation/components/ui/empty-state"
+import { ROUTES } from "@/shared/constants/routes"
 
 export function ComparisonContainer() {
   const router = useRouter()
-  const { user: authUser } = useAuthContext()
-  const userId = authUser?.id
-
+  const { user } = useAuth()
   const {
-    step,
-    loading,
-    availableCategories,
+    records,
     currentMatchup,
-    results,
-    totalMatches,
-    completedMatches,
+    round,
+    totalRounds,
+    selectWinner,
+    result,
+    isLoading,
     startComparison,
-    pickWinner,
-    reset,
-  } = useComparison(userId)
+  } = useComparison(user?.id ?? null)
 
-  // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-[#FF6038]" />
-        <p className="text-sm text-[var(--color-neutral-500)]">불러오는 중...</p>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
       </div>
     )
   }
 
-  // Category select step
-  if (step === 'category-select') {
+  if (records.length < 2) {
     return (
-      <div className="flex flex-col gap-5 px-4 pt-4 pb-8">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <h1 className="flex-1 text-center text-lg font-bold text-[var(--color-neutral-800)]">
-            맛집 월드컵 🏆
-          </h1>
-          <div className="h-8 w-8" />
-        </div>
-
-        {/* Description */}
-        <p className="text-center text-sm text-[var(--color-neutral-500)]">
-          카테고리를 선택하고 나만의 맛집 순위를 정해보세요!
-        </p>
-
-        {/* Category Grid */}
-        {availableCategories.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <span className="text-4xl">📝</span>
-            <p className="text-sm text-[var(--color-neutral-500)]">
-              같은 카테고리 기록이 4개 이상 필요해요
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push('/record')}
-              className="rounded-xl bg-[#FF6038] px-6 py-2.5 text-sm font-semibold text-white"
-            >
-              기록하러 가기
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {availableCategories.map(({ category, count }) => {
-              const emoji = CATEGORY_EMOJI[category] ?? '🍽️'
-              const label = CATEGORY_LABEL[category] ?? category
-
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => startComparison(category)}
-                  className="flex flex-col items-center gap-2 rounded-2xl bg-white p-5 shadow-sm transition-all hover:shadow-md active:scale-[0.97]"
-                >
-                  <span className="text-3xl">{emoji}</span>
-                  <span className="text-sm font-bold text-[var(--color-neutral-800)]">{label}</span>
-                  <span className="text-xs text-[var(--color-neutral-400)]">{count}개 기록</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Playing step
-  if (step === 'playing' && currentMatchup) {
-    const progressPercent = totalMatches > 0
-      ? Math.round((completedMatches / totalMatches) * 100)
-      : 0
-
-    const aspectLabel = ASPECT_LABELS[currentMatchup.aspect] ?? currentMatchup.aspect
-
-    return (
-      <div className="flex flex-col gap-5 px-4 pt-4 pb-8">
-        {/* Progress */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs text-[var(--color-neutral-500)]">
-            <span>라운드 {currentMatchup.round}</span>
-            <span>{completedMatches}/{totalMatches} 매치</span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-[var(--color-neutral-100)]">
-            <div
-              className="h-2 rounded-full bg-[#FF6038] transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Aspect Question */}
-        <div className="text-center">
-          <p className="text-lg font-bold text-[var(--color-neutral-800)]">
-            {aspectLabel}은 어디가 더 좋았나요?
-          </p>
-        </div>
-
-        {/* Matchup Cards */}
-        <div className="flex items-stretch gap-3">
-          <MatchupCard
-            record={currentMatchup.recordA}
-            onPick={() => pickWinner(currentMatchup.recordA.id)}
-            side="left"
-          />
-
-          <div className="flex shrink-0 items-center">
-            <span className="text-lg font-black text-[var(--color-neutral-300)]">VS</span>
-          </div>
-
-          <MatchupCard
-            record={currentMatchup.recordB}
-            onPick={() => pickWinner(currentMatchup.recordB.id)}
-            side="right"
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // Result step
-  if (step === 'result' && results) {
-    return (
-      <div className="flex flex-col gap-5 px-4 pt-4 pb-8">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <h1 className="flex-1 text-center text-lg font-bold text-[var(--color-neutral-800)]">
-            맛집 월드컵 🏆
-          </h1>
-          <div className="h-8 w-8" />
-        </div>
-
-        <ComparisonResult
-          rankings={results.rankings}
-          aspectWinners={results.aspectWinners}
-          onPlayAgain={reset}
-          onGoHome={() => router.push('/')}
+      <div className="px-4 pt-6 pb-4">
+        <EmptyState
+          icon={Trophy}
+          title="비교 게임"
+          description="기록이 2개 이상 필요해요. 맛 기록을 더 남겨보세요!"
+          actionLabel="기록하러 가기"
+          actionHref={ROUTES.RECORD}
         />
       </div>
     )
   }
 
-  // Fallback loading
+  // Not started yet
+  if (!currentMatchup && !result) {
+    return (
+      <div className="flex flex-col items-center gap-5 px-4 pt-6 pb-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+          <Trophy className="h-8 w-8 text-amber-500" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-neutral-800">비교 게임</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            내 기록 중 최고를 뽑아보세요!
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-400">
+            {records.length}개의 기록으로 토너먼트 시작
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => startComparison()}
+          className="rounded-xl bg-primary-500 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-600 active:scale-[0.98]"
+        >
+          시작하기
+        </button>
+      </div>
+    )
+  }
+
+  // Show result
+  if (result) {
+    const winnerRecord = records.find((r) => r.id === result.winnerId)
+    if (!winnerRecord) return null
+
+    return (
+      <div className="px-4 pt-6 pb-4">
+        <ComparisonResult
+          winner={{
+            id: winnerRecord.id,
+            title: winnerRecord.menuName ?? "이름 없음",
+            thumbnailUrl: winnerRecord.photos[0]?.thumbnailUrl ?? null,
+            overallRating: winnerRecord.ratingOverall ?? 0,
+          }}
+          totalMatchups={Math.ceil(Math.log2(records.length))}
+          onViewRecord={(id) => router.push(`/records/${id}`)}
+          onPlayAgain={() => startComparison()}
+        />
+      </div>
+    )
+  }
+
+  // Show matchup
+  if (!currentMatchup) return null
+
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-      <Loader2 className="h-8 w-8 animate-spin text-[#FF6038]" />
+    <div className="px-4 pt-6 pb-4">
+      <MatchupCard
+        record1={{
+          id: currentMatchup.recordA.id,
+          title: currentMatchup.recordA.menuName ?? "이름 없음",
+          thumbnailUrl: currentMatchup.recordA.photos[0]?.thumbnailUrl ?? null,
+          overallRating: currentMatchup.recordA.ratingOverall ?? 0,
+        }}
+        record2={{
+          id: currentMatchup.recordB.id,
+          title: currentMatchup.recordB.menuName ?? "이름 없음",
+          thumbnailUrl: currentMatchup.recordB.photos[0]?.thumbnailUrl ?? null,
+          overallRating: currentMatchup.recordB.ratingOverall ?? 0,
+        }}
+        onSelect={selectWinner}
+        round={round}
+        totalRounds={totalRounds}
+      />
     </div>
   )
 }

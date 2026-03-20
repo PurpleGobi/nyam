@@ -1,204 +1,237 @@
-'use client'
+"use client"
 
-import { useState, useCallback } from 'react'
-import type { RecordType } from '@/domain/entities/record'
-import { uploadRecordPhoto, resizeImage } from '@/infrastructure/storage/image-upload'
-import { getRecordRepository } from '@/di/repositories'
-import { createClient } from '@/infrastructure/supabase/client'
+import { useCallback, useState } from "react"
+import { createClient } from "@/infrastructure/supabase/client"
+import { uploadRecordPhoto } from "@/infrastructure/storage/image-upload"
+import type { RecordType } from "@/infrastructure/supabase/types"
+import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
+import { extractArea } from "@/shared/constants/areas"
 
-export type QuickCaptureStep = 'input' | 'saving' | 'complete'
-
-export interface QuickCaptureDraft {
+interface CreateRecordData {
   recordType: RecordType
   photos: File[]
-  ratings: Record<string, number>
+  restaurantId?: string
+  selectedPlace?: NearbyPlace
+  menuName?: string
+  genre?: string
+  scene?: string
+  ratingTaste?: number
+  ratingValue?: number
+  ratingService?: number
+  ratingAtmosphere?: number
+  ratingCleanliness?: number
+  ratingPortion?: number
+  ratingBalance?: number
+  ratingDifficulty?: number
+  ratingTimeSpent?: number
+  ratingReproducibility?: number
+  ratingPlating?: number
+  ratingMaterialCost?: number
+  comment?: string
+  flavorTags?: string[]
+  textureTags?: string[]
+  atmosphereTags?: string[]
+  locationLat?: number
+  locationLng?: number
+  // Wine WSET tasting notes (user input, optional)
+  wineAcidity?: number
+  wineBody?: number
+  wineTannin?: number
+  wineSweetness?: number
+  wineBalance?: number
+  wineFinish?: number
+  wineAroma?: number
+  // Cooking manual flavor input (6-axis)
+  flavorSpicy?: number
+  flavorSweet?: number
+  flavorSalty?: number
+  flavorSour?: number
+  flavorUmami?: number
+  flavorRich?: number
 }
 
-interface SavedResult {
-  recordId: string
-  ratingOverall: number
-}
+export function useCreateRecord() {
+  const [isCreating, setIsCreating] = useState(false)
+  const [progress, setProgress] = useState("")
 
-const INITIAL_DRAFT: QuickCaptureDraft = {
-  recordType: 'restaurant',
-  photos: [],
-  ratings: {},
-}
-
-export function useCreateRecord(
-  userId: string | undefined,
-  location: { lat: number; lng: number } | null,
-) {
-  const [step, setStep] = useState<QuickCaptureStep>('input')
-  const [draft, setDraft] = useState<QuickCaptureDraft>({ ...INITIAL_DRAFT })
-  const [savedResult, setSavedResult] = useState<SavedResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const addPhotos = useCallback((files: File[]) => {
-    setDraft(prev => ({
-      ...prev,
-      photos: [...prev.photos, ...files].slice(0, 8),
-    }))
-  }, [])
-
-  const removePhoto = useCallback((index: number) => {
-    setDraft(prev => ({
-      ...prev,
-      photos: prev.photos.filter((_, i) => i !== index),
-    }))
-  }, [])
-
-  const setRecordType = useCallback((recordType: RecordType) => {
-    setDraft(prev => ({
-      ...prev,
-      recordType,
-      ratings: {},  // reset ratings when switching type
-    }))
-  }, [])
-
-  const setRating = useCallback((key: string, value: number) => {
-    setDraft(prev => ({
-      ...prev,
-      ratings: { ...prev.ratings, [key]: value },
-    }))
-  }, [])
-
-  const save = useCallback(async () => {
-    if (!userId) {
-      setError('로그인이 필요합니다')
-      return
-    }
-
-    // At least one rating required
-    const ratingValues = Object.values(draft.ratings).filter(v => v > 0)
-    if (ratingValues.length === 0) {
-      setError('최소 한 항목은 평가해주세요')
-      return
-    }
-
-    setStep('saving')
-    setError(null)
+  const createRecord = useCallback(async (data: CreateRecordData): Promise<string> => {
+    setIsCreating(true)
+    const supabase = createClient()
 
     try {
-      // Upload resized photos
-      const photoUrls: string[] = []
-      for (const file of draft.photos) {
-        const resized = await resizeImage(file, 1024)
-        const result = await uploadRecordPhoto(resized, userId)
-        photoUrls.push(result.url)
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
 
-      const r = draft.ratings
-      // 0-100 scale → average for overall
-      const ratingOverall = ratingValues.length > 0
-        ? Math.round(ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length)
-        : 0
+      setProgress("기록 저장 중...")
 
-      const buildRatings = () => {
-        if (draft.recordType === 'wine') {
-          return {
-            aroma: r.aroma ?? 0, body: r.body ?? 0, acidity: r.acidity ?? 0,
-            finish: r.finish ?? 0, balance: r.balance ?? 0, value: r.value ?? 0,
+      // Resolve restaurant from selected place (select-or-insert)
+      let resolvedRestaurantId = data.restaurantId ?? null
+      if (data.selectedPlace) {
+        // Try to find existing restaurant by source + external_id
+        const { data: existing } = await supabase
+          .from("restaurants")
+          .select("id")
+          .eq("source", "kakao")
+          .eq("external_id", data.selectedPlace.externalId)
+          .maybeSingle()
+
+        if (existing) {
+          resolvedRestaurantId = existing.id
+        } else {
+          const { data: created } = await supabase
+            .from("restaurants")
+            .insert({
+              source: "kakao",
+              external_id: data.selectedPlace.externalId,
+              name: data.selectedPlace.name,
+              address: data.selectedPlace.address,
+              phone: data.selectedPlace.phone || null,
+              latitude: data.selectedPlace.latitude,
+              longitude: data.selectedPlace.longitude,
+              external_url: data.selectedPlace.placeUrl || null,
+              region: extractArea(data.selectedPlace.addressName),
+            })
+            .select("id")
+            .single()
+
+          if (created) {
+            resolvedRestaurantId = created.id
           }
         }
-        if (draft.recordType === 'cooking') {
-          return {
-            taste: r.taste ?? 0, difficulty: r.difficulty ?? 0, timeSpent: r.timeSpent ?? 0,
-            reproducibility: r.reproducibility ?? 0, plating: r.plating ?? 0, value: r.value ?? 0,
-          }
-        }
-        return {
-          taste: r.taste ?? 0, value: r.value ?? 0, service: r.service ?? 0,
-          atmosphere: r.atmosphere ?? 0, cleanliness: r.cleanliness ?? 0, portion: r.portion ?? 0,
-        }
       }
 
-      const repo = getRecordRepository()
-      const record = await repo.create({
-        userId,
-        restaurantId: null,
-        recordType: draft.recordType,
-        menuName: '',
-        category: '',
-        subCategory: null,
-        pricePerPerson: null,
-        ratings: buildRatings(),
-        ratingOverall,
-        comment: null,
-        tags: [],
-        flavorTags: [],
-        textureTags: [],
-        atmosphereTags: [],
-        visibility: 'private',
-        aiRecognized: false,
-        completenessScore: 0,
-        locationAtRecord: location,
-        phaseStatus: 1,
-        phase1CompletedAt: new Date().toISOString(),
-        phase2CompletedAt: null,
-        phase3CompletedAt: null,
-        scaledRating: null,
-        comparisonCount: 0,
-        visitTime: null,
-        companionCount: null,
-        totalCost: null,
-      })
+      // Calculate overall rating
+      let ratingOverall: number | null = null
+      if (data.recordType === "restaurant") {
+        const ratings = [data.ratingTaste, data.ratingValue, data.ratingService, data.ratingAtmosphere, data.ratingCleanliness, data.ratingPortion]
+        const valid = ratings.filter((r): r is number => r != null)
+        ratingOverall = valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null
+      } else if (data.recordType === "wine") {
+        const ratings = [data.ratingTaste, data.ratingValue]
+        const valid = ratings.filter((r): r is number => r != null)
+        ratingOverall = valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null
+      } else if (data.recordType === "cooking") {
+        const ratings = [data.ratingBalance, data.ratingTaste]
+        const valid = ratings.filter((r): r is number => r != null)
+        ratingOverall = valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null
+      }
 
-      // Insert photo records
-      if (photoUrls.length > 0) {
-        const supabase = createClient()
-        await supabase.from('record_photos').insert(
-          photoUrls.map((url, i) => ({
+      // Create record
+      const { data: record, error } = await supabase
+        .from("records")
+        .insert({
+          user_id: user.id,
+          record_type: data.recordType,
+          restaurant_id: resolvedRestaurantId,
+          menu_name: data.menuName ?? null,
+          genre: data.genre ?? null,
+          scene: data.scene ?? null,
+          rating_overall: ratingOverall,
+          rating_taste: data.ratingTaste ?? null,
+          rating_value: data.ratingValue ?? null,
+          rating_service: data.ratingService ?? null,
+          rating_atmosphere: data.ratingAtmosphere ?? null,
+          rating_cleanliness: data.ratingCleanliness ?? null,
+          rating_portion: data.ratingPortion ?? null,
+          rating_balance: data.ratingBalance ?? null,
+          rating_difficulty: data.ratingDifficulty ?? null,
+          rating_time_spent: data.ratingTimeSpent ?? null,
+          rating_reproducibility: data.ratingReproducibility ?? null,
+          rating_plating: data.ratingPlating ?? null,
+          rating_material_cost: data.ratingMaterialCost ?? null,
+          comment: data.comment ?? null,
+          flavor_tags: data.flavorTags ?? [],
+          texture_tags: data.textureTags ?? [],
+          atmosphere_tags: data.atmosphereTags ?? [],
+          location_lat: data.locationLat ?? null,
+          location_lng: data.locationLng ?? null,
+          phase1_completed_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (error) throw new Error(`Failed to create record: ${error.message}`)
+
+      // Upload photos
+      if (data.photos.length > 0) {
+        setProgress("사진 업로드 중...")
+        const photoInserts = []
+        for (let i = 0; i < data.photos.length; i++) {
+          const { photoUrl, thumbnailUrl } = await uploadRecordPhoto(
+            data.photos[i],
+            user.id,
+            record.id,
+            i,
+          )
+          photoInserts.push({
             record_id: record.id,
-            photo_url: url,
-            thumbnail_url: url,
+            photo_url: photoUrl,
+            thumbnail_url: thumbnailUrl,
             order_index: i,
-            photo_type: 'food',
-          })),
-        )
+          })
+        }
+        await supabase.from("record_photos").insert(photoInserts)
       }
 
-      // Fire-and-forget: AI analysis + enrichment
-      fetch('/api/records/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recordId: record.id,
-          photoUrls,
-          location,
-        }),
-      }).catch(() => {})
+      // Save wine WSET user tasting notes (source='pending_user', to be merged with AI later)
+      const hasWset = data.recordType === "wine" && data.wineAcidity != null
+      if (hasWset) {
+        await supabase.from("record_taste_profiles").insert({
+          record_id: record.id,
+          wine_acidity_user: data.wineAcidity ?? null,
+          wine_body_user: data.wineBody ?? null,
+          wine_tannin_user: data.wineTannin ?? null,
+          wine_sweetness_user: data.wineSweetness ?? null,
+          wine_balance_user: data.wineBalance ?? null,
+          wine_finish_user: data.wineFinish ?? null,
+          wine_aroma_user: data.wineAroma ?? null,
+          source: "pending_user",
+        })
+      }
 
-      // Fire-and-forget: stats update
-      fetch('/api/records/post-process', {
-        method: 'POST',
-      }).catch(() => {})
+      // Save manual taste profile for cooking (source='manual')
+      const hasFlavor = data.recordType === "cooking" && data.flavorSpicy != null
+      if (hasFlavor) {
+        await supabase.from("record_taste_profiles").insert({
+          record_id: record.id,
+          spicy: data.flavorSpicy ?? null,
+          sweet: data.flavorSweet ?? null,
+          salty: data.flavorSalty ?? null,
+          sour: data.flavorSour ?? null,
+          umami: data.flavorUmami ?? null,
+          rich: data.flavorRich ?? null,
+          source: "manual",
+        })
+      }
 
-      setSavedResult({ recordId: record.id, ratingOverall })
-      setStep('complete')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '저장에 실패했습니다')
-      setStep('input')
+      // Trigger async AI pipeline (fire and forget) — 5 steps
+      setProgress("AI 분석 요청 중...")
+
+      const runPipeline = async () => {
+        const headers = { "Content-Type": "application/json" }
+        const body = JSON.stringify({ recordId: record.id })
+        try {
+          // Step 1: identify (each API skips internally if not applicable)
+          await fetch("/api/records/identify", { method: "POST", headers, body }).catch(() => {})
+          // Step 2: enrich (Kakao data collection)
+          await fetch("/api/records/enrich", { method: "POST", headers, body }).catch(() => {})
+          // Step 3: analyze-photos
+          await fetch("/api/records/analyze-photos", { method: "POST", headers, body }).catch(() => {})
+          // Step 4: taste-profile
+          await fetch("/api/records/taste-profile", { method: "POST", headers, body }).catch(() => {})
+        } finally {
+          // Step 5: post-process (always runs)
+          await fetch("/api/records/post-process", { method: "POST", headers, body }).catch(console.error)
+        }
+      }
+      runPipeline()
+
+      return record.id
+    } finally {
+      setIsCreating(false)
+      setProgress("")
     }
-  }, [userId, draft, location])
-
-  const reset = useCallback(() => {
-    setStep('input')
-    setDraft({ ...INITIAL_DRAFT })
-    setSavedResult(null)
-    setError(null)
   }, [])
 
-  return {
-    step,
-    draft,
-    savedResult,
-    error,
-    addPhotos,
-    removePhoto,
-    setRecordType,
-    setRating,
-    save,
-    reset,
-  }
+  return { createRecord, isCreating, progress }
 }

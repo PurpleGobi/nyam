@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Design System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ============================================
+     DESIGN TOKENS
+     ============================================ */
+  :root {
+    /* Surface */
+    --bg: #ffffff;
+    --bg-card: #f9fafb;
+    --bg-page: #e5e7eb;
+
+    /* Text */
+    --text: #111827;
+    --text-sub: #6b7280;
+    --text-hint: #9ca3af;
+
+    /* Brand — Restaurant (Coral Orange) */
+    --restaurant-primary: #FF6038;
+    --restaurant-primary-light: #FFF5F2;
+    --restaurant-tag-bg: #FFEEE8;
+
+    /* Brand — Wine (Plum Purple) */
+    --wine-primary: #6B4C8A;
+    --wine-primary-light: #F8F5FA;
+    --wine-tag-bg: #EDE6F5;
+    --wine-accent: #8B5CF6;
+
+    /* Semantic */
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+
+    /* Border & Radius */
+    --border: #e5e7eb;
+    --border-active: #d1d5db;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 50px;
+
+    /* Shadow */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.15);
+    --shadow-btn-restaurant: 0 4px 20px rgba(255,96,56,0.4);
+    --shadow-btn-wine: 0 4px 20px rgba(107,76,138,0.4);
+
+    /* Satisfaction Gauge Colors */
+    --gauge-1: #ef4444;   /* 1~30 */
+    --gauge-2: #f59e0b;   /* 31~50 */
+    --gauge-3: #fbbf24;   /* 51~70 */
+    --gauge-4: #22c55e;   /* 71~85 */
+    --gauge-5: #3b82f6;   /* 86~100 */
+
+    /* Wine Gauge (purple gradient) */
+    --wine-gauge-1: #ddd6fe;  /* 1~30 */
+    --wine-gauge-2: #c4b5fd;  /* 31~50 */
+    --wine-gauge-3: #a78bfa;  /* 51~70 */
+    --wine-gauge-4: #8b5cf6;  /* 71~85 */
+    --wine-gauge-5: #7c3aed;  /* 86~100 */
+
+    /* Scene Tag Colors */
+    --scene-solo: #3b82f6;
+    --scene-romantic: #ec4899;
+    --scene-friends: #22c55e;
+    --scene-family: #f59e0b;
+    --scene-business: #8b5cf6;
+    --scene-drinks: #ef4444;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --space-2xl: 24px;
+    --space-3xl: 32px;
+
+    /* Typography */
+    --font: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  body {
+    background: var(--bg-page);
+    font-family: var(--font);
+    color: var(--text);
+    padding: 40px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* ============================================
+     CATALOG LAYOUT
+     ============================================ */
+  h1 { font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+  h1 span { color: var(--restaurant-primary); }
+  .subtitle { font-size: 14px; color: var(--text-sub); margin-bottom: 40px; }
+  h2 {
+    font-size: 20px; font-weight: 800; margin: 48px 0 16px;
+    padding-bottom: 8px; border-bottom: 2px solid var(--text);
+  }
+  h3 { font-size: 15px; font-weight: 700; color: var(--text-sub); margin: 24px 0 12px; }
+  .section { background: var(--bg); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 12px; }
+  .label { font-size: 11px; font-weight: 600; color: var(--text-hint); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ============================================
+     1. COLOR SWATCHES
+     ============================================ */
+  .swatch-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch {
+    width: 72px; text-align: center;
+  }
+  .swatch-circle {
+    width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 6px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .swatch-name { font-size: 10px; font-weight: 600; color: var(--text-sub); }
+  .swatch-hex { font-size: 9px; color: var(--text-hint); font-family: monospace; }
+
+  /* ============================================
+     2. TYPOGRAPHY
+     ============================================ */
+  .type-display { font-size: 2rem; font-weight: 800; }
+  .type-h1 { font-size: 1.953rem; font-weight: 700; }
+  .type-h2 { font-size: 1.563rem; font-weight: 600; }
+  .type-body { font-size: 1rem; font-weight: 400; }
+  .type-small { font-size: 0.875rem; font-weight: 400; color: var(--text-sub); }
+  .type-caption { font-size: 0.75rem; font-weight: 400; color: var(--text-hint); }
+
+  /* ============================================
+     3. BUTTONS — Primary, Ghost, Skip, Tab
+     ============================================ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; cursor: pointer; transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .btn:active { transform: scale(0.96); }
+
+  /* Primary CTA (floating pill) */
+  .btn-primary {
+    padding: 14px 24px; border-radius: var(--radius-full);
+    font-size: 15px; font-weight: 700; color: white;
+  }
+  .btn-primary.restaurant {
+    background: var(--restaurant-primary);
+    box-shadow: var(--shadow-btn-restaurant);
+  }
+  .btn-primary.wine {
+    background: var(--wine-primary);
+    box-shadow: var(--shadow-btn-wine);
+  }
+  .btn-primary:disabled {
+    background: #d1d5db; box-shadow: none; cursor: default;
+  }
+
+  /* Ghost Back (← 이전) */
+  .btn-back {
+    padding: 14px 24px; border-radius: var(--radius-full);
+    background: #f3f4f6; border: 1px solid var(--border);
+    font-size: 15px; font-weight: 600; color: var(--text);
+  }
+
+  /* Skip link */
+  .btn-skip {
+    background: none; border: none;
+    font-size: 13px; font-weight: 600; color: var(--text-hint);
+    padding: 4px 8px; cursor: pointer;
+  }
+  .btn-skip:hover { color: var(--text-sub); }
+
+  /* Inline action (가봤음 / 가보고싶음) */
+  .btn-action {
+    flex: 1; padding: 10px 0; border-radius: 10px;
+    border: 1.5px solid var(--border); background: white;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    text-align: center; transition: all 0.15s;
+  }
+  .btn-action.active-restaurant { background: var(--restaurant-primary); color: white; border-color: var(--restaurant-primary); }
+  .btn-action.active-wine { background: var(--wine-primary); color: white; border-color: var(--wine-primary); }
+  .btn-action.active-wish { background: #f59e0b; color: white; border-color: #f59e0b; }
+
+  /* Sticky search */
+  .btn-search-primary {
+    padding: 11px 16px; border-radius: var(--radius-md); border: none;
+    background: var(--wine-primary); color: white;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ============================================
+     4. CARDS
+     ============================================ */
+  .card {
+    background: var(--bg-card); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 14px 16px;
+    transition: all 0.2s;
+  }
+  .card.visited-restaurant { border-color: var(--restaurant-primary); background: var(--restaurant-primary-light); }
+  .card.visited-wine { border-color: var(--wine-primary); background: var(--wine-primary-light); }
+  .card.wishlisted { border-color: #f59e0b; background: #fffbeb; }
+
+  .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 12px; background: #e5e7eb;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+  }
+  .card-info { flex: 1; }
+  .card-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .card-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .card-score { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+  /* ============================================
+     5. SATISFACTION GAUGE (inline)
+     ============================================ */
+  .gauge-bar {
+    position: relative; height: 36px; background: #f3f4f6;
+    border-radius: 18px; overflow: hidden; cursor: pointer;
+  }
+  .gauge-fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    border-radius: 18px; transition: width 0.1s, background 0.1s;
+  }
+  .gauge-label {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 16px; font-weight: 800; color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .gauge-hints {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--text-hint); margin-top: 4px;
+  }
+
+  /* ============================================
+     6. TAGS & BADGES
+     ============================================ */
+  .badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    border-radius: 6px;
+  }
+  .badge-blue { background: #eff6ff; color: #3b82f6; }
+  .badge-michelin { background: #fef3c7; color: #d97706; }
+
+  .scene-tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 8px; color: white;
+  }
+
+  .wine-type-chip {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 6px;
+  }
+
+  /* ============================================
+     7. BOTTOM SHEET
+     ============================================ */
+  .sheet-demo {
+    background: var(--bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+    padding: 16px 20px 28px; max-width: 360px;
+  }
+  .sheet-handle {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: #d1d5db; margin: 0 auto 12px;
+  }
+
+  /* ============================================
+     8. ONBOARDING NAVIGATION
+     ============================================ */
+  .ob-nav-demo {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px 28px; background: var(--bg);
+    border-radius: var(--radius-lg); border: 1px dashed var(--border);
+  }
+  .ob-nav-demo .nav-back {
+    padding: 12px 20px; border-radius: var(--radius-full);
+    background: #f3f4f6; border: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer;
+  }
+  .ob-nav-demo .nav-skip {
+    background: none; border: none;
+    font-size: 13px; font-weight: 600; color: var(--text-hint);
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .ob-nav-demo .nav-next {
+    padding: 12px 20px; border-radius: var(--radius-full);
+    background: var(--restaurant-primary); color: white;
+    font-size: 14px; font-weight: 700; border: none; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,96,56,0.4);
+  }
+
+  /* ============================================
+     9. FILTER TABS
+     ============================================ */
+  .filter-tabs {
+    display: flex; gap: 0; border-bottom: 1.5px solid var(--border);
+  }
+  .filter-tab {
+    flex-shrink: 0; padding: 10px 16px;
+    font-size: 14px; font-weight: 500; white-space: nowrap;
+    border: none; background: none; color: var(--text-hint);
+    cursor: pointer; position: relative;
+  }
+  .filter-tab::after {
+    content: ''; position: absolute; bottom: -1.5px; left: 8px; right: 8px;
+    height: 2.5px; border-radius: 2px; background: transparent;
+  }
+  .filter-tab.active-restaurant { color: var(--restaurant-primary); font-weight: 700; }
+  .filter-tab.active-restaurant::after { background: var(--restaurant-primary); }
+  .filter-tab.active-wine { color: var(--wine-primary); font-weight: 700; }
+  .filter-tab.active-wine::after { background: var(--wine-primary); }
+
+  /* ============================================
+     10. INTRO SELECTION CARDS
+     ============================================ */
+  .intro-card {
+    padding: 18px 16px; border-radius: var(--radius-lg);
+    border: 2px solid var(--border); background: var(--bg-card);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .intro-card.selected-restaurant {
+    border-color: var(--restaurant-primary); background: var(--restaurant-primary-light);
+  }
+  .intro-card.selected-wine {
+    border-color: var(--wine-primary); background: var(--wine-primary-light);
+  }
+  .intro-check {
+    width: 24px; height: 24px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  .intro-check.off { background: var(--border); color: transparent; }
+  .intro-check.on-restaurant { background: var(--restaurant-primary); color: white; }
+  .intro-check.on-wine { background: var(--wine-primary); color: white; }
+
+  /* ============================================
+     11. LOADING & EMPTY STATES
+     ============================================ */
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--text-hint);
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-state .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .empty-state .desc { font-size: 12px; }
+
+  .loading-card {
+    text-align: center; padding: 24px;
+    background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border);
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  /* ============================================
+     12. TOAST
+     ============================================ */
+  .toast-demo {
+    display: inline-block; background: #1f2937; color: white;
+    padding: 12px 24px; border-radius: var(--radius-md);
+    font-size: 14px; font-weight: 600;
+  }
+
+  /* ============================================
+     13. SEARCH INPUT
+     ============================================ */
+  .search-input {
+    width: 100%; padding: 12px 14px 12px 36px;
+    border-radius: var(--radius-md); border: 1.5px solid var(--border);
+    font-size: 14px; background: var(--bg-card); outline: none;
+    box-sizing: border-box; font-family: var(--font);
+  }
+  .search-input:focus { border-color: var(--wine-primary); }
+
+  /* ============================================
+     14. SOCIAL LOGIN BUTTONS
+     ============================================ */
+  .social-btn-demo {
+    height: 52px; border-radius: 14px; border: none;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
+  }
+  .social-kakao { background: #FEE500; color: #3C1E1E; }
+  .social-google { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+  .social-apple { background: #000; color: #fff; }
+</style>
+</head>
+<body>
+
+<h1><span>nyam</span> Design System</h1>
+<div class="subtitle">프로토타입 컴포넌트 카탈로그 — 모든 목업 HTML이 이 정의를 따릅니다</div>
+
+<!-- ============================================ -->
+<h2>1. Color Tokens</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Brand — Restaurant</h3>
+  <div class="swatch-group">
+    <div class="swatch"><div class="swatch-circle" style="background:#FF6038;"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#FF6038</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#FFF5F2;"></div><div class="swatch-name">Light</div><div class="swatch-hex">#FFF5F2</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#FFEEE8;"></div><div class="swatch-name">Tag BG</div><div class="swatch-hex">#FFEEE8</div></div>
+  </div>
+
+  <h3>Brand — Wine</h3>
+  <div class="swatch-group">
+    <div class="swatch"><div class="swatch-circle" style="background:#6B4C8A;"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#6B4C8A</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#F8F5FA;"></div><div class="swatch-name">Light</div><div class="swatch-hex">#F8F5FA</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#EDE6F5;"></div><div class="swatch-name">Tag BG</div><div class="swatch-hex">#EDE6F5</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#8B5CF6;"></div><div class="swatch-name">Accent</div><div class="swatch-hex">#8B5CF6</div></div>
+  </div>
+
+  <h3>Surface & Text</h3>
+  <div class="swatch-group">
+    <div class="swatch"><div class="swatch-circle" style="background:#ffffff;"></div><div class="swatch-name">bg</div><div class="swatch-hex">#ffffff</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#f9fafb;"></div><div class="swatch-name">bg-card</div><div class="swatch-hex">#f9fafb</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#111827;"></div><div class="swatch-name">text</div><div class="swatch-hex">#111827</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#6b7280;"></div><div class="swatch-name">text-sub</div><div class="swatch-hex">#6b7280</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#9ca3af;"></div><div class="swatch-name">text-hint</div><div class="swatch-hex">#9ca3af</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#e5e7eb;"></div><div class="swatch-name">border</div><div class="swatch-hex">#e5e7eb</div></div>
+  </div>
+
+  <h3>Satisfaction Gauge — Restaurant</h3>
+  <div class="swatch-group">
+    <div class="swatch"><div class="swatch-circle" style="background:#ef4444;"></div><div class="swatch-name">1~30</div><div class="swatch-hex">#ef4444</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#f59e0b;"></div><div class="swatch-name">31~50</div><div class="swatch-hex">#f59e0b</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#fbbf24;"></div><div class="swatch-name">51~70</div><div class="swatch-hex">#fbbf24</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#22c55e;"></div><div class="swatch-name">71~85</div><div class="swatch-hex">#22c55e</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#3b82f6;"></div><div class="swatch-name">86~100</div><div class="swatch-hex">#3b82f6</div></div>
+  </div>
+
+  <h3>Satisfaction Gauge — Wine (Purple Gradient)</h3>
+  <div class="swatch-group">
+    <div class="swatch"><div class="swatch-circle" style="background:#ddd6fe;"></div><div class="swatch-name">1~30</div><div class="swatch-hex">#ddd6fe</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#c4b5fd;"></div><div class="swatch-name">31~50</div><div class="swatch-hex">#c4b5fd</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#a78bfa;"></div><div class="swatch-name">51~70</div><div class="swatch-hex">#a78bfa</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#8b5cf6;"></div><div class="swatch-name">71~85</div><div class="swatch-hex">#8b5cf6</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#7c3aed;"></div><div class="swatch-name">86~100</div><div class="swatch-hex">#7c3aed</div></div>
+  </div>
+
+  <h3>Scene Tags</h3>
+  <div class="row">
+    <span class="scene-tag" style="background:#3b82f6;">혼밥</span>
+    <span class="scene-tag" style="background:#ec4899;">데이트</span>
+    <span class="scene-tag" style="background:#22c55e;">친구</span>
+    <span class="scene-tag" style="background:#f59e0b;">가족</span>
+    <span class="scene-tag" style="background:#8b5cf6;">회식</span>
+    <span class="scene-tag" style="background:#ef4444;">술자리</span>
+  </div>
+
+  <h3>Wine Type Chips</h3>
+  <div class="row">
+    <span class="wine-type-chip" style="background:#fef2f2;color:#dc2626;">레드</span>
+    <span class="wine-type-chip" style="background:#fffbeb;color:#d97706;">화이트</span>
+    <span class="wine-type-chip" style="background:#fdf2f8;color:#db2777;">로제</span>
+    <span class="wine-type-chip" style="background:#fff7ed;color:#ea580c;">오렌지</span>
+    <span class="wine-type-chip" style="background:#f0f9ff;color:#0284c7;">스파클링</span>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>2. Typography</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div><div class="label">Display — 2rem / 800</div><div class="type-display">92</div></div>
+    <div><div class="label">H1 — 1.953rem / 700</div><div class="type-h1">선택한 동네의 대표 맛집이에요</div></div>
+    <div><div class="label">H2 — 1.563rem / 600</div><div class="type-h2">미진</div></div>
+    <div><div class="label">Body — 1rem / 400</div><div class="type-body">한식 · 광화문 · 냉면 전문</div></div>
+    <div><div class="label">Small — 0.875rem / 400</div><div class="type-small">N 4.5 · K 4.2 · G 4.3</div></div>
+    <div><div class="label">Caption — 0.75rem / 400</div><div class="type-caption">2026.03.19 화요일 · 데이트</div></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>3. Buttons</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Primary CTA (Floating Pill)</h3>
+  <div class="row">
+    <button class="btn btn-primary restaurant">다음 →</button>
+    <button class="btn btn-primary restaurant">다음: 와인 →</button>
+    <button class="btn btn-primary wine">시작하기 →</button>
+    <button class="btn btn-primary" disabled>1개 이상 선택</button>
+  </div>
+
+  <h3>Ghost Back</h3>
+  <div class="row">
+    <button class="btn btn-back">← 이전</button>
+  </div>
+
+  <h3>Skip Link</h3>
+  <div class="row">
+    <button class="btn btn-skip">식당 입력 건너뛰기</button>
+    <button class="btn btn-skip">와인 입력 건너뛰기</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-hint);margin-top:4px;">위치: 다음 버튼 바로 위, 우측 정렬. font-size:13px, color: text-hint</div>
+
+  <h3>Inline Action (Card Buttons)</h3>
+  <div class="row" style="max-width:360px;">
+    <button class="btn-action">🍽️ 가봤음</button>
+    <button class="btn-action">💛 가보고싶음</button>
+  </div>
+  <div class="row" style="max-width:360px;">
+    <button class="btn-action active-restaurant">🍽️ 가봤음</button>
+    <button class="btn-action">💛 가보고싶음</button>
+  </div>
+  <div class="row" style="max-width:360px;">
+    <button class="btn-action active-wine">맞아요</button>
+    <button class="btn-action">다른 와인이에요</button>
+  </div>
+
+  <h3>Search Buttons</h3>
+  <div class="row">
+    <button class="btn-action" style="flex:none;padding:11px 16px;border-color:var(--wine-primary);color:var(--wine-primary);background:var(--wine-primary-light);">📷 사진으로 찾기</button>
+    <button class="btn-action" style="flex:none;padding:11px 16px;">🔍 이름으로 검색</button>
+    <button class="btn-search-primary">찾기</button>
+    <button class="btn btn-skip">취소</button>
+  </div>
+
+  <h3>Social Login</h3>
+  <div style="max-width:320px;display:flex;flex-direction:column;gap:10px;">
+    <button class="social-btn-demo social-kakao">💬 카카오로 시작</button>
+    <button class="social-btn-demo social-google">G Google로 시작</button>
+    <button class="social-btn-demo social-apple"> Apple로 시작</button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>4. Cards</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Default Card</h3>
+  <div style="max-width:360px;">
+    <div class="card">
+      <div class="card-top">
+        <div class="card-icon">🍜</div>
+        <div class="card-info">
+          <div class="card-name">미진</div>
+          <div class="card-meta">한식 · 광화문 <span class="badge badge-blue">⭐ 블루리본</span></div>
+          <div class="card-score">N 4.5 · K 4.2</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn-action">🍽️ 가봤음</button>
+        <button class="btn-action">💛 가보고싶음</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Visited — Restaurant (button → gauge)</h3>
+  <div style="max-width:360px;">
+    <div class="card visited-restaurant">
+      <div class="card-top">
+        <div class="card-icon" style="background:var(--restaurant-primary-light);">🍜</div>
+        <div class="card-info">
+          <div class="card-name">미진</div>
+          <div class="card-meta">한식 · 광화문 <span class="badge badge-blue">⭐ 블루리본</span></div>
+          <div class="card-score">N 4.5 · K 4.2</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;">
+          <div class="gauge-bar">
+            <div class="gauge-fill" style="width:78%;background:var(--gauge-4);"></div>
+            <div class="gauge-label">78</div>
+          </div>
+        </div>
+        <button class="btn btn-skip" style="font-size:16px;padding:4px;">×</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Visited — Wine (confirmed)</h3>
+  <div style="max-width:360px;">
+    <div class="card visited-wine">
+      <div class="card-top">
+        <div class="card-icon" style="background:var(--wine-primary-light);">🍷</div>
+        <div class="card-info">
+          <div class="card-name" style="color:var(--wine-primary);">몬테스 알파 까베르네 소비뇽</div>
+          <div class="card-meta">레드 · 칠레 콜차과 · ★4.1</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;">
+          <div class="gauge-bar">
+            <div class="gauge-fill" style="width:75%;background:var(--wine-gauge-4);"></div>
+            <div class="gauge-label">75</div>
+          </div>
+        </div>
+        <button class="btn btn-skip" style="font-size:16px;padding:4px;">×</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Pending — Wine Recognition</h3>
+  <div style="max-width:360px;">
+    <div class="card">
+      <div class="card-top">
+        <div class="card-icon" style="background:var(--wine-primary-light);">🍷</div>
+        <div class="card-info">
+          <div class="card-name" style="color:var(--wine-primary);">몬테스 알파 까베르네 소비뇽</div>
+          <div class="card-meta">레드 · 칠레 콜차과 · ★4.1</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn-action active-wine">맞아요</button>
+        <button class="btn-action">다른 와인이에요</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Wishlisted</h3>
+  <div style="max-width:360px;">
+    <div class="card wishlisted">
+      <div class="card-top">
+        <div class="card-icon">🍲</div>
+        <div class="card-info">
+          <div class="card-name">토속촌</div>
+          <div class="card-meta">한식 · 광화문</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Loading Card</h3>
+  <div style="max-width:360px;">
+    <div class="loading-card">
+      <div style="font-size:28px;margin-bottom:8px;animation:pulse 1.5s infinite;">🍷</div>
+      <div style="font-size:13px;color:var(--text-sub);">와인을 찾고 있어요...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>5. Satisfaction Gauge</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Restaurant (Red → Blue)</h3>
+  <div style="max-width:360px;display:flex;flex-direction:column;gap:12px;">
+    <div><div class="label">Score 25</div><div class="gauge-bar"><div class="gauge-fill" style="width:25%;background:var(--gauge-1);"></div><div class="gauge-label">25</div></div></div>
+    <div><div class="label">Score 45</div><div class="gauge-bar"><div class="gauge-fill" style="width:45%;background:var(--gauge-2);"></div><div class="gauge-label">45</div></div></div>
+    <div><div class="label">Score 65</div><div class="gauge-bar"><div class="gauge-fill" style="width:65%;background:var(--gauge-3);"></div><div class="gauge-label">65</div></div></div>
+    <div><div class="label">Score 78</div><div class="gauge-bar"><div class="gauge-fill" style="width:78%;background:var(--gauge-4);"></div><div class="gauge-label">78</div></div></div>
+    <div><div class="label">Score 92</div><div class="gauge-bar"><div class="gauge-fill" style="width:92%;background:var(--gauge-5);"></div><div class="gauge-label">92</div></div></div>
+  </div>
+  <div class="gauge-hints" style="max-width:360px;"><span>별로</span><span>최고</span></div>
+
+  <h3>Wine (Purple Gradient)</h3>
+  <div style="max-width:360px;display:flex;flex-direction:column;gap:12px;">
+    <div><div class="label">Score 25</div><div class="gauge-bar"><div class="gauge-fill" style="width:25%;background:var(--wine-gauge-1);"></div><div class="gauge-label">25</div></div></div>
+    <div><div class="label">Score 45</div><div class="gauge-bar"><div class="gauge-fill" style="width:45%;background:var(--wine-gauge-2);"></div><div class="gauge-label">45</div></div></div>
+    <div><div class="label">Score 65</div><div class="gauge-bar"><div class="gauge-fill" style="width:65%;background:var(--wine-gauge-3);"></div><div class="gauge-label">65</div></div></div>
+    <div><div class="label">Score 78</div><div class="gauge-bar"><div class="gauge-fill" style="width:78%;background:var(--wine-gauge-4);"></div><div class="gauge-label">78</div></div></div>
+    <div><div class="label">Score 92</div><div class="gauge-bar"><div class="gauge-fill" style="width:92%;background:var(--wine-gauge-5);"></div><div class="gauge-label">92</div></div></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>6. Filter Tabs</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Restaurant Context</h3>
+  <div class="filter-tabs" style="max-width:360px;">
+    <button class="filter-tab active-restaurant">전체</button>
+    <button class="filter-tab">광화문</button>
+    <button class="filter-tab">을지로</button>
+    <button class="filter-tab">강남</button>
+  </div>
+
+  <h3>Wine Context</h3>
+  <div class="filter-tabs" style="max-width:360px;margin-top:16px;">
+    <button class="filter-tab active-wine">전체</button>
+    <button class="filter-tab">🍷 레드</button>
+    <button class="filter-tab">🥂 화이트</button>
+    <button class="filter-tab">🫧 스파클링</button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>7. Intro Selection Cards</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div style="max-width:360px;display:flex;flex-direction:column;gap:10px;">
+    <h3>Selected</h3>
+    <div class="intro-card selected-restaurant">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:32px;">🍽️</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;">맛집 기록</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:3px;">가본 식당에 점수를 매기고, 가보고 싶은 곳을 찜해두세요</div>
+        </div>
+        <div class="intro-check on-restaurant">✓</div>
+      </div>
+    </div>
+
+    <h3>Deselected</h3>
+    <div class="intro-card">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:32px;">🍽️</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;">맛집 기록</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:3px;">가본 식당에 점수를 매기고, 가보고 싶은 곳을 찜해두세요</div>
+        </div>
+        <div class="intro-check off">✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>8. Bottom Sheet</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="sheet-demo">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+      <div style="position:relative;flex:1;">
+        <input class="search-input" placeholder="와인 이름 검색..." value="몬테스" />
+      </div>
+      <button class="btn-search-primary">찾기</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="padding:14px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:18px;">🍷</div>
+          <div><div style="font-size:14px;font-weight:600;">몬테스 알파 까베르네 소비뇽</div><div style="font-size:12px;color:var(--text-sub);">레드 · 칠레 콜차과 · ★4.1</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>9. Onboarding Navigation</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Restaurant Step</h3>
+  <div class="ob-nav-demo" style="max-width:360px;">
+    <button class="nav-back">← 이전</button>
+    <button class="nav-skip">건너뛰기</button>
+    <button class="nav-next">다음 →</button>
+  </div>
+
+  <h3>Wine Step</h3>
+  <div class="ob-nav-demo" style="max-width:360px;">
+    <button class="nav-back">← 이전</button>
+    <button class="nav-skip">건너뛰기</button>
+    <button class="nav-next" style="background:var(--wine-primary);box-shadow:0 4px 20px rgba(107,76,138,0.4);">시작하기 →</button>
+  </div>
+
+  <div style="font-size:11px;color:var(--text-hint);margin-top:12px;line-height:1.6;">
+    구조: <code>[← 이전] [건너뛰기] [다음 →]</code> 한 줄 배치<br>
+    이전: pill, bg:#f3f4f6, border<br>
+    건너뛰기: 밑줄 텍스트, text-hint, 중앙<br>
+    다음: pill, 테마색, shadow<br>
+    하단 고정, padding: 12px 20px 28px (홈 인디케이터 여백)
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>10. Empty State</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div style="max-width:360px;">
+    <div class="empty-state">
+      <div class="icon">🍷</div>
+      <div class="title">아직 등록한 와인이 없어요</div>
+      <div class="desc">위 버튼으로 와인을 추가해보세요. 건너뛰어도 OK!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>11. Toast</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="row">
+    <span class="toast-demo">이미 등록한 와인이에요</span>
+  </div>
+  <div style="font-size:11px;color:var(--text-hint);margin-top:4px;">위치: 하단 100px (내비 위), 중앙 정렬, 2초 후 fade out</div>
+</div>
+
+<!-- ============================================ -->
+<h2>12. Spacing & Radius Reference</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>Border Radius</h3>
+  <div class="row">
+    <div style="width:60px;height:40px;background:var(--restaurant-primary-light);border:1.5px solid var(--restaurant-primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:10px;">8px</div>
+    <div style="width:60px;height:40px;background:var(--restaurant-primary-light);border:1.5px solid var(--restaurant-primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:10px;">12px</div>
+    <div style="width:60px;height:40px;background:var(--restaurant-primary-light);border:1.5px solid var(--restaurant-primary);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:10px;">16px</div>
+    <div style="width:60px;height:40px;background:var(--restaurant-primary-light);border:1.5px solid var(--restaurant-primary);border-radius:var(--radius-xl);display:flex;align-items:center;justify-content:center;font-size:10px;">24px</div>
+    <div style="width:80px;height:40px;background:var(--restaurant-primary-light);border:1.5px solid var(--restaurant-primary);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:10px;">50px</div>
+  </div>
+
+  <h3>Usage</h3>
+  <div style="font-size:12px;color:var(--text-sub);line-height:1.8;">
+    <code>8px</code> — 태그, 뱃지, 체크박스<br>
+    <code>12px</code> — 검색 인풋, 인라인 버튼, 카드 아이콘<br>
+    <code>16px</code> — 카드, 인트로 선택 카드<br>
+    <code>24px</code> — 바텀시트 상단<br>
+    <code>50px</code> — CTA 버튼, 이전 버튼 (pill)
+  </div>
+</div>
+
+</body>
+</html>

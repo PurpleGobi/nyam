@@ -1,63 +1,50 @@
-'use client'
+"use client"
 
-import useSWR from 'swr'
-import { getTasteDnaRepository, getStyleDnaRepository } from '@/di/repositories'
-import {
-  calculateTasteSimilarity,
-  calculateExperienceComplementarity,
-  calculateOverallCompatibility,
-  type CompatibilityResult,
-} from '@/domain/services/compatibility'
+import { useCallback, useState } from "react"
 
-async function fetchCompatibility(
-  userIdA: string,
-  userIdB: string,
-): Promise<CompatibilityResult | null> {
-  const tasteDnaRepo = getTasteDnaRepository()
-  const atlasRepo = getStyleDnaRepository()
-
-  const [dnaA, dnaB, regionsA, regionsB, genresA, genresB] = await Promise.all([
-    tasteDnaRepo.getByUserId(userIdA),
-    tasteDnaRepo.getByUserId(userIdB),
-    atlasRepo.getRegionsByUserId(userIdA),
-    atlasRepo.getRegionsByUserId(userIdB),
-    atlasRepo.getGenresByUserId(userIdA),
-    atlasRepo.getGenresByUserId(userIdB),
-  ])
-
-  if (!dnaA || !dnaB) return null
-
-  const tasteSimilarity = calculateTasteSimilarity(dnaA, dnaB)
-
-  const atlasA = [
-    ...regionsA.map((r) => ({ name: r.region, level: r.level })),
-    ...genresA.map((g) => ({ name: g.category, level: g.level })),
-  ]
-  const atlasB = [
-    ...regionsB.map((r) => ({ name: r.region, level: r.level })),
-    ...genresB.map((g) => ({ name: g.category, level: g.level })),
-  ]
-
-  const { score: experienceComplementarity, strongAreas } =
-    calculateExperienceComplementarity(atlasA, atlasB)
-
-  const overall = calculateOverallCompatibility(tasteSimilarity, experienceComplementarity)
-
-  return { tasteSimilarity, experienceComplementarity, overall, strongAreas }
+interface CompatibilityBreakdown {
+  flavorSimilarity: number
 }
 
-export function useCompatibility(
-  userIdA: string | undefined,
-  userIdB: string | undefined,
-) {
-  const { data, isLoading, error } = useSWR(
-    userIdA && userIdB ? ['compatibility', userIdA, userIdB] : null,
-    () => fetchCompatibility(userIdA!, userIdB!),
-  )
+interface CompatibilityResponse {
+  success: boolean
+  score?: number
+  breakdown?: CompatibilityBreakdown
+  error?: string
+}
 
-  return {
-    result: data ?? null,
-    isLoading,
-    error,
-  }
+export function useCompatibility() {
+  const [score, setScore] = useState<number | null>(null)
+  const [breakdown, setBreakdown] = useState<CompatibilityBreakdown | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const checkCompatibility = useCallback(async (targetUserId: string) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/compatibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId }),
+      })
+
+      const data: CompatibilityResponse = await response.json()
+
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to check compatibility")
+        return
+      }
+
+      setScore(data.score ?? null)
+      setBreakdown(data.breakdown ?? null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  return { score, breakdown, isLoading, error, checkCompatibility }
 }

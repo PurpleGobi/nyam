@@ -1,107 +1,122 @@
-import { createClient } from '@/infrastructure/supabase/client'
-import { sanitizeLikePattern } from '@/shared/utils/sanitize'
-import type { Restaurant, MenuItem } from '@/domain/entities/restaurant'
-import type {
-  RestaurantRepository,
-  RestaurantSearchParams,
-} from '@/domain/repositories/restaurant-repository'
-import type { Database } from '@/infrastructure/supabase/types'
+import { createClient } from "@/infrastructure/supabase/client"
+import type { Restaurant, RestaurantStats } from "@/domain/entities/restaurant"
+import type { RestaurantRepository } from "@/domain/repositories/restaurant-repository"
 
-type RestaurantRow = Database['public']['Tables']['restaurants']['Row']
-
-function toMenuItems(raw: Record<string, unknown> | null): MenuItem[] {
-  if (!raw || !Array.isArray(raw)) return []
-  return (raw as Array<Record<string, unknown>>).map((item) => ({
-    name: (item.name as string) ?? '',
-    price: (item.price as number) ?? null,
-    description: (item.description as string) ?? null,
-  }))
-}
-
-function toRestaurant(row: RestaurantRow): Restaurant {
+function mapDbRestaurant(data: Record<string, unknown>): Restaurant {
   return {
-    id: row.id,
-    name: row.name,
-    address: row.address ?? '',
-    region: row.region ?? '',
-    category: row.category ?? '',
-    location: {
-      lat: row.latitude ?? 0,
-      lng: row.longitude ?? 0,
-    },
-    phone: row.phone,
-    hours: (row.hours as Record<string, string>) ?? {},
-    source: row.source ?? '',
-    externalId: row.external_id,
-    externalUrl: row.external_url,
-    menuItems: toMenuItems(row.menu_items),
-    syncedAt: row.synced_at ?? row.created_at,
+    id: data.id as string,
+    name: data.name as string,
+    address: data.address as string | null,
+    region: data.region as string | null,
+    genre: data.genre as string | null,
+    latitude: data.latitude as number | null,
+    longitude: data.longitude as number | null,
+    phone: data.phone as string | null,
+    hours: data.hours as Record<string, unknown> | null,
+    source: data.source as string | null,
+    externalId: data.external_id as string | null,
+    externalUrl: data.external_url as string | null,
+    menuItems: data.menu_items as Record<string, unknown> | null,
+    syncedAt: data.synced_at as string | null,
+    isClosed: (data.is_closed as boolean) ?? false,
+    closedAt: data.closed_at as string | null,
+    createdAt: data.created_at as string,
   }
 }
 
 export class SupabaseRestaurantRepository implements RestaurantRepository {
+  private supabase = createClient()
+
   async getById(id: string): Promise<Restaurant | null> {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('id', id)
+    const { data, error } = await this.supabase
+      .from("restaurants")
+      .select("*")
+      .eq("id", id)
       .single()
 
     if (error || !data) return null
-    return toRestaurant(data as RestaurantRow)
+    return mapDbRestaurant(data)
   }
 
-  async search(params: RestaurantSearchParams): Promise<Restaurant[]> {
-    const supabase = createClient()
-    let query = supabase
-      .from('restaurants')
-      .select('*')
-      .ilike('name', `%${sanitizeLikePattern(params.query)}%`)
+  async getByExternalId(externalId: string): Promise<Restaurant | null> {
+    const { data, error } = await this.supabase
+      .from("restaurants")
+      .select("*")
+      .eq("external_id", externalId)
+      .single()
 
-    if (params.location) {
-      const delta = 0.05
-      query = query
-        .gte('latitude', params.location.lat - delta)
-        .lte('latitude', params.location.lat + delta)
-        .gte('longitude', params.location.lng - delta)
-        .lte('longitude', params.location.lng + delta)
+    if (error || !data) return null
+    return mapDbRestaurant(data)
+  }
+
+  async upsertFromKakao(input: {
+    name: string
+    address: string
+    genre?: string
+    region?: string
+    latitude: number
+    longitude: number
+    phone?: string
+    externalId: string
+    externalUrl?: string
+  }): Promise<Restaurant> {
+    const { data, error } = await this.supabase
+      .from("restaurants")
+      .upsert(
+        {
+          name: input.name,
+          address: input.address,
+          genre: input.genre ?? null,
+          region: input.region ?? null,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          phone: input.phone ?? null,
+          external_id: input.externalId,
+          external_url: input.externalUrl ?? null,
+          source: "kakao",
+          synced_at: new Date().toISOString(),
+        },
+        { onConflict: "external_id" },
+      )
+      .select()
+      .single()
+
+    if (error) throw new Error(`Failed to upsert restaurant: ${error.message}`)
+    return mapDbRestaurant(data)
+  }
+
+  async getStats(restaurantId: string): Promise<RestaurantStats | null> {
+    const { data, error } = await this.supabase
+      .from("restaurant_stats")
+      .select("*")
+      .eq("restaurant_id", restaurantId)
+      .single()
+
+    if (error || !data) return null
+    return {
+      restaurantId: data.restaurant_id,
+      recordCount: data.record_count,
+      uniqueUsers: data.unique_users,
+      avgTaste: data.avg_taste,
+      avgValue: data.avg_value,
+      avgService: data.avg_service,
+      avgAtmosphere: data.avg_atmosphere,
+      avgCleanliness: data.avg_cleanliness,
+      avgPortion: data.avg_portion,
+      avgOverall: data.avg_overall,
+      latestRecordAt: data.latest_record_at,
+      updatedAt: data.updated_at,
     }
-
-    const { data, error } = await query.limit(50)
-
-    if (error || !data) return []
-    return (data as RestaurantRow[]).map(toRestaurant)
   }
 
-  async getByRegion(region: string): Promise<Restaurant[]> {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('region', region)
+  async searchByName(query: string, limit = 10): Promise<Restaurant[]> {
+    const { data, error } = await this.supabase
+      .from("restaurants")
+      .select("*")
+      .ilike("name", `%${query}%`)
+      .limit(limit)
 
-    if (error || !data) return []
-    return (data as RestaurantRow[]).map(toRestaurant)
-  }
-
-  async getNearby(
-    lat: number,
-    lng: number,
-    radiusKm: number,
-  ): Promise<Restaurant[]> {
-    const supabase = createClient()
-    const delta = radiusKm * 0.01
-
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select('*')
-      .gte('latitude', lat - delta)
-      .lte('latitude', lat + delta)
-      .gte('longitude', lng - delta)
-      .lte('longitude', lng + delta)
-
-    if (error || !data) return []
-    return (data as RestaurantRow[]).map(toRestaurant)
+    if (error) throw new Error(`Failed to search restaurants: ${error.message}`)
+    return (data ?? []).map(mapDbRestaurant)
   }
 }

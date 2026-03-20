@@ -1,105 +1,90 @@
-'use client'
+"use client"
 
-import { useEffect, useRef } from 'react'
-import Image from 'next/image'
-import type { CalendarDayRecord } from '@/application/hooks/use-calendar-records'
+import { useEffect, useRef } from "react"
+import Image from "next/image"
+import { X } from "lucide-react"
 
-const TYPE_EMOJI: Record<string, string> = {
-  restaurant: '🍽️',
-  wine: '🍷',
-  cooking: '🍳',
+interface CalendarDayRecord {
+  id: string
+  title: string
+  thumbnailUrl: string | null
+  recordType: string
+}
+
+interface CalendarDayPopupProps {
+  records: CalendarDayRecord[]
+  date: string
+  onClose: () => void
+  onRecordClick: (id: string) => void
 }
 
 export function CalendarDayPopup({
-  day,
-  month,
   records,
-  onSelect,
+  date,
   onClose,
-}: {
-  day: number
-  month: number
-  records: CalendarDayRecord[]
-  onSelect: (recordId: string) => void
-  onClose: () => void
-}) {
-  const ref = useRef<HTMLDivElement>(null)
+  onRecordClick,
+}: CalendarDayPopupProps) {
+  const backdropRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose()
-      }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
   }, [onClose])
 
-  useEffect(() => {
-    function handleEsc(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [onClose])
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === backdropRef.current) onClose()
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] px-6">
-      <div
-        ref={ref}
-        className="w-full max-w-md animate-in fade-in zoom-in-95 duration-200 rounded-2xl bg-white px-4 pb-5 pt-4 shadow-lg"
-      >
-
-        {/* Date header */}
-        <div className="mb-3 text-sm font-semibold text-[var(--color-neutral-800)]">
-          {month}월 {day}일 기록
-          <span className="ml-1.5 text-xs font-normal text-[var(--color-neutral-400)]">
-            {records.length}건
-          </span>
+    <div
+      ref={backdropRef}
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] px-6"
+    >
+      <div className="w-full max-w-md rounded-2xl bg-card p-4 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-neutral-800">{date}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className="p-1 text-neutral-400 hover:text-neutral-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Records list */}
-        <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
+        <div className="space-y-2">
           {records.map((record) => (
             <button
               key={record.id}
               type="button"
-              onClick={() => onSelect(record.id)}
-              className="flex items-center gap-3 rounded-xl bg-[var(--color-neutral-50)] p-3 text-left transition-colors hover:bg-[var(--color-neutral-100)] active:bg-[var(--color-neutral-200)]"
+              onClick={() => onRecordClick(record.id)}
+              className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-neutral-50 active:scale-[0.98]"
             >
-              {/* Thumbnail or emoji */}
-              {record.photoUrl ? (
-                <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg">
+              {record.thumbnailUrl ? (
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl">
                   <Image
-                    src={record.photoUrl}
-                    alt=""
+                    src={record.thumbnailUrl}
+                    alt={record.title}
                     fill
-                    sizes="44px"
                     className="object-cover"
+                    sizes="40px"
                   />
                 </div>
               ) : (
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--color-neutral-100)]">
-                  <span className="text-lg">{TYPE_EMOJI[record.recordType] ?? '🍽️'}</span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
+                  <span className="text-[10px] text-neutral-400">
+                    {record.recordType === "wine" ? "W" : record.recordType === "cooking" ? "C" : "R"}
+                  </span>
                 </div>
               )}
-
-              {/* Info */}
-              <div className="flex-1 overflow-hidden">
-                <div className="truncate text-sm font-semibold text-[var(--color-neutral-800)]">
-                  {record.menuName || '기록'}
-                </div>
-                <div className="text-xs text-[var(--color-neutral-400)]">
-                  {record.recordType === 'wine' ? '와인' : record.recordType === 'cooking' ? '요리' : '식당'}
-                </div>
-              </div>
-
-              {/* Rating */}
-              <div className="flex-shrink-0 text-right">
-                <div className="text-sm font-bold text-[var(--color-primary-500)]">
-                  {record.rating}
-                </div>
-              </div>
+              <span className="truncate text-sm text-neutral-700">
+                {record.title}
+              </span>
             </button>
           ))}
         </div>

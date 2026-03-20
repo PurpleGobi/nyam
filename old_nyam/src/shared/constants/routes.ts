@@ -1,10 +1,25 @@
 export const ROUTES = {
   HOME: "/",
   DISCOVER: "/discover",
+  RECORD: "/record",
   GROUPS: "/groups",
   PROFILE: "/profile",
-  RECORD: "/record",
+  LOGIN: "/auth/login",
+  AUTH_CALLBACK: "/auth/callback",
+  AUTH_CONSENT: "/auth/consent",
+  TERMS_SERVICE: "/terms/service",
+  TERMS_PRIVACY: "/terms/privacy",
   NOTIFICATIONS: "/notifications",
+  RECOMMEND: "/recommend",
+  COMPARISON: "/comparison",
+  COMPATIBILITY: "/compatibility",
+  WRAPPED: "/wrapped",
+  OFFLINE: "/offline",
+  SETTINGS: "/settings",
+  recordDetail: (id: string) => `/records/${id}` as const,
+  recordEdit: (id: string) => `/records/${id}/edit` as const,
+  recordComplete: (id: string) => `/records/${id}/complete` as const,
+  groupDetail: (id: string) => `/groups/${id}` as const,
+  groupJoin: () => "/groups/join" as const,
+  restaurantDetail: (id: string) => `/restaurants/${id}` as const,
 } as const
-
-export type Route = (typeof ROUTES)[keyof typeof ROUTES]

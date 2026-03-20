@@ -1,14 +1,10 @@
-import Link from 'next/link'
+import Link from "next/link"
+import { ROUTES } from "@/shared/constants/routes"
 
 export function LogoLink() {
   return (
-    <Link href="/">
-      <h1
-        className="text-2xl tracking-tight text-orange-500"
-        style={{ fontFamily: 'var(--font-logo)' }}
-      >
-        nyam
-      </h1>
+    <Link href={ROUTES.HOME} className="font-[family-name:var(--font-logo)] text-xl text-primary-500">
+      nyam
     </Link>
   )
 }

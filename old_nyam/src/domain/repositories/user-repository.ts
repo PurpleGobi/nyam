@@ -1,7 +1,9 @@
-import type { User, UserStats } from '../entities/user'
+import type { User, UserStats } from "@/domain/entities/user"
 
 export interface UserRepository {
-  getById(id: string): Promise<User | null>
-  getStats(userId: string): Promise<UserStats | null>
-  updateProfile(userId: string, profile: Partial<Pick<User, 'nickname' | 'avatarUrl'>>): Promise<User>
+  getCurrentUser(): Promise<User | null>
+  getUserById(id: string): Promise<User | null>
+  getUserStats(userId: string): Promise<UserStats | null>
+  updateNickname(userId: string, nickname: string): Promise<void>
+  updateAvatar(userId: string, avatarUrl: string): Promise<void>
 }

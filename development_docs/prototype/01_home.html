@@ -1,0 +1,3071 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — Home</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-card: #f9fafb;
+    --text: #111827;
+    --text-sub: #6b7280;
+    --text-hint: #9ca3af;
+    --primary: #FF6038;
+    --primary-light: #FFF5F2;
+    --wine: #6B4C8A;
+    --wine-light: #F8F5FA;
+    --border: #e5e7eb;
+    --radius: 16px;
+  }
+
+  body {
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  /* Device frame */
+  .device {
+    width: 390px;
+    height: 844px;
+    background: #1a1a1a;
+    border-radius: 52px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 1px #333,
+      0 30px 80px rgba(0,0,0,0.5),
+      inset 0 0 0 1px #444;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .device-inner {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 42px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Notch */
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    position: relative;
+    z-index: 50;
+  }
+
+  .status-time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+
+  /* Screen system */
+  .screens-wrapper {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+
+  .screen.hidden { transform: translateX(100%); }
+  .screen.slide-out { transform: translateX(-100%); }
+  .screen.active { transform: translateX(0); }
+
+  @keyframes slideOutRight { from { transform:translateX(0); } to { transform:translateX(100%); } }
+  @keyframes slideInLeft { from { transform:translateX(-100%); } to { transform:translateX(0); } }
+
+  /* Onboarding bottom nav bar */
+  .ob-nav {
+    position:absolute; bottom:0; left:0; right:0; z-index:80;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 20px 28px; /* extra bottom for home indicator */
+    background:linear-gradient(transparent 0%, var(--bg) 20%);
+  }
+  .ob-nav-back {
+    padding:12px 20px; border-radius:50px;
+    background:#f3f4f6; border:1px solid var(--border);
+    font-size:14px; font-weight:600; color:var(--text);
+    cursor:pointer; transition:all 0.2s;
+  }
+  .ob-nav-back:active { transform:scale(0.95); background:#e5e7eb; }
+
+  .ob-nav-skip {
+    background:none; border:none;
+    font-size:13px; font-weight:600; color:var(--text-hint);
+    cursor:pointer; padding:8px 4px;
+    text-decoration:underline; text-underline-offset:3px;
+  }
+  .ob-nav-skip:active { color:var(--text-sub); }
+
+  .ob-nav-next {
+    padding:12px 20px; border-radius:50px;
+    background:var(--primary); color:white;
+    font-size:14px; font-weight:700; border:none; cursor:pointer;
+    box-shadow:0 4px 20px rgba(255,96,56,0.4);
+    transition:all 0.2s; display:flex; align-items:center; gap:4px;
+  }
+  .ob-nav-next:active { transform:scale(0.95); }
+  .ob-nav-next:disabled { background:#d1d5db; box-shadow:none; cursor:default; }
+  .ob-nav-next.wine-style {
+    background:var(--wine); box-shadow:0 4px 20px rgba(107,76,138,0.4);
+  }
+
+  /* Legacy compat — keep for intro CTA only */
+  .floating-next {
+    position:absolute; bottom:24px; right:20px; z-index:80;
+    padding:14px 24px; border-radius:50px;
+    background:var(--primary); color:white;
+    font-size:15px; font-weight:700; border:none; cursor:pointer;
+    box-shadow:0 4px 20px rgba(255,96,56,0.4);
+    transition:all 0.2s; display:flex; align-items:center; gap:6px;
+  }
+  .floating-next:active { transform:scale(0.95); }
+  .floating-next:disabled { background:#d1d5db; box-shadow:none; cursor:default; }
+
+  /* Scrollable content */
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* =====================
+     SCREEN 1: LOGIN
+     ===================== */
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 60px 32px 40px;
+    background: linear-gradient(160deg, #fff8f6 0%, #ffffff 60%);
+  }
+
+  .login-logo {
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: -3px;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .login-tagline {
+    font-size: 15px;
+    color: var(--text-sub);
+    margin-bottom: 60px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .login-illustration {
+    width: 120px;
+    height: 120px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    margin-bottom: 48px;
+  }
+
+  .social-btns {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .social-btn {
+    height: 52px;
+    border-radius: 14px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .social-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+  .btn-kakao { background: #FEE500; color: #3C1E1E; }
+  .btn-google { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+  .btn-apple { background: #000; color: #fff; }
+
+  .social-btn-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .login-footer {
+    font-size: 12px;
+    color: var(--text-hint);
+    text-align: center;
+  }
+  .login-footer a { color: var(--text-sub); text-decoration: underline; }
+
+  /* =====================
+     SCREEN 2: AREA SELECTION
+     ===================== */
+  .onboarding-screen {
+    padding: 44px 24px 40px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .onboarding-step {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .step-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .step-dot.active { background: var(--primary); width: 20px; border-radius: 3px; }
+
+  .onboarding-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .onboarding-sub {
+    font-size: 14px;
+    color: var(--text-sub);
+    margin-bottom: 20px;
+  }
+
+  .location-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+  }
+
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+    flex: 1;
+  }
+
+  .chip {
+    padding: 10px 16px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .chip:active { transform: scale(0.95); }
+  .chip.selected {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* Area Map */
+  .area-map-container {
+    flex:1; min-height:360px; position:relative;
+    background: #f0f4f8; border-radius:20px; overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .map-layer {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    transition: opacity 0.35s, transform 0.35s;
+  }
+  .map-layer.hidden-layer {
+    opacity:0; pointer-events:none; transform:scale(1.1);
+  }
+  .map-layer.zoom-out {
+    opacity:0; pointer-events:none; transform:scale(0.8);
+  }
+
+  /* City bubbles on national map */
+  .city-bubble {
+    position:absolute; transform:translate(-50%,-50%);
+    width:52px; height:52px; border-radius:50%;
+    background:rgba(255,96,56,0.12); border:2px solid rgba(255,96,56,0.3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:600; color:var(--text);
+    cursor:pointer; transition: all 0.2s;
+    -webkit-user-select:none; user-select:none;
+  }
+  .city-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
+  .city-bubble.pulse {
+    background:rgba(255,96,56,0.2); border-color:var(--primary);
+  }
+
+  /* Area bubbles on city map */
+  .area-bubble {
+    position:absolute; transform:translate(-50%,-50%);
+    min-width:48px; height:48px; border-radius:50%;
+    background:rgba(255,96,56,0.08); border:1.5px solid rgba(255,96,56,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:500; color:var(--text-sub);
+    cursor:pointer; transition: all 0.2s;
+    padding:0 6px;
+    -webkit-user-select:none; user-select:none;
+  }
+  .area-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
+  .area-bubble.selected {
+    background:rgba(255,96,56,0.25); border-color:var(--primary);
+    color:var(--primary); font-weight:700;
+    box-shadow:0 0 12px rgba(255,96,56,0.3);
+  }
+
+  .map-back-btn {
+    position:absolute; top:12px; left:12px; z-index:10;
+    padding:6px 14px; border-radius:20px;
+    background:rgba(255,255,255,0.9); border:1px solid var(--border);
+    font-size:13px; color:var(--text); cursor:pointer;
+    backdrop-filter:blur(8px); display:flex; align-items:center; gap:4px;
+  }
+
+  .selected-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:4px 12px; border-radius:100px;
+    background:var(--primary-light); border:1px solid var(--primary);
+    color:var(--primary); font-size:12px; font-weight:600;
+  }
+  .selected-chip .remove {
+    cursor:pointer; font-size:14px; line-height:1; opacity:0.6;
+  }
+  .selected-chip .remove:hover { opacity:1; }
+
+  .btn-primary {
+    height: 54px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:disabled { background: var(--border); color: var(--text-hint); cursor: not-allowed; }
+  .btn-primary:disabled:active { transform: none; }
+
+  /* =====================
+     SCREEN 3: RESTAURANT CHECK
+     ===================== */
+  .restaurant-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 24px;
+  }
+
+  .restaurant-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .restaurant-item:last-child { border-bottom: none; }
+
+  .custom-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .custom-checkbox.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .custom-checkbox.checked::after {
+    content: '';
+    width: 12px;
+    height: 8px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+
+  .restaurant-info { flex: 1; }
+  .restaurant-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .restaurant-meta { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; gap: 6px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #FEF3C7;
+    color: #D97706;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+  }
+
+  .badge.blue { background: #EFF6FF; color: #3B82F6; }
+
+  .count-badge {
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  /* Onboarding restaurant/wine cards */
+  .ob-card {
+    background: var(--bg-card); border-radius:16px; border:1px solid var(--border);
+    padding:14px 16px; transition:all 0.2s;
+  }
+  .ob-card.visited { border-color: var(--primary); background: var(--primary-light); }
+  .ob-card.wishlisted { border-color: #f59e0b; background: #fffbeb; }
+  .ob-card.wine-visited { border-color: var(--wine); background: var(--wine-light); }
+  .ob-card.wine-wishlisted { border-color: #f59e0b; background: #fffbeb; }
+
+  /* Wine onboarding */
+  @keyframes sheetSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  .ob-card-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .ob-card-photo {
+    width:48px; height:48px; border-radius:12px; background:#e5e7eb;
+    display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
+  }
+  .ob-card-info { flex:1; }
+  .ob-card-name { font-size:15px; font-weight:600; color:var(--text); }
+  .ob-card-meta { font-size:12px; color:var(--text-sub); display:flex; align-items:center; gap:6px; margin-top:2px; }
+  .ob-card-score { font-size:11px; color:var(--text-hint); margin-top:2px; }
+  .ob-card-source { font-size:10px; color:var(--text-hint); margin-top:3px; line-height:1.3; }
+  .ob-card-rating { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:#7c3aed; background:#f5f3ff; padding:2px 7px; border-radius:6px; }
+  .ob-card-rating svg { width:11px; height:11px; fill:#7c3aed; }
+
+  /* Wine category tabs */
+  /* Unified filter tabs — underline tab style */
+  .ob-filter-tabs {
+    display:flex; gap:0; overflow-x:auto;
+    border-bottom:1.5px solid var(--border);
+    -webkit-overflow-scrolling:touch;
+  }
+  .ob-filter-tabs::-webkit-scrollbar { display:none; }
+  .ob-filter-tab {
+    flex-shrink:0; padding:10px 16px;
+    font-size:14px; font-weight:500; white-space:nowrap;
+    border:none; background:none; color:var(--text-hint);
+    cursor:pointer; transition:all 0.2s;
+    position:relative;
+    display:flex; align-items:center; gap:4px;
+  }
+  .ob-filter-tab::after {
+    content:''; position:absolute; bottom:-1.5px; left:8px; right:8px;
+    height:2.5px; border-radius:2px; background:transparent; transition:background 0.2s;
+  }
+  .ob-filter-tab.active {
+    color:var(--primary); font-weight:700;
+  }
+  .ob-filter-tab.active::after {
+    background:var(--primary);
+  }
+  .ob-filter-tab.wine-tab.active {
+    color:var(--wine);
+  }
+  .ob-filter-tab.wine-tab.active::after {
+    background:var(--wine);
+  }
+
+  .ob-card-actions { display:flex; gap:8px; }
+  .ob-btn {
+    flex:1; padding:10px 0; border-radius:10px; border:1.5px solid var(--border);
+    background:white; font-size:13px; font-weight:600; cursor:pointer;
+    transition:all 0.15s; text-align:center;
+  }
+  .ob-btn:active { transform:scale(0.96); }
+  .ob-btn.visited-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+  .ob-btn.wish-btn.active { background:#f59e0b; color:white; border-color:#f59e0b; }
+  .ob-btn.wine-visited-btn.active { background:var(--wine); color:white; border-color:var(--wine); }
+
+  .ob-card-gauge {
+    animation:fadeSlideIn 0.25s ease;
+  }
+  .ob-score-inline {
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--border);
+    display:none; animation:fadeSlideIn 0.25s ease;
+  }
+  .ob-score-inline.show { display:block; }
+  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+  .ob-score-bar {
+    position:relative; height:36px; background:#f3f4f6; border-radius:18px; overflow:hidden; cursor:pointer;
+  }
+  .ob-score-fill {
+    position:absolute; top:0;left:0;bottom:0; border-radius:18px;
+    transition:width 0.1s, background 0.1s;
+  }
+  .ob-score-label {
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:18px;font-weight:800;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-secondary {
+    height: 54px;
+    background: var(--bg);
+    color: var(--text-sub);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s;
+    flex: 1;
+  }
+  .btn-secondary:active { transform: scale(0.97); }
+
+  /* =====================
+     SCREEN 4: HOME
+     ===================== */
+  .app-header {
+    padding: 12px 20px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .header-right { display: flex; gap: 8px; align-items: center; }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .icon-btn:active { background: var(--border); }
+
+  /* Nudge card */
+  .nudge-card {
+    margin: 14px 16px 0;
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border);
+    position: relative;
+    animation: slideDown 0.3s ease;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .nudge-photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #FFD580 0%, #FF6038 100%);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .nudge-body { flex: 1; }
+  .nudge-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 1px; }
+  .nudge-sub { font-size: 11px; color: var(--text-hint); margin-bottom: 8px; }
+
+  .nudge-actions { display: flex; gap: 6px; }
+  .nudge-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    min-height: 30px;
+    transition: transform 0.1s;
+  }
+  .nudge-btn:active { transform: scale(0.95); }
+  .nudge-btn.confirm { background: var(--primary); color: #fff; }
+  .nudge-btn.dismiss { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
+
+  .nudge-close {
+    position: absolute;
+    top: 8px; right: 10px;
+    font-size: 16px;
+    color: var(--text-hint);
+    cursor: pointer;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+  .nudge-close:active { background: var(--border); }
+
+  /* Section header */
+  .section-header {
+    padding: 16px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .section-more {
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Timeline */
+  .timeline {
+    padding: 0 16px;
+    position: relative;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 25px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 14px;
+    padding: 0 0 20px;
+    position: relative;
+    cursor: pointer;
+  }
+  .timeline-item:active .timeline-card { transform: scale(0.98); }
+
+  .timeline-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--primary);
+    flex-shrink: 0;
+    margin-top: 14px;
+    z-index: 1;
+  }
+
+  .timeline-dot.unrated {
+    background: var(--border);
+    box-shadow: 0 0 0 2px var(--border);
+  }
+
+  .timeline-card {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    transition: transform 0.1s;
+  }
+
+  .timeline-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .timeline-date {
+    font-size: 11px;
+    color: var(--text-hint);
+    font-weight: 500;
+  }
+
+  .scene-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 100px;
+    color: #fff;
+  }
+
+  .scene-solo { background: #3b82f6; }
+  .scene-romantic { background: #ec4899; }
+  .scene-friends { background: #22c55e; }
+  .scene-family { background: #f59e0b; }
+  .scene-business { background: #8b5cf6; }
+  .scene-drinks { background: #ef4444; }
+
+  .timeline-restaurant {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .timeline-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .score-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .score-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .timeline-photos {
+    display: flex;
+    gap: 6px;
+  }
+
+  .photo-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #fce7f3 0%, #dbeafe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .photo-thumb:nth-child(2) { background: linear-gradient(135deg, #dcfce7 0%, #fef9c3 100%); }
+  .photo-thumb:nth-child(3) { background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); }
+
+  .timeline-comment {
+    font-size: 13px;
+    color: var(--text-sub);
+    font-style: italic;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .unrated-label {
+    font-size: 11px;
+    color: var(--text-hint);
+    background: #F3F4F6;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .rate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .rate-btn:active { opacity: 0.7; }
+
+  /* Expandable sections */
+  .expandable-section {
+    margin: 8px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .expandable-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    background: var(--bg);
+    user-select: none;
+  }
+  .expandable-header:active { background: var(--bg-card); }
+
+  .expandable-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chevron {
+    font-size: 18px;
+    color: var(--text-hint);
+    transition: transform 0.25s;
+    display: inline-block;
+  }
+  .chevron.open { transform: rotate(180deg); }
+
+  .expandable-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-card);
+  }
+  .expandable-body.open { max-height: 600px; }
+
+  .scene-filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 14px 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .scene-filter-row::-webkit-scrollbar { display: none; }
+
+  .filter-chip {
+    padding: 7px 14px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .filter-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .filter-chip:active { transform: scale(0.95); }
+
+  .recommend-card {
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .recommend-card:active { background: #f3f4f6; }
+
+  .recommend-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+
+  .rc1 { background: linear-gradient(135deg, #fce7f3 0%, #fecaca 100%); }
+  .rc2 { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
+  .rc3 { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+
+  .recommend-info { flex: 1; }
+  .recommend-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .recommend-meta { font-size: 12px; color: var(--text-sub); }
+  .recommend-score {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--primary);
+    align-self: center;
+  }
+
+  /* Wine section */
+  .wine-input-wrap {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .wine-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    font-family: inherit;
+  }
+  .wine-input:focus { border-color: var(--wine); }
+
+  .wine-card {
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .wine-card:active { background: #f3f4f6; }
+
+  .wine-thumb {
+    width: 36px;
+    height: 52px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #9c6fc4 0%, #4a2c6a 100%);
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .wine-info { flex: 1; }
+  .wine-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .wine-meta { font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
+  .wine-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .wine-tag {
+    font-size: 10px;
+    background: var(--wine-light);
+    color: var(--wine);
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 600;
+  }
+  .wine-score { font-size: 14px; font-weight: 800; color: var(--wine); align-self: center; }
+
+  /* Bubble feed */
+  .bubble-section { padding: 0 16px 16px; }
+
+  .bubble-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .bubble-card:last-child { border-bottom: none; }
+  .bubble-card:active .bubble-body { opacity: 0.7; }
+
+  .bubble-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .av1 { background: linear-gradient(135deg, #FF6038, #ff9566); }
+  .av2 { background: linear-gradient(135deg, #6B4C8A, #9b7fc0); }
+
+  .bubble-body { flex: 1; }
+  .bubble-user { font-size: 12px; color: var(--text-hint); margin-bottom: 2px; }
+  .bubble-user strong { color: var(--text-sub); font-weight: 600; }
+  .bubble-content { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .bubble-score-row { display: flex; align-items: center; gap: 6px; }
+  .bubble-actions { display: flex; gap: 12px; margin-top: 4px; }
+  .bubble-action { font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 3px; }
+
+  /* =====================
+     SCREEN 5: DISCOVER
+     ===================== */
+  .discover-header {
+    padding: 12px 16px 0;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .discover-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    cursor: text;
+  }
+  .search-bar span { font-size: 14px; color: var(--text-hint); }
+
+  .area-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .area-chips::-webkit-scrollbar { display: none; }
+
+  .area-chip {
+    padding: 7px 14px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .area-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .area-chip:active { transform: scale(0.95); }
+
+  /* Restaurant cards in discover */
+  .discover-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .discover-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .discover-card:active { transform: scale(0.98); }
+
+  .discover-card-photo {
+    height: 140px;
+    background: linear-gradient(135deg, #fce7f3 0%, #dbeafe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    position: relative;
+  }
+
+  .dc-photo2 { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
+  .dc-photo3 { background: linear-gradient(135deg, #fef9c3 0%, #fed7aa 100%); }
+  .dc-photo4 { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+
+  .discover-card-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .discover-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 100px;
+    backdrop-filter: blur(8px);
+  }
+
+  .db-michelin { background: rgba(239,68,68,0.9); color: #fff; }
+  .db-blue { background: rgba(59,130,246,0.9); color: #fff; }
+
+  .discover-card-body {
+    padding: 12px 14px;
+  }
+
+  .discover-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .discover-card-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .discover-card-score {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+
+  .discover-card-meta {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 10px;
+  }
+
+  .external-scores {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ext-score {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  /* =====================
+     BOTTOM TAB BAR
+     ===================== */
+  .tab-bar {
+    height: 72px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 8px;
+    flex-shrink: 0;
+  }
+
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+    min-height: 44px;
+    justify-content: flex-start;
+    transition: opacity 0.1s;
+  }
+  .tab-item:active { opacity: 0.6; }
+
+  .tab-icon {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-hint);
+  }
+  .tab-item.active .tab-label { color: var(--primary); }
+
+  .tab-plus {
+    width: 48px;
+    height: 48px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 300;
+    margin-top: -8px;
+    box-shadow: 0 4px 16px rgba(255,96,56,0.4);
+    transition: transform 0.1s;
+    cursor: pointer;
+  }
+  .tab-plus:active { transform: scale(0.92); }
+
+  /* SVG Icons */
+  .icon-home, .icon-discover, .icon-bubble, .icon-me {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    height: 4px;
+    width: 134px;
+    background: var(--text);
+    border-radius: 100px;
+    margin: 6px auto 2px;
+    opacity: 0.2;
+  }
+
+  /* Utility */
+  .mt-8 { margin-top: 8px; }
+  .pb-safe { padding-bottom: 8px; }
+  .divider { height: 1px; background: var(--border); margin: 8px 16px; }
+  .spacer { height: 16px; }
+
+  /* Notification badge */
+  .notif-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+
+  /* Wine section title style */
+  .wine-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wine);
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="device-inner">
+    <div class="notch"></div>
+
+    <div class="screens-wrapper" id="screensWrapper">
+
+      <!-- SCREEN 1: LOGIN -->
+      <div class="screen active" id="screen-login">
+        <div style="height:44px;"></div>
+        <div class="login-screen scroll-content" style="flex:1;">
+          <div class="login-illustration">🍽️</div>
+          <div class="login-logo">nyam</div>
+          <div class="login-tagline">나의 식도락 여정을<br>시작하세요</div>
+          <div class="social-btns">
+            <button class="social-btn btn-kakao" onclick="goToScreen('screen-intro')">
+              <span class="social-btn-icon">💬</span>
+              카카오로 시작
+            </button>
+            <button class="social-btn btn-google" onclick="goToScreen('screen-intro')">
+              <span class="social-btn-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              </span>
+              Google로 시작
+            </button>
+            <button class="social-btn btn-apple" onclick="goToScreen('screen-intro')">
+              <span class="social-btn-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.42c1.3.07 2.21.76 2.98.82.76-.13 1.49-.72 2.81-.77 1.7-.07 2.97.67 3.76 1.88-3.39 2.02-2.82 6.4.45 7.63-.66 1.31-1.22 2.63-2 3.3zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              </span>
+              Apple로 시작
+            </button>
+          </div>
+          <div class="login-footer">
+            가입 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의합니다
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 1.5: INTRO -->
+      <div class="screen hidden" id="screen-intro">
+        <div style="height:44px;"></div>
+        <div class="scroll-content" style="flex:1;padding:32px 24px 0;">
+          <!-- Value story -->
+          <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:28px;">
+            <!-- Step 1 -->
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="
+                width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                background:var(--primary-light);display:flex;align-items:center;justify-content:center;
+                font-size:18px;
+              ">🍽️</div>
+              <div>
+                <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3;">
+                  나만의 맛집·와인<br>컬렉션을 만드세요
+                </div>
+                <div style="font-size:13px;color:var(--text-sub);margin-top:4px;">
+                  가본 곳, 마셔본 와인을 간단히 기록
+                </div>
+              </div>
+            </div>
+            <!-- Step 2 -->
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="
+                width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                background:var(--wine-light);display:flex;align-items:center;justify-content:center;
+                font-size:18px;
+              ">✨</div>
+              <div>
+                <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3;">
+                  기록이 쌓이면<br>추천을 받으세요
+                </div>
+                <div style="font-size:13px;color:var(--text-sub);margin-top:4px;">
+                  상황별 맛집, 어울리는 와인까지
+                </div>
+              </div>
+            </div>
+            <!-- Step 3 -->
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="
+                width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                background:#f0f9ff;display:flex;align-items:center;justify-content:center;
+                font-size:18px;
+              ">💬</div>
+              <div>
+                <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.3;">
+                  버블에서<br>은밀하게 공유하세요
+                </div>
+                <div style="font-size:13px;color:var(--text-sub);margin-top:4px;">
+                  친구·동료와 소모임을 만들어<br>숨은 맛집과 최애 와인을 나눠요
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div style="height:1px;background:var(--border);margin-bottom:20px;"></div>
+
+          <!-- What to record — selectable cards -->
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">
+            우선 뭘 기록해볼까요?
+          </div>
+
+          <!-- Restaurant toggle card -->
+          <div id="introCardRestaurant" onclick="toggleIntroCard('restaurant')" style="
+            padding:18px 16px;border-radius:16px;border:2px solid var(--primary);
+            background:var(--primary-light);margin-bottom:10px;cursor:pointer;
+            transition:all 0.2s;position:relative;
+          ">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="font-size:32px;flex-shrink:0;">🍽️</div>
+              <div style="flex:1;">
+                <div style="font-size:15px;font-weight:700;color:var(--text);">맛집 기록</div>
+                <div style="font-size:12px;color:var(--text-sub);line-height:1.4;margin-top:3px;">
+                  가본 식당에 점수를 매기고,<br>가보고 싶은 곳을 찜해두세요
+                </div>
+              </div>
+              <div id="introCheckRestaurant" style="
+                width:24px;height:24px;border-radius:8px;
+                background:var(--primary);
+                display:flex;align-items:center;justify-content:center;
+                color:white;font-size:14px;font-weight:700;flex-shrink:0;
+              ">✓</div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,96,56,0.2);display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:white;color:var(--primary);font-weight:600;">동네 선택</span>
+              <span style="font-size:11px;color:var(--text-hint);">→</span>
+              <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:white;color:var(--primary);font-weight:600;">가본 곳 체크</span>
+            </div>
+          </div>
+
+          <!-- Wine toggle card -->
+          <div id="introCardWine" onclick="toggleIntroCard('wine')" style="
+            padding:18px 16px;border-radius:16px;border:2px solid var(--wine);
+            background:var(--wine-light);margin-bottom:24px;cursor:pointer;
+            transition:all 0.2s;position:relative;
+          ">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="font-size:32px;flex-shrink:0;">🍷</div>
+              <div style="flex:1;">
+                <div style="font-size:15px;font-weight:700;color:var(--text);">와인 기록</div>
+                <div style="font-size:12px;color:var(--text-sub);line-height:1.4;margin-top:3px;">
+                  마셔본 와인을 사진이나 검색으로<br>간단히 등록하세요
+                </div>
+              </div>
+              <div id="introCheckWine" style="
+                width:24px;height:24px;border-radius:8px;
+                background:var(--wine);
+                display:flex;align-items:center;justify-content:center;
+                color:white;font-size:14px;font-weight:700;flex-shrink:0;
+              ">✓</div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(107,76,138,0.2);display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:white;color:var(--wine);font-weight:600;">사진 인식</span>
+              <span style="font-size:11px;color:var(--text-hint);">또는</span>
+              <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:white;color:var(--wine);font-weight:600;">이름 검색</span>
+            </div>
+          </div>
+
+          <div style="text-align:center;font-size:12px;color:var(--text-hint);margin-bottom:8px;">
+            나중에 언제든 추가할 수 있어요
+          </div>
+
+          <div style="height:80px;"></div>
+        </div>
+        <button class="floating-next" id="introCta" onclick="startOnboarding()" style="
+          left:50%;right:auto;transform:translateX(-50%);
+          padding:14px 48px;
+        ">시작할게요 →</button>
+      </div>
+
+      <!-- SCREEN 2: AREA SELECTION -->
+      <div class="screen hidden" id="screen-area">
+        <div style="height:44px;"></div>
+        <div class="onboarding-screen" style="flex:1; display:flex; flex-direction:column; padding:12px 20px;">
+          <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">어디서 주로 드시나요?</div>
+          <div style="font-size:13px;color:var(--text-sub);margin-bottom:8px;">지도에서 동네를 탭하세요 (중복 선택 가능)</div>
+          <div class="location-hint" style="margin-bottom:12px;">
+            📍 현재 위치: 광화문 근처
+          </div>
+
+          <!-- Map: National → City → Area (2-level zoom) -->
+          <div class="area-map-container" id="areaMapContainer">
+
+            <!-- Level 1: National Map -->
+            <div class="map-layer" id="mapNational">
+              <!-- Korea outline hint -->
+              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">도시를 탭하세요</div>
+              <!-- Peninsula shape hint -->
+              <svg viewBox="0 0 200 320" style="position:absolute;top:5%;left:50%;transform:translateX(-50%);width:70%;height:85%;opacity:0.06;">
+                <path d="M100,10 C80,10 55,30 50,60 C45,90 55,120 60,140 C65,160 50,180 55,200 C60,220 70,240 75,260 C80,280 90,300 100,310 C110,300 120,280 125,260 C130,240 140,220 145,200 C150,180 135,160 140,140 C145,120 155,90 150,60 C145,30 120,10 100,10Z" fill="#374151"/>
+              </svg>
+
+              <!-- Major cities -->
+              <div class="city-bubble pulse" onclick="zoomToCity('서울')" style="top:28%;left:52%;">서울</div>
+              <div class="city-bubble" onclick="zoomToCity('인천')" style="top:32%;left:38%;">인천</div>
+              <div class="city-bubble" onclick="zoomToCity('경기')" style="top:24%;left:44%;">경기</div>
+              <div class="city-bubble" onclick="zoomToCity('대전')" style="top:48%;left:46%;">대전</div>
+              <div class="city-bubble" onclick="zoomToCity('대구')" style="top:54%;left:64%;">대구</div>
+              <div class="city-bubble" onclick="zoomToCity('부산')" style="top:68%;left:68%;">부산</div>
+              <div class="city-bubble" onclick="zoomToCity('광주')" style="top:64%;left:34%;">광주</div>
+              <div class="city-bubble" onclick="zoomToCity('제주')" style="top:88%;left:36%;">제주</div>
+            </div>
+
+            <!-- Level 2: City Detail (서울 - default) -->
+            <div class="map-layer hidden-layer" id="mapSeoul" data-city="서울">
+              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
+              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">서울 상권</div>
+              <!-- 한강 -->
+              <div style="position:absolute;top:50%;left:0;right:0;height:22px;background:linear-gradient(180deg,#bfdbfe,#93c5fd,#bfdbfe);opacity:0.4;transform:rotate(-3deg) scaleX(1.1);"></div>
+              <div style="position:absolute;top:52.5%;left:12%;font-size:9px;color:#60a5fa;opacity:0.5;letter-spacing:3px;">한 강</div>
+              <!-- 강북 -->
+              <div class="area-bubble" data-area="종로" style="top:18%;left:42%;">종로</div>
+              <div class="area-bubble" data-area="광화문" style="top:26%;left:34%;">광화문</div>
+              <div class="area-bubble" data-area="을지로" style="top:32%;left:48%;">을지로</div>
+              <div class="area-bubble" data-area="홍대" style="top:35%;left:18%;">홍대</div>
+              <div class="area-bubble" data-area="연남" style="top:24%;left:16%;">연남</div>
+              <div class="area-bubble" data-area="이태원" style="top:38%;left:38%;">이태원</div>
+              <div class="area-bubble" data-area="성수" style="top:34%;left:66%;">성수</div>
+              <div class="area-bubble" data-area="건대" style="top:28%;left:78%;">건대</div>
+              <div class="area-bubble" data-area="신촌" style="top:28%;left:24%;">신촌</div>
+              <div class="area-bubble" data-area="망원" style="top:32%;left:10%;">망원</div>
+              <!-- 강남 -->
+              <div class="area-bubble" data-area="강남" style="top:64%;left:50%;">강남</div>
+              <div class="area-bubble" data-area="잠실" style="top:58%;left:72%;">잠실</div>
+              <div class="area-bubble" data-area="여의도" style="top:54%;left:22%;">여의도</div>
+              <div class="area-bubble" data-area="압구정" style="top:58%;left:56%;">압구정</div>
+              <div class="area-bubble" data-area="서초" style="top:72%;left:42%;">서초</div>
+              <div class="area-bubble" data-area="송파" style="top:66%;left:68%;">송파</div>
+            </div>
+
+            <!-- Level 2: 부산 -->
+            <div class="map-layer hidden-layer" id="mapBusan" data-city="부산">
+              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
+              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">부산 상권</div>
+              <div class="area-bubble" data-area="서면" style="top:35%;left:45%;">서면</div>
+              <div class="area-bubble" data-area="해운대" style="top:30%;left:72%;">해운대</div>
+              <div class="area-bubble" data-area="광안리" style="top:45%;left:65%;">광안리</div>
+              <div class="area-bubble" data-area="남포동" style="top:55%;left:35%;">남포동</div>
+              <div class="area-bubble" data-area="전포" style="top:42%;left:50%;">전포</div>
+              <div class="area-bubble" data-area="센텀시티" style="top:35%;left:62%;">센텀</div>
+            </div>
+
+            <!-- Level 2: 대구 -->
+            <div class="map-layer hidden-layer" id="mapDaegu" data-city="대구">
+              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
+              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">대구 상권</div>
+              <div class="area-bubble" data-area="동성로" style="top:38%;left:48%;">동성로</div>
+              <div class="area-bubble" data-area="수성구" style="top:42%;left:65%;">수성구</div>
+              <div class="area-bubble" data-area="앞산" style="top:58%;left:45%;">앞산</div>
+            </div>
+
+            <!-- Level 2: 제주 -->
+            <div class="map-layer hidden-layer" id="mapJeju" data-city="제주">
+              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
+              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">제주 상권</div>
+              <div class="area-bubble" data-area="제주시" style="top:30%;left:45%;">제주시</div>
+              <div class="area-bubble" data-area="서귀포" style="top:62%;left:48%;">서귀포</div>
+              <div class="area-bubble" data-area="애월" style="top:32%;left:25%;">애월</div>
+              <div class="area-bubble" data-area="함덕" style="top:25%;left:62%;">함덕</div>
+              <div class="area-bubble" data-area="중문" style="top:60%;left:35%;">중문</div>
+              <div class="area-bubble" data-area="성산" style="top:45%;left:78%;">성산</div>
+            </div>
+
+            <!-- Level 2: Generic (other cities) -->
+            <div class="map-layer hidden-layer" id="mapGeneric" data-city="">
+              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
+              <div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                <div id="genericCityName" style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;"></div>
+                <div style="font-size:13px;color:var(--text-hint);">상권 데이터 준비 중</div>
+                <div style="font-size:12px;color:var(--text-hint);margin-top:4px;">직접 입력으로 동네를 추가할 수 있어요</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected areas display -->
+          <div id="selectedAreas" style="
+            margin-top:12px; min-height:32px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+          ">
+            <span style="font-size:13px; color:var(--text-hint);">선택된 동네가 여기에 표시됩니다</span>
+          </div>
+          <div style="height:60px;"></div>
+        </div>
+        <div class="ob-nav">
+          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
+          <button class="ob-nav-skip" onclick="skipRestaurantOnboarding()">건너뛰기</button>
+          <button class="ob-nav-next" id="areaNextBtn" onclick="goToScreen('screen-restaurants')" disabled>다음 →</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: RESTAURANT ONBOARDING -->
+      <div class="screen hidden" id="screen-restaurants">
+        <div style="height:44px;"></div>
+        <!-- Header -->
+        <div style="padding:16px 20px 0; background:var(--bg);">
+          <div style="font-size:22px;font-weight:800;color:var(--text);line-height:1.3;">선택한 동네의<br>대표 맛집이에요 🍽️</div>
+          <div style="font-size:14px;color:var(--text-sub);margin-top:6px;margin-bottom:14px;">가봤거나 가보고 싶은 곳을 표시해주세요</div>
+        </div>
+        <!-- Sticky filter tabs -->
+        <div style="padding:0 20px; background:var(--bg); position:sticky; top:0; z-index:10;">
+          <div id="restAreaTabs" class="ob-filter-tabs" style="margin-bottom:0;">
+            <button class="ob-filter-tab active" data-filter="all" onclick="filterRestByArea('all', this)">전체</button>
+          </div>
+        </div>
+        <div class="scroll-content" style="flex:1; padding:12px 20px 0;">
+
+          <div id="restaurantCards" style="display:flex;flex-direction:column;gap:12px;">
+            <!-- injected by JS -->
+          </div>
+
+          <!-- Score Modal (overlay within screen) -->
+          <div id="scoreModal" style="
+            display:none; position:absolute; top:0;left:0;right:0;bottom:0;
+            background:rgba(0,0,0,0.5); z-index:200;
+            display:none; align-items:center; justify-content:center;
+          ">
+            <div style="
+              background:white; border-radius:24px; padding:28px 24px; width:85%;
+              text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            ">
+              <div id="scoreModalName" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
+              <div id="scoreModalMeta" style="font-size:13px;color:var(--text-sub);margin-bottom:20px;"></div>
+              <div style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">만족도를 표시해주세요</div>
+              <!-- Score gauge -->
+              <div style="position:relative;height:48px;background:#f3f4f6;border-radius:24px;overflow:hidden;margin-bottom:8px;cursor:pointer;" id="scoreGaugeTrack">
+                <div id="scoreGaugeFill" style="
+                  position:absolute;top:0;left:0;bottom:0;width:75%;
+                  border-radius:24px; transition:width 0.15s,background 0.15s;
+                  background:#22c55e;
+                "></div>
+                <div id="scoreGaugeLabel" style="
+                  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                  font-size:24px;font-weight:800;color:white;
+                  text-shadow:0 1px 3px rgba(0,0,0,0.2);
+                ">75</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-hint);margin-bottom:20px;">
+                <span>별로</span><span>최고</span>
+              </div>
+              <button onclick="confirmScore()" style="
+                width:100%;padding:14px;border-radius:14px;border:none;
+                background:var(--primary);color:white;font-size:15px;font-weight:600;cursor:pointer;
+              ">확인</button>
+            </div>
+          </div>
+
+          <div style="height:80px;"></div><!-- spacer for floating btn -->
+        </div>
+        <div class="ob-nav">
+          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
+          <button class="ob-nav-skip" onclick="goToNextAfterRest()">건너뛰기</button>
+          <button class="ob-nav-next" id="restNextBtn" onclick="goToNextAfterRest()">다음: 와인 →</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3.5: WINE ONBOARDING (사진 인식 기반) -->
+      <div class="screen hidden" id="screen-wines">
+        <div style="height:44px;"></div>
+        <!-- Header -->
+        <div style="padding:16px 20px 0; background:var(--bg);">
+          <div style="font-size:22px;font-weight:800;color:var(--wine);line-height:1.3;">혹시 와인도<br>즐기시나요? 🍷</div>
+          <div style="font-size:14px;color:var(--text-sub);margin-top:6px;margin-bottom:14px;">사진으로 찾거나 이름으로 검색해서 추가하세요</div>
+        </div>
+
+        <!-- Sticky add buttons / search input -->
+        <div style="padding:0 20px 0; background:var(--bg); position:sticky; top:0; z-index:10;">
+          <!-- Button mode -->
+          <div id="wineStickyButtons" style="display:flex;gap:8px;padding-bottom:12px;border-bottom:1.5px solid var(--border);">
+            <button onclick="simulateWinePhotoUpload()" style="
+              flex:1;padding:11px 0;border-radius:12px;border:1.5px solid var(--wine);
+              background:var(--wine-light);font-size:13px;font-weight:600;color:var(--wine);
+              cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+            ">📷 사진으로 찾기</button>
+            <button onclick="activateStickySearch()" style="
+              flex:1;padding:11px 0;border-radius:12px;border:1.5px solid var(--border);
+              background:white;font-size:13px;font-weight:600;color:var(--text);
+              cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+            ">🔍 이름으로 검색</button>
+          </div>
+          <!-- Search input mode (hidden by default) -->
+          <div id="wineStickySearch" style="display:none;padding-bottom:12px;border-bottom:1.5px solid var(--border);">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="position:relative;flex:1;">
+                <input id="wineStickySearchInput" type="text" placeholder="와인 이름 검색..."
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();submitStickySearch();}" style="
+                  width:100%;padding:11px 14px 11px 36px;border-radius:12px;
+                  border:1.5px solid var(--wine);font-size:14px;
+                  background:white;outline:none;box-sizing:border-box;
+                " />
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;">🔍</span>
+              </div>
+              <button onclick="submitStickySearch()" style="
+                padding:11px 16px;border-radius:12px;border:none;
+                background:var(--wine);color:white;font-size:13px;font-weight:600;
+                cursor:pointer;white-space:nowrap;
+              ">찾기</button>
+              <button onclick="deactivateStickySearch()" style="
+                background:none;border:none;font-size:14px;font-weight:600;
+                color:var(--text-sub);cursor:pointer;padding:8px;white-space:nowrap;
+              ">취소</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll-content" style="flex:1; padding:12px 20px 0;">
+          <!-- Wine cards list — same ob-card pattern as restaurants -->
+          <div id="wineCardsList" style="display:flex;flex-direction:column;gap:12px;">
+            <!-- Loading card (shown during recognition) -->
+            <div id="wineLoadingCard" class="ob-card" style="display:none;text-align:center;padding:24px;">
+              <div style="font-size:28px;margin-bottom:8px;animation:pulse 1.5s infinite;">🍷</div>
+              <div style="font-size:13px;color:var(--text-sub);">와인을 찾고 있어요...</div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="wineEmptyState" style="text-align:center;padding:40px 20px;color:var(--text-hint);">
+              <div style="font-size:32px;margin-bottom:8px;">🍷</div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px;">아직 등록한 와인이 없어요</div>
+              <div style="font-size:12px;">위 버튼으로 와인을 추가해보세요. 건너뛰어도 OK!</div>
+            </div>
+          </div>
+
+          <div style="height:80px;"></div>
+        </div>
+
+        <!-- Wine Search Bottom Sheet -->
+        <div id="wineSearchSheet" style="
+          display:none; position:absolute; bottom:0; left:0; right:0;
+          background:var(--bg); border-radius:24px 24px 0 0;
+          box-shadow:0 -10px 40px rgba(0,0,0,0.15); z-index:200;
+          padding:16px 20px 28px; max-height:60%;
+          animation:sheetSlideUp 0.3s ease;
+          flex-direction:column;
+        ">
+          <div style="width:40px;height:4px;border-radius:2px;background:#d1d5db;margin:0 auto 12px;"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+            <div style="position:relative;flex:1;">
+              <input id="wineSearchInput" type="text" placeholder="와인 이름 검색..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();submitSheetSearch();}" style="
+                width:100%;padding:12px 14px 12px 36px;border-radius:12px;
+                border:1.5px solid var(--border);font-size:14px;
+                background:var(--bg-card);outline:none;box-sizing:border-box;
+              " onfocus="this.style.borderColor='var(--wine)'" onblur="this.style.borderColor='var(--border)'" />
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;">🔍</span>
+            </div>
+            <button onclick="submitSheetSearch()" style="
+              padding:12px 16px;border-radius:12px;border:none;
+              background:var(--wine);color:white;font-size:13px;font-weight:600;
+              cursor:pointer;white-space:nowrap;
+            ">찾기</button>
+          </div>
+          <div id="wineSearchResults" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+            <div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">와인 이름을 입력해보세요</div>
+          </div>
+        </div>
+        <div id="wineSearchBackdrop" onclick="closeWineSearch()" style="
+          display:none;position:absolute;top:0;left:0;right:0;bottom:0;
+          background:rgba(0,0,0,0.3);z-index:190;
+        "></div>
+
+        <div class="ob-nav">
+          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
+          <button class="ob-nav-skip" onclick="goToScreen('screen-home')">건너뛰기</button>
+          <button class="ob-nav-next wine-style" onclick="goToScreen('screen-home')">시작하기 →</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: HOME -->
+      <div class="screen hidden" id="screen-home">
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" width="22" height="12"><rect x="1" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="12" height="7" rx="1" fill="currentColor"/><path d="M21 6.5c.83.51 1 1.5 1 2s-.17 1.49-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+
+        <!-- App header -->
+        <div class="app-header">
+          <div class="header-title">내 식도락 🍽️</div>
+          <div class="header-right">
+            <div style="position:relative;">
+              <button class="icon-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </button>
+              <div class="notif-badge"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable content -->
+        <div class="scroll-content" style="flex:1;">
+
+          <!-- Nudge Card -->
+          <div class="nudge-card" id="nudgeCard">
+            <div class="nudge-photo">📷</div>
+            <div class="nudge-body">
+              <div class="nudge-title">📷 최근 사진에서 발견</div>
+              <div class="nudge-sub">3/19 12:34 · 음식 사진 감지됨</div>
+              <div class="nudge-actions">
+                <button class="nudge-btn confirm" onclick="alert('기록 화면으로 이동 → 02_record.html')">기록하기</button>
+                <button class="nudge-btn dismiss" onclick="dismissNudge()">무시</button>
+              </div>
+            </div>
+            <div class="nudge-close" onclick="dismissNudge()">✕</div>
+          </div>
+
+          <!-- Timeline section -->
+          <div class="section-header">
+            <div class="section-title">최근 기록</div>
+            <div class="section-more">전체보기</div>
+          </div>
+
+          <div class="timeline" id="timeline">
+            <!-- Record 1: Sushi with date -->
+            <div class="timeline-item" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+              <div class="timeline-dot"></div>
+              <div class="timeline-card">
+                <div class="timeline-card-header">
+                  <span class="timeline-date">2026.03.19 화요일</span>
+                  <span class="scene-chip scene-romantic">데이트</span>
+                </div>
+                <div class="timeline-restaurant">스시코우지</div>
+                <div class="timeline-score">
+                  <div class="score-dot" style="background:#3b82f6;"></div>
+                  <span class="score-text">92점</span>
+                  <span style="font-size:11px;color:var(--text-hint);">일식 · 광화문</span>
+                </div>
+                <div class="timeline-photos">
+                  <div class="photo-thumb">🍣</div>
+                  <div class="photo-thumb">🍱</div>
+                  <div class="photo-thumb">🥢</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Record 2: Mijin solo -->
+            <div class="timeline-item" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+              <div class="timeline-dot"></div>
+              <div class="timeline-card">
+                <div class="timeline-card-header">
+                  <span class="timeline-date">2026.03.17 일요일</span>
+                  <span class="scene-chip scene-solo">혼밥</span>
+                </div>
+                <div class="timeline-restaurant">미진</div>
+                <div class="timeline-score">
+                  <div class="score-dot" style="background:#22c55e;"></div>
+                  <span class="score-text">88점</span>
+                  <span style="font-size:11px;color:var(--text-hint);">한식 · 광화문</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Record 3: Business dinner with comment -->
+            <div class="timeline-item" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+              <div class="timeline-dot"></div>
+              <div class="timeline-card">
+                <div class="timeline-card-header">
+                  <span class="timeline-date">2026.03.14 목요일</span>
+                  <span class="scene-chip scene-business">회식</span>
+                </div>
+                <div class="timeline-restaurant">도쿄등심</div>
+                <div class="timeline-score">
+                  <div class="score-dot" style="background:#22c55e;"></div>
+                  <span class="score-text">85점</span>
+                  <span style="font-size:11px;color:var(--text-hint);">일식 · 광화문</span>
+                </div>
+                <div class="timeline-comment">"코스가 좋았다"</div>
+              </div>
+            </div>
+
+            <!-- Record 4: Unrated -->
+            <div class="timeline-item" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+              <div class="timeline-dot unrated"></div>
+              <div class="timeline-card">
+                <div class="timeline-card-header">
+                  <span class="unrated-label">미평가</span>
+                  <span style="font-size:11px;color:var(--text-hint);">한식 · 광화문</span>
+                </div>
+                <div class="timeline-restaurant">토속촌</div>
+                <button class="rate-btn">평가하기 →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <!-- Expandable: 오늘 뭐 먹지? -->
+          <div class="expandable-section">
+            <div class="expandable-header" onclick="toggleExpand('todayExpand')">
+              <div class="expandable-title">📍 오늘 뭐 먹지?</div>
+              <span class="chevron" id="todayExpand-chevron">⌄</span>
+            </div>
+            <div class="expandable-body" id="todayExpand">
+              <!-- Scene filter -->
+              <div class="scene-filter-row" id="sceneFilterRow">
+                <div class="filter-chip active" onclick="selectFilter(this)">전체</div>
+                <div class="filter-chip" onclick="selectFilter(this)">혼밥</div>
+                <div class="filter-chip" onclick="selectFilter(this)">데이트</div>
+                <div class="filter-chip" onclick="selectFilter(this)">회식</div>
+                <div class="filter-chip" onclick="selectFilter(this)">가족</div>
+              </div>
+              <!-- Recommend cards -->
+              <div class="recommend-card" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+                <div class="recommend-thumb rc1">🍜</div>
+                <div class="recommend-info">
+                  <div class="recommend-name">미진</div>
+                  <div class="recommend-meta">한식 · 광화문 · 내가 가봤어요</div>
+                </div>
+                <div class="recommend-score">88</div>
+              </div>
+              <div class="recommend-card" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+                <div class="recommend-thumb rc2">🥩</div>
+                <div class="recommend-info">
+                  <div class="recommend-name">광화문국밥</div>
+                  <div class="recommend-meta">한식 · 광화문 · 추천</div>
+                </div>
+                <div class="recommend-score">91</div>
+              </div>
+              <div class="recommend-card" onclick="alert('식당 상세로 이동 → 03_detail.html')">
+                <div class="recommend-thumb rc3">🍱</div>
+                <div class="recommend-info">
+                  <div class="recommend-name">스시코우지</div>
+                  <div class="recommend-meta">일식 · 광화문 · 최근 방문</div>
+                </div>
+                <div class="recommend-score">92</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expandable: 와인 고르기 -->
+          <div class="expandable-section" style="margin-top:8px;">
+            <div class="expandable-header" onclick="toggleExpand('wineExpand')">
+              <div class="wine-section-title">🍷 와인 고르기</div>
+              <span class="chevron" id="wineExpand-chevron">⌄</span>
+            </div>
+            <div class="expandable-body" id="wineExpand">
+              <div class="wine-input-wrap">
+                <input class="wine-input" placeholder="메뉴를 입력하면 어울리는 와인을 추천해드려요" />
+              </div>
+              <div class="wine-card" onclick="alert('와인 상세 정보')">
+                <div class="wine-thumb">🍷</div>
+                <div class="wine-info">
+                  <div class="wine-name">Penfolds Grange 2019</div>
+                  <div class="wine-meta">레드 · 쉬라즈 · 호주 · Barossa</div>
+                  <div class="wine-tags">
+                    <span class="wine-tag">숙성형</span>
+                    <span class="wine-tag">풀바디</span>
+                    <span class="wine-tag">스테이크</span>
+                  </div>
+                </div>
+                <div class="wine-score">96</div>
+              </div>
+              <div class="wine-card" onclick="alert('와인 상세 정보')">
+                <div class="wine-thumb" style="background:linear-gradient(180deg,#e8b4d0 0%,#a04070 100%);">🥂</div>
+                <div class="wine-info">
+                  <div class="wine-name">Opus One 2020</div>
+                  <div class="wine-meta">레드 · 카베르네 · 미국 · Napa</div>
+                  <div class="wine-tags">
+                    <span class="wine-tag">우아함</span>
+                    <span class="wine-tag">미디엄</span>
+                    <span class="wine-tag">파스타</span>
+                  </div>
+                </div>
+                <div class="wine-score">94</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <!-- Bubble Feed -->
+          <div class="section-header">
+            <div class="section-title">버블 피드 👥</div>
+            <div class="section-more" onclick="goToTab('bubble')">더보기</div>
+          </div>
+
+          <div class="bubble-section">
+            <div class="bubble-card" onclick="alert('버블 상세 → 04_social.html')">
+              <div class="bubble-avatar av1">김</div>
+              <div class="bubble-body">
+                <div class="bubble-user"><strong>김영수</strong> · 직장 맛집</div>
+                <div class="bubble-content">미진 — <span style="color:var(--primary);font-weight:800;">93점</span></div>
+                <div class="bubble-score-row">
+                  <span class="scene-chip scene-solo" style="font-size:10px;padding:2px 8px;">혼밥</span>
+                  <span style="font-size:11px;color:var(--text-hint);">광화문 · 한식</span>
+                </div>
+                <div class="bubble-actions">
+                  <div class="bubble-action">♡ 4</div>
+                  <div class="bubble-action">💬 2</div>
+                </div>
+              </div>
+            </div>
+            <div class="bubble-card" onclick="alert('버블 상세 → 04_social.html')">
+              <div class="bubble-avatar av2">박</div>
+              <div class="bubble-body">
+                <div class="bubble-user"><strong>박소연</strong> · 와인 모임</div>
+                <div class="bubble-content">Penfolds Grange — <span style="color:var(--wine);font-weight:800;">96점</span></div>
+                <div class="bubble-score-row">
+                  <span class="scene-chip scene-drinks" style="font-size:10px;padding:2px 8px;">모임</span>
+                  <span style="font-size:11px;color:var(--text-hint);">와인 · 강남</span>
+                </div>
+                <div class="bubble-actions">
+                  <div class="bubble-action">♡ 8</div>
+                  <div class="bubble-action">💬 5</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:20px;"></div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item active" id="tab-home" onclick="goToTab('home')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" stroke="#FF6038" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M9 21V12h6v9" stroke="#FF6038" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="tab-label" style="color:var(--primary);">홈</div>
+          </div>
+          <div class="tab-item" id="tab-discover" onclick="goToTab('discover')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="#9CA3AF" stroke-width="2"/>
+                <path d="m21 21-4.35-4.35" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">탐색</div>
+          </div>
+          <div class="tab-item" style="flex:1;" onclick="alert('기록하기 → 02_record.html')">
+            <div class="tab-plus">+</div>
+          </div>
+          <div class="tab-item" onclick="alert('버블 → 04_social.html')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#9CA3AF" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">버블</div>
+          </div>
+          <div class="tab-item" onclick="alert('내 프로필')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="4" stroke="#9CA3AF" stroke-width="2"/>
+                <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">나</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: DISCOVER -->
+      <div class="screen hidden" id="screen-discover">
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" width="22" height="12"><rect x="1" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="12" height="7" rx="1" fill="currentColor"/><path d="M21 6.5c.83.51 1 1.5 1 2s-.17 1.49-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+
+        <!-- Discover header (sticky) -->
+        <div class="discover-header">
+          <div class="discover-title">탐색 🔍</div>
+          <div class="search-bar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35" stroke-linecap="round"/></svg>
+            <span>식당, 동네, 장르 검색</span>
+          </div>
+          <div class="area-chips" id="discoverAreaChips">
+            <div class="area-chip active" onclick="selectAreaChip(this)">광화문</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">을지로</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">종로</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">강남</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">성수</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">홍대</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">이태원</div>
+            <div class="area-chip" onclick="selectAreaChip(this)">연남</div>
+          </div>
+        </div>
+
+        <!-- Discover list -->
+        <div class="scroll-content" style="flex:1;">
+          <div class="discover-list">
+
+            <!-- Card 1 -->
+            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+              <div class="discover-card-photo">
+                🍜
+                <div class="discover-card-badges">
+                  <span class="discover-badge db-blue">블루리본</span>
+                </div>
+              </div>
+              <div class="discover-card-body">
+                <div class="discover-card-header">
+                  <div class="discover-card-name">미진</div>
+                  <div class="discover-card-score">88</div>
+                </div>
+                <div class="discover-card-meta">한식 · 광화문 · 냉면 전문</div>
+                <div class="external-scores">
+                  <span class="ext-score">N 4.4</span>
+                  <span class="ext-score">K 4.1</span>
+                  <span class="ext-score">G 4.3</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+              <div class="discover-card-photo dc-photo2">
+                🍣
+                <div class="discover-card-badges">
+                  <span class="discover-badge db-michelin">미슐랭 ★</span>
+                </div>
+              </div>
+              <div class="discover-card-body">
+                <div class="discover-card-header">
+                  <div class="discover-card-name">스시코우지</div>
+                  <div class="discover-card-score">92</div>
+                </div>
+                <div class="discover-card-meta">일식 · 광화문 · 오마카세</div>
+                <div class="external-scores">
+                  <span class="ext-score">N 4.6</span>
+                  <span class="ext-score">K 4.4</span>
+                  <span class="ext-score">G 4.5</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+              <div class="discover-card-photo dc-photo3">
+                🍲
+              </div>
+              <div class="discover-card-body">
+                <div class="discover-card-header">
+                  <div class="discover-card-name">토속촌</div>
+                  <div class="discover-card-score">85</div>
+                </div>
+                <div class="discover-card-meta">한식 · 광화문 · 삼계탕</div>
+                <div class="external-scores">
+                  <span class="ext-score">N 4.2</span>
+                  <span class="ext-score">K 4.0</span>
+                  <span class="ext-score">G 4.3</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+              <div class="discover-card-photo dc-photo4">
+                🥩
+                <div class="discover-card-badges">
+                  <span class="discover-badge db-blue">블루리본</span>
+                </div>
+              </div>
+              <div class="discover-card-body">
+                <div class="discover-card-header">
+                  <div class="discover-card-name">도쿄등심</div>
+                  <div class="discover-card-score">85</div>
+                </div>
+                <div class="discover-card-meta">일식 · 광화문 · 규카츠 코스</div>
+                <div class="external-scores">
+                  <span class="ext-score">N 4.2</span>
+                  <span class="ext-score">K 3.9</span>
+                  <span class="ext-score">G 4.1</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+              <div class="discover-card-photo" style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);">
+                🍛
+              </div>
+              <div class="discover-card-body">
+                <div class="discover-card-header">
+                  <div class="discover-card-name">광화문국밥</div>
+                  <div class="discover-card-score">91</div>
+                </div>
+                <div class="discover-card-meta">한식 · 광화문 · 설렁탕·국밥</div>
+                <div class="external-scores">
+                  <span class="ext-score">N 4.5</span>
+                  <span class="ext-score">K 4.2</span>
+                  <span class="ext-score">G 4.4</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div style="height:20px;"></div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item" id="tab-home-d" onclick="goToTab('home')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" stroke="#9CA3AF" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M9 21V12h6v9" stroke="#9CA3AF" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">홈</div>
+          </div>
+          <div class="tab-item active" id="tab-discover-d">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="#FF6038" stroke-width="2"/>
+                <path d="m21 21-4.35-4.35" stroke="#FF6038" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tab-label" style="color:var(--primary);">탐색</div>
+          </div>
+          <div class="tab-item" style="flex:1;" onclick="alert('기록하기 → 02_record.html')">
+            <div class="tab-plus">+</div>
+          </div>
+          <div class="tab-item" onclick="alert('버블 → 04_social.html')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#9CA3AF" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">버블</div>
+          </div>
+          <div class="tab-item" onclick="alert('내 프로필')">
+            <div class="tab-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="4" stroke="#9CA3AF" stroke-width="2"/>
+                <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tab-label">나</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screens-wrapper -->
+    <div class="home-indicator"></div>
+  </div><!-- /device-inner -->
+</div><!-- /device -->
+
+<script>
+  // =====================
+  // Screen Navigation
+  // =====================
+  let currentScreen = 'screen-login';
+  const screenHistory = [];
+
+  // ── Intro selection state ──
+  const introSelected = { restaurant: true, wine: true };
+
+  function toggleIntroCard(type) {
+    introSelected[type] = !introSelected[type];
+    const card = document.getElementById(type === 'restaurant' ? 'introCardRestaurant' : 'introCardWine');
+    const check = document.getElementById(type === 'restaurant' ? 'introCheckRestaurant' : 'introCheckWine');
+    const color = type === 'restaurant' ? 'var(--primary)' : 'var(--wine)';
+    const lightColor = type === 'restaurant' ? 'var(--primary-light)' : 'var(--wine-light)';
+
+    if (introSelected[type]) {
+      card.style.borderColor = color;
+      card.style.background = lightColor;
+      check.style.background = color;
+      check.textContent = '✓';
+    } else {
+      card.style.borderColor = 'var(--border)';
+      card.style.background = 'var(--bg-card)';
+      check.style.background = 'var(--border)';
+      check.textContent = '';
+    }
+    updateIntroCta();
+  }
+
+  function updateIntroCta() {
+    const btn = document.getElementById('introCta');
+    if (!introSelected.restaurant && !introSelected.wine) {
+      btn.disabled = true;
+      btn.textContent = '하나 이상 선택해주세요';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '시작할게요 →';
+    }
+  }
+
+  function startOnboarding() {
+    if (introSelected.restaurant) {
+      goToScreen('screen-area');
+    } else if (introSelected.wine) {
+      goToScreen('screen-wines');
+    } else {
+      goToScreen('screen-home');
+    }
+  }
+
+  function goToScreen(targetId) {
+    if (targetId === currentScreen) return;
+    const current = document.getElementById(currentScreen);
+    const target = document.getElementById(targetId);
+
+    screenHistory.push(currentScreen);
+
+    current.classList.remove('active');
+    current.classList.add('slide-out');
+
+    target.classList.remove('hidden');
+    target.classList.add('active');
+
+    setTimeout(() => {
+      current.classList.remove('slide-out');
+      current.classList.add('hidden');
+    }, 350);
+
+    currentScreen = targetId;
+
+    // Init tabs when entering restaurant onboarding
+    if (targetId === 'screen-restaurants') {
+      initRestAreaTabs();
+      initRestaurantCards();
+      // Update next button based on wine selection
+      const nextBtn = document.getElementById('restNextBtn');
+      if (introSelected.wine) {
+        nextBtn.textContent = '다음: 와인 →';
+      } else {
+        nextBtn.textContent = '시작하기 →';
+      }
+    }
+  }
+
+  function goToNextAfterRest() {
+    if (introSelected.wine) {
+      goToScreen('screen-wines');
+    } else {
+      goToScreen('screen-home');
+    }
+  }
+
+  function skipRestaurantOnboarding() {
+    // Skip area + restaurant entirely
+    if (introSelected.wine) {
+      goToScreen('screen-wines');
+    } else {
+      goToScreen('screen-home');
+    }
+  }
+
+  function goBack() {
+    if (screenHistory.length === 0) return;
+    const prevId = screenHistory.pop();
+    const current = document.getElementById(currentScreen);
+    const prev = document.getElementById(prevId);
+
+    current.classList.remove('active');
+    current.classList.add('slide-out');
+    current.style.animation = 'slideOutRight 0.3s forwards';
+
+    prev.classList.remove('hidden');
+    prev.classList.add('active');
+    prev.style.animation = 'slideInLeft 0.3s forwards';
+
+    setTimeout(() => {
+      current.classList.remove('slide-out');
+      current.classList.add('hidden');
+      current.style.animation = '';
+      prev.style.animation = '';
+    }, 300);
+
+    currentScreen = prevId;
+  }
+
+  function goToTab(tab) {
+    if (tab === 'home') {
+      goToScreen('screen-home');
+    } else if (tab === 'discover') {
+      goToScreen('screen-discover');
+    } else if (tab === 'bubble') {
+      alert('버블 탭 → 04_social.html');
+    }
+  }
+
+  // =====================
+  // Area Selection (Screen 2) — National → City → Area map
+  // =====================
+  const selectedAreas = new Set(); // stores "서울·광화문", "부산·해운대" etc.
+
+  const cityMapIds = {
+    '서울': 'mapSeoul',
+    '부산': 'mapBusan',
+    '대구': 'mapDaegu',
+    '제주': 'mapJeju',
+  };
+
+  function zoomToCity(city) {
+    // Hide national map
+    document.getElementById('mapNational').classList.add('zoom-out');
+    // Show city map
+    const mapId = cityMapIds[city];
+    if (mapId) {
+      document.getElementById(mapId).classList.remove('hidden-layer');
+    } else {
+      // Generic for cities without detailed map
+      const generic = document.getElementById('mapGeneric');
+      document.getElementById('genericCityName').textContent = city;
+      generic.dataset.city = city;
+      generic.classList.remove('hidden-layer');
+    }
+  }
+
+  function zoomToNational() {
+    // Hide all city maps
+    document.querySelectorAll('.map-layer').forEach(l => {
+      if (l.id !== 'mapNational') l.classList.add('hidden-layer');
+    });
+    // Show national
+    document.getElementById('mapNational').classList.remove('zoom-out');
+  }
+
+  // Area bubble click handler (delegate)
+  document.getElementById('areaMapContainer').addEventListener('click', (e) => {
+    const bubble = e.target.closest('.area-bubble');
+    if (!bubble) return;
+    const area = bubble.dataset.area;
+    // Find which city map this belongs to
+    const cityLayer = bubble.closest('.map-layer');
+    const city = cityLayer ? cityLayer.dataset.city : '';
+    const key = city ? `${city}·${area}` : area;
+
+    if (selectedAreas.has(key)) {
+      selectedAreas.delete(key);
+      bubble.classList.remove('selected');
+    } else {
+      selectedAreas.add(key);
+      bubble.classList.add('selected');
+    }
+    renderSelectedAreas();
+    updateAreaBtn();
+  });
+
+  function renderSelectedAreas() {
+    const container = document.getElementById('selectedAreas');
+    if (selectedAreas.size === 0) {
+      container.innerHTML = '<span style="font-size:13px;color:var(--text-hint);">선택된 동네가 여기에 표시됩니다</span>';
+      return;
+    }
+    container.innerHTML = '';
+    selectedAreas.forEach(key => {
+      const chip = document.createElement('span');
+      chip.className = 'selected-chip';
+      chip.innerHTML = `${key} <span class="remove" onclick="removeArea('${key}')">×</span>`;
+      container.appendChild(chip);
+    });
+  }
+
+  function removeArea(key) {
+    selectedAreas.delete(key);
+    // Un-highlight the bubble on the map
+    const parts = key.split('·');
+    const areaName = parts.length > 1 ? parts[1] : parts[0];
+    document.querySelectorAll(`.area-bubble[data-area="${areaName}"]`).forEach(b => {
+      b.classList.remove('selected');
+    });
+    renderSelectedAreas();
+    updateAreaBtn();
+  }
+
+  function updateAreaBtn() {
+    const btn = document.getElementById('areaNextBtn');
+    if (selectedAreas.size > 0) {
+      btn.disabled = false;
+      btn.innerHTML = `${selectedAreas.size}개 선택됨 <span>→</span>`;
+    } else {
+      btn.disabled = true;
+      btn.innerHTML = '1개 이상 선택 <span>→</span>';
+    }
+  }
+
+  // No initAreaChips needed — bubbles are in HTML, click handled by delegation
+
+  // =====================
+  // Restaurant Onboarding (Screen 3)
+  // =====================
+  const obRestaurants = [
+    { name: '미진', genre: '한식', area: '광화문', badge: '블루리본', badgeClass: 'blue', icon: '🍜', scores: 'N 4.5 · K 4.2' },
+    { name: '스시코우지', genre: '일식', area: '을지로', badge: '미슐랭 1스타', badgeClass: '', icon: '🍣', scores: 'N 4.6 · G 4.5' },
+    { name: '토속촌', genre: '한식', area: '광화문', badge: null, icon: '🍲', scores: 'N 4.3 · K 4.1' },
+    { name: '도쿄등심', genre: '일식', area: '강남', badge: null, icon: '🥩', scores: 'N 4.4 · G 4.3' },
+    { name: '레스토랑 오르되브르', genre: '양식', area: '성수', badge: '블루리본', badgeClass: 'blue', icon: '🍝', scores: 'N 4.2' },
+    { name: '광화문국밥', genre: '한식', area: '광화문', badge: null, icon: '🥘', scores: 'N 4.1 · K 4.0' },
+  ];
+
+  const restVisited = {}; // { index: score }
+  const restWishlisted = new Set();
+  let currentRestArea = 'all';
+
+  // Build area filter tabs dynamically from selected areas
+  function initRestAreaTabs() {
+    const tabsContainer = document.getElementById('restAreaTabs');
+    tabsContainer.innerHTML = '<button class="ob-filter-tab active" onclick="filterRestByArea(\'all\', this)">전체</button>';
+    // Get unique areas from selectedAreas (format: "서울·광화문" → "광화문")
+    const areas = new Set();
+    selectedAreas.forEach(key => {
+      const parts = key.split('·');
+      areas.add(parts.length > 1 ? parts[1] : parts[0]);
+    });
+    // Fallback if no areas selected
+    if (areas.size === 0) {
+      ['광화문','을지로','강남','성수'].forEach(a => areas.add(a));
+    }
+    areas.forEach(area => {
+      const btn = document.createElement('button');
+      btn.className = 'ob-filter-tab';
+      btn.textContent = area;
+      btn.onclick = function() { filterRestByArea(area, this); };
+      tabsContainer.appendChild(btn);
+    });
+  }
+
+  function filterRestByArea(area, btn) {
+    currentRestArea = area;
+    document.querySelectorAll('#restAreaTabs .ob-filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    initRestaurantCards();
+  }
+
+  function initRestaurantCards() {
+    const container = document.getElementById('restaurantCards');
+    container.innerHTML = '';
+    const filtered = currentRestArea === 'all' ? obRestaurants : obRestaurants.filter(r => r.area === currentRestArea);
+    filtered.forEach((r) => {
+      const i = obRestaurants.indexOf(r);
+      const isVisited = restVisited.hasOwnProperty(i);
+      const isWished = restWishlisted.has(i);
+      const card = document.createElement('div');
+      card.className = 'ob-card' + (isVisited ? ' visited' : '') + (isWished ? ' wishlisted' : '');
+      card.id = `rest-card-${i}`;
+      card.innerHTML = `
+        <div class="ob-card-top">
+          <div class="ob-card-photo">${r.icon}</div>
+          <div class="ob-card-info">
+            <div class="ob-card-name">${r.name}</div>
+            <div class="ob-card-meta">
+              ${r.genre} · ${r.area}
+              ${r.badge ? `<span class="badge ${r.badgeClass}">⭐ ${r.badge}</span>` : ''}
+            </div>
+            <div class="ob-card-score">${r.scores}</div>
+          </div>
+        </div>
+        <div class="ob-card-actions" id="rest-actions-${i}" style="${isVisited?'display:none':''}">
+          <button class="ob-btn visited-btn" id="rest-visit-${i}" onclick="toggleRestVisited(${i})">🍽️ 가봤음</button>
+          <button class="ob-btn wish-btn ${isWished?'active':''}" id="rest-wish-${i}" onclick="toggleRestWish(${i})">💛 가보고싶음</button>
+        </div>
+        <div class="ob-card-gauge" id="rest-gauge-${i}" style="${isVisited?'':'display:none'}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;">
+              <div class="ob-score-bar" onpointerdown="startRestScore(event,${i})" onpointermove="moveRestScore(event,${i})" onpointerup="endRestScore(${i})">
+                <div class="ob-score-fill" id="rest-fill-${i}" style="width:${isVisited?restVisited[i]:75}%;background:${isVisited?getScoreColor(restVisited[i]):'#22c55e'};"></div>
+                <div class="ob-score-label" id="rest-label-${i}">${isVisited?restVisited[i]:75}</div>
+              </div>
+            </div>
+            <button onclick="cancelRestVisited(${i})" style="
+              background:none;border:none;font-size:16px;color:var(--text-hint);
+              cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
+            ">×</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function toggleRestVisited(i) {
+    const card = document.getElementById(`rest-card-${i}`);
+    const actions = document.getElementById(`rest-actions-${i}`);
+    const gauge = document.getElementById(`rest-gauge-${i}`);
+
+    // Switch: buttons → gauge
+    card.classList.remove('wishlisted');
+    card.classList.add('visited');
+    restWishlisted.delete(i);
+    restVisited[i] = 75;
+    actions.style.display = 'none';
+    gauge.style.display = '';
+    // Reset gauge visual
+    document.getElementById(`rest-fill-${i}`).style.width = '75%';
+    document.getElementById(`rest-fill-${i}`).style.background = getScoreColor(75);
+    document.getElementById(`rest-label-${i}`).textContent = '75';
+    updateRestCount();
+  }
+
+  function cancelRestVisited(i) {
+    const card = document.getElementById(`rest-card-${i}`);
+    const actions = document.getElementById(`rest-actions-${i}`);
+    const gauge = document.getElementById(`rest-gauge-${i}`);
+
+    // Switch: gauge → buttons
+    card.classList.remove('visited');
+    delete restVisited[i];
+    gauge.style.display = 'none';
+    actions.style.display = '';
+    updateRestCount();
+  }
+
+  function toggleRestWish(i) {
+    const card = document.getElementById(`rest-card-${i}`);
+    const btn = document.getElementById(`rest-wish-${i}`);
+
+    if (btn.classList.contains('active')) {
+      btn.classList.remove('active');
+      card.classList.remove('wishlisted');
+      restWishlisted.delete(i);
+    } else {
+      btn.classList.add('active');
+      card.classList.add('wishlisted');
+      restWishlisted.add(i);
+    }
+    updateRestCount();
+  }
+
+  let restScoreDragging = false;
+  function startRestScore(e, i) { restScoreDragging = true; moveRestScore(e, i); e.target.setPointerCapture(e.pointerId); }
+  function endRestScore(i) { restScoreDragging = false; }
+  function moveRestScore(e, i) {
+    if (!restScoreDragging) return;
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(1, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+    restVisited[i] = pct;
+    document.getElementById(`rest-fill-${i}`).style.width = pct + '%';
+    document.getElementById(`rest-fill-${i}`).style.background = getScoreColor(pct);
+    document.getElementById(`rest-label-${i}`).textContent = pct;
+  }
+
+  function getScoreColor(score) {
+    if (score <= 30) return '#ef4444';
+    if (score <= 50) return '#f59e0b';
+    if (score <= 70) return '#fbbf24';
+    if (score <= 85) return '#22c55e';
+    return '#3b82f6';
+  }
+
+  function updateRestCount() {
+    const v = Object.keys(restVisited).length;
+    const w = restWishlisted.size;
+    document.getElementById('onboardingRestCount').textContent = `가봤음 ${v}곳 · 가보고싶음 ${w}곳`;
+  }
+
+  // =====================
+  // Wine Onboarding (Screen 3.5) — Card list, same pattern as restaurants
+  // =====================
+  const wineDB = [
+    { name: '몬테스 알파 까베르네 소비뇽', type: '레드', region: '칠레 콜차과', icon: '🍷', rating: '4.1' },
+    { name: '1865 셀렉티드 빈야드 까베르네', type: '레드', region: '칠레 마울레', icon: '🍷', rating: '4.0' },
+    { name: '카시예로 델 디아블로', type: '레드', region: '칠레', icon: '🍷', rating: '3.8' },
+    { name: '코노 수르 비씨클레타 피노 누아', type: '레드', region: '칠레', icon: '🍷', rating: '3.7' },
+    { name: '루이 라투르 부르고뉴 피노 누아', type: '레드', region: '프랑스 부르고뉴', icon: '🍷', rating: '3.8' },
+    { name: '오이스터 베이 소비뇽 블랑', type: '화이트', region: '뉴질랜드 말보로', icon: '🥂', rating: '3.9' },
+    { name: '클라우디 베이 소비뇽 블랑', type: '화이트', region: '뉴질랜드 말보로', icon: '🥂', rating: '4.0' },
+    { name: '모엣 & 샹동 임페리얼', type: '샴페인', region: '프랑스 샹파뉴', icon: '🫧', rating: '4.1' },
+    { name: '뵈브 클리코 브뤼', type: '샴페인', region: '프랑스 샹파뉴', icon: '🫧', rating: '4.1' },
+    { name: '프레시넷 꼬든 네그로', type: '까바', region: '스페인', icon: '🫧', rating: '3.7' },
+    { name: '위스퍼링 엔젤', type: '로제', region: '프랑스 프로방스', icon: '🌸', rating: '3.9' },
+    { name: '그라브너 리볼라 안포라', type: '오렌지', region: '이탈리아 프리울리', icon: '🧡', rating: '4.2' },
+    { name: '알파카 소비뇽 블랑', type: '화이트', region: '칠레', icon: '🥂', rating: '3.5' },
+    { name: '옐로우테일 시라즈', type: '레드', region: '호주', icon: '🍷', rating: '3.6' },
+    { name: '디아블로 블랙 까베르네', type: '레드', region: '칠레', icon: '🍷', rating: '3.9' },
+  ];
+
+  // State
+  const wineCards = []; // { wine, status: 'pending'|'searching'|'confirmed', score }
+  let searchTargetIdx = null; // which card triggered search (null = sticky button)
+
+  function getWineScoreColor(pct) {
+    return pct > 85 ? '#7c3aed' : pct > 70 ? '#8b5cf6' : pct > 50 ? '#a78bfa' : pct > 30 ? '#c4b5fd' : '#ddd6fe';
+  }
+
+  // ── Render ──
+  function renderWineCards() {
+    const list = document.getElementById('wineCardsList');
+    const loadingCard = document.getElementById('wineLoadingCard');
+    list.innerHTML = '';
+    list.appendChild(loadingCard);
+
+    if (wineCards.length === 0 && loadingCard.style.display === 'none') {
+      const empty = document.createElement('div');
+      empty.id = 'wineEmptyState';
+      empty.style.cssText = 'text-align:center;padding:40px 20px;color:var(--text-hint);';
+      empty.innerHTML = '<div style="font-size:32px;margin-bottom:8px;">🍷</div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">아직 등록한 와인이 없어요</div><div style="font-size:12px;">위 버튼으로 와인을 추가해보세요. 건너뛰어도 OK!</div>';
+      list.appendChild(empty);
+      return;
+    }
+
+    wineCards.forEach((entry, idx) => {
+      const w = entry.wine;
+      const card = document.createElement('div');
+      card.className = 'ob-card' + (entry.status === 'confirmed' ? ' wine-visited' : '');
+      card.id = `wc-${idx}`;
+
+      if (entry.status === 'searching') {
+        // Card shows "재검색중..." loading
+        card.innerHTML = `
+          <div style="text-align:center;padding:16px;">
+            <div style="font-size:20px;margin-bottom:6px;animation:pulse 1.5s infinite;">🔍</div>
+            <div style="font-size:13px;color:var(--text-sub);">다시 찾고 있어요...</div>
+          </div>
+        `;
+        list.appendChild(card);
+        return;
+      }
+
+      card.innerHTML = `
+        <div class="ob-card-top">
+          <div class="ob-card-photo" style="background:var(--wine-light);">${w.icon}</div>
+          <div class="ob-card-info">
+            <div class="ob-card-name" style="color:var(--wine);">${w.name}</div>
+            <div class="ob-card-meta">${w.type} · ${w.region} · ★${w.rating}</div>
+          </div>
+        </div>
+        ${entry.status === 'pending' ? `
+        <div class="ob-card-actions" id="wc-actions-${idx}">
+          <button class="ob-btn wine-visited-btn" onclick="confirmWineCard(${idx})">맞아요</button>
+          <button class="ob-btn" onclick="rejectWineCard(${idx})">다른 와인이에요</button>
+        </div>
+        ` : `
+        <div class="ob-card-gauge" id="wc-gauge-${idx}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;">
+              <div class="ob-score-bar" onpointerdown="startWineScore(event,${idx})" onpointermove="moveWineScore(event,${idx})" onpointerup="endWineScore()">
+                <div class="ob-score-fill" id="wc-fill-${idx}" style="width:${entry.score}%;background:${getWineScoreColor(entry.score)};"></div>
+                <div class="ob-score-label" id="wc-label-${idx}">${entry.score}</div>
+              </div>
+            </div>
+            <button onclick="removeWineCard(${idx})" style="
+              background:none;border:none;font-size:16px;color:var(--text-hint);
+              cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
+            ">×</button>
+          </div>
+        </div>
+        `}
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  // ── Photo recognition ──
+  function simulateWinePhotoUpload() {
+    const loadingCard = document.getElementById('wineLoadingCard');
+    loadingCard.style.display = 'block';
+    const empty = document.getElementById('wineEmptyState');
+    if (empty) empty.style.display = 'none';
+
+    const scenario = Math.random();
+    setTimeout(() => {
+      loadingCard.style.display = 'none';
+      if (scenario < 0.55) {
+        const wine = wineDB[Math.floor(Math.random() * wineDB.length)];
+        if (!wineCards.some(c => c.wine.name === wine.name)) {
+          wineCards.unshift({ wine, status: 'pending', score: 75 });
+        } else { showToast('이미 등록한 와인이에요'); }
+      } else if (scenario < 0.85) {
+        const shuffled = [...wineDB].sort(() => Math.random() - 0.5).slice(0, 3);
+        shuffled.forEach(w => {
+          if (!wineCards.some(c => c.wine.name === w.name))
+            wineCards.unshift({ wine: w, status: 'pending', score: 75 });
+        });
+      } else {
+        showToast('인식이 어려워요 😅 검색해보세요');
+      }
+      renderWineCards();
+    }, 1000);
+  }
+
+  // ── Card actions ──
+  function confirmWineCard(idx) {
+    wineCards[idx].status = 'confirmed';
+    renderWineCards();
+  }
+
+  // "다른 와인이에요" → show loading on card → bottom sheet with alternatives
+  function rejectWineCard(idx) {
+    const rejectedName = wineCards[idx].wine.name;
+    wineCards[idx].status = 'searching';
+    searchTargetIdx = idx;
+    renderWineCards();
+
+    // After 1s, show bottom sheet with other wines (excluding rejected)
+    setTimeout(() => {
+      const alternatives = wineDB
+        .filter(w => w.name !== rejectedName)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5);
+
+      const container = document.getElementById('wineSearchResults');
+      container.innerHTML = '';
+
+      // Add search input hint at top
+      document.getElementById('wineSearchInput').value = '';
+      document.getElementById('wineSearchInput').placeholder = '다른 와인 검색...';
+
+      alternatives.forEach(w => {
+        const el = document.createElement('div');
+        el.style.cssText = 'padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all 0.15s;';
+        el.onmouseenter = () => { el.style.borderColor = 'var(--wine)'; el.style.background = 'var(--wine-light)'; };
+        el.onmouseleave = () => { el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-card)'; };
+        el.onclick = () => selectSearchResult(w);
+        el.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-size:18px;">${w.icon}</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text);">${w.name}</div>
+              <div style="font-size:12px;color:var(--text-sub);">${w.type} · ${w.region} · ★${w.rating}</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+
+      showWineSearchSheet();
+    }, 1000);
+  }
+
+  function removeWineCard(idx) {
+    wineCards.splice(idx, 1);
+    renderWineCards();
+  }
+
+  // ── Wine score dragging ──
+  let wineScoreDragging = false;
+  function startWineScore(e, i) { wineScoreDragging = true; moveWineScore(e, i); }
+  function endWineScore() { wineScoreDragging = false; }
+  function moveWineScore(e, i) {
+    if (!wineScoreDragging) return;
+    const bar = e.currentTarget; const rect = bar.getBoundingClientRect();
+    const pct = Math.max(1, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+    wineCards[i].score = pct;
+    document.getElementById(`wc-fill-${i}`).style.width = pct + '%';
+    document.getElementById(`wc-fill-${i}`).style.background = getWineScoreColor(pct);
+    document.getElementById(`wc-label-${i}`).textContent = pct;
+  }
+
+  // ── Sticky search (이름으로 검색 button) ──
+  function activateStickySearch() {
+    document.getElementById('wineStickyButtons').style.display = 'none';
+    document.getElementById('wineStickySearch').style.display = 'block';
+    searchTargetIdx = null; // not from a card
+    setTimeout(() => document.getElementById('wineStickySearchInput').focus(), 50);
+  }
+
+  function submitStickySearch() {
+    const query = document.getElementById('wineStickySearchInput').value;
+    if (!query.trim()) { showToast('와인 이름을 입력해주세요'); return; }
+    handleWineSearch(query);
+  }
+
+  function submitSheetSearch() {
+    const query = document.getElementById('wineSearchInput').value;
+    if (!query.trim()) return;
+    handleWineSearch(query);
+  }
+
+  function deactivateStickySearch() {
+    document.getElementById('wineStickySearch').style.display = 'none';
+    document.getElementById('wineStickyButtons').style.display = 'flex';
+    document.getElementById('wineStickySearchInput').value = '';
+    closeWineSearch();
+  }
+
+  // ── Search bottom sheet ──
+  function showWineSearchSheet() {
+    document.getElementById('wineSearchBackdrop').style.display = 'block';
+    document.getElementById('wineSearchSheet').style.display = 'flex';
+  }
+
+  function closeWineSearch() {
+    document.getElementById('wineSearchBackdrop').style.display = 'none';
+    document.getElementById('wineSearchSheet').style.display = 'none';
+    document.getElementById('wineSearchInput').value = '';
+    document.getElementById('wineSearchInput').placeholder = '와인 이름 검색...';
+    const container = document.getElementById('wineSearchResults');
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">와인 이름을 입력해보세요</div>';
+    // Clean up any searching cards if sheet closed without selecting
+    if (searchTargetIdx !== null && wineCards[searchTargetIdx] && wineCards[searchTargetIdx].status === 'searching') {
+      wineCards.splice(searchTargetIdx, 1);
+      searchTargetIdx = null;
+      renderWineCards();
+    }
+  }
+
+  function handleWineSearch(query, fromCardIdx) {
+    // Open bottom sheet with results
+    if (!query.trim()) {
+      closeWineSearch();
+      return;
+    }
+    const results = wineDB.filter(w => w.name.toLowerCase().includes(query.toLowerCase()));
+    const container = document.getElementById('wineSearchResults');
+
+    if (results.length === 0) {
+      showWineSearchSheet();
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">검색 결과가 없어요</div>';
+      return;
+    }
+
+    // Copy query to bottom sheet input too
+    document.getElementById('wineSearchInput').value = query;
+
+    container.innerHTML = '';
+    results.forEach(w => {
+      const el = document.createElement('div');
+      el.style.cssText = 'padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all 0.15s;';
+      el.onmouseenter = () => { el.style.borderColor = 'var(--wine)'; el.style.background = 'var(--wine-light)'; };
+      el.onmouseleave = () => { el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-card)'; };
+      el.onclick = () => selectSearchResult(w, fromCardIdx);
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:18px;">${w.icon}</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">${w.name}</div>
+            <div style="font-size:12px;color:var(--text-sub);">${w.type} · ${w.region} · ★${w.rating}</div>
+          </div>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+    showWineSearchSheet();
+  }
+
+  function selectSearchResult(wine, fromCardIdx) {
+    if (wineCards.some(c => c.wine.name === wine.name && c.status !== 'searching')) {
+      showToast('이미 등록한 와인이에요');
+      closeWineSearch();
+      return;
+    }
+
+    const idx = fromCardIdx !== undefined ? fromCardIdx : searchTargetIdx;
+    if (idx !== null && idx !== undefined && wineCards[idx] && wineCards[idx].status === 'searching') {
+      // Replace the searching card with the selected wine
+      wineCards[idx] = { wine, status: 'confirmed', score: 75 };
+    } else {
+      // From sticky search — add new confirmed card
+      wineCards.push({ wine, status: 'confirmed', score: 75 });
+    }
+
+    searchTargetIdx = null;
+    closeWineSearch();
+    deactivateStickySearch();
+    renderWineCards();
+  }
+
+  // Toast
+  function showToast(msg) {
+    let toast = document.getElementById('wineToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'wineToast';
+      toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.3s;white-space:nowrap;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  }
+
+  // =====================
+  // Expandable Sections
+  // =====================
+  function toggleExpand(id) {
+    const body = document.getElementById(id);
+    const chevron = document.getElementById(id + '-chevron');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    chevron.classList.toggle('open', !isOpen);
+  }
+
+  // =====================
+  // Scene Filter (Home Recommendations)
+  // =====================
+  function selectFilter(el) {
+    document.querySelectorAll('#sceneFilterRow .filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // =====================
+  // Area chips in Discover
+  // =====================
+  function selectAreaChip(el) {
+    document.querySelectorAll('#discoverAreaChips .area-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // =====================
+  // Nudge dismiss
+  // =====================
+  function dismissNudge() {
+    const card = document.getElementById('nudgeCard');
+    card.style.transition = 'all 0.25s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(-8px)';
+    card.style.maxHeight = card.offsetHeight + 'px';
+    setTimeout(() => {
+      card.style.maxHeight = '0';
+      card.style.margin = '0 16px';
+      card.style.padding = '0';
+      card.style.border = 'none';
+    }, 200);
+    setTimeout(() => card.remove(), 500);
+  }
+
+  // =====================
+  // Init
+  // =====================
+  // Area map is initialized in HTML + event delegation
+  initRestaurantCards();
+  // Wine onboarding: no init needed (photo-recognition based, no pre-built list)
+</script>
+</body>
+</html>

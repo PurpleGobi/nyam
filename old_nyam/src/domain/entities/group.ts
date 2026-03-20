@@ -1,24 +1,18 @@
-export type GroupType = 'private' | 'public' | 'viewonly' | 'paid'
-
-export type GroupRole = 'owner' | 'admin' | 'member'
-
-export interface GroupEntryRequirements {
-  minLevel: number | null
-  minRecords: number | null
-  minCategory: string | null
-  minRegion: string | null
-  minFrequency: number | null
-  requiresApproval: boolean
-}
+import type { GroupRole, MembershipStatus } from "@/infrastructure/supabase/types"
 
 export interface Group {
   id: string
   name: string
   description: string | null
-  type: GroupType
   ownerId: string
-  entryRequirements: GroupEntryRequirements
-  memberCount: number
+  accessType: "private" | "public"
+  sharingType: "interactive" | "view_only"
+  isPaid: boolean
+  priceMonthly: number | null
+  trialDays: number | null
+  entryRequirements: Record<string, unknown> | null
+  inviteCode: string | null
+  isActive: boolean
   createdAt: string
 }
 
@@ -26,13 +20,21 @@ export interface GroupMembership {
   groupId: string
   userId: string
   role: GroupRole
+  status: MembershipStatus
   joinedAt: string
 }
 
-export interface RecordShare {
-  id: string
-  recordId: string
+export interface GroupStats {
   groupId: string
-  sharedByUserId: string
-  sharedAt: string
+  memberCount: number
+  recordCount: number
+  recordsThisWeek: number
+  activityScore: number
+  overallScore: number
+  updatedAt: string
+}
+
+export interface GroupWithStats extends Group {
+  stats: GroupStats | null
+  memberCount: number
 }

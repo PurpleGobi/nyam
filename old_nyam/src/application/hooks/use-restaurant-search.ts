@@ -1,61 +1,33 @@
-'use client'
+"use client"
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import {
-  searchRestaurants,
-  type KakaoPlaceResult,
-} from '@/infrastructure/api/kakao-local'
+import { useCallback, useRef, useState } from "react"
+import type { NearbyPlace } from "@/infrastructure/api/kakao-local"
 
 export function useRestaurantSearch() {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<KakaoPlaceResult[]>([])
+  const [results, setResults] = useState<NearbyPlace[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const [selected, setSelected] = useState<KakaoPlaceResult | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
-  useEffect(() => {
+  const search = useCallback((query: string, lat?: number, lng?: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
-    if (!query.trim() || selected) {
+    if (!query.trim()) {
       setResults([])
       return
     }
 
-    setIsSearching(true)
     debounceRef.current = setTimeout(async () => {
-      try {
-        const places = await searchRestaurants(query)
-        setResults(places)
-      } catch {
-        setResults([])
-      } finally {
-        setIsSearching(false)
-      }
-    }, 400)
+      setIsSearching(true)
+      const params = new URLSearchParams({ q: query })
+      if (lat) params.set("lat", String(lat))
+      if (lng) params.set("lng", String(lng))
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [query, selected])
-
-  const handleSelect = useCallback((place: KakaoPlaceResult) => {
-    setSelected(place)
-    setResults([])
+      const response = await fetch(`/api/restaurants/search?${params}`)
+      const data = await response.json()
+      setResults(data.places ?? [])
+      setIsSearching(false)
+    }, 300)
   }, [])
 
-  const handleClear = useCallback(() => {
-    setSelected(null)
-    setQuery('')
-    setResults([])
-  }, [])
-
-  return {
-    query,
-    setQuery,
-    results,
-    isSearching,
-    selected,
-    handleSelect,
-    handleClear,
-  }
+  return { results, isSearching, search }
 }

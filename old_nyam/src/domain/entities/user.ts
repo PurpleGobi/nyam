@@ -1,9 +1,14 @@
+import type { AuthProvider } from "@/infrastructure/supabase/types"
+
 export interface User {
   id: string
   nickname: string
   avatarUrl: string | null
   email: string
-  authProvider: 'kakao' | 'naver' | 'google' | 'apple'
+  authProvider: AuthProvider
+  isDeactivated: boolean
+  deactivatedAt: string | null
+  termsAgreedAt: string | null
   createdAt: string
   lastActiveAt: string
 }
@@ -23,4 +28,5 @@ export interface UserStats {
   groupsCount: number
   sharedRecordsCount: number
   reactionsReceived: number
+  updatedAt: string
 }

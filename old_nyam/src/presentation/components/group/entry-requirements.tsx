@@ -1,62 +1,66 @@
-'use client'
+"use client"
 
-import { cn } from '@/shared/utils/cn'
-
-interface EntryRequirementsData {
-  minLevel?: number | null
-  minRecords?: number | null
-  minCategory?: { category: string; count: number } | null
-  minRegion?: { region: string; count: number } | null
-  minFrequency?: number | null
-  requiresApproval?: boolean
-}
+import { Lock, Globe, Users, Eye } from "lucide-react"
 
 interface EntryRequirementsProps {
-  requirements: EntryRequirementsData
-  className?: string
+  accessType: "private" | "public"
+  memberCount: number
+  maxMembers?: number
+  sharingType: "interactive" | "view_only"
 }
 
+const sharingTypeLabels = {
+  interactive: "서로의 기록에 반응할 수 있어요",
+  view_only: "기록을 조회만 할 수 있어요",
+} as const
+
 export function EntryRequirements({
-  requirements,
-  className,
+  accessType,
+  memberCount,
+  maxMembers,
+  sharingType,
 }: EntryRequirementsProps) {
-  const items: { icon: string; label: string }[] = []
-
-  if (requirements.minLevel != null) {
-    items.push({ icon: '\u2B50', label: `nyam Lv.${requirements.minLevel}+` })
-  }
-  if (requirements.minRecords != null) {
-    items.push({ icon: '\uD83D\uDCDD', label: `기록 ${requirements.minRecords}개+` })
-  }
-  if (requirements.minCategory != null) {
-    items.push({
-      icon: '\uD83C\uDF74',
-      label: `${requirements.minCategory.category} ${requirements.minCategory.count}개+`,
-    })
-  }
-  if (requirements.minRegion != null) {
-    items.push({
-      icon: '\uD83D\uDCCD',
-      label: `${requirements.minRegion.region} ${requirements.minRegion.count}개+`,
-    })
-  }
-  if (requirements.minFrequency != null) {
-    items.push({ icon: '\uD83D\uDCC5', label: `주 ${requirements.minFrequency}회+` })
-  }
-  if (requirements.requiresApproval) {
-    items.push({ icon: '\u270B', label: '승인 필요' })
-  }
-
-  if (items.length === 0) return null
-
   return (
-    <div className={cn('bg-neutral-50 rounded-lg p-3 flex flex-col gap-2', className)}>
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2 text-sm text-[#334E68]">
-          <span>{item.icon}</span>
-          <span>{item.label}</span>
-        </div>
-      ))}
+    <div className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
+      {/* Access type */}
+      <div className="flex items-center gap-2.5">
+        {accessType === "private" ? (
+          <Lock className="h-4 w-4 text-neutral-400" />
+        ) : (
+          <Globe className="h-4 w-4 text-neutral-400" />
+        )}
+        <span className="text-sm text-neutral-700">
+          {accessType === "private" ? "비공개 버블" : "공개 버블"}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            accessType === "private"
+              ? "bg-neutral-100 text-neutral-500"
+              : "bg-green-50 text-green-600"
+          }`}
+        >
+          {accessType === "private" ? "초대 필요" : "누구나 참여"}
+        </span>
+      </div>
+
+      {/* Member count */}
+      <div className="flex items-center gap-2.5">
+        <Users className="h-4 w-4 text-neutral-400" />
+        <span className="text-sm text-neutral-700">
+          {memberCount}명 참여 중
+          {maxMembers != null && (
+            <span className="text-neutral-400"> / {maxMembers}명</span>
+          )}
+        </span>
+      </div>
+
+      {/* Sharing type */}
+      <div className="flex items-center gap-2.5">
+        <Eye className="h-4 w-4 text-neutral-400" />
+        <span className="text-sm text-neutral-700">
+          {sharingTypeLabels[sharingType]}
+        </span>
+      </div>
     </div>
   )
 }

@@ -1,32 +1,60 @@
-'use client'
+"use client"
 
-import { useCallback, useState } from 'react'
-import { getUserRepository } from '@/di/repositories'
+import { useCallback, useState } from "react"
+import { useSWRConfig } from "swr"
+import { createClient } from "@/infrastructure/supabase/client"
 
-interface UpdateProfileParams {
+export interface UpdateProfileInput {
   nickname?: string
-  avatarUrl?: string
+  profileImageUrl?: string
+  bio?: string
 }
 
 export function useUpdateProfile() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const repo = getUserRepository()
+  const supabase = createClient()
+  const { mutate } = useSWRConfig()
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [updateError, setUpdateError] = useState<string | null>(null)
 
-  const updateProfile = useCallback(async (userId: string, params: UpdateProfileParams) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const updated = await repo.updateProfile(userId, params)
-      return updated
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update profile'
-      setError(message)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [repo])
+  const updateProfile = useCallback(
+    async (input: UpdateProfileInput) => {
+      setIsUpdating(true)
+      setUpdateError(null)
 
-  return { updateProfile, isLoading, error }
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("Not authenticated")
+
+        const updateData: Record<string, unknown> = {}
+        if (input.nickname !== undefined) updateData.nickname = input.nickname
+        if (input.profileImageUrl !== undefined) updateData.avatar_url = input.profileImageUrl
+        if (input.bio !== undefined) updateData.bio = input.bio
+
+        if (Object.keys(updateData).length === 0) return
+
+        const { error } = await supabase
+          .from("users")
+          .update(updateData)
+          .eq("id", user.id)
+
+        if (error) throw new Error(`Failed to update profile: ${error.message}`)
+
+        // Revalidate profile cache
+        await mutate("profile")
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update profile"
+        setUpdateError(message)
+        throw err
+      } finally {
+        setIsUpdating(false)
+      }
+    },
+    [supabase, mutate],
+  )
+
+  return {
+    updateProfile,
+    isUpdating,
+    updateError,
+  }
 }

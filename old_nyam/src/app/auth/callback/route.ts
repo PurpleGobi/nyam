@@ -1,15 +1,32 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { createClient } from '@/infrastructure/supabase/server'
+import { NextResponse } from "next/server"
+import { createClient } from "@/infrastructure/supabase/server"
 
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get("code")
+  const next = searchParams.get("next") ?? "/"
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      // 약관 동의 여부 확인
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("terms_agreed_at")
+          .eq("id", user.id)
+          .single()
+
+        if (!profile?.terms_agreed_at) {
+          return NextResponse.redirect(`${origin}/auth/consent?next=${encodeURIComponent(next)}`)
+        }
+      }
+
+      return NextResponse.redirect(`${origin}${next}`)
+    }
   }
 
-  return NextResponse.redirect(new URL('/', requestUrl.origin))
+  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`)
 }

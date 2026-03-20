@@ -1,191 +1,205 @@
-import { createClient } from '@/infrastructure/supabase/client'
-import type { Group, GroupMembership, GroupEntryRequirements, GroupType, GroupRole } from '@/domain/entities/group'
-import type { GroupRepository } from '@/domain/repositories/group-repository'
-import type { Database } from '@/infrastructure/supabase/types'
+import { createClient } from "@/infrastructure/supabase/client"
+import type { Group, GroupMembership, GroupWithStats } from "@/domain/entities/group"
+import type { GroupRepository, CreateGroupInput } from "@/domain/repositories/group-repository"
 
-type GroupRow = Database['public']['Tables']['groups']['Row']
-type MembershipRow = Database['public']['Tables']['group_memberships']['Row']
-
-function toGroup(row: GroupRow, memberCount?: number): Group {
-  const reqs = (row.entry_requirements ?? {}) as Record<string, unknown>
-
+function mapDbGroup(data: Record<string, unknown>): Group {
   return {
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    type: row.type as GroupType,
-    ownerId: row.owner_id,
-    entryRequirements: {
-      minLevel: (reqs.min_level as number) ?? null,
-      minRecords: (reqs.min_records as number) ?? null,
-      minCategory: (reqs.min_category as string) ?? null,
-      minRegion: (reqs.min_region as string) ?? null,
-      minFrequency: (reqs.min_frequency as number) ?? null,
-      requiresApproval: (reqs.requires_approval as boolean) ?? false,
-    } satisfies GroupEntryRequirements,
-    memberCount: memberCount ?? 0,
-    createdAt: row.created_at,
-  }
-}
-
-function toMembership(row: MembershipRow): GroupMembership {
-  return {
-    groupId: row.group_id,
-    userId: row.user_id,
-    role: row.role as GroupRole,
-    joinedAt: row.joined_at,
+    id: data.id as string,
+    name: data.name as string,
+    description: data.description as string | null,
+    ownerId: data.owner_id as string,
+    accessType: data.access_type as "private" | "public",
+    sharingType: data.sharing_type as "interactive" | "view_only",
+    isPaid: data.is_paid as boolean,
+    priceMonthly: data.price_monthly as number | null,
+    trialDays: data.trial_days as number | null,
+    entryRequirements: data.entry_requirements as Record<string, unknown> | null,
+    inviteCode: data.invite_code as string | null,
+    isActive: data.is_active as boolean,
+    createdAt: data.created_at as string,
   }
 }
 
 export class SupabaseGroupRepository implements GroupRepository {
-  async getById(id: string): Promise<Group | null> {
-    const supabase = createClient()
+  private supabase = createClient()
 
-    const { data, error } = await supabase
-      .from('groups')
-      .select('*')
-      .eq('id', id)
+  async getById(id: string): Promise<GroupWithStats | null> {
+    const { data, error } = await this.supabase
+      .from("groups")
+      .select("*, group_stats(*)")
+      .eq("id", id)
       .single()
 
     if (error || !data) return null
-
-    const countResult = await supabase
-      .from('group_memberships')
-      .select('user_id', { count: 'exact', head: true })
-      .eq('group_id', id)
-
-    return toGroup(data as GroupRow, countResult.count ?? 0)
-  }
-
-  async getByUserId(userId: string): Promise<Group[]> {
-    const supabase = createClient()
-    const memResult = await supabase
-      .from('group_memberships')
-      .select('group_id')
-      .eq('user_id', userId)
-
-    if (memResult.error || !memResult.data || memResult.data.length === 0) return []
-
-    const groupIds = (memResult.data as { group_id: string }[]).map((m) => m.group_id)
-    const { data, error } = await supabase
-      .from('groups')
-      .select('*')
-      .in('id', groupIds)
-
-    if (error || !data) return []
-
-    const groupRows = data as GroupRow[]
-    const counts = await Promise.all(
-      groupRows.map(async (g) => {
-        const { count } = await supabase
-          .from('group_memberships')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('group_id', g.id)
-        return { id: g.id, count: count ?? 0 }
-      }),
-    )
-    const countMap = new Map(counts.map((c) => [c.id, c.count]))
-
-    return groupRows.map((row) => toGroup(row, countMap.get(row.id) ?? 0))
-  }
-
-  async create(
-    group: Omit<Group, 'id' | 'createdAt' | 'memberCount'>,
-  ): Promise<Group> {
-    const supabase = createClient()
-
-    const insertData: Database['public']['Tables']['groups']['Insert'] = {
-      name: group.name,
-      description: group.description,
-      type: group.type as Database['public']['Tables']['groups']['Insert']['type'],
-      owner_id: group.ownerId,
-      entry_requirements: {
-        min_level: group.entryRequirements.minLevel,
-        min_records: group.entryRequirements.minRecords,
-        min_category: group.entryRequirements.minCategory,
-        min_region: group.entryRequirements.minRegion,
-        min_frequency: group.entryRequirements.minFrequency,
-        requires_approval: group.entryRequirements.requiresApproval,
-      },
+    const stats = data.group_stats as Record<string, unknown> | null
+    return {
+      ...mapDbGroup(data),
+      stats: stats ? {
+        groupId: stats.group_id as string,
+        memberCount: stats.member_count as number,
+        recordCount: stats.record_count as number,
+        recordsThisWeek: stats.records_this_week as number,
+        activityScore: stats.activity_score as number,
+        overallScore: stats.overall_score as number,
+        updatedAt: stats.updated_at as string,
+      } : null,
+      memberCount: (stats?.member_count as number) ?? 0,
     }
+  }
 
-    const { data, error } = await supabase
-      .from('groups')
-      .insert(insertData)
+  async getMyGroups(userId: string): Promise<GroupWithStats[]> {
+    const { data: memberships } = await this.supabase
+      .from("group_memberships")
+      .select("group_id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+
+    if (!memberships?.length) return []
+
+    const groupIds = memberships.map((m) => m.group_id)
+    const { data } = await this.supabase
+      .from("groups")
+      .select("*, group_stats(*)")
+      .in("id", groupIds)
+      .eq("is_active", true)
+
+    return (data ?? []).map((g) => {
+      const stats = g.group_stats as Record<string, unknown> | null
+      return {
+        ...mapDbGroup(g),
+        stats: stats ? {
+          groupId: stats.group_id as string,
+          memberCount: stats.member_count as number,
+          recordCount: stats.record_count as number,
+          recordsThisWeek: stats.records_this_week as number,
+          activityScore: stats.activity_score as number,
+          overallScore: stats.overall_score as number,
+          updatedAt: stats.updated_at as string,
+        } : null,
+        memberCount: (stats?.member_count as number) ?? 0,
+      }
+    })
+  }
+
+  async getPublicGroups(limit = 20): Promise<GroupWithStats[]> {
+    const { data } = await this.supabase
+      .from("groups")
+      .select("*, group_stats(*)")
+      .eq("access_type", "public")
+      .eq("is_active", true)
+      .limit(limit)
+
+    return (data ?? []).map((g) => {
+      const stats = g.group_stats as Record<string, unknown> | null
+      return {
+        ...mapDbGroup(g),
+        stats: stats ? {
+          groupId: stats.group_id as string,
+          memberCount: stats.member_count as number,
+          recordCount: stats.record_count as number,
+          recordsThisWeek: stats.records_this_week as number,
+          activityScore: stats.activity_score as number,
+          overallScore: stats.overall_score as number,
+          updatedAt: stats.updated_at as string,
+        } : null,
+        memberCount: (stats?.member_count as number) ?? 0,
+      }
+    })
+  }
+
+  async create(ownerId: string, input: CreateGroupInput): Promise<Group> {
+    const { data, error } = await this.supabase
+      .from("groups")
+      .insert({
+        name: input.name,
+        description: input.description ?? null,
+        owner_id: ownerId,
+        access_type: input.accessType ?? "private",
+        sharing_type: input.sharingType ?? "interactive",
+      })
       .select()
       .single()
 
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to create group')
-    }
+    if (error) throw new Error(`Failed to create group: ${error.message}`)
 
-    const groupData = data as GroupRow
+    // Auto-join as owner
+    await this.supabase.from("group_memberships").insert({
+      group_id: data.id,
+      user_id: ownerId,
+      role: "owner",
+      status: "active",
+    })
 
-    const memberInsert: Database['public']['Tables']['group_memberships']['Insert'] = {
-      group_id: groupData.id,
-      user_id: group.ownerId,
-      role: 'owner',
-      status: 'active',
-    }
-
-    const { error: memberError } = await supabase
-      .from('group_memberships')
-      .insert(memberInsert)
-
-    if (memberError) {
-      throw new Error(memberError.message)
-    }
-
-    return toGroup(groupData, 1)
+    return mapDbGroup(data)
   }
 
-  async getMembers(groupId: string): Promise<GroupMembership[]> {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('group_memberships')
-      .select('*')
-      .eq('group_id', groupId)
-
-    if (error || !data) return []
-    return (data as MembershipRow[]).map(toMembership)
-  }
-
-  async join(
-    groupId: string,
-    userId: string,
-  ): Promise<GroupMembership> {
-    const supabase = createClient()
-
-    const insertData: Database['public']['Tables']['group_memberships']['Insert'] = {
-      group_id: groupId,
-      user_id: userId,
-      role: 'member',
-      status: 'active',
-    }
-
-    const { data, error } = await supabase
-      .from('group_memberships')
-      .insert(insertData)
+  async join(groupId: string, userId: string): Promise<GroupMembership> {
+    const { data, error } = await this.supabase
+      .from("group_memberships")
+      .insert({
+        group_id: groupId,
+        user_id: userId,
+        role: "member",
+        status: "active",
+      })
       .select()
       .single()
 
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to join group')
+    if (error) throw new Error(`Failed to join group: ${error.message}`)
+    return {
+      groupId: data.group_id,
+      userId: data.user_id,
+      role: data.role,
+      status: data.status,
+      joinedAt: data.joined_at,
     }
-
-    return toMembership(data as MembershipRow)
   }
 
   async leave(groupId: string, userId: string): Promise<void> {
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('group_memberships')
+    const { error } = await this.supabase
+      .from("group_memberships")
       .delete()
-      .eq('group_id', groupId)
-      .eq('user_id', userId)
+      .eq("group_id", groupId)
+      .eq("user_id", userId)
 
-    if (error) {
-      throw new Error(error.message)
-    }
+    if (error) throw new Error(`Failed to leave group: ${error.message}`)
+  }
+
+  async getMembers(groupId: string): Promise<GroupMembership[]> {
+    const { data } = await this.supabase
+      .from("group_memberships")
+      .select("*")
+      .eq("group_id", groupId)
+      .eq("status", "active")
+
+    return (data ?? []).map((m) => ({
+      groupId: m.group_id,
+      userId: m.user_id,
+      role: m.role,
+      status: m.status,
+      joinedAt: m.joined_at,
+    }))
+  }
+
+  async getByInviteCode(code: string): Promise<Group | null> {
+    const { data, error } = await this.supabase
+      .from("groups")
+      .select("*")
+      .eq("invite_code", code)
+      .single()
+
+    if (error || !data) return null
+    return mapDbGroup(data)
+  }
+
+  async generateInviteCode(groupId: string): Promise<string> {
+    const code = crypto.randomUUID().slice(0, 8)
+    const { error } = await this.supabase
+      .from("groups")
+      .update({ invite_code: code })
+      .eq("id", groupId)
+
+    if (error) throw new Error(`Failed to generate invite code: ${error.message}`)
+    return code
   }
 }

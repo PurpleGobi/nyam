@@ -1,188 +1,134 @@
-'use client'
+"use client"
 
-import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { CalendarDayRecord } from '@/application/hooks/use-calendar-records'
+import { useState } from "react"
+import Image from "next/image"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { cn } from "@/shared/utils/cn"
+import type { RecordWithPhotos } from "@/domain/entities/record"
 
-const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate()
-}
-
-function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month - 1, 1).getDay()
-}
-
-const RECORD_TYPE_STYLES: Record<string, { bg: string; emoji: string }> = {
-  restaurant: { bg: 'bg-gradient-to-br from-amber-50 to-orange-100', emoji: '🍽️' },
-  wine: { bg: 'bg-gradient-to-br from-purple-50 to-rose-100', emoji: '🍷' },
-  cooking: { bg: 'bg-gradient-to-br from-green-50 to-emerald-100', emoji: '🍳' },
-}
-
-export function PhotoCalendar({
-  year,
-  month,
-  recordsByDay,
-  summary,
-  onPrevMonth,
-  onNextMonth,
-  onGoToday,
-  onDayClick,
-}: {
+interface PhotoCalendarProps {
+  recordsByDay: Record<number, RecordWithPhotos[]>
   year: number
   month: number
-  recordsByDay: Map<number, CalendarDayRecord[]>
-  summary: { recordCount: number; placeCount: number; avgRating: number }
-  onPrevMonth: () => void
-  onNextMonth: () => void
-  onGoToday: () => void
-  onDayClick?: (day: number, records: CalendarDayRecord[]) => void
-}) {
-  const totalDays = getDaysInMonth(year, month)
-  const firstDayOffset = getFirstDayOfMonth(year, month)
+  onMonthChange: (year: number, month: number) => void
+  totalRecords: number
+}
 
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"]
+
+export function PhotoCalendar({
+  recordsByDay,
+  year,
+  month,
+  onMonthChange,
+  totalRecords,
+}: PhotoCalendarProps) {
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+
+  const firstDayOfMonth = new Date(year, month - 1, 1).getDay()
+  const daysInMonth = new Date(year, month, 0).getDate()
   const today = new Date()
-  const isCurrentMonth =
-    today.getFullYear() === year && today.getMonth() + 1 === month
-  const todayDate = today.getDate()
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month
 
-  const cells: (number | null)[] = []
-  for (let i = 0; i < firstDayOffset; i++) {
-    cells.push(null)
+  const handlePrevMonth = () => {
+    if (month === 1) onMonthChange(year - 1, 12)
+    else onMonthChange(year, month - 1)
   }
-  for (let d = 1; d <= totalDays; d++) {
-    cells.push(d)
+
+  const handleNextMonth = () => {
+    if (month === 12) onMonthChange(year + 1, 1)
+    else onMonthChange(year, month + 1)
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-[var(--shadow-sm)]">
-      {/* Month nav header */}
-      <div className="mb-3 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onPrevMonth}
-          className="rounded-full p-1 text-[var(--color-neutral-500)] transition-colors hover:bg-[var(--color-neutral-100)]"
-        >
-          <ChevronLeft className="h-5 w-5" />
+    <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-sm)]">
+      <div className="flex items-center justify-between mb-3">
+        <button type="button" onClick={handlePrevMonth} className="p-1 text-neutral-400 hover:text-neutral-600">
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          onClick={onGoToday}
-          className="text-sm font-semibold text-[var(--color-neutral-800)] hover:text-[#FF6038] transition-colors"
-        >
-          {year}년 {month}월
-        </button>
-        <button
-          type="button"
-          onClick={onNextMonth}
-          className="rounded-full p-1 text-[var(--color-neutral-500)] transition-colors hover:bg-[var(--color-neutral-100)]"
-        >
-          <ChevronRight className="h-5 w-5" />
+        <div className="text-center">
+          <p className="text-sm font-semibold text-neutral-800">
+            {year}년 {month}월
+          </p>
+          <p className="text-[10px] text-neutral-400">{totalRecords}개 기록</p>
+        </div>
+        <button type="button" onClick={handleNextMonth} className="p-1 text-neutral-400 hover:text-neutral-600">
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Day-of-week headers */}
-      <div className="mb-1 grid grid-cols-7 gap-1">
-        {DAY_LABELS.map((label) => (
-          <div
-            key={label}
-            className="text-center text-[10px] font-medium text-[var(--color-neutral-400)]"
-          >
-            {label}
+      <div className="grid grid-cols-7 gap-1">
+        {WEEKDAYS.map((day) => (
+          <div key={day} className="text-center text-[10px] font-medium text-neutral-400 pb-1">
+            {day}
           </div>
         ))}
-      </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((day, idx) => {
-          if (day === null) {
-            return <div key={`empty-${idx}`} className="aspect-square" />
-          }
+        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+          <div key={`empty-${i}`} />
+        ))}
 
-          const records = recordsByDay.get(day)
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+          const records = recordsByDay[day]
           const hasRecords = records && records.length > 0
-          const isToday = isCurrentMonth && day === todayDate
-          const photos = records
-            ?.map((r) => r.photoUrl)
-            .filter((url): url is string => url !== null)
-          const hasPhotos = photos && photos.length > 0
-          const hasMultiplePhotos = photos && photos.length >= 2
-
-          // For records without photos, use type-based visual
-          const primaryRecord = records?.[0]
-          const typeStyle = primaryRecord
-            ? RECORD_TYPE_STYLES[primaryRecord.recordType] ?? RECORD_TYPE_STYLES.restaurant
-            : null
+          const firstPhoto = records?.[0]?.photos?.[0]
+          const isToday = isCurrentMonth && today.getDate() === day
 
           return (
-            <div
+            <button
               key={day}
-              role={hasRecords ? 'button' : undefined}
-              tabIndex={hasRecords ? 0 : undefined}
-              onClick={hasRecords && records ? () => onDayClick?.(day, records) : undefined}
-              onKeyDown={hasRecords && records ? (e) => { if (e.key === 'Enter') onDayClick?.(day, records) } : undefined}
-              className={`relative aspect-square overflow-hidden rounded-lg ${
-                isToday ? 'ring-2 ring-[#FF6038]' : ''
-              } ${hasRecords ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+              type="button"
+              onClick={() => hasRecords ? setSelectedDay(day === selectedDay ? null : day) : undefined}
+              className={cn(
+                "relative aspect-square rounded-xl overflow-hidden",
+                hasRecords ? "cursor-pointer" : "cursor-default",
+                isToday && !hasRecords && "ring-1 ring-primary-500",
+              )}
             >
-              {hasPhotos ? (
-                hasMultiplePhotos ? (
-                  <div className="grid h-full w-full grid-cols-2 gap-px">
-                    <div className="relative overflow-hidden">
-                      <Image src={photos[0]} alt="" fill sizes="50px" className="object-cover" />
-                    </div>
-                    <div className="relative overflow-hidden">
-                      <Image src={photos[1]} alt="" fill sizes="50px" className="object-cover" />
-                    </div>
-                  </div>
-                ) : (
-                  <Image
-                    src={photos[0]}
-                    alt=""
-                    fill
-                    sizes="50px"
-                    className="object-cover"
-                  />
-                )
-              ) : hasRecords && typeStyle ? (
-                <div className={`flex h-full w-full flex-col items-center justify-center ${typeStyle.bg}`}>
-                  <span className="text-sm leading-none">{typeStyle.emoji}</span>
-                  {records.length >= 2 && (
-                    <span className="mt-0.5 text-[7px] font-bold text-[var(--color-neutral-500)]">
-                      +{records.length}
-                    </span>
-                  )}
-                </div>
+              {firstPhoto ? (
+                <Image
+                  src={firstPhoto.thumbnailUrl ?? firstPhoto.photoUrl}
+                  alt={`${month}/${day}`}
+                  fill
+                  className="object-cover"
+                  sizes="48px"
+                />
               ) : (
-                <div className="h-full w-full bg-[var(--color-neutral-50)]" />
+                <div className={cn(
+                  "h-full w-full flex items-center justify-center text-[10px]",
+                  isToday ? "bg-primary-50 text-primary-500 font-semibold" : "bg-neutral-50 text-neutral-400",
+                )}>
+                  {day}
+                </div>
               )}
 
-              {/* Day number overlay */}
-              <span
-                className={
-                  hasPhotos
-                    ? 'absolute left-0.5 top-0 text-[9px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]'
-                    : hasRecords
-                      ? 'absolute left-0.5 top-0 text-[9px] font-semibold text-[var(--color-neutral-600)]'
-                      : 'absolute left-0.5 top-0 text-[9px] font-medium text-[var(--color-neutral-300)]'
-                }
-              >
-                {day}
-              </span>
-
-              {/* Today indicator removed — using ring-2 border instead */}
-            </div>
+              {records && records.length > 1 && (
+                <span className="absolute bottom-0.5 right-0.5 text-[8px] font-medium text-white bg-black/50 rounded-full px-1">
+                  {records.length}
+                </span>
+              )}
+            </button>
           )
         })}
       </div>
 
-      {/* Summary footer */}
-      <div className="mt-3 border-t border-[var(--color-neutral-100)] pt-2 text-center text-xs text-[var(--color-neutral-500)]">
-        {summary.recordCount}회 기록 · {summary.placeCount}곳 방문 · 평균{' '}
-        {summary.avgRating.toFixed(1)}
-      </div>
+      {selectedDay && recordsByDay[selectedDay] && (
+        <div className="mt-3 space-y-2 border-t border-neutral-100 pt-3">
+          {recordsByDay[selectedDay].map((record) => (
+            <div key={record.id} className="flex items-center gap-2 text-sm">
+              {record.photos[0] && (
+                <div className="relative h-8 w-8 rounded-lg overflow-hidden shrink-0">
+                  <Image src={record.photos[0].photoUrl} alt="" fill className="object-cover" sizes="32px" />
+                </div>
+              )}
+              <span className="text-neutral-700 truncate">{record.menuName ?? record.restaurant?.name ?? "기록"}</span>
+              {record.ratingOverall != null && (
+                <span className="text-xs font-bold text-primary-500 ml-auto">{Math.round(record.ratingOverall)}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

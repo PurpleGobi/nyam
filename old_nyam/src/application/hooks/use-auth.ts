@@ -1,78 +1,69 @@
-'use client'
+"use client"
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
-import { createClient } from '@/infrastructure/supabase/client'
+import { useCallback, useEffect, useState } from "react"
+import { createClient } from "@/infrastructure/supabase/client"
+import type { User as AuthUser } from "@supabase/supabase-js"
 
-type OAuthProvider = 'kakao' | 'google' | 'naver'
-type SupabaseProvider = Exclude<OAuthProvider, 'naver'>
-
-export interface UseAuthReturn {
-  readonly user: User | null
-  readonly session: Session | null
-  readonly isLoading: boolean
-  readonly signIn: (provider: OAuthProvider) => Promise<void>
-  readonly signOut: () => Promise<void>
-}
-
-export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function useAuth() {
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
   useEffect(() => {
-    const supabase = createClient()
+    const getUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      setUser(authUser)
+      setLoading(false)
+    }
+    getUser()
 
-    supabase.auth.getSession().then(({ data: { session: initial } }) => {
-      setSession(initial)
-      setUser(initial?.user ?? null)
-      setIsLoading(false)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, updated) => {
-        setSession(updated)
-        setUser(updated?.user ?? null)
-        setIsLoading(false)
-      },
-    )
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+  const signInWithProvider = useCallback(
+    async (provider: "google" | "kakao" | "apple") => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) throw error
+    },
+    [supabase],
+  )
 
-  const signIn = useCallback(async (provider: OAuthProvider) => {
-    if (provider === 'naver') {
-      const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID
-      const redirectUri = encodeURIComponent(
-        `${window.location.origin}/auth/naver/callback`
-      )
-      const state = crypto.randomUUID()
-      sessionStorage.setItem('naver_oauth_state', state)
-      window.location.href =
-        `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`
-      return
-    }
-
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider as SupabaseProvider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+  const signInWithNaver = useCallback(() => {
+    const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID
+    if (!clientId) throw new Error("Naver Client ID not configured")
+    const state = crypto.randomUUID()
+    sessionStorage.setItem("naver_oauth_state", state)
+    const redirectUri = `${window.location.origin}/auth/naver/callback`
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      state,
     })
-    if (error) throw error
+    window.location.href = `https://nid.naver.com/oauth2.0/authorize?${params}`
   }, [])
 
   const signOut = useCallback(async () => {
-    const supabase = createClient()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
-  }, [])
+  }, [supabase])
 
-  return useMemo(
-    () => ({ user, session, isLoading, signIn, signOut }),
-    [user, session, isLoading, signIn, signOut],
-  )
+  return {
+    user,
+    loading,
+    signInWithProvider,
+    signInWithNaver,
+    signOut,
+    isAuthenticated: !!user,
+  }
 }

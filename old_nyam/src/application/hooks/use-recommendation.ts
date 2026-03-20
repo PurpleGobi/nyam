@@ -1,84 +1,70 @@
-'use client'
+"use client"
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from "react"
 
-interface TasteDnaInput {
-  flavorSpicy: number
-  flavorSweet: number
-  flavorSalty: number
-  flavorSour: number
-  flavorUmami: number
-  flavorRich: number
-  tasteTypeName: string
+interface TasteDna {
+  spicy: number
+  sweet: number
+  salty: number
+  sour: number
+  umami: number
+  rich: number
 }
 
-interface RecommendParams {
-  tasteDna: TasteDnaInput
-  situation: string
-  location?: string
-  additionalContext?: string
-}
-
-export interface Recommendation {
+interface Recommendation {
   food: string
   reason: string
   tip: string
 }
 
-interface RecommendResponse {
-  available: boolean
-  recommendations?: Recommendation[]
+interface RecommendationResponse {
+  success: boolean
+  recommendations: Recommendation[]
+  tasteDna: TasteDna | null
+  isColdStart: boolean
+  sampleCount: number
   error?: string
 }
 
-export interface UseRecommendationReturn {
-  getRecommendation: (params: RecommendParams) => Promise<void>
-  recommendations: Recommendation[]
-  isLoading: boolean
-  error: string | null
-  isAvailable: boolean | null
-}
-
-export function useRecommendation(): UseRecommendationReturn {
+export function useRecommendation() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [tasteDna, setTasteDna] = useState<TasteDna | null>(null)
+  const [isColdStart, setIsColdStart] = useState(false)
+  const [sampleCount, setSampleCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
 
-  const getRecommendation = useCallback(async (params: RecommendParams) => {
-    setIsLoading(true)
-    setError(null)
-    setRecommendations([])
+  const requestRecommendation = useCallback(
+    async (params: { scene?: string; location?: { lat: number; lng: number }; additionalContext?: string }) => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const res = await fetch('/api/recommend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      })
+      try {
+        const response = await fetch("/api/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        })
 
-      if (!res.ok) {
-        throw new Error('요청에 실패했습니다')
+        const data: RecommendationResponse = await response.json()
+
+        if (!response.ok || !data.success) {
+          setError(data.error ?? "추천을 받지 못했어요")
+          return
+        }
+
+        setRecommendations(data.recommendations)
+        setTasteDna(data.tasteDna ?? null)
+        setIsColdStart(data.isColdStart)
+        setSampleCount(data.sampleCount)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "알 수 없는 오류")
+      } finally {
+        setIsLoading(false)
       }
+    },
+    [],
+  )
 
-      const data: RecommendResponse = await res.json()
-      setIsAvailable(data.available)
-
-      if (!data.available) {
-        return
-      }
-
-      if (data.error) {
-        setError(data.error)
-      }
-
-      setRecommendations(data.recommendations ?? [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  return { getRecommendation, recommendations, isLoading, error, isAvailable }
+  return { recommendations, tasteDna, isColdStart, sampleCount, isLoading, error, requestRecommendation }
 }

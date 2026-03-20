@@ -2,60 +2,50 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Search, Plus, Users, User } from "lucide-react"
-import { ROUTES } from "@/shared/constants/routes"
+import { Home, Compass, Plus, Users, User } from "lucide-react"
 import { cn } from "@/shared/utils/cn"
+import { ROUTES } from "@/shared/constants/routes"
 
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  isFab?: boolean
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { href: ROUTES.HOME, label: "홈", icon: Home },
-  { href: ROUTES.DISCOVER, label: "발견", icon: Search },
-  { href: ROUTES.RECORD, label: "기록", icon: Plus, isFab: true },
-  { href: ROUTES.GROUPS, label: "버블", icon: Users },
-  { href: ROUTES.PROFILE, label: "프로필", icon: User },
-]
+const NAV_ITEMS = [
+  { href: ROUTES.HOME, icon: Home, label: "홈", isFab: false },
+  { href: ROUTES.DISCOVER, icon: Compass, label: "발견", isFab: false },
+  { href: ROUTES.RECORD, icon: Plus, label: "기록", isFab: true },
+  { href: ROUTES.GROUPS, icon: Users, label: "버블", isFab: false },
+  { href: ROUTES.PROFILE, icon: User, label: "프로필", isFab: false },
+] as const
 
 export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-[var(--color-neutral-200)] bg-white pb-[env(safe-area-inset-bottom)] shadow-lg">
-      <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-neutral-100 bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href
-          const Icon = item.icon
-
           if (item.isFab) {
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF6038] shadow-lg transition-transform active:scale-95"
+                className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500 text-white shadow-lg active:scale-95 transition-transform"
               >
-                <Icon className="h-6 w-6 text-white" />
+                <item.icon className="h-6 w-6" />
               </Link>
             )
           }
+
+          const isActive = pathname === item.href
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors",
-                isActive
-                  ? "text-[#FF6038]"
-                  : "text-[var(--color-neutral-400)]"
+                "flex flex-col items-center gap-0.5 px-3 py-1",
+                isActive ? "text-primary-500" : "text-neutral-400",
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <item.icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           )
         })}

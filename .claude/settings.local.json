@@ -74,7 +74,14 @@
       "Bash(wc -l /Users/jk_mini/github/nyam/src/application/hooks/*.ts)",
       "Bash(git mv:*)",
       "Bash(md5:*)",
-      "Bash(grep -o \"SourceBadge\\\\|EmptyAiField\\\\|시스템 정보\\\\|보조 장르\\\\|분위기 태그\\\\|ReadOnlyField\\\\|atmosphereTags\\\\|wineUserTasting\" /Users/jk_mini/github/nyam/.next/server/app/\\\\\\(main\\\\\\)/records/[id]/edit/page.js)"
+      "Bash(grep -o \"SourceBadge\\\\|EmptyAiField\\\\|시스템 정보\\\\|보조 장르\\\\|분위기 태그\\\\|ReadOnlyField\\\\|atmosphereTags\\\\|wineUserTasting\" /Users/jk_mini/github/nyam/.next/server/app/\\\\\\(main\\\\\\)/records/[id]/edit/page.js)",
+      "Bash(cd /Users/jkm4/Documents/GitHub/nyam/src/presentation grep -rn \"bg-white\" --include=\"*.tsx\")",
+      "Bash(sed -i '' 's/text-gray-900/text-foreground/g' components/capture/blog-preview.tsx)",
+      "Bash(sed -i '' 's/text-gray-800/text-foreground/g' components/capture/blog-preview.tsx)",
+      "Bash(sed -i '' 's/text-gray-700/text-neutral-600/g' components/capture/blog-preview.tsx)",
+      "Bash(sed -i '' 's/text-gray-500/text-neutral-500/g' components/capture/blog-preview.tsx)",
+      "Bash(git ls-tree:*)",
+      "Bash(git fetch:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

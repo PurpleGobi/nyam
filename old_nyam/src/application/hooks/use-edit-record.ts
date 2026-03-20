@@ -1,49 +1,61 @@
-'use client'
+"use client"
 
-import { useState, useCallback } from 'react'
-import useSWR from 'swr'
-import type { FoodRecord } from '@/domain/entities/record'
-import { getRecordRepository } from '@/di/repositories'
+import { useCallback, useState } from "react"
+import { getRecordRepository } from "@/di/repositories"
+import type { CreateRecordInput, UpdateAiAnalysisInput, UpdateTasteProfileInput, UpdateJournalInput } from "@/domain/repositories/record-repository"
+import type { PhotoCropData } from "@/domain/entities/record"
 
-interface UseEditRecordReturn {
-  record: FoodRecord | null | undefined
-  saveChanges: (updates: Partial<FoodRecord>) => Promise<void>
-  isLoading: boolean
-  isSaving: boolean
-  error: string | null
-}
+export function useEditRecord() {
+  const [isUpdating, setIsUpdating] = useState(false)
 
-export function useEditRecord(recordId: string | undefined): UseEditRecordReturn {
-  const repo = getRecordRepository()
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const { data: record, isLoading, mutate } = useSWR(
-    recordId ? ['record', recordId] : null,
-    () => repo.getById(recordId!),
-  )
-
-  const saveChanges = useCallback(async (updates: Partial<FoodRecord>) => {
-    if (!recordId) return
-    setIsSaving(true)
-    setError(null)
+  const updateRecord = useCallback(async (id: string, data: Partial<CreateRecordInput>) => {
+    setIsUpdating(true)
     try {
-      const updated = await repo.update(recordId, updates)
-      await mutate(updated, { revalidate: false })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save changes'
-      setError(message)
-      throw err
+      return await getRecordRepository().update(id, data)
     } finally {
-      setIsSaving(false)
+      setIsUpdating(false)
     }
-  }, [recordId, repo, mutate])
+  }, [])
 
-  return {
-    record,
-    saveChanges,
-    isLoading,
-    isSaving,
-    error,
-  }
+  const deleteRecord = useCallback(async (id: string) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().delete(id)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updateAiAnalysis = useCallback(async (recordId: string, data: UpdateAiAnalysisInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateAiAnalysis(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updateTasteProfile = useCallback(async (recordId: string, data: UpdateTasteProfileInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateTasteProfile(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updateJournal = useCallback(async (recordId: string, data: UpdateJournalInput) => {
+    setIsUpdating(true)
+    try {
+      await getRecordRepository().updateJournal(recordId, data)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const updatePhotoCrop = useCallback(async (photoId: string, cropData: PhotoCropData | null) => {
+    await getRecordRepository().updatePhotoCrop(photoId, cropData)
+  }, [])
+
+  return { updateRecord, deleteRecord, updateAiAnalysis, updateTasteProfile, updateJournal, updatePhotoCrop, isUpdating }
 }

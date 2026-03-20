@@ -1,202 +1,123 @@
-'use client'
+"use client"
 
-import { useState, useCallback, useEffect } from 'react'
-import useSWR from 'swr'
-import { createClient } from '@/infrastructure/supabase/client'
-import { getRecordRepository } from '@/di/repositories'
-import type { AiQuestion, BlogSection } from '@/domain/entities/record'
+import { useCallback, useState } from "react"
 
-export type CompletionStep = 'loading' | 'questions' | 'generating' | 'preview' | 'saving' | 'complete'
-
-interface BlogContent {
-  title: string
-  sections: BlogSection[]
-  summary: string
-  recommendFor: string[]
+export interface ReviewQuestion {
+  id: string
+  question: string
+  options?: string[]
+  type: "select" | "freetext"
 }
 
-export function useRecordCompletion(recordId: string | undefined) {
-  const recordRepo = getRecordRepository()
+export interface BlogSection {
+  type: "text" | "photo"
+  content: string
+  photoIndex?: number
+  caption?: string
+}
 
-  const { data: record, isLoading: recordLoading, mutate: mutateRecord } = useSWR(
-    recordId ? ['record', recordId] : null,
-    () => recordRepo.getById(recordId!),
-  )
+export interface GeneratedBlog {
+  title: string
+  sections: BlogSection[]
+  tags: string[]
+}
 
-  // Fetch photo URLs for preview
-  const { data: photoUrls } = useSWR(
-    recordId ? ['record-photos', recordId] : null,
-    async () => {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('record_photos')
-        .select('photo_url, order_index')
-        .eq('record_id', recordId!)
-        .order('order_index', { ascending: true })
-      return (data ?? []).map(p => p.photo_url)
-    },
-  )
+export type CompletionStage = "questions" | "generating" | "preview" | "complete"
 
-  const [step, setStep] = useState<CompletionStep>('loading')
-  const [questions, setQuestions] = useState<AiQuestion[]>([])
+export function useRecordCompletion() {
+  const [stage, setStage] = useState<CompletionStage>("questions")
+  const [questions, setQuestions] = useState<ReviewQuestion[]>([])
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [blog, setBlog] = useState<BlogContent | null>(null)
-  const [xpEarned, setXpEarned] = useState(0)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [blog, setBlog] = useState<GeneratedBlog | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchQuestions = useCallback(async () => {
-    if (!recordId) return
+  const fetchQuestions = useCallback(async (recordId: string) => {
+    setIsLoading(true)
     setError(null)
 
     try {
-      const res = await fetch('/api/records/generate-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recordId, answers: {} }),
+      const response = await fetch("/api/records/generate-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId }),
       })
 
-      const data = await res.json()
-      if (!data.success) {
-        setError(data.error ?? 'AI 질문 생성에 실패했습니다')
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to generate questions")
         return
       }
 
       setQuestions(data.questions)
-      setStep('questions')
-    } catch {
-      setError('네트워크 오류가 발생했습니다')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error")
+    } finally {
+      setIsLoading(false)
     }
-  }, [recordId])
-
-  const setAnswer = useCallback((questionId: string, value: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }))
   }, [])
 
-  const generateBlog = useCallback(async () => {
-    if (!recordId) return
-    setStep('generating')
+  const setAnswer = useCallback((questionId: string, answer: string) => {
+    setAnswers(prev => ({ ...prev, [questionId]: answer }))
+  }, [])
+
+  const goNext = useCallback(() => {
+    setCurrentStep(prev => Math.min(prev + 1, questions.length - 1))
+  }, [questions.length])
+
+  const goPrev = useCallback(() => {
+    setCurrentStep(prev => Math.max(prev - 1, 0))
+  }, [])
+
+  const generateBlog = useCallback(async (recordId: string) => {
+    setStage("generating")
     setError(null)
 
     try {
-      // Map answers from question IDs to question text for better context
-      const mappedAnswers: Record<string, string> = {}
-      for (const q of questions) {
-        const answer = answers[q.id]
-        if (answer) {
-          mappedAnswers[q.question] = answer
-        }
-      }
-
-      const res = await fetch('/api/records/generate-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recordId, answers: mappedAnswers }),
+      const response = await fetch("/api/records/generate-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId, answers }),
       })
 
-      const data = await res.json()
-      if (!data.success) {
-        setError(data.error ?? 'AI 블로그 생성에 실패했습니다')
-        setStep('questions')
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to generate blog")
+        setStage("questions")
         return
       }
 
       setBlog(data.blog)
-      setStep('preview')
-    } catch {
-      setError('네트워크 오류가 발생했습니다')
-      setStep('questions')
+      setStage("preview")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error")
+      setStage("questions")
     }
-  }, [recordId, questions, answers])
+  }, [answers])
 
-  const saveBlog = useCallback(async () => {
-    if (!recordId || !blog || !record) return
-    setStep('saving')
-    setError(null)
+  const completeReview = useCallback(() => {
+    setStage("complete")
+  }, [])
 
-    try {
-      const supabase = createClient()
-
-      // Upsert journal with blog content
-      await supabase
-        .from('record_journals' as never)
-        .upsert({
-          record_id: recordId,
-          blog_title: blog.title,
-          blog_content: blog.sections.filter(s => s.type === 'text').map(s => s.content).join('\n\n'),
-          blog_sections: blog.sections,
-          ai_questions: questions,
-          user_answers: answers,
-          published: false,
-        } as never, { onConflict: 'record_id' } as never)
-
-      // Update record phase_status to 2
-      await supabase
-        .from('records')
-        .update({
-          phase_status: 2,
-          phase2_completed_at: new Date().toISOString(),
-        } as never)
-        .eq('id', recordId)
-
-      // Award 15 XP via phase_completions
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase
-          .from('phase_completions' as never)
-          .insert({
-            user_id: user.id,
-            record_id: recordId,
-            phase: 2,
-            xp_earned: 15,
-          } as never)
-
-        // Update user_stats points
-        const { data: completions } = await supabase
-          .from('phase_completions' as never)
-          .select('xp_earned' as never)
-          .eq('user_id' as never, user.id as never)
-
-        if (completions) {
-          const totalPoints = (completions as Array<{ xp_earned: number }>).reduce(
-            (sum, c) => sum + c.xp_earned,
-            0,
-          )
-          await supabase
-            .from('user_stats')
-            .update({ points: totalPoints } as never)
-            .eq('user_id', user.id)
-        }
-      }
-
-      setXpEarned(15)
-      await mutateRecord()
-      setStep('complete')
-    } catch {
-      setError('저장에 실패했습니다')
-      setStep('preview')
-    }
-  }, [recordId, blog, record, questions, answers, mutateRecord])
-
-  // Auto-fetch questions when record is loaded
-  useEffect(() => {
-    if (record && !recordLoading && step === 'loading') {
-      fetchQuestions()
-    }
-  }, [record, recordLoading, step, fetchQuestions])
+  const allAnswered = questions.length > 0 && questions.every(q => answers[q.id]?.trim())
 
   return {
-    step,
-    record,
-    photoUrls: photoUrls ?? [],
+    stage,
     questions,
     answers,
+    currentStep,
     blog,
-    xpEarned,
+    isLoading,
     error,
-    isLoading: recordLoading,
-    setAnswer,
-    generateBlog,
-    saveBlog,
+    allAnswered,
     fetchQuestions,
+    setAnswer,
+    goNext,
+    goPrev,
+    generateBlog,
+    completeReview,
   }
 }

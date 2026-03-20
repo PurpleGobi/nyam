@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Comfortaa } from "next/font/google"
-import "./globals.css"
-import { AuthProvider } from "@/presentation/providers/auth-provider"
+import { Comfortaa, Inter } from "next/font/google"
+import { Toaster } from "sonner"
 import { SWRProvider } from "@/presentation/providers/swr-provider"
-import { AppShell } from "@/presentation/components/layout/app-shell"
+import { AuthProvider } from "@/presentation/providers/auth-provider"
+import { ThemeProvider } from "@/presentation/providers/theme-provider"
+import "./globals.css"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,21 +13,16 @@ const inter = Inter({
 })
 
 const comfortaa = Comfortaa({
-  variable: "--font-logo",
   subsets: ["latin"],
-  weight: ["700"],
+  variable: "--font-logo",
+  weight: "700",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "nyam - 맛의 Second Brain",
-  description:
-    "당신의 미식 경험을 기록하고, 취향을 발견하고, 함께 나누는 맛의 Second Brain",
+  title: "nyam",
+  description: "AI-powered food diary",
   manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "nyam",
-  },
 }
 
 export const viewport: Viewport = {
@@ -34,23 +30,28 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
-  themeColor: "#FF6038",
+  themeColor: "#FFFFFF",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="ko" className={`${inter.variable} ${comfortaa.variable}`}>
-      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <SWRProvider>
-          <AuthProvider>
-            <AppShell>{children}</AppShell>
-          </AuthProvider>
-        </SWRProvider>
+    <html lang="ko" className={`${inter.variable} ${comfortaa.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('nyam-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.documentElement.classList.add('dark')}catch(e){}})()` }} />
+      </head>
+      <body>
+        <ThemeProvider>
+          <SWRProvider>
+            <AuthProvider>
+              {children}
+              <Toaster position="top-center" richColors />
+            </AuthProvider>
+          </SWRProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
