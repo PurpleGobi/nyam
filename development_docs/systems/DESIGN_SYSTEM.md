@@ -1,88 +1,283 @@
 # DESIGN_SYSTEM — 디자인 시스템
 
 > affects: 모든 페이지
+> 비주얼 레퍼런스: `prototype/00_design_system.html`
+> 아이콘: Lucide (https://lucide.dev)
+
+---
+
+## 디자인 철학
+
+**"조용한 개인 컬렉션"** — 비밀일기장처럼, 내 과거의 식도락 흔적을 차분히 감상하는 공간.
+
+| 원칙 | 설명 |
+|------|------|
+| **70/25/5** | 70% 뉴트럴 서피스 + 25% 보조 뉴트럴 + 5% 액센트 |
+| **종이 같은 따뜻함** | 순백(#fff) 대신 크림(#F8F6F3) 기본 배경 |
+| **그림자 절제** | 카드는 border만, shadow는 바텀시트/토스트에만 |
+| **여백이 콘텐츠** | 카드 간 12px+, 카드 내 16px+ 패딩 |
+| **사진이 주인공** | UI는 조용한 프레임 |
+| **색은 데이터에만** | 게이지, 선택 상태, 태그에만 색 사용 |
+| **재사용 우선** | 페이지별 특화 없이 요소 조합으로 모든 화면 구성 |
 
 ---
 
 ## 1. 컬러 토큰
 
-### 식당 (Coral Orange)
+### Surface
 ```css
---restaurant-primary: #FF6038;
---restaurant-primary-light: #FFF5F2;
---restaurant-tag-bg: #FFEEE8;
+--bg:          #F8F6F3;   /* 따뜻한 크림 (기본 배경) */
+--bg-card:     #FEFCFA;   /* 웜 화이트 (카드) */
+--bg-elevated: #FFFFFF;   /* 바텀시트, 모달 */
+--bg-page:     #EFECE7;   /* 디바이스 프레임 밖 배경 */
 ```
 
-### 와인 (Plum Purple)
+### Text
 ```css
---wine-primary: #6B4C8A;
---wine-primary-light: #F8F5FA;
---wine-tag-bg: #EDE6F5;
---wine-accent: #8B5CF6;
+--text:      #3D3833;   /* 따뜻한 차콜 (본문) */
+--text-sub:  #8C8580;   /* 보조 텍스트 */
+--text-hint: #B5AFA8;   /* 플레이스홀더, 힌트 */
+```
+> 순흑(#000, #111) 사용 금지. 항상 따뜻한 차콜 계열.
+
+### Border
+```css
+--border:      #E8E4DF;   /* 기본 보더 */
+--border-bold: #D4CFC8;   /* 포커스, 강조 보더 */
 ```
 
-> `--wine-accent` (#8B5CF6): 와인 만족도 게이지 그라데이션, 와인 관련 강조 텍스트에 사용
+### Accent — Restaurant (절제된 테라코타)
+```css
+--accent-food:       #C17B5E;   /* 액센트 */
+--accent-food-light: #F5EDE8;   /* 배경용 */
+--accent-food-dim:   #E8D5CB;   /* 태그/보더 배경 */
+```
 
-> `--primary`는 사용하지 않음. 항상 `--restaurant-primary` 또는 `--wine-primary`를 명시적으로 사용.
+### Accent — Wine (절제된 모브)
+```css
+--accent-wine:       #8B7396;   /* 액센트 */
+--accent-wine-light: #F0ECF3;   /* 배경용 */
+--accent-wine-dim:   #DDD5E3;   /* 태그/보더 배경 */
+```
+
+### Accent — Social/Bubble (절제된 슬레이트)
+```css
+--accent-social:       #7A9BAE;
+--accent-social-light: #EDF2F5;
+```
+
+### Semantic (절제된 톤)
+```css
+--positive: #7EAE8B;   /* 성공, 확인 */
+--caution:  #C9A96E;   /* 경고, 찜 */
+--negative: #B87272;   /* 에러, 삭제 */
+```
+
+### 만족도 게이지 색상 (식당·와인 공통)
+
+기존 식당(red→blue) / 와인(purple gradient) 이원화 → **공통 자연색 5단계로 통일**.
+
+| 범위 | 이름 | Hex | 느낌 |
+|------|------|-----|------|
+| 1~30 | 웜그레이 | `#C4B5A8` | 낮은 만족 |
+| 31~50 | 머스타드 | `#C9A96E` | 보통 이하 |
+| 51~70 | 샌드 | `#B8A078` | 보통 |
+| 71~85 | 세이지 | `#7EAE8B` | 좋음 |
+| 86~100 | 슬레이트 | `#7A9BAE` | 최고 |
+
+### 상황 태그 색상 (식당·와인 공통)
+
+| 태그 | 값 | 색상 |
+|------|-----|------|
+| 혼밥/혼술 | `solo` | `#7A9BAE` (슬레이트) |
+| 데이트 | `romantic` | `#B8879B` (더스티 로즈) |
+| 친구/모임 | `friends` | `#7EAE8B` (세이지) |
+| 가족 | `family` | `#C9A96E` (머스타드) |
+| 회식/접대 | `business` | `#8B7396` (모브) |
+| 술자리 | `drinks` | `#B87272` (로즈우드) |
 
 ### 와인 타입 칩
+
 | 타입 | 배경 | 텍스트 |
 |------|------|--------|
-| 레드 | `bg-red-50` | `text-red-700` |
-| 화이트 | `bg-amber-50` | `text-amber-700` |
-| 로제 | `bg-pink-50` | `text-pink-700` |
-| 오렌지 | `bg-amber-100` | `text-amber-800` |
-| 스파클링 | `bg-sky-50` | `text-sky-700` |
-| 주정강화 | `bg-orange-50` | `text-orange-700` |
-| 디저트 | `bg-yellow-50` | `text-yellow-700` |
-
-### 만족도 색상 매핑
-| 범위 | 색상 | Hex |
-|------|------|-----|
-| 1~30 | 레드 | `#ef4444` |
-| 31~50 | 앰버 | `#f59e0b` |
-| 51~70 | 옐로우 | `#fbbf24` |
-| 71~85 | 그린 | `#22c55e` |
-| 86~100 | 블루+글로우 | `#3b82f6` |
-
-### 상황 태그 색상
-
-**식당** (`scene` 값):
-| 태그 | 값 | 색상 | 용도 |
-|------|-----|------|------|
-| 혼밥 | `solo` | `#3b82f6` | 사분면 점 테두리 |
-| 데이트 | `romantic` | `#ec4899` | |
-| 친구 | `friends` | `#22c55e` | |
-| 가족 | `family` | `#f59e0b` | |
-| 회식/접대 | `business` | `#8b5cf6` | |
-| 술자리 | `drinks` | `#ef4444` | |
-
-**와인** (`scene` 값):
-| 태그 | 값 | 색상 | 용도 |
-|------|-----|------|------|
-| 혼술 | `solo` | `#3b82f6` | 사분면 점 테두리 |
-| 데이트 | `romantic` | `#ec4899` | |
-| 모임 | `gathering` | `#22c55e` | |
-| 페어링 | `pairing` | `#f97316` (오렌지) | |
-| 선물 | `gift` | `#a855f7` (라이트퍼플) | |
-| 시음회 | `tasting` | `#06b6d4` (시안) | |
+| 레드 | `#FAF0F0` | `#B87272` |
+| 화이트 | `#FBF8F1` | `#C9A96E` |
+| 로제 | `#F8F0F4` | `#B8879B` |
+| 오렌지 | `#F5F0EA` | `#B8A078` |
+| 스파클링 | `#EDF2F5` | `#7A9BAE` |
 
 ---
 
 ## 2. 타이포그래피
 
-| 용도 | 크기 | Weight | 클래스 |
-|------|------|--------|--------|
-| Display | 2rem | bold | 점수 큰 숫자 |
-| H1 | 1.953rem | bold | 페이지 제목 |
-| H2 | 1.563rem | semibold | 섹션 제목, 식당명 |
-| Body | 1rem | normal | 본문 |
-| Small | 0.875rem | normal | 서브텍스트, 메타 |
-| Caption | 0.75rem | normal | 날짜, 보조 정보 |
+| 용도 | 크기 | Weight | 용례 |
+|------|------|--------|------|
+| Display | 36px | 800 | 만족도 큰 숫자 |
+| H1 | 22px | 700 | 페이지 제목, 온보딩 헤더 |
+| H2 | 17px | 600 | 섹션 제목, 식당/와인명 |
+| Body | 15px | 400 | 본문 |
+| Sub | 13px | 400 | 메타 정보, 보조 텍스트 |
+| Caption | 11px | 400 | 날짜, 출처, 힌트 |
+
+**폰트**: Pretendard Variable → Apple SD Gothic Neo → Noto Sans KR
+**색상**: 항상 `--text` (#3D3833) 기본. 보조는 `--text-sub`, 힌트는 `--text-hint`.
 
 ---
 
-## 3. 만족도 ↔ 점 크기
+## 3. 아이콘
+
+**라이브러리**: Lucide (https://lucide.dev)
+**기본 크기**: 24px
+**색상**: 컨텍스트에 따라 토큰 사용
+
+| 용도 | 아이콘 | 색상 |
+|------|--------|------|
+| 식당 | `utensils` | `--accent-food` |
+| 와인 | `wine` | `--accent-wine` |
+| 사진 | `camera` | `--text-sub` |
+| 검색 | `search` | `--text-sub` |
+| 찜 | `heart` | `--caution` |
+| 평점 | `star` | `--caution` |
+| 뒤로 | `chevron-left` | `--text` |
+| 닫기 | `x` | `--text-hint` |
+| 추가 | `plus` | `--text` |
+| 확인 | `check` | `--positive` |
+| 위치 | `map-pin` | `--accent-food` |
+| 공유 | `share-2` | `--text-sub` |
+| 알림 | `bell` | `--text-sub` |
+| 홈 | `home` | 탭 상태에 따라 |
+| 탐색 | `compass` | 탭 상태에 따라 |
+| 버블 | `message-circle` | 탭 상태에 따라 |
+| 프로필 | `user` | 탭 상태에 따라 |
+
+---
+
+## 4. Border Radius
+
+| 토큰 | 값 | 용도 |
+|------|-----|------|
+| `--r-xs` | 6px | 태그, 칩, 체크박스 |
+| `--r-sm` | 8px | 버튼, 뱃지 |
+| `--r-md` | 12px | 인풋, 카드 아이콘 |
+| `--r-lg` | 16px | 카드 |
+| `--r-xl` | 20px | 바텀시트 상단 |
+| `--r-full` | 50px | CTA pill 버튼, 이전 버튼 |
+
+---
+
+## 5. Shadow
+
+| 토큰 | 값 | 용도 |
+|------|-----|------|
+| `--shadow-sm` | `0 1px 2px rgba(61,56,51,0.04)` | 거의 사용 안 함 |
+| `--shadow-md` | `0 2px 8px rgba(61,56,51,0.06)` | 필요시 카드 |
+| `--shadow-lg` | `0 4px 20px rgba(61,56,51,0.08)` | 토스트 |
+| `--shadow-sheet` | `0 -4px 24px rgba(61,56,51,0.1)` | 바텀시트 |
+
+> 카드는 기본적으로 shadow 없이 border만 사용. 그림자는 절제.
+
+---
+
+## 6. 재사용 컴포넌트
+
+페이지별 특화 없이 **요소 단위**로 정의. 조합으로 모든 화면 구성.
+
+### 버튼
+
+| 종류 | 스타일 | 용도 |
+|------|--------|------|
+| **Primary CTA** | pill, `--accent-food` 또는 `--accent-wine`, white text | 다음, 시작하기 |
+| **Ghost Back** | pill, `--bg` + `--border`, `--text` | ← 이전 |
+| **Skip** | 밑줄 텍스트, `--text-hint` | 건너뛰기 |
+| **Card Action** | flex, `--r-sm`, `--border`, `--text-sub` | 가봤음, 가보고싶음, 맞아요 |
+| **Search Submit** | `--r-md`, `--accent-wine`, white | 찾기 |
+| **Social Login** | full-width, `--r-md`, 플랫폼별 색상 | 카카오/구글/애플 |
+
+### 카드
+
+| 상태 | 보더 | 배경 |
+|------|------|------|
+| 기본 | `--border` | `--bg-card` |
+| 식당 방문 | `--accent-food-dim` | `--accent-food-light` |
+| 와인 확인 | `--accent-wine-dim` | `--accent-wine-light` |
+| 찜 | `--caution` | `#FBF8F1` |
+
+카드 구조:
+```
+card-top:    [icon 44x44] [name + meta]
+card-actions: [버튼] [버튼]              ← 기본 상태
+card-gauge:   [gauge bar] [× 닫기]       ← 가봤음/맞아요 후 교체
+```
+
+### 만족도 게이지
+
+- 높이: 32px, `--r-full`, `--bg` 배경 + `--border` 테두리
+- 라벨: 14px, 700, white, 중앙
+- 좌우 힌트: "별로" / "최고" (10px, `--text-hint`)
+- 색상: 5단계 공통 (Section 1 참조)
+
+### 필터 탭
+
+- 밑줄 탭 스타일 (pill 아님)
+- 비활성: 13px, 500, `--text-hint`
+- 활성: 13px, 700, 액센트색 + 하단 2px 밑줄
+- 식당 컨텍스트: `--accent-food` / 와인 컨텍스트: `--accent-wine`
+
+### 인풋
+
+- `--r-md`, `--border`, `--bg` 배경
+- placeholder: `--text-hint`
+- focus: `--border-bold`
+- 14px 본문
+
+### 바텀시트
+
+- `--bg-elevated` (순백), `--r-xl` 상단, `--shadow-sheet`
+- 핸들: 36×4px, `--border`, 중앙
+- 내부: 인풋 + 찾기 버튼 + 결과 리스트
+
+### 온보딩 네비게이션
+
+한 줄 바: `[← 이전] [건너뛰기] [다음 →]`
+```
+.ob-nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px 28px;  /* 하단 홈 인디케이터 여백 */
+  background: linear-gradient(transparent 0%, var(--bg) 20%);
+}
+```
+- 이전: `.btn-back` (Ghost pill)
+- 건너뛰기: `.btn-skip` (밑줄 텍스트, 중앙)
+- 다음: `.btn-primary` (테마색 pill)
+
+### 인트로 선택 카드
+
+- `--r-lg`, 탭 토글
+- 선택: 테마색 보더 + light 배경 + 체크 아이콘 (accent색 bg, white ✓)
+- 해제: `--border` + `--bg-card` + 회색 빈 체크
+
+### 빈 상태
+
+- 중앙 정렬, Lucide 아이콘 (28px, `--text-hint`)
+- 제목: 14px 600 `--text-sub`
+- 설명: 12px `--text-hint`
+
+### 토스트
+
+- `--text` 배경, `--bg` 텍스트
+- `--r-md`, 13px 600
+- 하단 100px, 중앙, 2초 후 fade out
+
+### 로딩
+
+- Lucide `search` 아이콘, pulse 애니메이션
+- 13px `--text-sub` 텍스트
+- 카드 내부에 표시 (별도 오버레이 없음)
+
+---
+
+## 7. 만족도 ↔ 사분면 점 크기
 
 | 만족도 | 점 지름(px) |
 |--------|-----------|
@@ -94,117 +289,32 @@
 
 ---
 
-## 4. 레벨 뱃지 색상
+## 8. 레벨 뱃지 색상
+
+절제된 톤의 뱃지:
 
 | 레벨 | 색상 |
 |------|------|
-| Lv.1 | — |
-| Lv.2~3 | green |
-| Lv.4~5 | blue |
-| Lv.6~7 | purple |
-| Lv.8~9 | orange |
-| Lv.10 | gold |
+| Lv.1 | — (뱃지 없음) |
+| Lv.2~3 | `--positive` (#7EAE8B) |
+| Lv.4~5 | `--accent-social` (#7A9BAE) |
+| Lv.6~7 | `--accent-wine` (#8B7396) |
+| Lv.8~9 | `--accent-food` (#C17B5E) |
+| Lv.10 | `--caution` (#C9A96E) |
 
 ---
 
-## 5. 공통 컴포넌트 패턴
+## 9. 다크모드
 
-### 액션 바
-```
-[Primary CTA (flex-1)] [Ghost 아이콘] [Ghost 아이콘]
-```
-- 기록 남기기: Primary 버튼
-- 찜: Heart 토글
-- 공유: Share2 아이콘
+| 라이트 토큰 | 다크 값 | 설명 |
+|------------|---------|------|
+| `--bg` | `#1E1C1A` | 따뜻한 다크 (순흑 아님) |
+| `--bg-card` | `#2A2725` | 카드 |
+| `--bg-elevated` | `#333029` | 시트, 모달 |
+| `--text` | `#E0DDD9` | 웜 화이트 (순백 아님) |
+| `--text-sub` | `#9C9690` | |
+| `--text-hint` | `#6B6560` | |
+| `--border` | `#3A3632` | |
 
-### 빈 상태
-- 아이콘 + 안내 문구 + CTA 버튼
-- `bg-neutral-50 rounded-xl p-6 text-center`
-
-### 카드
-- `bg-background rounded-xl border shadow-sm`
-- 패딩: `p-4`
-
-### 접이식 (Collapsible)
-- 헤더 탭 → 확장 (ChevronDown → ChevronUp)
-- 애니메이션: 200ms ease-in-out
-
-### 스크롤 시 헤더 전환
-```
-스크롤 < 히어로 높이: 투명 헤더 (아이콘만)
-스크롤 ≥ 히어로 높이: 고정 헤더 (bg-background/95 backdrop-blur) + 제목
-```
-
-### 하단 고정 CTA
-- 스크롤이 액션 바를 지나면 "기록 남기기" 버튼 하단 고정
-- 하단 내비 위에 floating
-
-### 온보딩 네비게이션 (공통)
-
-모든 온보딩 Step에 일관 적용되는 하단 고정 네비게이션.
-
-| 요소 | 스타일 |
-|------|--------|
-| **이전 (← 이전)** | 좌하단 고정 pill, `padding:14px 24px`, `border-radius:50px`, `background:#f3f4f6`, `border:1px solid var(--border)`, `font-size:15px`, `font-weight:600`, `color:var(--text)` |
-| **다음 ([다음 →])** | 우하단 floating pill, `padding:14px 24px`, `border-radius:50px`, `font-size:15px`, `font-weight:700`, `box-shadow:0 4px 20px rgba(...)`, `color:white` |
-| **다음 색상** | 식당 Step: `bg:--restaurant-primary` / 와인 Step: `bg:--wine-primary` |
-| **스크롤 콘텐츠** | 양쪽 버튼 모두 `position:absolute; bottom:24px` (스크롤 따라다님) |
-| **비스크롤** | 동일 위치 (하단 고정) |
-| **첫 화면 (동네 선택)** | 이전 버튼 있음 (로그인으로 돌아감). 로그인에는 없음 |
-
-### 온보딩 헤더
-
-- 타이틀: `font-size:22px`, `font-weight:700`, 상단 고정
-- 서브텍스트: `font-size:14px`, `color:text-sub`
-- 필터 탭: 타이틀 아래 sticky (스크롤 시 상단에 고정)
-- 콘텐츠: 필터 탭 아래에서 스크롤
-
-```
-[큰 타이틀 — 22px, weight 700, 2줄]     ← 스크롤 시 올라감
-[서브텍스트 — 14px, color: text-sub]
-────────────────────────────────────
-[필터 탭 — sticky, 스크롤 시 상단 고정]  ← 밑줄 탭 스타일
-────────────────────────────────────
-[카드 리스트 — 스크롤 영역]
-```
-
-- 타이틀+서브텍스트는 **스크롤 시 올라가고** 필터 탭만 상단에 sticky로 남음
-- step dots/진행 표시 없음 (불필요한 공간 차지)
-
-### 필터 탭 (카테고리 전환)
-- 스타일: 밑줄 탭 (pill 아님)
-- 비활성: `font-weight:500`, `color:text-sub`, 밑줄 없음
-- 활성: `font-weight:700`, `color:text` (식당 컨텍스트) 또는 `color:wine-primary` (와인 컨텍스트), 하단 2px 밑줄
-- 전환 애니메이션: 밑줄 슬라이드 200ms ease
-- 사용처: 온보딩 식당 동네 필터, 상세 페이지 탭, 버블 탭
-
-```css
-.ob-filter-tabs { display:flex; border-bottom:1.5px solid var(--border); }
-.ob-filter-tab {
-  padding:10px 16px; font-size:14px; font-weight:500; color:var(--text-hint);
-  border:none; background:none; position:relative;
-}
-.ob-filter-tab.active { color:var(--primary); font-weight:700; }
-.ob-filter-tab.active::after {
-  /* 하단 밑줄 인디케이터 */
-  content:''; position:absolute; bottom:-1.5px; left:8px; right:8px;
-  height:2.5px; border-radius:2px; background:var(--primary);
-}
-.ob-filter-tab.wine-tab.active { color:var(--wine); }
-.ob-filter-tab.wine-tab.active::after { background:var(--wine); }
-```
-
-| 적용 위치 | 탭 항목 | active 색상 |
-|-----------|---------|-------------|
-| 식당 온보딩 | 전체 / 사용자 선택 동네들 | `--primary` (coral) |
-| 와인 온보딩 | 해당 없음 (사진 인식/검색 기반, 탭 필터 미사용) | `--wine` (purple) |
-| 버블 상세 | 피드 / 식당 / 와인 / 통계 | `--primary` |
-| 프로필 | 기록 / 위시리스트 | `--primary` |
-
----
-
-## 6. 다크모드
-
-- 모든 `bg-white` → `bg-background` 토큰 사용
-- 모든 `text-black` → `text-foreground` 토큰 사용
-- 디자인 토큰으로 자동 전환
+> 다크모드에서도 따뜻한 톤 유지. 쿨그레이 금지.
+> 모든 하드코딩 색상 금지 — 반드시 CSS 변수 토큰 사용.
