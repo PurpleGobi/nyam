@@ -72,6 +72,7 @@ CREATE TABLE restaurants (
   -- 권위 인증
   michelin_stars INT,              -- NULL or 1,2,3
   blue_ribbon BOOLEAN DEFAULT false,
+  media_appearances JSONB,         -- TV출연 등 [{"show":"흑백요리사","season":"S1","year":2024}]
 
   -- 캐싱 관리
   external_ids JSONB,              -- {"kakao": "...", "naver": "...", "google": "..."}
