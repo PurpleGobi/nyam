@@ -7,7 +7,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #f0f0f0;
+    background: var(--bg-page);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -16,19 +16,34 @@
   }
 
   :root {
-    --bg: #ffffff; --bg-card: #f9fafb; --text: #111827; --text-sub: #6b7280;
-    --primary: #FF6038; --primary-light: #FFF5F2;
-    --wine: #6B4C8A; --wine-light: #F8F5FA;
-    --border: #e5e7eb; --radius: 16px;
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --accent-social-light: #EDF2F5;
   }
 
   /* Device Frame */
   .device {
     width: 390px;
     height: 844px;
-    background: #fff;
+    background: var(--bg);
     border-radius: 44px;
-    box-shadow: 0 0 0 10px #1a1a1a, 0 20px 60px rgba(0,0,0,0.4);
+    box-shadow: 0 0 0 10px #2A2725, 0 20px 60px rgba(0,0,0,0.4);
     overflow: hidden;
     position: relative;
     display: flex;
@@ -36,7 +51,7 @@
   }
   .notch {
     width: 120px; height: 30px;
-    background: #1a1a1a;
+    background: #2A2725;
     border-radius: 0 0 20px 20px;
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     z-index: 100;
@@ -49,7 +64,7 @@
     justify-content: space-between;
     font-size: 11px;
     font-weight: 600;
-    color: #111;
+    color: #3D3833;
     flex-shrink: 0;
     z-index: 50;
   }
@@ -66,7 +81,7 @@
     inset: 0;
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--bg);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s;
@@ -114,7 +129,7 @@
   /* Bottom Tab Bar */
   .tab-bar {
     height: 83px;
-    background: #fff;
+    background: var(--bg);
     border-top: 1px solid var(--border);
     display: flex;
     align-items: flex-start;
@@ -155,12 +170,12 @@
     align-items: center;
     gap: 4px;
   }
-  .pill-green { background: #dcfce7; color: #16a34a; }
-  .pill-blue { background: #dbeafe; color: #2563eb; }
-  .pill-purple { background: #ede9fe; color: #7c3aed; }
-  .pill-orange { background: #ffedd5; color: #ea580c; }
-  .pill-gold { background: #fef9c3; color: #ca8a04; }
-  .pill-gray { background: #f3f4f6; color: #9ca3af; }
+  .pill-green { background: #E8F0EB; color: #7EAE8B; }
+  .pill-blue { background: #EDF2F5; color: #7A9BAE; }
+  .pill-purple { background: #F0ECF3; color: #8B7396; }
+  .pill-orange { background: #F5EDE8; color: #C17B5E; }
+  .pill-gold { background: #F5F0E5; color: #C9A96E; }
+  .pill-gray { background: #F0EDE8; color: var(--text-hint); }
 
   /* ========== SCREEN: PROFILE ========== */
   .profile-header-section {
@@ -174,14 +189,14 @@
   .avatar-circle {
     width: 72px; height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6038, #FF9F7A);
+    background: linear-gradient(135deg, #C17B5E, #D4A08A);
     display: flex; align-items: center; justify-content: center;
     font-size: 28px; color: #fff; font-weight: 700;
     position: relative;
   }
   .avatar-level-badge {
     position: absolute; bottom: -4px; right: -4px;
-    background: #7c3aed; color: #fff;
+    background: #8B7396; color: #fff;
     font-size: 10px; font-weight: 700;
     padding: 2px 5px;
     border-radius: 8px;
@@ -208,7 +223,7 @@
 
   .section-block {
     padding: 16px 20px;
-    border-bottom: 8px solid #f3f4f6;
+    border-bottom: 8px solid #F0EDE8;
   }
   .section-title {
     font-size: 13px; font-weight: 600;
@@ -249,17 +264,17 @@
   .quadrant-axis-h {
     position: absolute;
     top: 50%; left: 0; right: 0;
-    height: 1px; background: #d1d5db;
+    height: 1px; background: #D4CFC8;
   }
   .quadrant-axis-v {
     position: absolute;
     left: 50%; top: 0; bottom: 0;
-    width: 1px; background: #d1d5db;
+    width: 1px; background: #D4CFC8;
   }
   .quad-label {
     position: absolute;
     font-size: 9px;
-    color: #9ca3af;
+    color: #B5AFA8;
     font-weight: 500;
   }
   .quad-dot {
@@ -270,7 +285,7 @@
   }
   .quad-labels-corner {
     position: absolute;
-    font-size: 9px; color: #9ca3af;
+    font-size: 9px; color: #B5AFA8;
   }
 
   /* Badge grid */
@@ -295,8 +310,8 @@
     background: #fff3;
     border: 1px solid var(--border);
   }
-  .badge-icon.earned { background: #fff9f5; border-color: #ffd0c0; }
-  .badge-icon.locked { background: #f3f4f6; filter: grayscale(1); opacity: 0.5; }
+  .badge-icon.earned { background: #F5EDE8; border-color: #E8D5CB; }
+  .badge-icon.locked { background: #F0EDE8; filter: grayscale(1); opacity: 0.5; }
   .badge-name { font-size: 9px; color: var(--text-sub); text-align: center; line-height: 1.2; }
   .badge-tooltip {
     display: none;
@@ -320,7 +335,7 @@
   .inner-tabs {
     display: flex;
     border-bottom: 1px solid var(--border);
-    background: #fff;
+    background: var(--bg);
     flex-shrink: 0;
   }
   .inner-tab {
@@ -367,7 +382,7 @@
     display: flex;
     gap: 0;
     padding: 12px 20px 0;
-    background: #fff;
+    background: var(--bg);
   }
   .sub-tab {
     padding: 6px 16px;
@@ -434,13 +449,13 @@
   .settings-item-icon { font-size: 16px; width: 20px; text-align: center; }
   .settings-item-label { flex: 1; font-size: 15px; color: var(--text); }
   .settings-item-value { font-size: 13px; color: var(--text-sub); }
-  .settings-item-chevron { font-size: 12px; color: #d1d5db; }
-  .settings-item.danger .settings-item-label { color: #ef4444; }
+  .settings-item-chevron { font-size: 12px; color: #D4CFC8; }
+  .settings-item.danger .settings-item-label { color: #B87272; }
 
   /* Toggle */
   .toggle {
     width: 44px; height: 26px;
-    background: #d1d5db;
+    background: #D4CFC8;
     border-radius: 13px;
     position: relative;
     cursor: pointer;
@@ -503,13 +518,13 @@
   .activity-dot {
     display: inline-block;
     width: 6px; height: 6px;
-    background: #22c55e;
+    background: #7EAE8B;
     border-radius: 50%;
     margin-right: 4px;
     vertical-align: middle;
   }
-  .activity-dot.stale { background: #d1d5db; }
-  .bubble-chevron { font-size: 14px; color: #d1d5db; }
+  .activity-dot.stale { background: #D4CFC8; }
+  .bubble-chevron { font-size: 14px; color: #D4CFC8; }
 
   .section-header {
     padding: 16px 20px 8px;
@@ -540,7 +555,7 @@
   }
   .btn-primary:active { opacity: 0.9; }
   .btn-outline {
-    background: #fff;
+    background: var(--bg-elevated);
     color: var(--primary);
     border: 1.5px solid var(--primary);
     border-radius: 12px;
@@ -624,7 +639,7 @@
   }
   .feed-place-name { font-size: 15px; font-weight: 700; color: var(--text); }
   .feed-place-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-  .feed-comment { font-size: 13px; color: #374151; margin-top: 6px; font-style: italic; }
+  .feed-comment { font-size: 13px; color: #3D3833; margin-top: 6px; font-style: italic; }
   .feed-actions {
     display: flex;
     gap: 12px;
@@ -665,7 +680,7 @@
   /* Stats */
   .stats-section {
     padding: 16px 20px;
-    border-bottom: 8px solid #f3f4f6;
+    border-bottom: 8px solid #F0EDE8;
   }
   .stats-section-title {
     font-size: 14px; font-weight: 600; color: var(--text);
@@ -682,9 +697,9 @@
     font-size: 11px; font-weight: 700; color: #fff;
     flex-shrink: 0;
   }
-  .rank-1 { background: #f59e0b; }
-  .rank-2 { background: #9ca3af; }
-  .rank-3 { background: #b45309; }
+  .rank-1 { background: #C9A96E; }
+  .rank-2 { background: #B5AFA8; }
+  .rank-3 { background: #A08060; }
   .rank-name { flex: 1; font-size: 13px; color: var(--text); }
   .rank-count { font-size: 13px; font-weight: 600; color: var(--text-sub); }
 
@@ -693,7 +708,7 @@
   .bar-item { display: flex; align-items: center; gap: 10px; }
   .bar-label { width: 60px; font-size: 12px; color: var(--text); text-align: right; flex-shrink: 0; }
   .bar-track {
-    flex: 1; height: 10px; background: #f3f4f6;
+    flex: 1; height: 10px; background: #F0EDE8;
     border-radius: 5px; overflow: hidden;
   }
   .bar-fill { height: 100%; border-radius: 5px; background: var(--primary); }
@@ -822,7 +837,7 @@
   .notif-unread-dot {
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: #7A9BAE;
     flex-shrink: 0;
     margin-top: 6px;
   }
@@ -839,24 +854,24 @@
   .notif-text strong { font-weight: 600; }
   .notif-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
   .notif-time { font-size: 11px; color: var(--text-sub); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
-  .notif-item.unread { background: #f0f7ff; }
-  .notif-item.unread:active { background: #e0f0ff; }
+  .notif-item.unread { background: #EDF2F5; }
+  .notif-item.unread:active { background: #E3EBF0; }
 
   /* ========== Cross-nav proto links ========== */
   .proto-nav {
     padding: 12px 20px;
-    background: #f8faff;
-    border-top: 1px solid #e8ecf6;
+    background: #F5F2ED;
+    border-top: 1px solid #E8E4DF;
   }
-  .proto-nav-title { font-size: 10px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+  .proto-nav-title { font-size: 10px; color: #B5AFA8; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
   .proto-links { display: flex; gap: 6px; flex-wrap: wrap; }
   .proto-link {
     padding: 4px 10px;
-    background: #fff;
-    border: 1px solid #d4daf0;
+    background: var(--bg-elevated);
+    border: 1px solid #D4CFC8;
     border-radius: 6px;
     font-size: 11px;
-    color: #6b7280;
+    color: #8C8580;
     text-decoration: none;
     cursor: pointer;
   }
@@ -877,7 +892,7 @@
   .level-popup {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    background: #fff;
+    background: var(--bg-elevated);
     border-radius: 24px 24px 0 0;
     padding: 20px;
     z-index: 600;
@@ -890,6 +905,7 @@
 
   .hidden { display: none !important; }
 </style>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -914,7 +930,7 @@
           <button class="icon-btn" onclick="showScreen('screen-settings')" title="설정">⚙️</button>
           <button class="icon-btn" onclick="showScreen('screen-notifications')" title="알림" style="position:relative">
             🔔
-            <span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:#3b82f6;border-radius:50%;border:1.5px solid #fff;"></span>
+            <span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:#7A9BAE;border-radius:50%;border:1.5px solid #fff;"></span>
           </button>
         </div>
       </div>
@@ -970,33 +986,33 @@
           <div class="quadrant-container" id="quadrant">
             <div class="quadrant-axis-h"></div>
             <div class="quadrant-axis-v"></div>
-            <div class="quad-label" style="top:6px;left:8px;color:#9ca3af;font-size:9px">만족도 높음</div>
-            <div class="quad-label" style="bottom:6px;left:8px;color:#9ca3af;font-size:9px">만족도 낮음</div>
-            <div class="quad-label" style="top:50%;right:8px;transform:translateY(-50%);color:#9ca3af;font-size:9px">격식</div>
-            <div class="quad-label" style="top:50%;left:8px;transform:translateY(-50%);color:#9ca3af;font-size:9px">캐주얼</div>
+            <div class="quad-label" style="top:6px;left:8px;color:#B5AFA8;font-size:9px">만족도 높음</div>
+            <div class="quad-label" style="bottom:6px;left:8px;color:#B5AFA8;font-size:9px">만족도 낮음</div>
+            <div class="quad-label" style="top:50%;right:8px;transform:translateY(-50%);color:#B5AFA8;font-size:9px">격식</div>
+            <div class="quad-label" style="top:50%;left:8px;transform:translateY(-50%);color:#B5AFA8;font-size:9px">캐주얼</div>
             <!-- Dots -->
-            <div class="quad-dot" style="width:14px;height:14px;background:#FF6038;top:25%;left:30%"></div>
-            <div class="quad-dot" style="width:18px;height:18px;background:#FF6038;top:30%;left:25%"></div>
-            <div class="quad-dot" style="width:10px;height:10px;background:#6B4C8A;top:20%;right:35%"></div>
-            <div class="quad-dot" style="width:16px;height:16px;background:#3b82f6;top:35%;right:28%"></div>
-            <div class="quad-dot" style="width:12px;height:12px;background:#22c55e;top:45%;left:40%"></div>
-            <div class="quad-dot" style="width:20px;height:20px;background:#FF6038;top:18%;left:18%"></div>
-            <div class="quad-dot" style="width:8px;height:8px;background:#f97316;top:60%;right:40%"></div>
-            <div class="quad-dot" style="width:14px;height:14px;background:#6B4C8A;top:28%;right:20%"></div>
-            <div class="quad-dot" style="width:10px;height:10px;background:#22c55e;top:55%;left:28%"></div>
-            <div class="quad-dot" style="width:16px;height:16px;background:#3b82f6;top:22%;left:55%"></div>
-            <div class="quad-dot" style="width:12px;height:12px;background:#FF6038;top:70%;left:60%"></div>
-            <div class="quad-dot" style="width:8px;height:8px;background:#eab308;top:42%;right:45%"></div>
-            <div class="quad-dot" style="width:14px;height:14px;background:#f97316;top:38%;left:70%"></div>
-            <div class="quad-dot" style="width:18px;height:18px;background:#FF6038;top:15%;left:42%"></div>
-            <div class="quad-dot" style="width:10px;height:10px;background:#6B4C8A;top:65%;right:30%"></div>
-            <div class="quad-dot" style="width:12px;height:12px;background:#22c55e;top:80%;left:45%"></div>
+            <div class="quad-dot" style="width:14px;height:14px;background:#C17B5E;top:25%;left:30%"></div>
+            <div class="quad-dot" style="width:18px;height:18px;background:#C17B5E;top:30%;left:25%"></div>
+            <div class="quad-dot" style="width:10px;height:10px;background:#8B7396;top:20%;right:35%"></div>
+            <div class="quad-dot" style="width:16px;height:16px;background:#7A9BAE;top:35%;right:28%"></div>
+            <div class="quad-dot" style="width:12px;height:12px;background:#7EAE8B;top:45%;left:40%"></div>
+            <div class="quad-dot" style="width:20px;height:20px;background:#C17B5E;top:18%;left:18%"></div>
+            <div class="quad-dot" style="width:8px;height:8px;background:#C17B5E;top:60%;right:40%"></div>
+            <div class="quad-dot" style="width:14px;height:14px;background:#8B7396;top:28%;right:20%"></div>
+            <div class="quad-dot" style="width:10px;height:10px;background:#7EAE8B;top:55%;left:28%"></div>
+            <div class="quad-dot" style="width:16px;height:16px;background:#7A9BAE;top:22%;left:55%"></div>
+            <div class="quad-dot" style="width:12px;height:12px;background:#C17B5E;top:70%;left:60%"></div>
+            <div class="quad-dot" style="width:8px;height:8px;background:#C9A96E;top:42%;right:45%"></div>
+            <div class="quad-dot" style="width:14px;height:14px;background:#C17B5E;top:38%;left:70%"></div>
+            <div class="quad-dot" style="width:18px;height:18px;background:#C17B5E;top:15%;left:42%"></div>
+            <div class="quad-dot" style="width:10px;height:10px;background:#8B7396;top:65%;right:30%"></div>
+            <div class="quad-dot" style="width:12px;height:12px;background:#7EAE8B;top:80%;left:45%"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#FF6038;display:inline-block"></span>한식</span>
-            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block"></span>일식</span>
-            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>양식</span>
-            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#6B4C8A;display:inline-block"></span>와인바</span>
+            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#C17B5E;display:inline-block"></span>한식</span>
+            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#7A9BAE;display:inline-block"></span>일식</span>
+            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#7EAE8B;display:inline-block"></span>양식</span>
+            <span style="font-size:10px;color:var(--text-sub);display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#8B7396;display:inline-block"></span>와인바</span>
           </div>
         </div>
 
@@ -1344,7 +1360,7 @@
         </div>
 
         <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
-          <div class="bubble-icon" style="background:#FFF5F2;">🍱</div>
+          <div class="bubble-icon" style="background:#F5EDE8;">🍱</div>
           <div class="bubble-info">
             <div class="bubble-name">직장 맛집</div>
             <div class="bubble-meta">멤버 8명 · 기록 47개</div>
@@ -1356,7 +1372,7 @@
         </div>
 
         <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
-          <div class="bubble-icon" style="background:#F8F5FA;">🍷</div>
+          <div class="bubble-icon" style="background:#F0ECF3;">🍷</div>
           <div class="bubble-info">
             <div class="bubble-name">와인 모임</div>
             <div class="bubble-meta">멤버 5명 · 기록 23개</div>
@@ -1368,7 +1384,7 @@
         </div>
 
         <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
-          <div class="bubble-icon" style="background:#f0fdf4;">🏘️</div>
+          <div class="bubble-icon" style="background:#E8F0EB;">🏘️</div>
           <div class="bubble-info">
             <div class="bubble-name">동네 맛집</div>
             <div class="bubble-meta">멤버 12명 · 기록 31개</div>
@@ -1384,7 +1400,7 @@
           <span class="section-header-title">주변 버블 탐색</span>
         </div>
         <div style="padding:0 20px 16px;">
-          <div style="background:var(--primary-light);border-radius:12px;padding:16px;border:1px dashed #ffb49a;">
+          <div style="background:var(--primary-light);border-radius:12px;padding:16px;border:1px dashed #E8D5CB;">
             <div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:4px">🔍 을지로 맛탐정 클럽</div>
             <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">멤버 23명 · 공개 버블 · 을지로 전문</div>
             <button class="btn-outline" style="font-size:12px;padding:6px 14px">가입 신청</button>
@@ -1434,27 +1450,27 @@
       <!-- Member scroll -->
       <div class="member-scroll">
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#FF6038">김</div>
+          <div class="member-avatar-circle" style="background:#C17B5E">김</div>
           <div class="member-name">김영수</div>
         </div>
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#6B4C8A">박</div>
+          <div class="member-avatar-circle" style="background:#8B7396">박</div>
           <div class="member-name">박소연</div>
         </div>
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#3b82f6">이</div>
+          <div class="member-avatar-circle" style="background:#7A9BAE">이</div>
           <div class="member-name">이준호</div>
         </div>
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#22c55e">최</div>
+          <div class="member-avatar-circle" style="background:#7EAE8B">최</div>
           <div class="member-name">최유진</div>
         </div>
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#f97316">정</div>
+          <div class="member-avatar-circle" style="background:#C17B5E">정</div>
           <div class="member-name">정민재</div>
         </div>
         <div class="member-avatar">
-          <div class="member-avatar-circle" style="background:#eab308">윤</div>
+          <div class="member-avatar-circle" style="background:#C9A96E">윤</div>
           <div class="member-name">윤서희</div>
         </div>
         <div class="member-avatar">
@@ -1480,7 +1496,7 @@
         <div id="dcontent-feed">
           <div class="feed-card">
             <div class="feed-top">
-              <div class="feed-avatar" style="background:#FF6038">김</div>
+              <div class="feed-avatar" style="background:#C17B5E">김</div>
               <div class="feed-user-info">
                 <div class="feed-user-name">김영수</div>
                 <div class="feed-time">3시간 전</div>
@@ -1501,7 +1517,7 @@
 
           <div class="feed-card">
             <div class="feed-top">
-              <div class="feed-avatar" style="background:#6B4C8A">박</div>
+              <div class="feed-avatar" style="background:#8B7396">박</div>
               <div class="feed-user-info">
                 <div class="feed-user-name">박소연</div>
                 <div class="feed-time">1일 전</div>
@@ -1522,7 +1538,7 @@
 
           <div class="feed-card">
             <div class="feed-top">
-              <div class="feed-avatar" style="background:#3b82f6">이</div>
+              <div class="feed-avatar" style="background:#7A9BAE">이</div>
               <div class="feed-user-info">
                 <div class="feed-user-name">이준호</div>
                 <div class="feed-time">2일 전</div>
@@ -1542,7 +1558,7 @@
 
           <div class="feed-card">
             <div class="feed-top">
-              <div class="feed-avatar" style="background:#22c55e">최</div>
+              <div class="feed-avatar" style="background:#7EAE8B">최</div>
               <div class="feed-user-info">
                 <div class="feed-user-name">최유진</div>
                 <div class="feed-time">4일 전</div>
@@ -1660,19 +1676,19 @@
             <div class="ranking-list">
               <div class="ranking-item">
                 <div class="rank-num rank-1">1</div>
-                <div class="member-avatar-circle" style="width:28px;height:28px;background:#FF6038;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">김</div>
+                <div class="member-avatar-circle" style="width:28px;height:28px;background:#C17B5E;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">김</div>
                 <div class="rank-name">김영수</div>
                 <div class="rank-count">14개</div>
               </div>
               <div class="ranking-item">
                 <div class="rank-num rank-2">2</div>
-                <div class="member-avatar-circle" style="width:28px;height:28px;background:#6B4C8A;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">박</div>
+                <div class="member-avatar-circle" style="width:28px;height:28px;background:#8B7396;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">박</div>
                 <div class="rank-name">박소연</div>
                 <div class="rank-count">11개</div>
               </div>
               <div class="ranking-item">
                 <div class="rank-num rank-3">3</div>
-                <div class="member-avatar-circle" style="width:28px;height:28px;background:#3b82f6;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">이</div>
+                <div class="member-avatar-circle" style="width:28px;height:28px;background:#7A9BAE;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">이</div>
                 <div class="rank-name">이준호</div>
                 <div class="rank-count">8개</div>
               </div>
@@ -1707,24 +1723,24 @@
             <div class="donut-wrap">
               <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">
                 <!-- 한식 40% -->
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#FF6038" stroke-width="18"
+                <circle cx="50" cy="50" r="35" fill="none" stroke="#C17B5E" stroke-width="18"
                   stroke-dasharray="87.96 131.95" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
                 <!-- 일식 30% -->
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#3b82f6" stroke-width="18"
+                <circle cx="50" cy="50" r="35" fill="none" stroke="#7A9BAE" stroke-width="18"
                   stroke-dasharray="65.97 131.95" stroke-dashoffset="-87.96" transform="rotate(-90 50 50)"/>
                 <!-- 양식 20% -->
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#22c55e" stroke-width="18"
+                <circle cx="50" cy="50" r="35" fill="none" stroke="#7EAE8B" stroke-width="18"
                   stroke-dasharray="43.98 131.95" stroke-dashoffset="-153.93" transform="rotate(-90 50 50)"/>
                 <!-- 기타 10% -->
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#d1d5db" stroke-width="18"
+                <circle cx="50" cy="50" r="35" fill="none" stroke="#D4CFC8" stroke-width="18"
                   stroke-dasharray="21.99 131.95" stroke-dashoffset="-197.91" transform="rotate(-90 50 50)"/>
-                <text x="50" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">47개</text>
+                <text x="50" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#3D3833">47개</text>
               </svg>
               <div class="donut-legend">
-                <div class="legend-item"><div class="legend-dot" style="background:#FF6038"></div>한식 40%</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>일식 30%</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>양식 20%</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#d1d5db"></div>기타 10%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#C17B5E"></div>한식 40%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#7A9BAE"></div>일식 30%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#7EAE8B"></div>양식 20%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#D4CFC8"></div>기타 10%</div>
               </div>
             </div>
           </div>
@@ -1733,22 +1749,22 @@
           <div class="stats-section" style="border-bottom:none">
             <div class="stats-section-title">버블 사분면 분포</div>
             <div class="mini-quad">
-              <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#e5e7eb"></div>
-              <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#e5e7eb"></div>
+              <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#E8E4DF"></div>
+              <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#E8E4DF"></div>
               <!-- Member dots -->
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#FF6038;top:22%;left:28%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">김</div>
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#6B4C8A;top:32%;right:30%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">박</div>
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#3b82f6;top:40%;left:55%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">이</div>
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#22c55e;top:25%;left:42%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">최</div>
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#f97316;top:55%;left:38%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">정</div>
-              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#eab308;top:60%;right:25%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">윤</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C17B5E;top:22%;left:28%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">김</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#8B7396;top:32%;right:30%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">박</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#7A9BAE;top:40%;left:55%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">이</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#7EAE8B;top:25%;left:42%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">최</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C17B5E;top:55%;left:38%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">정</div>
+              <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C9A96E;top:60%;right:25%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">윤</div>
               <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#ec4899;top:20%;left:68%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">강</div>
               <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#14b8a6;top:35%;left:20%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">나</div>
               <!-- Labels -->
-              <div style="position:absolute;top:4px;left:6px;font-size:8px;color:#9ca3af">만족↑</div>
-              <div style="position:absolute;bottom:4px;left:6px;font-size:8px;color:#9ca3af">만족↓</div>
-              <div style="position:absolute;top:50%;left:6px;transform:translateY(-50%);font-size:8px;color:#9ca3af">캐주얼</div>
-              <div style="position:absolute;top:50%;right:6px;transform:translateY(-50%);font-size:8px;color:#9ca3af">격식</div>
+              <div style="position:absolute;top:4px;left:6px;font-size:8px;color:#B5AFA8">만족↑</div>
+              <div style="position:absolute;bottom:4px;left:6px;font-size:8px;color:#B5AFA8">만족↓</div>
+              <div style="position:absolute;top:50%;left:6px;transform:translateY(-50%);font-size:8px;color:#B5AFA8">캐주얼</div>
+              <div style="position:absolute;top:50%;right:6px;transform:translateY(-50%);font-size:8px;color:#B5AFA8">격식</div>
             </div>
           </div>
         </div>
@@ -1838,7 +1854,7 @@
       <div class="scroll-area">
         <div class="notif-item unread" id="notif-1" onclick="toggleNotifRead(this)">
           <div class="notif-unread-dot" id="dot-1"></div>
-          <div class="notif-icon" style="background:#FFF5F2">🍱</div>
+          <div class="notif-icon" style="background:#F5EDE8">🍱</div>
           <div class="notif-content">
             <div class="notif-text"><strong>김영수</strong>님이 직장 맛집에 새 기록을 남겼습니다</div>
             <div class="notif-sub">미진 · 93점</div>
@@ -1848,7 +1864,7 @@
 
         <div class="notif-item unread" id="notif-2" onclick="toggleNotifRead(this)">
           <div class="notif-unread-dot" id="dot-2"></div>
-          <div class="notif-icon" style="background:#f0fdf4">❤️</div>
+          <div class="notif-icon" style="background:#E8F0EB">❤️</div>
           <div class="notif-content">
             <div class="notif-text"><strong>박소연</strong>님이 회원님의 기록에 좋아요를 눌렀습니다</div>
             <div class="notif-sub">도쿄등심</div>
@@ -1858,7 +1874,7 @@
 
         <div class="notif-item" id="notif-3" onclick="toggleNotifRead(this)">
           <div class="notif-unread-dot read" id="dot-3"></div>
-          <div class="notif-icon" style="background:#f0f9ff">💬</div>
+          <div class="notif-icon" style="background:#EDF2F5">💬</div>
           <div class="notif-content">
             <div class="notif-text"><strong>이준호</strong>: "거기 런치도 괜찮아요"</div>
             <div class="notif-sub">도쿄등심 기록에 댓글</div>
@@ -1881,7 +1897,7 @@
 
         <div class="notif-item" id="notif-5" onclick="toggleNotifRead(this)">
           <div class="notif-unread-dot read" id="dot-5"></div>
-          <div class="notif-icon" style="background:#ede9fe">🎉</div>
+          <div class="notif-icon" style="background:#F0ECF3">🎉</div>
           <div class="notif-content">
             <div class="notif-text">을지로 <span class="pill pill-purple" style="font-size:11px;padding:1px 7px">Lv.5</span> 달성!</div>
             <div class="notif-sub">계속 을지로를 탐험하세요</div>
@@ -1891,7 +1907,7 @@
 
         <div class="notif-item" id="notif-6" onclick="toggleNotifRead(this)">
           <div class="notif-unread-dot read" id="dot-6"></div>
-          <div class="notif-icon" style="background:#fef9c3">🏅</div>
+          <div class="notif-icon" style="background:#F5F0E5">🏅</div>
           <div class="notif-content">
             <div class="notif-text">새 뱃지 획득: <strong>와인탐험10</strong></div>
             <div class="notif-sub">와인 10종 기록 달성!</div>
@@ -2046,6 +2062,8 @@
       item.querySelector('.notif-unread-dot').classList.add('read');
     });
   }
+
+  lucide.createIcons();
 </script>
 </body>
 </html>

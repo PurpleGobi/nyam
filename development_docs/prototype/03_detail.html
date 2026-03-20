@@ -8,20 +8,27 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #ffffff;
-    --bg-card: #f9fafb;
-    --text: #111827;
-    --text-sub: #6b7280;
-    --primary: #FF6038;
-    --primary-light: #FFF5F2;
-    --wine: #6B4C8A;
-    --wine-light: #F8F5FA;
-    --border: #e5e7eb;
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
     --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
   }
 
   body {
-    background: #e8e8e8;
+    background: var(--bg-page);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -33,7 +40,7 @@
 
   h1.page-title {
     font-size: 14px;
-    color: #666;
+    color: var(--text-sub);
     margin-bottom: 16px;
     letter-spacing: 0.05em;
   }
@@ -43,7 +50,7 @@
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
-    background: #fff;
+    background: var(--bg-elevated);
     border-radius: 12px;
     padding: 4px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
@@ -57,7 +64,7 @@
     cursor: pointer;
     transition: all 0.2s;
     background: transparent;
-    color: #6b7280;
+    color: var(--text-sub);
   }
   .tab-btn.active {
     background: var(--primary);
@@ -73,7 +80,7 @@
     height: 844px;
     background: var(--bg);
     border-radius: 44px;
-    box-shadow: 0 0 0 10px #1a1a1a, 0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 2px #333;
+    box-shadow: 0 0 0 10px #2A2725, 0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 2px #333;
     overflow: hidden;
     position: relative;
   }
@@ -102,7 +109,7 @@
     gap: 12px;
   }
   .scroll-header.solid {
-    background: rgba(255,255,255,0.97);
+    background: rgba(248,246,243,0.97);
     box-shadow: 0 1px 8px rgba(0,0,0,0.08);
     backdrop-filter: blur(10px);
   }
@@ -121,7 +128,7 @@
   .header-back {
     width: 32px; height: 32px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.9);
+    background: rgba(248,246,243,0.9);
     border: none;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -134,7 +141,7 @@
   .header-heart {
     width: 32px; height: 32px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.9);
+    background: rgba(248,246,243,0.9);
     border: none;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -144,7 +151,7 @@
     transition: transform 0.2s;
   }
   .header-heart:active { transform: scale(1.3); }
-  .header-heart.liked { color: #ef4444; }
+  .header-heart.liked { color: #B87272; }
 
   /* ===================== HERO CAROUSEL ===================== */
   .hero-carousel {
@@ -222,7 +229,7 @@
     flex-wrap: wrap;
   }
   .meta-cat { font-size: 13px; color: var(--text-sub); }
-  .meta-price { font-size: 12px; color: #9ca3af; }
+  .meta-price { font-size: 12px; color: var(--text-hint); }
 
   /* ===================== SCORE SUMMARY ===================== */
   .score-section {
@@ -263,9 +270,9 @@
     gap: 2px;
     font-size: 12px;
   }
-  .pn { color: #22c55e; font-weight: 700; }
-  .pk { color: #eab308; font-weight: 700; }
-  .pg { color: #3b82f6; font-weight: 700; }
+  .pn { color: #7EAE8B; font-weight: 700; }
+  .pk { color: #C9A96E; font-weight: 700; }
+  .pg { color: #7A9BAE; font-weight: 700; }
   .p-val { color: var(--text-sub); }
   .badges-row {
     display: flex;
@@ -281,8 +288,8 @@
     font-size: 11px;
     font-weight: 500;
   }
-  .badge-michelin { background: #fefce8; color: #854d0e; border: 1px solid #fef08a; }
-  .badge-wine-spec { background: var(--wine-light); color: var(--wine); border: 1px solid #e9d5ff; }
+  .badge-michelin { background: #F5F0E8; color: #C9A96E; border: 1px solid #E8DDCA; }
+  .badge-wine-spec { background: var(--wine-light); color: var(--wine); border: 1px solid #DDD6E3; }
 
   /* ===================== ACTION BAR ===================== */
   .action-bar {
@@ -326,7 +333,7 @@
     flex-shrink: 0;
   }
   .btn-icon:active { transform: scale(0.9); }
-  .btn-icon.liked { border-color: #ef4444; color: #ef4444; }
+  .btn-icon.liked { border-color: #B87272; color: #B87272; }
 
   /* ===================== SECTIONS ===================== */
   .section {
@@ -360,7 +367,7 @@
     position: absolute;
     left: 6px; top: 8px; bottom: 8px;
     width: 2px;
-    background: linear-gradient(to bottom, var(--primary), #fca5a5, transparent);
+    background: linear-gradient(to bottom, var(--primary), #D4A089, transparent);
     border-radius: 2px;
   }
   .timeline-item {
@@ -393,11 +400,11 @@
     font-size: 10px;
     font-weight: 600;
   }
-  .chip-pink { background: #fdf2f8; color: #be185d; }
-  .chip-purple { background: #faf5ff; color: #7e22ce; }
-  .chip-blue { background: #eff6ff; color: #1d4ed8; }
-  .chip-orange { background: #fff7ed; color: #c2410c; }
-  .chip-green { background: #f0fdf4; color: #15803d; }
+  .chip-pink { background: #F5ECF0; color: #B8879B; }
+  .chip-purple { background: #F0ECF3; color: #8B7396; }
+  .chip-blue { background: #ECF1F5; color: #7A9BAE; }
+  .chip-orange { background: #F5F0E8; color: #C9A96E; }
+  .chip-green { background: #ECF5EF; color: #7EAE8B; }
   .chip-coral { background: var(--primary-light); color: var(--primary); }
 
   .timeline-score {
@@ -436,7 +443,7 @@
     position: relative;
     width: 100%;
     padding-bottom: 80%;
-    background: #fff;
+    background: var(--bg-elevated);
     border-radius: 8px;
     border: 1px solid var(--border);
     overflow: hidden;
@@ -482,12 +489,12 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
   .q-dot:hover { transform: translate(-50%, -50%) scale(1.2); }
-  .q-dot.high { width: 32px; height: 32px; background: #FF6038; border: 2px solid #ffc0b0; }
-  .q-dot.mid { width: 26px; height: 26px; background: #3b82f6; border: 2px solid #bfdbfe; }
-  .q-dot.low { width: 24px; height: 24px; background: #8b5cf6; border: 2px solid #ddd6fe; }
+  .q-dot.high { width: 32px; height: 32px; background: var(--primary); border: 2px solid #F5EDE8; }
+  .q-dot.mid { width: 26px; height: 26px; background: #7A9BAE; border: 2px solid #D6E4EC; }
+  .q-dot.low { width: 24px; height: 24px; background: #8B7396; border: 2px solid #E0D8E5; }
   /* Wine dots */
-  .q-dot.wine-1 { width: 32px; height: 32px; background: var(--wine); border: 2px solid #e9d5ff; }
-  .q-dot.wine-2 { width: 26px; height: 26px; background: #9333ea; border: 2px solid #f3e8ff; }
+  .q-dot.wine-1 { width: 32px; height: 32px; background: var(--wine); border: 2px solid #DDD6E3; }
+  .q-dot.wine-2 { width: 26px; height: 26px; background: #A08DAB; border: 2px solid #E8E0ED; }
   .popular-menu {
     font-size: 12px;
     color: var(--text-sub);
@@ -501,13 +508,13 @@
     align-items: flex-start;
     gap: 10px;
     padding: 8px 0;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #F0EDE8;
     font-size: 13px;
   }
   .info-row:last-child { border-bottom: none; }
   .info-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
   .info-text { flex: 1; color: var(--text); line-height: 1.4; }
-  .info-green { color: #16a34a; font-weight: 600; }
+  .info-green { color: #7EAE8B; font-weight: 600; }
   .info-action {
     font-size: 12px;
     color: var(--primary);
@@ -518,14 +525,14 @@
   .map-placeholder {
     width: 100%;
     height: 80px;
-    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    background: linear-gradient(135deg, #E8E4DF, #D4CFC8);
     border-radius: 8px;
     margin-top: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    color: #9ca3af;
+    color: var(--text-hint);
     position: relative;
     overflow: hidden;
   }
@@ -540,7 +547,7 @@
   .collapsible-btn {
     width: 100%;
     padding: 10px 14px;
-    background: #f3f4f6;
+    background: #F0EDE8;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -554,7 +561,7 @@
     margin-top: 8px;
     transition: all 0.2s;
   }
-  .collapsible-btn:hover { background: #e5e7eb; }
+  .collapsible-btn:hover { background: #E8E4DF; }
   .collapsible-arrow {
     transition: transform 0.3s;
     display: inline-block;
@@ -570,7 +577,7 @@
     justify-content: space-between;
     padding: 7px 14px;
     font-size: 12px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #F0EDE8;
   }
   .menu-row:last-child { border-bottom: none; }
   .menu-name { color: var(--text); }
@@ -594,14 +601,14 @@
     background: var(--wine-light);
     border-radius: 12px;
     padding: 10px;
-    border: 1px solid #e9d5ff;
+    border: 1px solid #DDD6E3;
     cursor: pointer;
     flex-shrink: 0;
   }
   .wine-card-h .wine-label-mini {
     width: 100%;
     height: 56px;
-    background: linear-gradient(160deg, #4c1d95, #7c3aed, #6B4C8A);
+    background: linear-gradient(160deg, #4c1d95, #7c3aed, #8B7396);
     border-radius: 6px;
     margin-bottom: 6px;
     display: flex; align-items: center; justify-content: center;
@@ -694,9 +701,9 @@
     font-weight: 700;
     color: #fff;
   }
-  .av1 { background: linear-gradient(135deg, #FF6038, #ff8c6b); }
-  .av2 { background: linear-gradient(135deg, #6B4C8A, #9333ea); }
-  .av3 { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+  .av1 { background: linear-gradient(135deg, #C17B5E, #D4A089); }
+  .av2 { background: linear-gradient(135deg, #8B7396, #A08DAB); }
+  .av3 { background: linear-gradient(135deg, #7A9BAE, #9BB5C4); }
   .bubble-user {
     flex: 1;
   }
@@ -719,7 +726,7 @@
     align-items: center;
     justify-content: space-between;
   }
-  .bubble-meta { font-size: 10px; color: #9ca3af; }
+  .bubble-meta { font-size: 10px; color: var(--text-hint); }
   .bubble-reactions {
     display: flex;
     gap: 10px;
@@ -742,7 +749,7 @@
   }
   .fact-table td {
     padding: 7px 0;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #F0EDE8;
   }
   .fact-table td:first-child {
     color: var(--text-sub);
@@ -761,7 +768,7 @@
   .pairing-tag {
     padding: 5px 12px;
     background: var(--wine-light);
-    border: 1px solid #e9d5ff;
+    border: 1px solid #DDD6E3;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
@@ -779,14 +786,14 @@
   .wine-label-img {
     width: 80px;
     height: 120px;
-    background: linear-gradient(160deg, #2d1b4e, #4c1d95, #6B4C8A, #7c3aed);
+    background: linear-gradient(160deg, #2d1b4e, #4c1d95, #8B7396, #7c3aed);
     border-radius: 8px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 28px;
-    box-shadow: 0 4px 16px rgba(107,76,138,0.3);
+    box-shadow: 0 4px 16px rgba(139,115,150,0.3);
     position: relative;
     overflow: hidden;
   }
@@ -835,12 +842,12 @@
   }
   .wine-chip-red {
     padding: 3px 8px;
-    background: #fef2f2;
-    color: #b91c1c;
+    background: #F5ECEC;
+    color: #B87272;
     border-radius: 20px;
     font-size: 10px;
     font-weight: 600;
-    border: 1px solid #fecaca;
+    border: 1px solid #E8D6D6;
   }
   .wine-grape {
     font-size: 10px;
@@ -859,14 +866,15 @@
     left: 50%;
     transform: translateX(-50%);
     width: 120px; height: 30px;
-    background: #1a1a1a;
+    background: #2A2725;
     border-radius: 0 0 20px 20px;
     z-index: 999;
   }
 
   /* Divider */
-  .divider { height: 8px; background: #f3f4f6; }
+  .divider { height: 8px; background: #F0EDE8; }
 </style>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -966,24 +974,24 @@
           </div>
         </div>
         <div class="timeline-item">
-          <div class="timeline-dot" style="background: #8b5cf6; box-shadow: 0 0 0 2px #8b5cf6;"></div>
+          <div class="timeline-dot" style="background: #8B7396; box-shadow: 0 0 0 2px #8B7396;"></div>
           <div class="timeline-date">
             2026.02.28 &nbsp;
             <span class="tag-chip chip-purple">회식</span>
           </div>
           <div>
-            <span class="timeline-score" style="color: #8b5cf6;">78점</span>
+            <span class="timeline-score" style="color: #8B7396;">78점</span>
             <span class="timeline-comment">"코스가 아쉬움"</span>
           </div>
         </div>
         <div class="timeline-item">
-          <div class="timeline-dot" style="background: #3b82f6; box-shadow: 0 0 0 2px #3b82f6;"></div>
+          <div class="timeline-dot" style="background: #7A9BAE; box-shadow: 0 0 0 2px #7A9BAE;"></div>
           <div class="timeline-date">
             2026.01.10 &nbsp;
             <span class="tag-chip chip-blue">혼밥</span>
           </div>
           <div>
-            <span class="timeline-score" style="color: #3b82f6;">85점</span>
+            <span class="timeline-score" style="color: #7A9BAE;">85점</span>
             <span class="timeline-comment">"런치세트 가성비 좋다"</span>
           </div>
         </div>
@@ -1143,9 +1151,9 @@
 
     <!-- Scroll Header -->
     <div class="scroll-header" id="wine-header">
-      <a href="01_home.html" class="header-back" style="background: rgba(248,245,250,0.95);">←</a>
+      <a href="01_home.html" class="header-back" style="background: rgba(240,236,243,0.95);">←</a>
       <span class="header-name" style="color: var(--wine);">Château Margaux</span>
-      <button class="header-heart" id="header-heart-wine" onclick="toggleHeart('header-heart-wine', 'action-heart-wine')" style="background: rgba(248,245,250,0.95);">♡</button>
+      <button class="header-heart" id="header-heart-wine" onclick="toggleHeart('header-heart-wine', 'action-heart-wine')" style="background: rgba(240,236,243,0.95);">♡</button>
     </div>
 
     <!-- Layer 1+2: Label + Identity (side by side) -->
@@ -1177,10 +1185,10 @@
     </div>
 
     <!-- Layer 4: Action Bar -->
-    <div class="action-bar" id="wine-action-bar-static" style="background: var(--wine-light); border-color: #e9d5ff;">
+    <div class="action-bar" id="wine-action-bar-static" style="background: var(--wine-light); border-color: #DDD6E3;">
       <button class="btn-primary wine-btn">+ 기록 남기기</button>
-      <button class="btn-icon" id="action-heart-wine" onclick="toggleHeart('action-heart-wine', 'header-heart-wine')" style="border-color: #e9d5ff;">♡</button>
-      <button class="btn-icon" style="border-color: #e9d5ff;">⇪</button>
+      <button class="btn-icon" id="action-heart-wine" onclick="toggleHeart('action-heart-wine', 'header-heart-wine')" style="border-color: #DDD6E3;">♡</button>
+      <button class="btn-icon" style="border-color: #DDD6E3;">⇪</button>
     </div>
 
     <!-- Layer 5: Quadrant (wine axes) -->
@@ -1188,11 +1196,11 @@
       <div class="section-header">
         <span class="section-title">테이스팅 분포</span>
       </div>
-      <div class="quadrant-wrap" style="background: var(--wine-light); border: 1px solid #e9d5ff;">
-        <div class="quadrant-chart" style="border-color: #e9d5ff;">
+      <div class="quadrant-wrap" style="background: var(--wine-light); border: 1px solid #DDD6E3;">
+        <div class="quadrant-chart" style="border-color: #DDD6E3;">
           <div class="quadrant-inner">
-            <div class="crosshair-h" style="background: #e9d5ff;"></div>
-            <div class="crosshair-v" style="background: #e9d5ff;"></div>
+            <div class="crosshair-h" style="background: #DDD6E3;"></div>
+            <div class="crosshair-v" style="background: #DDD6E3;"></div>
             <span class="axis-label ax-left" style="color: var(--wine);">산미 낮음</span>
             <span class="axis-label ax-right" style="color: var(--wine);">산미 높음</span>
             <span class="axis-label ax-top" style="color: var(--wine);">Full Body</span>
@@ -1240,13 +1248,13 @@
           <div style="margin-top: 4px; font-size: 11px; color: var(--text-sub);">📍 레스토랑 A</div>
         </div>
         <div class="timeline-item">
-          <div class="timeline-dot" style="background: #3b82f6; box-shadow: 0 0 0 2px #3b82f6;"></div>
+          <div class="timeline-dot" style="background: #7A9BAE; box-shadow: 0 0 0 2px #7A9BAE;"></div>
           <div class="timeline-date">
             2026.01.25 &nbsp;
             <span class="tag-chip chip-blue">혼술</span>
           </div>
           <div>
-            <span class="timeline-score" style="color: #3b82f6;">88점</span>
+            <span class="timeline-score" style="color: #7A9BAE;">88점</span>
             <span class="timeline-comment">"혼자 마시기엔 묵직한 편"</span>
           </div>
         </div>
@@ -1309,7 +1317,7 @@
         <button class="filter-chip" onclick="toggleFilterWine(this)">와인 모임</button>
         <button class="filter-chip" onclick="toggleFilterWine(this)">소믈리에</button>
       </div>
-      <div class="bubble-card" style="border-color: #e9d5ff;">
+      <div class="bubble-card" style="border-color: #DDD6E3;">
         <div class="bubble-top">
           <div class="avatar av2">이</div>
           <div class="bubble-user">
@@ -1327,7 +1335,7 @@
           </div>
         </div>
       </div>
-      <div class="bubble-card" style="border-color: #e9d5ff;">
+      <div class="bubble-card" style="border-color: #DDD6E3;">
         <div class="bubble-top">
           <div class="avatar av3">최</div>
           <div class="bubble-user">
@@ -1348,10 +1356,10 @@
     </div>
 
     <!-- Floating Action Bar for wine -->
-    <div class="action-bar floating" id="wine-floating-bar" style="background: var(--wine-light); border-top: 1px solid #e9d5ff;">
+    <div class="action-bar floating" id="wine-floating-bar" style="background: var(--wine-light); border-top: 1px solid #DDD6E3;">
       <button class="btn-primary wine-btn">+ 기록 남기기</button>
-      <button class="btn-icon" style="border-color: #e9d5ff;">♡</button>
-      <button class="btn-icon" style="border-color: #e9d5ff;">⇪</button>
+      <button class="btn-icon" style="border-color: #DDD6E3;">♡</button>
+      <button class="btn-icon" style="border-color: #DDD6E3;">⇪</button>
     </div>
 
     <div class="bottom-spacer"></div>
@@ -1543,6 +1551,9 @@
     parent.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('wine-active'));
     btn.classList.add('wine-active');
   }
+
+  // Initialize Lucide icons
+  lucide.createIcons();
 </script>
 </body>
 </html>

@@ -8,21 +8,28 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
-    --bg: #ffffff;
-    --bg-card: #f9fafb;
-    --text: #111827;
-    --text-sub: #6b7280;
-    --text-hint: #9ca3af;
-    --primary: #FF6038;
-    --primary-light: #FFF5F2;
-    --wine: #6B4C8A;
-    --wine-light: #F8F5FA;
-    --border: #e5e7eb;
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
     --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
   }
 
   body {
-    background: #e5e7eb;
+    background: var(--bg-page);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,13 +41,13 @@
   .device {
     width: 390px;
     height: 844px;
-    background: #1a1a1a;
+    background: #2A2725;
     border-radius: 52px;
     padding: 12px;
     box-shadow:
-      0 0 0 1px #333,
+      0 0 0 1px #3A3632,
       0 30px 80px rgba(0,0,0,0.5),
-      inset 0 0 0 1px #444;
+      inset 0 0 0 1px #4A4540;
     position: relative;
     flex-shrink: 0;
   }
@@ -62,7 +69,7 @@
     transform: translateX(-50%);
     width: 120px;
     height: 34px;
-    background: #1a1a1a;
+    background: #2A2725;
     border-radius: 0 0 20px 20px;
     z-index: 100;
   }
@@ -121,11 +128,11 @@
   }
   .ob-nav-back {
     padding:12px 20px; border-radius:50px;
-    background:#f3f4f6; border:1px solid var(--border);
+    background:var(--bg); border:1px solid var(--border);
     font-size:14px; font-weight:600; color:var(--text);
     cursor:pointer; transition:all 0.2s;
   }
-  .ob-nav-back:active { transform:scale(0.95); background:#e5e7eb; }
+  .ob-nav-back:active { transform:scale(0.95); background:var(--bg-page); }
 
   .ob-nav-skip {
     background:none; border:none;
@@ -139,13 +146,13 @@
     padding:12px 20px; border-radius:50px;
     background:var(--primary); color:white;
     font-size:14px; font-weight:700; border:none; cursor:pointer;
-    box-shadow:0 4px 20px rgba(255,96,56,0.4);
+    box-shadow:0 4px 20px rgba(193,123,94,0.4);
     transition:all 0.2s; display:flex; align-items:center; gap:4px;
   }
   .ob-nav-next:active { transform:scale(0.95); }
-  .ob-nav-next:disabled { background:#d1d5db; box-shadow:none; cursor:default; }
+  .ob-nav-next:disabled { background:var(--border-bold); box-shadow:none; cursor:default; }
   .ob-nav-next.wine-style {
-    background:var(--wine); box-shadow:0 4px 20px rgba(107,76,138,0.4);
+    background:var(--wine); box-shadow:0 4px 20px rgba(139,115,150,0.4);
   }
 
   /* Legacy compat — keep for intro CTA only */
@@ -154,11 +161,11 @@
     padding:14px 24px; border-radius:50px;
     background:var(--primary); color:white;
     font-size:15px; font-weight:700; border:none; cursor:pointer;
-    box-shadow:0 4px 20px rgba(255,96,56,0.4);
+    box-shadow:0 4px 20px rgba(193,123,94,0.4);
     transition:all 0.2s; display:flex; align-items:center; gap:6px;
   }
   .floating-next:active { transform:scale(0.95); }
-  .floating-next:disabled { background:#d1d5db; box-shadow:none; cursor:default; }
+  .floating-next:disabled { background:var(--border-bold); box-shadow:none; cursor:default; }
 
   /* Scrollable content */
   .scroll-content {
@@ -508,7 +515,7 @@
 
   .ob-card-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
   .ob-card-photo {
-    width:48px; height:48px; border-radius:12px; background:#e5e7eb;
+    width:48px; height:48px; border-radius:12px; background:var(--bg-page);
     display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
   }
   .ob-card-info { flex:1; }
@@ -574,7 +581,7 @@
   @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
 
   .ob-score-bar {
-    position:relative; height:36px; background:#f3f4f6; border-radius:18px; overflow:hidden; cursor:pointer;
+    position:relative; height:36px; background:#F0EDE8; border-radius:18px; overflow:hidden; cursor:pointer;
   }
   .ob-score-fill {
     position:absolute; top:0;left:0;bottom:0; border-radius:18px;
@@ -968,7 +975,7 @@
     cursor: pointer;
     transition: background 0.1s;
   }
-  .recommend-card:active { background: #f3f4f6; }
+  .recommend-card:active { background: var(--bg); }
 
   .recommend-thumb {
     width: 52px;
@@ -1022,7 +1029,7 @@
     cursor: pointer;
     transition: background 0.1s;
   }
-  .wine-card:active { background: #f3f4f6; }
+  .wine-card:active { background: var(--bg); }
 
   .wine-thumb {
     width: 36px;
@@ -1298,7 +1305,7 @@
     font-size: 24px;
     font-weight: 300;
     margin-top: -8px;
-    box-shadow: 0 4px 16px rgba(255,96,56,0.4);
+    box-shadow: 0 4px 16px rgba(193,123,94,0.4);
     transition: transform 0.1s;
     cursor: pointer;
   }
@@ -1348,6 +1355,7 @@
     color: var(--wine);
   }
 </style>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -1673,7 +1681,7 @@
               <div id="scoreModalMeta" style="font-size:13px;color:var(--text-sub);margin-bottom:20px;"></div>
               <div style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">만족도를 표시해주세요</div>
               <!-- Score gauge -->
-              <div style="position:relative;height:48px;background:#f3f4f6;border-radius:24px;overflow:hidden;margin-bottom:8px;cursor:pointer;" id="scoreGaugeTrack">
+              <div style="position:relative;height:48px;background:#F0EDE8;border-radius:24px;overflow:hidden;margin-bottom:8px;cursor:pointer;" id="scoreGaugeTrack">
                 <div id="scoreGaugeFill" style="
                   position:absolute;top:0;left:0;bottom:0;width:75%;
                   border-radius:24px; transition:width 0.15s,background 0.15s;
@@ -1782,7 +1790,7 @@
           animation:sheetSlideUp 0.3s ease;
           flex-direction:column;
         ">
-          <div style="width:40px;height:4px;border-radius:2px;background:#d1d5db;margin:0 auto 12px;"></div>
+          <div style="width:40px;height:4px;border-radius:2px;background:var(--border-bold);margin:0 auto 12px;"></div>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
             <div style="position:relative;flex:1;">
               <input id="wineSearchInput" type="text" placeholder="와인 이름 검색..."
@@ -2686,11 +2694,11 @@
   }
 
   function getScoreColor(score) {
-    if (score <= 30) return '#ef4444';
-    if (score <= 50) return '#f59e0b';
-    if (score <= 70) return '#fbbf24';
-    if (score <= 85) return '#22c55e';
-    return '#3b82f6';
+    if (score <= 30) return '#C4B5A8';
+    if (score <= 50) return '#C9A96E';
+    if (score <= 70) return '#B8A078';
+    if (score <= 85) return '#7EAE8B';
+    return '#7A9BAE';
   }
 
   function updateRestCount() {
@@ -2725,7 +2733,7 @@
   let searchTargetIdx = null; // which card triggered search (null = sticky button)
 
   function getWineScoreColor(pct) {
-    return pct > 85 ? '#7c3aed' : pct > 70 ? '#8b5cf6' : pct > 50 ? '#a78bfa' : pct > 30 ? '#c4b5fd' : '#ddd6fe';
+    return pct > 85 ? '#7A9BAE' : pct > 70 ? '#7EAE8B' : pct > 50 ? '#B8A078' : pct > 30 ? '#C9A96E' : '#C4B5A8';
   }
 
   // ── Render ──
@@ -3066,6 +3074,7 @@
   // Area map is initialized in HTML + event delegation
   initRestaurantCards();
   // Wine onboarding: no init needed (photo-recognition based, no pre-built list)
+  lucide.createIcons();
 </script>
 </body>
 </html>

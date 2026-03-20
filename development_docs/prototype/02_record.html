@@ -8,20 +8,27 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #ffffff;
-    --bg-card: #f9fafb;
-    --text: #111827;
-    --text-sub: #6b7280;
-    --primary: #FF6038;
-    --primary-light: #FFF5F2;
-    --wine: #6B4C8A;
-    --wine-light: #F8F5FA;
-    --border: #e5e7eb;
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
     --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
   }
 
   body {
-    background: #1a1a2e;
+    background: var(--bg-page);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -33,7 +40,7 @@
   .device {
     width: 390px;
     height: 844px;
-    background: #111;
+    background: #2A2725;
     border-radius: 54px;
     padding: 12px;
     box-shadow: 0 0 0 2px #333, 0 30px 80px rgba(0,0,0,0.7), inset 0 0 0 1px #444;
@@ -48,7 +55,7 @@
     transform: translateX(-50%);
     width: 120px;
     height: 34px;
-    background: #111;
+    background: #2A2725;
     border-radius: 0 0 20px 20px;
     z-index: 100;
   }
@@ -126,7 +133,7 @@
     transition: background 0.15s;
   }
 
-  .nav-back:hover { background: #f3f4f6; }
+  .nav-back:hover { background: #F0EDE8; }
 
   .nav-title {
     font-size: 16px;
@@ -269,7 +276,7 @@
     transition: background 0.15s;
   }
 
-  .search-result-item:hover { background: #f9fafb; margin: 0 -16px; padding: 14px 16px; }
+  .search-result-item:hover { background: var(--bg-card); margin: 0 -16px; padding: 14px 16px; }
 
   .search-result-name {
     font-size: 15px;
@@ -286,7 +293,7 @@
   .search-result-rating {
     font-size: 13px;
     font-weight: 600;
-    color: #f59e0b;
+    color: #C9A96E;
   }
 
   /* Quadrant screen */
@@ -307,7 +314,7 @@
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border);
-    background: #fafafa;
+    background: #F5F2ED;
   }
 
   #quadrantCanvas, #wineQuadrantCanvas {
@@ -371,12 +378,12 @@
     gap: 6px;
   }
 
-  .btn-primary:hover { background: #e8522e; transform: translateY(-1px); }
+  .btn-primary:hover { background: #A8654A; transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
+  .btn-primary:disabled { background: var(--border-bold); cursor: not-allowed; transform: none; }
 
   .btn-wine { background: var(--wine); }
-  .btn-wine:hover { background: #5a3d75; }
+  .btn-wine:hover { background: #6E5A7D; }
 
   /* Scene tags */
   .scene-section {
@@ -693,7 +700,7 @@
   .completion-check {
     width: 80px;
     height: 80px;
-    background: #dcfce7;
+    background: #E2F0E6;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -725,11 +732,11 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    background: #fafafa;
+    background: #F5F2ED;
   }
 
   .xp-badge {
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    background: linear-gradient(135deg, #C9A96E, #B87272);
     color: white;
     padding: 10px 20px;
     border-radius: 20px;
@@ -771,7 +778,7 @@
   /* Wine complexity satisfaction */
   .satisfaction-preview {
     background: var(--wine-light);
-    border: 1px solid rgba(107, 76, 138, 0.2);
+    border: 1px solid rgba(139, 115, 150, 0.2);
     border-radius: 12px;
     padding: 12px 16px;
     margin-top: 8px;
@@ -793,6 +800,7 @@
   /* Wine scene tags */
   .wine-tag.selected { color: white; }
 </style>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -924,27 +932,27 @@
           <div class="scene-sub">하나를 선택해주세요</div>
 
           <div class="scene-tags-grid" id="sceneTags">
-            <div class="scene-tag" data-tag="혼밥" data-color="#3b82f6" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="혼밥" data-color="#7A9BAE" onclick="selectScene(this)">
               <span class="tag-icon">🍱</span>
               <span>혼밥</span>
             </div>
-            <div class="scene-tag" data-tag="데이트" data-color="#ec4899" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="데이트" data-color="#B8879B" onclick="selectScene(this)">
               <span class="tag-icon">💑</span>
               <span>데이트</span>
             </div>
-            <div class="scene-tag" data-tag="친구" data-color="#22c55e" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="친구" data-color="#7EAE8B" onclick="selectScene(this)">
               <span class="tag-icon">👥</span>
               <span>친구</span>
             </div>
-            <div class="scene-tag" data-tag="가족" data-color="#f59e0b" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="가족" data-color="#C9A96E" onclick="selectScene(this)">
               <span class="tag-icon">👨‍👩‍👧</span>
               <span>가족</span>
             </div>
-            <div class="scene-tag" data-tag="회식" data-color="#8b5cf6" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="회식" data-color="#8B7396" onclick="selectScene(this)">
               <span class="tag-icon">🥂</span>
               <span>회식</span>
             </div>
-            <div class="scene-tag" data-tag="술자리" data-color="#ef4444" onclick="selectScene(this)">
+            <div class="scene-tag" data-tag="술자리" data-color="#B87272" onclick="selectScene(this)">
               <span class="tag-icon">🍻</span>
               <span>술자리</span>
             </div>
@@ -965,7 +973,7 @@
                 <div class="field-label">사진</div>
                 <div class="photo-row">
                   <div class="photo-placeholder">+</div>
-                  <div class="photo-placeholder" style="font-size:12px;color:#d1d5db">빈 슬롯</div>
+                  <div class="photo-placeholder" style="font-size:12px;color:#D4CFC8">빈 슬롯</div>
                 </div>
               </div>
               <div class="field-group">
@@ -1121,27 +1129,27 @@
           <div class="scene-sub">하나를 선택해주세요</div>
 
           <div class="scene-tags-grid" id="wineSceneTags">
-            <div class="scene-tag wine-tag" data-tag="혼술" data-color="#3b82f6" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="혼술" data-color="#7A9BAE" onclick="selectWineScene(this)">
               <span class="tag-icon">🍷</span>
               <span>혼술</span>
             </div>
-            <div class="scene-tag wine-tag" data-tag="데이트" data-color="#ec4899" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="데이트" data-color="#B8879B" onclick="selectWineScene(this)">
               <span class="tag-icon">💑</span>
               <span>데이트</span>
             </div>
-            <div class="scene-tag wine-tag" data-tag="모임" data-color="#22c55e" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="모임" data-color="#7EAE8B" onclick="selectWineScene(this)">
               <span class="tag-icon">👥</span>
               <span>모임</span>
             </div>
-            <div class="scene-tag wine-tag" data-tag="페어링" data-color="#f59e0b" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="페어링" data-color="#C9A96E" onclick="selectWineScene(this)">
               <span class="tag-icon">🍽️</span>
               <span>페어링</span>
             </div>
-            <div class="scene-tag wine-tag" data-tag="선물" data-color="#8b5cf6" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="선물" data-color="#8B7396" onclick="selectWineScene(this)">
               <span class="tag-icon">🎁</span>
               <span>선물</span>
             </div>
-            <div class="scene-tag wine-tag" data-tag="시음회" data-color="#ef4444" onclick="selectWineScene(this)">
+            <div class="scene-tag wine-tag" data-tag="시음회" data-color="#B87272" onclick="selectWineScene(this)">
               <span class="tag-icon">🏆</span>
               <span>시음회</span>
             </div>
@@ -1359,11 +1367,11 @@ function drawQuadrant(ctx, canvas, dot, isWine) {
   ctx.clearRect(0, 0, W, H);
 
   // Background
-  ctx.fillStyle = '#fafafa';
+  ctx.fillStyle = '#F5F2ED';
   ctx.fillRect(0, 0, W, H);
 
   // Subtle grid
-  ctx.strokeStyle = '#e5e7eb';
+  ctx.strokeStyle = '#E8E4DF';
   ctx.lineWidth = 0.5;
   for (let i = 1; i < 4; i++) {
     ctx.beginPath(); ctx.moveTo(W/4*i, 0); ctx.lineTo(W/4*i, H); ctx.stroke();
@@ -1371,14 +1379,14 @@ function drawQuadrant(ctx, canvas, dot, isWine) {
   }
 
   // Crosshairs
-  ctx.strokeStyle = '#9ca3af';
+  ctx.strokeStyle = '#B5AFA8';
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
 
   // Quadrant labels
   ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = '#d1d5db';
+  ctx.fillStyle = '#D4CFC8';
   if (!isWine) {
     ctx.textAlign = 'left';
     ctx.fillText('합리적 격식집', 8, 18);
@@ -1401,7 +1409,7 @@ function drawQuadrant(ctx, canvas, dot, isWine) {
 
   // Axis labels
   ctx.font = '12px -apple-system, sans-serif';
-  ctx.fillStyle = '#6b7280';
+  ctx.fillStyle = '#8C8580';
   ctx.textAlign = 'center';
   if (!isWine) {
     ctx.fillText('저렴', 40, H/2 + 16);
@@ -1440,8 +1448,8 @@ function drawQuadrant(ctx, canvas, dot, isWine) {
     // Glow for high satisfaction
     if (sat >= 90) {
       const grd = ctx.createRadialGradient(px, py, 0, px, py, radius * 1.8);
-      grd.addColorStop(0, 'rgba(59,130,246,0.4)');
-      grd.addColorStop(1, 'rgba(59,130,246,0)');
+      grd.addColorStop(0, 'rgba(122,155,174,0.4)');
+      grd.addColorStop(1, 'rgba(122,155,174,0)');
       ctx.beginPath();
       ctx.arc(px, py, radius * 1.8, 0, Math.PI * 2);
       ctx.fillStyle = grd;
@@ -1487,11 +1495,11 @@ function drawQuadrant(ctx, canvas, dot, isWine) {
 }
 
 function satColor(sat) {
-  if (sat <= 30) return '#ef4444';
-  if (sat <= 50) return '#f59e0b';
-  if (sat <= 70) return '#fbbf24';
-  if (sat <= 85) return '#22c55e';
-  return '#3b82f6';
+  if (sat <= 30) return '#C4B5A8';
+  if (sat <= 50) return '#C9A96E';
+  if (sat <= 70) return '#B8A078';
+  if (sat <= 85) return '#7EAE8B';
+  return '#7A9BAE';
 }
 
 function getCanvasPos(canvas, e) {
@@ -1798,9 +1806,9 @@ function drawAromaPalette(ctx, canvas, painted) {
   // Center circle
   ctx.beginPath();
   ctx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#f3f0f7';
+  ctx.fillStyle = '#F0ECF3';
   ctx.fill();
-  ctx.fillStyle = '#9ca3af';
+  ctx.fillStyle = '#B5AFA8';
   ctx.font = '10px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -2002,6 +2010,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const c = document.getElementById('quadrantCanvas');
   drawQuadrant(c.getContext('2d'), c, null, false);
 });
+
+lucide.createIcons();
 </script>
 </body>
 </html>
