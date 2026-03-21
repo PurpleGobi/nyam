@@ -164,11 +164,13 @@
   }
   .filter-rule-prefix.clickable {
     cursor: pointer; padding: 2px 6px; border-radius: 4px;
-    color: var(--text-sub); font-weight: 600;
-    transition: background 0.1s;
+    font-weight: 700; transition: background 0.1s;
+    position: relative;
   }
-  .filter-rule-prefix.clickable:hover { background: var(--bg-page); }
-  .filter-rule-prefix.clickable:active { background: var(--border); }
+  .filter-rule-prefix.conj-and { color: var(--positive); background: rgba(126,174,139,0.1); }
+  .filter-rule-prefix.conj-or { color: var(--caution); background: rgba(201,169,110,0.1); }
+  .filter-rule-prefix.clickable:hover { opacity: 0.8; }
+  .filter-rule-prefix.clickable:active { opacity: 0.6; }
 
   .filter-rule-prop {
     padding: 3px 8px; border-radius: 4px; font-size: 12px;
@@ -293,71 +295,33 @@
   .dropdown-search:focus { border-color: var(--primary); }
 
   /* =====================
-     FILTER SLIDE PANEL
+     INLINE DROPDOWNS (Notion-style filter)
      ===================== */
-  .filter-panel {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
+  .filter-rule-prop, .filter-rule-value {
+    position: relative;
   }
-  .filter-panel.open {
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  .filter-panel-inner {
-    padding: 12px 16px 16px;
-  }
-  .filter-section {
-    margin-bottom: 12px;
-  }
-  .filter-section:last-child { margin-bottom: 0; }
-  .filter-section-title {
-    font-size: 11px; font-weight: 700; color: var(--text-hint);
-    text-transform: uppercase; letter-spacing: 0.5px;
-    margin-bottom: 6px;
-  }
-  .filter-chips {
-    display: flex; flex-wrap: wrap; gap: 6px;
-  }
-  .filter-chip {
-    padding: 5px 12px; border-radius: 50px;
+  .filter-inline-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0;
+    min-width: 160px; max-height: 240px; overflow-y: auto;
+    background: var(--bg-elevated);
     border: 1px solid var(--border);
-    background: var(--bg);
-    font-size: 12px; font-weight: 600;
-    color: var(--text-sub);
-    cursor: pointer; transition: all 0.15s;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    z-index: 50; padding: 4px 0;
+    display: none;
   }
-  .filter-chip:active { transform: scale(0.95); }
-  .filter-chip.active {
-    border-color: var(--primary);
-    background: var(--primary-light);
-    color: var(--primary);
+  .filter-inline-dropdown.open { display: block; }
+  .filter-inline-dropdown .dd-item {
+    padding: 6px 12px; font-size: 12px; color: var(--text);
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
   }
-  .filter-chip.wine-active {
-    border-color: var(--wine);
-    background: var(--wine-light);
-    color: var(--wine);
+  .filter-inline-dropdown .dd-item:hover { background: var(--bg-page); }
+  .filter-inline-dropdown .dd-item.current { color: var(--primary); font-weight: 700; }
+  .filter-inline-dropdown .dd-item.wine-current { color: var(--wine); font-weight: 700; }
+  .filter-inline-dropdown .dd-header {
+    padding: 4px 12px; font-size: 10px; font-weight: 700;
+    color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .filter-panel-actions {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 12px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .filter-reset-btn {
-    font-size: 12px; color: var(--text-hint); cursor: pointer;
-    background: none; border: none; font-weight: 600;
-    font-family: inherit;
-  }
-  .filter-reset-btn:hover { color: var(--text-sub); }
-  .filter-apply-btn {
-    padding: 6px 20px; border-radius: 50px; border: none;
-    background: var(--primary); color: white;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    font-family: inherit;
-  }
-  .filter-apply-btn.wine-style { background: var(--wine); }
 
   /* =====================
      COMPACT LIST
@@ -487,10 +451,9 @@
     <!-- Notion-style Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <button class="toolbar-btn" id="filterBtn" onclick="toggleFilterPanel()">
-          <i data-lucide="filter" style="width:14px;height:14px;"></i>
+        <button class="toolbar-btn" id="filterBtn" onclick="addNewFilter()">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i>
           <span id="filterBtnLabel">필터</span>
-          <i data-lucide="chevron-down" id="filterChevron" style="width:12px;height:12px;transition:transform 0.2s;"></i>
         </button>
 
         <div class="dropdown-anchor">
@@ -526,13 +489,6 @@
       </div>
 
       <span class="toolbar-count" id="resultCount">24건</span>
-    </div>
-
-    <!-- Filter slide panel -->
-    <div class="filter-panel" id="filterPanel">
-      <div class="filter-panel-inner" id="filterPanelContent">
-        <!-- Content rendered by JS based on current tab -->
-      </div>
     </div>
 
     <!-- Active filter rules (Notion inline style) -->
@@ -789,11 +745,7 @@ function switchTab(tab) {
   document.getElementById('wineList').style.display = tab === 'wine' ? '' : 'none';
   document.getElementById('resultCount').textContent = tab === 'food' ? '24건' : '18건';
 
-  // Close filter panel and clear filters on tab switch
-  const panel = document.getElementById('filterPanel');
-  const chevron = document.getElementById('filterChevron');
-  panel.classList.remove('open');
-  chevron.style.transform = 'rotate(0)';
+  // Clear filters on tab switch
   clearAllFilters();
 
   // Reset sort visual
@@ -881,68 +833,21 @@ let activeFilters = []; // flat reference for chip panel compat
 let filterConjunction = 'and';
 
 // ===========================
-// Filter Slide Panel
+// Add New Filter (Notion-style)
 // ===========================
-function toggleFilterPanel() {
-  const panel = document.getElementById('filterPanel');
-  const chevron = document.getElementById('filterChevron');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) {
-    renderFilterPanel();
-    chevron.style.transform = 'rotate(180deg)';
-  } else {
-    chevron.style.transform = 'rotate(0)';
-  }
-}
-
-function renderFilterPanel() {
-  const config = filterConfig[currentTab];
-  const isWine = currentTab === 'wine';
-  const activeClass = isWine ? 'wine-active' : 'active';
-
-  let html = '';
-  for (const [prop, cfg] of Object.entries(config)) {
-    html += `<div class="filter-section">
-      <div class="filter-section-title">${cfg.label}</div>
-      <div class="filter-chips">
-        ${cfg.values.map(val => {
-          const isActive = activeFilters.some(f => f.prop === prop && f.value === val);
-          return `<div class="filter-chip ${isActive ? activeClass : ''}"
-            onclick="toggleFilterChip('${prop}','${val}',this)">${val}</div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
-  html += `<div class="filter-panel-actions">
-    <button class="filter-reset-btn" onclick="clearAllFilters(); renderFilterPanel();">초기화</button>
-    <button class="filter-apply-btn ${isWine ? 'wine-style' : ''}" onclick="toggleFilterPanel()">적용 (${activeFilters.length})</button>
-  </div>`;
-
-  document.getElementById('filterPanelContent').innerHTML = html;
-}
-
-function toggleFilterChip(prop, value, el) {
-  const isWine = currentTab === 'wine';
-  const activeClass = isWine ? 'wine-active' : 'active';
-  const idx = activeFilters.findIndex(f => f.prop === prop && f.value === value);
-
-  if (idx >= 0) {
-    activeFilters.splice(idx, 1);
-    el.classList.remove(activeClass);
-  } else {
-    activeFilters.push({ id: 'rule-' + (++filterRuleCount), prop, value });
-    el.classList.add(activeClass);
-  }
-
+function addNewFilter() {
+  const props = Object.keys(filterConfig[currentTab]);
+  const firstProp = props[0];
+  const firstVal = filterConfig[currentTab][firstProp].values[0];
+  const id = 'rule-' + (++filterRuleCount);
+  activeFilters.push({ id, prop: firstProp, value: firstVal });
   renderFilterRules();
   updateFilterBtn();
-  // Update apply button count
-  const applyBtn = document.querySelector('.filter-apply-btn');
-  if (applyBtn) applyBtn.textContent = `적용 (${activeFilters.length})`;
+  // Auto-open property dropdown on the new rule
+  setTimeout(() => openRulePropDropdown(id), 100);
 }
 
 function toggleConjunction() {
-  // Notion logic: clicking any conjunction toggles ALL of them together
   filterConjunction = filterConjunction === 'and' ? 'or' : 'and';
   renderFilterRules();
 }
@@ -950,6 +855,7 @@ function toggleConjunction() {
 function renderFilterRules() {
   const container = document.getElementById('filterRules');
   const isWine = currentTab === 'wine';
+  const valClass = isWine ? 'wine-val' : 'food-val';
 
   // Sync flat activeFilters → filterTree.rules
   filterTree.rules = [...activeFilters];
@@ -963,76 +869,191 @@ function renderFilterRules() {
   }
 
   container.classList.add('open');
-  container.innerHTML = renderGroup(filterTree, true, 'root') + `
-    <div style="display:flex;gap:12px;">
-      <div class="filter-add-rule" onclick="toggleFilterPanel()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        필터 추가
-      </div>
-      <div class="filter-add-rule" onclick="addFilterGroup()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        그룹 추가
-      </div>
-    </div>
-  `;
-}
+  const conjLabel = filterConjunction === 'and' ? 'And' : 'Or';
+  const conjClass = filterConjunction === 'and' ? 'conj-and' : 'conj-or';
+  const xSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const plusSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 
-function renderGroup(group, isRoot, groupId) {
-  const isWine = currentTab === 'wine';
-  const valClass = isWine ? 'wine-val' : 'food-val';
-  const conjLabel = group.conj === 'and' ? 'And' : 'Or';
-
-  let rulesHtml = group.rules.map((f, i) => {
+  let html = activeFilters.map((f, i) => {
     const config = filterConfig[currentTab][f.prop];
     if (!config) return '';
-    let prefixHtml;
-    if (i === 0 && isRoot) {
-      prefixHtml = `<span class="filter-rule-prefix">Where</span>`;
-    } else if (i === 0) {
-      prefixHtml = `<span class="filter-rule-prefix" style="min-width:30px;"></span>`;
-    } else {
-      prefixHtml = `<span class="filter-rule-prefix clickable" onclick="${isRoot ? 'toggleConjunction()' : 'toggleGroupConj(\'' + groupId + '\')'}" title="And/Or 전환">${conjLabel}</span>`;
-    }
-    const removeFunc = isRoot ? `removeFilter('${f.id}')` : `removeGroupFilter('${groupId}','${f.id}')`;
+    const prefixHtml = i === 0
+      ? '<span class="filter-rule-prefix">Where</span>'
+      : `<span class="filter-rule-prefix clickable ${conjClass}" onclick="toggleConjunction()" title="클릭하여 And↔Or 전환">${conjLabel}</span>`;
+
     return `<div class="filter-rule" id="${f.id}">
       ${prefixHtml}
-      <span class="filter-rule-prop" onclick="cycleFilterProp('${f.id}')">${config.label}</span>
+      <span class="filter-rule-prop" onclick="openRulePropDropdown('${f.id}')">${config.label} ▾</span>
       <span class="filter-rule-op">is</span>
-      <span class="filter-rule-value ${valClass}" onclick="cycleFilterValue('${f.id}')">${f.value}</span>
-      <span class="filter-rule-remove" onclick="${removeFunc}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </span>
+      <span class="filter-rule-value ${valClass}" onclick="openRuleValueDropdown('${f.id}')">${f.value} ▾</span>
+      <span class="filter-rule-remove" onclick="removeFilter('${f.id}')">${xSvg}</span>
     </div>`;
   }).join('');
 
-  // Sub-groups
-  let groupsHtml = (group.groups || []).map((sg, gi) => {
-    const sgId = groupId + '-g' + gi;
+  // Sub groups
+  html += (filterTree.groups || []).map((sg, gi) => {
     const sgConj = sg.conj === 'and' ? 'And' : 'Or';
+    const sgClass = sg.conj === 'and' ? 'conj-and' : 'conj-or';
     return `<div class="filter-group">
       <div class="filter-group-header">
-        <span class="filter-group-conj" onclick="toggleGroupConj('${sgId}')">${sgConj}</span>
-        <span>중첩 그룹</span>
+        <span class="filter-group-conj" onclick="toggleGroupConj('root-g${gi}')" title="클릭하여 And↔Or 전환">${sgConj}</span>
+        <span>하위 필터</span>
         <span class="filter-group-remove" onclick="removeFilterGroup(${gi})">삭제</span>
       </div>
-      ${renderGroup(sg, false, sgId)}
+      ${sg.rules.map((f, j) => {
+        const config = filterConfig[currentTab][f.prop];
+        if (!config) return '';
+        const prefix = j === 0
+          ? '<span class="filter-rule-prefix" style="min-width:30px;"></span>'
+          : `<span class="filter-rule-prefix clickable ${sgClass}" onclick="toggleGroupConj('root-g${gi}')">${sgConj}</span>`;
+        return `<div class="filter-rule" id="${f.id}">
+          ${prefix}
+          <span class="filter-rule-prop" onclick="openRulePropDropdown('${f.id}',${gi})">${config.label} ▾</span>
+          <span class="filter-rule-op">is</span>
+          <span class="filter-rule-value ${valClass}" onclick="openRuleValueDropdown('${f.id}',${gi})">${f.value} ▾</span>
+          <span class="filter-rule-remove" onclick="removeGroupFilter('root-g${gi}','${f.id}')">${xSvg}</span>
+        </div>`;
+      }).join('')}
+      <div class="filter-add-rule" onclick="addGroupFilter(${gi})">${plusSvg} 조건 추가</div>
     </div>`;
   }).join('');
 
-  return rulesHtml + groupsHtml;
+  html += `<div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <div class="filter-add-rule" onclick="addNewFilter()">${plusSvg} 필터 추가</div>
+    <div class="filter-add-rule" onclick="addFilterGroup()">${plusSvg} 하위 필터 추가</div>
+    <div class="filter-add-rule" onclick="clearAllFilters()" style="margin-left:auto;color:var(--negative);">${xSvg} 초기화</div>
+  </div>`;
+
+  container.innerHTML = html;
 }
 
-function addFilterGroup() {
-  // Add a sub-group with a sample rule
+// ===========================
+// Inline Dropdown Functions
+// ===========================
+let openInlineDropdown = null;
+
+function closeAllInlineDropdowns() {
+  document.querySelectorAll('.filter-inline-dropdown').forEach(d => d.remove());
+  openInlineDropdown = null;
+}
+
+function openRulePropDropdown(ruleId, groupIdx) {
+  closeAllInlineDropdowns();
+  const ruleEl = document.getElementById(ruleId);
+  const propEl = ruleEl.querySelector('.filter-rule-prop');
+  const config = filterConfig[currentTab];
+  const isWine = currentTab === 'wine';
+  const currentClass = isWine ? 'wine-current' : 'current';
+
+  let filter;
+  if (groupIdx !== undefined) {
+    filter = filterTree.groups[groupIdx].rules.find(f => f.id === ruleId);
+  } else {
+    filter = activeFilters.find(f => f.id === ruleId);
+  }
+  if (!filter) return;
+
+  const dd = document.createElement('div');
+  dd.className = 'filter-inline-dropdown open';
+  dd.innerHTML = `<div class="dd-header">속성 선택</div>` +
+    Object.entries(config).map(([key, cfg]) =>
+      `<div class="dd-item ${filter.prop === key ? currentClass : ''}"
+        onclick="event.stopPropagation(); setRuleProp('${ruleId}','${key}',${groupIdx !== undefined ? groupIdx : 'undefined'})">${cfg.label}</div>`
+    ).join('');
+
+  propEl.appendChild(dd);
+  openInlineDropdown = dd;
+}
+
+function openRuleValueDropdown(ruleId, groupIdx) {
+  closeAllInlineDropdowns();
+  const ruleEl = document.getElementById(ruleId);
+  const valEl = ruleEl.querySelector('.filter-rule-value');
+  const isWine = currentTab === 'wine';
+  const currentClass = isWine ? 'wine-current' : 'current';
+
+  let filter;
+  if (groupIdx !== undefined) {
+    filter = filterTree.groups[groupIdx].rules.find(f => f.id === ruleId);
+  } else {
+    filter = activeFilters.find(f => f.id === ruleId);
+  }
+  if (!filter) return;
+
+  const config = filterConfig[currentTab][filter.prop];
+  if (!config) return;
+
+  const dd = document.createElement('div');
+  dd.className = 'filter-inline-dropdown open';
+  dd.innerHTML = `<div class="dd-header">${config.label}</div>` +
+    config.values.map(val =>
+      `<div class="dd-item ${filter.value === val ? currentClass : ''}"
+        onclick="event.stopPropagation(); setRuleValue('${ruleId}','${val}',${groupIdx !== undefined ? groupIdx : 'undefined'})">${val}</div>`
+    ).join('');
+
+  valEl.appendChild(dd);
+  openInlineDropdown = dd;
+}
+
+function setRuleProp(ruleId, newProp, groupIdx) {
+  let filter;
+  if (groupIdx !== undefined && groupIdx !== 'undefined') {
+    filter = filterTree.groups[groupIdx].rules.find(f => f.id === ruleId);
+  } else {
+    filter = activeFilters.find(f => f.id === ruleId);
+  }
+  if (!filter) return;
+
+  filter.prop = newProp;
+  filter.value = filterConfig[currentTab][newProp].values[0];
+  closeAllInlineDropdowns();
+  renderFilterRules();
+}
+
+function setRuleValue(ruleId, newValue, groupIdx) {
+  let filter;
+  if (groupIdx !== undefined && groupIdx !== 'undefined') {
+    filter = filterTree.groups[groupIdx].rules.find(f => f.id === ruleId);
+  } else {
+    filter = activeFilters.find(f => f.id === ruleId);
+  }
+  if (!filter) return;
+
+  filter.value = newValue;
+  closeAllInlineDropdowns();
+  renderFilterRules();
+}
+
+function addGroupFilter(groupIdx) {
   const props = Object.keys(filterConfig[currentTab]);
   const firstProp = props[0];
   const firstVal = filterConfig[currentTab][firstProp].values[0];
+  filterTree.groups[groupIdx].rules.push({ id: 'grule-' + (++filterRuleCount), prop: firstProp, value: firstVal });
+  renderFilterRules();
+}
+
+// Close inline dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (openInlineDropdown && !e.target.closest('.filter-inline-dropdown') && !e.target.closest('.filter-rule-prop') && !e.target.closest('.filter-rule-value')) {
+    closeAllInlineDropdowns();
+  }
+});
+
+function addFilterGroup() {
+  // Add a sub-group with opposite conjunction (AND parent → OR sub, or vice versa)
+  const props = Object.keys(filterConfig[currentTab]);
+  const firstProp = props[0];
+  const firstVal = filterConfig[currentTab][firstProp].values[0];
+  const ruleId = 'grule-' + (++filterRuleCount);
+  const gi = filterTree.groups.length;
   filterTree.groups.push({
-    conj: filterConjunction === 'and' ? 'or' : 'and', // opposite of parent
-    rules: [{ id: 'grule-' + (++filterRuleCount), prop: firstProp, value: firstVal }],
+    conj: filterConjunction === 'and' ? 'or' : 'and',
+    rules: [{ id: ruleId, prop: firstProp, value: firstVal }],
     groups: []
   });
   renderFilterRules();
+  // Auto-open prop dropdown on the new sub-group rule
+  setTimeout(() => openRulePropDropdown(ruleId, gi), 100);
 }
 
 function removeFilterGroup(idx) {
@@ -1091,33 +1112,14 @@ function clearAllFilters() {
   updateFilterBtn();
 }
 
-function cycleFilterValue(id) {
-  const filter = activeFilters.find(f => f.id === id);
-  if (!filter) return;
-  const config = filterConfig[currentTab][filter.prop];
-  const currentIdx = config.values.indexOf(filter.value);
-  filter.value = config.values[(currentIdx + 1) % config.values.length];
-  renderFilterRules();
-}
-
-function cycleFilterProp(id) {
-  const filter = activeFilters.find(f => f.id === id);
-  if (!filter) return;
-  const props = Object.keys(filterConfig[currentTab]);
-  const currentIdx = props.indexOf(filter.prop);
-  filter.prop = props[(currentIdx + 1) % props.length];
-  const config = filterConfig[currentTab][filter.prop];
-  filter.value = config.values[0];
-  renderFilterRules();
-}
-
 function updateFilterBtn() {
   const btn = document.getElementById('filterBtn');
   const label = document.getElementById('filterBtnLabel');
-  if (activeFilters.length > 0) {
+  const totalRules = activeFilters.length + filterTree.groups.reduce((s,g) => s + g.rules.length, 0);
+  if (totalRules > 0) {
     btn.classList.add(currentTab === 'wine' ? 'wine-has-value' : 'has-value');
     btn.classList.remove(currentTab === 'wine' ? 'has-value' : 'wine-has-value');
-    label.textContent = `필터 · ${activeFilters.length}`;
+    label.textContent = `필터 · ${totalRules}`;
   } else {
     btn.classList.remove('has-value', 'wine-has-value');
     label.textContent = '필터';
