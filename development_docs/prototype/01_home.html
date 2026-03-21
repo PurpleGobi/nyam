@@ -2582,7 +2582,7 @@
   .wine-full-card + .wine-full-card { margin-top: 12px; }
 
   .wine-photo-col {
-    width: 40%;
+    width: 46%;
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
@@ -3004,7 +3004,7 @@
   }
   .wine-mini-bar.highlight { background: var(--wine); }
 
-  /* Recent wines section */
+  /* Recent wines section — matches .place-card layout */
   .wine-recent-card {
     display: flex;
     margin: 0 16px;
@@ -3014,10 +3014,10 @@
     border: 1px solid var(--border);
     cursor: pointer;
     transition: transform 0.1s;
-    min-height: 120px;
+    min-height: 170px;
   }
   .wine-recent-card:active { transform: scale(0.985); }
-  .wine-recent-card + .wine-recent-card { margin-top: 10px; }
+  .wine-recent-card + .wine-recent-card { margin-top: 12px; }
 
   /* =====================
      Wine region swiper
@@ -3926,7 +3926,9 @@
             </div>
 
             <div class="wine-recent-card" onclick="alert('와인 상세')">
-              <div class="wine-photo-col" style="width:35%;background:linear-gradient(180deg, #3a1828, #1a0c14 50%, #0c0408);"></div>
+              <div class="wine-photo-col" style="background:linear-gradient(135deg, #3d1a2a 0%, #1a0a15 100%);">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
               <div class="place-info-col">
                 <div class="place-name">Penfolds Grange</div>
                 <div class="place-meta">레드 · 쉬라즈 · 호주</div>
@@ -3951,7 +3953,9 @@
             </div>
 
             <div class="wine-recent-card" onclick="alert('와인 상세')">
-              <div class="wine-photo-col" style="width:35%;background:linear-gradient(180deg, #200c18, #140810 50%, #0a0406);"></div>
+              <div class="wine-photo-col" style="background:linear-gradient(135deg, #200c18 0%, #0a0406 100%);">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
               <div class="place-info-col">
                 <div class="place-name">Opus One 2020</div>
                 <div class="place-meta">레드 · 카베르네 · 미국</div>
@@ -3969,7 +3973,9 @@
             </div>
 
             <div class="wine-recent-card" onclick="alert('와인 상세')">
-              <div class="wine-photo-col" style="width:35%;background:linear-gradient(180deg, #e8dcc8, #c8b898 50%, #a89070);"></div>
+              <div class="wine-photo-col" style="background:linear-gradient(135deg, #e8dcc8 0%, #a89070 100%);">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
               <div class="place-info-col">
                 <div class="place-name">Cloudy Bay Sauv. Blanc</div>
                 <div class="place-meta">화이트 · 소비뇽 블랑 · NZ</div>
