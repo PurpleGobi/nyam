@@ -1469,41 +1469,357 @@
   .nearby-register:hover { border-color: var(--primary); color: var(--primary); }
 
   /* =====================
+     Restaurant Record (AI-assisted single screen)
+     ===================== */
+  .rest-record-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; background: var(--primary-light); margin: 0 16px;
+    border-radius: 12px;
+  }
+  .rest-record-photo {
+    width: 64px; height: 64px; border-radius: 10px; overflow: hidden;
+    background: linear-gradient(135deg, #c8a888 0%, #a8856a 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; flex-shrink: 0; position: relative;
+  }
+  .rest-record-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .rest-record-info { flex: 1; }
+  .rest-record-name { font-size: 17px; font-weight: 700; color: var(--text); }
+  .rest-record-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .rest-record-ai-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--primary); font-weight: 600;
+    background: white; padding: 2px 8px; border-radius: 20px; margin-top: 4px;
+  }
+  .rest-record-section {
+    padding: 20px 16px 0;
+  }
+  .rest-record-section-title {
+    font-size: 13px; font-weight: 700; color: var(--text-sub);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ai-tag {
+    font-size: 9px; color: white; background: var(--primary);
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+  .rest-rec-quad-mini {
+    width: 100%; aspect-ratio: 1; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px;
+    position: relative;
+  }
+  .rest-rec-quad-mini .axis-label {
+    position: absolute; font-size: 10px; color: var(--text-hint); font-weight: 500;
+  }
+  .rest-rec-quad-mini .ax-top { top: 8px; left: 50%; transform: translateX(-50%); }
+  .rest-rec-quad-mini .ax-bottom { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .rest-rec-quad-mini .ax-left { left: 8px; top: 50%; transform: translateY(-50%); }
+  .rest-rec-quad-mini .ax-right { right: 8px; top: 50%; transform: translateY(-50%); }
+  .rest-rec-quad-mini .crosshair-h,
+  .rest-rec-quad-mini .crosshair-v {
+    position: absolute; background: var(--border);
+  }
+  .rest-rec-quad-mini .crosshair-h { width: 100%; height: 1px; top: 50%; }
+  .rest-rec-quad-mini .crosshair-v { height: 100%; width: 1px; left: 50%; }
+  .rest-rec-dot, .wine-rec-dot {
+    position: absolute; border-radius: 50%;
+    background: var(--primary); opacity: 0.9;
+    transform: translate(-50%, -50%); cursor: grab;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800;
+    box-shadow: 0 2px 12px rgba(193,123,94,0.5);
+    transition: box-shadow 0.2s, filter 0.2s;
+    touch-action: none; user-select: none;
+    z-index: 10;
+  }
+  .rest-rec-dot.sizing, .wine-rec-dot.sizing {
+    cursor: ns-resize;
+  }
+  .rest-rec-dot.glow-1 { box-shadow: 0 0 16px 4px rgba(122,155,174,0.5); }
+  .rest-rec-dot.glow-2 { box-shadow: 0 0 24px 6px rgba(122,155,174,0.65); filter: brightness(1.1); }
+  .rest-rec-dot.glow-3 { box-shadow: 0 0 32px 10px rgba(122,155,174,0.8); filter: brightness(1.2); }
+  .wine-rec-dot.glow-1 { box-shadow: 0 0 16px 4px rgba(139,115,150,0.5); }
+  .wine-rec-dot.glow-2 { box-shadow: 0 0 24px 6px rgba(139,115,150,0.65); filter: brightness(1.1); }
+  .wine-rec-dot.glow-3 { box-shadow: 0 0 32px 10px rgba(139,115,150,0.8); filter: brightness(1.2); }
+  /* Reference dots (past records) */
+  .rest-rec-ref-dot {
+    position: absolute; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.3;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 9px; font-weight: 700;
+    pointer-events: none;
+  }
+  .rest-rec-ref-label {
+    position: absolute; transform: translate(-50%, 0);
+    font-size: 9px; color: var(--text-hint); font-weight: 500;
+    white-space: nowrap; pointer-events: none;
+    text-align: center;
+  }
+  /* Quadrant values display */
+  .rest-rec-quad-values {
+    display: flex; gap: 8px; margin-top: 12px; justify-content: center;
+  }
+  .rest-rec-quad-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 50px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    font-size: 12px; color: var(--text-sub); font-weight: 500;
+  }
+  .rest-rec-quad-chip .val {
+    font-weight: 800; color: var(--primary);
+  }
+  .rest-rec-quad-hint {
+    text-align: center; font-size: 11px; color: var(--text-hint);
+    margin-top: 8px;
+  }
+  .rest-rec-scene-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .rest-rec-scene-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 50px;
+    border: 1.5px solid var(--border); background: var(--bg-card);
+    font-size: 13px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .rest-rec-scene-chip.selected {
+    border-color: var(--primary); background: var(--primary-light);
+    color: var(--primary);
+  }
+  .rest-rec-field {
+    margin-bottom: 16px;
+  }
+  .rest-rec-field label {
+    font-size: 13px; font-weight: 600; color: var(--text-sub);
+    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+  }
+  .rest-rec-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--bg-card); font-size: 14px;
+    color: var(--text); outline: none;
+  }
+  .rest-rec-input:focus { border-color: var(--primary); }
+  .rest-rec-input::placeholder { color: var(--text-hint); }
+  .rest-rec-textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--bg-card); font-size: 14px;
+    color: var(--text); outline: none; resize: none; font-family: inherit;
+  }
+  .rest-rec-textarea:focus { border-color: var(--primary); }
+  .rest-rec-companion {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-card);
+  }
+  .rest-rec-comp-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .rest-rec-comp-name { font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
+  .rest-rec-comp-remove { color: var(--text-hint); cursor: pointer; }
+  .rest-rec-comp-add {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--text-hint); font-size: 13px; cursor: pointer;
+    padding: 6px 0;
+  }
+  /* Pairing grid */
+  .pairing-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pairing-cell {
+    padding: 10px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg-card);
+    cursor: pointer; transition: all 0.15s;
+    text-align: center;
+  }
+  .pairing-cell:active { transform: scale(0.97); }
+  .pairing-cell.selected {
+    border-color: var(--wine); background: var(--wine-light);
+  }
+  .pairing-cell-icon {
+    font-size: 22px; margin-bottom: 2px;
+  }
+  .pairing-cell-name {
+    font-size: 12px; font-weight: 700; color: var(--text);
+  }
+  .pairing-cell.selected .pairing-cell-name { color: var(--wine); }
+  .pairing-cell-examples {
+    font-size: 9px; color: var(--text-hint); margin-top: 3px;
+    line-height: 1.3;
+  }
+  .pairing-cell.selected .pairing-cell-examples { color: var(--wine); opacity: 0.7; }
+
+  /* Wine link in restaurant record */
+  .rest-rec-wine-linked {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-card); margin-bottom: 8px;
+  }
+  .rest-rec-wine-bottle {
+    width: 32px; height: 46px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rest-rec-wine-info { flex: 1; }
+  .rest-rec-wine-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .rest-rec-wine-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+  .rest-rec-wine-badge {
+    font-size: 10px; color: var(--wine); font-weight: 600;
+    background: var(--wine-light); padding: 2px 8px; border-radius: 20px;
+  }
+  .rest-rec-wine-add {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--wine); font-size: 13px; font-weight: 600;
+    cursor: pointer; padding: 8px 0;
+  }
+  .rest-rec-wine-search {
+    margin-top: 4px;
+  }
+  .rest-rec-wine-result {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: opacity 0.1s;
+  }
+  .rest-rec-wine-result:active { opacity: 0.6; }
+  .rest-rec-wine-result:last-child { border-bottom: none; }
+
+  .rest-rec-save-bar {
+    padding: 12px 16px 28px; background: linear-gradient(transparent, var(--bg) 20%);
+  }
+  .rest-rec-save-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 50px;
+    background: var(--primary); color: white; font-size: 15px;
+    font-weight: 700; cursor: pointer; transition: transform 0.1s;
+  }
+  .rest-rec-save-btn:active { transform: scale(0.97); }
+
+  /* =====================
+     Wine Record Screen
+     ===================== */
+  .wine-rec-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; background: var(--wine-light); margin: 0 16px;
+    border-radius: 12px;
+  }
+  .wine-rec-dot {
+    position: absolute; border-radius: 50%;
+    background: var(--wine); opacity: 0.9;
+    transform: translate(-50%, -50%); cursor: grab;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800;
+    box-shadow: 0 2px 12px rgba(107,76,138,0.5);
+    transition: width 0.15s, height 0.15s, font-size 0.15s;
+    touch-action: none; user-select: none;
+    z-index: 10;
+  }
+  .wine-rec-scene-chip.selected {
+    border-color: var(--wine); background: var(--wine-light); color: var(--wine);
+  }
+  .wine-rec-save-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 50px;
+    background: var(--wine); color: white; font-size: 15px;
+    font-weight: 700; cursor: pointer; transition: transform 0.1s;
+  }
+  .wine-rec-save-btn:active { transform: scale(0.97); }
+
+  /* Aroma wheel */
+  .aroma-wheel {
+    width: 260px; height: 260px; margin: 0 auto;
+    position: relative; border-radius: 50%;
+  }
+  .aroma-sector {
+    position: absolute; width: 55px; height: 55px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: white; cursor: pointer;
+    opacity: 0.35; transition: all 0.2s; border: 2px solid transparent;
+    text-align: center; line-height: 1.2;
+  }
+  .aroma-sector.active { opacity: 1; border-color: white; transform: scale(1.1); }
+  .aroma-sector.ring-2 { width: 45px; height: 45px; font-size: 8px; }
+  .aroma-sector.ring-3 { width: 38px; height: 38px; font-size: 8px; }
+
+  /* Sliders for finish/balance */
+  .wine-slider-wrap { margin-bottom: 16px; }
+  .wine-slider-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--text-sub); font-weight: 600; margin-bottom: 6px;
+  }
+  .wine-slider-val { font-weight: 800; color: var(--wine); }
+  .wine-slider {
+    -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+    background: var(--border); outline: none;
+  }
+  .wine-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--wine); cursor: pointer; border: 3px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  /* Complexity chips */
+  .complexity-chips { display: flex; gap: 8px; }
+  .complexity-chip {
+    flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+    border: 1.5px solid var(--border); background: var(--bg-card);
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .complexity-chip.active {
+    border-color: var(--wine); background: var(--wine-light); color: var(--wine);
+  }
+  .complexity-chip .chip-label { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .complexity-chip.active .chip-label { color: var(--wine); opacity: 0.7; }
+
+  /* Wine record quad value chips */
+  .wine-rec-quad-chip .val { font-weight: 800; color: var(--wine); }
+
+  /* Wine AI tag */
+  .ai-tag.wine { background: var(--wine); }
+
+  /* =====================
      Wine Camera Screen
      ===================== */
-  .wine-camera-area {
-    flex: 1; background: #1a1520; display: flex;
+  /* Shared camera area (food & wine) */
+  .camera-area {
+    flex: 1; display: flex;
     flex-direction: column; align-items: center;
     justify-content: center; position: relative; margin: 0 16px;
     border-radius: 16px; overflow: hidden;
   }
-  .wine-camera-frame {
-    width: 160px; height: 220px; border: 2px dashed rgba(139,115,150,0.5);
+  .camera-area.food-camera { background: #1c1510; }
+  .camera-area.wine-camera { background: #1a1520; }
+  .camera-frame {
+    border: 2px dashed rgba(255,255,255,0.3);
     border-radius: 12px; display: flex; align-items: center;
     justify-content: center; flex-direction: column; gap: 8px;
     color: rgba(255,255,255,0.5);
   }
-  .wine-camera-hint {
+  .camera-frame.food-frame { width: 240px; height: 180px; border-color: rgba(193,123,94,0.5); }
+  .camera-frame.wine-frame { width: 160px; height: 220px; border-color: rgba(139,115,150,0.5); }
+  .camera-hint {
     font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 16px;
   }
-  .wine-camera-btn {
+  .camera-btn {
     width: 64px; height: 64px; border-radius: 50%;
-    background: var(--wine); border: 4px solid rgba(255,255,255,0.3);
+    border: 4px solid rgba(255,255,255,0.3);
     cursor: pointer; margin-top: 20px; transition: transform 0.15s;
     display: flex; align-items: center; justify-content: center; color: white;
   }
-  .wine-camera-btn:active { transform: scale(0.9); }
-  .wine-camera-alt {
+  .camera-btn.food-btn { background: var(--primary); }
+  .camera-btn.wine-btn { background: var(--wine); }
+  .camera-btn:active { transform: scale(0.9); }
+  .camera-alt {
     display: flex; gap: 16px; margin-top: 16px;
   }
-  .wine-camera-alt-btn {
+  .camera-alt-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 50px;
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
     color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
   }
-  .wine-camera-alt-btn:hover { background: rgba(255,255,255,0.15); }
+  .camera-alt-btn:hover { background: rgba(255,255,255,0.15); }
 
   /* Wine confirm */
   .wine-confirm-card {
@@ -4166,29 +4482,14 @@
 
         <!-- FAB -->
         <div class="fab-container">
-          <button class="fab" id="fabBtn" onclick="openAddSheet()">
+          <button class="fab" id="fabBtn" onclick="fabAddRecord()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
           </button>
         </div>
 
-        <!-- Add Bottom Sheet -->
-        <div class="fab-overlay" id="fabOverlay" onclick="closeAddSheet()"></div>
-        <div class="add-sheet" id="addSheet">
-          <div class="add-sheet-handle"></div>
-          <div class="add-sheet-title">무엇을 추가할까요?</div>
-          <div class="add-sheet-cards">
-            <div class="add-sheet-card food-card" onclick="startAdd('restaurant')">
-              <div class="add-sheet-icon food-icon"><i data-lucide="utensils" style="width:24px;height:24px;"></i></div>
-              <div class="add-sheet-label">식당</div>
-            </div>
-            <div class="add-sheet-card wine-card" onclick="startAdd('wine')">
-              <div class="add-sheet-icon wine-icon"><i data-lucide="wine" style="width:24px;height:24px;"></i></div>
-              <div class="add-sheet-label">와인</div>
-            </div>
-          </div>
-        </div>
+        <!-- Add Bottom Sheet (removed — FAB now goes directly to record flow based on current tab) -->
       </div>
 
       <!-- ==========================================
@@ -4201,14 +4502,41 @@
           <div class="record-nav-title">식당 추가</div>
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
+        <div style="flex:1;display:flex;flex-direction:column;padding-bottom:20px;">
+          <div class="camera-area food-camera">
+            <div class="camera-frame food-frame">
+              <i data-lucide="utensils" style="width:40px;height:40px;"></i>
+              <span style="font-size:12px;">음식 사진을 촬영하세요</span>
+            </div>
+            <div class="camera-hint">음식 또는 식당 사진을 촬영하면 자동으로 인식합니다</div>
+            <button class="camera-btn food-btn" onclick="simulateRestScan()">
+              <i data-lucide="camera" style="width:24px;height:24px;"></i>
+            </button>
+            <div class="camera-alt">
+              <button class="camera-alt-btn" onclick="simulateRestScan()">
+                <i data-lucide="image" style="width:14px;height:14px;"></i> 앨범에서 추가
+              </button>
+              <button class="camera-alt-btn" onclick="goToScreen('screen-add-restaurant-search')">
+                <i data-lucide="search" style="width:14px;height:14px;"></i> 목록에서 추가
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD: RESTAURANT SEARCH (fallback from camera) -->
+      <div class="screen hidden" id="screen-add-restaurant-search">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">식당 검색</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
         <div class="scroll-content">
-          <!-- Search bar -->
           <div class="rec-search-wrap">
             <span class="rec-search-icon"><i data-lucide="search" style="width:18px;height:18px;"></i></span>
             <input class="rec-search-input" id="addRestSearchInput" placeholder="식당 이름 검색..." oninput="onAddRestSearch(this.value)" />
           </div>
-
-          <!-- Search results (hidden by default) -->
           <div id="addRestSearchResults" style="display:none">
             <div class="rec-search-item" onclick="addRestaurant('스시코우지','일식 · 교대역', true)">
               <div><div class="rec-search-name">스시코우지</div><div class="rec-search-meta">일식 · 교대역</div></div>
@@ -4221,8 +4549,6 @@
               <div><div class="rec-search-name">스시야마</div><div class="rec-search-meta">일식 · 강남역</div></div>
             </div>
           </div>
-
-          <!-- Nearby restaurants -->
           <div id="addRestNearbySection">
             <div class="nearby-header" style="margin-top:8px;">
               <i data-lucide="map-pin" style="width:14px;height:14px;"></i> 근처 식당
@@ -4230,10 +4556,7 @@
             <div class="nearby-list">
               <div class="nearby-item" onclick="addRestaurant('스시코우지','일식 · 을지로', true)">
                 <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
-                <div class="nearby-info">
-                  <div class="nearby-name">스시코우지</div>
-                  <div class="nearby-meta">일식 · 을지로</div>
-                </div>
+                <div class="nearby-info"><div class="nearby-name">스시코우지</div><div class="nearby-meta">일식 · 을지로</div></div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                   <div class="nearby-dist">120m</div>
                   <div style="font-size:10px;color:var(--primary);font-weight:600;">기록 있음</div>
@@ -4241,34 +4564,22 @@
               </div>
               <div class="nearby-item" onclick="addRestaurant('몽탄','한식 · 을지로', false)">
                 <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
-                <div class="nearby-info">
-                  <div class="nearby-name">몽탄</div>
-                  <div class="nearby-meta">한식 · 을지로</div>
-                </div>
+                <div class="nearby-info"><div class="nearby-name">몽탄</div><div class="nearby-meta">한식 · 을지로</div></div>
                 <div class="nearby-dist">350m</div>
               </div>
               <div class="nearby-item" onclick="addRestaurant('을지로 골목집','한식 · 을지로3가', false)">
                 <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
-                <div class="nearby-info">
-                  <div class="nearby-name">을지로 골목집</div>
-                  <div class="nearby-meta">한식 · 을지로3가</div>
-                </div>
+                <div class="nearby-info"><div class="nearby-name">을지로 골목집</div><div class="nearby-meta">한식 · 을지로3가</div></div>
                 <div class="nearby-dist">500m</div>
               </div>
               <div class="nearby-item" onclick="addRestaurant('비스트로 드 욘트빌','프렌치 · 을지로', false)">
                 <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
-                <div class="nearby-info">
-                  <div class="nearby-name">비스트로 드 욘트빌</div>
-                  <div class="nearby-meta">프렌치 · 을지로</div>
-                </div>
+                <div class="nearby-info"><div class="nearby-name">비스트로 드 욘트빌</div><div class="nearby-meta">프렌치 · 을지로</div></div>
                 <div class="nearby-dist">650m</div>
               </div>
               <div class="nearby-item" onclick="addRestaurant('리스토란테 에오','이탈리안 · 청담', false)">
                 <div class="nearby-icon"><i data-lucide="utensils" style="width:18px;height:18px;"></i></div>
-                <div class="nearby-info">
-                  <div class="nearby-name">리스토란테 에오</div>
-                  <div class="nearby-meta">이탈리안 · 청담</div>
-                </div>
+                <div class="nearby-info"><div class="nearby-name">리스토란테 에오</div><div class="nearby-meta">이탈리안 · 청담</div></div>
                 <div class="nearby-dist">1.2km</div>
               </div>
             </div>
@@ -4291,21 +4602,21 @@
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;padding-bottom:20px;">
-          <div class="wine-camera-area">
-            <div class="wine-camera-frame">
+          <div class="camera-area wine-camera">
+            <div class="camera-frame wine-frame">
               <i data-lucide="wine" style="width:40px;height:40px;"></i>
               <span style="font-size:12px;">라벨을 맞춰주세요</span>
             </div>
-            <div class="wine-camera-hint">와인 라벨을 촬영하면 자동으로 인식합니다</div>
-            <button class="wine-camera-btn" onclick="simulateWineScan()">
+            <div class="camera-hint">와인 라벨을 촬영하면 자동으로 인식합니다</div>
+            <button class="camera-btn wine-btn" onclick="simulateWineScan()">
               <i data-lucide="camera" style="width:24px;height:24px;"></i>
             </button>
-            <div class="wine-camera-alt">
-              <button class="wine-camera-alt-btn" onclick="goToScreen('screen-add-wine-search')">
-                <i data-lucide="search" style="width:14px;height:14px;"></i> 이름으로 검색
+            <div class="camera-alt">
+              <button class="camera-alt-btn" onclick="simulateWineScan()">
+                <i data-lucide="image" style="width:14px;height:14px;"></i> 앨범에서 추가
               </button>
-              <button class="wine-camera-alt-btn">
-                <i data-lucide="image" style="width:14px;height:14px;"></i> 앨범에서
+              <button class="camera-alt-btn" onclick="goToScreen('screen-add-wine-search')">
+                <i data-lucide="search" style="width:14px;height:14px;"></i> 이름으로 검색
               </button>
             </div>
           </div>
@@ -4368,6 +4679,429 @@
           <div style="padding:24px;text-align:center;color:var(--text-hint);font-size:13px;" id="addWineSearchHint">
             와인 이름이나 생산자를 입력하세요
           </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           RESTAURANT RECORD (AI-assisted single screen)
+           ========================================== -->
+      <div class="screen hidden" id="screen-rest-record">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">기록</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+
+          <!-- AI 인식 결과: 식당 헤더 -->
+          <div style="padding:12px 16px 0;">
+            <div class="rest-record-header">
+              <div class="rest-record-photo">
+                <i data-lucide="utensils" style="width:24px;height:24px;"></i>
+              </div>
+              <div class="rest-record-info">
+                <div class="rest-record-name" id="restRecName">스시코우지</div>
+                <div class="rest-record-meta" id="restRecMeta">일식 · 을지로 · 120m</div>
+                <div class="rest-record-ai-badge">
+                  <i data-lucide="sparkles" style="width:10px;height:10px;"></i> AI 자동 인식
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 사분면 평가 -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">사분면 평가</div>
+            <div class="rest-rec-quad-mini" id="restRecQuad">
+              <div class="crosshair-h"></div>
+              <div class="crosshair-v"></div>
+              <span class="axis-label ax-top">포멀</span>
+              <span class="axis-label ax-bottom">캐주얼</span>
+              <span class="axis-label ax-left">저렴</span>
+              <span class="axis-label ax-right">고가</span>
+
+              <!-- 기존 기록 참조 점 (반투명) -->
+              <div class="rest-rec-ref-dot" style="left:30%;top:60%;width:22px;height:22px;background:#B8A078;">72</div>
+              <div class="rest-rec-ref-label" style="left:30%;top:calc(60% + 14px);">몽탄</div>
+
+              <div class="rest-rec-ref-dot" style="left:75%;top:25%;width:30px;height:30px;background:#7EAE8B;">91</div>
+              <div class="rest-rec-ref-label" style="left:75%;top:calc(25% + 18px);">밍글스</div>
+
+              <div class="rest-rec-ref-dot" style="left:45%;top:70%;width:18px;height:18px;background:#C9A96E;">65</div>
+              <div class="rest-rec-ref-label" style="left:45%;top:calc(70% + 12px);">을지로골목</div>
+
+              <div class="rest-rec-ref-dot" style="left:82%;top:50%;width:26px;height:26px;background:#7A9BAE;">85</div>
+              <div class="rest-rec-ref-label" style="left:82%;top:calc(50% + 16px);">비스트로</div>
+
+              <!-- 현재 기록 점 (드래그 이동, 상하 크기 조절) -->
+              <div class="rest-rec-dot" id="restRecDot" style="left:65%;top:35%;width:36px;height:36px;font-size:12px;">87</div>
+            </div>
+
+            <!-- 수치 표시 -->
+            <div class="rest-rec-quad-values">
+              <div class="rest-rec-quad-chip">가격 <span class="val" id="rrValPrice">65</span></div>
+              <div class="rest-rec-quad-chip">분위기 <span class="val" id="rrValAtm">65</span></div>
+              <div class="rest-rec-quad-chip">만족도 <span class="val" id="rrValSat">87</span></div>
+            </div>
+            <div class="rest-rec-quad-hint">좌우 드래그: 위치 이동 · 원 위에서 상하 드래그: 만족도(크기) 변경</div>
+          </div>
+
+          <!-- 상황 태그 (AI 추천) -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">상황 <span class="ai-tag">AI 추천</span></div>
+            <div class="rest-rec-scene-chips" id="restRecScenes">
+              <div class="rest-rec-scene-chip" onclick="toggleRestRecScene(this)" data-scene="혼밥">혼밥</div>
+              <div class="rest-rec-scene-chip selected" onclick="toggleRestRecScene(this)" data-scene="데이트">데이트</div>
+              <div class="rest-rec-scene-chip" onclick="toggleRestRecScene(this)" data-scene="친구">친구</div>
+              <div class="rest-rec-scene-chip" onclick="toggleRestRecScene(this)" data-scene="가족">가족</div>
+              <div class="rest-rec-scene-chip" onclick="toggleRestRecScene(this)" data-scene="회식">회식</div>
+              <div class="rest-rec-scene-chip" onclick="toggleRestRecScene(this)" data-scene="술자리">술자리</div>
+            </div>
+          </div>
+
+          <!-- 한줄 코멘트 -->
+          <div class="rest-record-section">
+            <div class="rest-rec-field">
+              <label>한줄 코멘트</label>
+              <textarea class="rest-rec-textarea" rows="2" placeholder="이 식당에 대한 한 줄..." maxlength="200"></textarea>
+            </div>
+          </div>
+
+          <!-- 동반자 (AI 자동 입력) -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">동반자 <span class="ai-tag">사진 인식</span></div>
+            <div class="rest-rec-companion">
+              <div class="rest-rec-comp-avatar" style="background:linear-gradient(135deg,#7A9BAE,#5a7b8e);">김</div>
+              <div class="rest-rec-comp-name">김영수</div>
+              <div class="rest-rec-comp-remove" onclick="this.closest('.rest-rec-companion').style.display='none'">
+                <i data-lucide="x" style="width:14px;height:14px;"></i>
+              </div>
+            </div>
+            <div class="rest-rec-comp-add" style="margin-top:8px;">
+              <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+              <span>동반자 추가</span>
+            </div>
+          </div>
+
+          <!-- 가격 (AI 자동 입력) -->
+          <div class="rest-record-section">
+            <div class="rest-rec-field">
+              <label>가격 (1인) <span class="ai-tag">영수증 인식</span></label>
+              <input class="rest-rec-input" type="text" value="85,000원" placeholder="예: 85,000원" />
+            </div>
+          </div>
+
+          <!-- 와인 연결 -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">같이 마신 와인</div>
+
+            <!-- 연결된 와인 (등록된 와인 → 바로 연결 확인) -->
+            <div id="linkedWineList">
+              <div class="rest-rec-wine-linked" id="linkedWine1">
+                <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#5a2a3a,#3d1a2a);">
+                  <i data-lucide="wine" style="width:14px;height:14px;color:rgba(255,255,255,0.7);"></i>
+                </div>
+                <div class="rest-rec-wine-info">
+                  <div class="rest-rec-wine-name">Château Margaux 2018</div>
+                  <div class="rest-rec-wine-meta">Red · Bordeaux</div>
+                </div>
+                <div class="rest-rec-wine-badge">연결됨</div>
+                <div class="rest-rec-comp-remove" onclick="this.closest('.rest-rec-wine-linked').style.display='none'">
+                  <i data-lucide="x" style="width:14px;height:14px;"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 와인 추가 버튼 -->
+            <div class="rest-rec-wine-add" onclick="showWineSearchPopup()">
+              <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+              <span>와인 추가</span>
+            </div>
+
+            <!-- 와인 검색 인라인 (토글) -->
+            <div class="rest-rec-wine-search" id="wineSearchArea" style="display:none;">
+              <input class="rest-rec-input" id="wineSearchInput" placeholder="와인 이름 검색..." oninput="onWineLinkSearch(this.value)" style="margin-bottom:8px;" />
+              <div id="wineLinkResults" style="display:none;">
+                <!-- 기존 등록 와인 -->
+                <div class="rest-rec-wine-result" onclick="linkExistingWine('Opus One 2020','Red · Napa Valley')">
+                  <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);width:28px;height:40px;">
+                    <i data-lucide="wine" style="width:10px;height:10px;color:rgba(255,255,255,0.7);"></i>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);">Opus One 2020</div>
+                    <div style="font-size:11px;color:var(--text-sub);">Red · Napa Valley</div>
+                  </div>
+                  <div style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:20px;">내 기록</div>
+                </div>
+                <!-- DB에 있지만 내 기록 없는 와인 -->
+                <div class="rest-rec-wine-result" onclick="linkExistingWine('Sassicaia 2019','Red · Toscana')">
+                  <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);width:28px;height:40px;">
+                    <i data-lucide="wine" style="width:10px;height:10px;color:rgba(255,255,255,0.7);"></i>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);">Sassicaia 2019</div>
+                    <div style="font-size:11px;color:var(--text-sub);">Red · Toscana</div>
+                  </div>
+                </div>
+                <!-- 미등록 → 신규 기록 유도 -->
+                <div class="rest-rec-wine-result rest-rec-wine-new" onclick="linkNewWine()">
+                  <div style="width:28px;height:40px;border:1.5px dashed var(--wine);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="plus" style="width:12px;height:12px;color:var(--wine);"></i>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:var(--wine);">새 와인으로 등록</div>
+                    <div style="font-size:11px;color:var(--text-hint);">검색 결과에 없는 와인 추가</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:100px;"></div>
+        </div>
+
+        <!-- 저장 버튼 -->
+        <div class="rest-rec-save-bar">
+          <button class="rest-rec-save-btn" onclick="saveRestRecord()">저장</button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           WINE RECORD (AI-assisted single screen)
+           ========================================== -->
+      <div class="screen hidden" id="screen-wine-record">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title" style="color:var(--wine);">기록</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+        <div class="scroll-content">
+
+          <!-- AI 인식 결과: 와인 헤더 -->
+          <div style="padding:12px 16px 0;">
+            <div class="wine-rec-header">
+              <div class="rest-record-photo" style="background:linear-gradient(135deg,#5a2a3a,#3d1a2a);">
+                <i data-lucide="wine" style="width:24px;height:24px;"></i>
+              </div>
+              <div class="rest-record-info">
+                <div class="rest-record-name" id="wineRecName">Chateau Margaux 2018</div>
+                <div class="rest-record-meta" id="wineRecMeta">Red · Bordeaux · 2018</div>
+                <div class="rest-record-ai-badge" style="color:var(--wine);">
+                  <i data-lucide="sparkles" style="width:10px;height:10px;"></i> AI 자동 인식
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 사분면 평가 (산미 × 바디) -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">사분면 평가</div>
+            <div class="rest-rec-quad-mini" id="wineRecQuad">
+              <div class="crosshair-h"></div>
+              <div class="crosshair-v"></div>
+              <span class="axis-label ax-top">Full Body</span>
+              <span class="axis-label ax-bottom">Light Body</span>
+              <span class="axis-label ax-left">산미 낮음</span>
+              <span class="axis-label ax-right">산미 높음</span>
+
+              <!-- 기존 기록 참조 점 (반투명) -->
+              <div class="rest-rec-ref-dot" style="left:70%;top:30%;width:28px;height:28px;background:#7EAE8B;">94</div>
+              <div class="rest-rec-ref-label" style="left:70%;top:calc(30% + 17px);">Opus One</div>
+
+              <div class="rest-rec-ref-dot" style="left:35%;top:65%;width:20px;height:20px;background:#C9A96E;">85</div>
+              <div class="rest-rec-ref-label" style="left:35%;top:calc(65% + 13px);">Cloudy Bay</div>
+
+              <div class="rest-rec-ref-dot" style="left:55%;top:20%;width:32px;height:32px;background:#7A9BAE;">96</div>
+              <div class="rest-rec-ref-label" style="left:55%;top:calc(20% + 19px);">Barolo</div>
+
+              <!-- 현재 기록 점 (드래그 이동, 상하 크기 조절) -->
+              <div class="wine-rec-dot" id="wineRecDot" style="left:60%;top:35%;width:36px;height:36px;font-size:12px;">91</div>
+            </div>
+
+            <!-- 수치 표시 -->
+            <div class="rest-rec-quad-values">
+              <div class="rest-rec-quad-chip wine-rec-quad-chip">산미 <span class="val" id="wrValAcid">60</span></div>
+              <div class="rest-rec-quad-chip wine-rec-quad-chip">바디 <span class="val" id="wrValBody">65</span></div>
+              <div class="rest-rec-quad-chip wine-rec-quad-chip">만족도 <span class="val" id="wrValSat">91</span></div>
+            </div>
+            <div class="rest-rec-quad-hint">좌우 드래그: 위치 이동 · 원 위에서 상하 드래그: 만족도(크기) 변경</div>
+          </div>
+
+          <!-- 아로마 휠 (1-3차향) WSET 체계적 시음 -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">아로마 <span class="ai-tag wine">AI 감지</span></div>
+            <div class="aroma-wheel">
+              <!-- Ring 1: 1차향 (outer, 8 sectors) -->
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#fde047;top:2px;left:50%;transform:translateX(-50%);color:#78350f;">시트러스</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#a3e635;top:22px;right:18px;color:#1a2e05;">사과/배</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#fb923c;top:90px;right:0px;color:#fff;">열대과일</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#fda4af;top:168px;right:10px;color:#881337;">핵과</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#f87171;bottom:14px;right:52px;color:#fff;">붉은베리</div>
+              <div class="aroma-sector active" onclick="toggleAromaSector(this)" style="background:#a855f7;bottom:2px;left:50%;transform:translateX(-50%);color:#fff;">검은베리</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#f472b6;top:168px;left:10px;color:#fff;">꽃</div>
+              <div class="aroma-sector" onclick="toggleAromaSector(this)" style="background:#fef3c7;top:90px;left:0px;color:#78350f;border-color:#e5e7eb;">흰꽃</div>
+
+              <!-- Ring 2: 2차향 (middle, 4 sectors) -->
+              <div class="aroma-sector ring-2" onclick="toggleAromaSector(this)" style="background:#fde68a;top:60px;left:58px;color:#78350f;">버터</div>
+              <div class="aroma-sector ring-2 active" onclick="toggleAromaSector(this)" style="background:#d97706;top:60px;right:58px;color:#fff;">바닐라</div>
+              <div class="aroma-sector ring-2" onclick="toggleAromaSector(this)" style="background:#991b1b;bottom:60px;right:58px;color:#fff;">향신료</div>
+              <div class="aroma-sector ring-2" onclick="toggleAromaSector(this)" style="background:#4ade80;bottom:60px;left:58px;color:#052e16;">허브</div>
+
+              <!-- Ring 3: 3차향 (inner, 3 sectors) -->
+              <div class="aroma-sector ring-3 active" onclick="toggleAromaSector(this)" style="background:#78350f;top:50%;left:50%;transform:translate(-80px,-50%);color:#fff;">가죽</div>
+              <div class="aroma-sector ring-3" onclick="toggleAromaSector(this)" style="background:#78716c;top:50%;left:50%;transform:translate(-50%,-19px);color:#fff;">흙</div>
+              <div class="aroma-sector ring-3" onclick="toggleAromaSector(this)" style="background:#92400e;top:50%;left:50%;transform:translate(25px,-50%);color:#fff;">견과</div>
+            </div>
+          </div>
+
+          <!-- 구조 평가: 복합성 · 여운 · 균형 -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">구조 평가 (Structure)</div>
+
+            <!-- 복합성 -->
+            <div class="wine-slider-wrap">
+              <div class="wine-slider-label">
+                <span>복합성</span>
+                <span class="wine-slider-val" id="wineComplexityVal">68</span>
+              </div>
+              <input type="range" class="wine-slider" min="0" max="100" value="68" oninput="updateWineSlider('complexity', this.value)" />
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-hint);margin-top:3px;">
+                <span>1차향 (과일/꽃)</span><span>2차향 (발효)</span><span>3차향 (숙성)</span>
+              </div>
+            </div>
+
+            <!-- 여운 -->
+            <div class="wine-slider-wrap">
+              <div class="wine-slider-label">
+                <span>여운</span>
+                <span class="wine-slider-val" id="wineFinishVal"><span id="wineFinishSec">7</span>초+</span>
+              </div>
+              <input type="range" class="wine-slider" min="0" max="100" value="72" oninput="updateWineFinish(this.value)" />
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-hint);margin-top:3px;">
+                <span>짧음 (&lt;3초)</span><span>보통 (5~8초)</span><span>긺 (10초+)</span>
+              </div>
+            </div>
+
+            <!-- 균형 -->
+            <div class="wine-slider-wrap">
+              <div class="wine-slider-label">
+                <span>균형</span>
+                <span class="wine-slider-val" id="wineBalanceVal">85</span>
+              </div>
+              <input type="range" class="wine-slider" min="0" max="100" value="85" oninput="updateWineSlider('balance', this.value)" />
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-hint);margin-top:3px;">
+                <span>산미 치우침</span><span>조화</span><span>타닌/알코올 치우침</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 페어링 (WSET 그리드) -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">페어링 <span class="ai-tag wine">AI 추천</span></div>
+            <div class="pairing-grid">
+              <div class="pairing-cell selected" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🥩</div>
+                <div class="pairing-cell-name">적색육</div>
+                <div class="pairing-cell-examples">스테이크 · 양갈비 · 오리 · 사슴</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🍗</div>
+                <div class="pairing-cell-name">백색육</div>
+                <div class="pairing-cell-examples">닭 · 돼지 · 송아지 · 토끼</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🦐</div>
+                <div class="pairing-cell-name">어패류</div>
+                <div class="pairing-cell-examples">생선 · 갑각류 · 조개 · 굴 · 초밥</div>
+              </div>
+              <div class="pairing-cell selected" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🧀</div>
+                <div class="pairing-cell-name">치즈·유제품</div>
+                <div class="pairing-cell-examples">숙성 · 블루 · 브리 · 크림소스</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🌿</div>
+                <div class="pairing-cell-name">채소·곡물</div>
+                <div class="pairing-cell-examples">버섯 · 트러플 · 리조또 · 파스타</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🌶️</div>
+                <div class="pairing-cell-name">매운·발효</div>
+                <div class="pairing-cell-examples">커리 · 마라 · 김치 · 된장</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🍫</div>
+                <div class="pairing-cell-name">디저트·과일</div>
+                <div class="pairing-cell-examples">다크초콜릿 · 타르트 · 건과일</div>
+              </div>
+              <div class="pairing-cell" onclick="this.classList.toggle('selected')">
+                <div class="pairing-cell-icon">🥜</div>
+                <div class="pairing-cell-name">샤퀴트리·견과</div>
+                <div class="pairing-cell-examples">하몽 · 살라미 · 아몬드 · 올리브</div>
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              <input class="rest-rec-input" placeholder="직접 입력 (예: 트러플 리조또)" style="font-size:13px;" />
+            </div>
+          </div>
+
+          <!-- 한줄 코멘트 -->
+          <div class="rest-record-section">
+            <div class="rest-rec-field">
+              <label>한줄 코멘트</label>
+              <textarea class="rest-rec-textarea" rows="2" placeholder="이 와인에 대한 한 줄..." maxlength="200"></textarea>
+            </div>
+          </div>
+
+          <!-- 가격 (병) -->
+          <div class="rest-record-section">
+            <div class="rest-rec-field">
+              <label>가격 (병) <span class="ai-tag wine">AI 추정</span></label>
+              <input class="rest-rec-input" type="text" value="89,000원" placeholder="예: 89,000원" style="border-color:var(--wine);" />
+            </div>
+          </div>
+
+          <!-- 식당 연결 -->
+          <div class="rest-record-section">
+            <div class="rest-record-section-title">어디서 마셨나요?</div>
+
+            <!-- 연결된 식당 -->
+            <div id="linkedRestList">
+              <div class="rest-rec-wine-linked" id="linkedRest1">
+                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c8a888,#a8856a);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i data-lucide="utensils" style="width:14px;height:14px;color:white;"></i>
+                </div>
+                <div class="rest-rec-wine-info">
+                  <div class="rest-rec-wine-name">스시코우지</div>
+                  <div class="rest-rec-wine-meta">일식 · 을지로</div>
+                </div>
+                <div class="rest-rec-wine-badge" style="color:var(--primary);background:var(--primary-light);">연결됨</div>
+                <div class="rest-rec-comp-remove" onclick="this.closest('.rest-rec-wine-linked').style.display='none'">
+                  <i data-lucide="x" style="width:14px;height:14px;"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 식당 검색 버튼 -->
+            <div class="rest-rec-wine-add" style="color:var(--primary);" onclick="document.getElementById('restSearchAreaInWine').style.display=document.getElementById('restSearchAreaInWine').style.display==='none'?'block':'none'">
+              <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+              <span>식당 검색</span>
+            </div>
+
+            <!-- 식당 검색 인라인 -->
+            <div class="rest-rec-wine-search" id="restSearchAreaInWine" style="display:none;">
+              <input class="rest-rec-input" placeholder="식당 이름 검색..." style="margin-bottom:8px;" />
+            </div>
+          </div>
+
+          <div style="height:100px;"></div>
+        </div>
+
+        <!-- 저장 버튼 -->
+        <div class="rest-rec-save-bar">
+          <button class="wine-rec-save-btn" onclick="saveWineRecord()">저장</button>
         </div>
       </div>
 
@@ -5769,33 +6503,14 @@
     aromaColor: null,
   };
 
-  // FAB → Add Bottom Sheet
-  function openAddSheet() {
-    fabOpen = true;
-    document.getElementById('addSheet').classList.add('open');
-    document.getElementById('fabOverlay').classList.add('open');
-    // Update FAB color based on tab
-    const fab = document.getElementById('fabBtn');
+  // FAB → directly enter record flow based on current tab
+  function fabAddRecord() {
     if (currentHomeTab === 'wine') {
-      fab.classList.add('wine-style');
-    } else {
-      fab.classList.remove('wine-style');
-    }
-  }
-
-  function closeAddSheet() {
-    fabOpen = false;
-    document.getElementById('addSheet').classList.remove('open');
-    document.getElementById('fabOverlay').classList.remove('open');
-  }
-
-  function startAdd(type) {
-    closeAddSheet();
-    recState.type = type;
-    if (type === 'restaurant') {
-      goToScreen('screen-add-restaurant');
-    } else {
+      recState.type = 'wine';
       goToScreen('screen-add-wine');
+    } else {
+      recState.type = 'restaurant';
+      goToScreen('screen-add-restaurant');
     }
   }
 
@@ -5817,11 +6532,262 @@
     showAddSuccess(name, meta, 'food');
   }
 
+  // Add restaurant camera scan (simulate AI recognition)
+  function simulateRestScan() {
+    // Simulate: photo OCR + GPS → confident match → go directly to record screen
+    document.getElementById('restRecName').textContent = '스시코우지';
+    document.getElementById('restRecMeta').textContent = '일식 · 을지로 · 120m';
+    goToScreen('screen-rest-record');
+  }
+
+  // Restaurant record screen helpers
+  function toggleRestRecScene(el) {
+    el.classList.toggle('selected');
+  }
+
+  // Shared quadrant interaction factory
+  function createQuadInteraction(config) {
+    // config: { dotId, quadId, screenId, valIds: {x, y, sat}, labels: {x, y}, accentColor }
+    let mode = 'idle'; // idle | moving | sizing
+    let startY = 0, startSize = 36, currentSize = 36;
+    let pointerId = null;
+    const MIN_SIZE = 16, MAX_SIZE = 54;
+    const MOVE_THRESHOLD = 6; // px horizontal to switch to move mode
+    let startX = 0, startClientX = 0, startClientY = 0;
+
+    function sizeToSat(s) { return Math.round(((s - MIN_SIZE) / (MAX_SIZE - MIN_SIZE)) * 80 + 20); }
+    function satToGaugeColor(sat) {
+      // Smooth gradient: Worst #C4B5A8 (warm gray) → Best #7A9BAE (slate blue)
+      const t = Math.max(0, Math.min(1, (sat - 20) / 80)); // 20~100 → 0~1
+      const r = Math.round(196 + (122 - 196) * t);
+      const g = Math.round(181 + (155 - 181) * t);
+      const b = Math.round(168 + (174 - 168) * t);
+      return `rgb(${r},${g},${b})`;
+    }
+    function applyGlow(dot, sat) {
+      dot.classList.remove('glow-1','glow-2','glow-3');
+      if (sat >= 90) dot.classList.add('glow-3');
+      else if (sat >= 80) dot.classList.add('glow-2');
+      else if (sat >= 70) dot.classList.add('glow-1');
+    }
+
+    function updateDisplay() {
+      const dot = document.getElementById(config.dotId);
+      if (!dot) return;
+      const xPct = parseFloat(dot.style.left);
+      const yPct = parseFloat(dot.style.top);
+      const xVal = Math.round(xPct);
+      const yVal = Math.round(100 - yPct);
+      const sat = sizeToSat(currentSize);
+
+      document.getElementById(config.valIds.x).textContent = xVal;
+      document.getElementById(config.valIds.y).textContent = yVal;
+      document.getElementById(config.valIds.sat).textContent = sat;
+
+      dot.textContent = sat;
+      dot.style.width = currentSize + 'px';
+      dot.style.height = currentSize + 'px';
+      dot.style.fontSize = Math.max(9, Math.round(currentSize * 0.3)) + 'px';
+      dot.style.background = satToGaugeColor(sat);
+      applyGlow(dot, sat);
+    }
+
+    function init() {
+      const dot = document.getElementById(config.dotId);
+      const quad = document.getElementById(config.quadId);
+      if (!dot || !quad) return;
+
+      updateDisplay();
+
+      // === Pointer down on dot ===
+      dot.addEventListener('pointerdown', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        pointerId = e.pointerId;
+        dot.setPointerCapture(e.pointerId);
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        startY = e.clientY;
+        startSize = currentSize;
+        mode = 'pending'; // wait to determine move vs size
+      });
+
+      // === Pointer move: determine mode, then act ===
+      document.addEventListener('pointermove', function(e) {
+        if (mode === 'idle') return;
+
+        const dx = Math.abs(e.clientX - startClientX);
+        const dy = Math.abs(e.clientY - startClientY);
+
+        // Determine mode on first significant movement
+        if (mode === 'pending') {
+          if (dx + dy < 4) return; // too small
+          if (dx > dy * 1.2) {
+            mode = 'moving'; // horizontal dominant → move position
+            dot.style.cursor = 'grabbing';
+          } else {
+            mode = 'sizing'; // vertical dominant → resize
+            dot.classList.add('sizing');
+          }
+        }
+
+        if (mode === 'moving') {
+          const rect = quad.getBoundingClientRect();
+          const x = Math.max(8, Math.min(92, ((e.clientX - rect.left) / rect.width) * 100));
+          const y = Math.max(8, Math.min(92, ((e.clientY - rect.top) / rect.height) * 100));
+          dot.style.left = x + '%';
+          dot.style.top = y + '%';
+          updateDisplay();
+        } else if (mode === 'sizing') {
+          // Drag up → bigger (higher score), drag down → smaller
+          const deltaY = startY - e.clientY;
+          currentSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, startSize + deltaY * 0.4));
+          updateDisplay();
+        }
+      });
+
+      // === Pointer up ===
+      document.addEventListener('pointerup', function(e) {
+        if (mode !== 'idle') {
+          dot.style.cursor = 'grab';
+          dot.classList.remove('sizing');
+          mode = 'idle';
+          pointerId = null;
+        }
+      });
+
+      // === Tap on quad background → move dot there ===
+      quad.addEventListener('click', function(e) {
+        if (e.target !== quad && !e.target.classList.contains('crosshair-h') && !e.target.classList.contains('crosshair-v') && !e.target.classList.contains('axis-label')) return;
+        const rect = quad.getBoundingClientRect();
+        const x = Math.max(8, Math.min(92, ((e.clientX - rect.left) / rect.width) * 100));
+        const y = Math.max(8, Math.min(92, ((e.clientY - rect.top) / rect.height) * 100));
+        dot.style.left = x + '%';
+        dot.style.top = y + '%';
+        updateDisplay();
+      });
+
+      // === Mouse wheel on dot → resize ===
+      dot.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        currentSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, currentSize + e.deltaY * -0.3));
+        updateDisplay();
+      }, { passive: false });
+    }
+
+    // Init when screen becomes visible
+    const obs = new MutationObserver(function(muts) {
+      muts.forEach(function(m) {
+        if (m.target.id === config.screenId && m.target.classList.contains('active')) {
+          setTimeout(init, 100);
+        }
+      });
+    });
+    const el = document.getElementById(config.screenId);
+    if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Restaurant quadrant
+  createQuadInteraction({
+    dotId: 'restRecDot', quadId: 'restRecQuad', screenId: 'screen-rest-record',
+    valIds: { x: 'rrValPrice', y: 'rrValAtm', sat: 'rrValSat' },
+  });
+
+  // Wine link helpers
+  function showWineSearchPopup() {
+    const area = document.getElementById('wineSearchArea');
+    area.style.display = area.style.display === 'none' ? 'block' : 'none';
+    if (area.style.display === 'block') {
+      document.getElementById('wineSearchInput').focus();
+    }
+  }
+
+  function onWineLinkSearch(val) {
+    document.getElementById('wineLinkResults').style.display = val.trim().length > 1 ? 'block' : 'none';
+  }
+
+  function linkExistingWine(name, meta) {
+    // Add linked wine card
+    const list = document.getElementById('linkedWineList');
+    const card = document.createElement('div');
+    card.className = 'rest-rec-wine-linked';
+    card.innerHTML = `
+      <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);">
+        <i data-lucide="wine" style="width:14px;height:14px;color:rgba(255,255,255,0.7);"></i>
+      </div>
+      <div class="rest-rec-wine-info">
+        <div class="rest-rec-wine-name">${name}</div>
+        <div class="rest-rec-wine-meta">${meta}</div>
+      </div>
+      <div class="rest-rec-wine-badge">연결됨</div>
+      <div class="rest-rec-comp-remove" onclick="this.closest('.rest-rec-wine-linked').remove()">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </div>`;
+    list.appendChild(card);
+    // Reset search
+    document.getElementById('wineSearchArea').style.display = 'none';
+    document.getElementById('wineSearchInput').value = '';
+    document.getElementById('wineLinkResults').style.display = 'none';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function linkNewWine() {
+    // Navigate to wine add flow, then return
+    document.getElementById('wineSearchArea').style.display = 'none';
+    recState.type = 'wine';
+    goToScreen('screen-add-wine');
+  }
+
+  function saveRestRecord() {
+    const name = document.getElementById('restRecName').textContent;
+    const meta = document.getElementById('restRecMeta').textContent;
+    showAddSuccess(name, meta, 'food');
+  }
+
   // Add wine flow
   function simulateWineScan() {
-    // Simulate camera scan → go to confirm
-    goToScreen('screen-add-wine-confirm');
+    document.getElementById('wineRecName').textContent = 'Chateau Margaux 2018';
+    document.getElementById('wineRecMeta').textContent = 'Red · Bordeaux · 2018';
+    goToScreen('screen-wine-record');
   }
+
+  // Wine record helpers
+  function toggleAromaSector(el) {
+    el.classList.toggle('active');
+  }
+
+  function toggleComplexity(el) {
+    el.classList.toggle('active');
+  }
+
+  function toggleWineRecScene(el) {
+    el.classList.toggle('selected');
+  }
+
+  function updateWineSlider(type, val) {
+    if (type === 'complexity') {
+      document.getElementById('wineComplexityVal').textContent = val;
+    } else if (type === 'balance') {
+      document.getElementById('wineBalanceVal').textContent = val;
+    }
+  }
+
+  function updateWineFinish(val) {
+    // Map 0~100 to seconds: 0→1초, 50→6초, 100→15초+
+    const sec = Math.round(1 + (val / 100) * 14);
+    document.getElementById('wineFinishSec').textContent = sec;
+  }
+
+  function saveWineRecord() {
+    const name = document.getElementById('wineRecName').textContent;
+    const meta = document.getElementById('wineRecMeta').textContent;
+    showAddSuccess(name, meta, 'wine');
+  }
+
+  // Wine quadrant — uses shared factory
+  createQuadInteraction({
+    dotId: 'wineRecDot', quadId: 'wineRecQuad', screenId: 'screen-wine-record',
+    valIds: { x: 'wrValAcid', y: 'wrValBody', sat: 'wrValSat' },
+  });
 
   function onAddWineSearch(val) {
     const hasVal = val.trim().length > 1;

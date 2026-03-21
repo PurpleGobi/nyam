@@ -50,12 +50,15 @@
     --caution:   #C9A96E;    /* 절제된 골드 */
     --negative:  #B87272;    /* 절제된 레드 */
 
-    /* ── Satisfaction Gauge (5단계, 뉴트럴→따뜻함) ── */
-    --gauge-1: #C4B5A8;   /* 1~30: 웜그레이 */
-    --gauge-2: #C9A96E;   /* 31~50: 머스타드 */
-    --gauge-3: #B8A078;   /* 51~70: 샌드 */
-    --gauge-4: #7EAE8B;   /* 71~85: 세이지 */
-    --gauge-5: #7A9BAE;   /* 86~100: 슬레이트 */
+    /* ── Satisfaction Gauge (Worst→Best 2색 연속 그라데이션) ── */
+    --gauge-worst: #C4B5A8;  /* Worst: 웜그레이 */
+    --gauge-best:  #7A9BAE;  /* Best: 슬레이트 */
+    /* 보간 예시 (JS에서 RGB 선형 보간) */
+    --gauge-1: #C4B5A8;   /* 점수 25 */
+    --gauge-2: #B0ADA4;   /* 점수 42 */
+    --gauge-3: #9FA5A3;   /* 점수 63 */
+    --gauge-4: #889DAB;   /* 점수 78 */
+    --gauge-5: #7A9BAE;   /* 점수 92 */
 
     /* ── Scene Tags (muted) ── */
     --scene-solo:     #7A9BAE;
@@ -716,11 +719,12 @@
 
 <div class="section">
   <div style="max-width:340px;display:flex;flex-direction:column;gap:12px;">
-    <div><div class="label">25 — 웜그레이</div><div class="gauge"><div class="gauge-fill" style="width:25%;background:var(--gauge-1);"></div><div class="gauge-label">25</div></div></div>
-    <div><div class="label">42 — 머스타드</div><div class="gauge"><div class="gauge-fill" style="width:42%;background:var(--gauge-2);"></div><div class="gauge-label">42</div></div></div>
-    <div><div class="label">63 — 샌드</div><div class="gauge"><div class="gauge-fill" style="width:63%;background:var(--gauge-3);"></div><div class="gauge-label">63</div></div></div>
-    <div><div class="label">78 — 세이지</div><div class="gauge"><div class="gauge-fill" style="width:78%;background:var(--gauge-4);"></div><div class="gauge-label">78</div></div></div>
-    <div><div class="label">92 — 슬레이트</div><div class="gauge"><div class="gauge-fill" style="width:92%;background:var(--gauge-5);"></div><div class="gauge-label">92</div></div></div>
+    <div style="margin-bottom:4px;font-size:11px;color:var(--text-hint);display:flex;justify-content:space-between;"><span>Worst #C4B5A8</span><span>→ 연속 보간 →</span><span>Best #7A9BAE</span></div>
+    <div><div class="label">25 — Worst</div><div class="gauge"><div class="gauge-fill" style="width:25%;background:var(--gauge-1);"></div><div class="gauge-label">25</div></div></div>
+    <div><div class="label">42</div><div class="gauge"><div class="gauge-fill" style="width:42%;background:var(--gauge-2);"></div><div class="gauge-label">42</div></div></div>
+    <div><div class="label">63</div><div class="gauge"><div class="gauge-fill" style="width:63%;background:var(--gauge-3);"></div><div class="gauge-label">63</div></div></div>
+    <div><div class="label">78</div><div class="gauge"><div class="gauge-fill" style="width:78%;background:var(--gauge-4);"></div><div class="gauge-label">78</div></div></div>
+    <div><div class="label">92 — Best</div><div class="gauge"><div class="gauge-fill" style="width:92%;background:var(--gauge-5);"></div><div class="gauge-label">92</div></div></div>
   </div>
   <div class="gauge-hints" style="max-width:340px;"><span>별로</span><span>최고</span></div>
   <div class="note">식당·와인 공통. 절제된 자연색 5단계.</div>
