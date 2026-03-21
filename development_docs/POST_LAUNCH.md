@@ -70,7 +70,6 @@ affects: Record, RestaurantDetail, WineDetail, Home
 affects: Record, Profile, Bubble, Home
 - XP 획득 테이블 (활동별 XP)
 - 레벨 테이블 (레벨-XP-색상)
-- 뱃지 조건 목록
 - 적립 로직 (어떤 축에 적립되는가)
 - 소셜 활용 규칙 (자동 가중치 아님, 필터/정렬만)
 
@@ -143,7 +142,7 @@ depends_on: DataModel, RatingEngine
 depends_on: RatingEngine, SearchRegister, DataModel
 - 식당 기록 플로우 (사분면 → 태그 → 확장 → 저장)
 - 와인 기록 플로우 (사분면 → 향 → 복합성 → 저장)
-- 저장 후 처리 (XP 적립, 뱃지 체크)
+- 저장 후 처리 (XP 적립, 레벨 체크)
 
 ## Restaurant Detail
 depends_on: DataModel, RatingEngine, DesignSystem
@@ -158,9 +157,9 @@ depends_on: DataModel, RatingEngine, DesignSystem
 - 데이터 소스 매핑
 
 ## Profile
-depends_on: DataModel, XP
-- 프로필 구성 (레벨, 뱃지, 사분면)
-- 위시리스트
+depends_on: DataModel, XP, Bubble
+- 프로필 구성 (미식 정체성, 레벨, 버블 활동)
+- Wrapped 공유 (개인정보/디테일 게이지)
 - 프라이버시 기본값
 
 ## Bubble (Phase 2)

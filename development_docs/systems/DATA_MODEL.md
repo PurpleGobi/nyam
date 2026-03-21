@@ -10,7 +10,6 @@
 users (1) ─── (N) records
 users (1) ─── (N) wishlists
 users (1) ─── (N) user_experience
-users (1) ─── (N) user_badges
 
 restaurants (1) ─── (N) records (target_type='restaurant')
 wines (1) ─── (N) records (target_type='wine')
@@ -56,7 +55,7 @@ CREATE TABLE restaurants (
   address TEXT,
   area VARCHAR(50),                -- 생활권 동네명 (광화문, 을지로 등)
   district VARCHAR(50),            -- 구 (종로구, 강남구 등)
-  genre VARCHAR(30),               -- 한식, 일식, 양식, 중식 등
+  genre VARCHAR(30),               -- CHECK: 한식/일식/양식/중식/이탈리안/프렌치/동남아/멕시칸
   price_range INT,                 -- 1~4 (₩~₩₩₩₩)
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
@@ -82,6 +81,8 @@ CREATE TABLE restaurants (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 가격대 필터 매핑: price_range 1=~2만, 2=2~5만, 3=5~10만, 4=10만+
+
 CREATE INDEX idx_restaurants_area ON restaurants(area);
 CREATE INDEX idx_restaurants_location ON restaurants USING gist(
   ST_MakePoint(lng, lat)
@@ -106,9 +107,11 @@ CREATE TABLE wines (
 
   -- 와인 DB 메타
   body_level INT,                  -- 1~5 (DB 기준, 사용자 평가와 별개)
-  acidity_level INT,               -- 1~5
+  acidity_level INT,               -- 1~3 (1=낮음, 2=중간, 3=높음)
+  sweetness_level INT,             -- 1~3 (1=드라이, 2=오프드라이, 3=스위트)
   food_pairings TEXT[],            -- ["steak", "lamb", "cheese"]
   serving_temp VARCHAR(20),        -- "16-18°C"
+  decanting VARCHAR(30),            -- "2시간 권장" 등
 
   external_id VARCHAR(100),
   cached_at TIMESTAMPTZ,
@@ -153,7 +156,7 @@ CREATE TABLE records (
   aroma_regions JSONB,             -- 향 팔레트 칠한 영역 좌표
   aroma_labels TEXT[],             -- 자동 추출된 향 라벨
   aroma_color VARCHAR(7),          -- 점 대표 색상 hex
-  complexity INT,                  -- 1~3 (1차/2차/3차 향)
+  complexity INT,                  -- 0~100 (단순↔복합, 슬라이더)
   finish DECIMAL(5,2),             -- 여운 0~100
   balance DECIMAL(5,2),            -- 균형 0~100
   auto_score INT,                  -- 자동 산출 만족도
@@ -161,8 +164,10 @@ CREATE TABLE records (
   -- 확장 (선택)
   comment VARCHAR(200),            -- 한줄평
   menu_tags TEXT[],                -- 추천 메뉴/페어링 메모
+  pairing_categories TEXT[],        -- WSET 페어링 카테고리 ['red_meat','cheese',...] — 와인 기록 전용
   tips TEXT,                       -- 사용팁
   companions TEXT[],               -- 함께 간 사람
+  companion_count INT,              -- 동반자 수 (1=혼자, 2, 3, 4, 5+) — 필터용
   price INT,                       -- 가격 (원) — 식당 결제 금액
   purchase_price INT,              -- 구매 가격 (원) — 와인 구매/병 단가. 월별 소비 추적용
 
@@ -220,8 +225,8 @@ CREATE TABLE wishlists (
 CREATE TABLE user_experience (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
-  axis_type VARCHAR(20) NOT NULL,   -- 'area' | 'genre' | 'wine_type' | 'wine_region'
-  axis_value VARCHAR(50) NOT NULL,  -- '을지로' | '일식' | 'red' | '프랑스'
+  axis_type VARCHAR(20) NOT NULL,   -- 'area' | 'genre' | 'wine_variety' | 'wine_region'
+  axis_value VARCHAR(50) NOT NULL,  -- '을지로' | '일식' | 'Cabernet Sauvignon' | '프랑스'
   total_xp INT DEFAULT 0,
   level INT DEFAULT 1,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -246,30 +251,12 @@ CREATE TABLE level_thresholds (
 );
 
 INSERT INTO level_thresholds VALUES
-  (1, 0, NULL), (2, 30, 'green'), (3, 80, 'green'),
-  (4, 160, 'blue'), (5, 280, 'blue'),
-  (6, 450, 'purple'), (7, 700, 'purple'),
-  (8, 1050, 'orange'), (9, 1500, 'orange'),
-  (10, 2100, 'gold');
+  (1, 0, NULL), (2, 40, 'green'), (3, 100, 'green'),
+  (4, 200, 'blue'), (5, 350, 'blue'),
+  (6, 560, 'purple'), (7, 850, 'purple'),
+  (8, 1250, 'orange'), (9, 1800, 'orange'),
+  (10, 2500, 'gold');
 
-CREATE TABLE badge_definitions (
-  id VARCHAR(50) PRIMARY KEY,
-  category VARCHAR(30),       -- 'exploration' | 'diversity' | 'depth' | 'social' | 'milestone'
-  name VARCHAR(50),
-  description TEXT,
-  condition_type VARCHAR(30),
-  condition_value INT,
-  badge_group VARCHAR(30),
-  stage INT,
-  icon_url TEXT
-);
-
-CREATE TABLE user_badges (
-  user_id UUID REFERENCES users(id),
-  badge_id VARCHAR(50) REFERENCES badge_definitions(id),
-  achieved_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY(user_id, badge_id)
-);
 ```
 
 ---
@@ -423,28 +410,49 @@ WHERE r.target_id = :wine_id
 ### 식당 상황 태그
 | 값 | 표시명 | 색상 |
 |----|--------|------|
-| `solo` | 혼밥 | `#3b82f6` (블루) |
-| `romantic` | 데이트 | `#ec4899` (핑크) |
-| `friends` | 친구 | `#22c55e` (그린) |
-| `family` | 가족 | `#f59e0b` (앰버) |
-| `business` | 회식/접대 | `#8b5cf6` (퍼플) |
-| `drinks` | 술자리 | `#ef4444` (레드) |
+| `solo` | 혼밥 | `#7A9BAE` (슬레이트) |
+| `romantic` | 데이트 | `#B8879B` (더스티 로즈) |
+| `friends` | 친구 | `#7EAE8B` (세이지) |
+| `family` | 가족 | `#C9A96E` (머스타드) |
+| `business` | 회식/접대 | `#8B7396` (모브) |
+| `drinks` | 술자리 | `#B87272` (로즈우드) |
 
 ### 와인 상황 태그
 | 값 | 표시명 | 색상 |
 |----|--------|------|
-| `solo` | 혼술 | `#3b82f6` |
-| `romantic` | 데이트 | `#ec4899` |
-| `gathering` | 모임 | `#22c55e` |
-| `pairing` | 페어링 | `#f97316` |
-| `gift` | 선물 | `#a855f7` |
-| `tasting` | 시음회 | `#06b6d4` |
+| `solo` | 혼술 | `#7A9BAE` (슬레이트) |
+| `romantic` | 데이트 | `#B8879B` (더스티 로즈) |
+| `gathering` | 모임 | `#7EAE8B` (세이지) |
+| `pairing` | 페어링 | `#C9A96E` (머스타드) |
+| `gift` | 선물 | `#8B7396` (모브) |
+| `tasting` | 시음회 | `#B87272` (로즈우드) |
+
+> 색상은 DESIGN_SYSTEM.md의 상황 태그 색상과 동일하게 유지. Tailwind 원색 사용 금지.
 
 ### wishlists vs reactions.bookmark vs records.wine_status='wishlist' 구분
 - **wishlists 테이블**: 사용자가 직접 식당/와인을 "찜". 상세 페이지의 하트 버튼, 프로필의 위시리스트
 - **reactions.bookmark**: 버블에서 다른 멤버의 기록을 보고 해당 식당/와인을 찜 → wishlists에 INSERT하는 트리거
 - **records.wine_status='wishlist'**: 와인 탭 내 3분류(시음/셀러/찜) 중 "찜" 필터. wishlists 테이블에서 target_type='wine'인 항목과 동기화
 - 즉, bookmark 리액션은 wishlists 생성의 진입점. 와인 찜은 wishlists + records.wine_status 양쪽에 반영. 최종 저장소는 항상 wishlists
+
+### 페어링 카테고리 ENUM (WSET 기반)
+
+와인 기록 시 선택하는 음식 매칭 카테고리. `records.pairing_categories TEXT[]`에 저장.
+
+| 값 | 표시명 | 예시 음식 |
+|----|--------|----------|
+| `red_meat` | 적색육 | 스테이크, 양갈비, 오리, 사슴 |
+| `white_meat` | 백색육 | 닭, 돼지, 송아지, 토끼 |
+| `seafood` | 어패류 | 생선, 갑각류, 조개, 굴, 초밥 |
+| `cheese` | 치즈·유제품 | 숙성 치즈, 블루, 브리, 크림소스 |
+| `vegetable` | 채소·곡물 | 버섯, 트러플, 리조또, 파스타 |
+| `spicy` | 매운·발효 | 커리, 마라, 김치, 된장 |
+| `dessert` | 디저트·과일 | 다크초콜릿, 타르트, 건과일 |
+| `charcuterie` | 샤퀴트리·견과 | 하몽, 살라미, 아몬드, 올리브 |
+
+- wines.food_pairings: 와인 DB 기본 추천 (외부 데이터)
+- records.pairing_categories: 사용자가 실제 경험한 페어링 (기록별)
+- 두 필드는 독립적: DB 추천 ≠ 사용자 경험
 
 ---
 

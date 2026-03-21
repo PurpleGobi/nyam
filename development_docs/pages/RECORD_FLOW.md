@@ -470,7 +470,6 @@ Phase 1(추가만)의 경우:
 4. record_photos INSERT (사진 있으면)
 5. XP 적립 (user_experience UPDATE)
 6. 레벨 체크 → 레벨업 알림 (있으면)
-7. 뱃지 조건 체크 → 달성 알림 (있으면)
 ```
 
 ---
