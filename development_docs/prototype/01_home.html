@@ -1246,12 +1246,115 @@
   }
 
   /* =====================
+     Progressive Disclosure Controls
+     ===================== */
+  .pd-control-panel {
+    position: absolute;
+    bottom: 90px;
+    left: 12px;
+    z-index: 40;
+    background: var(--bg-elevated);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 4px 24px rgba(61,56,51,0.15), 0 0 0 1px var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.25s;
+    max-width: 160px;
+  }
+  .pd-control-panel.collapsed {
+    max-width: 40px;
+    padding: 8px;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .pd-control-panel.collapsed .pd-body { display: none; }
+  .pd-control-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .pd-toggle-btn {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 10px; color: var(--text-sub);
+    flex-shrink: 0;
+  }
+  .pd-body { display: flex; flex-direction: column; gap: 4px; }
+  .pd-btn {
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .pd-btn:active { transform: scale(0.95); }
+  .pd-btn.active {
+    background: var(--wine-light);
+    border-color: var(--wine);
+    color: var(--wine);
+  }
+
+  /* Lock overlay for progressive disclosure */
+  .pd-section-wrap { position: relative; }
+  .pd-lock-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(248,246,243,0.85);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 5;
+    border-radius: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .pd-lock-overlay.locked {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .pd-lock-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--wine-light);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--wine);
+  }
+  .pd-lock-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* =====================
      FAB + Add Bottom Sheet
      ===================== */
   .fab-container {
     position: absolute;
-    bottom: 28px;
-    right: 20px;
+    bottom: 80px;
+    right: 16px;
     z-index: 30;
   }
 
@@ -3723,6 +3826,11 @@
             <div class="wine-divider"></div>
 
             <!-- 산지 지도 — 드릴다운: 세계 → 국가 → 산지 -->
+            <div class="pd-section-wrap" data-pd-min="5">
+            <div class="pd-lock-overlay" id="pdLockMap">
+              <div class="pd-lock-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <div class="pd-lock-text">기록 5개 이상일 때 표시</div>
+            </div>
             <div style="margin:18px 0 0;">
               <div style="padding:0 16px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
                 <button id="mapBackBtn" onclick="mapBack()" style="display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--text-sub);cursor:pointer;">← 뒤로</button>
@@ -3887,10 +3995,16 @@
 
               </div>
             </div>
+            </div><!-- /pd-section-wrap map -->
 
             <div class="wine-divider"></div>
 
             <!-- 품종 — 껍질 얇음→두꺼움 순, 토글로 미시음 숨김 -->
+            <div class="pd-section-wrap" data-pd-min="10">
+            <div class="pd-lock-overlay" id="pdLockVariety">
+              <div class="pd-lock-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <div class="pd-lock-text">기록 10개 이상일 때 표시</div>
+            </div>
             <div style="margin:20px 16px 0;">
               <div class="wine-section-label">품종</div>
             </div>
@@ -3926,11 +4040,17 @@
               <div class="variety-row empty" onclick="filterByVariety('타나')"><div class="variety-name">타나</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;"></div></div><div class="variety-count">—</div></div>
               <div class="variety-row empty" onclick="filterByVariety('프티 베르도')"><div class="variety-name">프티 베르도</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;"></div></div><div class="variety-count">—</div></div>
             </div>
+            </div><!-- /pd-section-wrap variety -->
 
             <div class="wine-divider"></div>
 
             <!-- 점수 분포: 6등분, 병수 기준 (max=6병) -->
             <!-- 데이터: ~49=0, 50s=0, 60s=0, 70s=1, 80s=5, 90s=6 -->
+            <div class="pd-section-wrap" data-pd-min="10">
+            <div class="pd-lock-overlay" id="pdLockScore">
+              <div class="pd-lock-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <div class="pd-lock-text">기록 10개 이상일 때 표시</div>
+            </div>
             <div class="wine-filter-section">
               <div class="wine-section-label">점수 분포</div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:0 16px;">
@@ -3973,11 +4093,17 @@
                 <div style="flex:1;text-align:center;font-size:9px;color:var(--text-hint);">90s</div>
               </div>
             </div>
+            </div><!-- /pd-section-wrap score -->
 
             <div class="wine-divider"></div>
 
             <!-- 월별 소비: 6개월, 병수 기준 (max=4병), 금액 스티커 -->
             <!-- 데이터: 10월1/8만, 11월2/22만, 12월1/12만, 1월3/32만, 2월1/14만, 3월4/36만 -->
+            <div class="pd-section-wrap" data-pd-min="20">
+            <div class="pd-lock-overlay" id="pdLockMonthly">
+              <div class="pd-lock-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <div class="pd-lock-text">기록 20개 이상일 때 표시</div>
+            </div>
             <div class="wine-filter-section">
               <div class="wine-section-label">월별 소비 <small style="font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:0 16px;">
@@ -4017,8 +4143,24 @@
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">3월</div><div style="font-size:8px;font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">36만</div></div>
               </div>
             </div>
+            </div><!-- /pd-section-wrap monthly -->
 
             <div style="height:80px;"></div>
+          </div>
+        </div>
+
+        <!-- Progressive Disclosure Demo Control -->
+        <div class="pd-control-panel" id="pdControlPanel">
+          <div class="pd-control-label" onclick="togglePdPanel()">
+            <div class="pd-toggle-btn" id="pdToggleIcon">&#9881;</div>
+            <span>기록 시뮬레이션</span>
+          </div>
+          <div class="pd-body" id="pdBody">
+            <div class="pd-btn active" data-count="25" onclick="setPdCount(25, this)">25개 (전체)</div>
+            <div class="pd-btn" data-count="15" onclick="setPdCount(15, this)">15개</div>
+            <div class="pd-btn" data-count="7" onclick="setPdCount(7, this)">7개</div>
+            <div class="pd-btn" data-count="3" onclick="setPdCount(3, this)">3개</div>
+            <div class="pd-btn" data-count="0" onclick="setPdCount(0, this)">0개</div>
           </div>
         </div>
 
@@ -5914,6 +6056,52 @@
     document.getElementById('recSceneNext').disabled=true;document.getElementById('recWineSceneNext').disabled=true;
     document.getElementById('recMoreToggle').classList.remove('open');document.getElementById('recMoreFields').classList.remove('open');
   }
+
+  // =============================================
+  // PROGRESSIVE DISCLOSURE DEMO
+  // =============================================
+  let pdRecordCount = 25; // default: all unlocked
+  let pdPanelOpen = true;
+
+  function togglePdPanel() {
+    pdPanelOpen = !pdPanelOpen;
+    const panel = document.getElementById('pdControlPanel');
+    if (pdPanelOpen) {
+      panel.classList.remove('collapsed');
+    } else {
+      panel.classList.add('collapsed');
+    }
+  }
+
+  function setPdCount(count, el) {
+    pdRecordCount = count;
+    // Update active button
+    document.querySelectorAll('.pd-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    // Apply lock/unlock to each section
+    applyProgressiveDisclosure();
+  }
+
+  function applyProgressiveDisclosure() {
+    const sections = [
+      { id: 'pdLockMap', min: 5 },
+      { id: 'pdLockVariety', min: 10 },
+      { id: 'pdLockScore', min: 10 },
+      { id: 'pdLockMonthly', min: 20 },
+    ];
+    sections.forEach(s => {
+      const overlay = document.getElementById(s.id);
+      if (!overlay) return;
+      if (pdRecordCount < s.min) {
+        overlay.classList.add('locked');
+      } else {
+        overlay.classList.remove('locked');
+      }
+    });
+  }
+
+  // Initialize: all unlocked (25 records)
+  applyProgressiveDisclosure();
 </script>
 </body>
 </html>

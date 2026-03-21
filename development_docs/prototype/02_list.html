@@ -246,6 +246,15 @@
 
   .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
+  .dropdown-back {
+    padding: 6px 12px; font-size: 13px; color: var(--text-sub);
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    font-weight: 600; transition: background 0.08s;
+  }
+  .dropdown-back:hover { background: var(--bg-page); }
+  .dropdown-back:active { background: var(--border); }
+  .dropdown-back-icon { display: flex; align-items: center; color: var(--text-hint); }
+
   .dropdown-search {
     margin: 4px 8px; padding: 6px 8px;
     border: 1px solid var(--border); border-radius: 6px;
@@ -390,29 +399,9 @@
             <i data-lucide="filter" style="width:14px;height:14px;"></i>
             <span id="filterBtnLabel">필터</span>
           </button>
-          <!-- Filter property picker dropdown -->
+          <!-- Filter property picker dropdown (2-level) -->
           <div class="dropdown" id="filterDropdown">
-            <div class="dropdown-header">필터 추가</div>
-            <div class="dropdown-item" onclick="addFilter('status')">
-              <span>상태</span>
-              <span class="dropdown-item-icon"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></span>
-            </div>
-            <div class="dropdown-item" onclick="addFilter('scene')" id="filterOptScene">
-              <span>상황</span>
-              <span class="dropdown-item-icon"><i data-lucide="tag" style="width:14px;height:14px;"></i></span>
-            </div>
-            <div class="dropdown-item" onclick="addFilter('genre')" id="filterOptGenre">
-              <span id="filterOptGenreLabel">장르</span>
-              <span class="dropdown-item-icon"><i data-lucide="utensils" style="width:14px;height:14px;"></i></span>
-            </div>
-            <div class="dropdown-item" onclick="addFilter('area')" id="filterOptArea">
-              <span id="filterOptAreaLabel">지역</span>
-              <span class="dropdown-item-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></span>
-            </div>
-            <div class="dropdown-item" onclick="addFilter('score')">
-              <span>점수</span>
-              <span class="dropdown-item-icon"><i data-lucide="bar-chart-3" style="width:14px;height:14px;"></i></span>
-            </div>
+            <div id="filterDropdownContent"></div>
           </div>
         </div>
 
@@ -705,11 +694,7 @@ function switchTab(tab) {
   document.getElementById('wineList').style.display = tab === 'wine' ? '' : 'none';
   document.getElementById('resultCount').textContent = tab === 'food' ? '24건' : '18건';
 
-  // Update filter options for tab context
-  document.getElementById('filterOptGenreLabel').textContent = tab === 'wine' ? '타입' : '장르';
-  document.getElementById('filterOptAreaLabel').textContent = tab === 'wine' ? '산지' : '지역';
-
-  // Clear filters on tab switch
+  // Clear filters on tab switch (dropdown content rebuilds on next open)
   clearAllFilters();
 
   // Reset sort visual
@@ -732,8 +717,14 @@ function toggleDropdown(id) {
   if (openDropdownId && openDropdownId !== id) {
     document.getElementById(openDropdownId).classList.remove('open');
   }
+  const wasOpen = dd.classList.contains('open');
   dd.classList.toggle('open');
   openDropdownId = dd.classList.contains('open') ? id : null;
+
+  // Reset filter dropdown to property level when opening
+  if (id === 'filterDropdown' && !wasOpen) {
+    renderFilterDropdownProps();
+  }
 }
 
 // Close dropdowns on outside click
@@ -764,34 +755,76 @@ function selectSort(el, label) {
 // ===========================
 const filterConfig = {
   food: {
-    status: { label: '상태', values: ['방문', '찜', '추천'] },
-    scene: { label: '상황', values: ['혼밥', '데이트', '친구', '가족', '회식', '술자리'] },
-    genre: { label: '장르', values: ['한식', '일식', '양식', '중식', '이탈리안', '프렌치'] },
-    area: { label: '지역', values: ['강남', '을지로', '청담', '이태원', '홍대', '광화문'] },
-    score: { label: '점수', values: ['90+', '80~89', '70~79', '~69'] },
+    status: { label: '상태', icon: 'circle-dot', values: ['방문', '찜', '추천'] },
+    scene: { label: '상황', icon: 'tag', values: ['혼밥', '데이트', '친구', '가족', '회식', '술자리'] },
+    genre: { label: '장르', icon: 'utensils', values: ['한식', '일식', '양식', '중식', '이탈리안', '프렌치'] },
+    area: { label: '지역', icon: 'map-pin', values: ['강남', '을지로', '청담', '이태원', '홍대', '광화문'] },
+    score: { label: '점수', icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
   },
   wine: {
-    status: { label: '상태', values: ['시음', '찜', '셀러'] },
-    scene: { label: '상황', values: ['혼술', '데이트', '모임', '페어링', '선물', '시음회'] },
-    genre: { label: '타입', values: ['Red', 'White', 'Rosé', 'Sparkling', 'Dessert'] },
-    area: { label: '산지', values: ['France', 'Italy', 'USA', 'Chile', 'Australia', 'NZ'] },
-    score: { label: '점수', values: ['90+', '80~89', '70~79', '~69'] },
+    status: { label: '상태', icon: 'circle-dot', values: ['시음', '찜', '셀러'] },
+    scene: { label: '상황', icon: 'tag', values: ['혼술', '데이트', '모임', '페어링', '선물', '시음회'] },
+    genre: { label: '타입', icon: 'wine', values: ['Red', 'White', 'Rosé', 'Sparkling', 'Dessert'] },
+    area: { label: '산지', icon: 'globe', values: ['France', 'Italy', 'USA', 'Chile', 'Australia', 'NZ'] },
+    score: { label: '점수', icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
   },
 };
 
 let activeFilters = []; // { id, prop, value }
 let filterConjunction = 'and'; // 'and' | 'or' — Notion-style: all rules share same conjunction
+let filterDropdownLevel = 'props'; // 'props' | 'values'
+let filterDropdownSelectedProp = null;
 
-function addFilter(prop) {
-  toggleDropdown('filterDropdown');
+function renderFilterDropdownProps() {
+  filterDropdownLevel = 'props';
+  filterDropdownSelectedProp = null;
+  const config = filterConfig[currentTab];
+  const container = document.getElementById('filterDropdownContent');
+  container.innerHTML = `
+    <div class="dropdown-header">필터 추가</div>
+    ${Object.keys(config).map(prop => {
+      const c = config[prop];
+      return `<div class="dropdown-item" onclick="showFilterValues('${prop}')">
+        <span>${c.label}</span>
+        <span class="dropdown-item-icon"><i data-lucide="${c.icon}" style="width:14px;height:14px;"></i></span>
+      </div>`;
+    }).join('')}
+  `;
+  lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
+}
 
+function showFilterValues(prop) {
+  filterDropdownLevel = 'values';
+  filterDropdownSelectedProp = prop;
+  const config = filterConfig[currentTab][prop];
+  if (!config) return;
+  const container = document.getElementById('filterDropdownContent');
+  const isWine = currentTab === 'wine';
+  container.innerHTML = `
+    <div class="dropdown-back" onclick="renderFilterDropdownProps()">
+      <span class="dropdown-back-icon"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i></span>
+      <span>${config.label}</span>
+    </div>
+    <div class="dropdown-divider"></div>
+    ${config.values.map(val => {
+      return `<div class="dropdown-item" onclick="selectFilterValue('${prop}','${val}')">
+        <span>${val}</span>
+      </div>`;
+    }).join('')}
+  `;
+  lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
+}
+
+function selectFilterValue(prop, value) {
   const config = filterConfig[currentTab][prop];
   if (!config) return;
 
   const id = 'rule-' + (++filterRuleCount);
-  const defaultValue = config.values[0];
-  activeFilters.push({ id, prop, value: defaultValue });
+  activeFilters.push({ id, prop, value });
 
+  // Close dropdown and reset to props level
+  toggleDropdown('filterDropdown');
+  renderFilterDropdownProps();
   renderFilterRules();
   updateFilterBtn();
 }
@@ -901,7 +934,10 @@ function closeSearch() {
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+document.addEventListener('DOMContentLoaded', () => {
+  renderFilterDropdownProps();
+  lucide.createIcons();
+});
 </script>
 </body>
 </html>

@@ -146,6 +146,7 @@
 | 찜 | `heart` | `--caution` |
 | 평점 | `star` | `--caution` |
 | 뒤로 | `chevron-left` | `--text` |
+| 앞으로 | `chevron-right` | `--text` |
 | 닫기 | `x` | `--text-hint` |
 | 추가 | `plus` | `--text` |
 | 확인 | `check` | `--positive` |

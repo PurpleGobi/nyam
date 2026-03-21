@@ -380,9 +380,66 @@
 
   .loading-pulse { animation: pulse 1.5s ease infinite; }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  /* ============================================
+     DARK MODE
+     ============================================ */
+  [data-theme="dark"] {
+    --bg:          #1E1C1A;
+    --bg-card:     #2A2725;
+    --bg-elevated: #333029;
+    --bg-page:     #141210;
+    --text:        #E0DDD9;
+    --text-sub:    #9C9690;
+    --text-hint:   #6B6560;
+    --border:      #3A3632;
+    --border-bold: #4A4640;
+  }
+
+  /* Dark mode toggle */
+  .theme-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    padding: 10px 16px; border-radius: var(--r-full);
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: var(--font);
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s;
+  }
+  .theme-toggle:hover { border-color: var(--border-bold); }
+
+  /* ============================================
+     SHADOW DEMO
+     ============================================ */
+  .shadow-demo {
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .shadow-box {
+    width: 140px; padding: 20px 12px; border-radius: var(--r-lg);
+    background: var(--bg-card); text-align: center;
+    border: 1px solid var(--border);
+  }
+  .shadow-box-name { font-size: 11px; font-weight: 700; color: var(--text-sub); margin-bottom: 4px; }
+  .shadow-box-use { font-size: 10px; color: var(--text-hint); }
+
+  /* ============================================
+     DOT SIZE DEMO
+     ============================================ */
+  .dot-demo {
+    display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end;
+    justify-content: center;
+  }
+  .dot-item {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .dot-circle { border-radius: 50%; }
+  .dot-label { font-size: 11px; font-weight: 600; color: var(--text-sub); }
+  .dot-range { font-size: 10px; color: var(--text-hint); }
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌙 다크모드</button>
 
 <div class="page-title"><span>nyam</span> Design System</div>
 <div class="page-subtitle">조용한 개인 컬렉션 — 재사용 가능한 요소 기반 디자인 시스템</div>
@@ -836,9 +893,88 @@
   </div>
 </div>
 
+<!-- ============================================ -->
+<h2>14. Shadows</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="shadow-demo">
+    <div class="shadow-box" style="box-shadow:var(--shadow-sm);border:none;">
+      <div class="shadow-box-name">--shadow-sm</div>
+      <div class="shadow-box-use">거의 사용 안 함</div>
+    </div>
+    <div class="shadow-box" style="box-shadow:var(--shadow-md);border:none;">
+      <div class="shadow-box-name">--shadow-md</div>
+      <div class="shadow-box-use">필요시 카드</div>
+    </div>
+    <div class="shadow-box" style="box-shadow:var(--shadow-lg);border:none;">
+      <div class="shadow-box-name">--shadow-lg</div>
+      <div class="shadow-box-use">토스트</div>
+    </div>
+    <div class="shadow-box" style="box-shadow:var(--shadow-sheet);border:none;">
+      <div class="shadow-box-name">--shadow-sheet</div>
+      <div class="shadow-box-use">바텀시트 (위로 그림자)</div>
+    </div>
+  </div>
+  <div class="note">카드는 기본적으로 shadow 없이 border만 사용. 그림자는 절제 — 시트/토스트 전용.</div>
+</div>
+
+<!-- ============================================ -->
+<h2>15. Dot Size Mapping (만족도 → 사분면 점)</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="dot-demo">
+    <div class="dot-item">
+      <div class="dot-circle" style="width:14px;height:14px;background:var(--gauge-1);"></div>
+      <div class="dot-label">14px</div>
+      <div class="dot-range">만족도 10</div>
+      <div class="dot-range">1~20</div>
+    </div>
+    <div class="dot-item">
+      <div class="dot-circle" style="width:20px;height:20px;background:var(--gauge-2);"></div>
+      <div class="dot-label">20px</div>
+      <div class="dot-range">만족도 30</div>
+      <div class="dot-range">21~40</div>
+    </div>
+    <div class="dot-item">
+      <div class="dot-circle" style="width:26px;height:26px;background:var(--gauge-3);"></div>
+      <div class="dot-label">26px</div>
+      <div class="dot-range">만족도 50</div>
+      <div class="dot-range">41~60</div>
+    </div>
+    <div class="dot-item">
+      <div class="dot-circle" style="width:36px;height:36px;background:var(--gauge-4);"></div>
+      <div class="dot-label">36px</div>
+      <div class="dot-range">만족도 70</div>
+      <div class="dot-range">61~80</div>
+    </div>
+    <div class="dot-item">
+      <div class="dot-circle" style="width:48px;height:48px;background:var(--gauge-5);"></div>
+      <div class="dot-label">48px</div>
+      <div class="dot-range">만족도 90</div>
+      <div class="dot-range">81~100</div>
+    </div>
+  </div>
+  <div class="note">만족도가 높을수록 점이 크고 색이 진해짐. 사분면(quadrant) UI에서 식당/와인 점 표시에 사용.</div>
+</div>
+
 <script>
   // Initialize Lucide icons
   lucide.createIcons();
+
+  // Dark mode toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.querySelector('.theme-toggle');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.removeAttribute('data-theme');
+      btn.textContent = '🌙 다크모드';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️ 라이트모드';
+    }
+  }
 </script>
 </body>
 </html>

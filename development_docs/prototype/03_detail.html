@@ -1008,6 +1008,56 @@
 
   /* Bottom spacer */
   .bottom-spacer { height: 80px; }
+
+  /* =====================
+     EMPTY STATE
+     ===================== */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .empty-state i { margin-bottom: 8px; }
+  .empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-top: 4px;
+  }
+  .empty-desc {
+    font-size: 12px;
+    color: var(--text-hint);
+    margin-top: 4px;
+  }
+  .empty-cta {
+    margin-top: 12px;
+  }
+
+  /* Empty state toggle */
+  .empty-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .empty-toggle-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .empty-toggle-btn:hover { background: var(--border); }
+  .empty-toggle-btn.active-empty {
+    background: var(--caution);
+    border-color: var(--caution);
+    color: #fff;
+  }
 </style>
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -1024,6 +1074,13 @@
   </button>
   <button class="tab-btn wine-tab" onclick="switchTab('wine', this)">
     <i data-lucide="wine" style="width:14px;height:14px;"></i> Chateau Margaux
+  </button>
+</div>
+
+<!-- Empty State Toggle -->
+<div class="empty-toggle-wrap">
+  <button class="empty-toggle-btn" id="emptyToggleBtn" onclick="toggleEmptyState()">
+    <i data-lucide="eye-off" style="width:12px;height:12px;"></i> 빈 상태 보기
   </button>
 </div>
 
@@ -1337,6 +1394,139 @@
     </div>
 
     <!-- ============================================================ -->
+    <!-- SCREEN 1-EMPTY: RESTAURANT DETAIL (Empty State)              -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-restaurant-empty">
+      <div class="scroll-content">
+
+        <!-- Scroll Header -->
+        <div class="scroll-header">
+          <button class="header-icon-btn" onclick="history.back()">
+            <i data-lucide="chevron-left" style="width:20px;height:20px;"></i>
+          </button>
+          <span class="header-name">스시코우지</span>
+          <button class="header-icon-btn">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 1: Hero Carousel (same) -->
+        <div class="hero-carousel">
+          <div class="carousel-track">
+            <div class="carousel-slide slide-1"></div>
+          </div>
+        </div>
+
+        <!-- Layer 2: Identity (same) -->
+        <div class="identity-section">
+          <div class="place-name">스시코우지</div>
+          <div class="place-meta">
+            <span class="meta-cat">일식 · 을지로</span>
+            <span class="meta-price">₩₩₩</span>
+          </div>
+        </div>
+
+        <!-- Layer 3: Score — no personal score yet -->
+        <div class="score-section">
+          <div class="score-row">
+            <div class="score-left">
+              <div class="big-score" style="color: var(--text-hint);">—</div>
+              <div class="score-caption">아직 기록 없음</div>
+            </div>
+            <div class="platform-scores">
+              <div class="platform-score"><span class="pn">N</span><span class="p-val"> 4.3</span></div>
+              <div class="platform-score"><span class="pk">K</span><span class="p-val"> 4.1</span></div>
+              <div class="platform-score"><span class="pg">G</span><span class="p-val"> 4.4</span></div>
+            </div>
+          </div>
+          <div class="badges-row">
+            <span class="badge badge-michelin">
+              <i data-lucide="star" style="width:12px;height:12px;"></i> 미슐랭 1스타
+            </span>
+          </div>
+        </div>
+
+        <!-- Layer 4: Action Bar -->
+        <div class="action-bar">
+          <button class="btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 5: 나의 기록 — Empty -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+          </div>
+          <div class="empty-state">
+            <i data-lucide="search" style="width:28px;height:28px;color:var(--text-hint);"></i>
+            <div class="empty-title">아직 방문 기록이 없어요</div>
+            <div class="empty-desc">첫 기록을 남겨보세요</div>
+            <div class="empty-cta">
+              <button class="btn-primary" style="display:inline-flex;flex:none;padding:10px 24px;">첫 기록 남기기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 6: Quadrant — hidden (< 2 records) -->
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Practical Info (same) -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">정보</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              서울 중구 을지로 XX길 12
+              <div class="map-placeholder">
+                <i data-lucide="map" style="width:24px;height:24px;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="clock" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              <span class="info-green">영업 중</span> · 11:30–22:00
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="phone" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">02-1234-5678</div>
+            <span class="info-action">전화하기</span>
+          </div>
+        </div>
+
+        <!-- Layer 8: Wine Connection — hidden (no wine records) -->
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble — Empty -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <div class="empty-state">
+            <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
+            <div class="empty-title">아직 버블 기록이 없어요</div>
+            <div class="empty-desc">버블에서 이 식당에 대한 이야기를 나눠보세요</div>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
     <!-- SCREEN 2: WINE DETAIL                                        -->
     <!-- ============================================================ -->
     <div class="screen" id="screen-wine">
@@ -1601,6 +1791,138 @@
       </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- SCREEN 2-EMPTY: WINE DETAIL (Empty State)                    -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-wine-empty">
+      <div class="scroll-content">
+
+        <!-- Scroll Header -->
+        <div class="scroll-header">
+          <button class="header-icon-btn" onclick="history.back()" style="background: rgba(240,236,243,0.95);">
+            <i data-lucide="chevron-left" style="width:20px;height:20px;"></i>
+          </button>
+          <span class="header-name" style="color: var(--wine);">Chateau Margaux</span>
+          <button class="header-icon-btn" style="background: rgba(240,236,243,0.95);">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 1+2: Label + Identity (same) -->
+        <div class="wine-identity-wrap" style="margin-top: -52px; padding-top: 68px;">
+          <div class="wine-label-img">
+            <i data-lucide="wine" style="width:28px;height:28px;"></i>
+          </div>
+          <div class="wine-info-right">
+            <div class="wine-name">Chateau Margaux</div>
+            <div class="wine-producer">Chateau Margaux</div>
+            <div class="wine-origin">Bordeaux, France</div>
+            <div class="wine-vintage">2018</div>
+            <div class="wine-chips">
+              <span class="wine-chip-red">레드</span>
+            </div>
+            <div class="wine-grape">Cabernet Sauvignon, Merlot</div>
+          </div>
+        </div>
+
+        <!-- Layer 3: Score — no personal score -->
+        <div class="score-section" style="background: var(--wine-light);">
+          <div class="score-row">
+            <div class="score-left">
+              <div class="big-score wine-score" style="color: var(--text-hint);">—</div>
+              <div class="score-caption">아직 기록 없음</div>
+            </div>
+            <div>
+              <span class="badge badge-wine-spec">
+                <i data-lucide="award" style="width:12px;height:12px;"></i> Grand Cru Classe
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 4: Action Bar -->
+        <div class="action-bar" style="background: var(--wine-light); border-color: #DDD6E3;">
+          <button class="btn-primary wine-btn">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
+          </button>
+          <button class="btn-icon" style="border-color: #DDD6E3;">
+            <i data-lucide="heart" style="width:18px;height:18px;"></i>
+          </button>
+          <button class="btn-icon" style="border-color: #DDD6E3;">
+            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+
+        <!-- Layer 5: Quadrant — hidden (< 2 records) -->
+
+        <!-- Layer 5b: Food Pairing (DB data, shown even when empty) -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">음식 페어링</span>
+          </div>
+          <div class="pairing-tags">
+            <span class="pairing-tag">스테이크</span>
+            <span class="pairing-tag">양갈비</span>
+            <span class="pairing-tag">숙성 치즈</span>
+            <span class="pairing-tag">트러플 파스타</span>
+            <span class="pairing-tag">다크 초콜릿</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 6: 나의 기록 — Empty -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+          </div>
+          <div class="empty-state">
+            <i data-lucide="search" style="width:28px;height:28px;color:var(--text-hint);"></i>
+            <div class="empty-title">아직 기록이 없어요</div>
+            <div class="empty-desc">첫 기록을 남겨보세요</div>
+            <div class="empty-cta">
+              <button class="btn-primary wine-btn" style="display:inline-flex;flex:none;padding:10px 24px;">첫 기록 남기기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Wine Facts (DB data, shown even when empty) -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">와인 정보</span>
+          </div>
+          <table class="fact-table">
+            <tr><td>품종</td><td>Cabernet Sauvignon 75%, Merlot 20%, Petit Verdot 5%</td></tr>
+            <tr><td>산지</td><td>프랑스 보르도 메독</td></tr>
+            <tr><td>알코올</td><td>14.5%</td></tr>
+            <tr><td>적정 온도</td><td>16–18°C</td></tr>
+            <tr><td>디캔팅</td><td>2시간 권장</td></tr>
+          </table>
+        </div>
+
+        <!-- Layer 8: Connected Restaurants — hidden (no records) -->
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble — Empty -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <div class="empty-state">
+            <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
+            <div class="empty-title">아직 버블 기록이 없어요</div>
+            <div class="empty-desc">버블에서 이 와인에 대한 이야기를 나눠보세요</div>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1777,6 +2099,51 @@
     parent.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('wine-active'));
     btn.classList.add('wine-active');
   }
+
+  // ============================================================
+  // EMPTY STATE TOGGLE
+  // ============================================================
+  let emptyMode = false;
+  function toggleEmptyState() {
+    emptyMode = !emptyMode;
+    const btn = document.getElementById('emptyToggleBtn');
+
+    if (emptyMode) {
+      btn.classList.add('active-empty');
+      btn.innerHTML = '<i data-lucide="eye" style="width:12px;height:12px;"></i> 데이터 있는 상태 보기';
+    } else {
+      btn.classList.remove('active-empty');
+      btn.innerHTML = '<i data-lucide="eye-off" style="width:12px;height:12px;"></i> 빈 상태 보기';
+    }
+
+    // Determine which tab is active
+    const restTab = document.querySelectorAll('.tab-btn')[0];
+    const isRestaurant = restTab.classList.contains('active');
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    if (isRestaurant) {
+      document.getElementById(emptyMode ? 'screen-restaurant-empty' : 'screen-restaurant').classList.add('active');
+    } else {
+      document.getElementById(emptyMode ? 'screen-wine-empty' : 'screen-wine').classList.add('active');
+    }
+
+    lucide.createIcons();
+  }
+
+  // Override switchTab to respect empty mode
+  const _origSwitchTab = switchTab;
+  switchTab = function(screenId, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const suffix = emptyMode ? '-empty' : '';
+    document.getElementById('screen-' + screenId + suffix).classList.add('active');
+
+    const scroll = document.getElementById(screenId === 'restaurant' ? 'rest-scroll' : 'wine-scroll');
+    if (scroll) scroll.scrollTop = 0;
+  };
 
   // Initialize Lucide icons
   document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
