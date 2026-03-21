@@ -264,6 +264,72 @@
   .dropdown-search:focus { border-color: var(--primary); }
 
   /* =====================
+     FILTER SLIDE PANEL
+     ===================== */
+  .filter-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-panel.open {
+    max-height: 500px;
+  }
+  .filter-panel-inner {
+    padding: 12px 16px 16px;
+  }
+  .filter-section {
+    margin-bottom: 12px;
+  }
+  .filter-section:last-child { margin-bottom: 0; }
+  .filter-section-title {
+    font-size: 11px; font-weight: 700; color: var(--text-hint);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .filter-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .filter-chip {
+    padding: 5px 12px; border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 12px; font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-chip:active { transform: scale(0.95); }
+  .filter-chip.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+  .filter-chip.wine-active {
+    border-color: var(--wine);
+    background: var(--wine-light);
+    color: var(--wine);
+  }
+  .filter-panel-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .filter-reset-btn {
+    font-size: 12px; color: var(--text-hint); cursor: pointer;
+    background: none; border: none; font-weight: 600;
+    font-family: inherit;
+  }
+  .filter-reset-btn:hover { color: var(--text-sub); }
+  .filter-apply-btn {
+    padding: 6px 20px; border-radius: 50px; border: none;
+    background: var(--primary); color: white;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .filter-apply-btn.wine-style { background: var(--wine); }
+
+  /* =====================
      COMPACT LIST
      ===================== */
   .compact-list { padding: 0 16px; }
@@ -391,16 +457,11 @@
     <!-- Notion-style Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <div class="dropdown-anchor">
-          <button class="toolbar-btn" id="filterBtn" onclick="toggleDropdown('filterDropdown')">
-            <i data-lucide="filter" style="width:14px;height:14px;"></i>
-            <span id="filterBtnLabel">필터</span>
-          </button>
-          <!-- Filter property picker dropdown (2-level) -->
-          <div class="dropdown" id="filterDropdown">
-            <div id="filterDropdownContent"></div>
-          </div>
-        </div>
+        <button class="toolbar-btn" id="filterBtn" onclick="toggleFilterPanel()">
+          <i data-lucide="filter" style="width:14px;height:14px;"></i>
+          <span id="filterBtnLabel">필터</span>
+          <i data-lucide="chevron-down" id="filterChevron" style="width:12px;height:12px;transition:transform 0.2s;"></i>
+        </button>
 
         <div class="dropdown-anchor">
           <button class="toolbar-btn" id="sortBtn" onclick="toggleDropdown('sortDropdown')">
@@ -435,6 +496,13 @@
       </div>
 
       <span class="toolbar-count" id="resultCount">24건</span>
+    </div>
+
+    <!-- Filter slide panel -->
+    <div class="filter-panel" id="filterPanel">
+      <div class="filter-panel-inner" id="filterPanelContent">
+        <!-- Content rendered by JS based on current tab -->
+      </div>
     </div>
 
     <!-- Active filter rules (Notion inline style) -->
@@ -691,7 +759,11 @@ function switchTab(tab) {
   document.getElementById('wineList').style.display = tab === 'wine' ? '' : 'none';
   document.getElementById('resultCount').textContent = tab === 'food' ? '24건' : '18건';
 
-  // Clear filters on tab switch (dropdown content rebuilds on next open)
+  // Close filter panel and clear filters on tab switch
+  const panel = document.getElementById('filterPanel');
+  const chevron = document.getElementById('filterChevron');
+  panel.classList.remove('open');
+  chevron.style.transform = 'rotate(0)';
   clearAllFilters();
 
   // Reset sort visual
@@ -714,14 +786,8 @@ function toggleDropdown(id) {
   if (openDropdownId && openDropdownId !== id) {
     document.getElementById(openDropdownId).classList.remove('open');
   }
-  const wasOpen = dd.classList.contains('open');
   dd.classList.toggle('open');
   openDropdownId = dd.classList.contains('open') ? id : null;
-
-  // Reset filter dropdown to property level when opening
-  if (id === 'filterDropdown' && !wasOpen) {
-    renderFilterDropdownProps();
-  }
 }
 
 // Close dropdowns on outside click
@@ -769,61 +835,66 @@ const filterConfig = {
 
 let activeFilters = []; // { id, prop, value }
 let filterConjunction = 'and'; // 'and' | 'or' — Notion-style: all rules share same conjunction
-let filterDropdownLevel = 'props'; // 'props' | 'values'
-let filterDropdownSelectedProp = null;
 
-function renderFilterDropdownProps() {
-  filterDropdownLevel = 'props';
-  filterDropdownSelectedProp = null;
+// ===========================
+// Filter Slide Panel
+// ===========================
+function toggleFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  const chevron = document.getElementById('filterChevron');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    renderFilterPanel();
+    chevron.style.transform = 'rotate(180deg)';
+  } else {
+    chevron.style.transform = 'rotate(0)';
+  }
+}
+
+function renderFilterPanel() {
   const config = filterConfig[currentTab];
-  const container = document.getElementById('filterDropdownContent');
-  container.innerHTML = `
-    <div class="dropdown-header">필터 추가</div>
-    ${Object.keys(config).map(prop => {
-      const c = config[prop];
-      return `<div class="dropdown-item" onclick="showFilterValues('${prop}')">
-        <span>${c.label}</span>
-        <span class="dropdown-item-icon"><i data-lucide="${c.icon}" style="width:14px;height:14px;"></i></span>
-      </div>`;
-    }).join('')}
-  `;
-  lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
-}
-
-function showFilterValues(prop) {
-  filterDropdownLevel = 'values';
-  filterDropdownSelectedProp = prop;
-  const config = filterConfig[currentTab][prop];
-  if (!config) return;
-  const container = document.getElementById('filterDropdownContent');
   const isWine = currentTab === 'wine';
-  container.innerHTML = `
-    <div class="dropdown-back" onclick="renderFilterDropdownProps()">
-      <span class="dropdown-back-icon"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i></span>
-      <span>${config.label}</span>
-    </div>
-    <div class="dropdown-divider"></div>
-    ${config.values.map(val => {
-      return `<div class="dropdown-item" onclick="selectFilterValue('${prop}','${val}')">
-        <span>${val}</span>
-      </div>`;
-    }).join('')}
-  `;
-  lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
+  const activeClass = isWine ? 'wine-active' : 'active';
+
+  let html = '';
+  for (const [prop, cfg] of Object.entries(config)) {
+    html += `<div class="filter-section">
+      <div class="filter-section-title">${cfg.label}</div>
+      <div class="filter-chips">
+        ${cfg.values.map(val => {
+          const isActive = activeFilters.some(f => f.prop === prop && f.value === val);
+          return `<div class="filter-chip ${isActive ? activeClass : ''}"
+            onclick="toggleFilterChip('${prop}','${val}',this)">${val}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  html += `<div class="filter-panel-actions">
+    <button class="filter-reset-btn" onclick="clearAllFilters(); renderFilterPanel();">초기화</button>
+    <button class="filter-apply-btn ${isWine ? 'wine-style' : ''}" onclick="toggleFilterPanel()">적용 (${activeFilters.length})</button>
+  </div>`;
+
+  document.getElementById('filterPanelContent').innerHTML = html;
 }
 
-function selectFilterValue(prop, value) {
-  const config = filterConfig[currentTab][prop];
-  if (!config) return;
+function toggleFilterChip(prop, value, el) {
+  const isWine = currentTab === 'wine';
+  const activeClass = isWine ? 'wine-active' : 'active';
+  const idx = activeFilters.findIndex(f => f.prop === prop && f.value === value);
 
-  const id = 'rule-' + (++filterRuleCount);
-  activeFilters.push({ id, prop, value });
+  if (idx >= 0) {
+    activeFilters.splice(idx, 1);
+    el.classList.remove(activeClass);
+  } else {
+    activeFilters.push({ id: 'rule-' + (++filterRuleCount), prop, value });
+    el.classList.add(activeClass);
+  }
 
-  // Close dropdown and reset to props level
-  toggleDropdown('filterDropdown');
-  renderFilterDropdownProps();
   renderFilterRules();
   updateFilterBtn();
+  // Update apply button count
+  const applyBtn = document.querySelector('.filter-apply-btn');
+  if (applyBtn) applyBtn.textContent = `적용 (${activeFilters.length})`;
 }
 
 function toggleConjunction() {
@@ -866,7 +937,7 @@ function renderFilterRules() {
       </div>
     `;
   }).join('') + `
-    <div class="filter-add-rule" onclick="toggleDropdown('filterDropdown')">
+    <div class="filter-add-rule" onclick="toggleFilterPanel()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       필터 추가
     </div>
@@ -932,7 +1003,6 @@ function closeSearch() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-  renderFilterDropdownProps();
   lucide.createIcons();
 });
 </script>
