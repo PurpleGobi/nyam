@@ -201,6 +201,35 @@
     font-size: 12px; color: var(--text-hint); cursor: pointer;
     font-weight: 500;
   }
+  .filter-add-rule + .filter-add-rule { margin-left: 0; }
+
+  /* Filter group (tree structure) */
+  .filter-group {
+    border-left: 2px solid var(--border);
+    margin-left: 18px; padding-left: 10px;
+    margin-top: 4px; margin-bottom: 4px;
+    position: relative;
+  }
+  .filter-group::before {
+    content: '';
+    position: absolute; left: -2px; top: 0;
+    width: 8px; height: 2px; background: var(--border);
+  }
+  .filter-group-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-hint); padding: 4px 0;
+  }
+  .filter-group-conj {
+    padding: 1px 6px; border-radius: 4px; font-weight: 700;
+    cursor: pointer; font-size: 11px;
+    background: var(--bg-page); color: var(--text-sub);
+  }
+  .filter-group-conj:hover { background: var(--border); }
+  .filter-group-remove {
+    font-size: 10px; color: var(--text-hint); cursor: pointer;
+    margin-left: auto;
+  }
+  .filter-group-remove:hover { color: var(--negative); }
   .filter-add-rule:hover { color: var(--text-sub); }
 
   /* =====================
@@ -274,7 +303,8 @@
     border-bottom: 1px solid var(--border);
   }
   .filter-panel.open {
-    max-height: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
   .filter-panel-inner {
     padding: 12px 16px 16px;
@@ -818,23 +848,37 @@ function selectSort(el, label) {
 // ===========================
 const filterConfig = {
   food: {
-    status: { label: '상태', icon: 'circle-dot', values: ['방문', '찜', '추천'] },
-    scene: { label: '상황', icon: 'tag', values: ['혼밥', '데이트', '친구', '가족', '회식', '술자리'] },
-    genre: { label: '장르', icon: 'utensils', values: ['한식', '일식', '양식', '중식', '이탈리안', '프렌치'] },
-    area: { label: '지역', icon: 'map-pin', values: ['강남', '을지로', '청담', '이태원', '홍대', '광화문'] },
-    score: { label: '점수', icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
+    status:  { label: '상태',     icon: 'circle-dot', values: ['방문', '찜', '추천'] },
+    scene:   { label: '상황',     icon: 'tag',       values: ['혼밥', '데이트', '친구', '가족', '회식', '술자리'] },
+    genre:   { label: '음식종류', icon: 'utensils',  values: ['한식', '일식', '양식', '중식', '이탈리안', '프렌치', '동남아', '멕시칸'] },
+    area:    { label: '위치',     icon: 'map-pin',   values: ['강남', '을지로', '청담', '이태원', '홍대', '광화문', '성수', '한남'] },
+    score:   { label: '점수',     icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
+    period:  { label: '시기',     icon: 'calendar',  values: ['최근 1주', '최근 1개월', '최근 3개월', '최근 6개월', '1년+'] },
+    companion: { label: '동반자', icon: 'users',     values: ['혼자', '2인', '3~4인', '5인+'] },
+    fame:    { label: '명성',     icon: 'award',     values: ['미슐랭', '블루리본', 'TV출연', '수상없음'] },
+    menu:    { label: '대표메뉴', icon: 'book-open', values: ['코스', '단품', '오마카세', '뷔페', '세트'] },
+    price:   { label: '가격대',   icon: 'wallet',    values: ['~2만', '2~5만', '5~10만', '10만+'] },
   },
   wine: {
-    status: { label: '상태', icon: 'circle-dot', values: ['시음', '찜', '셀러'] },
-    scene: { label: '상황', icon: 'tag', values: ['혼술', '데이트', '모임', '페어링', '선물', '시음회'] },
-    genre: { label: '타입', icon: 'wine', values: ['Red', 'White', 'Rosé', 'Sparkling', 'Dessert'] },
-    area: { label: '산지', icon: 'globe', values: ['France', 'Italy', 'USA', 'Chile', 'Australia', 'NZ'] },
-    score: { label: '점수', icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
+    status:  { label: '상태',     icon: 'circle-dot', values: ['시음', '찜', '셀러'] },
+    style:   { label: '스타일',   icon: 'wine',      values: ['Red', 'White', 'Rosé', 'Sparkling', 'Orange', 'Dessert', 'Fortified'] },
+    variety: { label: '품종',     icon: 'grape',     values: ['카베르네 소비뇽', '피노 누아', '메를로', '쉬라즈', '샤르도네', '소비뇽 블랑', '리슬링', '네비올로'] },
+    region:  { label: '산지',     icon: 'globe',     values: ['France', 'Italy', 'USA', 'Spain', 'Chile', 'Australia', 'NZ', 'Argentina'] },
+    vintage: { label: '빈티지',   icon: 'clock',     values: ['2024', '2023', '2022', '2021', '2020', '2019', '2018 이전'] },
+    score:   { label: '점수',     icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
+    period:  { label: '시음시기', icon: 'calendar',  values: ['최근 1주', '최근 1개월', '최근 3개월', '최근 6개월', '1년+'] },
+    pairing: { label: '페어링',   icon: 'utensils',  values: ['적색육', '백색육', '어패류', '치즈', '채소', '디저트'] },
+    price:   { label: '가격대',   icon: 'wallet',    values: ['~3만', '3~7만', '7~15만', '15만+'] },
+    acidity: { label: '산미',     icon: 'droplets',  values: ['낮음', '중간', '높음'] },
+    sweetness: { label: '당도',   icon: 'candy',     values: ['드라이', '오프드라이', '스위트'] },
+    complexity: { label: '복합도', icon: 'layers',   values: ['단순', '중간', '복합'] },
   },
 };
 
-let activeFilters = []; // { id, prop, value }
-let filterConjunction = 'and'; // 'and' | 'or' — Notion-style: all rules share same conjunction
+// Tree structure: { conj: 'and'|'or', rules: [{id,prop,value}], groups: [sub-tree...] }
+let filterTree = { conj: 'and', rules: [], groups: [] };
+let activeFilters = []; // flat reference for chip panel compat
+let filterConjunction = 'and';
 
 // ===========================
 // Filter Slide Panel
@@ -906,42 +950,131 @@ function toggleConjunction() {
 function renderFilterRules() {
   const container = document.getElementById('filterRules');
   const isWine = currentTab === 'wine';
-  const valClass = isWine ? 'wine-val' : 'food-val';
 
-  if (activeFilters.length === 0) {
+  // Sync flat activeFilters → filterTree.rules
+  filterTree.rules = [...activeFilters];
+  filterTree.conj = filterConjunction;
+
+  const totalRules = activeFilters.length + filterTree.groups.reduce((s,g) => s + g.rules.length, 0);
+  if (totalRules === 0) {
     container.classList.remove('open');
     container.innerHTML = '';
     return;
   }
 
   container.classList.add('open');
-  const conjLabel = filterConjunction === 'and' ? 'And' : 'Or';
-
-  container.innerHTML = activeFilters.map((f, i) => {
-    const config = filterConfig[currentTab][f.prop];
-    let prefixHtml;
-    if (i === 0) {
-      prefixHtml = `<span class="filter-rule-prefix">Where</span>`;
-    } else {
-      prefixHtml = `<span class="filter-rule-prefix clickable" onclick="toggleConjunction()" title="클릭하여 And/Or 전환">${conjLabel}</span>`;
-    }
-    return `
-      <div class="filter-rule" id="${f.id}">
-        ${prefixHtml}
-        <span class="filter-rule-prop" onclick="cycleFilterProp('${f.id}')">${config.label}</span>
-        <span class="filter-rule-op">is</span>
-        <span class="filter-rule-value ${valClass}" onclick="cycleFilterValue('${f.id}')">${f.value}</span>
-        <span class="filter-rule-remove" onclick="removeFilter('${f.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </span>
+  container.innerHTML = renderGroup(filterTree, true, 'root') + `
+    <div style="display:flex;gap:12px;">
+      <div class="filter-add-rule" onclick="toggleFilterPanel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        필터 추가
       </div>
-    `;
-  }).join('') + `
-    <div class="filter-add-rule" onclick="toggleFilterPanel()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      필터 추가
+      <div class="filter-add-rule" onclick="addFilterGroup()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        그룹 추가
+      </div>
     </div>
   `;
+}
+
+function renderGroup(group, isRoot, groupId) {
+  const isWine = currentTab === 'wine';
+  const valClass = isWine ? 'wine-val' : 'food-val';
+  const conjLabel = group.conj === 'and' ? 'And' : 'Or';
+
+  let rulesHtml = group.rules.map((f, i) => {
+    const config = filterConfig[currentTab][f.prop];
+    if (!config) return '';
+    let prefixHtml;
+    if (i === 0 && isRoot) {
+      prefixHtml = `<span class="filter-rule-prefix">Where</span>`;
+    } else if (i === 0) {
+      prefixHtml = `<span class="filter-rule-prefix" style="min-width:30px;"></span>`;
+    } else {
+      prefixHtml = `<span class="filter-rule-prefix clickable" onclick="${isRoot ? 'toggleConjunction()' : 'toggleGroupConj(\'' + groupId + '\')'}" title="And/Or 전환">${conjLabel}</span>`;
+    }
+    const removeFunc = isRoot ? `removeFilter('${f.id}')` : `removeGroupFilter('${groupId}','${f.id}')`;
+    return `<div class="filter-rule" id="${f.id}">
+      ${prefixHtml}
+      <span class="filter-rule-prop" onclick="cycleFilterProp('${f.id}')">${config.label}</span>
+      <span class="filter-rule-op">is</span>
+      <span class="filter-rule-value ${valClass}" onclick="cycleFilterValue('${f.id}')">${f.value}</span>
+      <span class="filter-rule-remove" onclick="${removeFunc}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+    </div>`;
+  }).join('');
+
+  // Sub-groups
+  let groupsHtml = (group.groups || []).map((sg, gi) => {
+    const sgId = groupId + '-g' + gi;
+    const sgConj = sg.conj === 'and' ? 'And' : 'Or';
+    return `<div class="filter-group">
+      <div class="filter-group-header">
+        <span class="filter-group-conj" onclick="toggleGroupConj('${sgId}')">${sgConj}</span>
+        <span>중첩 그룹</span>
+        <span class="filter-group-remove" onclick="removeFilterGroup(${gi})">삭제</span>
+      </div>
+      ${renderGroup(sg, false, sgId)}
+    </div>`;
+  }).join('');
+
+  return rulesHtml + groupsHtml;
+}
+
+function addFilterGroup() {
+  // Add a sub-group with a sample rule
+  const props = Object.keys(filterConfig[currentTab]);
+  const firstProp = props[0];
+  const firstVal = filterConfig[currentTab][firstProp].values[0];
+  filterTree.groups.push({
+    conj: filterConjunction === 'and' ? 'or' : 'and', // opposite of parent
+    rules: [{ id: 'grule-' + (++filterRuleCount), prop: firstProp, value: firstVal }],
+    groups: []
+  });
+  renderFilterRules();
+}
+
+function removeFilterGroup(idx) {
+  filterTree.groups.splice(idx, 1);
+  renderFilterRules();
+}
+
+function toggleGroupConj(groupId) {
+  // Find group by id path (e.g., 'root-g0')
+  const parts = groupId.split('-');
+  let target = filterTree;
+  for (let i = 1; i < parts.length; i++) {
+    const gi = parseInt(parts[i].replace('g',''));
+    target = target.groups[gi];
+  }
+  if (target) {
+    target.conj = target.conj === 'and' ? 'or' : 'and';
+    renderFilterRules();
+  }
+}
+
+function removeGroupFilter(groupId, ruleId) {
+  const parts = groupId.split('-');
+  let target = filterTree;
+  for (let i = 1; i < parts.length; i++) {
+    const gi = parseInt(parts[i].replace('g',''));
+    target = target.groups[gi];
+  }
+  if (target) {
+    target.rules = target.rules.filter(r => r.id !== ruleId);
+    if (target.rules.length === 0) {
+      // Remove empty group
+      const parentParts = parts.slice(0, -1);
+      let parent = filterTree;
+      for (let i = 1; i < parentParts.length; i++) {
+        parent = parent.groups[parseInt(parentParts[i].replace('g',''))];
+      }
+      const gi = parseInt(parts[parts.length-1].replace('g',''));
+      parent.groups.splice(gi, 1);
+    }
+    renderFilterRules();
+  }
 }
 
 function removeFilter(id) {
@@ -952,6 +1085,8 @@ function removeFilter(id) {
 
 function clearAllFilters() {
   activeFilters = [];
+  filterTree = { conj: 'and', rules: [], groups: [] };
+  filterConjunction = 'and';
   renderFilterRules();
   updateFilterBtn();
 }
