@@ -41,7 +41,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 
-  /* Device Frame (matches 01_home / 02_list) */
+  /* Device Frame (matches 01_home) */
   .device {
     width: 390px; height: 844px; background: #2A2725;
     border-radius: 52px; padding: 12px;
@@ -102,6 +102,19 @@
   .fab-back:active { transform: scale(0.9); }
   .fab-back svg { width: 22px; height: 22px; }
 
+  /* FAB Add — glassmorphism (matches fab-back) */
+  .fab-add {
+    position: absolute; bottom: 28px; right: 16px; z-index: 85;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); transition: transform 0.15s;
+  }
+  .fab-add:active { transform: scale(0.9); }
+
   /* Header */
   .header {
     padding: 12px 20px;
@@ -136,18 +149,14 @@
   }
   .scroll-area::-webkit-scrollbar { display: none; }
 
-  /* Top fixed — glassmorphism on scroll (matches 01_home) */
+  /* Top fixed — always glassmorphism */
   .top-fixed {
     flex-shrink: 0;
-    transition: background 0.35s, box-shadow 0.35s;
-    background: var(--bg);
-    z-index: 60;
-  }
-  .top-fixed.glass {
-    background: rgba(248,246,243,0.72);
+    background: rgba(248,246,243,0.55);
     backdrop-filter: blur(20px) saturate(1.5);
     -webkit-backdrop-filter: blur(20px) saturate(1.5);
     box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    z-index: 60;
   }
   .app-header {
     padding: 2px 16px 8px;
@@ -360,24 +369,34 @@
   .lv-gold .level-progress-fill { background: #C9A96E; }
   .lv-gold .level-card-icon { background: #C9A96E; }
 
-  /* Level section tabs */
-  .level-section-tabs {
-    display: flex; gap: 0; margin-bottom: 12px;
+  /* Level section tabs — design system .tabs pattern */
+  .level-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 14px;
   }
-  .level-section-tab {
-    flex: 1; padding: 7px 0; text-align: center;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    background: var(--bg-card); border: 1px solid var(--border);
-    color: var(--text-sub); font-family: inherit;
+  .level-tab {
+    flex-shrink: 0; padding: 9px 16px;
+    font-size: 13px; font-weight: 500; white-space: nowrap;
+    border: none; background: none; color: var(--text-hint);
+    cursor: pointer; position: relative; font-family: inherit;
   }
-  .level-section-tab:first-child { border-radius: 8px 0 0 8px; }
-  .level-section-tab:last-child { border-radius: 0 8px 8px 0; }
-  .level-section-tab.active {
-    background: var(--primary); color: #fff; border-color: var(--primary);
+  .level-tab::after {
+    content: ''; position: absolute; bottom: -1px; left: 8px; right: 8px;
+    height: 2px; border-radius: 1px; background: transparent;
   }
-  .level-section-tab.wine-active {
-    background: var(--wine); color: #fff; border-color: var(--wine);
+  .level-tab.active-food { color: var(--primary); font-weight: 700; }
+  .level-tab.active-food::after { background: var(--primary); }
+  .level-tab.active-wine { color: var(--wine); font-weight: 700; }
+  .level-tab.active-wine::after { background: var(--wine); }
+
+  /* Two-column XP grid */
+  .xp-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .xp-column-title {
+    font-size: 12px; font-weight: 700; color: var(--text-sub);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    margin-bottom: 8px; padding-bottom: 4px;
+    display: flex; align-items: center; gap: 5px;
   }
+  .xp-column-title svg { width: 13px; height: 13px; }
 
   /* Recent XP */
   .xp-recent-item {
@@ -440,38 +459,6 @@
     height: 100%; border-radius: 3px;
   }
   .xp-breakdown-val { font-size: 12px; font-weight: 600; color: var(--text-sub); width: 40px; text-align: right; }
-
-  /* My Bubble cards (profile) */
-  .my-bubble-card {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    padding: 12px; margin-bottom: 8px;
-    background: var(--bg-card); border-radius: 12px;
-    border: 1px solid var(--border);
-    cursor: pointer; transition: background 0.15s;
-  }
-  .my-bubble-card:active { background: var(--bg); }
-  .my-bubble-left { display: flex; align-items: center; gap: 12px; }
-  .my-bubble-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .my-bubble-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .my-bubble-meta { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
-  .my-bubble-activity {
-    font-size: 11px; color: var(--text-hint);
-    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
-  }
-  .bubble-see-all {
-    width: 100%; padding: 10px; margin-top: 4px;
-    background: none; border: 1px dashed var(--border);
-    border-radius: 10px; cursor: pointer;
-    font-size: 13px; font-weight: 500; color: var(--text-sub);
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-    font-family: inherit; transition: color 0.15s;
-  }
-  .bubble-see-all:active { color: var(--primary); border-color: var(--primary); }
 
   /* Taste Identity (shared base styles for compact card) */
   .taste-identity-text {
@@ -668,37 +655,6 @@
 
 
   /* ========== SCREEN: SETTINGS ========== */
-  .settings-section { padding: 20px 20px 8px; }
-  .settings-section-title {
-    font-size: 11px; font-weight: 600;
-    color: var(--text-sub); text-transform: uppercase;
-    letter-spacing: 0.5px; padding: 0 0 6px;
-  }
-  .settings-card {
-    background: var(--bg-card); border-radius: 12px;
-    overflow: hidden; border: 1px solid var(--border);
-    margin-bottom: 4px;
-  }
-  .settings-item {
-    display: flex; align-items: center;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer; gap: 12px;
-  }
-  .settings-item:last-child { border-bottom: none; }
-  .settings-item-icon {
-    width: 20px; height: 20px;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-sub); flex-shrink: 0;
-  }
-  .settings-item-icon svg { width: 18px; height: 18px; }
-  .settings-item-label { flex: 1; font-size: 15px; color: var(--text); }
-  .settings-item-value { font-size: 13px; color: var(--text-sub); }
-  .settings-item-chevron { color: #D4CFC8; display: flex; align-items: center; }
-  .settings-item-chevron svg { width: 16px; height: 16px; }
-  .settings-item.danger .settings-item-label { color: #B87272; }
-  .settings-item.danger .settings-item-icon { color: #B87272; }
-
   /* Toggle */
   .toggle {
     width: 44px; height: 26px;
@@ -717,14 +673,6 @@
   }
   .toggle.on { background: var(--primary); }
   .toggle.on::after { left: 20px; }
-
-  /* Select pill */
-  .select-pill {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 8px; padding: 4px 10px;
-    font-size: 12px; color: var(--text-sub); cursor: pointer;
-    font-family: inherit;
-  }
 
   /* ========== SCREEN: BUBBLE LIST ========== */
   .bubble-card {
@@ -1057,12 +1005,10 @@
           <div class="app-header">
             <div class="header-brand">nyam</div>
             <div class="header-right">
-              <button class="icon-btn" onclick="showScreen('screen-settings')" title="설정">
+              <button class="icon-btn" onclick="location.href='05_settings.html'" title="설정">
                 <i data-lucide="settings"></i>
               </button>
-              <button class="icon-btn" onclick="location.href='05_bubbles.html'" title="버블">
-                <i data-lucide="circle-dot"></i>
-              </button>
+              <button onclick="location.href='05_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn" onclick="showScreen('screen-notifications')" title="알림">
                   <i data-lucide="bell"></i>
@@ -1074,7 +1020,7 @@
           </div>
         </div>
 
-        <div class="scroll-area" onscroll="document.getElementById('profileTopFixed').classList.toggle('glass', this.scrollTop > 10)">
+        <div class="scroll-area" >
           <!-- Section 1: Profile Header (2-column) -->
           <div class="profile-header-section">
             <div class="profile-top-row">
@@ -1135,182 +1081,266 @@
           <div class="section-block">
             <div class="section-title">경험치 & 레벨</div>
 
-            <!-- Level tabs: 동네 / 와인 품종 -->
-            <div class="level-section-tabs">
-              <button class="level-section-tab active" id="lvtab-area" onclick="switchLevelTab('area')">동네</button>
-              <button class="level-section-tab" id="lvtab-variety" onclick="switchLevelTab('variety')">와인 품종</button>
+            <!-- Level tabs: 식당 / 와인 — design system tab filter -->
+            <div class="level-tabs">
+              <button class="level-tab active-food" id="lvtab-food" onclick="switchLevelTab('food')">식당</button>
+              <button class="level-tab" id="lvtab-wine" onclick="switchLevelTab('wine')">와인</button>
             </div>
 
-            <!-- Area levels -->
-            <div id="lvcontent-area">
-              <!-- 을지로 Lv.7 — 주력 지역 -->
-              <div class="level-card lv-purple" onclick="openLevelDetail('euljiro')">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">을지로</div>
-                      <div class="level-card-xp">780 / 850 XP</div>
-                    </div>
-                  </div>
-                  <span class="level-card-lv">Lv.7</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:82%"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>고유 장소 42곳</span>
-                  <span>Lv.8까지 70 XP</span>
-                </div>
-              </div>
+            <!-- 식당 tab: 지역 + 장르 두 컬럼 -->
+            <div id="lvcontent-food">
+              <div class="xp-columns">
+                <!-- 지역 컬럼 -->
+                <div>
+                  <div class="xp-column-title"><i data-lucide="map-pin"></i> 지역</div>
 
-              <!-- 광화문 Lv.5 -->
-              <div class="level-card lv-blue" onclick="openLevelDetail('gwanghwa')">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">광화문</div>
-                      <div class="level-card-xp">410 / 560 XP</div>
-                    </div>
-                  </div>
-                  <span class="level-card-lv">Lv.5</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:58%"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>고유 장소 18곳</span>
-                  <span>Lv.6까지 150 XP</span>
-                </div>
-              </div>
-
-              <!-- 강남 Lv.3 -->
-              <div class="level-card lv-green" onclick="openLevelDetail('gangnam')">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">강남</div>
-                      <div class="level-card-xp">130 / 200 XP</div>
-                    </div>
-                  </div>
-                  <span class="level-card-lv">Lv.3</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:48%"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>고유 장소 7곳</span>
-                  <span>Lv.4까지 70 XP</span>
-                </div>
-              </div>
-
-              <!-- Expand more -->
-              <div id="expand-more-levels" class="expand-more" style="flex-direction:column;gap:8px;">
-                <div class="level-card lv-green" style="margin-bottom:0">
-                  <div class="level-card-top" style="margin-bottom:0">
-                    <div class="level-card-left">
-                      <div class="level-card-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></div>
-                      <div>
-                        <div class="level-card-name">홍대</div>
-                        <div class="level-card-xp">55 / 100 XP</div>
+                  <div class="level-card lv-purple" onclick="openLevelDetail('euljiro')" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">을지로</div>
+                          <div class="level-card-xp">780 / 850 XP</div>
+                        </div>
                       </div>
+                      <span class="level-card-lv">Lv.7</span>
                     </div>
-                    <span class="level-card-lv">Lv.2</span>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:82%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-blue" onclick="openLevelDetail('gwanghwa')" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">광화문</div>
+                          <div class="level-card-xp">410 / 560 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.5</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:58%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" onclick="openLevelDetail('gangnam')" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">강남</div>
+                          <div class="level-card-xp">130 / 200 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.3</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:48%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" style="margin-bottom:8px;opacity:0.6">
+                    <div class="level-card-top" style="margin-bottom:0">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">홍대</div>
+                          <div class="level-card-xp">55 / 100 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.2</span>
+                    </div>
                   </div>
                 </div>
-                <div class="level-card lv-green" style="margin-bottom:0;opacity:0.6">
-                  <div class="level-card-top" style="margin-bottom:0">
-                    <div class="level-card-left">
-                      <div class="level-card-icon" style="background:var(--text-hint)"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></div>
-                      <div>
-                        <div class="level-card-name">잠실</div>
-                        <div class="level-card-xp">12 / 40 XP</div>
+
+                <!-- 장르 컬럼 -->
+                <div>
+                  <div class="xp-column-title"><i data-lucide="chef-hat"></i> 장르</div>
+
+                  <div class="level-card lv-orange" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">일식</div>
+                          <div class="level-card-xp">520 / 650 XP</div>
+                        </div>
                       </div>
+                      <span class="level-card-lv">Lv.6</span>
                     </div>
-                    <span class="level-card-lv" style="background:#F0EDE8;color:var(--text-hint)">Lv.1</span>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:72%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-blue" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">한식</div>
+                          <div class="level-card-xp">340 / 450 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.5</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:62%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">이탈리안</div>
+                          <div class="level-card-xp">95 / 200 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.3</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:42%"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" style="margin-bottom:8px;opacity:0.6">
+                    <div class="level-card-top" style="margin-bottom:0">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">중식</div>
+                          <div class="level-card-xp">30 / 100 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv">Lv.2</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button class="expand-btn" onclick="toggleExpand()" style="margin-top:8px">
-                <span id="expand-label">전체 레벨 보기</span>
-                <i data-lucide="chevron-down" id="expand-chevron" style="width:14px;height:14px;transition:transform 0.2s;"></i>
-              </button>
             </div>
 
-            <!-- Wine variety levels -->
-            <div id="lvcontent-variety" class="hidden">
-              <div class="level-card lv-blue">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon" style="background:var(--wine)"><i data-lucide="grape" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">카베르네 소비뇽</div>
-                      <div class="level-card-xp">290 / 350 XP</div>
-                    </div>
-                  </div>
-                  <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.5</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:72%;background:var(--wine)"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>12종 시음</span>
-                  <span>Lv.6까지 60 XP</span>
-                </div>
-              </div>
+            <!-- 와인 tab: 산지 + 품종 두 컬럼 -->
+            <div id="lvcontent-wine" class="hidden">
+              <div class="xp-columns">
+                <!-- 산지 컬럼 -->
+                <div>
+                  <div class="xp-column-title"><i data-lucide="globe"></i> 산지</div>
 
-              <div class="level-card lv-green">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon" style="background:var(--wine)"><i data-lucide="grape" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">피노 누아</div>
-                      <div class="level-card-xp">120 / 200 XP</div>
+                  <div class="level-card lv-purple" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">보르도</div>
+                          <div class="level-card-xp">380 / 450 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.6</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:78%;background:var(--wine)"></div>
                     </div>
                   </div>
-                  <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.3</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:45%;background:var(--wine)"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>6종 시음</span>
-                  <span>Lv.4까지 80 XP</span>
-                </div>
-              </div>
 
-              <div class="level-card lv-green">
-                <div class="level-card-top">
-                  <div class="level-card-left">
-                    <div class="level-card-icon" style="background:var(--wine)"><i data-lucide="grape" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">샤르도네</div>
-                      <div class="level-card-xp">65 / 100 XP</div>
+                  <div class="level-card lv-blue" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">부르고뉴</div>
+                          <div class="level-card-xp">210 / 350 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.4</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:52%;background:var(--wine)"></div>
                     </div>
                   </div>
-                  <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.2</span>
-                </div>
-                <div class="level-progress">
-                  <div class="level-progress-fill" style="width:38%;background:var(--wine)"></div>
-                </div>
-                <div class="level-card-meta">
-                  <span>4종 시음</span>
-                  <span>Lv.3까지 35 XP</span>
-                </div>
-              </div>
 
-              <div class="level-card" style="opacity:0.6">
-                <div class="level-card-top" style="margin-bottom:0">
-                  <div class="level-card-left">
-                    <div class="level-card-icon" style="background:var(--text-hint)"><i data-lucide="grape" style="width:16px;height:16px;"></i></div>
-                    <div>
-                      <div class="level-card-name">네비올로</div>
-                      <div class="level-card-xp">18 / 40 XP</div>
+                  <div class="level-card lv-green" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">나파 밸리</div>
+                          <div class="level-card-xp">75 / 200 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.2</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:32%;background:var(--wine)"></div>
                     </div>
                   </div>
-                  <span class="level-card-lv" style="background:#F0EDE8;color:var(--text-hint)">Lv.1</span>
+
+                  <div class="level-card" style="margin-bottom:8px;opacity:0.6">
+                    <div class="level-card-top" style="margin-bottom:0">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">토스카나</div>
+                          <div class="level-card-xp">20 / 40 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0EDE8;color:var(--text-hint)">Lv.1</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 품종 컬럼 -->
+                <div>
+                  <div class="xp-column-title"><i data-lucide="grape"></i> 품종</div>
+
+                  <div class="level-card lv-blue" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">카베르네 소비뇽</div>
+                          <div class="level-card-xp">290 / 350 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.5</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:72%;background:var(--wine)"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">피노 누아</div>
+                          <div class="level-card-xp">120 / 200 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.3</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:45%;background:var(--wine)"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card lv-green" style="margin-bottom:8px">
+                    <div class="level-card-top">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">샤르도네</div>
+                          <div class="level-card-xp">65 / 100 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0ECF3;color:var(--wine)">Lv.2</span>
+                    </div>
+                    <div class="level-progress">
+                      <div class="level-progress-fill" style="width:38%;background:var(--wine)"></div>
+                    </div>
+                  </div>
+
+                  <div class="level-card" style="margin-bottom:8px;opacity:0.6">
+                    <div class="level-card-top" style="margin-bottom:0">
+                      <div class="level-card-left">
+                        <div>
+                          <div class="level-card-name">네비올로</div>
+                          <div class="level-card-xp">18 / 40 XP</div>
+                        </div>
+                      </div>
+                      <span class="level-card-lv" style="background:#F0EDE8;color:var(--text-hint)">Lv.1</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1359,54 +1389,6 @@
               </div>
               <div class="xp-recent-amount">+25</div>
             </div>
-          </div>
-
-          <!-- My Bubbles Activity -->
-          <div class="section-block">
-            <div class="section-title">내 버블</div>
-
-            <div class="my-bubble-card" onclick="showScreen('screen-bubble-detail')">
-              <div class="my-bubble-left">
-                <div class="my-bubble-icon" style="background:#F5EDE8;color:var(--primary)"><i data-lucide="utensils-crossed" style="width:18px;height:18px;"></i></div>
-                <div class="my-bubble-info">
-                  <div class="my-bubble-name">직장 맛집</div>
-                  <div class="my-bubble-meta">멤버 8명 · 기록 47개</div>
-                </div>
-              </div>
-              <div class="my-bubble-activity">
-                <span class="activity-dot"></span>2시간 전
-              </div>
-            </div>
-
-            <div class="my-bubble-card" onclick="showScreen('screen-bubble-detail')">
-              <div class="my-bubble-left">
-                <div class="my-bubble-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="wine" style="width:18px;height:18px;"></i></div>
-                <div class="my-bubble-info">
-                  <div class="my-bubble-name">와인 동호회</div>
-                  <div class="my-bubble-meta">멤버 15명 · 기록 89개</div>
-                </div>
-              </div>
-              <div class="my-bubble-activity">
-                <span class="activity-dot"></span>5시간 전
-              </div>
-            </div>
-
-            <div class="my-bubble-card" onclick="showScreen('screen-bubble-detail')">
-              <div class="my-bubble-left">
-                <div class="my-bubble-icon" style="background:#EDF2F5;color:var(--accent-social)"><i data-lucide="users" style="width:18px;height:18px;"></i></div>
-                <div class="my-bubble-info">
-                  <div class="my-bubble-name">대학 동기</div>
-                  <div class="my-bubble-meta">멤버 6명 · 기록 23개</div>
-                </div>
-              </div>
-              <div class="my-bubble-activity">
-                <span class="activity-dot" style="background:var(--text-hint)"></span>3일 전
-              </div>
-            </div>
-
-            <button class="bubble-see-all" onclick="showScreen('screen-bubbles')">
-              전체 버블 보기 <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
-            </button>
           </div>
 
           <div style="height:16px"></div>
@@ -1560,158 +1542,12 @@
             </div>
           </div>
         </div>
+        <button class="fab-add" onclick="alert('새 기록 추가')">
+          <i data-lucide="plus" style="width:22px;height:22px;"></i>
+        </button>
       </div>
 
       <!-- ============ SCREEN: SETTINGS ============ -->
-      <div class="screen hidden" id="screen-settings">
-        <div class="top-fixed">
-          <div class="status-bar">
-            <span class="status-time">9:41</span>
-            <div class="status-icons">
-              <i data-lucide="signal" style="width:16px;height:16px;"></i>
-              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
-            </div>
-          </div>
-          <div class="app-header">
-            <button class="back-btn" onclick="showScreen('screen-profile')">
-              <i data-lucide="chevron-left"></i> 설정
-            </button>
-          </div>
-        </div>
-        <div class="scroll-area">
-          <!-- 계정 -->
-          <div class="settings-section">
-            <div class="settings-section-title">계정</div>
-            <div class="settings-card">
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="pencil"></i></span>
-                <span class="settings-item-label">닉네임 변경</span>
-                <span class="settings-item-value">김맛잘알</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="message-square"></i></span>
-                <span class="settings-item-label">한줄 소개 변경</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="image"></i></span>
-                <span class="settings-item-label">아바타 변경</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="log-out"></i></span>
-                <span class="settings-item-label">로그아웃</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item danger">
-                <span class="settings-item-icon"><i data-lucide="trash-2"></i></span>
-                <span class="settings-item-label">계정 삭제</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 프라이버시 -->
-          <div class="settings-section">
-            <div class="settings-section-title">프라이버시</div>
-            <div class="settings-card">
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="eye"></i></span>
-                <span class="settings-item-label">프로필 공개</span>
-                <button class="select-pill">버블 멤버만 ▾</button>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="file-text"></i></span>
-                <span class="settings-item-label">기록 공개</span>
-                <button class="select-pill">공유한 것만 ▾</button>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="message-circle"></i></span>
-                <span class="settings-item-label">소속 버블 표시</span>
-                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="award"></i></span>
-                <span class="settings-item-label">레벨 표시</span>
-                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 알림 -->
-          <div class="settings-section">
-            <div class="settings-section-title">알림</div>
-            <div class="settings-card">
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="clock"></i></span>
-                <span class="settings-item-label">넛지 설정</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="bell"></i></span>
-                <span class="settings-item-label">푸시 알림</span>
-                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="moon"></i></span>
-                <span class="settings-item-label">방해 금지</span>
-                <span class="settings-item-value">23:00–08:00</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 데이터 -->
-          <div class="settings-section">
-            <div class="settings-section-title">데이터</div>
-            <div class="settings-card">
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="upload"></i></span>
-                <span class="settings-item-label">데이터 내보내기</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="eraser"></i></span>
-                <span class="settings-item-label">캐시 삭제</span>
-                <span class="settings-item-value" style="font-size:11px">12.3 MB</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 정보 -->
-          <div class="settings-section">
-            <div class="settings-section-title">정보</div>
-            <div class="settings-card">
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="scroll-text"></i></span>
-                <span class="settings-item-label">이용약관</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="shield"></i></span>
-                <span class="settings-item-label">개인정보처리방침</span>
-                <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-              </div>
-              <div class="settings-item">
-                <span class="settings-item-icon"><i data-lucide="info"></i></span>
-                <span class="settings-item-label">버전</span>
-                <span class="settings-item-value">2.0.0</span>
-              </div>
-            </div>
-          </div>
-          <div style="padding:20px 20px 40px;">
-            <button onclick="alert('로그아웃')" style="
-              width:100%; padding:14px; border-radius:12px;
-              background:none; border:1px solid var(--negative);
-              color:var(--negative); font-size:15px; font-weight:600;
-              cursor:pointer; font-family:inherit;
-            ">로그아웃</button>
-          </div>
-        </div>
-      </div>
 
       <!-- ============ SCREEN: BUBBLE LIST ============ -->
       <div class="screen hidden" id="screen-bubbles">
@@ -2406,34 +2242,14 @@
     currentScreen = id;
   }
 
-  // Profile level expand
-  function toggleExpand() {
-    const more = document.getElementById('expand-more-levels');
-    const label = document.getElementById('expand-label');
-    const chevron = document.getElementById('expand-chevron');
-    if (more.classList.contains('open')) {
-      more.classList.remove('open');
-      label.textContent = '전체 레벨 보기';
-      chevron.style.transform = 'rotate(0deg)';
-    } else {
-      more.classList.add('open');
-      label.textContent = '접기';
-      chevron.style.transform = 'rotate(180deg)';
-    }
-  }
-
-  // Level section tab switching (동네 / 와인 품종)
+  // Level section tab switching (식당 / 와인)
   function switchLevelTab(tab) {
-    document.getElementById('lvtab-area').classList.toggle('active', tab === 'area');
-    document.getElementById('lvtab-variety').classList.toggle('active', tab === 'variety');
-    if (tab === 'variety') {
-      document.getElementById('lvtab-variety').classList.add('wine-active');
-      document.getElementById('lvtab-variety').classList.remove('active');
-    } else {
-      document.getElementById('lvtab-variety').classList.remove('wine-active');
-    }
-    document.getElementById('lvcontent-area').classList.toggle('hidden', tab !== 'area');
-    document.getElementById('lvcontent-variety').classList.toggle('hidden', tab !== 'variety');
+    const foodTab = document.getElementById('lvtab-food');
+    const wineTab = document.getElementById('lvtab-wine');
+    foodTab.className = 'level-tab' + (tab === 'food' ? ' active-food' : '');
+    wineTab.className = 'level-tab' + (tab === 'wine' ? ' active-wine' : '');
+    document.getElementById('lvcontent-food').classList.toggle('hidden', tab !== 'food');
+    document.getElementById('lvcontent-wine').classList.toggle('hidden', tab !== 'wine');
   }
 
   // Level detail bottom sheet

@@ -620,15 +620,11 @@
   /* Top fixed — glassmorphism on scroll */
   .top-fixed {
     flex-shrink: 0;
-    transition: background 0.35s, box-shadow 0.35s;
-    background: var(--bg);
-    z-index: 60;
-  }
-  .top-fixed.glass {
-    background: rgba(248,246,243,0.72);
+    background: rgba(248,246,243,0.55);
     backdrop-filter: blur(20px) saturate(1.5);
     -webkit-backdrop-filter: blur(20px) saturate(1.5);
     box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    z-index: 60;
   }
 
   .app-header {
@@ -1366,31 +1362,24 @@
   /* =====================
      FAB + Add Bottom Sheet
      ===================== */
-  .fab-container {
+  /* FAB Add — glassmorphism (matches fab-back) */
+  .fab-add {
     position: absolute;
-    bottom: 80px;
-    right: 16px;
-    z-index: 30;
-  }
-
-  .fab {
-    width: 56px;
-    height: 56px;
-    background: var(--primary);
+    bottom: 28px; right: 16px;
+    z-index: 85;
+    width: 44px; height: 44px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(193,123,94,0.45);
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    z-index: 31;
-    border: none;
-    position: relative;
+    color: var(--text);
+    transition: transform 0.15s;
   }
-  .fab:active { transform: scale(0.9); }
-  .fab.wine-style { background: var(--wine); box-shadow: 0 4px 20px rgba(139,115,150,0.45); }
+  .fab-add:active { transform: scale(0.9); }
 
   .fab-overlay {
     position: absolute;
@@ -2463,23 +2452,91 @@
   }
   .filter-toggle.has-filter svg { stroke: var(--primary); }
 
+  /* Borderless icon buttons for filter/sort */
+  .tab-icon-btn {
+    background: none; border: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-hint);
+    flex-shrink: 0; padding: 0;
+    transition: color 0.15s;
+  }
+  .tab-icon-btn:active { color: var(--text); }
+  .tab-icon-btn.has-filter { color: var(--primary); }
+
   .filter-drawer {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.25s ease;
+    transition: max-height 0.3s ease;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border);
   }
-  .filter-drawer.open { max-height: 60px; }
-  .filter-drawer-inner {
-    display: flex;
-    gap: 8px;
-    padding: 10px 16px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  .filter-drawer.open { max-height: 200px; }
+
+  /* Notion-style filter panel */
+  .notion-filter-panel { padding: 10px 16px; }
+  .notion-filter-rules { display: flex; flex-direction: column; gap: 6px; }
+  .notion-filter-rule {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
   }
-  .filter-drawer-inner::-webkit-scrollbar { display: none; }
+  .notion-conjunction {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    width: 40px; flex-shrink: 0; cursor: pointer;
+  }
+  .notion-conjunction.clickable:active { color: var(--primary); }
+  .notion-attr, .notion-val {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 8px;
+    font-size: 12px; font-weight: 500; color: var(--text);
+    cursor: pointer; font-family: inherit;
+  }
+  .notion-attr:active, .notion-val:active { border-color: var(--primary); }
+  .notion-is { font-size: 11px; color: var(--text-hint); }
+  .notion-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text-hint); padding: 2px 4px;
+    margin-left: auto;
+  }
+  .notion-remove:active { color: var(--negative); }
+  .notion-add-rule {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--primary);
+    padding: 6px 0 2px; font-family: inherit;
+  }
+  .notion-sort-row {
+    display: flex; align-items: center; gap: 8px;
+    padding-top: 8px; margin-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+  /* Sort dropdown (nyam-dropdown style) */
+  .sort-dropdown {
+    display: none;
+    position: absolute; right: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px;
+    z-index: 80;
+    min-width: 140px;
+  }
+  .sort-dropdown.open { display: block; }
+  .nyam-dropdown-item {
+    display: block; width: 100%;
+    padding: 9px 12px; text-align: left;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text); background: none;
+    border: none; cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .nyam-dropdown-item:hover { background: var(--bg); }
+  .nyam-dropdown-item:active { background: var(--border); }
+  .nyam-dropdown-item.active {
+    color: var(--primary); font-weight: 600;
+  }
 
   /* =====================
      Place card — L/R split layout
@@ -3710,9 +3767,7 @@
           <div class="app-header">
             <div class="header-brand">nyam</div>
             <div class="header-right">
-              <button class="icon-btn" onclick="goToTab('bubble')" title="버블">
-                <i data-lucide="circle-dot" style="width:20px;height:20px;"></i>
-              </button>
+              <button onclick="goToTab('bubble')" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -3725,7 +3780,7 @@
         </div>
 
         <!-- Scrollable content (tabs scroll with content, not sticky) -->
-        <div class="scroll-content" id="homeScroll" style="flex:1;" onscroll="document.getElementById('homeTopFixed').classList.toggle('glass', this.scrollTop > 10)">
+        <div class="scroll-content" id="homeScroll" style="flex:1;" >
 
           <!-- AI greeting -->
           <div class="ai-greeting" id="aiGreeting" data-restaurant-id="sushi-kouji" onclick="navigateToRestaurant(this)">
@@ -3756,25 +3811,39 @@
               <button class="view-toggle-btn" onclick="setViewMode('compact')">간단</button>
               <button class="view-toggle-btn active" onclick="setViewMode('detail')">상세</button>
             </div>
-            <!-- 식당: 필터 / 와인: 전체 목록 -->
-            <button class="filter-toggle" id="filterToggle" onclick="toggleFilter()" title="필터">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <!-- 필터 (좌) -->
+            <button class="tab-icon-btn" id="filterToggle" onclick="toggleFilter()" title="필터">
+              <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
             </button>
-            <button class="filter-toggle" id="wineListBtn" onclick="alert('내 와인 전체 목록 페이지')" title="와인 목록" style="display:none;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <!-- 소팅 (우) -->
+            <button class="tab-icon-btn" id="sortToggle" onclick="toggleSort()" title="정렬">
+              <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
             </button>
           </div>
 
-          <!-- Filter drawer — hidden by default -->
+          <!-- Notion-style filter panel — hidden by default -->
           <div class="filter-drawer" id="filterDrawer">
-            <div class="filter-drawer-inner" id="sceneFilterRow">
-              <div class="filter-chip active" onclick="selectFilter(this)">전체</div>
-              <div class="filter-chip" onclick="selectFilter(this)">혼밥</div>
-              <div class="filter-chip" onclick="selectFilter(this)">데이트</div>
-              <div class="filter-chip" onclick="selectFilter(this)">회식</div>
-              <div class="filter-chip" onclick="selectFilter(this)">가족</div>
-              <div class="filter-chip" onclick="selectFilter(this)">친구</div>
+            <div class="notion-filter-panel">
+              <div class="notion-filter-rules" id="filterRules">
+                <div class="notion-filter-rule">
+                  <span class="notion-conjunction">Where</span>
+                  <button class="notion-attr" onclick="cycleAttr(this)">상황</button>
+                  <span class="notion-is">is</span>
+                  <button class="notion-val" onclick="cycleVal(this)">전체</button>
+                  <button class="notion-remove" onclick="removeRule(this)">✕</button>
+                </div>
+              </div>
+              <button class="notion-add-rule" onclick="addFilterRule()">+ 필터 추가</button>
             </div>
+          </div>
+
+          <!-- Sort dropdown (nyam-dropdown style) -->
+          <div class="sort-dropdown" id="sortDropdown">
+            <button class="nyam-dropdown-item active" onclick="selectSort(this)">최신순</button>
+            <button class="nyam-dropdown-item" onclick="selectSort(this)">점수 높은순</button>
+            <button class="nyam-dropdown-item" onclick="selectSort(this)">점수 낮은순</button>
+            <button class="nyam-dropdown-item" onclick="selectSort(this)">이름순</button>
+            <button class="nyam-dropdown-item" onclick="selectSort(this)">방문 많은순</button>
           </div>
 
           <!-- TAB: 식당 -->
@@ -3988,7 +4057,7 @@
             </div>
 
             <!-- 더보기 -->
-            <button onclick="alert('02_list.html → 내 컬렉션')" style="
+            <button onclick="setViewMode('compact')" style="
               display:flex;align-items:center;justify-content:center;gap:6px;
               width:calc(100% - 32px);margin:0 16px 4px;padding:12px;
               border-radius:12px;border:1.5px solid var(--border);
@@ -4700,16 +4769,10 @@
           </div>
         </div>
 
-        <!-- FAB -->
-        <div class="fab-container">
-          <button class="fab" id="fabBtn" onclick="fabAddRecord()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Add Bottom Sheet (removed — FAB now goes directly to record flow based on current tab) -->
+        <!-- FAB Add -->
+        <button class="fab-add" onclick="fabAddRecord()">
+          <i data-lucide="plus" style="width:22px;height:22px;"></i>
+        </button>
       </div>
 
       <!-- ==========================================
@@ -6293,9 +6356,7 @@
     // Show/hide panels
     document.getElementById('panelFood').className = 'tab-panel' + (tab === 'food' ? ' active' : '');
     document.getElementById('panelWine').className = 'tab-panel' + (tab === 'wine' ? ' active' : '');
-    // Toggle filter vs wine-list button
-    document.getElementById('filterToggle').style.display = tab === 'food' ? '' : 'none';
-    document.getElementById('wineListBtn').style.display = tab === 'wine' ? '' : 'none';
+    // Filter button is always visible (both tabs use same filter system)
     // Close filter drawer when switching tabs
     document.getElementById('filterDrawer').classList.remove('open');
     // Maintain view mode across tabs
@@ -6307,20 +6368,92 @@
   // =====================
   function toggleFilter() {
     const drawer = document.getElementById('filterDrawer');
-    const toggle = document.getElementById('filterToggle');
+    const sortDD = document.getElementById('sortDropdown');
+    // close sort dropdown if open
+    sortDD.classList.remove('open');
+    document.getElementById('sortToggle').classList.remove('has-filter');
     drawer.classList.toggle('open');
+    document.getElementById('filterToggle').classList.toggle('has-filter', drawer.classList.contains('open'));
   }
 
-  function selectFilter(el) {
-    document.querySelectorAll('#sceneFilterRow .filter-chip').forEach(c => c.classList.remove('active'));
+  function toggleSort() {
+    const dd = document.getElementById('sortDropdown');
+    const filterDrawer = document.getElementById('filterDrawer');
+    // close filter if open
+    filterDrawer.classList.remove('open');
+    document.getElementById('filterToggle').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('sortToggle').classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+
+  function selectSort(el) {
+    el.parentElement.querySelectorAll('.nyam-dropdown-item').forEach(s => s.classList.remove('active'));
     el.classList.add('active');
-    savedFilter = el.textContent;
-    const toggle = document.getElementById('filterToggle');
-    if (savedFilter !== '전체') {
-      toggle.classList.add('has-filter');
-    } else {
-      toggle.classList.remove('has-filter');
+    document.getElementById('sortDropdown').classList.remove('open');
+    document.getElementById('sortToggle').classList.remove('has-filter');
+  }
+
+  // Notion-style filter interactions
+  const FOOD_ATTRS = ['상황','음식종류','위치','점수','시기','동반자','명성','가격대'];
+  const FOOD_VALS = {
+    '상황': ['전체','혼밥','데이트','회식','가족','친구','술자리'],
+    '음식종류': ['전체','한식','일식','양식','중식','이탈리안','프렌치','동남아'],
+    '위치': ['전체','강남','을지로','청담','이태원','홍대','광화문','성수','한남'],
+    '점수': ['전체','90+','80~89','70~79','~69'],
+    '시기': ['전체','최근 1주','1개월','3개월','6개월','1년+'],
+    '동반자': ['전체','혼자','2인','3~4인','5인+'],
+    '명성': ['전체','미슐랭','블루리본','TV출연','수상없음'],
+    '가격대': ['전체','~2만','2~5만','5~10만','10만+']
+  };
+  const SORT_OPTIONS = ['최신순','점수 높은순','점수 낮은순','이름순','방문 많은순'];
+
+  function cycleAttr(el) {
+    const attrs = FOOD_ATTRS;
+    const idx = (attrs.indexOf(el.textContent) + 1) % attrs.length;
+    el.textContent = attrs[idx];
+    // reset value when attr changes
+    const valBtn = el.parentElement.querySelector('.notion-val');
+    if (valBtn) valBtn.textContent = FOOD_VALS[attrs[idx]][0];
+  }
+
+  function cycleVal(el) {
+    const attrBtn = el.parentElement.querySelector('.notion-attr');
+    const vals = FOOD_VALS[attrBtn.textContent] || ['전체'];
+    const idx = (vals.indexOf(el.textContent) + 1) % vals.length;
+    el.textContent = vals[idx];
+  }
+
+  function removeRule(el) {
+    const rule = el.parentElement;
+    const rules = document.getElementById('filterRules');
+    if (rules.children.length > 1) {
+      rule.remove();
     }
+  }
+
+  function addFilterRule() {
+    const rules = document.getElementById('filterRules');
+    const rule = document.createElement('div');
+    rule.className = 'notion-filter-rule';
+    rule.innerHTML = '<span class="notion-conjunction clickable" onclick="toggleConjunction()">And</span>' +
+      '<button class="notion-attr" onclick="cycleAttr(this)">상황</button>' +
+      '<span class="notion-is">is</span>' +
+      '<button class="notion-val" onclick="cycleVal(this)">전체</button>' +
+      '<button class="notion-remove" onclick="removeRule(this)">✕</button>';
+    rules.appendChild(rule);
+  }
+
+  function toggleConjunction() {
+    const conjs = document.querySelectorAll('.notion-conjunction.clickable');
+    const current = conjs[0]?.textContent || 'And';
+    const next = current === 'And' ? 'Or' : 'And';
+    conjs.forEach(c => c.textContent = next);
+  }
+
+  // (unused — sort now uses selectSort with chip UI)
+  function cycleSortNotion(el) {
+    const idx = (SORT_OPTIONS.indexOf(el.textContent.replace(' ▾','')) + 1) % SORT_OPTIONS.length;
+    el.textContent = SORT_OPTIONS[idx] + ' ▾';
   }
 
   // =====================

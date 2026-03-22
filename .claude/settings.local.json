@@ -82,7 +82,9 @@
       "Bash(sed -i '' 's/text-gray-500/text-neutral-500/g' components/capture/blog-preview.tsx)",
       "Bash(git ls-tree:*)",
       "Bash(git fetch:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "mcp__playwright__browser_press_key",
+      "Bash(python3:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

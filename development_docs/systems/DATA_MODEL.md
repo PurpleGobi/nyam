@@ -37,11 +37,11 @@ CREATE TABLE users (
   avatar_url TEXT,
   bio VARCHAR(100),
   preferred_areas TEXT[],           -- 온보딩에서 선택한 동네
-  privacy_profile VARCHAR(20) DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private'
-  privacy_records VARCHAR(20) DEFAULT 'shared_only',  -- 'shared_only' | 'all' | 'private'
-  show_bubbles BOOLEAN DEFAULT true,
-  show_levels BOOLEAN DEFAULT true,
-  show_quadrant BOOLEAN DEFAULT true,
+  privacy_profile VARCHAR(20) DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private' → SETTINGS.md §2
+  privacy_records VARCHAR(20) DEFAULT 'shared_only',  -- 'all' | 'shared_only' | 'private' → SETTINGS.md §3
+  show_bubbles BOOLEAN DEFAULT true,   -- 소속 버블 표시 (프로필+Wrapped+버블피드 전체 적용) → SETTINGS.md §5
+  show_levels BOOLEAN DEFAULT true,    -- 레벨 표시 (프로필+Wrapped+기록옆뱃지 전체 적용) → SETTINGS.md §5
+  show_quadrant BOOLEAN DEFAULT true,  -- 사분면 표시 (프로필+버블피드+상세L9 전체 적용) → SETTINGS.md §5
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

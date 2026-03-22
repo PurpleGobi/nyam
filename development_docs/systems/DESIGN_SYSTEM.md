@@ -283,7 +283,64 @@ card-gauge:   [gauge bar] [× 닫기]       ← 가봤음/맞아요 후 교체
 | 점수 | `compact-score`, 18px, 800, 우측 정렬, 32px 최소 폭 |
 | 점수 색상 | 식당: `--accent-food` / 와인: `--accent-wine` |
 | 미평가 | 14px, 600, `--text-hint`, `—` 표시 |
-| 최대 표시 | 10개 |
+| 최대 표시 | 제한 없음 (전체 데이터) |
+
+### Floating Add Button (fab-add)
+
+fab-back과 동일한 글래스모피즘 스타일의 기록 추가 버튼. 하단 우측 고정.
+
+| 속성 | 값 |
+|------|-----|
+| CSS 클래스 | `fab-add` |
+| 크기 | 44×44px 원형 (fab-back과 동일) |
+| 위치 | `position: absolute; bottom: 28px; right: 16px;` |
+| 배경 | `rgba(248,246,243,0.88)` + `backdrop-filter: blur(12px)` |
+| 테두리 | `1px solid var(--border)` |
+| 그림자 | `0 2px 12px rgba(0,0,0,0.12)` |
+| 아이콘 | lucide `plus` 22px, `color: var(--text)` |
+| 터치 | `transform: scale(0.9)` on active |
+| z-index | 85 |
+| 적용 페이지 | HOME, DETAIL, PROFILE, BUBBLE — 모든 페이지 |
+| 동작 — 홈 | 현재 탭(식당/와인)에 따라 기록 플로우 진입 |
+| 동작 — 상세 | 해당 식당/와인 선택 스킵 → 바로 사분면 평가 |
+| 동작 — 프로필/버블 | 새 기록 추가 (홈과 동일) |
+
+### Notion 스타일 필터 패널
+
+인라인 드롭다운 기반 조건 필터. Where/And/Or 접속사 + 속성 + 값 구조.
+
+| 속성 | 값 |
+|------|-----|
+| 컨테이너 | `notion-filter-panel` / `bubble-filter-panel`, 접기/펼치기 (`max-height` 트랜지션) |
+| 규칙 행 | `flex`, `gap: 6px`, 12px 폰트 |
+| 접속사 | Where (첫 행) / And·Or (이후 행, 클릭으로 토글) |
+| 속성 버튼 | `--bg` 배경, `1px solid --border`, `border-radius: 6px`, 클릭 시 순환 |
+| 값 버튼 | 동일 스타일, 속성에 따라 옵션 순환 |
+| 제거 | `✕` 버튼, hint 색상, hover 시 negative |
+| 추가 | `+ 필터 추가`, accent 색상 텍스트 버튼 |
+| 적용 | HOME 식당/와인 탭, BUBBLE 탐색 |
+
+### 고정 헤더 (top-fixed)
+
+모든 페이지 상단 고정 헤더. 글래스모피즘 항상 적용 (스크롤 토글 없음).
+
+```css
+.top-fixed {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+  background: rgba(248,246,243,0.55);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+}
+```
+
+| 속성 | 값 |
+|------|-----|
+| 위치 | `position: absolute; top: 0; left: 0; right: 0;` |
+| z-index | 10 |
+| 배경 | `rgba(248,246,243,0.55)` |
+| 블러 | `backdrop-filter: blur(20px) saturate(1.5)` |
+| 그림자 | `0 1px 12px rgba(0,0,0,0.08)` |
+| `.glass` 클래스 | 없음 — 글래스모피즘이 기본 상태. 스크롤 기반 토글 없음 |
 
 ### 인풋
 

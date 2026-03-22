@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — 설정</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --accent-social-light: #EDF2F5;
+    --brand: #FF6038;
+  }
+
+  body {
+    background: var(--bg-page);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  .device {
+    width: 390px; height: 844px; background: #2A2725;
+    border-radius: 52px; padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
+    position: relative; flex-shrink: 0;
+  }
+  .viewport {
+    width: 100%; height: 100%; background: var(--bg);
+    border-radius: 42px; overflow: hidden; position: relative;
+  }
+
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 0; height: 50px;
+    font-size: 15px; font-weight: 600; color: var(--text);
+  }
+  .status-icons { display: flex; gap: 6px; color: var(--text); }
+
+  .top-fixed {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 20px 10px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    font-size: 17px; font-weight: 700; color: var(--text); font-family: inherit;
+  }
+  .back-btn svg { width: 20px; height: 20px; }
+
+  .scroll-area {
+    height: 100%; overflow-y: auto; padding-top: 90px; padding-bottom: 40px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Settings */
+  .settings-section { padding: 20px 20px 8px; }
+  .settings-section-title {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-sub); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 0 0 6px;
+  }
+  .settings-card {
+    background: var(--bg-card); border-radius: 12px;
+    overflow: hidden; border: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .settings-item {
+    display: flex; align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; gap: 12px;
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item-icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); flex-shrink: 0;
+  }
+  .settings-item-icon svg { width: 18px; height: 18px; }
+  .settings-item-label { flex: 1; font-size: 15px; color: var(--text); }
+  .settings-item-sub {
+    font-size: 12px; color: var(--text-hint); margin-top: 2px; line-height: 1.3;
+  }
+  .settings-item-value { font-size: 13px; color: var(--text-sub); }
+  .settings-item-chevron { color: #D4CFC8; display: flex; align-items: center; }
+  .settings-item-chevron svg { width: 16px; height: 16px; }
+  .settings-item.danger .settings-item-label { color: #B87272; }
+  .settings-item.danger .settings-item-icon { color: #B87272; }
+
+  /* Toggle */
+  .toggle {
+    width: 44px; height: 26px;
+    background: #D4CFC8; border-radius: 13px;
+    position: relative; cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0; border: none;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 22px; height: 22px;
+    background: #fff; border-radius: 50%;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle.on::after { left: 20px; }
+
+  /* Select pill */
+  /* nyam-select (inline variant for settings) */
+  .nyam-select-wrap { position: relative; display: inline-block; flex-shrink: 0; }
+  .nyam-select {
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; font-family: inherit;
+    font-size: 12px; font-weight: 500; color: var(--text);
+    transition: all 0.15s; user-select: none;
+  }
+  .nyam-select:hover { border-color: var(--border-bold); }
+  .nyam-select.open { border-color: var(--primary); }
+  .nyam-select-value { flex: 1; white-space: nowrap; }
+  .nyam-select-arrow { transition: transform 0.2s; flex-shrink: 0; }
+  .nyam-select.open .nyam-select-arrow { transform: rotate(180deg); }
+  .nyam-dropdown {
+    display: none; position: absolute; top: calc(100% + 4px);
+    right: 0; min-width: 100%;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px; z-index: 100;
+  }
+  .nyam-select.open + .nyam-dropdown { display: block; }
+  .nyam-dropdown-item {
+    display: block; width: 100%; padding: 8px 12px;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); cursor: pointer; transition: background 0.1s;
+    border: none; background: none; text-align: left;
+    font-family: inherit; white-space: nowrap;
+  }
+  .nyam-dropdown-item:hover { background: var(--bg); }
+  .nyam-dropdown-item.selected { color: var(--primary); font-weight: 600; }
+
+  /* Privacy detail sub-section (collapsible helper) */
+  .privacy-helper {
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .privacy-helper:last-child { border-bottom: none; }
+  .privacy-helper-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 0;
+  }
+  .privacy-helper-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px;
+  }
+  .privacy-helper-text {
+    flex: 1; font-size: 12px; color: var(--text-sub); line-height: 1.4;
+  }
+  .privacy-helper-text strong { color: var(--text); font-weight: 600; }
+
+  /* Bottom sheet overlay */
+  .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    border-radius: 42px;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* Option sheet */
+  .option-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: var(--bg-elevated);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 40px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 75%;
+    overflow-y: auto;
+  }
+  .option-sheet.show { transform: translateY(0); }
+  .option-sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border-bold);
+    margin: 0 auto 16px;
+  }
+  .option-sheet-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px;
+  }
+  .option-sheet-desc {
+    font-size: 13px; color: var(--text-sub); margin-bottom: 16px; line-height: 1.4;
+  }
+
+  .option-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px; margin-bottom: 8px;
+    background: var(--bg); border-radius: 12px;
+    border: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .option-card:active { opacity: 0.8; }
+  .option-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .option-card-radio {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--border-bold);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .option-card.selected .option-card-radio {
+    border-color: var(--primary);
+  }
+  .option-card.selected .option-card-radio::after {
+    content: ''; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--primary);
+  }
+  .option-card-content { flex: 1; }
+  .option-card-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .option-card-desc { font-size: 12px; color: var(--text-sub); margin-top: 3px; line-height: 1.4; }
+
+  .option-card-scope {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+  }
+  .scope-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    font-weight: 500;
+  }
+  .scope-tag.visible { background: #E8F0EB; color: var(--positive); }
+  .scope-tag.hidden { background: #F5EAEA; color: var(--negative); }
+  .scope-tag.partial { background: #F5F0E5; color: var(--caution); }
+
+  /* Toggle group info */
+  .toggle-scope-list {
+    padding: 8px 16px 12px 46px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .toggle-scope-list:last-child { border-bottom: none; }
+  .toggle-scope-item {
+    font-size: 11px; color: var(--text-hint); line-height: 1.6;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .toggle-scope-item::before {
+    content: ''; width: 4px; height: 4px; border-radius: 50%;
+    background: var(--text-hint); flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="viewport">
+
+    <div class="top-fixed">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <i data-lucide="signal" style="width:16px;height:16px;"></i>
+          <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+          <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+        </div>
+      </div>
+      <div class="app-header">
+        <button class="back-btn" onclick="location.href='03_profile.html'">
+          <i data-lucide="chevron-left"></i> 설정
+        </button>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- 계정 -->
+      <div class="settings-section">
+        <div class="settings-section-title">계정</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="pencil"></i></span>
+            <span class="settings-item-label">닉네임 변경</span>
+            <span class="settings-item-value">김맛잘알</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="message-square"></i></span>
+            <span class="settings-item-label">한줄 소개 변경</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="image"></i></span>
+            <span class="settings-item-label">아바타 변경</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== 프라이버시 — 공개 범위 (항목별 세분화) ========== -->
+      <div class="settings-section">
+        <div class="settings-section-title">공개 범위</div>
+        <div class="settings-card">
+
+          <!-- 프로필 공개 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="eye"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">프로필</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">버블 멤버만</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">전체 공개</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">버블 멤버만</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 기록 공개 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="book-open"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기록</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">버블 내 공유만</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">전체 공개</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">버블 내 공유만</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 점수 공개 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="star"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">점수</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">버블 멤버만</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">전체 공개</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">버블 멤버만</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 한줄평 공개 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="message-circle"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">한줄평</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">버블 멤버만</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">전체 공개</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">버블 멤버만</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 사진 공개 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="image"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">사진</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">버블 멤버만</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">전체 공개</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">버블 멤버만</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 가격 정보 -->
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="wallet"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">가격 정보</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">비공개</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">버블 멤버만</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">비공개</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 동반자 (항상 비공개, 비활성) -->
+          <div class="settings-item" style="opacity:0.5;">
+            <span class="settings-item-icon"><i data-lucide="users"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label" style="font-size:15px">동반자</div>
+            </div>
+            <span class="settings-item-value" style="font-size:12px;color:var(--text-hint)">항상 비공개</span>
+          </div>
+
+        </div>
+        <div style="padding:8px 4px 0;font-size:11px;color:var(--text-hint);line-height:1.5;">
+          · 버블 종류(private/members/public)마다 owner가 별도 공개수위를 설정 가능<br>
+          · 여기 설정은 개인 기본값 — 버블 설정이 더 제한적이면 버블 설정이 우선
+        </div>
+      </div>
+
+      <!-- ========== 프라이버시 — 표시 항목 ========== -->
+      <div class="settings-section">
+        <div class="settings-section-title">표시 항목</div>
+        <div class="settings-card">
+
+          <!-- 소속 버블 표시 -->
+          <div class="settings-item" id="toggle-bubbles-item">
+            <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label" style="font-size:15px">소속 버블</div>
+              <div class="settings-item-sub">프로필·Wrapped에서 버블 목록 표시</div>
+            </div>
+            <button class="toggle on" onclick="event.stopPropagation();this.classList.toggle('on');toggleScope('bubbles')"></button>
+          </div>
+          <div class="toggle-scope-list" id="scope-bubbles">
+            <div class="toggle-scope-item">프로필 페이지</div>
+            <div class="toggle-scope-item">Wrapped 공유 카드</div>
+          </div>
+
+          <!-- 레벨 표시 -->
+          <div class="settings-item" id="toggle-levels-item">
+            <span class="settings-item-icon"><i data-lucide="award"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label" style="font-size:15px">경험치 레벨</div>
+              <div class="settings-item-sub">레벨 뱃지와 경험치 진행 표시</div>
+            </div>
+            <button class="toggle on" onclick="event.stopPropagation();this.classList.toggle('on');toggleScope('levels')"></button>
+          </div>
+          <div class="toggle-scope-list" id="scope-levels">
+            <div class="toggle-scope-item">프로필 아바타 레벨 뱃지</div>
+            <div class="toggle-scope-item">프로필 경험치 섹션</div>
+            <div class="toggle-scope-item">Wrapped 공유 카드</div>
+            <div class="toggle-scope-item">버블 피드 내 내 기록</div>
+            <div class="toggle-scope-item">식당/와인 상세 (L9)</div>
+          </div>
+
+          <!-- 사분면 표시 -->
+          <div class="settings-item" id="toggle-quadrant-item">
+            <span class="settings-item-icon"><i data-lucide="scatter-chart"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label" style="font-size:15px">사분면 점수</div>
+              <div class="settings-item-sub">기록의 사분면 좌표 공개</div>
+            </div>
+            <button class="toggle on" onclick="event.stopPropagation();this.classList.toggle('on');toggleScope('quadrant')"></button>
+          </div>
+          <div class="toggle-scope-list" id="scope-quadrant" style="border-bottom:none">
+            <div class="toggle-scope-item">버블 피드 내 내 기록</div>
+            <div class="toggle-scope-item">식당/와인 상세 (L9)</div>
+          </div>
+
+        </div>
+
+        <div style="padding:8px 4px 0;font-size:11px;color:var(--text-hint);line-height:1.5">
+          OFF로 설정해도 나에게는 항상 표시됩니다. 다른 사용자에게만 숨겨집니다.
+        </div>
+      </div>
+
+      <!-- 알림 -->
+      <div class="settings-section">
+        <div class="settings-section-title">알림</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="clock"></i></span>
+            <span class="settings-item-label">넛지 설정</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="bell"></i></span>
+            <span class="settings-item-label">푸시 알림</span>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="moon"></i></span>
+            <span class="settings-item-label">방해 금지</span>
+            <span class="settings-item-value">23:00–08:00</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 디폴트 설정 -->
+      <div class="settings-section">
+        <div class="settings-section-title">디폴트 설정</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="layout-grid"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">홈 보기 모드</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">상세</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">상세</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">간단</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="utensils"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">시작 탭</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">식당</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">식당</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">와인</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">마지막 사용</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="arrow-up-down"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기본 정렬</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">최신순</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">최신순</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">점수 높은순</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">점수 낮은순</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">이름순</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">방문 많은순</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="camera"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기록 시 카메라</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">카메라 우선</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">카메라 우선</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">검색 우선</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="share-2"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기록 후 버블 공유</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">매번 물어보기</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">매번 물어보기</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">자동 공유</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">공유 안 함</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="thermometer"></i></span>
+            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">와인 온도 단위</div></div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">°C</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">°C</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">°F</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 데이터 -->
+      <div class="settings-section">
+        <div class="settings-section-title">데이터</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="upload"></i></span>
+            <span class="settings-item-label">데이터 내보내기</span>
+            <span class="settings-item-value" style="font-size:11px">JSON / CSV</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="download"></i></span>
+            <span class="settings-item-label">데이터 가져오기</span>
+            <span class="settings-item-value" style="font-size:11px">JSON / CSV</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="eraser"></i></span>
+            <span class="settings-item-label">캐시 삭제</span>
+            <span class="settings-item-value" style="font-size:11px">12.3 MB</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 정보 -->
+      <div class="settings-section">
+        <div class="settings-section-title">정보</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="scroll-text"></i></span>
+            <span class="settings-item-label">이용약관</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="shield"></i></span>
+            <span class="settings-item-label">개인정보처리방침</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="info"></i></span>
+            <span class="settings-item-label">버전</span>
+            <span class="settings-item-value">2.0.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 계정 관리 -->
+      <div class="settings-section">
+        <div class="settings-section-title">계정 관리</div>
+        <div class="settings-card">
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="log-out"></i></span>
+            <span class="settings-item-label">로그아웃</span>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+          <div class="settings-item danger" onclick="openSheet('delete')">
+            <span class="settings-item-icon"><i data-lucide="trash-2"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label" style="font-size:15px;color:var(--negative)">계정 삭제</div>
+              <div class="settings-item-sub">30일 유예 후 영구 삭제</div>
+            </div>
+            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- ========== SHEET: 계정 삭제 ========== -->
+    <div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+    <!-- ========== SHEET: 계정 삭제 ========== -->
+    <div class="option-sheet" id="sheet-delete">
+      <div class="option-sheet-handle"></div>
+      <div class="option-sheet-title">계정 삭제</div>
+      <div class="option-sheet-desc">삭제를 요청하면 30일간 복구 가능합니다. 이후 영구 삭제됩니다.</div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">기록 처리 방식을 선택하세요</div>
+
+        <div class="option-card selected" onclick="selectDeleteOption(this)">
+          <div class="option-card-radio"></div>
+          <div class="option-card-content">
+            <div class="option-card-title">기록 익명화</div>
+            <div class="option-card-desc">닉네임 → "탈퇴한 사용자", 아바타 삭제. 기록은 익명으로 집계에 유지됩니다.</div>
+          </div>
+        </div>
+
+        <div class="option-card" onclick="selectDeleteOption(this)">
+          <div class="option-card-radio"></div>
+          <div class="option-card-content">
+            <div class="option-card-title">기록 완전 삭제</div>
+            <div class="option-card-desc">모든 기록, 사진, 버블 공유, 댓글이 삭제됩니다. 복구 불가.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px;background:var(--bg);border-radius:10px;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
+          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
+            <span style="color:var(--text-hint)">·</span> 소속 버블에서 자동 탈퇴
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
+            <span style="color:var(--text-hint)">·</span> 내가 owner인 버블 → 다음 admin에게 이전 (없으면 삭제)
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
+            <span style="color:var(--text-hint)">·</span> 팔로우 관계 삭제
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:5px">
+            <span style="color:var(--text-hint)">·</span> 소셜 로그인 연결 해제
+          </div>
+        </div>
+      </div>
+
+      <button onclick="alert('30일 유예 기간이 시작됩니다.')" style="
+        width:100%; padding:14px; border-radius:12px;
+        background:var(--negative); border:none;
+        color:#fff; font-size:15px; font-weight:600;
+        cursor:pointer; font-family:inherit;
+      ">계정 삭제 요청</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // nyam-select dropdown
+  function selectNyam(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    const valueEl = select.querySelector('.nyam-select-value');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    valueEl.textContent = item.textContent.trim();
+    select.classList.remove('open');
+  }
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', e => {
+    document.querySelectorAll('.nyam-select.open').forEach(s => {
+      if (!s.parentElement.contains(e.target)) s.classList.remove('open');
+    });
+  });
+
+  // Sheet open/close
+  function openSheet(type) {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('sheet-' + type).classList.add('show');
+  }
+  function closeSheet() {
+    document.getElementById('overlay').classList.remove('show');
+    document.querySelectorAll('.option-sheet').forEach(s => s.classList.remove('show'));
+  }
+
+  // Option selection (profile / records)
+  function selectOption(type, el, label) {
+    const sheet = el.closest('.option-sheet');
+    sheet.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('pill-' + type).textContent = label + ' ▾';
+    setTimeout(closeSheet, 250);
+  }
+
+  // Delete option selection
+  function selectDeleteOption(el) {
+    const sheet = el.closest('.option-sheet');
+    sheet.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // Toggle scope visibility hint
+  function toggleScope(type) {
+    const scope = document.getElementById('scope-' + type);
+    if (scope) {
+      scope.style.opacity = scope.style.opacity === '0.4' ? '1' : '0.4';
+    }
+  }
+</script>
+</body>
+</html>

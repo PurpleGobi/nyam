@@ -142,17 +142,13 @@
     top: 0; left: 0; right: 0;
     z-index: 90;
     flex-shrink: 0;
-    transition: background 0.35s, box-shadow 0.35s;
-    background: transparent;
-    pointer-events: none;
-  }
-  .top-fixed > * { pointer-events: auto; }
-  .top-fixed.glass {
-    background: rgba(248,246,243,0.72);
+    background: rgba(248,246,243,0.55);
     backdrop-filter: blur(20px) saturate(1.5);
     -webkit-backdrop-filter: blur(20px) saturate(1.5);
     box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    pointer-events: none;
   }
+  .top-fixed > * { pointer-events: auto; }
 
   .status-bar {
     height: 44px;
@@ -262,6 +258,7 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    position: relative;
   }
   .screen.active {
     display: flex;
@@ -274,6 +271,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     position: relative;
+    padding-top: 80px; /* top-fixed 높이만큼 밀어냄 */
   }
   .scroll-content::-webkit-scrollbar { display: none; }
 
@@ -282,7 +280,7 @@
      ===================== */
   .scroll-header {
     position: sticky;
-    top: 0;
+    top: 0; /* scroll-content 내부의 sticky이므로 0 유지 */
     z-index: 80;
     background: transparent;
     transition: background 0.3s, box-shadow 0.3s;
@@ -335,7 +333,6 @@
   /* Hero wrap — shared between restaurant & wine */
   .hero-wrap {
     position: relative;
-    margin-top: -52px; /* pulls carousel behind scroll-header */
   }
   .hero-carousel {
     position: relative;
@@ -365,6 +362,22 @@
     height: 80px;
     background: linear-gradient(transparent, rgba(0,0,0,0.4));
   }
+  /* Hero action buttons — inside photo, bottom-right */
+  .hero-actions {
+    position: absolute;
+    bottom: 10px; right: 12px;
+    display: flex; gap: 8px;
+    z-index: 6;
+  }
+  .hero-action-btn {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+  .hero-action-btn:active { color: #fff; }
+  .hero-action-btn.liked { color: #FF6038; }
   .carousel-dots {
     position: absolute;
     bottom: 12px;
@@ -384,25 +397,19 @@
   .dot.active { background: #fff; width: 16px; border-radius: 3px; }
 
   /* =====================
-     DETAIL INFO — grid-based info block
+     DETAIL INFO — consistent layout
      ===================== */
   .detail-info {
     padding: 0 20px;
     background: var(--bg);
-    border-bottom: 1px solid var(--border);
     display: flex;
     flex-direction: column;
   }
 
-  /* ── Group A: Name + Score (2-column grid) ── */
-  .info-group-a {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 12px;
-    align-items: start;
-    padding: 12px 0 0;
+  /* ── Row 1: Name + Meta ── */
+  .info-header {
+    padding: 14px 0 8px;
   }
-
   .detail-name {
     font-size: 21px;
     font-weight: 800;
@@ -415,44 +422,10 @@
     color: var(--text-sub);
     margin-top: 1px;
   }
-
-  .my-score {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 2px;
-  }
-  .my-score-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--text-hint);
-    letter-spacing: 0.02em;
-  }
-  .my-score-num {
-    font-size: 38px;
-    font-weight: 800;
-    line-height: 1;
-    color: var(--primary);
-  }
-  .my-score-num.wine-color { color: var(--wine); }
-  .my-score-num.empty { color: var(--text-hint); font-size: 30px; }
-  .my-score-sub {
-    font-size: 9px;
-    color: var(--text-sub);
-    margin-top: 1px;
-  }
-
-  /* ── Group B: Meta details ── */
-  .info-group-b {
-    padding: 6px 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
   .meta-row {
     display: flex;
     align-items: center;
-    gap: 0;
+    margin-top: 4px;
     line-height: 1.4;
   }
   .dm-item { font-size: 12px; color: var(--text-sub); }
@@ -478,20 +451,119 @@
   .dm-chip.rose { background: #FDF5F8; color: #B8879B; border: 1px solid #EDD8E0; }
   .dm-chip.sparkling { background: #F0F5FA; color: var(--accent-social); border: 1px solid #D6E0E8; }
 
-  /* ── Group C: External scores + Badges (combined row) ── */
-  .info-group-c {
-    padding: 8px 0 10px;
+  /* ── Row 2: Score Cards (always 3 slots) ── */
+  .score-cards {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 10px;
+  }
+  .score-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .score-card-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-hint);
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+  .score-card-num {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--primary);
+  }
+  .score-card-num.wine-color { color: var(--wine); }
+  .score-card-num.empty { color: var(--border-bold); font-size: 18px; }
+  .score-card-sub {
+    font-size: 9px;
+    color: var(--text-hint);
+    margin-top: 2px;
+  }
+
+  /* Bubble score card — expandable */
+  .score-card.bubble {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .score-card.bubble:active { border-color: var(--accent-social); }
+  .bubble-count-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent-social);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--bg);
+  }
+
+  /* Bubble expand panel */
+  .bubble-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .bubble-expand.open { max-height: 200px; }
+  .bubble-expand-inner {
+    padding: 0 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bubble-score-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .bubble-score-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 10px;
+  }
+  .bubble-score-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .bubble-score-meta {
+    font-size: 10px;
+    color: var(--text-hint);
+  }
+  .bubble-score-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .bubble-score-val.wine-color { color: var(--wine); }
+
+  /* ── Row 3: Badges ── */
+  .badge-row {
+    padding: 0 0 10px;
     display: flex;
     align-items: center;
     gap: 5px;
     flex-wrap: wrap;
-  }
-  .info-group-c .gc-divider {
-    width: 1px;
-    height: 14px;
-    background: var(--border);
-    margin: 0 3px;
-    flex-shrink: 0;
   }
 
   /* External score chips */
@@ -558,6 +630,26 @@
     border-top: 1px solid var(--border);
   }
   .action-bar.floating.visible { display: flex; }
+
+  /* FAB Add — glassmorphism (matches fab-back) */
+  .fab-add {
+    position: absolute;
+    bottom: 28px; right: 16px;
+    z-index: 85;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: transform 0.15s;
+  }
+  .fab-add:active { transform: scale(0.9); }
+
   .btn-primary {
     flex: 1;
     padding: 12px;
@@ -1213,12 +1305,13 @@
   }
 
   /* Empty state toggle */
-  .empty-toggle-wrap {
+  .view-mode-wrap {
     display: flex;
     justify-content: center;
     margin-bottom: 12px;
+    gap: 6px;
   }
-  .empty-toggle-btn {
+  .view-mode-btn {
     padding: 6px 14px;
     border-radius: 20px;
     border: 1.5px solid var(--border);
@@ -1232,10 +1325,10 @@
     align-items: center;
     gap: 4px;
   }
-  .empty-toggle-btn:hover { background: var(--border); }
-  .empty-toggle-btn.active-empty {
-    background: var(--caution);
-    border-color: var(--caution);
+  .view-mode-btn:hover { background: var(--border); }
+  .view-mode-btn.active {
+    background: var(--text);
+    border-color: var(--text);
     color: #fff;
   }
 </style>
@@ -1257,10 +1350,16 @@
   </button>
 </div>
 
-<!-- Empty State Toggle -->
-<div class="empty-toggle-wrap">
-  <button class="empty-toggle-btn" id="emptyToggleBtn" onclick="toggleEmptyState()">
-    <i data-lucide="eye-off" style="width:12px;height:12px;"></i> 빈 상태 보기
+<!-- View Mode Toggle: 3 states -->
+<div class="view-mode-wrap">
+  <button class="view-mode-btn active" onclick="setViewMode('mine')">
+    <i data-lucide="user" style="width:12px;height:12px;"></i> 내 기록
+  </button>
+  <button class="view-mode-btn" onclick="setViewMode('recommended')">
+    <i data-lucide="compass" style="width:12px;height:12px;"></i> 추천 (버블 없음)
+  </button>
+  <button class="view-mode-btn" onclick="setViewMode('bubble')">
+    <i data-lucide="message-circle" style="width:12px;height:12px;"></i> 버블 리뷰
   </button>
 </div>
 
@@ -1274,12 +1373,15 @@
       <div class="status-bar">
         <span class="status-time">9:41</span>
         <div style="display:flex;gap:6px;align-items:center;">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+          <i data-lucide="signal" style="width:14px;height:14px;"></i>
+          <i data-lucide="wifi" style="width:14px;height:14px;"></i>
+          <i data-lucide="battery" style="width:16px;height:16px;"></i>
         </div>
       </div>
       <div class="app-header">
         <span class="app-logo">nyam</span>
         <div class="app-header-actions">
+          <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
           <button class="app-header-btn">
             <i data-lucide="bell" style="width:20px;height:20px;"></i>
             <span class="notif-dot"></span>
@@ -1298,14 +1400,6 @@
       </button>
       <div class="scroll-content" id="rest-scroll" onscroll="handleRestaurantScroll(this)">
 
-        <!-- Scroll Header -->
-        <div class="scroll-header" id="rest-header">
-          <span class="header-name">스시코우지</span>
-          <button class="header-icon-btn" id="header-heart-rest" onclick="toggleHeart('header-heart-rest', 'action-heart-rest')">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-
         <!-- Layer 1: Hero Carousel + Thumb -->
         <div class="hero-wrap">
           <div class="hero-carousel">
@@ -1321,6 +1415,10 @@
                 <span class="thumb-text">스시코우지</span>
               </div>
             </div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
             <div class="carousel-dots">
               <div class="dot active" onclick="goToSlide('rest-carousel', 0, this.parentElement)"></div>
               <div class="dot" onclick="goToSlide('rest-carousel', 1, this.parentElement)"></div>
@@ -1329,19 +1427,10 @@
           </div>
         </div>
 
-        <!-- Layer 2: Detail Info -->
+        <!-- Layer 2: Detail Info (consistent layout) -->
         <div class="detail-info">
-          <div class="info-group-a">
-            <div>
-              <div class="detail-name">스시코우지</div>
-            </div>
-            <div class="my-score">
-              <span class="my-score-label">내 점수</span>
-              <span class="my-score-num">87</span>
-              <span class="my-score-sub">3회 방문</span>
-            </div>
-          </div>
-          <div class="info-group-b">
+          <div class="info-header">
+            <div class="detail-name">스시코우지</div>
             <div class="meta-row">
               <span class="dm-item">일식</span>
               <span class="dm-sep">·</span>
@@ -1350,29 +1439,59 @@
               <span class="dm-price">₩₩₩</span>
             </div>
           </div>
-          <div class="info-group-c">
-            <div class="ext-chip"><span class="ext-label naver">N</span><span class="ext-val">4.3</span></div>
-            <div class="ext-chip"><span class="ext-label kakao">K</span><span class="ext-val">4.1</span></div>
-            <div class="ext-chip"><span class="ext-label google">G</span><span class="ext-val">4.4</span></div>
-            <span class="gc-divider"></span>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num">87</div>
+              <div class="score-card-sub">3회 방문</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num">88</div>
+              <div class="score-card-sub">웹+명성</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('rest-bubbles')">
+              <div class="bubble-count-badge">3</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num">87</div>
+              <div class="score-card-sub">평균 · 3개</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="rest-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">3명 평가</div>
+                </div>
+                <div class="bubble-score-val">90</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">와인 모임</div>
+                  <div class="bubble-score-meta">2명 평가</div>
+                </div>
+                <div class="bubble-score-val">82</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#E8F0EB;color:var(--positive);"><i data-lucide="home" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">동네 맛집</div>
+                  <div class="bubble-score-meta">5명 평가</div>
+                </div>
+                <div class="bubble-score-val">89</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
             <span class="badge badge-michelin"><i data-lucide="star" style="width:10px;height:10px;"></i> 미슐랭 1스타</span>
             <span class="badge badge-blueribbon"><i data-lucide="award" style="width:10px;height:10px;"></i> 블루리본</span>
             <span class="badge badge-tv"><i data-lucide="tv" style="width:10px;height:10px;"></i> 수요미식회</span>
           </div>
         </div>
 
-        <!-- Layer 4: Action Bar (static) -->
-        <div class="action-bar" id="rest-action-bar-static">
-          <button class="btn-primary">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon" id="action-heart-rest" onclick="toggleHeart('action-heart-rest', 'header-heart-rest')">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
 
         <!-- Layer 5: My Records -->
         <div class="section">
@@ -1580,21 +1699,13 @@
           </div>
         </div>
 
-        <!-- Floating Action Bar -->
-        <div class="action-bar floating" id="rest-floating-bar">
-          <button class="btn-primary">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
+        <!-- (FAB is absolute-positioned inside scroll-content) -->
 
         <div class="bottom-spacer"></div>
       </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
     </div>
 
     <!-- ============================================================ -->
@@ -1606,14 +1717,6 @@
       </button>
       <div class="scroll-content">
 
-        <!-- Scroll Header -->
-        <div class="scroll-header">
-          <span class="header-name">스시코우지</span>
-          <button class="header-icon-btn">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-
         <!-- Layer 1: Hero Carousel + Thumb -->
         <div class="hero-wrap">
           <div class="hero-carousel">
@@ -1621,6 +1724,10 @@
               <div class="carousel-slide slide-1"></div>
             </div>
             <div class="carousel-overlay"></div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
             <div class="hero-thumb rest">
               <div class="thumb-inner">
                 <i data-lucide="utensils" style="width:28px;height:28px;"></i>
@@ -1630,19 +1737,10 @@
           </div>
         </div>
 
-        <!-- Layer 2: Detail Info (empty) -->
+        <!-- Layer 2: Detail Info (empty — same layout) -->
         <div class="detail-info">
-          <div class="info-group-a">
-            <div>
-              <div class="detail-name">스시코우지</div>
-            </div>
-            <div class="my-score">
-              <span class="my-score-label">내 점수</span>
-              <span class="my-score-num empty">—</span>
-              <span class="my-score-sub">아직 기록 없음</span>
-            </div>
-          </div>
-          <div class="info-group-b">
+          <div class="info-header">
+            <div class="detail-name">스시코우지</div>
             <div class="meta-row">
               <span class="dm-item">일식</span>
               <span class="dm-sep">·</span>
@@ -1651,29 +1749,47 @@
               <span class="dm-price">₩₩₩</span>
             </div>
           </div>
-          <div class="info-group-c">
-            <div class="ext-chip"><span class="ext-label naver">N</span><span class="ext-val">4.3</span></div>
-            <div class="ext-chip"><span class="ext-label kakao">K</span><span class="ext-val">4.1</span></div>
-            <div class="ext-chip"><span class="ext-label google">G</span><span class="ext-val">4.4</span></div>
-            <span class="gc-divider"></span>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num empty">—</div>
+              <div class="score-card-sub">미방문</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num">88</div>
+              <div class="score-card-sub">웹+명성</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('rest-empty-bubbles')">
+              <div class="bubble-count-badge">1</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num">90</div>
+              <div class="score-card-sub">1개 버블</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="rest-empty-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">1명 평가</div>
+                </div>
+                <div class="bubble-score-val">90</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
             <span class="badge badge-michelin"><i data-lucide="star" style="width:10px;height:10px;"></i> 미슐랭 1스타</span>
             <span class="badge badge-blueribbon"><i data-lucide="award" style="width:10px;height:10px;"></i> 블루리본</span>
             <span class="badge badge-tv"><i data-lucide="tv" style="width:10px;height:10px;"></i> 수요미식회</span>
           </div>
         </div>
 
-        <!-- Layer 4: Action Bar -->
-        <div class="action-bar">
-          <button class="btn-primary">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
+        <!-- FAB (+) -->
+        <button class="detail-fab food" onclick="alert('기록 추가')">
+          <i data-lucide="plus" style="width:24px;height:24px;"></i>
+        </button>
 
         <!-- Layer 5: 나의 기록 — Empty -->
         <div class="section">
@@ -1683,10 +1799,7 @@
           <div class="empty-state">
             <i data-lucide="search" style="width:28px;height:28px;color:var(--text-hint);"></i>
             <div class="empty-title">아직 방문 기록이 없어요</div>
-            <div class="empty-desc">첫 기록을 남겨보세요</div>
-            <div class="empty-cta">
-              <button class="btn-primary" style="display:inline-flex;flex:none;padding:10px 24px;">첫 기록 남기기</button>
-            </div>
+            <div class="empty-desc">우하단 + 버튼으로 첫 기록을 남겨보세요</div>
           </div>
         </div>
 
@@ -1725,21 +1838,52 @@
 
         <div class="divider"></div>
 
-        <!-- Layer 9: Bubble — Empty -->
-        <div class="section">
+        <!-- Layer 9: Bubble — toggleable -->
+        <div class="section" id="rest-empty-bubble-section">
           <div class="section-header">
             <span class="section-title">버블 기록</span>
             <span class="section-meta">Phase 2</span>
           </div>
-          <div class="empty-state">
-            <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
-            <div class="empty-title">아직 버블 기록이 없어요</div>
-            <div class="empty-desc">버블에서 이 식당에 대한 이야기를 나눠보세요</div>
+          <!-- Bubble Empty (추천 모드) -->
+          <div id="rest-empty-bubble-empty">
+            <div class="empty-state">
+              <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
+              <div class="empty-title">아직 버블 기록이 없어요</div>
+              <div class="empty-desc">버블에서 이 식당에 대한 이야기를 나눠보세요</div>
+            </div>
+          </div>
+          <!-- Bubble Data (버블 리뷰 모드) -->
+          <div id="rest-empty-bubble-data" style="display:none;">
+            <div class="bubble-filter">
+              <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
+              <button class="filter-chip" onclick="toggleFilter(this)">직장맛집</button>
+            </div>
+            <div class="bubble-card">
+              <div class="bubble-top">
+                <div class="avatar av1">김</div>
+                <div class="bubble-user">
+                  <div class="bubble-name">김영수</div>
+                  <div class="bubble-bubble-name">직장 맛집 버블</div>
+                </div>
+                <div class="bubble-score">90점</div>
+              </div>
+              <div class="bubble-comment">"여기 사케 페어링 필수예요. 오마카세랑 완벽 조합"</div>
+              <div class="bubble-footer">
+                <span class="bubble-meta">회식 · 3일 전</span>
+                <div class="bubble-reactions">
+                  <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 4</span>
+                  <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 2</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="bottom-spacer"></div>
       </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
     </div>
 
     <!-- ============================================================ -->
@@ -1751,14 +1895,6 @@
       </button>
       <div class="scroll-content" id="wine-scroll" onscroll="handleWineScroll(this)">
 
-        <!-- Scroll Header -->
-        <div class="scroll-header" id="wine-header">
-          <span class="header-name" style="color: var(--wine);">Chateau Margaux</span>
-          <button class="header-icon-btn" id="header-heart-wine" onclick="toggleHeart('header-heart-wine', 'action-heart-wine')" style="background: rgba(240,236,243,0.95);">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-
         <!-- Layer 1: Hero Carousel + Label -->
         <div class="hero-wrap">
           <div class="hero-carousel">
@@ -1768,6 +1904,10 @@
               <div class="carousel-slide wine-slide-3"></div>
             </div>
             <div class="carousel-overlay"></div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
             <div class="hero-thumb wine">
               <div class="thumb-inner">
                 <i data-lucide="wine" style="width:28px;height:28px;"></i>
@@ -1783,37 +1923,66 @@ MARGAUX</span>
           </div>
         </div>
 
-        <!-- Layer 2: Detail Info -->
+        <!-- Layer 2: Detail Info (consistent layout) -->
         <div class="detail-info">
-          <div class="info-group-a">
-            <div>
-              <div class="detail-name wine-color">Chateau Margaux</div>
-              <div class="detail-sub">Chateau Margaux</div>
-            </div>
-            <div class="my-score">
-              <span class="my-score-label">내 점수</span>
-              <span class="my-score-num wine-color">91</span>
-              <span class="my-score-sub">2회 시음</span>
-            </div>
-          </div>
-          <div class="info-group-b">
+          <div class="info-header">
+            <div class="detail-name wine-color">Chateau Margaux</div>
+            <div class="detail-sub">Chateau Margaux · 2018</div>
             <div class="meta-row">
               <span class="dm-chip red">레드</span>
               <span class="dm-sep">·</span>
               <span class="dm-item">보르도, 프랑스</span>
               <span class="dm-sep">·</span>
-              <span class="dm-item">2018</span>
-            </div>
-            <div class="meta-row">
               <span class="dm-item">Cabernet Sauvignon, Merlot</span>
-              <span class="dm-sep">·</span>
-              <span class="dm-price">₩350,000</span>
             </div>
           </div>
-          <div class="info-group-c">
-            <div class="ext-chip"><span class="ext-label vivino">Vivino</span><span class="ext-val">4.5</span></div>
-            <div class="ext-chip"><span class="ext-label ws">WS</span><span class="ext-val">96</span></div>
-            <span class="gc-divider"></span>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num wine-color">91</div>
+              <div class="score-card-sub">2회 시음</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num wine-color">92</div>
+              <div class="score-card-sub">Vivino+WS</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('wine-bubbles')">
+              <div class="bubble-count-badge">3</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num wine-color">88</div>
+              <div class="score-card-sub">평균 · 6명</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="wine-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">와인 동호회</div>
+                  <div class="bubble-score-meta">3명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">96</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">2명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">88</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#EDF2F5;color:var(--accent-social);"><i data-lucide="users" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">대학 동기</div>
+                  <div class="bubble-score-meta">1명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">79</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
             <span class="badge badge-wine-class"><i data-lucide="award" style="width:10px;height:10px;"></i> Grand Cru Classé</span>
             <span class="badge badge-vivino"><i data-lucide="grape" style="width:10px;height:10px;"></i> Vivino 4.5</span>
             <span class="badge badge-ws"><i data-lucide="trophy" style="width:10px;height:10px;"></i> WS 96</span>
@@ -1821,17 +1990,6 @@ MARGAUX</span>
         </div>
 
         <!-- Layer 4: Action Bar -->
-        <div class="action-bar" id="wine-action-bar-static" style="background: var(--wine-light); border-color: #DDD6E3;">
-          <button class="btn-primary wine-btn">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon" id="action-heart-wine" onclick="toggleHeart('action-heart-wine', 'header-heart-wine')" style="border-color: #DDD6E3;">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon" style="border-color: #DDD6E3;">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
 
         <!-- Layer 5: Wine Position Map — relative to other reviewed wines -->
         <div class="section">
@@ -2020,20 +2178,13 @@ MARGAUX</span>
         </div>
 
         <!-- Floating Action Bar for wine -->
-        <div class="action-bar floating" id="wine-floating-bar" style="background: var(--wine-light); border-top-color: #DDD6E3;">
-          <button class="btn-primary wine-btn">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon" style="border-color: #DDD6E3;">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon" style="border-color: #DDD6E3;">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
+        <!-- (FAB is absolute-positioned inside scroll-content) -->
 
         <div class="bottom-spacer"></div>
       </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
     </div>
 
     <!-- ============================================================ -->
@@ -2045,14 +2196,6 @@ MARGAUX</span>
       </button>
       <div class="scroll-content">
 
-        <!-- Scroll Header -->
-        <div class="scroll-header">
-          <span class="header-name" style="color: var(--wine);">Chateau Margaux</span>
-          <button class="header-icon-btn" style="background: rgba(240,236,243,0.95);">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-
         <!-- Layer 1: Hero Carousel + Label -->
         <div class="hero-wrap">
           <div class="hero-carousel">
@@ -2062,6 +2205,10 @@ MARGAUX</span>
               <div class="carousel-slide wine-slide-3"></div>
             </div>
             <div class="carousel-overlay"></div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
             <div class="hero-thumb wine">
               <div class="thumb-inner">
                 <i data-lucide="wine" style="width:28px;height:28px;"></i>
@@ -2077,55 +2224,72 @@ MARGAUX</span>
           </div>
         </div>
 
-        <!-- Layer 2: Detail Info (empty) -->
+        <!-- Layer 2: Detail Info (empty — same layout) -->
         <div class="detail-info">
-          <div class="info-group-a">
-            <div>
-              <div class="detail-name wine-color">Chateau Margaux</div>
-              <div class="detail-sub">Chateau Margaux</div>
-            </div>
-            <div class="my-score">
-              <span class="my-score-label">내 점수</span>
-              <span class="my-score-num wine-color empty">—</span>
-              <span class="my-score-sub">아직 기록 없음</span>
-            </div>
-          </div>
-          <div class="info-group-b">
+          <div class="info-header">
+            <div class="detail-name wine-color">Chateau Margaux</div>
+            <div class="detail-sub">Chateau Margaux · 2018</div>
             <div class="meta-row">
               <span class="dm-chip red">레드</span>
               <span class="dm-sep">·</span>
               <span class="dm-item">보르도, 프랑스</span>
               <span class="dm-sep">·</span>
-              <span class="dm-item">2018</span>
-            </div>
-            <div class="meta-row">
               <span class="dm-item">Cabernet Sauvignon, Merlot</span>
-              <span class="dm-sep">·</span>
-              <span class="dm-price">₩350,000</span>
             </div>
           </div>
-          <div class="info-group-c">
-            <div class="ext-chip"><span class="ext-label vivino">Vivino</span><span class="ext-val">4.5</span></div>
-            <div class="ext-chip"><span class="ext-label ws">WS</span><span class="ext-val">96</span></div>
-            <span class="gc-divider"></span>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num empty">—</div>
+              <div class="score-card-sub">미시음</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num wine-color">92</div>
+              <div class="score-card-sub">Vivino+WS</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('wine-empty-bubbles')">
+              <div class="bubble-count-badge">3</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num wine-color">88</div>
+              <div class="score-card-sub">평균 · 6명</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="wine-empty-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">와인 동호회</div>
+                  <div class="bubble-score-meta">3명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">96</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">2명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">88</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#EDF2F5;color:var(--accent-social);"><i data-lucide="users" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">대학 동기</div>
+                  <div class="bubble-score-meta">1명 평가</div>
+                </div>
+                <div class="bubble-score-val wine-color">79</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
             <span class="badge badge-wine-class"><i data-lucide="award" style="width:10px;height:10px;"></i> Grand Cru Classé</span>
             <span class="badge badge-vivino"><i data-lucide="grape" style="width:10px;height:10px;"></i> Vivino 4.5</span>
             <span class="badge badge-ws"><i data-lucide="trophy" style="width:10px;height:10px;"></i> WS 96</span>
           </div>
         </div>
 
-        <!-- Layer 4: Action Bar -->
-        <div class="action-bar" style="background: var(--wine-light); border-color: #DDD6E3;">
-          <button class="btn-primary wine-btn">
-            <i data-lucide="plus" style="width:16px;height:16px;"></i> 기록 남기기
-          </button>
-          <button class="btn-icon" style="border-color: #DDD6E3;">
-            <i data-lucide="heart" style="width:18px;height:18px;"></i>
-          </button>
-          <button class="btn-icon" style="border-color: #DDD6E3;">
-            <i data-lucide="share-2" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
 
         <!-- Layer 5: Quadrant — hidden (< 2 records) -->
 
@@ -2153,10 +2317,7 @@ MARGAUX</span>
           <div class="empty-state">
             <i data-lucide="search" style="width:28px;height:28px;color:var(--text-hint);"></i>
             <div class="empty-title">아직 기록이 없어요</div>
-            <div class="empty-desc">첫 기록을 남겨보세요</div>
-            <div class="empty-cta">
-              <button class="btn-primary wine-btn" style="display:inline-flex;flex:none;padding:10px 24px;">첫 기록 남기기</button>
-            </div>
+            <div class="empty-desc">우하단 + 버튼으로 첫 기록을 남겨보세요</div>
           </div>
         </div>
 
@@ -2180,21 +2341,52 @@ MARGAUX</span>
 
         <div class="divider"></div>
 
-        <!-- Layer 9: Bubble — Empty -->
-        <div class="section">
+        <!-- Layer 9: Bubble — toggleable -->
+        <div class="section" id="wine-empty-bubble-section">
           <div class="section-header">
             <span class="section-title">버블 기록</span>
             <span class="section-meta">Phase 2</span>
           </div>
-          <div class="empty-state">
-            <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
-            <div class="empty-title">아직 버블 기록이 없어요</div>
-            <div class="empty-desc">버블에서 이 와인에 대한 이야기를 나눠보세요</div>
+          <!-- Bubble Empty (추천 모드) -->
+          <div id="wine-empty-bubble-empty">
+            <div class="empty-state">
+              <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
+              <div class="empty-title">아직 버블 기록이 없어요</div>
+              <div class="empty-desc">버블에서 이 와인에 대한 이야기를 나눠보세요</div>
+            </div>
+          </div>
+          <!-- Bubble Data (버블 리뷰 모드) -->
+          <div id="wine-empty-bubble-data" style="display:none;">
+            <div class="bubble-filter">
+              <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
+              <button class="filter-chip" onclick="toggleFilter(this)">와인 동호회</button>
+            </div>
+            <div class="bubble-card" style="border-color:var(--wine);">
+              <div class="bubble-top">
+                <div class="avatar av2">박</div>
+                <div class="bubble-user">
+                  <div class="bubble-name">박소연</div>
+                  <div class="bubble-bubble-name">와인 동호회</div>
+                </div>
+                <div class="bubble-score" style="color:var(--wine);">96점</div>
+              </div>
+              <div class="bubble-comment">"보르도 클래식의 정수. 2018 빈티지 최고"</div>
+              <div class="bubble-footer">
+                <span class="bubble-meta">모임 · 2일 전</span>
+                <div class="bubble-reactions">
+                  <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 7</span>
+                  <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 3</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="bottom-spacer"></div>
       </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
     </div>
 
   </div>
@@ -2220,33 +2412,11 @@ MARGAUX</span>
   // SCROLL HEADER TRANSITION
   // ============================================================
   function handleRestaurantScroll(el) {
-    const header = document.getElementById('rest-header');
-    const floatingBar = document.getElementById('rest-floating-bar');
-    const staticBar = document.getElementById('rest-action-bar-static');
-    const topFixed = document.getElementById('top-fixed');
-
-    const scrolled = el.scrollTop > 160;
-    header.classList.toggle('solid', scrolled);
-    topFixed.classList.toggle('glass', el.scrollTop > 10);
-
-    const staticBarBottom = staticBar.offsetTop + staticBar.offsetHeight;
-    const showFloating = el.scrollTop > staticBarBottom - 100;
-    floatingBar.classList.toggle('visible', showFloating);
+    // FAB is always visible (absolute positioned)
   }
 
   function handleWineScroll(el) {
-    const header = document.getElementById('wine-header');
-    const floatingBar = document.getElementById('wine-floating-bar');
-    const staticBar = document.getElementById('wine-action-bar-static');
-    const topFixed = document.getElementById('top-fixed');
-
-    const scrolled = el.scrollTop > 140;
-    header.classList.toggle('solid', scrolled);
-    topFixed.classList.toggle('glass', el.scrollTop > 10);
-
-    const staticBarBottom = staticBar.offsetTop + staticBar.offsetHeight;
-    const showFloating = el.scrollTop > staticBarBottom - 80;
-    floatingBar.classList.toggle('visible', showFloating);
+    // FAB is always visible (absolute positioned)
   }
 
   // ============================================================
@@ -2376,6 +2546,17 @@ MARGAUX</span>
   }
 
   // ============================================================
+  // BUBBLE EXPAND
+  // ============================================================
+  function toggleBubbleExpand(id) {
+    // close all others first
+    document.querySelectorAll('.bubble-expand.open').forEach(el => {
+      if (el.id !== id) el.classList.remove('open');
+    });
+    document.getElementById(id).classList.toggle('open');
+  }
+
+  // ============================================================
   // HEART TOGGLE
   // ============================================================
   function toggleHeart(id1, id2) {
@@ -2409,52 +2590,94 @@ MARGAUX</span>
   }
 
   // ============================================================
-  // EMPTY STATE TOGGLE
+  // VIEW MODE: mine / recommended / bubble
   // ============================================================
-  let emptyMode = false;
-  function toggleEmptyState() {
-    emptyMode = !emptyMode;
-    const btn = document.getElementById('emptyToggleBtn');
+  let viewMode = 'mine'; // 'mine' | 'recommended' | 'bubble'
 
-    if (emptyMode) {
-      btn.classList.add('active-empty');
-      btn.innerHTML = '<i data-lucide="eye" style="width:12px;height:12px;"></i> 데이터 있는 상태 보기';
-    } else {
-      btn.classList.remove('active-empty');
-      btn.innerHTML = '<i data-lucide="eye-off" style="width:12px;height:12px;"></i> 빈 상태 보기';
-    }
+  function setViewMode(mode) {
+    viewMode = mode;
+    // Update buttons
+    document.querySelectorAll('.view-mode-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
 
     // Determine which tab is active
     const restTab = document.querySelectorAll('.tab-btn')[0];
     const isRestaurant = restTab.classList.contains('active');
 
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-
-    if (isRestaurant) {
-      document.getElementById(emptyMode ? 'screen-restaurant-empty' : 'screen-restaurant').classList.add('active');
-    } else {
-      document.getElementById(emptyMode ? 'screen-wine-empty' : 'screen-wine').classList.add('active');
-    }
-
+    applyViewMode(isRestaurant ? 'restaurant' : 'wine');
+    updateFab();
     lucide.createIcons();
   }
 
-  // Override switchTab to respect empty mode
+  function applyViewMode(type) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    if (viewMode === 'mine') {
+      // 내 기록: 풀 데이터 화면
+      document.getElementById('screen-' + type).classList.add('active');
+    } else {
+      // recommended & bubble: empty 화면 사용
+      document.getElementById('screen-' + type + '-empty').classList.add('active');
+
+      // 버블 섹션 토글
+      const prefix = type === 'restaurant' ? 'rest' : 'wine';
+      const bubbleEmpty = document.getElementById(prefix + '-empty-bubble-empty');
+      const bubbleData = document.getElementById(prefix + '-empty-bubble-data');
+
+      // 점수 영역 토글
+      const nyamScore = document.getElementById(prefix + '-empty-nyam-score');
+      const bubbleScore = document.getElementById(prefix + '-empty-bubble-score');
+
+      if (viewMode === 'recommended') {
+        bubbleEmpty.style.display = '';
+        bubbleData.style.display = 'none';
+        if (nyamScore) nyamScore.style.display = '';
+        if (bubbleScore) bubbleScore.style.display = 'none';
+      } else {
+        // bubble: 버블 리뷰 있는 상태 — nyam 점수도 나란히 표시 (bubble-score 내부에 포함)
+        bubbleEmpty.style.display = 'none';
+        bubbleData.style.display = '';
+        if (nyamScore) nyamScore.style.display = 'none';
+        if (bubbleScore) bubbleScore.style.display = '';
+      }
+    }
+  }
+
+  // Override switchTab to respect view mode
   const _origSwitchTab = switchTab;
   switchTab = function(screenId, btn) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
-    const suffix = emptyMode ? '-empty' : '';
-    document.getElementById('screen-' + screenId + suffix).classList.add('active');
+    applyViewMode(screenId);
+    updateFab();
 
     const scroll = document.getElementById(screenId === 'restaurant' ? 'rest-scroll' : 'wine-scroll');
     if (scroll) scroll.scrollTop = 0;
+    lucide.createIcons();
   };
 
+  // ============================================================
+  // DETAIL FAB — context-aware floating button
+  // ============================================================
+  function handleDetailFab() {
+    const restTab = document.querySelectorAll('.tab-btn')[0];
+    const isRestaurant = restTab.classList.contains('active');
+    const type = isRestaurant ? '식당' : '와인';
+    const name = isRestaurant ? '스시코우지' : 'Chateau Margaux';
+
+    if (viewMode === 'mine') {
+      alert(`[${name}] 기록 추가\n\n→ 식당/와인 선택 단계 스킵\n→ 바로 사분면 평가 화면으로 이동\n\n기존 기록이 있으면 "새 방문 추가"\n기록 수정은 개별 기록 탭에서 진행`);
+    } else {
+      alert(`[${name}] 첫 기록 남기기\n\n→ ${type} 선택 단계 스킵 (이미 선택됨)\n→ 바로 사분면 평가 화면으로 이동`);
+    }
+  }
+
+  function updateFab() {
+    // fab-add uses glassmorphism style — no color change needed
+  }
+
   // Initialize Lucide icons
-  document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+  document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); updateFab(); });
 </script>
 </body>
 </html>

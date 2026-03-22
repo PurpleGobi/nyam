@@ -36,7 +36,7 @@ LIMIT 10;
 ```
 
 ### 2-2. 상황별 추천
-**트리거**: 홈 식당 탭 → `추천` 서브탭 + 상황 필터 드로어에서 상황 칩 선택
+**트리거**: 홈 식당 탭 → `추천` 서브탭 + 필터에서 `상황 is [값]` 선택
 
 ```sql
 WHERE r.scene = :selected_scene AND r.satisfaction >= 75  -- scene 값: 'solo','romantic','friends','family','business','drinks'

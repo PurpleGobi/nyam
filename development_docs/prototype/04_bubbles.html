@@ -88,20 +88,40 @@
   .screen.slide-out { transform: translateX(-100%); }
   .screen.active { transform: translateX(0); }
 
-  .hidden { display: none !important; }
+  /* FAB Add — glassmorphism */
+  .fab-add {
+    position: absolute; bottom: 28px; right: 16px; z-index: 85;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); transition: transform 0.15s;
+  }
+  .fab-add:active { transform: scale(0.9); }
 
-  /* Top fixed — glassmorphism */
+  /* FAB Back — glassmorphism */
+  .fab-back {
+    position: absolute; bottom: 28px; left: 16px; z-index: 85;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); transition: transform 0.15s;
+  }
+  .fab-back:active { transform: scale(0.9); }
+
+  /* Top fixed — always glassmorphism */
   .top-fixed {
     flex-shrink: 0;
-    transition: background 0.35s, box-shadow 0.35s;
-    background: var(--bg);
-    z-index: 60;
-  }
-  .top-fixed.glass {
-    background: rgba(248,246,243,0.72);
+    background: rgba(248,246,243,0.55);
     backdrop-filter: blur(20px) saturate(1.5);
     -webkit-backdrop-filter: blur(20px) saturate(1.5);
     box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    z-index: 60;
   }
   .app-header {
     padding: 2px 16px 8px;
@@ -150,7 +170,7 @@
   }
   .scroll-area::-webkit-scrollbar { display: none; }
 
-  /* Header */
+  /* Header (for create screen) */
   .header {
     padding: 12px 20px;
     display: flex; align-items: center;
@@ -159,7 +179,6 @@
     border-bottom: 1px solid var(--border);
   }
   .header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
-  .header-actions { display: flex; gap: 8px; align-items: center; }
   .back-btn {
     display: flex; align-items: center; gap: 4px;
     background: none; border: none; cursor: pointer;
@@ -238,9 +257,193 @@
     cursor: pointer; font-family: inherit;
   }
 
+  /* ========== BUBBLE SEARCH + FILTER ========== */
+  .bubble-search-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 20px 8px; padding: 8px 12px;
+    background: var(--bg-card); border: 1.5px solid var(--border);
+    border-radius: 12px; transition: border-color 0.15s;
+  }
+  .bubble-search-bar:focus-within { border-color: var(--accent-social); }
+  .bubble-search-bar input {
+    flex: 1; border: none; background: none; outline: none;
+    font-size: 14px; color: var(--text); font-family: inherit;
+  }
+  .bubble-search-bar input::placeholder { color: var(--text-hint); }
+  .bubble-search-bar svg { width: 16px; height: 16px; color: var(--text-hint); flex-shrink: 0; }
+  .bubble-search-bar .search-filter-btn {
+    width: 28px; height: 28px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-hint); flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .bubble-search-bar .search-filter-btn.has-filter {
+    border-color: var(--accent-social); background: var(--accent-social-light);
+    color: var(--accent-social);
+  }
+  .bubble-search-bar .search-filter-btn svg { width: 14px; height: 14px; }
+
+  /* Notion-style filter panel for bubbles */
+  .bubble-filter-panel {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.25s ease;
+    margin: 0 20px;
+  }
+  .bubble-filter-panel.open { max-height: 300px; }
+  .bubble-filter-inner {
+    padding: 10px 14px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 10px;
+  }
+  .bf-rules { display: flex; flex-direction: column; gap: 6px; }
+  .bf-rule {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
+  }
+  .bf-conj {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    width: 40px; flex-shrink: 0; cursor: pointer;
+  }
+  .bf-conj.clickable:active { color: var(--accent-social); }
+  .bf-attr, .bf-val {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 8px;
+    font-size: 12px; font-weight: 500; color: var(--text);
+    cursor: pointer; font-family: inherit;
+  }
+  .bf-attr:active, .bf-val:active { border-color: var(--accent-social); }
+  .bf-is { font-size: 11px; color: var(--text-hint); }
+  .bf-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text-hint); padding: 2px 4px;
+    margin-left: auto;
+  }
+  .bf-remove:active { color: var(--negative); }
+  .bf-add-rule {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--accent-social);
+    padding: 6px 0 2px; font-family: inherit;
+  }
+  .bf-result-count {
+    font-size: 11px; color: var(--text-hint);
+    padding-top: 6px; border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  /* ========== DISCOVERY CHIPS ========== */
+  .discover-chips {
+    display: flex; gap: 6px; padding: 0 20px 12px;
+    overflow-x: auto;
+  }
+  .discover-chips::-webkit-scrollbar { display: none; }
+  .discover-chip {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-sub); cursor: pointer; font-family: inherit;
+    white-space: nowrap; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .discover-chip svg { width: 14px; height: 14px; }
+  .discover-chip.active {
+    background: var(--accent-social); color: #fff;
+    border-color: var(--accent-social);
+  }
+
+  /* ========== DISCOVERY CARDS ========== */
+  .discover-card {
+    margin: 0 20px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .discover-card:active { opacity: 0.8; }
+  .discover-card-top {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+  }
+  .discover-card-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .discover-card-icon svg { width: 20px; height: 20px; }
+  .discover-card-info { flex: 1; min-width: 0; }
+  .discover-card-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .discover-card-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .discover-card-similarity {
+    padding: 3px 8px; border-radius: 8px;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .sim-high { background: #E8F0EB; color: var(--positive); }
+  .sim-mid { background: #F5F0E5; color: var(--caution); }
+  .sim-low { background: var(--bg); color: var(--text-hint); }
+  .discover-card-overlaps {
+    display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .overlap-chip {
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 500;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; gap: 3px;
+  }
+  .overlap-chip svg { width: 10px; height: 10px; }
+  .overlap-chip.wine-chip {
+    background: var(--wine-light); color: var(--wine);
+  }
+  .discover-card-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .discover-card-desc {
+    font-size: 12px; color: var(--text-sub); flex: 1; margin-right: 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .btn-join {
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    background: var(--accent-social); color: #fff;
+    border: none; cursor: pointer; font-family: inherit;
+    flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .btn-join:active { opacity: 0.8; }
+
   /* ========== BUBBLE DETAIL ========== */
+  .detail-hero {
+    padding: 16px 20px 12px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+  .detail-hero-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .detail-hero-icon svg { width: 28px; height: 28px; }
+  .detail-hero-name { font-size: 20px; font-weight: 700; color: var(--text); }
+  .detail-hero-desc { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+  .detail-hero-badges {
+    display: flex; gap: 6px; margin-top: 8px; align-items: center;
+  }
+
+  .quick-stats {
+    display: flex; gap: 0; margin: 0 20px 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .quick-stat {
+    flex: 1; padding: 10px 0; text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .quick-stat:last-child { border-right: none; }
+  .quick-stat-value { font-size: 18px; font-weight: 700; color: var(--text); }
+  .quick-stat-label { font-size: 10px; color: var(--text-sub); margin-top: 1px; }
+
   .member-scroll {
-    padding: 12px 20px; display: flex;
+    padding: 8px 20px; display: flex;
     gap: 10px; overflow-x: auto;
     -webkit-overflow-scrolling: touch; flex-shrink: 0;
   }
@@ -250,9 +453,9 @@
     align-items: center; gap: 4px; flex-shrink: 0;
   }
   .member-avatar-circle {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #fff;
+    font-size: 13px; font-weight: 700; color: #fff;
   }
   .member-name { font-size: 10px; color: var(--text-sub); }
 
@@ -263,7 +466,7 @@
   }
   .detail-tab {
     flex: 1; padding: 10px 0; text-align: center;
-    font-size: 13px; font-weight: 500;
+    font-size: 12px; font-weight: 500;
     color: var(--text-sub); cursor: pointer;
     border-bottom: 2px solid transparent;
     background: none; border-top: none; border-left: none; border-right: none;
@@ -271,6 +474,7 @@
   }
   .detail-tab.active {
     color: var(--accent-social); border-bottom-color: var(--accent-social);
+    font-weight: 600;
   }
 
   /* Feed */
@@ -387,6 +591,22 @@
     position: relative; overflow: hidden;
   }
 
+  /* ========== OVERLAP TAB ========== */
+  .overlap-item {
+    padding: 12px 20px; display: flex;
+    align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .overlap-scores {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;
+  }
+  .overlap-score-row {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600;
+  }
+  .overlap-my { color: var(--accent-social); }
+  .overlap-bubble { color: var(--text-hint); }
+
   /* ========== BUBBLE CREATE ========== */
   .form-section {
     padding: 16px 20px;
@@ -479,9 +699,7 @@
           <div class="app-header">
             <div class="header-brand">nyam</div>
             <div class="header-right">
-              <button class="icon-btn active-icon" title="버블">
-                <i data-lucide="circle-dot"></i>
-              </button>
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn" title="알림">
                   <i data-lucide="bell"></i>
@@ -493,7 +711,7 @@
           </div>
         </div>
 
-        <div class="scroll-area" onscroll="document.getElementById('bubbleTopFixed').classList.toggle('glass', this.scrollTop > 10)">
+        <div class="scroll-area">
 
           <!-- Page title + create button -->
           <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between">
@@ -546,98 +764,447 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <!-- Discover section -->
+          <!-- ========== DISCOVERY SECTION ========== -->
           <div class="section-header" style="margin-top:8px">
-            <span class="section-header-title">주변 버블 탐색</span>
+            <span class="section-header-title">버블 탐색</span>
           </div>
-          <div style="padding:0 20px 16px;">
-            <div style="background:var(--accent-social-light);border-radius:12px;padding:16px;border:1px dashed #B5C9D5;">
-              <div style="font-size:14px;font-weight:600;color:var(--accent-social);margin-bottom:4px;display:flex;align-items:center;gap:6px">
-                <i data-lucide="search" style="width:16px;height:16px;"></i> 을지로 맛탐정 클럽
+
+          <!-- Search bar + filter toggle -->
+          <div class="bubble-search-bar">
+            <i data-lucide="search"></i>
+            <input type="text" placeholder="버블 이름, 지역, 키워드 검색..." id="bubbleSearchInput" oninput="filterBubbleSearch()">
+            <button class="search-filter-btn" id="bFilterToggle" onclick="toggleBubbleFilter()">
+              <i data-lucide="sliders-horizontal"></i>
+            </button>
+          </div>
+
+          <!-- Notion-style filter panel -->
+          <div class="bubble-filter-panel" id="bubbleFilterPanel">
+            <div class="bubble-filter-inner">
+              <div class="bf-rules" id="bfRules">
+                <div class="bf-rule">
+                  <span class="bf-conj">Where</span>
+                  <button class="bf-attr" onclick="cycleBfAttr(this)">지역</button>
+                  <span class="bf-is">is</span>
+                  <button class="bf-val" onclick="cycleBfVal(this)">을지로</button>
+                  <button class="bf-remove" onclick="removeBfRule(this)">✕</button>
+                </div>
               </div>
-              <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">멤버 23명 · 공개 버블 · 을지로 전문</div>
-              <button class="btn-outline" style="font-size:12px;padding:6px 14px;color:var(--accent-social);border-color:var(--accent-social)">가입 신청</button>
+              <button class="bf-add-rule" onclick="addBfRule()">+ 필터 추가</button>
+              <div class="bf-result-count" id="bfResultCount">4개 버블 발견</div>
             </div>
           </div>
 
-          <div style="padding:0 20px 16px;">
-            <div style="background:var(--primary-light);border-radius:12px;padding:16px;border:1px dashed #E8D5CB;">
-              <div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:4px;display:flex;align-items:center;gap:6px">
-                <i data-lucide="grape" style="width:16px;height:16px;"></i> 내추럴 와인 러버스
+          <!-- Discovery chips -->
+          <div class="discover-chips">
+            <button class="discover-chip active" onclick="switchDiscoverTab('recommend')">
+              <i data-lucide="sparkles"></i> 추천
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('nearby')">
+              <i data-lucide="map-pin"></i> 근처
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('popular')">
+              <i data-lucide="trending-up"></i> 인기
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('new')">
+              <i data-lucide="zap"></i> 새로운
+            </button>
+          </div>
+
+          <!-- Discover content: 추천 (AI taste similarity) -->
+          <div id="discover-recommend">
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
+                  <i data-lucide="flame"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
+                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
+                </div>
+                <div class="discover-card-similarity sim-high">
+                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>87%
+                </div>
               </div>
-              <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">멤버 15명 · 공개 버블 · 내추럴 와인</div>
-              <button class="btn-outline" style="font-size:12px;padding:6px 14px">가입 신청</button>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 미진</span>
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 스시코우지</span>
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 도쿄등심</span>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
+                  <i data-lucide="grape"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">내추럴 와인 러버스</div>
+                  <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
+                </div>
+                <div class="discover-card-similarity sim-high">
+                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>82%
+                </div>
+              </div>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Ch. Margaux</span>
+                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Barolo Brunate</span>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">내추럴 와인 페어링 정보 공유</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#E8F0EB;color:var(--positive)">
+                  <i data-lucide="salad"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">비건 프렌들리 서울</div>
+                  <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
+                </div>
+                <div class="discover-card-similarity sim-mid">
+                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>64%
+                </div>
+              </div>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 파스타 바르바리</span>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">채식 친화 레스토랑 탐방</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5F0E5;color:var(--caution)">
+                  <i data-lucide="chef-hat"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">오마카세 탐구회</div>
+                  <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
+                </div>
+                <div class="discover-card-similarity sim-low">
+                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>48%
+                </div>
+              </div>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 스시코우지</span>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">하이엔드 일식 오마카세 전문</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discover content: 근처 -->
+          <div id="discover-nearby" style="display:none">
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
+                  <i data-lucide="flame"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
+                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>0.3km
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#EDF2F5;color:var(--accent-social)">
+                  <i data-lucide="building-2"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">광화문 직장인 점심</div>
+                  <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>0.8km
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">광화문·종로 런치 맛집 공유</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
+                  <i data-lucide="wine"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">종로 와인바 투어</div>
+                  <div class="discover-card-meta">멤버 11명 · 기록 67개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>1.2km
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">종로 와인바 리뷰 모음</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discover content: 인기 -->
+          <div id="discover-popular" style="display:none">
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#EDF2F5;color:var(--accent-social)">
+                  <i data-lucide="building-2"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">광화문 직장인 점심</div>
+                  <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="activity" style="width:10px;height:10px;"></i>활발
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">광화문·종로 런치 맛집 공유</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
+                  <i data-lucide="flame"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
+                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="activity" style="width:10px;height:10px;"></i>활발
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
+                  <i data-lucide="grape"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">내추럴 와인 러버스</div>
+                  <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
+                  <i data-lucide="activity" style="width:10px;height:10px;"></i>보통
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">내추럴 와인 페어링 정보 공유</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discover content: 새로운 -->
+          <div id="discover-new" style="display:none">
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5F0E5;color:var(--caution)">
+                  <i data-lucide="chef-hat"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">오마카세 탐구회</div>
+                  <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
+                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>3일 전
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">하이엔드 일식 오마카세 전문</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#E8F0EB;color:var(--positive)">
+                  <i data-lucide="salad"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">비건 프렌들리 서울</div>
+                  <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
+                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>1주 전
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">채식 친화 레스토랑 탐방</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
+            </div>
+
+            <div class="discover-card">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
+                  <i data-lucide="pizza"></i>
+                </div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">이태원 피자 헌터</div>
+                  <div class="discover-card-meta">멤버 4명 · 기록 12개</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
+                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>2주 전
+                </div>
+              </div>
+              <div class="discover-card-bottom">
+                <div class="discover-card-desc">이태원·한남동 피자 맛집 정복</div>
+                <button class="btn-join">가입 신청</button>
+              </div>
             </div>
           </div>
 
           <div style="height:16px"></div>
         </div>
+        <button class="fab-add" onclick="showScreen('screen-bubble-create')">
+          <i data-lucide="plus" style="width:22px;height:22px;"></i>
+        </button>
       </div>
 
       <!-- ============ SCREEN: BUBBLE DETAIL ============ -->
       <div class="screen hidden" id="screen-bubble-detail">
-        <div class="header" style="flex-direction:column;align-items:flex-start;gap:4px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <button class="back-btn" onclick="showScreen('screen-bubbles')">
-              <i data-lucide="chevron-left"></i> 직장 맛집
-            </button>
-            <div style="display:flex;gap:6px">
-              <button class="btn-outline" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:4px">
-                <i data-lucide="user-plus" style="width:14px;height:14px;"></i> 초대
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <div class="header-brand">nyam</div>
+            <div class="header-right">
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림">
+                  <i data-lucide="bell"></i>
+                </button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll-area">
+          <!-- Hero section -->
+          <div class="detail-hero">
+            <div class="detail-hero-icon" style="background:#F5EDE8;color:var(--primary)">
+              <i data-lucide="utensils-crossed"></i>
+            </div>
+            <div class="detail-hero-name">직장 맛집</div>
+            <div class="detail-hero-desc">직장 동료들과 점심 맛집 공유</div>
+            <div class="detail-hero-badges">
+              <span class="pill pill-blue" style="font-size:11px;padding:2px 8px">
+                <i data-lucide="users" style="width:11px;height:11px;"></i> 멤버 8명
+              </span>
+              <span class="pill pill-green" style="font-size:11px;padding:2px 8px">
+                <i data-lucide="heart" style="width:11px;height:11px;"></i> 취향 87% 일치
+              </span>
+              <button class="icon-btn" style="width:28px;height:28px" title="설정">
+                <i data-lucide="settings" style="width:14px;height:14px;"></i>
               </button>
-              <button class="icon-btn" style="width:30px;height:30px">
-                <i data-lucide="settings" style="width:16px;height:16px;"></i>
+              <button class="icon-btn" style="width:28px;height:28px" title="초대">
+                <i data-lucide="user-plus" style="width:14px;height:14px;"></i>
               </button>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--text-sub);padding-left:2px">멤버 8명 · 기록 47개</div>
+
+          <!-- Quick stats -->
+          <div class="quick-stats">
+            <div class="quick-stat">
+              <div class="quick-stat-value">47</div>
+              <div class="quick-stat-label">총 기록</div>
+            </div>
+            <div class="quick-stat">
+              <div class="quick-stat-value">87</div>
+              <div class="quick-stat-label">평균 점수</div>
+            </div>
+            <div class="quick-stat">
+              <div class="quick-stat-value">6</div>
+              <div class="quick-stat-label">이번 주</div>
+            </div>
+          </div>
+
+          <!-- Member avatars -->
+          <div class="member-scroll">
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#C17B5E">김</div>
+              <div class="member-name">김영수</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#8B7396">박</div>
+              <div class="member-name">박소연</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#7A9BAE">이</div>
+              <div class="member-name">이준호</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#7EAE8B">최</div>
+              <div class="member-name">최유진</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#C17B5E">정</div>
+              <div class="member-name">정민재</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#C9A96E">윤</div>
+              <div class="member-name">윤서희</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#ec4899">강</div>
+              <div class="member-name">강하늘</div>
+            </div>
+            <div class="member-avatar">
+              <div class="member-avatar-circle" style="background:#14b8a6">나</div>
+              <div class="member-name">나</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Member scroll -->
-        <div class="member-scroll">
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#C17B5E">김</div>
-            <div class="member-name">김영수</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#8B7396">박</div>
-            <div class="member-name">박소연</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#7A9BAE">이</div>
-            <div class="member-name">이준호</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#7EAE8B">최</div>
-            <div class="member-name">최유진</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#C17B5E">정</div>
-            <div class="member-name">정민재</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#C9A96E">윤</div>
-            <div class="member-name">윤서희</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#ec4899">강</div>
-            <div class="member-name">강하늘</div>
-          </div>
-          <div class="member-avatar">
-            <div class="member-avatar-circle" style="background:#14b8a6">나</div>
-            <div class="member-name">나</div>
-          </div>
-        </div>
-
-        <!-- Detail tabs -->
+        <!-- Detail tabs (outside scroll so they stick below hero) -->
         <div class="detail-tabs">
           <button class="detail-tab active" id="dtab-feed" onclick="switchDetailTab('feed')">피드</button>
           <button class="detail-tab" id="dtab-restaurants" onclick="switchDetailTab('restaurants')">식당</button>
           <button class="detail-tab" id="dtab-wines" onclick="switchDetailTab('wines')">와인</button>
           <button class="detail-tab" id="dtab-stats" onclick="switchDetailTab('stats')">통계</button>
+          <button class="detail-tab" id="dtab-overlap" onclick="switchDetailTab('overlap')">겹치는 곳</button>
         </div>
 
-        <div class="scroll-area">
+        <div class="scroll-area" id="detail-scroll-area">
           <!-- Feed tab -->
           <div id="dcontent-feed">
             <div class="feed-card">
@@ -798,7 +1365,7 @@
               <div class="rest-rank">2</div>
               <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="glass-water"></i></div>
               <div class="rest-info">
-                <div class="rest-name">Krug Grande Cuvée</div>
+                <div class="rest-name">Krug Grande Cuvee</div>
                 <div class="rest-meta">샴페인 · 블렌드 · 기록 2개</div>
               </div>
               <div class="rest-score" style="color:var(--wine)">91</div>
@@ -905,8 +1472,112 @@
             </div>
           </div>
 
+          <!-- Overlap tab (겹치는 곳) -->
+          <div id="dcontent-overlap" style="display:none">
+            <div style="padding:12px 20px 8px">
+              <div style="font-size:12px;color:var(--text-sub);display:flex;align-items:center;gap:4px">
+                <i data-lucide="info" style="width:12px;height:12px;"></i>
+                나와 버블 멤버들이 함께 방문한 곳의 점수 비교
+              </div>
+            </div>
+
+            <!-- Overlapping restaurants -->
+            <div style="padding:8px 20px 4px">
+              <div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px">식당</div>
+            </div>
+            <div class="overlap-item">
+              <div class="rest-icon"><i data-lucide="soup"></i></div>
+              <div class="rest-info">
+                <div class="rest-name">미진</div>
+                <div class="rest-meta">한식 · 을지로</div>
+              </div>
+              <div class="overlap-scores">
+                <div class="overlap-score-row">
+                  <span class="overlap-my">나 91</span>
+                </div>
+                <div class="overlap-score-row">
+                  <span class="overlap-bubble">버블 89</span>
+                </div>
+              </div>
+            </div>
+            <div class="overlap-item">
+              <div class="rest-icon"><i data-lucide="fish"></i></div>
+              <div class="rest-info">
+                <div class="rest-name">스시코우지</div>
+                <div class="rest-meta">일식 · 을지로</div>
+              </div>
+              <div class="overlap-scores">
+                <div class="overlap-score-row">
+                  <span class="overlap-my">나 88</span>
+                </div>
+                <div class="overlap-score-row">
+                  <span class="overlap-bubble">버블 85</span>
+                </div>
+              </div>
+            </div>
+            <div class="overlap-item">
+              <div class="rest-icon"><i data-lucide="beef"></i></div>
+              <div class="rest-info">
+                <div class="rest-name">도쿄등심</div>
+                <div class="rest-meta">일식 · 광화문</div>
+              </div>
+              <div class="overlap-scores">
+                <div class="overlap-score-row">
+                  <span class="overlap-my">나 84</span>
+                </div>
+                <div class="overlap-score-row">
+                  <span class="overlap-bubble">버블 82</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Overlapping wines -->
+            <div style="padding:16px 20px 4px">
+              <div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px">와인</div>
+            </div>
+            <div class="overlap-item">
+              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
+              <div class="rest-info">
+                <div class="rest-name">Ch. Margaux 2018</div>
+                <div class="rest-meta">레드 · 카베르네 소비뇽</div>
+              </div>
+              <div class="overlap-scores">
+                <div class="overlap-score-row">
+                  <span class="overlap-my">나 92</span>
+                </div>
+                <div class="overlap-score-row">
+                  <span class="overlap-bubble">버블 94</span>
+                </div>
+              </div>
+            </div>
+            <div class="overlap-item" style="border-bottom:none">
+              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
+              <div class="rest-info">
+                <div class="rest-name">Barolo Brunate 2017</div>
+                <div class="rest-meta">레드 · 네비올로</div>
+              </div>
+              <div class="overlap-scores">
+                <div class="overlap-score-row">
+                  <span class="overlap-my">나 87</span>
+                </div>
+                <div class="overlap-score-row">
+                  <span class="overlap-bubble">버블 89</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px;text-align:center">
+              <div style="font-size:12px;color:var(--text-hint)">총 5곳 겹침 · 평균 차이 2.4점</div>
+            </div>
+          </div>
+
           <div style="height:16px"></div>
         </div>
+
+        <!-- Floating back button -->
+        <button class="fab-back" onclick="showScreen('screen-bubbles')">
+          <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+        </button>
       </div>
 
       <!-- ============ SCREEN: BUBBLE CREATE ============ -->
@@ -1027,17 +1698,35 @@
         prev.classList.add('hidden');
         prev.style.transform = '';
       }
+      // Re-init lucide icons for newly shown screen
+      lucide.createIcons();
     }, 350);
 
     currentScreen = id;
   }
 
+  // Discovery tab switching
+  function switchDiscoverTab(tab) {
+    const tabs = ['recommend', 'nearby', 'popular', 'new'];
+    // Update chips
+    document.querySelectorAll('.discover-chip').forEach((chip, i) => {
+      chip.classList.toggle('active', tabs[i] === tab);
+    });
+    // Update content
+    tabs.forEach(t => {
+      const el = document.getElementById('discover-' + t);
+      if (el) el.style.display = (t === tab) ? '' : 'none';
+    });
+  }
+
   // Bubble detail tab
   function switchDetailTab(tab) {
-    ['feed','restaurants','wines','stats'].forEach(t => {
-      document.getElementById('dtab-' + t).classList.toggle('active', t === tab);
+    const tabs = ['feed', 'restaurants', 'wines', 'stats', 'overlap'];
+    tabs.forEach(t => {
+      const tabBtn = document.getElementById('dtab-' + t);
+      if (tabBtn) tabBtn.classList.toggle('active', t === tab);
       const content = document.getElementById('dcontent-' + t);
-      content.style.display = (t === tab) ? '' : 'none';
+      if (content) content.style.display = (t === tab) ? '' : 'none';
     });
   }
 
@@ -1058,6 +1747,86 @@
   function selectExpire(el) {
     el.parentElement.querySelectorAll('.expire-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
+  }
+
+  // ============================================================
+  // BUBBLE SEARCH + NOTION FILTER
+  // ============================================================
+  const BF_ATTRS = ['지역', '유형', '멤버 수', '취향 유사도', '카테고리', '활동량', '공개 여부'];
+  const BF_VALS = {
+    '지역': ['을지로', '광화문', '강남', '홍대', '성수', '이태원', '종로', '전체'],
+    '유형': ['양방향', '열람 전용', '전체'],
+    '멤버 수': ['5명 이하', '5~10명', '10~20명', '20명+', '전체'],
+    '취향 유사도': ['80%+', '60%+', '40%+', '전체'],
+    '카테고리': ['맛집', '와인', '혼합', '전체'],
+    '활동량': ['활발 (주3+)', '보통 (주1+)', '조용', '전체'],
+    '공개 여부': ['공개', '비공개', '전체']
+  };
+
+  function toggleBubbleFilter() {
+    const panel = document.getElementById('bubbleFilterPanel');
+    const btn = document.getElementById('bFilterToggle');
+    panel.classList.toggle('open');
+    btn.classList.toggle('has-filter', panel.classList.contains('open'));
+    lucide.createIcons();
+  }
+
+  function cycleBfAttr(el) {
+    const idx = (BF_ATTRS.indexOf(el.textContent) + 1) % BF_ATTRS.length;
+    el.textContent = BF_ATTRS[idx];
+    const valBtn = el.parentElement.querySelector('.bf-val');
+    if (valBtn) valBtn.textContent = BF_VALS[BF_ATTRS[idx]][0];
+  }
+
+  function cycleBfVal(el) {
+    const attrBtn = el.parentElement.querySelector('.bf-attr');
+    const vals = BF_VALS[attrBtn.textContent] || ['전체'];
+    const idx = (vals.indexOf(el.textContent) + 1) % vals.length;
+    el.textContent = vals[idx];
+    updateBfCount();
+  }
+
+  function removeBfRule(el) {
+    const rules = document.getElementById('bfRules');
+    if (rules.children.length > 1) {
+      el.parentElement.remove();
+      updateBfCount();
+    }
+  }
+
+  function addBfRule() {
+    const rules = document.getElementById('bfRules');
+    const rule = document.createElement('div');
+    rule.className = 'bf-rule';
+    rule.innerHTML = '<span class="bf-conj clickable" onclick="toggleBfConj()">And</span>' +
+      '<button class="bf-attr" onclick="cycleBfAttr(this)">유형</button>' +
+      '<span class="bf-is">is</span>' +
+      '<button class="bf-val" onclick="cycleBfVal(this)">양방향</button>' +
+      '<button class="bf-remove" onclick="removeBfRule(this)">✕</button>';
+    rules.appendChild(rule);
+  }
+
+  function toggleBfConj() {
+    const conjs = document.querySelectorAll('#bfRules .bf-conj.clickable');
+    const current = conjs[0]?.textContent || 'And';
+    conjs.forEach(c => c.textContent = current === 'And' ? 'Or' : 'And');
+  }
+
+  function updateBfCount() {
+    const counts = [4, 3, 7, 2, 5, 6, 1];
+    const el = document.getElementById('bfResultCount');
+    el.textContent = counts[Math.floor(Math.random() * counts.length)] + '개 버블 발견';
+  }
+
+  function filterBubbleSearch() {
+    // Mock search — just visual feedback
+    const input = document.getElementById('bubbleSearchInput');
+    const cards = document.querySelectorAll('.discover-card');
+    const q = input.value.toLowerCase();
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
   }
 
   // Init lucide icons

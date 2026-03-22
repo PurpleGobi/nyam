@@ -307,6 +307,115 @@
   .input:focus { border-color: var(--border-bold); }
 
   /* ============================================
+     8b. DROPDOWN SELECT
+     ============================================ */
+  .nyam-select-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .nyam-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.15s;
+    user-select: none;
+    min-width: 100px;
+  }
+  .nyam-select:hover { border-color: var(--border-bold); }
+  .nyam-select:active { background: var(--bg); }
+  .nyam-select.open { border-color: var(--accent-food); }
+  .nyam-select-value { flex: 1; }
+  .nyam-select-arrow {
+    width: 16px; height: 16px;
+    color: var(--text-hint);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .nyam-select.open .nyam-select-arrow { transform: rotate(180deg); }
+
+  /* Dropdown menu */
+  .nyam-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .nyam-select.open + .nyam-dropdown { display: block; }
+  .nyam-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.1s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
+  }
+  .nyam-dropdown-item:hover { background: var(--bg); }
+  .nyam-dropdown-item:active { background: var(--border); }
+  .nyam-dropdown-item.selected {
+    color: var(--accent-food);
+    font-weight: 600;
+  }
+  .nyam-dropdown-item.selected::before { display: none; }
+  .nyam-dropdown-item:not(.selected)::before { display: none; }
+  .nyam-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 8px;
+  }
+  .nyam-dropdown-item .item-desc {
+    font-size: 11px;
+    color: var(--text-hint);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  /* Wine accent variant */
+  .nyam-select.wine.open { border-color: var(--accent-wine); }
+  .nyam-select-wrap.wine .nyam-dropdown-item.selected { color: var(--accent-wine); }
+  .nyam-select-wrap.wine .nyam-dropdown-item.selected::before { background: var(--accent-wine); }
+
+  /* Inline variant (settings style — compact) */
+  .nyam-select.inline {
+    padding: 5px 10px;
+    font-size: 12px;
+    min-width: 80px;
+    border-radius: 8px;
+    background: var(--bg);
+  }
+
+  /* Dark mode */
+  [data-theme="dark"] .nyam-dropdown {
+    background: var(--bg-elevated);
+    border-color: var(--border-bold);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+
+  /* ============================================
      9. FILTER TABS
      ============================================ */
   .tabs {
@@ -399,6 +508,44 @@
     --text-hint:   #6B6560;
     --border:      #3A3632;
     --border-bold: #4A4640;
+
+    /* Light-bg overrides for dark mode */
+    --accent-food-light: #3A2A22;
+    --accent-wine-light: #2E2533;
+  }
+
+  /* §5 Cards — dark mode overrides */
+  [data-theme="dark"] .card.visited-food { background: var(--accent-food-light); border-color: #5A4030; }
+  [data-theme="dark"] .card.visited-wine { background: var(--accent-wine-light); border-color: #4A3555; }
+  [data-theme="dark"] .card.wishlisted { background: #2E2A1E; border-color: #5A4A2A; }
+
+  /* §10 Intro Selection — dark mode overrides */
+  [data-theme="dark"] .intro-card.on-food { background: var(--accent-food-light); border-color: var(--accent-food); }
+  [data-theme="dark"] .intro-card.on-wine { background: var(--accent-wine-light); border-color: var(--accent-wine); }
+
+  /* §16 Floating buttons — dark mode overrides */
+  [data-theme="dark"] .fab-back,
+  [data-theme="dark"] .fab-add,
+  [data-theme="dark"] .demo-fab-back {
+    background: rgba(42,39,37,0.92) !important;
+    border-color: var(--border-bold) !important;
+    color: var(--text) !important;
+  }
+
+  /* §16 App header — dark mode glass */
+  [data-theme="dark"] .top-fixed.glass,
+  [data-theme="dark"] #demoTopFixed {
+    background: rgba(30,28,26,0.88);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.25);
+  }
+
+  /* §16 App header avatar menu — dark mode */
+  [data-theme="dark"] .avatar-menu {
+    background: var(--bg-elevated);
+    border-color: var(--border-bold);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
 
   /* Dark mode toggle */
@@ -440,6 +587,34 @@
   .dot-circle { border-radius: 50%; }
   .dot-label { font-size: 11px; font-weight: 600; color: var(--text-sub); }
   .dot-range { font-size: 10px; color: var(--text-hint); }
+
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none;
+    position: absolute;
+    top: 36px; right: 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    padding: 4px 0;
+    z-index: 100;
+    min-width: 120px;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .avatar-menu-item:active { background: var(--bg); }
 </style>
 </head>
 <body>
@@ -796,6 +971,99 @@
 <!-- ============================================ -->
 
 <div class="section">
+  <h3>Dropdown Select</h3>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- Default (food accent) -->
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;">기본 정렬</div>
+      <div class="nyam-select-wrap">
+        <div class="nyam-select" onclick="this.classList.toggle('open')">
+          <span class="nyam-select-value">최신순</span>
+          <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+        </div>
+        <div class="nyam-dropdown">
+          <button class="nyam-dropdown-item selected" onclick="selectNyamDropdown(this)">최신순</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">점수 높은순</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">점수 낮은순</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">이름순</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">방문 많은순</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wine variant -->
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;">와인 스타일</div>
+      <div class="nyam-select-wrap wine">
+        <div class="nyam-select wine" onclick="this.classList.toggle('open')">
+          <span class="nyam-select-value">Red</span>
+          <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+        </div>
+        <div class="nyam-dropdown">
+          <button class="nyam-dropdown-item selected" onclick="selectNyamDropdown(this)">Red</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">White</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">Rosé</button>
+          <div class="nyam-dropdown-divider"></div>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">Sparkling</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">Orange</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">Dessert</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- With descriptions -->
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;">공개 범위</div>
+      <div class="nyam-select-wrap">
+        <div class="nyam-select" onclick="this.classList.toggle('open')">
+          <span class="nyam-select-value">버블 멤버만</span>
+          <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+        </div>
+        <div class="nyam-dropdown" style="min-width:180px;">
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">
+            <div><div>전체 공개</div><div class="item-desc">모든 사용자에게 표시</div></div>
+          </button>
+          <button class="nyam-dropdown-item selected" onclick="selectNyamDropdown(this)">
+            <div><div>버블 멤버만</div><div class="item-desc">같은 버블 멤버에게만</div></div>
+          </button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">
+            <div><div>비공개</div><div class="item-desc">나만 열람</div></div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inline variant (settings style) -->
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;">인라인 (설정용)</div>
+      <div class="nyam-select-wrap">
+        <div class="nyam-select inline" onclick="this.classList.toggle('open')">
+          <span class="nyam-select-value">상세</span>
+          <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+        </div>
+        <div class="nyam-dropdown">
+          <button class="nyam-dropdown-item selected" onclick="selectNyamDropdown(this)">상세</button>
+          <button class="nyam-dropdown-item" onclick="selectNyamDropdown(this)">간단</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note" style="margin-top:12px;">
+    <b>CSS 클래스:</b> <code>.nyam-select-wrap</code> > <code>.nyam-select</code> + <code>.nyam-dropdown</code><br>
+    <b>열기:</b> <code>.nyam-select</code> 클릭 → <code>.open</code> 토글<br>
+    <b>선택:</b> <code>.nyam-dropdown-item</code> 클릭 → <code>.selected</code> 이동 + 값 반영 + 닫기<br>
+    <b>외부 클릭:</b> 자동 닫기<br><br>
+    <b>변형:</b><br>
+    &nbsp;&nbsp;<code>.wine</code> — 와인 accent (퍼플 포커스/선택)<br>
+    &nbsp;&nbsp;<code>.inline</code> — 설정 페이지용 컴팩트 (12px, 8px radius)<br>
+    &nbsp;&nbsp;<code>.item-desc</code> — 옵션 아래 설명 텍스트 (11px, hint 색상)<br>
+    &nbsp;&nbsp;<code>.nyam-dropdown-divider</code> — 옵션 간 구분선
+  </div>
+
+  <h3 style="margin-top:20px;">Text Input</h3>
   <div style="max-width:340px;display:flex;flex-direction:column;gap:10px;">
     <input class="input" placeholder="와인 이름 검색..." />
     <div style="display:flex;gap:8px;">
@@ -1109,7 +1377,7 @@ function applyRating(circle, score) {
   <div id="headerDemo" style="position:relative;max-width:390px;height:320px;border-radius:16px;overflow:hidden;border:1px solid var(--border);">
 
     <!-- Top Fixed (header) -->
-    <div id="demoTopFixed" style="position:absolute;top:0;left:0;right:0;z-index:10;transition:background 0.35s,box-shadow 0.35s;background:var(--bg);">
+    <div id="demoTopFixed" class="top-fixed glass" style="position:absolute;top:0;left:0;right:0;z-index:10;">
       <!-- Status Bar -->
       <div style="height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-size:12px;font-weight:600;color:var(--text);">
         <span style="font-size:15px;font-weight:700;">9:41</span>
@@ -1122,17 +1390,25 @@ function applyRating(circle, score) {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px;">
         <span style="font-family:'Comfortaa',cursive;font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;">
+          <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;" title="알림">
             <i data-lucide="bell" style="width:20px;height:20px;"></i>
             <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
           </button>
-          <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">J</div>
+          <div style="position:relative;">
+            <div onclick="this.querySelector('.avatar-menu').classList.toggle('open')" style="width:30px;height:30px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">J
+              <div class="avatar-menu" onclick="event.stopPropagation()">
+                <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                <a href="03_profile.html#settings" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Scrollable content (demo) -->
-    <div id="demoScroll" style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:88px;" onscroll="document.getElementById('demoTopFixed').style.background=this.scrollTop>10?'rgba(248,246,243,0.72)':'var(--bg)';document.getElementById('demoTopFixed').style.backdropFilter=this.scrollTop>10?'blur(20px) saturate(1.5)':'none';document.getElementById('demoTopFixed').style.boxShadow=this.scrollTop>10?'0 1px 12px rgba(0,0,0,0.08)':'none';">
+    <div id="demoScroll" style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:88px;">
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
         <div style="height:60px;background:var(--accent-food-light);border-radius:12px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">AI 인사말 영역</div>
         <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 1</div>
@@ -1146,14 +1422,116 @@ function applyRating(circle, score) {
     </div>
   </div>
 
+  <!-- Bubble Button — Text Button Variations -->
+  <h4 style="margin-top:16px;font-size:14px;color:var(--text-sub);">버블 진입 — 텍스트 버튼 변형</h4>
+  <p style="font-size:11px;color:var(--text-hint);margin:4px 0 12px;">헤더 실사이즈 컨텍스트에서 비교</p>
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- T1: 플레인 텍스트 — 시스템 폰트 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);padding:4px 0;font-family:-apple-system,sans-serif;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T1. 시스템 폰트</span>
+    </div>
+
+    <!-- T2: Comfortaa 폰트 — 로고와 통일 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:var(--text);padding:4px 0;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T2. Comfortaa 통일</span>
+    </div>
+
+    <!-- T3: Comfortaa + 그라데이션 텍스트 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;padding:4px 0;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T3. 그라데이션 글자</span>
+    </div>
+
+    <!-- T4: 오렌지 컬러 텍스트 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T4. 브랜드 오렌지</span>
+    </div>
+
+    <!-- T5: 서브듀드 — hint 색 + 호버 시 브랜드 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:12px;font-weight:700;color:var(--text-hint);padding:4px 0;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T5. 서브듀드</span>
+    </div>
+
+    <!-- T6: 필 버튼 — 살짝 배경 있는 칩 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:#F5EDE8;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:11px;font-weight:700;color:#FF6038;padding:4px 10px;border-radius:10px;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T6. 파스텔 칩</span>
+    </div>
+
+    <!-- T7: 아웃라인 칩 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:none;border:1.5px solid var(--border);cursor:pointer;font-family:'Comfortaa',cursive;font-size:11px;font-weight:700;color:var(--text);padding:3px 10px;border-radius:10px;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T7. 아웃라인 칩</span>
+    </div>
+
+    <!-- T8: 그라데이션 칩 -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:8px 16px;border:1px solid var(--border);">
+        <span style="font-family:'Comfortaa',cursive;font-size:20px;font-weight:700;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="flex:1"></div>
+        <button style="background:linear-gradient(135deg,#FF6038,#8B7396);border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:11px;font-weight:700;color:#fff;padding:4px 10px;border-radius:10px;">bubbles</button>
+        <div style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">J</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-sub);white-space:nowrap;">T8. 그라데이션 칩</span>
+    </div>
+
+  </div>
+
   <div class="note" style="margin-top:10px;">
-    <b>구성:</b> nyam 로고 (Comfortaa, accent-food 색) + 알림 벨 (빨간 dot) + 프로필 아바타<br><br>
-    <b>기본 상태:</b> <code>background: var(--bg)</code> — 불투명 배경<br>
-    <b>스크롤 10px+ (glass):</b><br>
-    &nbsp;&nbsp;<code>background: rgba(248,246,243,0.72)</code><br>
+    <b>구성:</b> nyam 로고 (Comfortaa) + <code>bubbles</code> 텍스트 버튼 (Comfortaa 13px 700, #FF6038, → /bubbles) + 🔔 알림 벨 (빨간 dot) + 프로필 아바타<br><br>
+    <b>항상 글래스모피즘 적용:</b><br>
+    &nbsp;&nbsp;<code>background: rgba(248,246,243,0.55)</code><br>
     &nbsp;&nbsp;<code>backdrop-filter: blur(20px) saturate(1.5)</code><br>
     &nbsp;&nbsp;<code>box-shadow: 0 1px 12px rgba(0,0,0,0.08)</code><br><br>
-    <b>CSS 클래스:</b> <code>.top-fixed</code> (기본) → <code>.top-fixed.glass</code> (스크롤 시 JS 토글)<br>
+    <b>CSS 클래스:</b> <code>.top-fixed</code> (글래스모피즘 상시 적용, 스크롤 토글 없음)<br>
     <b>높이:</b> status-bar 44px + app-header ~36px = 총 ~80px<br>
     <b>z-index:</b> 90
   </div>
@@ -1161,8 +1539,8 @@ function applyRating(circle, score) {
   <!-- ── 16-2. Floating Back Button ── -->
   <h3 style="margin-top:28px;">Floating Back Button (모든 페이지 공통)</h3>
   <div class="note">하단 좌측 고정. 화살표만, 텍스트 없음. 온보딩 포함 모든 페이지에 적용.</div>
-  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;">
-    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;overflow:visible;">
+    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);" class="demo-fab-back">
       <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
     </button>
   </div>
@@ -1181,13 +1559,13 @@ function applyRating(circle, score) {
   <!-- ── 16-3. Floating Forward Button ── -->
   <h3 style="margin-top:28px;">Floating Forward Button (CTA 진행)</h3>
   <div class="note">하단 우측 고정. Back과 동일한 형태, 색상만 accent. 온보딩·기록 플로우에서 사용.</div>
-  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;">
+  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;overflow:visible;">
     <!-- Back (left) -->
-    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);" class="demo-fab-back">
       <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
     </button>
     <!-- Forward — food (right) -->
-    <button style="position:absolute;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent-food);border:none;box-shadow:0 3px 16px rgba(193,123,94,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+    <button style="position:absolute;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent-food);border:none;box-shadow:0 3px 16px rgba(193,123,94,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;" class="demo-fab-forward">
       <i data-lucide="chevron-right" style="width:22px;height:22px;"></i>
     </button>
   </div>
@@ -1209,6 +1587,35 @@ function applyRating(circle, score) {
     <b>아이콘:</b> lucide <code>chevron-right</code> 22px, color <code>#fff</code>
   </div>
 
+  <!-- ── 16-3b. Floating Add Button ── -->
+  <h3 style="margin-top:28px;">Floating Add Button (기록 추가)</h3>
+  <div class="note">하단 우측 고정. Back 버튼과 동일한 글래스모피즘 스타일. 모든 페이지에서 사용 — 현재 컨텍스트에 맞는 기록 추가.</div>
+  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;">
+    <!-- Back (left) -->
+    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;">
+      <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+    </button>
+    <!-- Add (right) -->
+    <button style="position:absolute;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+      <i data-lucide="plus" style="width:22px;height:22px;"></i>
+    </button>
+  </div>
+  <div class="note" style="margin-top:8px;">
+    <b>CSS 클래스:</b> <code>.fab-add</code><br>
+    <b>크기:</b> 44×44px 원형 (back과 동일)<br>
+    <b>위치:</b> <code>position: absolute; bottom: 28px; right: 16px;</code> (screen 기준)<br>
+    <b>배경:</b> <code>rgba(248,246,243,0.88)</code> + <code>backdrop-filter: blur(12px)</code> (back과 동일 글래스모피즘)<br>
+    <b>테두리:</b> <code>1px solid var(--border)</code><br>
+    <b>그림자:</b> <code>0 2px 12px rgba(0,0,0,0.12)</code><br>
+    <b>아이콘:</b> lucide <code>plus</code> 22px, color <code>var(--text)</code><br>
+    <b>터치:</b> <code>transform: scale(0.9)</code> on active<br>
+    <b>z-index:</b> 85<br><br>
+    <b>동작:</b><br>
+    · 홈: 현재 탭(식당/와인)에 따라 기록 플로우 진입<br>
+    · 상세 페이지: 해당 식당/와인 선택 스킵 → 바로 사분면 평가<br>
+    · 프로필: 새 기록 추가 (홈과 동일)
+  </div>
+
   <!-- ── 16-4. CSS Reference ── -->
   <h3 style="margin-top:28px;">CSS Reference (복사용)</h3>
   <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;line-height:1.5;overflow-x:auto;color:var(--text);max-width:390px;">
@@ -1221,7 +1628,7 @@ function applyRating(circle, score) {
   background: var(--bg);
 }
 .top-fixed.glass {
-  background: rgba(248,246,243,0.72);
+  background: rgba(248,246,243,0.55);
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
   box-shadow: 0 1px 12px rgba(0,0,0,0.08);
@@ -1268,13 +1675,64 @@ function applyRating(circle, score) {
 .fab-forward.wine {
   background: var(--accent-wine);
   box-shadow: 0 3px 16px rgba(139,115,150,0.4);
-}</pre>
+}
+
+/* ── Floating Add ── */
+.fab-add {
+  position: absolute;
+  bottom: 28px; right: 16px;
+  z-index: 85;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(248,246,243,0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+.fab-add:active { transform: scale(0.9); }</pre>
 
 </div>
 
 <script>
   // Initialize Lucide icons
   lucide.createIcons();
+
+  // Nyam dropdown select
+  function selectNyamDropdown(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    const valueEl = select.querySelector('.nyam-select-value');
+
+    // Update selected state
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+
+    // Get text (first text node, skip .item-desc)
+    const titleEl = item.querySelector('div > div:first-child') || item;
+    valueEl.textContent = titleEl.textContent.trim();
+
+    // Close
+    select.classList.remove('open');
+  }
+
+  // Close all dropdowns + avatar menu on outside click
+  document.addEventListener('click', e => {
+    // Dropdowns
+    document.querySelectorAll('.nyam-select.open').forEach(s => {
+      if (!s.parentElement.contains(e.target)) s.classList.remove('open');
+    });
+    // Avatar menu
+    document.querySelectorAll('.avatar-menu.open').forEach(m => {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
 
   // Dark mode toggle
   function toggleTheme() {
