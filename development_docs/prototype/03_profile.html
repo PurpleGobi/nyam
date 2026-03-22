@@ -142,6 +142,16 @@
   }
   .back-btn svg { width: 20px; height: 20px; color: var(--text-sub); }
 
+  /* Inner page header back button */
+  .inner-back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; color: var(--text);
+  }
+  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
+  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
+  .inner-back-btn:active { opacity: 0.6; }
+
   /* Scrollable content */
   .scroll-area {
     flex: 1; overflow-y: auto; overflow-x: hidden;
@@ -494,6 +504,10 @@
   .wrapped-cat.active {
     background: var(--primary); color: #fff;
     border-color: var(--primary);
+  }
+  .wrapped-cat.active-wine {
+    background: var(--wine); color: #fff;
+    border-color: var(--wine);
   }
 
   .gauge-section {
@@ -1398,14 +1412,33 @@
 
       <!-- ============ SCREEN: WRAPPED SHARE ============ -->
       <div class="screen hidden" id="screen-wrapped">
-        <div class="header">
-          <button class="back-btn" onclick="showScreen('screen-profile')">
-            <i data-lucide="chevron-left"></i> 프로필
-          </button>
-          <div class="header-actions">
-            <button class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:4px" onclick="alert('이미지 저장 / 공유 시트')">
-              <i data-lucide="download" style="width:14px;height:14px;"></i> 저장
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-profile')">
+              <i data-lucide="chevron-left"></i>
+              <span>프로필</span>
             </button>
+            <div class="header-right">
+              <button class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:4px" onclick="alert('이미지 저장 / 공유 시트')">
+                <i data-lucide="download" style="width:14px;height:14px;"></i> 저장
+              </button>
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림">
+                  <i data-lucide="bell"></i>
+                </button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
+            </div>
           </div>
         </div>
 
@@ -1445,23 +1478,18 @@
             </div>
           </div>
 
-          <!-- Wrapped card preview -->
-          <div class="wrapped-preview" id="wrapped-preview">
+          <!-- Wrapped card preview: ALL -->
+          <div class="wrapped-preview" id="wrapped-preview-all">
             <div class="wrapped-card">
-              <!-- Header — always visible -->
               <div class="wrapped-header">
                 <div class="wrapped-brand">nyam</div>
                 <div class="wrapped-year">2026</div>
               </div>
-
-              <!-- Identity — always visible -->
               <div class="wrapped-identity" id="w-identity">
                 <div class="wrapped-avatar" id="w-avatar">김</div>
                 <div class="wrapped-name" id="w-name">김맛잘알</div>
                 <div class="wrapped-bio" id="w-bio">을지로 골목의 캐주얼 맛집 탐험가</div>
               </div>
-
-              <!-- Stats bar — privacy ≥ 1 -->
               <div class="wrapped-stats" id="w-stats">
                 <div class="wrapped-stat">
                   <div class="wrapped-stat-num">127</div>
@@ -1476,16 +1504,12 @@
                   <div class="wrapped-stat-label">와인</div>
                 </div>
               </div>
-
-              <!-- Tags — always visible -->
               <div class="wrapped-tags" id="w-tags">
                 <span class="wrapped-tag">을지로 전문가</span>
                 <span class="wrapped-tag">캐주얼 선호</span>
                 <span class="wrapped-tag">레드 와인파</span>
                 <span class="wrapped-tag">탐험형</span>
               </div>
-
-              <!-- Top levels — detail ≥ 1 -->
               <div class="wrapped-levels" id="w-levels">
                 <div class="wrapped-level-title">동네 레벨</div>
                 <div class="wrapped-level-row">
@@ -1494,8 +1518,6 @@
                   <span class="wrapped-level-pill lv-green">강남 Lv.3</span>
                 </div>
               </div>
-
-              <!-- Top places — detail ≥ 2 -->
               <div class="wrapped-top-places" id="w-places">
                 <div class="wrapped-places-title">올해 최애</div>
                 <div class="wrapped-place-item">
@@ -1523,8 +1545,6 @@
                   <div class="wrapped-place-score" style="color:var(--wine)">94</div>
                 </div>
               </div>
-
-              <!-- Bubble info — privacy ≥ 2 -->
               <div class="wrapped-bubbles" id="w-bubbles">
                 <div class="wrapped-bubbles-title">활동 버블</div>
                 <div class="wrapped-bubble-chips">
@@ -1533,11 +1553,174 @@
                   <span class="wrapped-bubble-chip">대학 동기</span>
                 </div>
               </div>
-
-              <!-- Footer -->
               <div class="wrapped-footer">
                 <div class="wrapped-footer-brand">nyam</div>
                 <div class="wrapped-footer-sub">나만의 미식 여정</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wrapped card preview: RESTAURANT -->
+          <div class="wrapped-preview wrapped-hidden" id="wrapped-preview-rest">
+            <div class="wrapped-card" style="background:linear-gradient(160deg, #3D3833 0%, #5A4E44 40%, #FF6038 100%);">
+              <div class="wrapped-header">
+                <div class="wrapped-brand">nyam</div>
+                <div class="wrapped-year" style="display:flex;align-items:center;gap:4px;">
+                  <i data-lucide="utensils-crossed" style="width:12px;height:12px;opacity:0.6"></i> 식당
+                </div>
+              </div>
+              <div class="wrapped-identity" id="wr-identity">
+                <div class="wrapped-avatar" id="wr-avatar">김</div>
+                <div class="wrapped-name" id="wr-name">김맛잘알</div>
+                <div class="wrapped-bio" id="wr-bio">을지로 골목의 캐주얼 맛집 탐험가</div>
+              </div>
+              <div class="wrapped-stats" id="wr-stats">
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">98</div>
+                  <div class="wrapped-stat-label">식당</div>
+                </div>
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">127</div>
+                  <div class="wrapped-stat-label">방문</div>
+                </div>
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">15</div>
+                  <div class="wrapped-stat-label">동네</div>
+                </div>
+              </div>
+              <div class="wrapped-tags" id="wr-tags">
+                <span class="wrapped-tag">을지로 전문가</span>
+                <span class="wrapped-tag">캐주얼 선호</span>
+                <span class="wrapped-tag">한식 애호가</span>
+                <span class="wrapped-tag">탐험형</span>
+              </div>
+              <div class="wrapped-levels" id="wr-levels">
+                <div class="wrapped-level-title">지역 레벨</div>
+                <div class="wrapped-level-row">
+                  <span class="wrapped-level-pill lv-purple">을지로 Lv.7</span>
+                  <span class="wrapped-level-pill lv-blue">광화문 Lv.5</span>
+                  <span class="wrapped-level-pill lv-green">강남 Lv.3</span>
+                </div>
+              </div>
+              <div class="wrapped-top-places" id="wr-places">
+                <div class="wrapped-places-title">올해 최애 식당</div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">1</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">미진</div>
+                    <div class="wrapped-place-meta">한식 · 을지로 · 12회 방문</div>
+                  </div>
+                  <div class="wrapped-place-score">93</div>
+                </div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">2</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">스시코우지</div>
+                    <div class="wrapped-place-meta">일식 · 을지로 · 8회 방문</div>
+                  </div>
+                  <div class="wrapped-place-score">92</div>
+                </div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">3</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">광화문 미쉐린</div>
+                    <div class="wrapped-place-meta">양식 · 광화문 · 6회 방문</div>
+                  </div>
+                  <div class="wrapped-place-score">90</div>
+                </div>
+              </div>
+              <div class="wrapped-bubbles" id="wr-bubbles">
+                <div class="wrapped-bubbles-title">맛집 버블</div>
+                <div class="wrapped-bubble-chips">
+                  <span class="wrapped-bubble-chip">직장 맛집</span>
+                  <span class="wrapped-bubble-chip">동네 맛집</span>
+                </div>
+              </div>
+              <div class="wrapped-footer">
+                <div class="wrapped-footer-brand">nyam</div>
+                <div class="wrapped-footer-sub">나만의 맛집 여정</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wrapped card preview: WINE -->
+          <div class="wrapped-preview wrapped-hidden" id="wrapped-preview-wine">
+            <div class="wrapped-card" style="background:linear-gradient(160deg, #2A2438 0%, #4A3D5E 40%, #8B7396 100%);">
+              <div class="wrapped-header">
+                <div class="wrapped-brand">nyam</div>
+                <div class="wrapped-year" style="display:flex;align-items:center;gap:4px;">
+                  <i data-lucide="wine" style="width:12px;height:12px;opacity:0.6"></i> 와인
+                </div>
+              </div>
+              <div class="wrapped-identity" id="ww-identity">
+                <div class="wrapped-avatar" id="ww-avatar">김</div>
+                <div class="wrapped-name" id="ww-name">김맛잘알</div>
+                <div class="wrapped-bio" id="ww-bio">카베르네 소비뇽을 깊이 파는 레드 와인파</div>
+              </div>
+              <div class="wrapped-stats" id="ww-stats">
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">32</div>
+                  <div class="wrapped-stat-label">와인</div>
+                </div>
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">45</div>
+                  <div class="wrapped-stat-label">시음</div>
+                </div>
+                <div class="wrapped-stat">
+                  <div class="wrapped-stat-num">8</div>
+                  <div class="wrapped-stat-label">품종</div>
+                </div>
+              </div>
+              <div class="wrapped-tags" id="ww-tags">
+                <span class="wrapped-tag" style="background:rgba(139,115,150,0.3);">레드 와인파</span>
+                <span class="wrapped-tag" style="background:rgba(139,115,150,0.3);">카베르네 소비뇽</span>
+                <span class="wrapped-tag" style="background:rgba(139,115,150,0.3);">풀바디 선호</span>
+                <span class="wrapped-tag" style="background:rgba(139,115,150,0.3);">프랑스 중심</span>
+              </div>
+              <div class="wrapped-levels" id="ww-levels">
+                <div class="wrapped-level-title">품종 레벨</div>
+                <div class="wrapped-level-row">
+                  <span class="wrapped-level-pill lv-purple">카베르네 소비뇽 Lv.5</span>
+                  <span class="wrapped-level-pill lv-blue">피노 누아 Lv.3</span>
+                  <span class="wrapped-level-pill lv-green">샤르도네 Lv.2</span>
+                </div>
+              </div>
+              <div class="wrapped-top-places" id="ww-places">
+                <div class="wrapped-places-title">올해 최애 와인</div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">1</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">Ch. Margaux 2018</div>
+                    <div class="wrapped-place-meta">레드 · 카베르네 소비뇽 · 보르도</div>
+                  </div>
+                  <div class="wrapped-place-score" style="color:rgba(200,180,220,0.9)">94</div>
+                </div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">2</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">Opus One 2019</div>
+                    <div class="wrapped-place-meta">레드 · 카베르네 소비뇽 · 나파밸리</div>
+                  </div>
+                  <div class="wrapped-place-score" style="color:rgba(200,180,220,0.9)">92</div>
+                </div>
+                <div class="wrapped-place-item">
+                  <span class="wrapped-place-rank">3</span>
+                  <div class="wrapped-place-info">
+                    <div class="wrapped-place-name">DRC Romanée-Conti 2017</div>
+                    <div class="wrapped-place-meta">레드 · 피노 누아 · 부르고뉴</div>
+                  </div>
+                  <div class="wrapped-place-score" style="color:rgba(200,180,220,0.9)">96</div>
+                </div>
+              </div>
+              <div class="wrapped-bubbles" id="ww-bubbles">
+                <div class="wrapped-bubbles-title">와인 버블</div>
+                <div class="wrapped-bubble-chips">
+                  <span class="wrapped-bubble-chip" style="border-color:rgba(139,115,150,0.3);">와인 동호회</span>
+                </div>
+              </div>
+              <div class="wrapped-footer">
+                <div class="wrapped-footer-brand">nyam</div>
+                <div class="wrapped-footer-sub">나만의 와인 여정</div>
               </div>
             </div>
           </div>
@@ -1551,12 +1734,31 @@
 
       <!-- ============ SCREEN: BUBBLE LIST ============ -->
       <div class="screen hidden" id="screen-bubbles">
-        <div class="header">
-          <h1>버블</h1>
-          <div class="header-actions">
-            <button class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:4px" onclick="showScreen('screen-bubble-create')">
-              <i data-lucide="plus" style="width:14px;height:14px;"></i> 만들기
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-profile')">
+              <i data-lucide="chevron-left"></i>
+              <span>프로필</span>
             </button>
+            <div class="header-right">
+              <button class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:4px" onclick="showScreen('screen-bubble-create')">
+                <i data-lucide="plus" style="width:14px;height:14px;"></i> 만들기
+              </button>
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림"><i data-lucide="bell"></i></button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
+            </div>
           </div>
         </div>
 
@@ -1622,21 +1824,35 @@
 
       <!-- ============ SCREEN: BUBBLE DETAIL ============ -->
       <div class="screen hidden" id="screen-bubble-detail">
-        <div class="header" style="flex-direction:column;align-items:flex-start;gap:4px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <button class="back-btn" onclick="showScreen('screen-bubbles')">
-              <i data-lucide="chevron-left"></i> 직장 맛집
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-bubbles')">
+              <i data-lucide="chevron-left"></i>
+              <span>버블</span>
             </button>
-            <div style="display:flex;gap:6px">
+            <div class="header-right">
               <button class="btn-outline" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:4px">
                 <i data-lucide="user-plus" style="width:14px;height:14px;"></i> 초대
               </button>
               <button class="icon-btn" style="width:30px;height:30px">
                 <i data-lucide="settings" style="width:16px;height:16px;"></i>
               </button>
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림"><i data-lucide="bell"></i></button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--text-sub);padding-left:2px">멤버 8명 · 기록 47개</div>
         </div>
 
         <!-- Member scroll -->
@@ -1961,10 +2177,29 @@
 
       <!-- ============ SCREEN: BUBBLE CREATE ============ -->
       <div class="screen hidden" id="screen-bubble-create">
-        <div class="header">
-          <button class="back-btn" onclick="showScreen('screen-bubbles')">
-            <i data-lucide="chevron-left"></i> 새 버블 만들기
-          </button>
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-bubbles')">
+              <i data-lucide="chevron-left"></i>
+              <span>버블</span>
+            </button>
+            <div class="header-right">
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림"><i data-lucide="bell"></i></button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
+            </div>
+          </div>
         </div>
         <div class="scroll-area">
           <!-- Name -->
@@ -2035,11 +2270,30 @@
 
       <!-- ============ SCREEN: NOTIFICATIONS ============ -->
       <div class="screen hidden" id="screen-notifications">
-        <div class="header">
-          <button class="back-btn" onclick="showScreen('screen-profile')">
-            <i data-lucide="chevron-left"></i> 알림
-          </button>
-          <button style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;font-weight:500" onclick="markAllRead()">모두 읽음</button>
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-profile')">
+              <i data-lucide="chevron-left"></i>
+              <span>프로필</span>
+            </button>
+            <div class="header-right">
+              <button style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;font-weight:500" onclick="markAllRead()">모두 읽음</button>
+              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림"><i data-lucide="bell"></i></button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar">J</div>
+            </div>
+          </div>
         </div>
         <div class="scroll-area">
           <div class="notif-item unread" id="notif-1" onclick="toggleNotifRead(this)">
@@ -2305,25 +2559,38 @@
     });
   }
 
-  // Wrapped share — gauge logic
+  // Wrapped share — current category
+  let wrappedCat = 'all';
+
+  // Prefix map per category for element IDs
+  const wrappedPrefixMap = { all: 'w', rest: 'wr', wine: 'ww' };
+  const wrappedBioMap = {
+    all: '을지로 골목의 캐주얼 맛집 탐험가',
+    rest: '을지로 골목의 캐주얼 맛집 탐험가',
+    wine: '카베르네 소비뇽을 깊이 파는 레드 와인파'
+  };
+  const wrappedAnonBioMap = {
+    all: '미식 탐험가',
+    rest: '맛집 탐험가',
+    wine: '와인 탐험가'
+  };
+
+  // Wrapped share — gauge logic (works on active card)
   function updateWrapped() {
     const privacy = parseInt(document.getElementById('gauge-privacy').value);
     const detail = parseInt(document.getElementById('gauge-detail').value);
+    const prefix = wrappedPrefixMap[wrappedCat];
 
-    // Privacy controls:
-    // 0 = minimal (no avatar, no stats, no bubbles, anonymous name)
-    // 1 = moderate (avatar initial, stats visible, name visible)
-    // 2 = full (everything + bubbles)
-    const wAvatar = document.getElementById('w-avatar');
-    const wName = document.getElementById('w-name');
-    const wBio = document.getElementById('w-bio');
-    const wStats = document.getElementById('w-stats');
-    const wBubbles = document.getElementById('w-bubbles');
+    const wAvatar = document.getElementById(prefix + '-avatar');
+    const wName = document.getElementById(prefix + '-name');
+    const wBio = document.getElementById(prefix + '-bio');
+    const wStats = document.getElementById(prefix + '-stats');
+    const wBubbles = document.getElementById(prefix + '-bubbles');
 
     if (privacy === 0) {
       wAvatar.style.opacity = '0.3';
       wAvatar.textContent = '?';
-      wName.textContent = '미식 탐험가';
+      wName.textContent = wrappedAnonBioMap[wrappedCat];
       wBio.textContent = '';
       wStats.classList.add('wrapped-hidden');
       wBubbles.classList.add('wrapped-hidden');
@@ -2331,24 +2598,20 @@
       wAvatar.style.opacity = '1';
       wAvatar.textContent = '김';
       wName.textContent = '김맛잘알';
-      wBio.textContent = '을지로 골목의 캐주얼 맛집 탐험가';
+      wBio.textContent = wrappedBioMap[wrappedCat];
       wStats.classList.remove('wrapped-hidden');
       wBubbles.classList.add('wrapped-hidden');
     } else {
       wAvatar.style.opacity = '1';
       wAvatar.textContent = '김';
       wName.textContent = '김맛잘알';
-      wBio.textContent = '을지로 골목의 캐주얼 맛집 탐험가';
+      wBio.textContent = wrappedBioMap[wrappedCat];
       wStats.classList.remove('wrapped-hidden');
       wBubbles.classList.remove('wrapped-hidden');
     }
 
-    // Detail controls:
-    // 0 = simple (tags only)
-    // 1 = moderate (+ levels)
-    // 2 = full (+ top places)
-    const wLevels = document.getElementById('w-levels');
-    const wPlaces = document.getElementById('w-places');
+    const wLevels = document.getElementById(prefix + '-levels');
+    const wPlaces = document.getElementById(prefix + '-places');
 
     if (detail === 0) {
       wLevels.classList.add('wrapped-hidden');
@@ -2362,12 +2625,24 @@
     }
   }
 
-  // Wrapped category tabs
+  // Wrapped category tabs — switch preview card
   function setWrappedCat(cat) {
+    wrappedCat = cat;
     ['all','rest','wine'].forEach(c => {
-      document.getElementById('wcat-' + c).classList.toggle('active', c === cat);
+      const btn = document.getElementById('wcat-' + c);
+      btn.classList.remove('active', 'active-wine');
+      if (c === cat) {
+        btn.classList.add(cat === 'wine' ? 'active-wine' : 'active');
+      }
+      const preview = document.getElementById('wrapped-preview-' + c);
+      if (c === cat) {
+        preview.classList.remove('wrapped-hidden');
+      } else {
+        preview.classList.add('wrapped-hidden');
+      }
     });
-    // In a real app this would filter the content; for the mockup just toggle active state
+    // Re-apply gauge settings to the newly visible card
+    updateWrapped();
   }
 
   lucide.createIcons();
