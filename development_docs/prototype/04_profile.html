@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nyam Prototype — 소셜 (버블 · 프로필)</title>
+<title>Nyam Prototype — 프로필</title>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
@@ -192,16 +192,23 @@
 
   /* ========== SCREEN: PROFILE ========== */
   .profile-header-section {
-    padding: 20px;
-    display: flex; flex-direction: column;
-    align-items: center; gap: 8px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
   }
+  .profile-top-row {
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  /* Left column: avatar + name + id */
+  .profile-left {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    flex-shrink: 0; width: 80px;
+  }
   .avatar-circle {
-    width: 72px; height: 72px; border-radius: 50%;
+    width: 64px; height: 64px; border-radius: 50%;
     background: linear-gradient(135deg, #C17B5E, #D4A08A);
     display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #fff; font-weight: 700;
+    font-size: 24px; color: #fff; font-weight: 700;
     position: relative;
   }
   .avatar-level-badge {
@@ -211,21 +218,61 @@
     padding: 2px 5px; border-radius: 8px;
     border: 2px solid #fff;
   }
-  .profile-name { font-size: 20px; font-weight: 700; color: var(--text); }
-  .profile-bio { font-size: 13px; color: var(--text-sub); text-align: center; }
+  .profile-name { font-size: 15px; font-weight: 700; color: var(--text); text-align: center; line-height: 1.2; }
+  .profile-handle { font-size: 11px; color: var(--text-hint); text-align: center; }
+  /* Right column: taste card */
+  .profile-right {
+    flex: 1; min-width: 0;
+  }
+  .taste-card-compact {
+    background: linear-gradient(135deg, #FEFCFA, #F5EDE8);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px;
+    position: relative;
+  }
+  .taste-card-compact .taste-identity-text {
+    font-size: 12px; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .taste-card-compact .taste-identity-tags {
+    margin-top: 8px; gap: 4px;
+  }
+  .taste-card-compact .taste-tag {
+    padding: 2px 8px; font-size: 10px;
+  }
+  .taste-card-compact .taste-card-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px;
+  }
+  .taste-card-compact .taste-identity-footer {
+    font-size: 10px;
+  }
+  .taste-share-btn-sm {
+    display: flex; align-items: center; gap: 3px;
+    padding: 4px 10px; border-radius: 14px;
+    background: var(--primary); color: #fff;
+    border: none; cursor: pointer;
+    font-size: 11px; font-weight: 600;
+    font-family: inherit; transition: opacity 0.15s;
+  }
+  .taste-share-btn-sm:active { opacity: 0.8; }
 
-  .stats-row {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
+  /* Compact stats row */
+  .stats-row-compact {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid var(--border);
   }
-  .stat-item {
-    display: flex; flex-direction: column;
-    align-items: center; gap: 2px;
+  .stat-inline {
+    display: flex; align-items: baseline; gap: 3px;
   }
-  .stat-item + .stat-item { border-left: 1px solid var(--border); }
-  .stat-num { font-size: 20px; font-weight: 700; color: var(--text); }
-  .stat-label { font-size: 11px; color: var(--text-sub); }
+  .stat-inline-num { font-size: 15px; font-weight: 700; color: var(--text); }
+  .stat-inline-label { font-size: 11px; color: var(--text-sub); }
+  .stat-inline-sep {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--border-bold);
+  }
 
   .section-block {
     padding: 16px 20px;
@@ -426,16 +473,7 @@
   }
   .bubble-see-all:active { color: var(--primary); border-color: var(--primary); }
 
-  /* Taste Identity section */
-  .taste-identity-section {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .taste-identity-card {
-    background: linear-gradient(135deg, #FEFCFA, #F5EDE8);
-    border: 1px solid var(--border);
-    border-radius: 14px; padding: 16px;
-  }
+  /* Taste Identity (shared base styles for compact card) */
   .taste-identity-text {
     font-size: 14px; line-height: 1.6;
     color: var(--text); font-style: italic;
@@ -449,23 +487,10 @@
     font-size: 11px; font-weight: 600;
     background: rgba(193,123,94,0.1); color: var(--primary);
   }
-  .taste-identity-bottom {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 12px;
-  }
   .taste-identity-footer {
     display: flex; align-items: center; gap: 4px;
     font-size: 11px; color: var(--text-hint);
   }
-  .taste-share-btn {
-    display: flex; align-items: center; gap: 4px;
-    padding: 6px 14px; border-radius: 20px;
-    background: var(--primary); color: #fff;
-    border: none; cursor: pointer;
-    font-size: 12px; font-weight: 600;
-    font-family: inherit; transition: opacity 0.15s;
-  }
-  .taste-share-btn:active { opacity: 0.8; }
 
   /* ========== SCREEN: WRAPPED SHARE ========== */
   .wrapped-category-tabs {
@@ -1035,6 +1060,9 @@
               <button class="icon-btn" onclick="showScreen('screen-settings')" title="설정">
                 <i data-lucide="settings"></i>
               </button>
+              <button class="icon-btn" onclick="location.href='05_bubbles.html'" title="버블">
+                <i data-lucide="circle-dot"></i>
+              </button>
               <div style="position:relative;">
                 <button class="icon-btn" onclick="showScreen('screen-notifications')" title="알림">
                   <i data-lucide="bell"></i>
@@ -1047,54 +1075,59 @@
         </div>
 
         <div class="scroll-area" onscroll="document.getElementById('profileTopFixed').classList.toggle('glass', this.scrollTop > 10)">
-          <!-- Avatar + Bio -->
+          <!-- Section 1: Profile Header (2-column) -->
           <div class="profile-header-section">
-            <div class="avatar-circle">
-              김
-              <div class="avatar-level-badge">Lv.7</div>
-            </div>
-            <div class="profile-name">김맛잘알</div>
-            <div class="profile-bio">맛있는 곳을 찾아다니는 을지로 탐험가</div>
-          </div>
-
-          <!-- Taste Identity — Wrapped style -->
-          <div class="taste-identity-section">
-            <div class="taste-identity-card">
-              <div class="taste-identity-text">
-                "을지로 골목을 누비며 <strong>캐주얼한 숨은 맛집</strong>을 발굴하는 탐험가.
-                와인은 <strong>카베르네 소비뇽 중심</strong>으로 깊이 파는 스타일."
-              </div>
-              <div class="taste-identity-tags">
-                <span class="taste-tag">을지로 전문가</span>
-                <span class="taste-tag">캐주얼 선호</span>
-                <span class="taste-tag">레드 와인파</span>
-                <span class="taste-tag">탐험형</span>
-              </div>
-              <div class="taste-identity-bottom">
-                <div class="taste-identity-footer">
-                  <i data-lucide="sparkles" style="width:12px;height:12px;color:var(--caution)"></i>
-                  <span>127개 기록 기반</span>
+            <div class="profile-top-row">
+              <!-- Left: Avatar + Name + ID -->
+              <div class="profile-left">
+                <div class="avatar-circle">
+                  김
+                  <div class="avatar-level-badge">Lv.7</div>
                 </div>
-                <button class="taste-share-btn" onclick="showScreen('screen-wrapped')">
-                  <i data-lucide="share-2" style="width:14px;height:14px;"></i> 공유
-                </button>
+                <div class="profile-name">김맛잘알</div>
+                <div class="profile-handle">@matjal_kim</div>
+              </div>
+              <!-- Right: Taste Identity Card -->
+              <div class="profile-right">
+                <div class="taste-card-compact">
+                  <div class="taste-identity-text">
+                    "을지로 골목을 누비며 <strong>캐주얼한 숨은 맛집</strong>을 발굴하는 탐험가.
+                    와인은 <strong>카베르네 소비뇽 중심</strong>으로 깊이 파는 스타일."
+                  </div>
+                  <div class="taste-identity-tags">
+                    <span class="taste-tag">을지로 전문가</span>
+                    <span class="taste-tag">캐주얼 선호</span>
+                    <span class="taste-tag">레드 와인파</span>
+                    <span class="taste-tag">탐험형</span>
+                  </div>
+                  <div class="taste-card-bottom">
+                    <div class="taste-identity-footer">
+                      <i data-lucide="sparkles" style="width:11px;height:11px;color:var(--caution)"></i>
+                      <span>127개 기록 기반</span>
+                    </div>
+                    <button class="taste-share-btn-sm" onclick="showScreen('screen-wrapped')">
+                      <i data-lucide="share-2" style="width:12px;height:12px;"></i> 공유
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Stats -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <div class="stat-num">127</div>
-              <div class="stat-label">기록</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-num">98</div>
-              <div class="stat-label">식당</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-num">32</div>
-              <div class="stat-label">와인</div>
+            <!-- Compact stats -->
+            <div class="stats-row-compact">
+              <div class="stat-inline">
+                <span class="stat-inline-num">127</span>
+                <span class="stat-inline-label">기록</span>
+              </div>
+              <div class="stat-inline-sep"></div>
+              <div class="stat-inline">
+                <span class="stat-inline-num">98</span>
+                <span class="stat-inline-label">식당</span>
+              </div>
+              <div class="stat-inline-sep"></div>
+              <div class="stat-inline">
+                <span class="stat-inline-num">32</span>
+                <span class="stat-inline-label">와인</span>
+              </div>
             </div>
           </div>
 
@@ -1531,10 +1564,20 @@
 
       <!-- ============ SCREEN: SETTINGS ============ -->
       <div class="screen hidden" id="screen-settings">
-        <div class="header">
-          <button class="back-btn" onclick="showScreen('screen-profile')">
-            <i data-lucide="chevron-left"></i> 설정
-          </button>
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal" style="width:16px;height:16px;"></i>
+              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
+              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="back-btn" onclick="showScreen('screen-profile')">
+              <i data-lucide="chevron-left"></i> 설정
+            </button>
+          </div>
         </div>
         <div class="scroll-area">
           <!-- 계정 -->
@@ -1659,7 +1702,14 @@
               </div>
             </div>
           </div>
-          <div style="height:20px"></div>
+          <div style="padding:20px 20px 40px;">
+            <button onclick="alert('로그아웃')" style="
+              width:100%; padding:14px; border-radius:12px;
+              background:none; border:1px solid var(--negative);
+              color:var(--negative); font-size:15px; font-weight:600;
+              cursor:pointer; font-family:inherit;
+            ">로그아웃</button>
+          </div>
         </div>
       </div>
 

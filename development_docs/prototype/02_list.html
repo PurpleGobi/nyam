@@ -56,34 +56,93 @@
     border-radius: 0 0 20px 20px; z-index: 100;
   }
 
+  /* =====================
+     TOP FIXED — status bar + app header
+     ===================== */
+  .top-fixed {
+    position: relative;
+    z-index: 90;
+    flex-shrink: 0;
+    transition: background 0.35s, box-shadow 0.35s;
+    background: var(--bg);
+  }
+  .top-fixed.glass {
+    background: rgba(248,246,243,0.72);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+  }
+
   .status-bar {
     height: 44px; display: flex; align-items: flex-end;
     justify-content: space-between; padding: 0 24px 6px;
     font-size: 12px; font-weight: 600; color: var(--text);
-    flex-shrink: 0; position: relative; z-index: 50;
+    position: relative;
   }
   .status-time { font-size: 15px; font-weight: 700; }
+
+  .app-header {
+    display: flex; align-items: center;
+    justify-content: space-between; padding: 2px 16px 8px;
+  }
+  .app-logo {
+    font-family: 'Comfortaa', cursive; font-size: 22px;
+    font-weight: 700; letter-spacing: -0.5px; line-height: 1;
+    background: linear-gradient(135deg, #FF6038, #8B7396);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .app-header-actions { display: flex; align-items: center; gap: 6px; }
+  .app-header-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: none;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: var(--text); background: transparent;
+    position: relative; transition: background 0.15s;
+  }
+  .app-header-btn:active { background: var(--bg-card); }
+  .app-header-btn .notif-dot {
+    position: absolute; top: 6px; right: 6px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--brand); border: 1.5px solid var(--bg);
+  }
+  .app-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* =====================
+     FLOATING BACK BUTTON
+     ===================== */
+  .fab-back {
+    position: absolute; bottom: 28px; left: 16px; z-index: 85;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); transition: transform 0.15s;
+  }
+  .fab-back:active { transform: scale(0.9); }
 
   .scroll-content {
     flex: 1; overflow-y: auto; overflow-x: hidden;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    position: relative;
   }
   .scroll-content::-webkit-scrollbar { display: none; }
 
   /* =====================
-     HEADER
+     PAGE TITLE (below app header)
      ===================== */
-  .list-header {
-    padding: 2px 16px 0; display: flex; align-items: center;
+  .page-title-bar {
+    padding: 4px 20px 6px; display: flex; align-items: center;
     justify-content: space-between; flex-shrink: 0;
   }
-  .list-header-left { display: flex; align-items: center; gap: 8px; }
-  .header-back {
-    width: 36px; height: 36px; display: flex; align-items: center;
-    justify-content: center; border-radius: 50%; cursor: pointer; color: var(--text);
-  }
-  .header-back:active { background: var(--bg-page); }
-  .list-header-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .page-title-text { font-size: 18px; font-weight: 800; color: var(--text); }
   .header-icon-btn {
     width: 36px; height: 36px; display: flex; align-items: center;
     justify-content: center; border-radius: 50%; cursor: pointer;
@@ -418,21 +477,34 @@
   <div class="notch"></div>
   <div class="device-inner">
 
-    <div class="status-bar">
-      <span class="status-time">9:41</span>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+    <!-- App Top Bar -->
+    <div class="top-fixed" id="top-fixed">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+        </div>
+      </div>
+      <div class="app-header">
+        <span class="app-logo">nyam</span>
+        <div class="app-header-actions">
+          <button class="app-header-btn">
+            <i data-lucide="bell" style="width:20px;height:20px;"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <div class="app-avatar">J</div>
+        </div>
       </div>
     </div>
 
-    <!-- Header -->
-    <div class="list-header">
-      <div class="list-header-left">
-        <div class="header-back" onclick="alert('← 홈으로')">
-          <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
-        </div>
-        <div class="list-header-title">내 컬렉션</div>
-      </div>
+    <!-- Floating Back Button -->
+    <button class="fab-back" onclick="history.back()">
+      <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+    </button>
+
+    <!-- Page Title -->
+    <div class="page-title-bar">
+      <span class="page-title-text">내 컬렉션</span>
       <button class="header-icon-btn" onclick="openSearch()">
         <i data-lucide="search" style="width:20px;height:20px;"></i>
       </button>
@@ -497,7 +569,7 @@
     </div>
 
     <!-- List -->
-    <div class="scroll-content">
+    <div class="scroll-content" onscroll="document.getElementById('top-fixed').classList.toggle('glass', this.scrollTop > 10)">
 
       <!-- FOOD LIST -->
       <div class="compact-list" id="foodList">
@@ -812,14 +884,14 @@ const filterConfig = {
     price:   { label: '가격대',   icon: 'wallet',    values: ['~2만', '2~5만', '5~10만', '10만+'] },
   },
   wine: {
-    status:  { label: '상태',     icon: 'circle-dot', values: ['시음', '찜', '셀러'] },
+    status:  { label: '상태',     icon: 'circle-dot', values: ['시음', '셀러', '찜'] },
     style:   { label: '스타일',   icon: 'wine',      values: ['Red', 'White', 'Rosé', 'Sparkling', 'Orange', 'Dessert', 'Fortified'] },
     variety: { label: '품종',     icon: 'grape',     values: ['카베르네 소비뇽', '피노 누아', '메를로', '쉬라즈', '샤르도네', '소비뇽 블랑', '리슬링', '네비올로'] },
     region:  { label: '산지',     icon: 'globe',     values: ['France', 'Italy', 'USA', 'Spain', 'Chile', 'Australia', 'NZ', 'Argentina'] },
     vintage: { label: '빈티지',   icon: 'clock',     values: ['2024', '2023', '2022', '2021', '2020', '2019', '2018 이전'] },
     score:   { label: '점수',     icon: 'bar-chart-3', values: ['90+', '80~89', '70~79', '~69'] },
     period:  { label: '시음시기', icon: 'calendar',  values: ['최근 1주', '최근 1개월', '최근 3개월', '최근 6개월', '1년+'] },
-    pairing: { label: '페어링',   icon: 'utensils',  values: ['적색육', '백색육', '어패류', '치즈', '채소', '디저트'] },
+    pairing: { label: '페어링',   icon: 'utensils',  values: ['적색육', '백색육', '어패류', '치즈·유제품', '채소·곡물', '매운·발효', '디저트·과일', '샤퀴트리·견과'] },
     price:   { label: '가격대',   icon: 'wallet',    values: ['~3만', '3~7만', '7~15만', '15만+'] },
     acidity: { label: '산미',     icon: 'droplets',  values: ['낮음', '중간', '높음'] },
     sweetness: { label: '당도',   icon: 'candy',     values: ['드라이', '오프드라이', '스위트'] },

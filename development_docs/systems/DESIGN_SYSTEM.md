@@ -239,6 +239,52 @@ card-gauge:   [gauge bar] [× 닫기]       ← 가봤음/맞아요 후 교체
 - 활성: 13px, 700, 액센트색 + 하단 2px 밑줄
 - 식당 컨텍스트: `--accent-food` / 와인 컨텍스트: `--accent-wine`
 
+### 보기 토글 (간단 / 상세)
+
+리스트형 화면에서 간단(compact) ↔ 상세(detail) 보기를 전환하는 pill 토글.
+
+```
+┌───────────────┐
+│ [간단] [상세]  │
+└───────────────┘
+```
+
+| 속성 | 값 |
+|------|-----|
+| 컨테이너 | `view-toggle`, `--bg-page` 배경, `--r-sm` (8px), padding 2px |
+| 버튼 | `view-toggle-btn`, 11px, 600 |
+| 비활성 | 배경 없음, `--text-hint` |
+| 활성 | `--bg-card` 배경, `--text`, `box-shadow: 0 1px 3px rgba(0,0,0,0.08)`, `--r-xs` (6px) |
+| 용도 | HOME 식당/와인 탭. 탭 전환 시 보기 모드 유지 |
+
+### 컴팩트 리스트 아이템
+
+간단 보기 모드에서 사용하는 한 줄짜리 아이템. 순위 + 썸네일 + 정보 + 점수.
+
+```
+┌──────────────────────────────┐
+│ 1  [40×40] 식당/와인명     92  │
+│           메타 정보            │
+└──────────────────────────────┘
+```
+
+| 속성 | 값 |
+|------|-----|
+| 컨테이너 | `compact-item`, `flex`, `align-items: center`, `gap: 10px`, padding `10px 0` |
+| 구분선 | `border-bottom: 1px solid --border` (마지막 제외) |
+| 순위 | `compact-rank`, 13px bold, 18px 고정 폭, 중앙 정렬 |
+| 순위 1~3 | accent 색상 (식당: `--accent-food`, 와인: `--accent-wine`) |
+| 순위 4+ | `--text-hint` |
+| 썸네일 | `compact-thumb`, 40×40, `--r-md` (10px) |
+| 식당 썸네일 | gradient 배경 (사진 대체) |
+| 와인 썸네일 | 어두운 gradient + 와인병 SVG 아이콘 (stroke: `rgba(255,255,255,0.3)`) |
+| 이름 | `compact-name`, 14px, 600, `--text`, `text-overflow: ellipsis` |
+| 메타 | `compact-meta`, 11px, `--text-hint`, 1줄 (장르 · 지역 · 태그) |
+| 점수 | `compact-score`, 18px, 800, 우측 정렬, 32px 최소 폭 |
+| 점수 색상 | 식당: `--accent-food` / 와인: `--accent-wine` |
+| 미평가 | 14px, 600, `--text-hint`, `—` 표시 |
+| 최대 표시 | 10개 |
+
 ### 인풋
 
 - `--r-md`, `--border`, `--bg` 배경

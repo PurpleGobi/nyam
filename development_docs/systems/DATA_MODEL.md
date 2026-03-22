@@ -270,13 +270,16 @@ CREATE TABLE bubbles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(20) NOT NULL,
   description VARCHAR(100),
-  type VARCHAR(20) DEFAULT 'bidirectional',  -- 'bidirectional' | 'readonly'
+  identity VARCHAR(20) DEFAULT 'all',         -- 'all' | 'restaurant' | 'wine' (라벨일 뿐, 제한 없음)
+  visibility VARCHAR(20) DEFAULT 'private',   -- 'private' | 'members' | 'public'
+  exposure_level VARCHAR(20) DEFAULT 'rating_only',  -- 'rating_only' | 'rating_and_comment'
+  allow_comments BOOLEAN DEFAULT true,
+  allow_external_share BOOLEAN DEFAULT false,
+  min_xp_level INT DEFAULT 0,                -- members 버블 가입 최소 경험치 레벨 (0 = 제한 없음)
   icon_url TEXT,
   created_by UUID REFERENCES users(id),
   invite_code VARCHAR(20) UNIQUE,
   invite_expires_at TIMESTAMPTZ,
-  requires_approval BOOLEAN DEFAULT false,
-  max_members INT DEFAULT 100,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

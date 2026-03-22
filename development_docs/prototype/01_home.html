@@ -120,41 +120,43 @@
   @keyframes slideOutRight { from { transform:translateX(0); } to { transform:translateX(100%); } }
   @keyframes slideInLeft { from { transform:translateX(-100%); } to { transform:translateX(0); } }
 
-  /* Onboarding bottom nav bar */
-  .ob-nav {
-    position:absolute; bottom:0; left:0; right:0; z-index:80;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 20px 28px; /* extra bottom for home indicator */
-    background:linear-gradient(transparent 0%, var(--bg) 20%);
+  /* Floating Back Button — §16 Global Nav */
+  .fab-back {
+    position:absolute; bottom:28px; left:16px; z-index:85;
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(248,246,243,0.88);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--border);
+    box-shadow:0 2px 12px rgba(0,0,0,0.12);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text); transition:transform 0.15s;
   }
-  .ob-nav-back {
-    padding:12px 20px; border-radius:50px;
-    background:var(--bg); border:1px solid var(--border);
-    font-size:14px; font-weight:600; color:var(--text);
-    cursor:pointer; transition:all 0.2s;
-  }
-  .ob-nav-back:active { transform:scale(0.95); background:var(--bg-page); }
+  .fab-back:active { transform:scale(0.9); }
+  .fab-back svg { width:22px; height:22px; }
 
-  .ob-nav-skip {
+  /* Skip link — top right */
+  .ob-skip {
+    position:absolute; top:52px; right:20px; z-index:85;
     background:none; border:none;
     font-size:13px; font-weight:600; color:var(--text-hint);
     cursor:pointer; padding:8px 4px;
-    text-decoration:underline; text-underline-offset:3px;
   }
-  .ob-nav-skip:active { color:var(--text-sub); }
+  .ob-skip:active { color:var(--text-sub); }
 
-  .ob-nav-next {
-    padding:12px 20px; border-radius:50px;
-    background:var(--primary); color:white;
-    font-size:14px; font-weight:700; border:none; cursor:pointer;
-    box-shadow:0 4px 20px rgba(193,123,94,0.4);
-    transition:all 0.2s; display:flex; align-items:center; gap:4px;
+  /* Floating Forward Button — §16 Global Nav */
+  .fab-forward {
+    position:absolute; bottom:28px; right:16px; z-index:85;
+    width:44px; height:44px; border-radius:50%;
+    background:var(--primary); border:none;
+    box-shadow:0 3px 16px rgba(193,123,94,0.4);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:#fff; transition:transform 0.15s;
   }
-  .ob-nav-next:active { transform:scale(0.95); }
-  .ob-nav-next:disabled { background:var(--border-bold); box-shadow:none; cursor:default; }
-  .ob-nav-next.wine-style {
-    background:var(--wine); box-shadow:0 4px 20px rgba(139,115,150,0.4);
+  .fab-forward:active { transform:scale(0.9); }
+  .fab-forward.wine-style {
+    background:var(--wine); box-shadow:0 3px 16px rgba(139,115,150,0.4);
   }
+  .fab-forward svg { width:22px; height:22px; }
 
   /* Legacy compat — keep for intro CTA only */
   .floating-next {
@@ -566,23 +568,31 @@
   .ob-card-gauge {
     animation:fadeSlideIn 0.25s ease;
   }
-  .ob-score-inline {
-    margin-top:10px; padding-top:10px; border-top:1px solid var(--border);
-    display:none; animation:fadeSlideIn 0.25s ease;
-  }
-  .ob-score-inline.show { display:block; }
   @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
 
-  .ob-score-bar {
-    position:relative; height:36px; background:#F0EDE8; border-radius:18px; overflow:hidden; cursor:pointer;
+  /* Circle rating inside card */
+  .ob-circle-area {
+    display:flex; align-items:center; justify-content:center;
+    height:90px; cursor:ns-resize; user-select:none; -webkit-user-select:none;
+    touch-action:none; position:relative;
   }
-  .ob-score-fill {
-    position:absolute; top:0;left:0;bottom:0; border-radius:18px;
-    transition:width 0.1s, background 0.1s;
+  .ob-rating-circle {
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; color:#fff;
+    transition:width 0.08s, height 0.08s, background 0.15s, box-shadow 0.15s;
+    pointer-events:none;
   }
-  .ob-score-label {
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    font-size:18px;font-weight:800;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.2);
+  .circle-hint {
+    position:absolute; bottom:4px; left:0; right:0;
+    text-align:center; font-size:10px; color:var(--text-hint);
+    pointer-events:none;
+    transition:opacity 0.3s;
+    animation:hintPulse 2s ease-in-out infinite;
+  }
+  .circle-hint.hidden { opacity:0; }
+  @keyframes hintPulse {
+    0%,100% { opacity:0.5; }
+    50% { opacity:1; }
   }
 
   .btn-row {
@@ -607,39 +617,44 @@
   /* =====================
      SCREEN 4: HOME
      ===================== */
+  /* Top fixed — glassmorphism on scroll */
+  .top-fixed {
+    flex-shrink: 0;
+    transition: background 0.35s, box-shadow 0.35s;
+    background: var(--bg);
+    z-index: 60;
+  }
+  .top-fixed.glass {
+    background: rgba(248,246,243,0.72);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+  }
+
   .app-header {
-    padding: 12px 20px 8px;
+    padding: 2px 16px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 10;
   }
 
-  .header-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--text);
-  }
-
-  .header-right { display: flex; gap: 8px; align-items: center; }
+  .header-right { display: flex; gap: 6px; align-items: center; }
 
   .icon-btn {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: var(--bg-card);
+    background: transparent;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--text);
+    position: relative;
     transition: background 0.15s;
   }
-  .icon-btn:active { background: var(--border); }
+  .icon-btn:active { background: var(--bg-card); }
 
   /* Nudge card */
   .nudge-card {
@@ -1974,20 +1989,19 @@
 
   /* Header avatar */
   .header-avatar {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary) 0%, #e8a68a 100%);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     color: #fff;
     cursor: pointer;
-    transition: transform 0.1s;
+    flex-shrink: 0;
   }
-  .header-avatar:active { transform: scale(0.92); }
 
   /* Header brand */
   .header-brand {
@@ -1995,6 +2009,7 @@
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.5px;
+    line-height: 1;
     background: linear-gradient(135deg, #FF6038, #8B7396);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -2102,33 +2117,6 @@
   }
   .bubble-preview-item:last-child { border-bottom: none; }
   .bubble-preview-item:active { opacity: 0.6; }
-
-  /* Legacy tab-bar kept for discover drill-down */
-  .tab-bar {
-    height: 72px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: flex-start;
-    padding-top: 8px;
-    flex-shrink: 0;
-  }
-  .tab-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    gap: 3px; cursor: pointer; padding: 4px 0; min-height: 44px;
-    justify-content: flex-start; transition: opacity 0.1s;
-  }
-  .tab-item:active { opacity: 0.6; }
-  .tab-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
-  .tab-label { font-size: 10px; font-weight: 600; color: var(--text-hint); }
-  .tab-item.active .tab-label { color: var(--primary); }
-  .tab-plus {
-    width: 48px; height: 48px; background: var(--primary); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; color: #fff;
-    font-size: 24px; font-weight: 300; margin-top: -8px;
-    box-shadow: 0 4px 16px rgba(193,123,94,0.4); transition: transform 0.1s; cursor: pointer;
-  }
-  .tab-plus:active { transform: scale(0.92); }
 
   /* Home indicator */
   .home-indicator {
@@ -2367,6 +2355,95 @@
     background: var(--wine);
   }
   .content-tab-spacer { flex: 1; }
+
+  /* View toggle — 간단/상세 */
+  .view-toggle {
+    display: flex;
+    background: var(--bg-page);
+    border-radius: 8px;
+    padding: 2px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .view-toggle-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .view-toggle-btn.active {
+    background: var(--bg-card);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* Compact list item */
+  .compact-list { padding: 0 16px; }
+  .compact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .compact-item:last-child { border-bottom: none; }
+  .compact-item:active { opacity: 0.7; }
+  .compact-rank {
+    width: 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-hint);
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .compact-rank.top3 { color: var(--primary); }
+  .compact-thumb {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .compact-thumb.food-thumb {
+    background: linear-gradient(135deg, #c8a882, #8a6848);
+  }
+  .compact-thumb.wine-thumb {
+    background: linear-gradient(135deg, #3d1a2a, #1a0a15);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .compact-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .compact-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .compact-meta {
+    font-size: 11px;
+    color: var(--text-hint);
+    margin-top: 1px;
+  }
+  .compact-score {
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+    min-width: 32px;
+    text-align: right;
+  }
+  .compact-score.food-score { color: var(--primary); }
+  .compact-score.wine-score { color: var(--wine); }
+  .compact-score.no-score { font-size: 14px; color: var(--text-hint); font-weight: 600; }
 
   /* Filter toggle */
   .filter-toggle {
@@ -3325,7 +3402,7 @@
         <button class="floating-next" id="introCta" onclick="startOnboarding()" style="
           left:50%;right:auto;transform:translateX(-50%);
           padding:14px 48px;
-        ">시작할게요 →</button>
+        ">시작할게요</button>
       </div>
 
       <!-- SCREEN 2: AREA SELECTION -->
@@ -3440,11 +3517,9 @@
           </div>
           <div style="height:60px;"></div>
         </div>
-        <div class="ob-nav">
-          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
-          <button class="ob-nav-skip" onclick="skipRestaurantOnboarding()">건너뛰기</button>
-          <button class="ob-nav-next" id="areaNextBtn" onclick="goToScreen('screen-restaurants')" disabled>다음 →</button>
-        </div>
+        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="ob-skip" onclick="skipRestaurantOnboarding()">건너뛰기</button>
+        <button class="fab-forward" id="areaNextBtn" onclick="goToScreen('screen-restaurants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
 
       <!-- SCREEN 3: RESTAURANT ONBOARDING -->
@@ -3505,11 +3580,9 @@
 
           <div style="height:80px;"></div><!-- spacer for floating btn -->
         </div>
-        <div class="ob-nav">
-          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
-          <button class="ob-nav-skip" onclick="goToNextAfterRest()">건너뛰기</button>
-          <button class="ob-nav-next" id="restNextBtn" onclick="goToNextAfterRest()">다음: 와인 →</button>
-        </div>
+        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="ob-skip" onclick="goToNextAfterRest()">건너뛰기</button>
+        <button class="fab-forward" id="restNextBtn" onclick="goToNextAfterRest()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
 
       <!-- SCREEN 3.5: WINE ONBOARDING (사진 인식 기반) -->
@@ -3616,50 +3689,52 @@
           background:rgba(0,0,0,0.3);z-index:190;
         "></div>
 
-        <div class="ob-nav">
-          <button class="ob-nav-back" onclick="goBack()">← 이전</button>
-          <button class="ob-nav-skip" onclick="goToScreen('screen-home')">건너뛰기</button>
-          <button class="ob-nav-next wine-style" onclick="goToScreen('screen-home')">시작하기 →</button>
+        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="ob-skip" onclick="goToScreen('screen-home')">건너뛰기</button>
+        <button class="fab-forward wine-style" onclick="goToScreen('screen-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
       </div>
 
       <!-- SCREEN 4: HOME -->
       <div class="screen hidden" id="screen-home">
-        <!-- Status bar -->
-        <div class="status-bar">
-          <span class="status-time">9:41</span>
-          <div class="status-icons">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" width="22" height="12"><rect x="1" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="12" height="7" rx="1" fill="currentColor"/><path d="M21 6.5c.83.51 1 1.5 1 2s-.17 1.49-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-
-        <!-- App header -->
-        <div class="app-header">
-          <div class="header-brand">nyam</div>
-          <div class="header-right">
-            <div style="position:relative;">
-              <button class="icon-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              </button>
-              <div class="notif-badge"></div>
+        <!-- Top fixed — glassmorphism on scroll -->
+        <div class="top-fixed" id="homeTopFixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" width="22" height="12"><rect x="1" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="12" height="7" rx="1" fill="currentColor"/><path d="M21 6.5c.83.51 1 1.5 1 2s-.17 1.49-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="header-avatar" onclick="alert('프로필/설정')">J</div>
+          </div>
+          <div class="app-header">
+            <div class="header-brand">nyam</div>
+            <div class="header-right">
+              <button class="icon-btn" onclick="goToTab('bubble')" title="버블">
+                <i data-lucide="circle-dot" style="width:20px;height:20px;"></i>
+              </button>
+              <div style="position:relative;">
+                <button class="icon-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <div class="notif-badge"></div>
+              </div>
+              <div class="header-avatar" onclick="alert('프로필/설정')">J</div>
+            </div>
           </div>
         </div>
 
-        <!-- AI greeting -->
-        <div class="ai-greeting" id="aiGreeting" data-restaurant-id="sushi-kouji" onclick="navigateToRestaurant(this)">
-          <div class="ai-greeting-text" id="greetingText">
-            <strong>점심 메뉴 고민 중이세요?</strong><br>
-            이번 주 광화문 쪽을 자주 가셨네요 — 오늘은 새로운 데 어때요?
-          </div>
-          <div class="ai-greeting-sub"><span class="ai-dot"></span> nyam AI · 나의 기록 기반</div>
-        </div>
+        <!-- Scrollable content (tabs scroll with content, not sticky) -->
+        <div class="scroll-content" id="homeScroll" style="flex:1;" onscroll="document.getElementById('homeTopFixed').classList.toggle('glass', this.scrollTop > 10)">
 
-        <!-- Scrollable content -->
-        <div class="scroll-content" style="flex:1;">
+          <!-- AI greeting -->
+          <div class="ai-greeting" id="aiGreeting" data-restaurant-id="sushi-kouji" onclick="navigateToRestaurant(this)">
+            <div class="ai-greeting-text" id="greetingText">
+              <strong>점심 메뉴 고민 중이세요?</strong><br>
+              이번 주 광화문 쪽을 자주 가셨네요 — 오늘은 새로운 데 어때요?
+            </div>
+            <div class="ai-greeting-sub"><span class="ai-dot"></span> nyam AI · 나의 기록 기반</div>
+          </div>
 
           <!-- Nudge strip — minimal -->
           <div class="nudge-strip" id="nudgeCard">
@@ -3676,6 +3751,11 @@
             <button class="content-tab active" id="tabFood" onclick="switchTab('food')">식당</button>
             <button class="content-tab" id="tabWine" onclick="switchTab('wine')">와인</button>
             <div class="content-tab-spacer"></div>
+            <!-- 간단/상세 토글 -->
+            <div class="view-toggle" id="viewToggle">
+              <button class="view-toggle-btn" onclick="setViewMode('compact')">간단</button>
+              <button class="view-toggle-btn active" onclick="setViewMode('detail')">상세</button>
+            </div>
             <!-- 식당: 필터 / 와인: 전체 목록 -->
             <button class="filter-toggle" id="filterToggle" onclick="toggleFilter()" title="필터">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
@@ -3708,13 +3788,94 @@
             </div>
 
             <!-- Sort row -->
-            <div class="sort-row">
+            <div class="sort-row" id="foodSortRow">
               <div class="sort-label" id="filterSubLabel">5곳</div>
               <button class="sort-btn" onclick="cycleSort()">
                 <span id="sortLabel">최신순</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
+
+            <!-- ===== 간단 보기 (compact) ===== -->
+            <div id="foodCompact" style="display:none;">
+              <div class="compact-list">
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank top3">1</div>
+                  <div class="compact-thumb food-thumb"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">스시코우지</div>
+                    <div class="compact-meta">일식 · 광화문 · 미슐랭★</div>
+                  </div>
+                  <div class="compact-score food-score">92</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank top3">2</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c8a882,#a08060);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">미진</div>
+                    <div class="compact-meta">한식 · 광화문 · 냉면</div>
+                  </div>
+                  <div class="compact-score food-score">88</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank top3">3</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d8c8a0,#887848);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">을지로 골뱅이</div>
+                    <div class="compact-meta">한식 · 을지로 · 골뱅이</div>
+                  </div>
+                  <div class="compact-score food-score">85</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank">4</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#e8c8a0,#8a5a38);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">리스토란테 에오</div>
+                    <div class="compact-meta">이탈리안 · 강남</div>
+                  </div>
+                  <div class="compact-score food-score">83</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank">5</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#b8a070,#685830);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">광화문국밥</div>
+                    <div class="compact-meta">한식 · 광화문 · 설렁탕</div>
+                  </div>
+                  <div class="compact-score no-score">—</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank">6</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c09060,#6a4028);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">오마카세 히든</div>
+                    <div class="compact-meta">일식 · 을지로</div>
+                  </div>
+                  <div class="compact-score food-score">80</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank">7</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#a89070,#5a4030);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">하카타 분코</div>
+                    <div class="compact-meta">일식 · 홍대 · 라멘</div>
+                  </div>
+                  <div class="compact-score food-score">78</div>
+                </div>
+                <div class="compact-item" onclick="alert('식당 상세')">
+                  <div class="compact-rank">8</div>
+                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d0b890,#806840);"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">진미 평양냉면</div>
+                    <div class="compact-meta">한식 · 강남 · 냉면</div>
+                  </div>
+                  <div class="compact-score food-score">76</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 상세 보기 (detail) ===== -->
+            <div id="foodDetail">
 
             <!-- 1: 미진 — 3소스 다 있음 -->
             <div class="place-card" onclick="alert('식당 상세 → 03_detail.html')">
@@ -3826,64 +3987,172 @@
               </div>
             </div>
 
-            <!-- 4: 토속촌 — 미평가 -->
-            <div class="place-card unrated" onclick="alert('식당 상세 → 03_detail.html')">
-              <div class="place-photo-col" style="background:
-                linear-gradient(135deg, #d0c8bc, #b8b0a0 50%, #989080);">
+            <!-- 더보기 -->
+            <button onclick="alert('02_list.html → 내 컬렉션')" style="
+              display:flex;align-items:center;justify-content:center;gap:6px;
+              width:calc(100% - 32px);margin:0 16px 4px;padding:12px;
+              border-radius:12px;border:1.5px solid var(--border);
+              background:var(--bg-card);font-size:13px;font-weight:600;
+              color:var(--text-sub);cursor:pointer;transition:all 0.15s;
+            ">전체 보기 · 5곳 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+
+            <!-- ═══ 통계 섹션 ═══ -->
+            <div class="wine-divider"></div>
+
+            <!-- 세계지도 (가본 식당) -->
+            <div style="margin:16px 16px 0;">
+              <div class="wine-section-label">
+                <span>가본 식당 지도</span>
+                <small style="font-size:10px;font-weight:400;color:var(--text-hint);">5개국 12곳</small>
               </div>
-              <div class="place-info-col">
-                <div class="place-name">토속촌</div>
-                <div class="place-meta">한식 · 광화문 · 삼계탕</div>
-                <div class="place-score-row">
-                  <span class="compact-unrated" onclick="event.stopPropagation();alert('사분면 평가 진입')">평가하기 →</span>
-                </div>
-                <div class="place-sources">
-                  <div class="place-source">
-                    <span class="source-tag web">웹</span>
-                    <span class="source-text">N4.2 K4.0 G4.3</span>
-                  </div>
+              <div style="background:var(--bg-card);border-radius:14px;border:1px solid var(--border);padding:14px;position:relative;overflow:hidden;">
+                <!-- Simplified world map -->
+                <svg viewBox="0 0 320 160" style="width:100%;height:auto;">
+                  <!-- Continents (simplified) -->
+                  <path d="M60,30 L90,25 L100,35 L95,55 L85,70 L70,65 L55,50 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
+                  <path d="M110,20 L130,15 L145,25 L155,20 L175,30 L180,55 L170,70 L160,80 L140,75 L125,60 L115,45 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
+                  <path d="M145,85 L165,80 L175,90 L170,110 L155,120 L140,110 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
+                  <path d="M190,25 L230,20 L260,30 L280,35 L290,50 L275,65 L260,70 L240,60 L220,55 L200,45 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
+                  <path d="M245,80 L270,75 L285,90 L275,110 L255,115 L240,100 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
+                  <!-- Dots: visited restaurants -->
+                  <circle cx="75" cy="45" r="4" fill="var(--primary)" opacity="0.8"><title>뉴욕 · 2곳</title></circle>
+                  <circle cx="140" cy="35" r="6" fill="var(--primary)" opacity="0.9"><title>파리 · 4곳</title></circle>
+                  <circle cx="155" cy="40" r="3" fill="var(--primary)" opacity="0.7"><title>밀라노 · 1곳</title></circle>
+                  <circle cx="230" cy="38" r="8" fill="var(--primary)"><title>서울 · 8곳</title></circle>
+                  <text x="230" y="41" fill="#fff" font-size="7" font-weight="800" text-anchor="middle">8</text>
+                  <circle cx="240" cy="48" r="4" fill="var(--primary)" opacity="0.8"><title>도쿄 · 3곳</title></circle>
+                </svg>
+                <div style="display:flex;justify-content:center;gap:12px;margin-top:8px;">
+                  <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:0.7;"></span> 1~2곳
+                  </span>
+                  <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:var(--primary);opacity:0.85;"></span> 3~5곳
+                  </span>
+                  <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:var(--primary);"></span> 6곳+
+                  </span>
                 </div>
               </div>
             </div>
 
-            <!-- 5: 도쿄등심 — TV출연 -->
-            <div class="place-card" onclick="alert('식당 상세 → 03_detail.html')">
-              <div class="place-photo-col" style="background:
-                radial-gradient(ellipse at 55% 45%, rgba(190,140,100,0.7), transparent 50%),
-                linear-gradient(150deg, #d0b090, #a88060 35%, #7a5838 75%, #5a3820);">
-                <div class="place-badges">
-                  <span class="place-badge tv">흑백요리사</span>
+            <div class="wine-divider"></div>
+
+            <!-- 음식점 장르 (품종 대신) -->
+            <div style="margin:16px 16px 0;">
+              <div class="wine-section-label"><span>장르</span></div>
+              <div class="variety-chart">
+                <div class="variety-row">
+                  <div class="variety-name" style="color:var(--primary);">한식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:80%;background:var(--primary);"></div></div>
+                  <div class="variety-count" style="color:var(--primary);">8</div>
                 </div>
-              </div>
-              <div class="place-info-col">
-                <div class="place-name">도쿄등심</div>
-                <div class="place-meta">일식 · 강남 · 규카츠</div>
-                <div class="place-score-row">
-                  <div class="mini-quad">
-                    <div class="q" style="background:#7EAE8B;">맛</div>
-                    <div class="q" style="background:#C9A96E;">분</div>
-                    <div class="q" style="background:#7EAE8B;">가</div>
-                    <div class="q" style="background:#C4B5A8;">재</div>
-                  </div>
-                  <div class="place-total-score">85</div>
+                <div class="variety-row">
+                  <div class="variety-name" style="color:var(--primary);">일식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--primary);opacity:0.8;"></div></div>
+                  <div class="variety-count" style="color:var(--primary);">5</div>
                 </div>
-                <div class="place-sources">
-                  <div class="place-source">
-                    <span class="source-tag me">나</span>
-                    <span class="source-text"><strong>85</strong> · 회식 3/14</span>
-                  </div>
-                  <div class="place-source">
-                    <span class="source-tag web">웹</span>
-                    <span class="source-text">N4.2 흑백요리사S1</span>
-                  </div>
+                <div class="variety-row">
+                  <div class="variety-name" style="color:var(--primary);">프렌치</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:30%;background:var(--primary);opacity:0.7;"></div></div>
+                  <div class="variety-count" style="color:var(--primary);">3</div>
                 </div>
-                <div class="place-engagement">
-                  <span>♡ 2</span>
+                <div class="variety-row">
+                  <div class="variety-name" style="color:var(--primary);">이탈리안</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:20%;background:var(--primary);opacity:0.6;"></div></div>
+                  <div class="variety-count" style="color:var(--primary);">2</div>
+                </div>
+                <div class="variety-row">
+                  <div class="variety-name" style="color:var(--primary);">중식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:10%;background:var(--primary);opacity:0.5;"></div></div>
+                  <div class="variety-count" style="color:var(--primary);">1</div>
                 </div>
               </div>
             </div>
 
-            <div style="height:80px;"></div>
+            <div class="wine-divider"></div>
+
+            <!-- 점수 분포 -->
+            <div class="wine-filter-section" style="margin:16px 16px 0;">
+              <div class="wine-section-label"><span>점수 분포</span></div>
+              <div style="display:flex;gap:6px;height:80px;align-items:flex-end;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:0%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.4;min-height:2px;"></div>
+                  <span style="font-size:9px;color:var(--text-hint);">~49</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:0%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.5;min-height:2px;"></div>
+                  <span style="font-size:9px;color:var(--text-hint);">50s</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:10%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.6;min-height:4px;"></div>
+                  <span style="font-size:9px;color:var(--text-hint);">60s</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:25%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;position:relative;">
+                    <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">2</span>
+                  </div>
+                  <span style="font-size:9px;color:var(--text-hint);">70s</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:75%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.85;position:relative;">
+                    <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">6</span>
+                  </div>
+                  <span style="font-size:9px;color:var(--text-hint);">80s</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:100%;background:var(--primary);border-radius:4px 4px 0 0;position:relative;">
+                    <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">8</span>
+                  </div>
+                  <span style="font-size:9px;color:var(--text-hint);">90s</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="wine-divider"></div>
+
+            <!-- 월별 소비 -->
+            <div class="wine-filter-section" style="margin:16px 16px 0;">
+              <div class="wine-section-label">
+                <span>월별 소비</span>
+                <small style="font-size:10px;font-weight:400;color:var(--text-hint);">총 186만</small>
+              </div>
+              <div style="display:flex;gap:6px;height:80px;align-items:flex-end;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:30%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.6;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">10월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">12만</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:55%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">11월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">28만</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:40%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.65;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">12월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">18만</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:80%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.85;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">1월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--primary-light);color:var(--primary);font-weight:600;">42만</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:45%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">2월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">22만</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                  <div style="width:100%;height:100%;background:var(--primary);border-radius:4px 4px 0 0;"></div>
+                  <span style="font-size:8px;color:var(--text-hint);">3월</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--primary-light);color:var(--primary);font-weight:600;">64만</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:100px;"></div>
+            </div><!-- /foodDetail -->
           </div>
 
           <!-- TAB: 와인 — 완전히 다른 세계 -->
@@ -3895,6 +4164,103 @@
               <button class="sub-nav-item" onclick="setSubNav(this,'wineSubNav')">찜<span class="nav-count">8</span></button>
               <button class="sub-nav-item" onclick="setSubNav(this,'wineSubNav')">셀러<span class="nav-count">5</span></button>
             </div>
+
+            <!-- ===== 간단 보기 (compact) ===== -->
+            <div id="wineCompact" style="display:none;">
+              <div class="compact-list">
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank top3" style="color:var(--wine)">1</div>
+                  <div class="compact-thumb wine-thumb">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Penfolds Grange</div>
+                    <div class="compact-meta">레드 · 쉬라즈 · 호주</div>
+                  </div>
+                  <div class="compact-score wine-score">96</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank top3" style="color:var(--wine)">2</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#200c18,#0a0406);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Opus One 2020</div>
+                    <div class="compact-meta">레드 · 카베르네 · 미국</div>
+                  </div>
+                  <div class="compact-score wine-score">94</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank top3" style="color:var(--wine)">3</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1520,#0f0810);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Ch. Margaux 2018</div>
+                    <div class="compact-meta">레드 · 카베르네 · 프랑스</div>
+                  </div>
+                  <div class="compact-score wine-score">93</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank">4</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e8dcc8,#a89070);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Cloudy Bay Sauv. Blanc</div>
+                    <div class="compact-meta">화이트 · 소비뇽 블랑 · NZ</div>
+                  </div>
+                  <div class="compact-score wine-score">90</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank">5</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#1a1018,#080408);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Barolo Riserva 2016</div>
+                    <div class="compact-meta">레드 · 네비올로 · 이탈리아</div>
+                  </div>
+                  <div class="compact-score wine-score">89</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank">6</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e0d0c0,#906838);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Moët Impérial</div>
+                    <div class="compact-meta">스파클링 · 샤르도네 · 프랑스</div>
+                  </div>
+                  <div class="compact-score wine-score">87</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank">7</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#f0d8d0,#c88888);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Whispering Angel</div>
+                    <div class="compact-meta">로제 · 그르나슈 · 프랑스</div>
+                  </div>
+                  <div class="compact-score wine-score">85</div>
+                </div>
+                <div class="compact-item" onclick="alert('와인 상세')">
+                  <div class="compact-rank">8</div>
+                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1020,#100810);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Casillero del Diablo</div>
+                    <div class="compact-meta">레드 · 카베르네 · 칠레</div>
+                  </div>
+                  <div class="compact-score wine-score">82</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 상세 보기 (detail) ===== -->
+            <div id="wineDetail">
 
             <!-- 카메라 3모드 -->
             <div style="margin:10px 16px 0;">
@@ -4315,6 +4681,7 @@
             </div><!-- /pd-section-wrap monthly -->
 
             <div style="height:80px;"></div>
+            </div><!-- /wineDetail -->
           </div>
         </div>
 
@@ -5170,7 +5537,7 @@
       btn.textContent = '하나 이상 선택해주세요';
     } else {
       btn.disabled = false;
-      btn.textContent = '시작할게요 →';
+      btn.textContent = '시작할게요';
     }
   }
 
@@ -5208,13 +5575,7 @@
     if (targetId === 'screen-restaurants') {
       initRestAreaTabs();
       initRestaurantCards();
-      // Update next button based on wine selection
-      const nextBtn = document.getElementById('restNextBtn');
-      if (introSelected.wine) {
-        nextBtn.textContent = '다음: 와인 →';
-      } else {
-        nextBtn.textContent = '시작하기 →';
-      }
+      // fab-forward는 항상 동일한 형태 유지
     }
   }
 
@@ -5265,7 +5626,7 @@
     } else if (tab === 'discover') {
       goToScreen('screen-discover');
     } else if (tab === 'bubble') {
-      alert('버블 탭 → 04_social.html');
+      alert('버블 탭 → 05_bubbles.html');
     }
   }
 
@@ -5355,14 +5716,7 @@
   }
 
   function updateAreaBtn() {
-    const btn = document.getElementById('areaNextBtn');
-    if (selectedAreas.size > 0) {
-      btn.disabled = false;
-      btn.innerHTML = `${selectedAreas.size}개 선택됨 <span>→</span>`;
-    } else {
-      btn.disabled = true;
-      btn.innerHTML = '1개 이상 선택 <span>→</span>';
-    }
+    // fab-forward는 항상 동일한 형태 유지 — 선택 여부와 무관
   }
 
   // No initAreaChips needed — bubbles are in HTML, click handled by delegation
@@ -5442,11 +5796,13 @@
         </div>
         <div class="ob-card-gauge" id="rest-gauge-${i}" style="${isVisited?'':'display:none'}">
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="flex:1;">
-              <div class="ob-score-bar" onpointerdown="startRestScore(event,${i})" onpointermove="moveRestScore(event,${i})" onpointerup="endRestScore(${i})">
-                <div class="ob-score-fill" id="rest-fill-${i}" style="width:${isVisited?restVisited[i]:75}%;background:${isVisited?getScoreColor(restVisited[i]):'#22c55e'};"></div>
-                <div class="ob-score-label" id="rest-label-${i}">${isVisited?restVisited[i]:75}</div>
-              </div>
+            <div class="ob-circle-area" style="flex:1;" id="rest-circle-area-${i}"
+              onpointerdown="startCircleScore(event,'rest',${i})"
+              onpointermove="moveCircleScore(event,'rest',${i})"
+              onpointerup="endCircleScore('rest')"
+              onpointercancel="endCircleScore('rest')">
+              <div class="ob-rating-circle" id="rest-circle-${i}"></div>
+              <span class="circle-hint" id="rest-hint-${i}">↕ 위아래로 드래그</span>
             </div>
             <button onclick="cancelRestVisited(${i})" style="
               background:none;border:none;font-size:16px;color:var(--text-hint);
@@ -5456,6 +5812,11 @@
         </div>
       `;
       container.appendChild(card);
+    });
+    // Initialize circles for visited restaurants
+    Object.keys(restVisited).forEach(i => {
+      const circle = document.getElementById(`rest-circle-${i}`);
+      if (circle) applyCircleRating(circle, restVisited[i]);
     });
   }
 
@@ -5471,10 +5832,7 @@
     restVisited[i] = 75;
     actions.style.display = 'none';
     gauge.style.display = '';
-    // Reset gauge visual
-    document.getElementById(`rest-fill-${i}`).style.width = '75%';
-    document.getElementById(`rest-fill-${i}`).style.background = getScoreColor(75);
-    document.getElementById(`rest-label-${i}`).textContent = '75';
+    applyCircleRating(document.getElementById(`rest-circle-${i}`), 75);
     updateRestCount();
   }
 
@@ -5507,32 +5865,75 @@
     updateRestCount();
   }
 
-  let restScoreDragging = false;
-  function startRestScore(e, i) { restScoreDragging = true; moveRestScore(e, i); e.target.setPointerCapture(e.pointerId); }
-  function endRestScore(i) { restScoreDragging = false; }
-  function moveRestScore(e, i) {
-    if (!restScoreDragging) return;
-    const bar = e.currentTarget;
-    const rect = bar.getBoundingClientRect();
-    const pct = Math.max(1, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
-    restVisited[i] = pct;
-    document.getElementById(`rest-fill-${i}`).style.width = pct + '%';
-    document.getElementById(`rest-fill-${i}`).style.background = getScoreColor(pct);
-    document.getElementById(`rest-label-${i}`).textContent = pct;
+  // ── Circle Rating System (shared for restaurant + wine) ──
+  const GAUGE_COLORS = [
+    { max: 20, color: '#C4B5A8' },
+    { max: 40, color: '#B0ADA4' },
+    { max: 60, color: '#9FA5A3' },
+    { max: 80, color: '#889DAB' },
+    { max: 100, color: '#7A9BAE' },
+  ];
+
+  function getCircleColor(score) {
+    return (GAUGE_COLORS.find(g => score <= g.max) || GAUGE_COLORS[4]).color;
   }
 
-  function getScoreColor(score) {
-    if (score <= 30) return '#C4B5A8';
-    if (score <= 50) return '#C9A96E';
-    if (score <= 70) return '#B8A078';
-    if (score <= 85) return '#7EAE8B';
-    return '#7A9BAE';
+  function applyCircleRating(circle, score) {
+    const s = Math.max(0, Math.min(100, score));
+    const size = 28 + (s / 100) * 52; // 28→80px (compact for card)
+    const color = getCircleColor(s);
+    const glow = size * 0.3;
+    const fontSize = Math.max(11, size * 0.3);
+    circle.style.width = size + 'px';
+    circle.style.height = size + 'px';
+    circle.style.background = color;
+    circle.style.boxShadow = `0 0 ${glow}px ${color}80`;
+    circle.style.fontSize = fontSize + 'px';
+    circle.textContent = Math.round(s);
   }
+
+  let circleDragging = false;
+  let circleStartY = 0;
+  let circleStartScore = 0;
+  let circleType = '';
+  let circleIdx = 0;
+
+  function startCircleScore(e, type, idx) {
+    circleDragging = true;
+    circleStartY = e.clientY;
+    circleType = type;
+    circleIdx = idx;
+    circleStartScore = type === 'rest' ? (restVisited[idx] || 75) : (wineCards[idx]?.score || 75);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    // Hide hint on first drag
+    const hintId = type === 'rest' ? `rest-hint-${idx}` : `wc-hint-${idx}`;
+    const hint = document.getElementById(hintId);
+    if (hint) hint.classList.add('hidden');
+  }
+
+  function moveCircleScore(e, type, idx) {
+    if (!circleDragging || circleType !== type || circleIdx !== idx) return;
+    const dy = circleStartY - e.clientY;
+    const newScore = Math.max(1, Math.min(100, Math.round(circleStartScore + dy * 0.5)));
+    const circleId = type === 'rest' ? `rest-circle-${idx}` : `wc-circle-${idx}`;
+    const circle = document.getElementById(circleId);
+    if (!circle) return;
+    applyCircleRating(circle, newScore);
+    if (type === 'rest') { restVisited[idx] = newScore; }
+    else if (wineCards[idx]) { wineCards[idx].score = newScore; }
+  }
+
+  function endCircleScore(type) { circleDragging = false; }
+
+  // Legacy compat
+  function getScoreColor(score) { return getCircleColor(score); }
 
   function updateRestCount() {
     const v = Object.keys(restVisited).length;
     const w = restWishlisted.size;
-    document.getElementById('onboardingRestCount').textContent = `가봤음 ${v}곳 · 가보고싶음 ${w}곳`;
+    const el = document.getElementById('onboardingRestCount');
+    if (el) el.textContent = `가봤음 ${v}곳 · 가보고싶음 ${w}곳`;
   }
 
   // =====================
@@ -5560,9 +5961,7 @@
   const wineCards = []; // { wine, status: 'pending'|'searching'|'confirmed', score }
   let searchTargetIdx = null; // which card triggered search (null = sticky button)
 
-  function getWineScoreColor(pct) {
-    return pct > 85 ? '#7A9BAE' : pct > 70 ? '#7EAE8B' : pct > 50 ? '#B8A078' : pct > 30 ? '#C9A96E' : '#C4B5A8';
-  }
+  function getWineScoreColor(pct) { return getCircleColor(pct); }
 
   // ── Render ──
   function renderWineCards() {
@@ -5614,11 +6013,13 @@
         ` : `
         <div class="ob-card-gauge" id="wc-gauge-${idx}">
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="flex:1;">
-              <div class="ob-score-bar" onpointerdown="startWineScore(event,${idx})" onpointermove="moveWineScore(event,${idx})" onpointerup="endWineScore()">
-                <div class="ob-score-fill" id="wc-fill-${idx}" style="width:${entry.score}%;background:${getWineScoreColor(entry.score)};"></div>
-                <div class="ob-score-label" id="wc-label-${idx}">${entry.score}</div>
-              </div>
+            <div class="ob-circle-area" style="flex:1;" id="wc-circle-area-${idx}"
+              onpointerdown="startCircleScore(event,'wine',${idx})"
+              onpointermove="moveCircleScore(event,'wine',${idx})"
+              onpointerup="endCircleScore('wine')"
+              onpointercancel="endCircleScore('wine')">
+              <div class="ob-rating-circle" id="wc-circle-${idx}"></div>
+              <span class="circle-hint" id="wc-hint-${idx}">↕ 위아래로 드래그</span>
             </div>
             <button onclick="removeWineCard(${idx})" style="
               background:none;border:none;font-size:16px;color:var(--text-hint);
@@ -5629,6 +6030,13 @@
         `}
       `;
       list.appendChild(card);
+    });
+    // Initialize circles for confirmed cards
+    wineCards.forEach((entry, idx) => {
+      if (entry.status === 'confirmed') {
+        const circle = document.getElementById(`wc-circle-${idx}`);
+        if (circle) applyCircleRating(circle, entry.score);
+      }
     });
   }
 
@@ -5715,18 +6123,7 @@
   }
 
   // ── Wine score dragging ──
-  let wineScoreDragging = false;
-  function startWineScore(e, i) { wineScoreDragging = true; moveWineScore(e, i); }
-  function endWineScore() { wineScoreDragging = false; }
-  function moveWineScore(e, i) {
-    if (!wineScoreDragging) return;
-    const bar = e.currentTarget; const rect = bar.getBoundingClientRect();
-    const pct = Math.max(1, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
-    wineCards[i].score = pct;
-    document.getElementById(`wc-fill-${i}`).style.width = pct + '%';
-    document.getElementById(`wc-fill-${i}`).style.background = getWineScoreColor(pct);
-    document.getElementById(`wc-label-${i}`).textContent = pct;
-  }
+  // Wine score drag — now handled by shared circleScore system
 
   // ── Sticky search (이름으로 검색 button) ──
   function activateStickySearch() {
@@ -5868,6 +6265,26 @@
   let currentHomeTab = 'food';
   let savedFilter = '전체'; // persist last filter
 
+  // =====================
+  // View mode toggle (간단/상세)
+  // =====================
+  let currentViewMode = 'detail';
+
+  function setViewMode(mode) {
+    currentViewMode = mode;
+    // Update toggle buttons
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.trim() === (mode === 'compact' ? '간단' : '상세'));
+    });
+    // Apply to food tab
+    document.getElementById('foodCompact').style.display = mode === 'compact' ? 'block' : 'none';
+    document.getElementById('foodDetail').style.display = mode === 'detail' ? 'block' : 'none';
+    document.getElementById('foodSortRow').style.display = mode === 'detail' ? '' : 'none';
+    // Apply to wine tab
+    document.getElementById('wineCompact').style.display = mode === 'compact' ? 'block' : 'none';
+    document.getElementById('wineDetail').style.display = mode === 'detail' ? 'block' : 'none';
+  }
+
   function switchTab(tab) {
     currentHomeTab = tab;
     // Update tab buttons
@@ -5881,6 +6298,8 @@
     document.getElementById('wineListBtn').style.display = tab === 'wine' ? '' : 'none';
     // Close filter drawer when switching tabs
     document.getElementById('filterDrawer').classList.remove('open');
+    // Maintain view mode across tabs
+    setViewMode(currentViewMode);
   }
 
   // =====================

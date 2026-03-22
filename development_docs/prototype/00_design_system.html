@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>nyam Design System</title>
+<!-- Comfortaa (logo font) -->
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
@@ -448,6 +450,50 @@
 <div class="page-subtitle">조용한 개인 컬렉션 — 재사용 가능한 요소 기반 디자인 시스템</div>
 
 <!-- ============================================ -->
+<h2>0. Brand & Logo</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <h3>nyam 로고</h3>
+
+  <!-- Logo variants -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+    <!-- Primary (gradient) — Login / Splash -->
+    <div style="background:var(--bg);border-radius:16px;padding:24px 32px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <span style="font-family:'Comfortaa',cursive;font-size:42px;font-weight:700;letter-spacing:-1px;line-height:1;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+      <span style="font-size:10px;color:var(--text-hint);">로그인 / 스플래시 (42px)</span>
+    </div>
+    <!-- Header (gradient, smaller) -->
+    <div style="background:var(--bg);border-radius:16px;padding:24px 32px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <span style="font-family:'Comfortaa',cursive;font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+      <span style="font-size:10px;color:var(--text-hint);">앱 헤더 (22px)</span>
+    </div>
+    <!-- Dark bg -->
+    <div style="background:#2A2725;border-radius:16px;padding:24px 32px;border:1px solid #3A3632;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <span style="font-family:'Comfortaa',cursive;font-size:42px;font-weight:700;letter-spacing:-1px;line-height:1;background:linear-gradient(135deg,#FF8060,#B8A0C8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+      <span style="font-size:10px;color:#8C8580;">다크 배경 (42px)</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>폰트:</b> <code>Comfortaa</code>, weight 700<br>
+    <b>색상:</b> <code>linear-gradient(135deg, #FF6038, #8B7396)</code> — 식당 오렌지 → 와인 모브 그라데이션<br>
+    <b>다크모드:</b> <code>linear-gradient(135deg, #FF8060, #B8A0C8)</code> — 밝기 보정<br>
+    <b>크기:</b> 로그인/스플래시 42px (<code>letter-spacing: -1px</code>) / 앱 헤더 22px (<code>letter-spacing: -0.5px</code>)<br>
+    <b>적용:</b> <code>background-clip: text; -webkit-text-fill-color: transparent;</code><br><br>
+    <b>CSS:</b>
+    <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;margin-top:6px;overflow-x:auto;">.logo {
+  font-family: 'Comfortaa', cursive;
+  font-weight: 700;
+  background: linear-gradient(135deg, #FF6038, #8B7396);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}</pre>
+  </div>
+</div>
+
+<!-- ============================================ -->
 <h2>1. Color Tokens</h2>
 <!-- ============================================ -->
 
@@ -581,16 +627,11 @@
 <div class="section">
   <h3>Primary CTA</h3>
   <div class="row">
-    <button class="btn btn-primary food">다음 →</button>
-    <button class="btn btn-primary wine">시작하기 →</button>
-    <button class="btn btn-primary" disabled>1개 이상 선택</button>
+    <button class="btn btn-primary food">CTA 텍스트</button>
+    <button class="btn btn-primary wine">CTA 텍스트</button>
+    <button class="btn btn-primary" disabled>비활성 상태</button>
   </div>
-
-  <h3>Ghost Back</h3>
-  <div class="row"><button class="btn btn-back">← 이전</button></div>
-
-  <h3>Skip</h3>
-  <div class="row"><button class="btn btn-skip">건너뛰기</button></div>
+  <div class="note">뒤로가기: §16 Floating Back Button 사용. 건너뛰기: 우측 상단 텍스트 링크로 처리.</div>
 
   <h3>Card Actions</h3>
   <div class="row" style="max-width:340px;">
@@ -611,7 +652,6 @@
     <button class="btn-action" style="flex:none;padding:10px 16px;border-color:var(--accent-wine);color:var(--accent-wine);background:var(--accent-wine-light);">사진으로 찾기</button>
     <button class="btn-action" style="flex:none;padding:10px 16px;">이름으로 검색</button>
     <button class="btn-search">찾기</button>
-    <button class="btn btn-skip">취소</button>
   </div>
 
   <h3>Social Login</h3>
@@ -793,27 +833,10 @@
   </div>
 </div>
 
-<!-- ============================================ -->
-<h2>10. Onboarding Nav</h2>
-<!-- ============================================ -->
-
-<div class="section">
-  <h3>Restaurant Step</h3>
-  <div class="ob-nav" style="max-width:340px;">
-    <button class="btn btn-back" style="font-size:13px;padding:10px 16px;">← 이전</button>
-    <button class="btn btn-skip">건너뛰기</button>
-    <button class="btn btn-primary food" style="font-size:13px;padding:10px 16px;">다음 →</button>
-  </div>
-  <h3>Wine Step</h3>
-  <div class="ob-nav" style="max-width:340px;">
-    <button class="btn btn-back" style="font-size:13px;padding:10px 16px;">← 이전</button>
-    <button class="btn btn-skip">건너뛰기</button>
-    <button class="btn btn-primary wine" style="font-size:13px;padding:10px 16px;">시작하기 →</button>
-  </div>
-</div>
+<!-- §10 삭제됨 — 온보딩 네비게이션은 §16 Global Navigation Components 사용 -->
 
 <!-- ============================================ -->
-<h2>11. Intro Selection</h2>
+<h2>10. Intro Selection</h2>
 <!-- ============================================ -->
 
 <div class="section">
@@ -963,6 +986,292 @@
   <div class="note">만족도가 높을수록 점이 크고 색이 진해짐. 사분면(quadrant) UI에서 식당/와인 점 표시에 사용.</div>
 </div>
 
+<!-- ============================================ -->
+<h2>15b. Circle Rating (원형 크기조절 평가)</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="note">터치(클릭) 후 상하 드래그로 점수 조절. 크기·색상·glow가 점수에 연동. 온보딩·기록 플로우에서 사용.</div>
+
+  <!-- Interactive demo -->
+  <div style="max-width:390px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+
+    <!-- Rating circle area -->
+    <div id="ratingArea" style="position:relative;width:280px;height:280px;background:var(--bg-card);border-radius:20px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:ns-resize;user-select:none;-webkit-user-select:none;touch-action:none;">
+      <div id="ratingCircle" style="width:80px;height:80px;border-radius:50%;background:var(--gauge-3);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;transition:width 0.08s,height 0.08s,background 0.15s,box-shadow 0.15s;pointer-events:none;box-shadow:0 0 20px rgba(159,165,163,0.4);">
+        50
+      </div>
+      <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:10px;color:var(--text-hint);">위아래로 드래그</div>
+    </div>
+
+    <!-- Score scale reference -->
+    <div style="display:flex;gap:12px;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--gauge-1);box-shadow:0 0 10px rgba(196,181,168,0.5);"></div>
+        <span style="font-size:9px;color:var(--text-hint);">~20</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--gauge-2);box-shadow:0 0 14px rgba(176,173,164,0.5);"></div>
+        <span style="font-size:9px;color:var(--text-hint);">~40</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--gauge-3);box-shadow:0 0 18px rgba(159,165,163,0.5);"></div>
+        <span style="font-size:9px;color:var(--text-hint);">~60</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:var(--gauge-4);box-shadow:0 0 24px rgba(136,157,171,0.5);"></div>
+        <span style="font-size:9px;color:var(--text-hint);">~80</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:90px;height:90px;border-radius:50%;background:var(--gauge-5);box-shadow:0 0 30px rgba(122,155,174,0.5);"></div>
+        <span style="font-size:9px;color:var(--text-hint);">~100</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:14px;">
+    <b>크기 범위:</b> 28px (점수 0) → 120px (점수 100)<br>
+    <b>색상 매핑 (fill = glow):</b><br>
+    <table style="font-size:11px;border-collapse:collapse;margin:6px 0;">
+      <tr><td style="padding:2px 10px;">0–20</td><td style="padding:2px 10px;"><code>--gauge-1</code></td><td style="padding:2px 10px;color:var(--gauge-1);">#C4B5A8</td><td style="padding:2px 10px;">웜그레이</td></tr>
+      <tr><td style="padding:2px 10px;">21–40</td><td style="padding:2px 10px;"><code>--gauge-2</code></td><td style="padding:2px 10px;color:var(--gauge-2);">#B0ADA4</td><td style="padding:2px 10px;">쿨그레이</td></tr>
+      <tr><td style="padding:2px 10px;">41–60</td><td style="padding:2px 10px;"><code>--gauge-3</code></td><td style="padding:2px 10px;color:var(--gauge-3);">#9FA5A3</td><td style="padding:2px 10px;">세이지</td></tr>
+      <tr><td style="padding:2px 10px;">61–80</td><td style="padding:2px 10px;"><code>--gauge-4</code></td><td style="padding:2px 10px;color:var(--gauge-4);">#889DAB</td><td style="padding:2px 10px;">스틸블루</td></tr>
+      <tr><td style="padding:2px 10px;">81–100</td><td style="padding:2px 10px;"><code>--gauge-5</code></td><td style="padding:2px 10px;color:var(--gauge-5);">#7A9BAE</td><td style="padding:2px 10px;">슬레이트</td></tr>
+    </table>
+    <b>Glow:</b> <code>box-shadow: 0 0 {size*0.3}px {fillColor}80</code> — fill과 동일 색상, 50% 투명도<br>
+    <b>인터랙션:</b><br>
+    &nbsp;&nbsp;1. 원 위에서 터치/클릭 시작<br>
+    &nbsp;&nbsp;2. 상하 드래그로 점수 조절 (위=증가, 아래=감소)<br>
+    &nbsp;&nbsp;3. 원 밖으로 나가도 드래그 유지 (pointerup까지)<br>
+    &nbsp;&nbsp;4. 크기·색상·glow·숫자 실시간 변경<br>
+    <b>폰트:</b> 점수 숫자 — weight 800, color #fff, 크기는 원 지름의 30%
+  </div>
+
+  <h3 style="margin-top:20px;">CSS + JS Reference</h3>
+  <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;line-height:1.5;overflow-x:auto;color:var(--text);max-width:390px;">
+/* Circle Rating */
+.rating-circle {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  transition: width 0.08s, height 0.08s,
+              background 0.15s, box-shadow 0.15s;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* JS: score → visual mapping */
+const GAUGE = [
+  { max: 20, color: '#C4B5A8' },
+  { max: 40, color: '#B0ADA4' },
+  { max: 60, color: '#9FA5A3' },
+  { max: 80, color: '#889DAB' },
+  { max:100, color: '#7A9BAE' },
+];
+
+function getGaugeColor(score) {
+  return (GAUGE.find(g => score <= g.max)
+    || GAUGE[4]).color;
+}
+
+function applyRating(circle, score) {
+  const s = Math.max(0, Math.min(100, score));
+  const size = 28 + (s / 100) * 92; // 28→120px
+  const color = getGaugeColor(s);
+  const glow = size * 0.3;
+  const fontSize = Math.max(12, size * 0.3);
+
+  circle.style.width = size + 'px';
+  circle.style.height = size + 'px';
+  circle.style.background = color;
+  circle.style.boxShadow =
+    `0 0 ${glow}px ${color}80`;
+  circle.style.fontSize = fontSize + 'px';
+  circle.textContent = Math.round(s);
+}</pre>
+</div>
+
+<!-- ============================================ -->
+<h2>16. Global Navigation Components</h2>
+<!-- ============================================ -->
+
+<div class="section">
+
+  <!-- ── 16-1. App Header ── -->
+  <h3>App Header (모든 페이지 공통)</h3>
+  <div class="note">상단 고정. 스크롤 시 glassmorphism 자동 적용. 아래 데모를 스크롤하여 확인.</div>
+
+  <!-- Interactive demo -->
+  <div id="headerDemo" style="position:relative;max-width:390px;height:320px;border-radius:16px;overflow:hidden;border:1px solid var(--border);">
+
+    <!-- Top Fixed (header) -->
+    <div id="demoTopFixed" style="position:absolute;top:0;left:0;right:0;z-index:10;transition:background 0.35s,box-shadow 0.35s;background:var(--bg);">
+      <!-- Status Bar -->
+      <div style="height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-size:12px;font-weight:600;color:var(--text);">
+        <span style="font-size:15px;font-weight:700;">9:41</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <i data-lucide="signal" style="width:14px;height:14px;"></i>
+          <i data-lucide="battery" style="width:16px;height:16px;"></i>
+        </div>
+      </div>
+      <!-- App Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px;">
+        <span style="font-family:'Comfortaa',cursive;font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;">
+            <i data-lucide="bell" style="width:20px;height:20px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
+          </button>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">J</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable content (demo) -->
+    <div id="demoScroll" style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:88px;" onscroll="document.getElementById('demoTopFixed').style.background=this.scrollTop>10?'rgba(248,246,243,0.72)':'var(--bg)';document.getElementById('demoTopFixed').style.backdropFilter=this.scrollTop>10?'blur(20px) saturate(1.5)':'none';document.getElementById('demoTopFixed').style.boxShadow=this.scrollTop>10?'0 1px 12px rgba(0,0,0,0.08)':'none';">
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div style="height:60px;background:var(--accent-food-light);border-radius:12px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">AI 인사말 영역</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 1</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 2</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 3</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 4</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">식당 카드 5</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">와인 카드 1</div>
+        <div style="height:50px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--text-sub);">와인 카드 2</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:10px;">
+    <b>구성:</b> nyam 로고 (Comfortaa, accent-food 색) + 알림 벨 (빨간 dot) + 프로필 아바타<br><br>
+    <b>기본 상태:</b> <code>background: var(--bg)</code> — 불투명 배경<br>
+    <b>스크롤 10px+ (glass):</b><br>
+    &nbsp;&nbsp;<code>background: rgba(248,246,243,0.72)</code><br>
+    &nbsp;&nbsp;<code>backdrop-filter: blur(20px) saturate(1.5)</code><br>
+    &nbsp;&nbsp;<code>box-shadow: 0 1px 12px rgba(0,0,0,0.08)</code><br><br>
+    <b>CSS 클래스:</b> <code>.top-fixed</code> (기본) → <code>.top-fixed.glass</code> (스크롤 시 JS 토글)<br>
+    <b>높이:</b> status-bar 44px + app-header ~36px = 총 ~80px<br>
+    <b>z-index:</b> 90
+  </div>
+
+  <!-- ── 16-2. Floating Back Button ── -->
+  <h3 style="margin-top:28px;">Floating Back Button (모든 페이지 공통)</h3>
+  <div class="note">하단 좌측 고정. 화살표만, 텍스트 없음. 온보딩 포함 모든 페이지에 적용.</div>
+  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;">
+    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+      <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+    </button>
+  </div>
+  <div class="note" style="margin-top:8px;">
+    <b>CSS 클래스:</b> <code>.fab-back</code><br>
+    <b>크기:</b> 44×44px 원형<br>
+    <b>위치:</b> <code>position: absolute; bottom: 28px; left: 16px;</code> (screen 기준)<br>
+    <b>배경:</b> <code>rgba(248,246,243,0.88)</code> + <code>backdrop-filter: blur(12px)</code><br>
+    <b>테두리:</b> <code>1px solid var(--border)</code><br>
+    <b>그림자:</b> <code>0 2px 12px rgba(0,0,0,0.12)</code><br>
+    <b>아이콘:</b> lucide <code>chevron-left</code> 22px<br>
+    <b>터치:</b> <code>transform: scale(0.9)</code> on active<br>
+    <b>z-index:</b> 85
+  </div>
+
+  <!-- ── 16-3. Floating Forward Button ── -->
+  <h3 style="margin-top:28px;">Floating Forward Button (CTA 진행)</h3>
+  <div class="note">하단 우측 고정. Back과 동일한 형태, 색상만 accent. 온보딩·기록 플로우에서 사용.</div>
+  <div style="position:relative;height:100px;background:var(--bg);border-radius:16px;border:1px solid var(--border);max-width:390px;">
+    <!-- Back (left) -->
+    <button style="position:absolute;bottom:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(248,246,243,0.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+      <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+    </button>
+    <!-- Forward — food (right) -->
+    <button style="position:absolute;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent-food);border:none;box-shadow:0 3px 16px rgba(193,123,94,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:transform 0.15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+      <i data-lucide="chevron-right" style="width:22px;height:22px;"></i>
+    </button>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+    <!-- Wine variant -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--accent-wine);box-shadow:0 3px 16px rgba(139,115,150,0.4);display:flex;align-items:center;justify-content:center;color:#fff;">
+        <i data-lucide="chevron-right" style="width:22px;height:22px;"></i>
+      </div>
+      <span style="font-size:11px;color:var(--text-sub);">Wine variant</span>
+    </div>
+  </div>
+  <div class="note" style="margin-top:8px;">
+    <b>CSS 클래스:</b> <code>.fab-forward</code><br>
+    <b>크기:</b> 44×44px 원형 (back과 동일)<br>
+    <b>위치:</b> <code>bottom: 28px; right: 16px;</code><br>
+    <b>식당:</b> <code>background: var(--accent-food)</code> + <code>box-shadow: 0 3px 16px rgba(193,123,94,0.4)</code><br>
+    <b>와인:</b> <code>background: var(--accent-wine)</code> + <code>box-shadow: 0 3px 16px rgba(139,115,150,0.4)</code><br>
+    <b>아이콘:</b> lucide <code>chevron-right</code> 22px, color <code>#fff</code>
+  </div>
+
+  <!-- ── 16-4. CSS Reference ── -->
+  <h3 style="margin-top:28px;">CSS Reference (복사용)</h3>
+  <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;line-height:1.5;overflow-x:auto;color:var(--text);max-width:390px;">
+/* ── App Header ── */
+.top-fixed {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 90;
+  transition: background 0.35s, box-shadow 0.35s;
+  background: var(--bg);
+}
+.top-fixed.glass {
+  background: rgba(248,246,243,0.72);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+}
+
+/* ── Floating Back ── */
+.fab-back {
+  position: absolute;
+  bottom: 28px; left: 16px;
+  z-index: 85;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(248,246,243,0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+.fab-back:active { transform: scale(0.9); }
+
+/* ── Floating Forward ── */
+.fab-forward {
+  position: absolute;
+  bottom: 28px; right: 16px;
+  z-index: 85;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent-food);
+  border: none;
+  box-shadow: 0 3px 16px rgba(193,123,94,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.15s;
+}
+.fab-forward:active { transform: scale(0.9); }
+.fab-forward.wine {
+  background: var(--accent-wine);
+  box-shadow: 0 3px 16px rgba(139,115,150,0.4);
+}</pre>
+
+</div>
+
 <script>
   // Initialize Lucide icons
   lucide.createIcons();
@@ -979,6 +1288,67 @@
       btn.textContent = '☀️ 라이트모드';
     }
   }
+
+  // ============================================================
+  // CIRCLE RATING — interactive demo
+  // ============================================================
+  (function() {
+    const GAUGE = [
+      { max: 20, color: '#C4B5A8' },
+      { max: 40, color: '#B0ADA4' },
+      { max: 60, color: '#9FA5A3' },
+      { max: 80, color: '#889DAB' },
+      { max: 100, color: '#7A9BAE' },
+    ];
+
+    function getColor(score) {
+      return (GAUGE.find(g => score <= g.max) || GAUGE[4]).color;
+    }
+
+    function applyRating(circle, score) {
+      const s = Math.max(0, Math.min(100, score));
+      const size = 28 + (s / 100) * 92;
+      const color = getColor(s);
+      const glow = size * 0.3;
+      const fontSize = Math.max(12, size * 0.3);
+
+      circle.style.width = size + 'px';
+      circle.style.height = size + 'px';
+      circle.style.background = color;
+      circle.style.boxShadow = `0 0 ${glow}px ${color}80`;
+      circle.style.fontSize = fontSize + 'px';
+      circle.textContent = Math.round(s);
+    }
+
+    const area = document.getElementById('ratingArea');
+    const circle = document.getElementById('ratingCircle');
+    if (!area || !circle) return;
+
+    let dragging = false;
+    let startY = 0;
+    let startScore = 50;
+    let currentScore = 50;
+
+    applyRating(circle, currentScore);
+
+    area.addEventListener('pointerdown', e => {
+      dragging = true;
+      startY = e.clientY;
+      startScore = currentScore;
+      area.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    area.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dy = startY - e.clientY;
+      currentScore = Math.max(0, Math.min(100, startScore + dy * 0.5));
+      applyRating(circle, currentScore);
+    });
+
+    area.addEventListener('pointerup', () => { dragging = false; });
+    area.addEventListener('pointercancel', () => { dragging = false; });
+  })();
 </script>
 </body>
 </html>
