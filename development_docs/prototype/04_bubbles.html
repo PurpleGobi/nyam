@@ -118,6 +118,7 @@
     cursor: pointer; color: var(--text); transition: transform 0.15s;
   }
   .fab-add:active { transform: scale(0.9); }
+  .fab-add svg { width: 22px; height: 22px; }
 
   /* Top fixed — always glassmorphism */
   .top-fixed {
@@ -134,6 +135,11 @@
     justify-content: space-between;
   }
   .header-right { display: flex; gap: 6px; align-items: center; }
+  .header-nav-link {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Comfortaa', cursive; font-size: 13px;
+    font-weight: 700; color: var(--brand); padding: 4px 0;
+  }
   .header-brand {
     font-family: 'Comfortaa', cursive;
     font-size: 22px; font-weight: 700;
@@ -142,6 +148,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-decoration: none; cursor: pointer;
   }
   .header-avatar {
     width: 30px; height: 30px; border-radius: 50%;
@@ -174,23 +181,6 @@
   }
   .scroll-area::-webkit-scrollbar { display: none; }
 
-  /* Header (for create screen) */
-  .header {
-    padding: 12px 20px;
-    display: flex; align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
-  .back-btn {
-    display: flex; align-items: center; gap: 4px;
-    background: none; border: none; cursor: pointer;
-    font-size: 15px; color: var(--text); font-weight: 600;
-    padding: 4px 0;
-  }
-  .back-btn svg { width: 20px; height: 20px; color: var(--text-sub); }
-
   /* Inner page header back button */
   .inner-back-btn {
     display: flex; align-items: center; gap: 2px;
@@ -209,9 +199,6 @@
   }
   .pill-green { background: #E8F0EB; color: #7EAE8B; }
   .pill-blue { background: #EDF2F5; color: #7A9BAE; }
-  .pill-purple { background: #F0ECF3; color: #8B7396; }
-  .pill-orange { background: #F5EDE8; color: #C17B5E; }
-  .pill-gold { background: #F5F0E5; color: #C9A96E; }
 
   /* Bubble list section header */
   .section-header {
@@ -223,6 +210,11 @@
     font-size: 13px; font-weight: 600; color: var(--text-sub);
     text-transform: uppercase; letter-spacing: 0.5px;
   }
+  .page-title-bar {
+    padding: 16px 20px 8px;
+  }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--text); }
+  .page-subtitle { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
   /* ========== BUBBLE LIST ========== */
   .bubble-card {
@@ -253,7 +245,6 @@
   .bubble-chevron { color: #D4CFC8; display: flex; align-items: center; }
   .bubble-chevron svg { width: 16px; height: 16px; }
 
-  /* Primary / outline buttons */
   .btn-primary {
     background: var(--primary); color: #fff;
     border: none; border-radius: 12px;
@@ -262,15 +253,6 @@
     width: 100%; font-family: inherit;
   }
   .btn-primary:active { opacity: 0.9; }
-  .btn-outline {
-    background: var(--bg-elevated);
-    color: var(--primary);
-    border: 1.5px solid var(--primary);
-    border-radius: 12px; padding: 8px 14px;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; font-family: inherit;
-  }
-
   /* ========== BUBBLE SEARCH + FILTER ========== */
   .bubble-search-bar {
     display: flex; align-items: center; gap: 8px;
@@ -396,6 +378,12 @@
   .sim-high { background: #E8F0EB; color: var(--positive); }
   .sim-mid { background: #F5F0E5; color: var(--caution); }
   .sim-low { background: var(--bg); color: var(--text-hint); }
+  .discover-card-similarity svg,
+  .discover-card-badge svg { width: 10px; height: 10px; }
+  .discover-card-badge {
+    font-size: 11px; color: var(--text-sub); flex-shrink: 0;
+    display: flex; align-items: center; gap: 2px;
+  }
   .discover-card-overlaps {
     display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;
   }
@@ -571,7 +559,33 @@
     display: flex; gap: 8px;
   }
   .popup-action-row .btn-join { flex: 1; padding: 12px; font-size: 14px; border-radius: 12px; }
-  .popup-action-row .btn-outline { flex: 1; padding: 12px; font-size: 14px; text-align: center; }
+
+  /* Popup detail elements */
+  .popup-icon { width: 50px; height: 50px; border-radius: 14px; }
+  .popup-name { font-size: 17px; font-weight: 700; color: var(--text); }
+  .popup-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .popup-pills { display: flex; gap: 4px; margin-top: 6px; }
+  .popup-pills .pill { font-size: 10px; padding: 2px 8px; }
+  .popup-stat-value-sm { font-size: 15px; }
+  .popup-stat-period { font-size: 9px; color: var(--text-hint); }
+  .popup-stars { display: flex; gap: 1px; margin-top: 2px; }
+  .popup-stars svg { width: 10px; height: 10px; }
+  .popup-section-body { padding: 0 20px 12px; }
+  .popup-taste-match {
+    margin: 0 20px 12px; padding: 10px 14px;
+    background: var(--accent-social-light); border-radius: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .popup-taste-match svg { width: 16px; height: 16px; color: var(--accent-social); }
+  .popup-taste-match-title { font-size: 13px; font-weight: 600; color: var(--accent-social); }
+  .popup-taste-match-sub { font-size: 11px; color: var(--text-sub); }
+  .popup-info-list { display: flex; flex-direction: column; gap: 6px; }
+  .popup-info-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text);
+  }
+  .popup-info-row svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .popup-info-row .info-note { font-size: 10px; color: var(--text-hint); margin-left: auto; }
 
   /* Avatar dropdown menu */
   .avatar-menu {
@@ -603,6 +617,7 @@
   }
   .avatar-menu-item:last-child { border-bottom: none; }
   .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
+  .avatar-menu-item svg { width: 16px; height: 16px; }
 </style>
 </head>
 <body>
@@ -615,21 +630,21 @@
 
       <!-- ============ SCREEN: BUBBLE LIST (main) ============ -->
       <div class="screen active" id="screen-bubbles">
-        <div class="top-fixed" id="bubbleTopFixed">
+        <div class="top-fixed">
           <div class="status-bar">
             <span class="status-time">9:41</span>
             <div class="status-icons">
-              <i data-lucide="signal" style="width:16px;height:16px;"></i>
-              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+              <i data-lucide="signal"></i>
+              <i data-lucide="wifi"></i>
+              <i data-lucide="battery-full"></i>
             </div>
           </div>
           <div class="app-header">
-            <a href="01_home.html" class="header-brand" style="text-decoration:none;cursor:pointer;">nyam</a>
+            <a href="01_home.html" class="header-brand">nyam</a>
             <div class="header-right">
-              <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn" title="알림">
+                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
                   <i data-lucide="bell"></i>
                 </button>
                 <div class="notif-badge"></div>
@@ -637,8 +652,8 @@
               <div style="position:relative;">
                 <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
-                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
-                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user"></i> 프로필</a>
+                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings"></i> 설정</a>
                 </div>
               </div>
             </div>
@@ -647,15 +662,10 @@
 
         <div class="scroll-area">
 
-          <!-- Page title + create button -->
-          <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <h1 style="font-size:20px;font-weight:700;color:var(--text)">버블</h1>
-              <div style="font-size:12px;color:var(--text-sub);margin-top:2px">나의 미식 커뮤니티</div>
-            </div>
-            <button class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:4px" onclick="showScreen('screen-bubble-create')">
-              <i data-lucide="plus" style="width:14px;height:14px;"></i> 만들기
-            </button>
+          <!-- Page title -->
+          <div class="page-title-bar">
+            <h1 class="page-title">버블</h1>
+            <div class="page-subtitle">나의 미식 커뮤니티</div>
           </div>
 
           <div class="section-header">
@@ -757,7 +767,7 @@
                   <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
                 </div>
                 <div class="discover-card-similarity sim-high">
-                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>87%
+                  <i data-lucide="heart"></i>87%
                 </div>
               </div>
               <div class="discover-card-overlaps">
@@ -781,7 +791,7 @@
                   <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
                 </div>
                 <div class="discover-card-similarity sim-high">
-                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>82%
+                  <i data-lucide="heart"></i>82%
                 </div>
               </div>
               <div class="discover-card-overlaps">
@@ -804,7 +814,7 @@
                   <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
                 </div>
                 <div class="discover-card-similarity sim-mid">
-                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>64%
+                  <i data-lucide="heart"></i>64%
                 </div>
               </div>
               <div class="discover-card-overlaps">
@@ -826,7 +836,7 @@
                   <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
                 </div>
                 <div class="discover-card-similarity sim-low">
-                  <i data-lucide="heart" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>48%
+                  <i data-lucide="heart"></i>48%
                 </div>
               </div>
               <div class="discover-card-overlaps">
@@ -850,8 +860,8 @@
                   <div class="discover-card-name">을지로 맛탐정 클럽</div>
                   <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>0.3km
+                <div class="discover-card-badge">
+                  <i data-lucide="map-pin"></i>0.3km
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -869,8 +879,8 @@
                   <div class="discover-card-name">광화문 직장인 점심</div>
                   <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>0.8km
+                <div class="discover-card-badge">
+                  <i data-lucide="map-pin"></i>0.8km
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -888,8 +898,8 @@
                   <div class="discover-card-name">종로 와인바 투어</div>
                   <div class="discover-card-meta">멤버 11명 · 기록 67개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="map-pin" style="width:10px;height:10px;"></i>1.2km
+                <div class="discover-card-badge">
+                  <i data-lucide="map-pin"></i>1.2km
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -910,8 +920,8 @@
                   <div class="discover-card-name">광화문 직장인 점심</div>
                   <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="activity" style="width:10px;height:10px;"></i>활발
+                <div class="discover-card-badge">
+                  <i data-lucide="activity"></i>활발
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -929,8 +939,8 @@
                   <div class="discover-card-name">을지로 맛탐정 클럽</div>
                   <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="activity" style="width:10px;height:10px;"></i>활발
+                <div class="discover-card-badge">
+                  <i data-lucide="activity"></i>활발
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -948,8 +958,8 @@
                   <div class="discover-card-name">내추럴 와인 러버스</div>
                   <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0;display:flex;align-items:center;gap:2px">
-                  <i data-lucide="activity" style="width:10px;height:10px;"></i>보통
+                <div class="discover-card-badge">
+                  <i data-lucide="activity"></i>보통
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -970,8 +980,8 @@
                   <div class="discover-card-name">오마카세 탐구회</div>
                   <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
-                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>3일 전
+                <div class="discover-card-badge">
+                  <i data-lucide="clock"></i>3일 전
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -989,8 +999,8 @@
                   <div class="discover-card-name">비건 프렌들리 서울</div>
                   <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
-                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>1주 전
+                <div class="discover-card-badge">
+                  <i data-lucide="clock"></i>1주 전
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -1008,8 +1018,8 @@
                   <div class="discover-card-name">이태원 피자 헌터</div>
                   <div class="discover-card-meta">멤버 4명 · 기록 12개</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-sub);flex-shrink:0">
-                  <i data-lucide="clock" style="width:10px;height:10px;display:inline;vertical-align:-1px;margin-right:2px;"></i>2주 전
+                <div class="discover-card-badge">
+                  <i data-lucide="clock"></i>2주 전
                 </div>
               </div>
               <div class="discover-card-bottom">
@@ -1022,7 +1032,7 @@
           <div style="height:16px"></div>
         </div>
         <button class="fab-add" onclick="showScreen('screen-bubble-create')">
-          <i data-lucide="plus" style="width:22px;height:22px;"></i>
+          <i data-lucide="plus"></i>
         </button>
       </div>
 
@@ -1032,9 +1042,9 @@
           <div class="status-bar">
             <span class="status-time">9:41</span>
             <div class="status-icons">
-              <i data-lucide="signal" style="width:16px;height:16px;"></i>
-              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+              <i data-lucide="signal"></i>
+              <i data-lucide="wifi"></i>
+              <i data-lucide="battery-full"></i>
             </div>
           </div>
           <div class="app-header">
@@ -1043,9 +1053,9 @@
               <span>버블</span>
             </button>
             <div class="header-right">
-              <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn" title="알림">
+                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
                   <i data-lucide="bell"></i>
                 </button>
                 <div class="notif-badge"></div>
@@ -1130,15 +1140,15 @@
 
         <!-- Header -->
         <div class="popup-header">
-          <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary);width:50px;height:50px;border-radius:14px" id="popupIcon">
+          <div class="discover-card-icon popup-icon" style="background:#F5EDE8;color:var(--primary)" id="popupIcon">
             <i data-lucide="flame"></i>
           </div>
           <div style="flex:1">
-            <div style="font-size:17px;font-weight:700;color:var(--text)" id="popupName">을지로 맛탐정 클럽</div>
-            <div style="font-size:12px;color:var(--text-sub);margin-top:2px" id="popupDesc">을지로·충무로 중심 맛집 탐험대</div>
-            <div style="display:flex;gap:4px;margin-top:6px">
-              <span class="pill pill-green" style="font-size:10px;padding:2px 8px">공개</span>
-              <span class="pill pill-blue" style="font-size:10px;padding:2px 8px">양방향</span>
+            <div class="popup-name" id="popupName">을지로 맛탐정 클럽</div>
+            <div class="popup-desc" id="popupDesc">을지로·충무로 중심 맛집 탐험대</div>
+            <div class="popup-pills">
+              <span class="pill pill-green">공개</span>
+              <span class="pill pill-blue">양방향</span>
             </div>
           </div>
           <button class="popup-close" onclick="closeDiscoverPopup()"><i data-lucide="x"></i></button>
@@ -1148,35 +1158,35 @@
         <div class="popup-stats-grid">
           <div class="popup-stat-card">
             <div class="popup-stat-label"><i data-lucide="calendar"></i> 시작일</div>
-            <div class="popup-stat-value" style="font-size:15px">2025.08</div>
+            <div class="popup-stat-value popup-stat-value-sm">2025.08</div>
             <div class="popup-stat-sub">약 7개월 전</div>
           </div>
           <div class="popup-stat-card">
             <div class="popup-stat-label"><i data-lucide="users"></i> 가입자</div>
             <div class="popup-stat-value">23명</div>
-            <div class="popup-stat-trend trend-up">+18% <span style="font-size:9px;color:var(--text-hint)">최근 30일</span></div>
+            <div class="popup-stat-trend trend-up">+18% <span class="popup-stat-period">최근 30일</span></div>
           </div>
           <div class="popup-stat-card">
             <div class="popup-stat-label"><i data-lucide="activity"></i> 활성도</div>
-            <div class="popup-stat-value" style="font-size:15px">매우 활발</div>
+            <div class="popup-stat-value popup-stat-value-sm">매우 활발</div>
             <div class="popup-stat-sub">평균 2.3일마다 기록</div>
           </div>
           <div class="popup-stat-card">
             <div class="popup-stat-label"><i data-lucide="star"></i> 만족도</div>
             <div class="popup-stat-value">4.7</div>
-            <div style="display:flex;gap:1px;margin-top:2px">
-              <i data-lucide="star" style="width:10px;height:10px;color:#C9A96E;fill:#C9A96E"></i>
-              <i data-lucide="star" style="width:10px;height:10px;color:#C9A96E;fill:#C9A96E"></i>
-              <i data-lucide="star" style="width:10px;height:10px;color:#C9A96E;fill:#C9A96E"></i>
-              <i data-lucide="star" style="width:10px;height:10px;color:#C9A96E;fill:#C9A96E"></i>
-              <i data-lucide="star" style="width:10px;height:10px;color:#D4CFC8;fill:#D4CFC8"></i>
+            <div class="popup-stars">
+              <i data-lucide="star" style="color:#C9A96E;fill:#C9A96E"></i>
+              <i data-lucide="star" style="color:#C9A96E;fill:#C9A96E"></i>
+              <i data-lucide="star" style="color:#C9A96E;fill:#C9A96E"></i>
+              <i data-lucide="star" style="color:#C9A96E;fill:#C9A96E"></i>
+              <i data-lucide="star" style="color:#D4CFC8;fill:#D4CFC8"></i>
             </div>
           </div>
         </div>
 
         <!-- Area-Level Bars -->
         <div class="popup-section-title"><i data-lucide="bar-chart-3"></i> 영역별 레벨</div>
-        <div style="padding:0 20px 12px">
+        <div class="popup-section-body">
           <div class="popup-level-bar">
             <div class="popup-level-label">한식</div>
             <div class="popup-level-track"><div class="popup-level-fill" style="width:88%;background:var(--primary)"></div></div>
@@ -1205,32 +1215,32 @@
         </div>
 
         <!-- Taste overlap hint -->
-        <div style="margin:0 20px 12px;padding:10px 14px;background:var(--accent-social-light);border-radius:10px;display:flex;align-items:center;gap:8px">
-          <i data-lucide="heart" style="width:16px;height:16px;color:var(--accent-social)"></i>
+        <div class="popup-taste-match">
+          <i data-lucide="heart"></i>
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--accent-social)">취향 87% 일치</div>
-            <div style="font-size:11px;color:var(--text-sub)">겹치는 맛집 3곳 · 와인 2종</div>
+            <div class="popup-taste-match-title">취향 87% 일치</div>
+            <div class="popup-taste-match-sub">겹치는 맛집 3곳 · 와인 2종</div>
           </div>
         </div>
 
         <!-- Join conditions -->
         <div class="popup-section-title"><i data-lucide="shield-check"></i> 가입 조건</div>
-        <div style="padding:0 20px 12px" id="popupJoinConditions">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i>
+        <div class="popup-section-body" id="popupJoinConditions">
+          <div class="popup-info-list">
+            <div class="popup-info-row">
+              <i data-lucide="check-circle" style="color:var(--positive)"></i>
               <span>관리자 승인 필요</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i>
+            <div class="popup-info-row">
+              <i data-lucide="check-circle" style="color:var(--positive)"></i>
               <span>최소 기록 5개 이상</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i>
+            <div class="popup-info-row">
+              <i data-lucide="check-circle" style="color:var(--positive)"></i>
               <span>최소 Lv.3 이상</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sub)">
-              <i data-lucide="users" style="width:14px;height:14px;color:var(--text-hint);flex-shrink:0"></i>
+            <div class="popup-info-row" style="color:var(--text-sub)">
+              <i data-lucide="users" style="color:var(--text-hint)"></i>
               <span>현재 23/30명 (여유 7자리)</span>
             </div>
           </div>
@@ -1238,27 +1248,27 @@
 
         <!-- Privacy / what's shared on join -->
         <div class="popup-section-title"><i data-lucide="eye"></i> 가입 시 공개 범위</div>
-        <div style="padding:0 20px 16px" id="popupPrivacy">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="unlock" style="width:14px;height:14px;color:var(--accent-social);flex-shrink:0"></i>
+        <div class="popup-section-body" style="padding-bottom:16px" id="popupPrivacy">
+          <div class="popup-info-list">
+            <div class="popup-info-row">
+              <i data-lucide="unlock" style="color:var(--accent-social)"></i>
               <span>내 기록이 멤버에게 공개</span>
-              <span style="font-size:10px;color:var(--text-hint);margin-left:auto">선택한 기록만</span>
+              <span class="info-note">선택한 기록만</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="unlock" style="width:14px;height:14px;color:var(--accent-social);flex-shrink:0"></i>
+            <div class="popup-info-row">
+              <i data-lucide="unlock" style="color:var(--accent-social)"></i>
               <span>프로필 · 레벨 · 뱃지</span>
-              <span style="font-size:10px;color:var(--text-hint);margin-left:auto">항상 공개</span>
+              <span class="info-note">항상 공개</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="lock" style="width:14px;height:14px;color:var(--text-hint);flex-shrink:0"></i>
+            <div class="popup-info-row">
+              <i data-lucide="lock" style="color:var(--text-hint)"></i>
               <span>사분면 위치</span>
-              <span style="font-size:10px;color:var(--text-hint);margin-left:auto">비공개</span>
+              <span class="info-note">비공개</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-              <i data-lucide="lock" style="width:14px;height:14px;color:var(--text-hint);flex-shrink:0"></i>
+            <div class="popup-info-row">
+              <i data-lucide="lock" style="color:var(--text-hint)"></i>
               <span>점수 상세</span>
-              <span style="font-size:10px;color:var(--text-hint);margin-left:auto">비공개</span>
+              <span class="info-note">비공개</span>
             </div>
           </div>
         </div>
@@ -1455,24 +1465,24 @@
     grid.innerHTML = `
       <div class="popup-stat-card">
         <div class="popup-stat-label"><i data-lucide="calendar"></i> 시작일</div>
-        <div class="popup-stat-value" style="font-size:15px">${data.started}</div>
+        <div class="popup-stat-value popup-stat-value-sm">${data.started}</div>
         <div class="popup-stat-sub">약 ${data.months} 전</div>
       </div>
       <div class="popup-stat-card">
         <div class="popup-stat-label"><i data-lucide="users"></i> 가입자</div>
         <div class="popup-stat-value">${data.members}명</div>
-        <div class="popup-stat-trend trend-up">${data.growth} <span style="font-size:9px;color:var(--text-hint)">최근 30일</span></div>
+        <div class="popup-stat-trend trend-up">${data.growth} <span class="popup-stat-period">최근 30일</span></div>
       </div>
       <div class="popup-stat-card">
         <div class="popup-stat-label"><i data-lucide="activity"></i> 활성도</div>
-        <div class="popup-stat-value" style="font-size:15px">${data.activity}</div>
+        <div class="popup-stat-value popup-stat-value-sm">${data.activity}</div>
         <div class="popup-stat-sub">평균 ${data.freq}마다 기록</div>
       </div>
       <div class="popup-stat-card">
         <div class="popup-stat-label"><i data-lucide="star"></i> 만족도</div>
         <div class="popup-stat-value">${data.satisfaction}</div>
-        <div style="display:flex;gap:1px;margin-top:2px">
-          ${Array.from({length:5}, (_,i) => `<i data-lucide="star" style="width:10px;height:10px;color:${i < Math.round(data.satisfaction) ? '#C9A96E' : '#D4CFC8'};fill:${i < Math.round(data.satisfaction) ? '#C9A96E' : '#D4CFC8'}"></i>`).join('')}
+        <div class="popup-stars">
+          ${Array.from({length:5}, (_,i) => `<i data-lucide="star" style="color:${i < Math.round(data.satisfaction) ? '#C9A96E' : '#D4CFC8'};fill:${i < Math.round(data.satisfaction) ? '#C9A96E' : '#D4CFC8'}"></i>`).join('')}
         </div>
       </div>
     `;
@@ -1489,13 +1499,13 @@
     `).join('');
 
     // Update taste match
-    const matchHint = popup.querySelector('[style*="accent-social-light"]');
+    const matchHint = popup.querySelector('.popup-taste-match');
     if (matchHint) {
       matchHint.innerHTML = `
-        <i data-lucide="heart" style="width:16px;height:16px;color:var(--accent-social)"></i>
+        <i data-lucide="heart"></i>
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--accent-social)">취향 ${data.match}% 일치</div>
-          <div style="font-size:11px;color:var(--text-sub)">${data.overlap}</div>
+          <div class="popup-taste-match-title">취향 ${data.match}% 일치</div>
+          <div class="popup-taste-match-sub">${data.overlap}</div>
         </div>
       `;
     }
@@ -1504,19 +1514,19 @@
     const joinEl = document.getElementById('popupJoinConditions');
     const j = data.join;
     const remaining = data.maxMembers - data.members;
-    let joinHTML = '<div style="display:flex;flex-direction:column;gap:6px">';
+    let joinHTML = '<div class="popup-info-list">';
     if (j.approval) {
-      joinHTML += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i><span>관리자 승인 필요</span></div>';
+      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>관리자 승인 필요</span></div>';
     } else {
-      joinHTML += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><i data-lucide="zap" style="width:14px;height:14px;color:var(--caution);flex-shrink:0"></i><span>즉시 가입 가능</span></div>';
+      joinHTML += '<div class="popup-info-row"><i data-lucide="zap" style="color:var(--caution)"></i><span>즉시 가입 가능</span></div>';
     }
     if (j.minRecords > 0) {
-      joinHTML += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i><span>최소 기록 ' + j.minRecords + '개 이상</span></div>';
+      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>최소 기록 ' + j.minRecords + '개 이상</span></div>';
     }
     if (j.minLevel > 1) {
-      joinHTML += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><i data-lucide="check-circle" style="width:14px;height:14px;color:var(--positive);flex-shrink:0"></i><span>최소 Lv.' + j.minLevel + ' 이상</span></div>';
+      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>최소 Lv.' + j.minLevel + ' 이상</span></div>';
     }
-    joinHTML += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sub)"><i data-lucide="users" style="width:14px;height:14px;color:var(--text-hint);flex-shrink:0"></i><span>현재 ' + data.members + '/' + data.maxMembers + '명 (여유 ' + remaining + '자리)</span></div>';
+    joinHTML += '<div class="popup-info-row" style="color:var(--text-sub)"><i data-lucide="users" style="color:var(--text-hint)"></i><span>현재 ' + data.members + '/' + data.maxMembers + '명 (여유 ' + remaining + '자리)</span></div>';
     joinHTML += '</div>';
     joinEl.innerHTML = joinHTML;
 
@@ -1525,26 +1535,26 @@
     const p = data.privacy;
     const privacyIcon = (val) => val === '비공개' ? 'lock' : 'unlock';
     const privacyColor = (val) => val === '비공개' ? 'var(--text-hint)' : 'var(--accent-social)';
-    privEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-        <i data-lucide="${privacyIcon(p.records)}" style="width:14px;height:14px;color:${privacyColor(p.records)};flex-shrink:0"></i>
+    privEl.innerHTML = `<div class="popup-info-list">
+      <div class="popup-info-row">
+        <i data-lucide="${privacyIcon(p.records)}" style="color:${privacyColor(p.records)}"></i>
         <span>내 기록이 멤버에게 공개</span>
-        <span style="font-size:10px;color:var(--text-hint);margin-left:auto">${p.records}</span>
+        <span class="info-note">${p.records}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-        <i data-lucide="unlock" style="width:14px;height:14px;color:var(--accent-social);flex-shrink:0"></i>
+      <div class="popup-info-row">
+        <i data-lucide="unlock" style="color:var(--accent-social)"></i>
         <span>프로필 · 레벨 · 뱃지</span>
-        <span style="font-size:10px;color:var(--text-hint);margin-left:auto">${p.profile}</span>
+        <span class="info-note">${p.profile}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-        <i data-lucide="${privacyIcon(p.quadrant)}" style="width:14px;height:14px;color:${privacyColor(p.quadrant)};flex-shrink:0"></i>
+      <div class="popup-info-row">
+        <i data-lucide="${privacyIcon(p.quadrant)}" style="color:${privacyColor(p.quadrant)}"></i>
         <span>사분면 위치</span>
-        <span style="font-size:10px;color:var(--text-hint);margin-left:auto">${p.quadrant}</span>
+        <span class="info-note">${p.quadrant}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)">
-        <i data-lucide="${privacyIcon(p.scores)}" style="width:14px;height:14px;color:${privacyColor(p.scores)};flex-shrink:0"></i>
+      <div class="popup-info-row">
+        <i data-lucide="${privacyIcon(p.scores)}" style="color:${privacyColor(p.scores)}"></i>
         <span>점수 상세</span>
-        <span style="font-size:10px;color:var(--text-hint);margin-left:auto">${p.scores}</span>
+        <span class="info-note">${p.scores}</span>
       </div>
     </div>`;
 

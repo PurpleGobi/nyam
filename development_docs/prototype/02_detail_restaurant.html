@@ -1041,7 +1041,10 @@
         </div>
       </div>
       <div class="app-header">
-        <a href="01_home.html" class="app-logo" style="text-decoration:none;cursor:pointer;">nyam</a>
+        <button class="inner-back-btn" id="detailBackBtn" onclick="goBackFromDetail()">
+          <i data-lucide="chevron-left"></i>
+          <span id="detailBackLabel">홈</span>
+        </button>
         <div class="app-header-actions">
           <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
           <button class="app-header-btn" onclick="location.href='06_notifications.html'">
@@ -1731,6 +1734,31 @@
       }
     }
   })();
+
+  // ============================================================
+  // SUB-PAGE HEADER — referrer-based back label
+  // ============================================================
+  (function initBackBtn() {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const label = document.getElementById('detailBackLabel');
+
+    const routes = {
+      home:      { text: '홈',     href: '01_home.html' },
+      profile:   { text: '프로필',  href: '03_profile.html' },
+      bubble:    { text: '버블',    href: '04_bubbles_detail.html' },
+      search:    { text: '검색',    href: '01_home.html' },
+      recommend: { text: '추천',    href: '01_home.html' },
+    };
+
+    const route = routes[from] || routes.home;
+    label.textContent = route.text;
+    window._detailBackHref = route.href;
+  })();
+
+  function goBackFromDetail() {
+    location.href = window._detailBackHref || '01_home.html';
+  }
 
   // Initialize Lucide icons
   document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });

@@ -2149,6 +2149,20 @@
     background: var(--primary-light);
     border-bottom: 1px solid rgba(193,123,94,0.15);
     animation: slideDown 0.3s ease;
+    max-height: 60px;
+    overflow: hidden;
+    transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.5s ease,
+                border-bottom 0.5s ease;
+    opacity: 1;
+  }
+  .nudge-strip.collapsed {
+    max-height: 0;
+    padding: 0 16px;
+    opacity: 0;
+    border-bottom: none;
+    pointer-events: none;
   }
   .nudge-strip-icon {
     width: 28px; height: 28px; border-radius: 8px;
@@ -6370,10 +6384,12 @@
   }
   updateGreeting();
 
-  // Auto-dismiss after 5 seconds (fade out completely)
+  // Auto-dismiss after 5 seconds (AI greeting + nudge strip collapse together)
   setTimeout(() => {
     const greeting = document.getElementById('aiGreeting');
     if (greeting) greeting.classList.add('collapsed');
+    const nudge = document.getElementById('nudgeCard');
+    if (nudge) nudge.classList.add('collapsed');
   }, 5000);
 
   // Click to navigate to linked restaurant

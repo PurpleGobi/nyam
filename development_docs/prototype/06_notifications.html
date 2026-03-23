@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — 알림</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --accent-social-light: #EDF2F5;
+    --brand: #FF6038;
+  }
+
+  body {
+    background: var(--bg-page);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  /* Device Frame */
+  .device {
+    width: 390px; height: 844px; background: #2A2725;
+    border-radius: 52px; padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
+    position: relative; flex-shrink: 0;
+  }
+  .device-inner {
+    width: 100%; height: 100%; background: var(--bg);
+    border-radius: 42px; overflow: hidden; position: relative;
+  }
+  .dynamic-island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 36px; background: #1A1A1A;
+    border-radius: 20px; z-index: 100;
+  }
+  .dynamic-island::after {
+    content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #080C10; box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 24px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    position: relative; z-index: 50;
+  }
+  .status-time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+
+  /* Screen system */
+  .screens-wrapper {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+  .screen {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; background: var(--bg);
+    display: flex; flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  .screen.hidden { transform: translateX(100%); }
+  .screen.slide-out { transform: translateX(-100%); }
+  .screen.active { transform: translateX(0); }
+
+  /* Top fixed — glassmorphism */
+  .top-fixed {
+    flex-shrink: 0;
+    background: rgba(248,246,243,0.55);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    z-index: 60;
+  }
+  .app-header {
+    padding: 2px 16px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-right { display: flex; gap: 6px; align-items: center; }
+  .header-brand {
+    font-family: 'Comfortaa', cursive;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.5px; line-height: 1;
+    background: linear-gradient(135deg, #FF6038, #8B7396);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; text-decoration: none; cursor: pointer;
+  }
+  .header-nav-link {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Comfortaa', cursive; font-size: 13px;
+    font-weight: 700; color: var(--brand); padding: 4px 0;
+  }
+  .header-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .notif-badge {
+    position: absolute; top: 4px; right: 4px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--brand); border: 1.5px solid var(--bg);
+  }
+
+  /* Icon button */
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: transparent; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text); position: relative; transition: background 0.15s;
+  }
+  .icon-btn:active { background: var(--bg-card); }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  /* Inner page header back button */
+  .inner-back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; color: var(--text);
+  }
+  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
+  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
+  .inner-back-btn:active { opacity: 0.6; }
+
+  /* Scrollable content */
+  .scroll-area {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none; position: absolute;
+    top: calc(100% + 6px); right: 0;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 200; min-width: 120px; overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; font-size: 13px; font-weight: 500;
+    color: var(--text); text-decoration: none; cursor: pointer;
+    border-bottom: 1px solid var(--border); transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page); }
+  .avatar-menu-item svg { width: 16px; height: 16px; }
+
+  /* ========== NOTIFICATION PAGE ========== */
+
+  /* Page title bar */
+  .page-title-bar {
+    padding: 16px 20px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--text); }
+
+  /* Mark all read button */
+  .mark-all-read {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--accent-social);
+    font-family: inherit; padding: 4px 0;
+  }
+  .mark-all-read:active { opacity: 0.6; }
+
+  /* Date group header */
+  .date-group {
+    padding: 14px 20px 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .date-group-label {
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+    flex-shrink: 0;
+  }
+  .date-group-line {
+    flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Notification card */
+  .notif-card {
+    margin: 0 12px 2px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    display: flex; align-items: flex-start; gap: 12px;
+    cursor: pointer; transition: background 0.15s;
+    position: relative;
+  }
+  .notif-card:active { opacity: 0.8; }
+  .notif-card.unread { background: rgba(122,155,174,0.06); }
+  .notif-card.read { background: transparent; }
+
+  /* Unread dot */
+  .notif-unread-dot {
+    position: absolute; top: 18px; right: 16px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--brand);
+  }
+
+  /* Notification icon */
+  .notif-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .notif-icon svg { width: 18px; height: 18px; }
+
+  /* Notification content */
+  .notif-content { flex: 1; min-width: 0; padding-right: 16px; }
+  .notif-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    line-height: 1.4;
+  }
+  .notif-body {
+    font-size: 13px; color: var(--text-sub);
+    margin-top: 2px; line-height: 1.3;
+  }
+  .notif-time {
+    font-size: 11px; color: var(--text-hint);
+    margin-top: 4px;
+  }
+
+  /* Bubble invite inline actions */
+  .notif-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .notif-action-btn {
+    padding: 5px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .notif-action-btn:active { opacity: 0.8; }
+  .notif-action-accept {
+    background: var(--accent-social); color: #fff; border: none;
+  }
+  .notif-action-decline {
+    background: transparent; color: var(--text-sub);
+    border: 1px solid var(--border);
+  }
+
+  /* Swipe hint */
+  .swipe-hint {
+    padding: 8px 20px 4px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .swipe-hint svg { width: 12px; height: 12px; color: var(--text-hint); }
+  .swipe-hint span { font-size: 10px; color: var(--text-hint); }
+
+  /* ========== NOTIFICATION SETTINGS ========== */
+  .settings-group {
+    padding: 16px 20px 4px;
+  }
+  .settings-group-title {
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .settings-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item-info { flex: 1; }
+  .settings-item-label { font-size: 14px; font-weight: 500; color: var(--text); }
+  .settings-item-desc { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+  /* Toggle */
+  .toggle {
+    width: 44px; height: 26px;
+    background: #D4CFC8; border-radius: 13px;
+    position: relative; cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0; border: none;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 22px; height: 22px;
+    background: #fff; border-radius: 50%;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on { background: var(--accent-social); }
+  .toggle.on::after { left: 20px; }
+
+  /* ========== EMPTY STATE ========== */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 40px; text-align: center;
+  }
+  .empty-state-icon {
+    width: 64px; height: 64px; border-radius: 20px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .empty-state-icon svg { width: 28px; height: 28px; color: var(--text-hint); }
+  .empty-state-title {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty-state-desc {
+    font-size: 13px; color: var(--text-sub); line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  .btn-primary {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 12px;
+    padding: 12px 24px; font-size: 14px;
+    font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary:active { opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="device-inner">
+    <div class="dynamic-island"></div>
+
+    <div class="screens-wrapper">
+
+      <!-- ============ SCREEN: NOTIFICATIONS LIST ============ -->
+      <div class="screen active" id="screen-notifications">
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal"></i>
+              <i data-lucide="wifi"></i>
+              <i data-lucide="battery-full"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="location.href='01_home.html'">
+              <i data-lucide="chevron-left"></i>
+              <span>알림</span>
+            </button>
+            <div class="header-right">
+              <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
+              <button class="icon-btn" title="알림 설정" onclick="showScreen('screen-notif-settings')">
+                <i data-lucide="sliders-horizontal"></i>
+              </button>
+              <div style="position:relative;">
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="avatar-menu" onclick="event.stopPropagation()">
+                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user"></i> 프로필</a>
+                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings"></i> 설정</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll-area">
+
+          <!-- Page title + mark all read -->
+          <div class="page-title-bar">
+            <h1 class="page-title">알림</h1>
+            <button class="mark-all-read" onclick="markAllRead()">모두 읽음</button>
+          </div>
+
+          <!-- ── 오늘 ── -->
+          <div class="date-group">
+            <span class="date-group-label">오늘</span>
+            <div class="date-group-line"></div>
+          </div>
+
+          <!-- 레벨업 알림 (미읽음) -->
+          <div class="notif-card unread" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#F5EDE8;color:var(--primary)">
+              <i data-lucide="trophy"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">을지로 레벨 4 달성!</div>
+              <div class="notif-body">기록이 쌓이고 있어요</div>
+              <div class="notif-time">3시간 전</div>
+            </div>
+            <div class="notif-unread-dot"></div>
+          </div>
+
+          <!-- 사진 감지 넛지 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:var(--accent-social-light);color:var(--accent-social)">
+              <i data-lucide="camera"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">최근 사진에서 맛집을 발견했어요</div>
+              <div class="notif-body">기록해볼까요?</div>
+              <div class="notif-time">5시간 전</div>
+            </div>
+          </div>
+
+          <!-- 식사 후 넛지 (미읽음) -->
+          <div class="notif-card unread" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#F5F0E5;color:var(--caution)">
+              <i data-lucide="utensils-crossed"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">방금 식사하셨나요?</div>
+              <div class="notif-body">기록을 남겨보세요</div>
+              <div class="notif-time">6시간 전</div>
+            </div>
+            <div class="notif-unread-dot"></div>
+          </div>
+
+          <!-- ── 이번 주 ── -->
+          <div class="date-group">
+            <span class="date-group-label">이번 주</span>
+            <div class="date-group-line"></div>
+          </div>
+
+          <!-- 레벨업 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:var(--wine-light);color:var(--wine)">
+              <i data-lucide="trophy"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">와인 레벨 7 달성!</div>
+              <div class="notif-body">기록이 쌓이고 있어요</div>
+              <div class="notif-time">3일 전</div>
+            </div>
+          </div>
+
+          <!-- 미평가 넛지 (미읽음) -->
+          <div class="notif-card unread" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#E8F0EB;color:var(--positive)">
+              <i data-lucide="clipboard-list"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">아직 평가하지 않은 곳이 있어요</div>
+              <div class="notif-body">미진 외 2곳</div>
+              <div class="notif-time">5일 전</div>
+            </div>
+            <div class="notif-unread-dot"></div>
+          </div>
+
+          <!-- 주간 리포트 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:var(--accent-social-light);color:var(--accent-social)">
+              <i data-lucide="bar-chart-3"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">이번 주 기록 5개</div>
+              <div class="notif-body">지난주보다 2개 더 많아요</div>
+              <div class="notif-time">6일 전</div>
+            </div>
+          </div>
+
+          <!-- ── 이전 ── -->
+          <div class="date-group">
+            <span class="date-group-label">이전</span>
+            <div class="date-group-line"></div>
+          </div>
+
+          <!-- P2: 버블 초대 (미읽음, 인라인 액션) -->
+          <div class="notif-card unread">
+            <div class="notif-icon" style="background:var(--accent-social-light);color:var(--accent-social)">
+              <i data-lucide="circle-dot"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">김영수님이 '을지로 맛탐정 클럽'에 초대했어요</div>
+              <div class="notif-time">1주 전</div>
+              <div class="notif-actions">
+                <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleInvite(this,'accept')">수락</button>
+                <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleInvite(this,'decline')">거절</button>
+              </div>
+            </div>
+            <div class="notif-unread-dot"></div>
+          </div>
+
+          <!-- P2: 댓글 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#F5EDE8;color:var(--primary)">
+              <i data-lucide="message-circle"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">김영수님이 댓글을 남겼어요</div>
+              <div class="notif-body">"여기 진짜 맛있죠!"</div>
+              <div class="notif-time">2주 전</div>
+            </div>
+          </div>
+
+          <!-- P2: 좋아요 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#FCE8E8;color:var(--negative)">
+              <i data-lucide="heart"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">이수진님이 좋아요를 눌렀어요</div>
+              <div class="notif-body">스시코우지 기록</div>
+              <div class="notif-time">2주 전</div>
+            </div>
+          </div>
+
+          <!-- P2: 새 공유 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#E8F0EB;color:var(--positive)">
+              <i data-lucide="share-2"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">박민호님이 기록을 공유했어요</div>
+              <div class="notif-body">도쿄등심 · 4.2점</div>
+              <div class="notif-time">3주 전</div>
+            </div>
+          </div>
+
+          <!-- P2: 팔로우 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:var(--wine-light);color:var(--wine)">
+              <i data-lucide="user-plus"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">최서연님이 나를 팔로우합니다</div>
+              <div class="notif-time">1달 전</div>
+            </div>
+          </div>
+
+          <!-- 새 동네 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#F5F0E5;color:var(--caution)">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">새로운 동네에서 기록을 남겼어요</div>
+              <div class="notif-body">성수동의 첫 기록!</div>
+              <div class="notif-time">1달 전</div>
+            </div>
+          </div>
+
+          <!-- P2: 찜 (읽음) -->
+          <div class="notif-card read" onclick="readNotif(this)">
+            <div class="notif-icon" style="background:#F5EDE8;color:var(--primary)">
+              <i data-lucide="bookmark"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">김영수님이 내 기록의 미진을 찜했어요</div>
+              <div class="notif-time">1달 전</div>
+            </div>
+          </div>
+
+          <!-- Swipe hint -->
+          <div class="swipe-hint">
+            <i data-lucide="arrow-left"></i>
+            <span>좌측 스와이프로 읽음 처리</span>
+          </div>
+
+          <div style="height:20px"></div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: NOTIFICATION SETTINGS ============ -->
+      <div class="screen hidden" id="screen-notif-settings">
+        <div class="top-fixed">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <i data-lucide="signal"></i>
+              <i data-lucide="wifi"></i>
+              <i data-lucide="battery-full"></i>
+            </div>
+          </div>
+          <div class="app-header">
+            <button class="inner-back-btn" onclick="showScreen('screen-notifications')">
+              <i data-lucide="chevron-left"></i>
+              <span>알림 설정</span>
+            </button>
+            <div class="header-right">
+              <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
+              <div style="position:relative;">
+                <button class="icon-btn" title="알림" onclick="showScreen('screen-notifications')">
+                  <i data-lucide="bell"></i>
+                </button>
+                <div class="notif-badge"></div>
+              </div>
+              <div style="position:relative;">
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="avatar-menu" onclick="event.stopPropagation()">
+                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user"></i> 프로필</a>
+                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings"></i> 설정</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scroll-area">
+
+          <!-- 넛지 알림 -->
+          <div class="settings-group">
+            <div class="settings-group-title">넛지 알림</div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">사진 감지</div>
+                <div class="settings-item-desc">갤러리에서 맛집 사진 발견 시 알림</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">미평가 리마인드</div>
+                <div class="settings-item-desc">아직 평가하지 않은 기록 알림</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">식사 후 알림</div>
+                <div class="settings-item-desc">식사 시간대에 기록 유도</div>
+              </div>
+              <button class="toggle" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">주간 리포트</div>
+                <div class="settings-item-desc">이번 주 기록 요약 알림</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+
+          <!-- 성장 알림 -->
+          <div class="settings-group">
+            <div class="settings-group-title">성장 알림</div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">레벨업</div>
+                <div class="settings-item-desc">영역별 레벨 달성 시 알림</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+
+          <!-- 버블 알림 (P2) -->
+          <div class="settings-group">
+            <div class="settings-group-title">버블 알림</div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">새 공유</div>
+                <div class="settings-item-desc">버블 멤버의 새 기록 공유</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">좋아요</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">댓글</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">초대</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">찜</div>
+              </div>
+              <button class="toggle" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+
+          <!-- 방해 금지 -->
+          <div class="settings-group">
+            <div class="settings-group-title">방해 금지</div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <div class="settings-item-label">23:00 ~ 08:00</div>
+                <div class="settings-item-desc">이 시간에는 푸시 알림을 보내지 않아요</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+
+          <div style="height:20px"></div>
+        </div>
+      </div>
+
+    </div><!-- /screens-wrapper -->
+  </div>
+</div>
+
+<script>
+  // Screen navigation
+  let currentScreen = 'screen-notifications';
+  const screenStack = ['screen-notifications'];
+
+  function showScreen(id) {
+    const prev = document.getElementById(currentScreen);
+    const next = document.getElementById(id);
+    if (!next || id === currentScreen) return;
+
+    const isForward = (id !== screenStack[screenStack.length - 2]);
+
+    if (isForward) {
+      screenStack.push(id);
+      next.classList.remove('hidden', 'slide-out');
+      next.style.transform = 'translateX(100%)';
+      requestAnimationFrame(() => {
+        next.style.transform = '';
+        next.classList.add('active');
+        prev.classList.add('slide-out');
+        prev.classList.remove('active');
+      });
+    } else {
+      screenStack.pop();
+      prev.style.transform = '';
+      next.classList.remove('slide-out');
+      next.classList.add('active');
+      requestAnimationFrame(() => {
+        prev.classList.remove('active');
+        prev.style.transform = 'translateX(100%)';
+      });
+    }
+
+    setTimeout(() => {
+      prev.classList.remove('slide-out');
+      if (!prev.classList.contains('active')) {
+        prev.classList.add('hidden');
+        prev.style.transform = '';
+      }
+      lucide.createIcons();
+    }, 350);
+
+    currentScreen = id;
+  }
+
+  // Read notification
+  function readNotif(card) {
+    card.classList.remove('unread');
+    card.classList.add('read');
+    const dot = card.querySelector('.notif-unread-dot');
+    if (dot) dot.remove();
+    updateUnreadCount();
+  }
+
+  // Mark all read
+  function markAllRead() {
+    document.querySelectorAll('.notif-card.unread').forEach(card => {
+      card.classList.remove('unread');
+      card.classList.add('read');
+      const dot = card.querySelector('.notif-unread-dot');
+      if (dot) dot.remove();
+    });
+    updateUnreadCount();
+  }
+
+  // Update unread count in header badge
+  function updateUnreadCount() {
+    const count = document.querySelectorAll('.notif-card.unread').length;
+    const badge = document.querySelector('.notif-badge');
+    if (badge) badge.style.display = count > 0 ? '' : 'none';
+  }
+
+  // Handle bubble invite
+  function handleInvite(btn, action) {
+    const card = btn.closest('.notif-card');
+    const actionsEl = card.querySelector('.notif-actions');
+
+    if (action === 'accept') {
+      actionsEl.innerHTML = '<span style="font-size:12px;font-weight:600;color:var(--positive)">수락 완료</span>';
+    } else {
+      actionsEl.innerHTML = '<span style="font-size:12px;color:var(--text-hint)">거절됨</span>';
+    }
+
+    card.classList.remove('unread');
+    card.classList.add('read');
+    const dot = card.querySelector('.notif-unread-dot');
+    if (dot) dot.remove();
+    updateUnreadCount();
+  }
+
+  // Init
+  lucide.createIcons();
+
+  // Close avatar menu on outside click
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
+</script>
+
+</body>
+</html>
