@@ -34,8 +34,10 @@
 
   body {
     background: var(--bg-page);
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0 24px;
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 
@@ -45,7 +47,31 @@
     box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
     position: relative; flex-shrink: 0;
   }
-  .viewport {
+    .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #1A1A1A;
+    border-radius: 20px;
+    z-index: 100;
+  }
+  .dynamic-island::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #080C10;
+    box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
+  }
+
+  .device-inner {
     width: 100%; height: 100%; background: var(--bg);
     border-radius: 42px; overflow: hidden; position: relative;
   }
@@ -369,12 +395,44 @@
     content: ''; width: 4px; height: 4px; border-radius: 50%;
     background: var(--text-hint); flex-shrink: 0;
   }
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--bg-elevated, #FFFFFF);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 120px;
+    overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
 </style>
 </head>
 <body>
 
+
 <div class="device">
-  <div class="viewport">
+  <div class="device-inner">
+    <div class="dynamic-island"></div>
 
     <div class="top-fixed">
       <div class="status-bar">
@@ -391,14 +449,20 @@
           <span>프로필</span>
         </button>
         <div class="header-right">
-          <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+          <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
           <div style="position:relative;">
             <button class="icon-btn" title="알림">
               <i data-lucide="bell"></i>
             </button>
             <div class="notif-badge"></div>
           </div>
-          <div class="header-avatar">J</div>
+          <div style="position:relative;">
+            <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+            <div class="avatar-menu" onclick="event.stopPropagation()">
+              <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+              <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -882,6 +946,13 @@
 
 <script>
   lucide.createIcons();
+
+  // Close avatar menu on outside click
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
 
   // ===== Privacy base level =====
   let currentPrivacyBase = 'bubble';

@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — Restaurant Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-elevated: #FFFFFF;
+    --bg-page: #EFECE7;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --radius: 16px;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --brand: #FF6038;
+
+    /* Gauge colors */
+    --gauge-1: #C4B5A8;
+    --gauge-2: #C9A96E;
+    --gauge-3: #B8A078;
+    --gauge-4: #7EAE8B;
+    --gauge-5: #7A9BAE;
+
+    /* Scene Tags */
+    --scene-solo: #7A9BAE;
+    --scene-romantic: #B8879B;
+    --scene-friends: #7EAE8B;
+    --scene-family: #C9A96E;
+    --scene-business: #8B7396;
+    --scene-drinks: #B87272;
+  }
+
+  body {
+    background: var(--bg-page);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  /* Page header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .page-title {
+    font-size: 14px;
+    color: var(--text-sub);
+    letter-spacing: 0.05em;
+  }
+
+  /* =====================
+     DEVICE FRAME
+     ===================== */
+  .device {
+    width: 390px;
+    height: 844px;
+    background: #2A2725;
+    border-radius: 52px;
+    padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .device-inner {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 42px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #1A1A1A;
+    border-radius: 20px;
+    z-index: 100;
+  }
+  .dynamic-island::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #080C10;
+    box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
+  }
+
+  /* =====================
+     STATUS BAR + APP HEADER
+     ===================== */
+  .top-fixed {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 90;
+    flex-shrink: 0;
+    background: rgba(248,246,243,0.55);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    pointer-events: none;
+  }
+  .top-fixed > * { pointer-events: auto; }
+
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    position: relative;
+  }
+  .status-time { font-size: 15px; font-weight: 700; }
+
+  /* App Header — nyam logo + actions */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 16px 8px;
+  }
+  .app-logo {
+    font-family: 'Comfortaa', cursive;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    background: linear-gradient(135deg, #FF6038, #8B7396);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .app-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .app-header-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    background: transparent;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .app-header-btn:active { background: var(--bg-card); }
+  .app-header-btn .notif-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 1.5px solid var(--bg);
+  }
+  .app-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* =====================
+     FLOATING BACK BUTTON — bottom-left
+     ===================== */
+  .fab-back {
+    position: absolute;
+    bottom: 28px;
+    left: 16px;
+    z-index: 85;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .fab-back:active {
+    transform: scale(0.9);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  }
+
+  /* Screen system */
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+    padding-top: 80px; /* top-fixed 높이만큼 밀어냄 */
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* =====================
+     SCROLL HEADER
+     ===================== */
+  .scroll-header {
+    position: sticky;
+    top: 0; /* scroll-content 내부의 sticky이므로 0 유지 */
+    z-index: 80;
+    background: transparent;
+    transition: background 0.3s, box-shadow 0.3s;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .scroll-header.solid {
+    background: rgba(248,246,243,0.97);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+  }
+  .scroll-header.solid .header-name {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .header-name {
+    font-size: 16px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.3s;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(248,246,243,0.9);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .header-icon-btn:active { transform: scale(0.9); }
+  .header-icon-btn.liked { color: var(--negative); }
+
+  /* =====================
+     HERO CAROUSEL
+     ===================== */
+  /* Hero wrap — shared between restaurant & wine */
+  .hero-wrap {
+    position: relative;
+  }
+  .hero-carousel {
+    position: relative;
+    height: 224px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.4s ease;
+  }
+  .carousel-slide {
+    width: 366px;
+    height: 224px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .slide-1 { background: linear-gradient(135deg, #2d1b0e 0%, #8b4513 40%, #cd853f 100%); }
+  .slide-2 { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+  .slide-3 { background: linear-gradient(135deg, #2d5016 0%, #4a7c59 50%, #7fb069 100%); }
+
+  .carousel-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.4));
+  }
+  /* Hero action buttons — inside photo, bottom-right */
+  .hero-actions {
+    position: absolute;
+    bottom: 10px; right: 12px;
+    display: flex; gap: 8px;
+    z-index: 6;
+  }
+  .hero-action-btn {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+  .hero-action-btn:active { color: #fff; }
+  .hero-action-btn.liked { color: #FF6038; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dot.active { background: #fff; width: 16px; border-radius: 3px; }
+
+  /* =====================
+     DETAIL INFO — consistent layout
+     ===================== */
+  .detail-info {
+    padding: 0 20px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Row 1: Name + Meta ── */
+  .info-header {
+    padding: 14px 0 8px;
+  }
+  .detail-name {
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .detail-name.wine-color { color: var(--wine); }
+  .detail-sub {
+    font-size: 11px;
+    color: var(--text-sub);
+    margin-top: 1px;
+  }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .dm-item { font-size: 12px; color: var(--text-sub); }
+  .dm-sep {
+    margin: 0 5px;
+    color: var(--border-bold);
+    font-size: 8px;
+  }
+  .dm-price {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .dm-chip {
+    display: inline-flex;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .dm-chip.red { background: #FAF0F0; color: var(--negative); border: 1px solid #EDDBDB; }
+  .dm-chip.white { background: #FAFAF0; color: #9A8B30; border: 1px solid #E8E4C8; }
+  .dm-chip.rose { background: #FDF5F8; color: #B8879B; border: 1px solid #EDD8E0; }
+  .dm-chip.sparkling { background: #F0F5FA; color: var(--accent-social); border: 1px solid #D6E0E8; }
+
+  /* ── Row 2: Score Cards (always 3 slots) ── */
+  .score-cards {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 10px;
+  }
+  .score-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .score-card-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-hint);
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+  .score-card-num {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--primary);
+  }
+  .score-card-num.wine-color { color: var(--wine); }
+  .score-card-num.empty { color: var(--border-bold); font-size: 18px; }
+  .score-card-sub {
+    font-size: 9px;
+    color: var(--text-hint);
+    margin-top: 2px;
+  }
+
+  /* Bubble score card — expandable */
+  .score-card.bubble {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .score-card.bubble:active { border-color: var(--accent-social); }
+  .bubble-count-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent-social);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--bg);
+  }
+
+  /* Bubble expand panel */
+  .bubble-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .bubble-expand.open { max-height: 200px; }
+  .bubble-expand-inner {
+    padding: 0 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bubble-score-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .bubble-score-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 10px;
+  }
+  .bubble-score-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .bubble-score-meta {
+    font-size: 10px;
+    color: var(--text-hint);
+  }
+  .bubble-score-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .bubble-score-val.wine-color { color: var(--wine); }
+
+  /* ── Row 3: Badges ── */
+  .badge-row {
+    padding: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  /* External score chips */
+  .ext-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1;
+  }
+  .ext-chip .ext-label {
+    font-weight: 700;
+    font-size: 10px;
+  }
+  .ext-chip .ext-val {
+    font-weight: 500;
+    color: var(--text-sub);
+  }
+  .ext-label.naver { color: var(--positive); }
+  .ext-label.kakao { color: var(--caution); }
+  .ext-label.google { color: var(--accent-social); }
+  .ext-label.vivino { color: #9B2335; }
+  .ext-label.ws { color: #8B7355; }
+
+  /* Badge pills */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .badge-michelin { background: #FDF6EC; color: #B8860B; border: 1px solid #E8DDCA; }
+  .badge-blueribbon { background: #EDF2FB; color: #4A6FA5; border: 1px solid #D0DCF0; }
+  .badge-tv { background: #FFF3F0; color: var(--brand); border: 1px solid #F0D8D0; }
+  .badge-wine-class { background: var(--wine-light); color: var(--wine); border: 1px solid #DDD6E3; }
+  .badge-vivino { background: #FBF0F0; color: #9B2335; border: 1px solid #E8D0D0; }
+  .badge-ws { background: #F5F0E8; color: #8B7355; border: 1px solid #E0D8C8; }
+
+  /* =====================
+     ACTION BAR
+     ===================== */
+  .action-bar {
+    padding: 12px 20px;
+    display: flex;
+    gap: 8px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .action-bar.floating {
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+    z-index: 50;
+    display: none;
+    border-bottom: none;
+    border-top: 1px solid var(--border);
+  }
+  .action-bar.floating.visible { display: flex; }
+
+  /* FAB Add — glassmorphism (matches fab-back) */
+  .fab-add {
+    position: absolute;
+    bottom: 28px; right: 16px;
+    z-index: 85;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: transform 0.15s;
+  }
+  .fab-add:active { transform: scale(0.9); }
+
+  .btn-primary {
+    flex: 1;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary.wine-btn { background: var(--wine); }
+  .btn-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-icon:active { transform: scale(0.9); }
+  .btn-icon.liked { border-color: var(--negative); color: var(--negative); }
+
+  /* =====================
+     SECTIONS
+     ===================== */
+  .section {
+    padding: 16px 20px;
+    background: var(--bg);
+    margin-top: 8px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .section-meta {
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+
+  /* =====================
+     TIMELINE
+     ===================== */
+  .timeline {
+    position: relative;
+    padding-left: 20px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px; top: 8px; bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary), #D4A089, transparent);
+    border-radius: 2px;
+  }
+  .timeline.wine-timeline::before {
+    background: linear-gradient(to bottom, var(--wine), #C0B3CA, transparent);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 18px;
+    cursor: pointer;
+  }
+  .timeline-item:last-child { margin-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -17px; top: 4px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .timeline-date {
+    font-size: 11px;
+    color: var(--text-sub);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .chip-solo { background: var(--scene-solo); }
+  .chip-romantic { background: var(--scene-romantic); }
+  .chip-friends { background: var(--scene-friends); }
+  .chip-family { background: var(--scene-family); }
+  .chip-business { background: var(--scene-business); }
+  .chip-drinks { background: var(--scene-drinks); }
+  .chip-pairing { background: var(--caution); }
+
+  .timeline-score {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    display: inline;
+    margin-right: 6px;
+  }
+  .timeline-comment {
+    font-size: 12px;
+    color: var(--text-sub);
+    display: inline;
+  }
+  .timeline-photos {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .photo-thumb {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #8b4513, #cd853f);
+    flex-shrink: 0;
+  }
+  .photo-thumb.t2 { background: linear-gradient(135deg, #2d5016, #7fb069); }
+
+  .timeline-place {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* =====================
+     QUADRANT CHART
+     ===================== */
+  .quadrant-wrap {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+  .quadrant-chart {
+    position: relative;
+    width: 100%;
+    padding-bottom: 80%;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .quadrant-inner {
+    position: absolute;
+    inset: 0;
+  }
+  .crosshair-h {
+    position: absolute;
+    top: 50%; left: 8%; right: 8%;
+    height: 1px;
+    background: var(--border);
+  }
+  .crosshair-v {
+    position: absolute;
+    left: 50%; top: 8%; bottom: 8%;
+    width: 1px;
+    background: var(--border);
+  }
+  .axis-label {
+    position: absolute;
+    font-size: 9px;
+    color: var(--text-sub);
+    font-weight: 500;
+  }
+  .ax-left { left: 10px; top: 50%; transform: translateY(-50%); }
+  .ax-right { right: 10px; top: 50%; transform: translateY(-50%); }
+  .ax-top { top: 8px; left: 50%; transform: translateX(-50%); }
+  .ax-bottom { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .q-dot {
+    position: absolute;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .q-dot:hover { transform: translate(-50%, -50%) scale(1.2); }
+  .q-dot.high { width: 32px; height: 32px; background: var(--primary); border: 2px solid var(--primary-light); }
+  .q-dot.mid { width: 26px; height: 26px; background: var(--accent-social); border: 2px solid #D6E4EC; }
+  .q-dot.low { width: 24px; height: 24px; background: var(--wine); border: 2px solid #E0D8E5; }
+  .q-dot.wine-1 { width: 32px; height: 32px; background: var(--wine); border: 2px solid #DDD6E3; }
+  .q-dot.wine-2 { width: 26px; height: 26px; background: #A08DAB; border: 2px solid #E8E0ED; }
+
+  /* Current restaurant/wine — hero dot */
+  .q-dot.current {
+    width: 38px; height: 38px;
+    background: var(--primary);
+    border: 3px solid var(--primary-light);
+    font-size: 11px;
+    font-weight: 800;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(193,123,94,0.4);
+  }
+  .q-dot.current.wine-current {
+    background: var(--wine);
+    border-color: #DDD6E3;
+    box-shadow: 0 2px 10px rgba(139,115,150,0.4);
+  }
+
+  /* Reference dots — other reviewed restaurants/wines */
+  .q-dot.ref {
+    width: 28px; height: 28px;
+    background: var(--border-bold);
+    border: 2px solid var(--border);
+    opacity: 0.35;
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text);
+    z-index: 5;
+  }
+  .q-dot.ref:hover {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+
+  /* Ref dot label (name underneath) */
+  .q-dot-label {
+    position: absolute;
+    font-size: 9px;
+    color: var(--text-hint);
+    white-space: nowrap;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Current dot name label */
+  .q-dot-label.current-label {
+    font-weight: 700;
+    color: var(--text-sub);
+    font-size: 10px;
+  }
+
+  .popular-menu {
+    font-size: 12px;
+    color: var(--text-sub);
+    text-align: center;
+  }
+  .popular-menu span { font-weight: 600; color: var(--text); }
+
+  /* =====================
+     PRACTICAL INFO
+     ===================== */
+  .info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #F0EDE8;
+    font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon { flex-shrink: 0; margin-top: 1px; color: var(--text-sub); }
+  .info-text { flex: 1; color: var(--text); line-height: 1.4; }
+  .info-green { color: var(--positive); font-weight: 600; }
+  .info-action {
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .map-placeholder {
+    width: 100%;
+    height: 80px;
+    background: linear-gradient(135deg, #E8E4DF, #D4CFC8);
+    border-radius: 8px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-hint);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Collapsible menu */
+  .collapsible-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: #F0EDE8;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .collapsible-btn:hover { background: #E8E4DF; }
+  .collapsible-arrow {
+    transition: transform 0.3s;
+    display: inline-flex;
+    color: var(--text-sub);
+  }
+  .collapsible-btn.open .collapsible-arrow { transform: rotate(180deg); }
+  .collapsible-content {
+    display: none;
+    padding: 8px 0;
+  }
+  .collapsible-content.open { display: block; }
+  .menu-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 14px;
+    font-size: 12px;
+    border-bottom: 1px solid #F0EDE8;
+  }
+  .menu-row:last-child { border-bottom: none; }
+  .menu-name { color: var(--text); }
+  .menu-price { color: var(--text-sub); font-weight: 500; }
+
+  /* =====================
+     HORIZONTAL SCROLL CARDS
+     ===================== */
+  .hscroll-wrap {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hscroll-wrap::-webkit-scrollbar { display: none; }
+  .hscroll-inner {
+    display: flex;
+    gap: 10px;
+    padding: 4px 2px;
+    width: max-content;
+  }
+  .wine-card-h {
+    width: 130px;
+    background: var(--wine-light);
+    border-radius: 12px;
+    padding: 10px;
+    border: 1px solid #DDD6E3;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .wine-card-h .wine-label-mini {
+    width: 100%;
+    height: 56px;
+    background: linear-gradient(160deg, #4c1d95, #7c3aed, #8B7396);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.7);
+  }
+  .wine-card-h .w-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--wine);
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+  .wine-card-h .w-score {
+    font-size: 11px;
+    color: var(--text-sub);
+  }
+  .wine-card-h .w-score b { color: var(--wine); }
+
+  .rest-card-h {
+    width: 130px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .rest-card-h .rest-photo {
+    width: 100%; height: 60px;
+    background: linear-gradient(135deg, #8b4513, #cd853f);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.6);
+  }
+  .rest-card-h .rest-info {
+    padding: 6px 8px;
+  }
+  .rest-card-h .r-name { font-size: 11px; font-weight: 600; color: var(--text); }
+  .rest-card-h .r-score { font-size: 11px; color: var(--text-sub); }
+  .rest-card-h .r-score b { color: var(--primary); }
+
+  /* =====================
+     BUBBLE RECORDS
+     ===================== */
+  .bubble-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .filter-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-sub);
+    transition: all 0.2s;
+  }
+  .filter-chip.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .filter-chip.wine-active {
+    background: var(--wine-light);
+    border-color: var(--wine);
+    color: var(--wine);
+  }
+  .bubble-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .bubble-card:active { transform: scale(0.98); }
+  .bubble-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .av1 { background: linear-gradient(135deg, var(--primary), #D4A089); }
+  .av2 { background: linear-gradient(135deg, var(--wine), #A08DAB); }
+  .av3 { background: linear-gradient(135deg, var(--accent-social), #9BB5C4); }
+  .bubble-user { flex: 1; }
+  .bubble-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .bubble-bubble-name { font-size: 10px; color: var(--text-sub); }
+  .bubble-score {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .bubble-score.wine { color: var(--wine); }
+  .bubble-comment {
+    font-size: 12px;
+    color: var(--text-sub);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .bubble-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .bubble-meta { font-size: 10px; color: var(--text-hint); }
+  .bubble-reactions {
+    display: flex;
+    gap: 10px;
+  }
+  .reaction {
+    font-size: 11px;
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  .reaction:hover { color: var(--primary); }
+
+  /* Thumbnail — positioned inside hero area */
+  .hero-thumb {
+    position: absolute;
+    bottom: 14px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    overflow: hidden;
+    border: 2.5px solid rgba(255,255,255,0.85);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+    cursor: pointer;
+  }
+  .hero-thumb.hidden {
+    transform: translateX(calc(-100% - 8px));
+    opacity: 0.3;
+  }
+
+  /* Restaurant — horizontal (landscape) */
+  .hero-thumb.rest {
+    width: 160px;
+    height: 110px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1a0f05, #5c2e0e 40%, #8b4513);
+    color: rgba(255,255,255,0.85);
+  }
+  .hero-thumb.rest .thumb-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .hero-thumb.rest .thumb-text {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+    text-align: center;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Divider */
+  .divider { height: 8px; background: #F0EDE8; }
+
+  /* Bottom spacer */
+  .bottom-spacer { height: 80px; }
+
+  /* =====================
+     EMPTY STATE
+     ===================== */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .empty-state i { margin-bottom: 8px; }
+  .empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-top: 4px;
+  }
+  .empty-desc {
+    font-size: 12px;
+    color: var(--text-hint);
+    margin-top: 4px;
+  }
+  .empty-cta {
+    margin-top: 12px;
+  }
+
+  /* [DEV] View mode toggle buttons */
+  .dev-btn {
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(4px);
+    color: var(--text-sub);
+    font-size: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .dev-btn.active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  /* Empty state toggle */
+  .view-mode-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+    gap: 6px;
+  }
+  .view-mode-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .view-mode-btn:hover { background: var(--border); }
+  .view-mode-btn.active {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--bg-elevated, #FFFFFF);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 120px;
+    overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
+</style>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- Device Frame -->
+<div class="device">
+  <div class="device-inner">
+    <div class="dynamic-island"></div>
+
+    <!-- App Top Bar (sticky + glassmorphism on scroll) -->
+    <div class="top-fixed" id="top-fixed">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <i data-lucide="signal" style="width:14px;height:14px;"></i>
+          <i data-lucide="wifi" style="width:14px;height:14px;"></i>
+          <i data-lucide="battery" style="width:16px;height:16px;"></i>
+        </div>
+      </div>
+      <div class="app-header">
+        <a href="01_home.html" class="app-logo" style="text-decoration:none;cursor:pointer;">nyam</a>
+        <div class="app-header-actions">
+          <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+          <button class="app-header-btn">
+            <i data-lucide="bell" style="width:20px;height:20px;"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <div style="position:relative;">
+            <div class="app-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+            <div class="avatar-menu" onclick="event.stopPropagation()">
+              <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+              <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- [DEV] View Mode Toggle — 개발/검수용 버튼. 실제 앱에는 없음. 스크린 전환에 영향받지 않도록 device-inner 레벨에 배치 -->
+    <div id="dev-view-toggle" style="position:absolute;top:92px;right:12px;z-index:95;display:flex;gap:4px;">
+      <button onclick="setViewMode('mine')" class="dev-btn active">내 기록</button>
+      <button onclick="setViewMode('recommended')" class="dev-btn">추천</button>
+      <button onclick="setViewMode('bubble')" class="dev-btn">버블</button>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 1: RESTAURANT DETAIL                                  -->
+    <!-- ============================================================ -->
+    <div class="screen active" id="screen-restaurant">
+      <button class="fab-back" onclick="history.back()">
+        <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+      </button>
+      <div class="scroll-content" id="rest-scroll" onscroll="handleRestaurantScroll(this)">
+
+        <!-- Layer 1: Hero Carousel + Thumb -->
+        <div class="hero-wrap">
+          <div class="hero-carousel">
+            <div class="carousel-track" id="rest-carousel">
+              <div class="carousel-slide slide-1"></div>
+              <div class="carousel-slide slide-2"></div>
+              <div class="carousel-slide slide-3"></div>
+            </div>
+            <div class="carousel-overlay"></div>
+            <div class="hero-thumb rest">
+              <div class="thumb-inner">
+                <i data-lucide="utensils" style="width:28px;height:28px;"></i>
+                <span class="thumb-text">스시코우지</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
+            <div class="carousel-dots">
+              <div class="dot active" onclick="goToSlide('rest-carousel', 0, this.parentElement)"></div>
+              <div class="dot" onclick="goToSlide('rest-carousel', 1, this.parentElement)"></div>
+              <div class="dot" onclick="goToSlide('rest-carousel', 2, this.parentElement)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 2: Detail Info (consistent layout) -->
+        <div class="detail-info">
+          <div class="info-header">
+            <div class="detail-name">스시코우지</div>
+            <div class="meta-row">
+              <span class="dm-item">일식</span>
+              <span class="dm-sep">·</span>
+              <span class="dm-item">을지로</span>
+              <span class="dm-sep">·</span>
+              <span class="dm-price">₩₩₩</span>
+            </div>
+          </div>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num">87</div>
+              <div class="score-card-sub">3회 방문</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num">88</div>
+              <div class="score-card-sub">웹+명성</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('rest-bubbles')">
+              <div class="bubble-count-badge">3</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num">87</div>
+              <div class="score-card-sub">평균 · 3개</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="rest-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">3명 평가</div>
+                </div>
+                <div class="bubble-score-val">90</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">와인 모임</div>
+                  <div class="bubble-score-meta">2명 평가</div>
+                </div>
+                <div class="bubble-score-val">82</div>
+              </div>
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#E8F0EB;color:var(--positive);"><i data-lucide="home" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">동네 맛집</div>
+                  <div class="bubble-score-meta">5명 평가</div>
+                </div>
+                <div class="bubble-score-val">89</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-michelin"><i data-lucide="star" style="width:10px;height:10px;"></i> 미슐랭 1스타</span>
+            <span class="badge badge-blueribbon"><i data-lucide="award" style="width:10px;height:10px;"></i> 블루리본</span>
+            <span class="badge badge-tv"><i data-lucide="tv" style="width:10px;height:10px;"></i> 수요미식회</span>
+          </div>
+        </div>
+
+
+        <!-- Layer 5: My Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+            <span class="section-meta">방문 3회 · 최근 2026.03.15</span>
+          </div>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-date">
+                2026.03.15
+                <span class="tag-chip chip-romantic">데이트</span>
+              </div>
+              <div>
+                <span class="timeline-score">92점</span>
+                <span class="timeline-comment">"분위기 최고, 오마카세 감동"</span>
+              </div>
+              <div class="timeline-photos">
+                <div class="photo-thumb"></div>
+                <div class="photo-thumb t2"></div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--wine); box-shadow: 0 0 0 2px var(--wine);"></div>
+              <div class="timeline-date">
+                2026.02.28
+                <span class="tag-chip chip-business">회식</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--wine);">78점</span>
+                <span class="timeline-comment">"코스가 아쉬움"</span>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background: var(--accent-social); box-shadow: 0 0 0 2px var(--accent-social);"></div>
+              <div class="timeline-date">
+                2026.01.10
+                <span class="tag-chip chip-solo">혼밥</span>
+              </div>
+              <div>
+                <span class="timeline-score" style="color: var(--accent-social);">85점</span>
+                <span class="timeline-comment">"런치세트 가성비 좋다"</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 6: Position Map — relative to other reviewed restaurants -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">내 식당 지도</span>
+            <span class="section-meta">리뷰한 식당 중 위치</span>
+          </div>
+          <div class="quadrant-wrap">
+            <div class="quadrant-chart">
+              <div class="quadrant-inner">
+                <div class="crosshair-h"></div>
+                <div class="crosshair-v"></div>
+                <span class="axis-label ax-left">저렴</span>
+                <span class="axis-label ax-right">고가</span>
+                <span class="axis-label ax-top">포멀</span>
+                <span class="axis-label ax-bottom">캐주얼</span>
+
+                <!-- Reference dots: other reviewed restaurants (semi-transparent) -->
+                <div class="q-dot ref" style="left: 28%; top: 65%;" title="을지로 골목집 · 85점">85</div>
+                <span class="q-dot-label" style="left: 28%; top: calc(65% + 18px);">골목집</span>
+
+                <div class="q-dot ref" style="left: 80%; top: 22%;" title="밍글스 · 95점">95</div>
+                <span class="q-dot-label" style="left: 80%; top: calc(22% + 18px);">밍글스</span>
+
+                <div class="q-dot ref" style="left: 55%; top: 55%;" title="몽탄 · 72점">72</div>
+                <span class="q-dot-label" style="left: 55%; top: calc(55% + 18px);">몽탄</span>
+
+                <div class="q-dot ref" style="left: 82%; top: 40%;" title="리스토란테 에오 · 88점">88</div>
+                <span class="q-dot-label" style="left: 82%; top: calc(40% + 18px);">에오</span>
+
+                <div class="q-dot ref" style="left: 62%; top: 48%;" title="비스트로 드 욘트빌 · 91점">91</div>
+                <span class="q-dot-label" style="left: 62%; top: calc(48% + 18px);">욘트빌</span>
+
+                <!-- Current restaurant: prominent -->
+                <div class="q-dot current" style="left: 72%; top: 28%;" title="스시코우지 · 87점">87</div>
+                <span class="q-dot-label current-label" style="left: 72%; top: calc(28% + 24px);">스시코우지</span>
+              </div>
+            </div>
+            <div class="popular-menu" style="text-align:left;display:flex;align-items:center;gap:6px;">
+              <i data-lucide="info" style="width:12px;height:12px;color:var(--text-hint);flex-shrink:0;"></i>
+              <span style="color:var(--text-hint);font-size:11px;">내가 리뷰한 비슷한 가격대·지역 식당과의 상대적 위치</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Practical Info -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">정보</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              서울 중구 을지로 XX길 12
+              <div class="map-placeholder">
+                <i data-lucide="map" style="width:24px;height:24px;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="clock" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              <span class="info-green">영업 중</span> · 11:30–22:00
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="phone" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">02-1234-5678</div>
+            <span class="info-action">전화하기</span>
+          </div>
+          <button class="collapsible-btn" id="menu-btn" onclick="toggleCollapsible('menu-content', 'menu-btn')">
+            메뉴 보기
+            <span class="collapsible-arrow"><i data-lucide="chevron-down" style="width:16px;height:16px;"></i></span>
+          </button>
+          <div class="collapsible-content" id="menu-content">
+            <div class="menu-row"><span class="menu-name">오마카세 코스</span><span class="menu-price">150,000원</span></div>
+            <div class="menu-row"><span class="menu-name">런치 오마카세</span><span class="menu-price">50,000원</span></div>
+            <div class="menu-row"><span class="menu-name">사케 페어링</span><span class="menu-price">80,000원</span></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 8: Wine Connection -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">연결된 와인</span>
+            <span class="section-meta">같이 즐긴 와인</span>
+          </div>
+          <div class="hscroll-wrap">
+            <div class="hscroll-inner">
+              <div class="wine-card-h" onclick="location.href='02_detail_wine.html'">
+                <div class="wine-label-mini"><i data-lucide="wine" style="width:20px;height:20px;"></i></div>
+                <div class="w-name">Masumi Junmai</div>
+                <div class="w-score"><b>88점</b></div>
+              </div>
+              <div class="wine-card-h" onclick="location.href='02_detail_wine.html'">
+                <div class="wine-label-mini"><i data-lucide="wine" style="width:20px;height:20px;"></i></div>
+                <div class="w-name">Dom Perignon 2015</div>
+                <div class="w-score"><b>92점</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble Records -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <div class="bubble-filter">
+            <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
+            <button class="filter-chip" onclick="toggleFilter(this)">직장맛집</button>
+            <button class="filter-chip" onclick="toggleFilter(this)">와인 모임</button>
+          </div>
+          <div class="bubble-card">
+            <div class="bubble-top">
+              <div class="avatar av1">김</div>
+              <div class="bubble-user">
+                <div class="bubble-name">김영수</div>
+                <div class="bubble-bubble-name">직장 맛집 버블</div>
+              </div>
+              <div class="bubble-score">90점</div>
+            </div>
+            <div class="bubble-comment">"여기 사케 페어링 필수예요. 오마카세랑 완벽 조합"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">회식 · 3일 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 4</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 2</span>
+              </div>
+            </div>
+          </div>
+          <div class="bubble-card">
+            <div class="bubble-top">
+              <div class="avatar av2">박</div>
+              <div class="bubble-user">
+                <div class="bubble-name">박소연</div>
+                <div class="bubble-bubble-name">와인 모임 버블</div>
+              </div>
+              <div class="bubble-score">82점</div>
+            </div>
+            <div class="bubble-comment">"음식은 좋은데 가격이 좀 부담... 특별한 날에만"</div>
+            <div class="bubble-footer">
+              <span class="bubble-meta">모임 · 1주 전</span>
+              <div class="bubble-reactions">
+                <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 1</span>
+                <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 1-EMPTY: RESTAURANT DETAIL (Empty State)              -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-restaurant-empty">
+      <button class="fab-back" onclick="history.back()">
+        <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+      </button>
+      <div class="scroll-content">
+
+        <!-- Layer 1: Hero Carousel + Thumb -->
+        <div class="hero-wrap">
+          <div class="hero-carousel">
+            <div class="carousel-track">
+              <div class="carousel-slide slide-1"></div>
+            </div>
+            <div class="carousel-overlay"></div>
+            <div class="hero-actions">
+              <button class="hero-action-btn" onclick="this.classList.toggle('liked')"><i data-lucide="heart" style="width:20px;height:20px;"></i></button>
+              <button class="hero-action-btn"><i data-lucide="share-2" style="width:20px;height:20px;"></i></button>
+            </div>
+            <div class="hero-thumb rest">
+              <div class="thumb-inner">
+                <i data-lucide="utensils" style="width:28px;height:28px;"></i>
+                <span class="thumb-text">스시코우지</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 2: Detail Info (empty — same layout) -->
+        <div class="detail-info">
+          <div class="info-header">
+            <div class="detail-name">스시코우지</div>
+            <div class="meta-row">
+              <span class="dm-item">일식</span>
+              <span class="dm-sep">·</span>
+              <span class="dm-item">을지로</span>
+              <span class="dm-sep">·</span>
+              <span class="dm-price">₩₩₩</span>
+            </div>
+          </div>
+          <div class="score-cards">
+            <div class="score-card">
+              <div class="score-card-label">내 점수</div>
+              <div class="score-card-num empty">—</div>
+              <div class="score-card-sub">미방문</div>
+            </div>
+            <div class="score-card">
+              <div class="score-card-label">nyam</div>
+              <div class="score-card-num">88</div>
+              <div class="score-card-sub">웹+명성</div>
+            </div>
+            <div class="score-card bubble" onclick="toggleBubbleExpand('rest-empty-bubbles')">
+              <div class="bubble-count-badge">1</div>
+              <div class="score-card-label">버블</div>
+              <div class="score-card-num">90</div>
+              <div class="score-card-sub">1개 버블</div>
+            </div>
+          </div>
+          <div class="bubble-expand" id="rest-empty-bubbles">
+            <div class="bubble-expand-inner">
+              <div class="bubble-score-row">
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div>
+                  <div class="bubble-score-name">직장 맛집</div>
+                  <div class="bubble-score-meta">1명 평가</div>
+                </div>
+                <div class="bubble-score-val">90</div>
+              </div>
+            </div>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-michelin"><i data-lucide="star" style="width:10px;height:10px;"></i> 미슐랭 1스타</span>
+            <span class="badge badge-blueribbon"><i data-lucide="award" style="width:10px;height:10px;"></i> 블루리본</span>
+            <span class="badge badge-tv"><i data-lucide="tv" style="width:10px;height:10px;"></i> 수요미식회</span>
+          </div>
+        </div>
+
+        <!-- Layer 5: 나의 기록 — Empty -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">나의 기록</span>
+          </div>
+          <div class="empty-state">
+            <i data-lucide="search" style="width:28px;height:28px;color:var(--text-hint);"></i>
+            <div class="empty-title">아직 방문 기록이 없어요</div>
+            <div class="empty-desc">우하단 + 버튼으로 첫 기록을 남겨보세요</div>
+          </div>
+        </div>
+
+        <!-- Layer 6: Quadrant — hidden (< 2 records) -->
+
+        <div class="divider"></div>
+
+        <!-- Layer 7: Practical Info (same) -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">정보</span>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              서울 중구 을지로 XX길 12
+              <div class="map-placeholder">
+                <i data-lucide="map" style="width:24px;height:24px;"></i>
+              </div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="clock" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">
+              <span class="info-green">영업 중</span> · 11:30–22:00
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><i data-lucide="phone" style="width:16px;height:16px;"></i></span>
+            <div class="info-text">02-1234-5678</div>
+            <span class="info-action">전화하기</span>
+          </div>
+        </div>
+
+        <!-- Layer 8: Wine Connection — hidden (no wine records) -->
+
+        <div class="divider"></div>
+
+        <!-- Layer 9: Bubble — toggleable -->
+        <div class="section" id="rest-empty-bubble-section">
+          <div class="section-header">
+            <span class="section-title">버블 기록</span>
+            <span class="section-meta">Phase 2</span>
+          </div>
+          <!-- Bubble Empty (추천 모드) -->
+          <div id="rest-empty-bubble-empty">
+            <div class="empty-state">
+              <i data-lucide="message-circle" style="width:28px;height:28px;color:var(--text-hint);"></i>
+              <div class="empty-title">아직 버블 기록이 없어요</div>
+              <div class="empty-desc">버블에서 이 식당에 대한 이야기를 나눠보세요</div>
+            </div>
+          </div>
+          <!-- Bubble Data (버블 리뷰 모드) -->
+          <div id="rest-empty-bubble-data" style="display:none;">
+            <div class="bubble-filter">
+              <button class="filter-chip active" onclick="toggleFilter(this)">전체</button>
+              <button class="filter-chip" onclick="toggleFilter(this)">직장맛집</button>
+            </div>
+            <div class="bubble-card">
+              <div class="bubble-top">
+                <div class="avatar av1">김</div>
+                <div class="bubble-user">
+                  <div class="bubble-name">김영수</div>
+                  <div class="bubble-bubble-name">직장 맛집 버블</div>
+                </div>
+                <div class="bubble-score">90점</div>
+              </div>
+              <div class="bubble-comment">"여기 사케 페어링 필수예요. 오마카세랑 완벽 조합"</div>
+              <div class="bubble-footer">
+                <span class="bubble-meta">회식 · 3일 전</span>
+                <div class="bubble-reactions">
+                  <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 4</span>
+                  <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+      <button class="fab-add" onclick="handleDetailFab()">
+        <i data-lucide="plus" style="width:22px;height:22px;"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // SCROLL HEADER TRANSITION
+  // ============================================================
+  function handleRestaurantScroll(el) {
+    // FAB is always visible (absolute positioned)
+  }
+
+  // ============================================================
+  // CAROUSEL
+  // ============================================================
+  const carouselState = {};
+  const SLIDE_WIDTH = 366;
+
+  function goToSlide(carouselId, idx, dotsEl) {
+    const track = document.getElementById(carouselId);
+    track.style.transform = `translateX(-${idx * SLIDE_WIDTH}px)`;
+    carouselState[carouselId] = idx;
+
+    const dots = dotsEl.querySelectorAll('.dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+
+  // Touch/swipe for carousel
+  let touchStartX = null;
+  document.querySelectorAll('.hero-carousel').forEach(carousel => {
+    carousel.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', e => {
+      if (touchStartX === null) return;
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      const carouselId = carousel.querySelector('.carousel-track').id;
+      const dotsEl = carousel.querySelector('.carousel-dots');
+      const current = carouselState[carouselId] || 0;
+      const max = carousel.querySelectorAll('.carousel-slide').length - 1;
+
+      if (Math.abs(diff) > 40) {
+        const next = diff > 0
+          ? Math.min(current + 1, max)
+          : Math.max(current - 1, 0);
+        goToSlide(carouselId, next, dotsEl);
+      }
+      touchStartX = null;
+    }, { passive: true });
+  });
+
+  // Mouse drag for carousel (desktop preview)
+  let mouseStartX = null;
+  let activeDragCarousel = null;
+  document.querySelectorAll('.hero-carousel').forEach(carousel => {
+    carousel.addEventListener('mousedown', e => {
+      mouseStartX = e.clientX;
+      activeDragCarousel = carousel;
+      carousel.style.cursor = 'grabbing';
+    });
+  });
+  document.addEventListener('mouseup', e => {
+    if (!activeDragCarousel || mouseStartX === null) return;
+    const diff = mouseStartX - e.clientX;
+    const carousel = activeDragCarousel;
+    const carouselId = carousel.querySelector('.carousel-track').id;
+    const dotsEl = carousel.querySelector('.carousel-dots');
+    const current = carouselState[carouselId] || 0;
+    const max = carousel.querySelectorAll('.carousel-slide').length - 1;
+
+    if (Math.abs(diff) > 30) {
+      const next = diff > 0
+        ? Math.min(current + 1, max)
+        : Math.max(current - 1, 0);
+      goToSlide(carouselId, next, dotsEl);
+    }
+    activeDragCarousel.style.cursor = '';
+    mouseStartX = null;
+    activeDragCarousel = null;
+  });
+
+  // Auto-advance carousel
+  setInterval(() => {
+    const activeScreen = document.querySelector('.screen.active');
+    if (!activeScreen) return;
+    const carousel = activeScreen.querySelector('.carousel-track');
+    if (!carousel) return;
+    const dotsEl = activeScreen.querySelector('.carousel-dots');
+    if (!dotsEl) return;
+    const id = carousel.id;
+    const slides = carousel.querySelectorAll('.carousel-slide').length;
+    const current = carouselState[id] || 0;
+    const next = (current + 1) % slides;
+    goToSlide(id, next, dotsEl);
+  }, 4000);
+
+  // ============================================================
+  // THUMB HIDE/SHOW ON CAROUSEL CLICK
+  // ============================================================
+  document.querySelectorAll('.hero-carousel').forEach(carousel => {
+    const thumb = carousel.querySelector('.hero-thumb');
+    if (!thumb) return;
+
+    // Click on carousel area (not on thumb) → hide thumb
+    carousel.addEventListener('click', e => {
+      if (thumb.contains(e.target)) return; // don't toggle when clicking thumb itself
+      thumb.classList.add('hidden');
+    });
+
+    // Click on thumb → also hide (same behavior)
+    thumb.addEventListener('click', e => {
+      e.stopPropagation();
+      thumb.classList.add('hidden');
+    });
+  });
+
+  // Click anywhere outside carousel → show all thumbs back
+  document.addEventListener('click', e => {
+    const inCarousel = e.target.closest('.hero-carousel');
+    if (!inCarousel) {
+      document.querySelectorAll('.hero-thumb.hidden').forEach(t => {
+        t.classList.remove('hidden');
+      });
+    }
+  });
+
+  // ============================================================
+  // COLLAPSIBLE MENU
+  // ============================================================
+  function toggleCollapsible(contentId, btnId) {
+    const content = document.getElementById(contentId);
+    const btn = document.getElementById(btnId);
+    const isOpen = content.classList.contains('open');
+    content.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+  }
+
+  // ============================================================
+  // BUBBLE EXPAND
+  // ============================================================
+  function toggleBubbleExpand(id) {
+    // close all others first
+    document.querySelectorAll('.bubble-expand.open').forEach(el => {
+      if (el.id !== id) el.classList.remove('open');
+    });
+    document.getElementById(id).classList.toggle('open');
+  }
+
+  // ============================================================
+  // HEART TOGGLE
+  // ============================================================
+  function toggleHeart(id1, id2) {
+    const el1 = document.getElementById(id1);
+    if (!el1) return;
+    const isLiked = el1.classList.contains('liked');
+
+    [id1, id2].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('liked', !isLiked);
+    });
+
+    el1.style.transform = 'scale(1.3)';
+    setTimeout(() => { el1.style.transform = ''; }, 200);
+  }
+
+  // ============================================================
+  // FILTER CHIPS
+  // ============================================================
+  function toggleFilter(btn) {
+    const parent = btn.parentElement;
+    parent.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ============================================================
+  // VIEW MODE: mine / recommended / bubble
+  // ============================================================
+  let viewMode = 'mine'; // 'mine' | 'recommended' | 'bubble'
+
+  function setViewMode(mode) {
+    viewMode = mode;
+    // Update dev toggle buttons
+    document.querySelectorAll('.dev-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    applyViewMode('restaurant');
+    updateFab();
+    lucide.createIcons();
+  }
+
+  function applyViewMode(type) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    if (viewMode === 'mine') {
+      // 내 기록: 풀 데이터 화면
+      document.getElementById('screen-restaurant').classList.add('active');
+    } else {
+      // recommended & bubble: empty 화면 사용
+      document.getElementById('screen-restaurant-empty').classList.add('active');
+
+      // 버블 섹션 토글
+      const prefix = 'rest';
+      const bubbleEmpty = document.getElementById(prefix + '-empty-bubble-empty');
+      const bubbleData = document.getElementById(prefix + '-empty-bubble-data');
+
+      // 점수 영역 토글
+      const nyamScore = document.getElementById(prefix + '-empty-nyam-score');
+      const bubbleScore = document.getElementById(prefix + '-empty-bubble-score');
+
+      if (viewMode === 'recommended') {
+        bubbleEmpty.style.display = '';
+        bubbleData.style.display = 'none';
+        if (nyamScore) nyamScore.style.display = '';
+        if (bubbleScore) bubbleScore.style.display = 'none';
+      } else {
+        // bubble: 버블 리뷰 있는 상태 — nyam 점수도 나란히 표시 (bubble-score 내부에 포함)
+        bubbleEmpty.style.display = 'none';
+        bubbleData.style.display = '';
+        if (nyamScore) nyamScore.style.display = 'none';
+        if (bubbleScore) bubbleScore.style.display = '';
+      }
+    }
+  }
+
+  // ============================================================
+  // DETAIL FAB — context-aware floating button
+  // ============================================================
+  function handleDetailFab() {
+    const name = '스시코우지';
+
+    if (viewMode === 'mine') {
+      alert(`[${name}] 기록 추가\n\n→ 식당 선택 단계 스킵\n→ 바로 사분면 평가 화면으로 이동\n\n기존 기록이 있으면 "새 방문 추가"\n기록 수정은 개별 기록 탭에서 진행`);
+    } else {
+      alert(`[${name}] 첫 기록 남기기\n\n→ 식당 선택 단계 스킵 (이미 선택됨)\n→ 바로 사분면 평가 화면으로 이동`);
+    }
+  }
+
+  function updateFab() {
+    // fab-add uses glassmorphism style — no color change needed
+  }
+
+  // Close avatar menu on outside click
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
+
+  // Initialize Lucide icons
+  document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); updateFab(); });
+</script>
+</body>
+</html>

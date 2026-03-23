@@ -35,9 +35,9 @@
   body {
     background: var(--bg-page);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
+    padding: 8px 0 24px;
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 
@@ -52,10 +52,28 @@
     width: 100%; height: 100%; background: var(--bg);
     border-radius: 42px; overflow: hidden; position: relative;
   }
-  .notch {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 120px; height: 34px; background: #2A2725;
-    border-radius: 0 0 20px 20px; z-index: 100;
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #1A1A1A;
+    border-radius: 20px;
+    z-index: 100;
+  }
+  .dynamic-island::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #080C10;
+    box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
   }
 
   /* Status bar */
@@ -100,19 +118,6 @@
     cursor: pointer; color: var(--text); transition: transform 0.15s;
   }
   .fab-add:active { transform: scale(0.9); }
-
-  /* FAB Back — glassmorphism */
-  .fab-back {
-    position: absolute; bottom: 28px; left: 16px; z-index: 85;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(248,246,243,0.88);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text); transition: transform 0.15s;
-  }
-  .fab-back:active { transform: scale(0.9); }
 
   /* Top fixed — always glassmorphism */
   .top-fixed {
@@ -161,7 +166,6 @@
   }
   .icon-btn:active { background: var(--bg-card); }
   .icon-btn svg { width: 20px; height: 20px; }
-  .icon-btn.active-icon { color: var(--accent-social); }
 
   /* Scrollable content */
   .scroll-area {
@@ -421,202 +425,6 @@
   }
   .btn-join:active { opacity: 0.8; }
 
-  /* ========== BUBBLE DETAIL ========== */
-  .detail-hero {
-    padding: 16px 20px 12px;
-    display: flex; flex-direction: column; align-items: center;
-    text-align: center;
-  }
-  .detail-hero-icon {
-    width: 64px; height: 64px; border-radius: 18px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 10px;
-  }
-  .detail-hero-icon svg { width: 28px; height: 28px; }
-  .detail-hero-name { font-size: 20px; font-weight: 700; color: var(--text); }
-  .detail-hero-desc { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
-  .detail-hero-badges {
-    display: flex; gap: 6px; margin-top: 8px; align-items: center;
-  }
-
-  .quick-stats {
-    display: flex; gap: 0; margin: 0 20px 12px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden;
-  }
-  .quick-stat {
-    flex: 1; padding: 10px 0; text-align: center;
-    border-right: 1px solid var(--border);
-  }
-  .quick-stat:last-child { border-right: none; }
-  .quick-stat-value { font-size: 18px; font-weight: 700; color: var(--text); }
-  .quick-stat-label { font-size: 10px; color: var(--text-sub); margin-top: 1px; }
-
-  .member-scroll {
-    padding: 8px 20px; display: flex;
-    gap: 10px; overflow-x: auto;
-    -webkit-overflow-scrolling: touch; flex-shrink: 0;
-  }
-  .member-scroll::-webkit-scrollbar { display: none; }
-  .member-avatar {
-    display: flex; flex-direction: column;
-    align-items: center; gap: 4px; flex-shrink: 0;
-  }
-  .member-avatar-circle {
-    width: 40px; height: 40px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff;
-  }
-  .member-name { font-size: 10px; color: var(--text-sub); }
-
-  .detail-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .detail-tab {
-    flex: 1; padding: 10px 0; text-align: center;
-    font-size: 12px; font-weight: 500;
-    color: var(--text-sub); cursor: pointer;
-    border-bottom: 2px solid transparent;
-    background: none; border-top: none; border-left: none; border-right: none;
-    font-family: inherit;
-  }
-  .detail-tab.active {
-    color: var(--accent-social); border-bottom-color: var(--accent-social);
-    font-weight: 600;
-  }
-
-  /* Feed */
-  .feed-card {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .feed-top {
-    display: flex; align-items: center;
-    gap: 8px; margin-bottom: 8px;
-  }
-  .feed-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: #fff;
-  }
-  .feed-user-info { flex: 1; }
-  .feed-user-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .feed-time { font-size: 11px; color: var(--text-sub); }
-  .feed-body {
-    background: var(--bg-card); border-radius: 10px;
-    padding: 10px 12px; margin-bottom: 8px;
-  }
-  .feed-place-name { font-size: 15px; font-weight: 700; color: var(--text); }
-  .feed-place-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-  .feed-comment { font-size: 13px; color: #3D3833; margin-top: 6px; font-style: italic; }
-  .feed-actions { display: flex; gap: 12px; align-items: center; }
-  .feed-action-btn {
-    background: none; border: none; cursor: pointer;
-    font-size: 13px; color: var(--text-sub);
-    display: flex; align-items: center; gap: 4px; padding: 0;
-    font-family: inherit;
-  }
-  .feed-action-btn svg { width: 16px; height: 16px; }
-  .feed-action-btn.liked { color: var(--negative); }
-
-  /* Restaurant/Wine list in bubble */
-  .sort-bar {
-    display: flex; gap: 6px; padding: 10px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .sort-btn {
-    padding: 5px 12px; border-radius: 8px;
-    font-size: 12px; font-weight: 500;
-    background: var(--bg-card); border: 1px solid var(--border);
-    color: var(--text-sub); cursor: pointer; font-family: inherit;
-  }
-  .sort-btn.active {
-    background: var(--accent-social); color: #fff;
-    border-color: var(--accent-social);
-  }
-
-  .rest-item {
-    padding: 12px 20px; display: flex;
-    align-items: center; gap: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .rest-rank {
-    width: 24px; font-size: 14px; font-weight: 700;
-    color: var(--text-sub); text-align: center; flex-shrink: 0;
-  }
-  .rest-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: var(--primary-light);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; color: var(--primary);
-  }
-  .rest-icon svg { width: 18px; height: 18px; }
-  .rest-info { flex: 1; }
-  .rest-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .rest-meta { font-size: 12px; color: var(--text-sub); }
-  .rest-score { font-size: 15px; font-weight: 700; color: var(--primary); }
-
-  /* Stats */
-  .stats-section {
-    padding: 16px 20px;
-    border-bottom: 8px solid #F0EDE8;
-  }
-  .stats-section-title {
-    font-size: 14px; font-weight: 600; color: var(--text);
-    margin-bottom: 12px;
-  }
-  .ranking-list { display: flex; flex-direction: column; gap: 8px; }
-  .ranking-item { display: flex; align-items: center; gap: 10px; }
-  .rank-num {
-    width: 20px; height: 20px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
-  }
-  .rank-1 { background: #C9A96E; }
-  .rank-2 { background: #B5AFA8; }
-  .rank-3 { background: #A08060; }
-  .rank-name { flex: 1; font-size: 13px; color: var(--text); }
-  .rank-count { font-size: 13px; font-weight: 600; color: var(--text-sub); }
-
-  /* Bar chart */
-  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
-  .bar-item { display: flex; align-items: center; gap: 8px; }
-  .bar-label { font-size: 12px; color: var(--text); width: 70px; flex-shrink: 0; }
-  .bar-track { flex: 1; height: 8px; background: #F0EDE8; border-radius: 4px; overflow: hidden; }
-  .bar-fill { height: 100%; background: var(--accent-social); border-radius: 4px; }
-  .bar-value { font-size: 12px; font-weight: 600; color: var(--text-sub); width: 30px; text-align: right; }
-
-  /* Donut chart */
-  .donut-wrap { display: flex; align-items: center; gap: 20px; justify-content: center; }
-  .donut-legend { display: flex; flex-direction: column; gap: 6px; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  /* Mini quadrant */
-  .mini-quad {
-    width: 100%; aspect-ratio: 1; border-radius: 12px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    position: relative; overflow: hidden;
-  }
-
-  /* ========== OVERLAP TAB ========== */
-  .overlap-item {
-    padding: 12px 20px; display: flex;
-    align-items: center; gap: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .overlap-scores {
-    display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;
-  }
-  .overlap-score-row {
-    display: flex; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 600;
-  }
-  .overlap-my { color: var(--accent-social); }
-  .overlap-bubble { color: var(--text-hint); }
-
   /* ========== BUBBLE CREATE ========== */
   .form-section {
     padding: 16px 20px;
@@ -685,63 +493,6 @@
   }
   .toggle.on { background: var(--accent-social); }
   .toggle.on::after { left: 20px; }
-
-  /* ========== BUBBLE SETTINGS ========== */
-  .settings-group {
-    padding: 16px 20px;
-    border-bottom: 8px solid #F0EDE8;
-  }
-  .settings-group-title {
-    font-size: 14px; font-weight: 700; color: var(--text);
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .settings-group-title svg { width: 16px; height: 16px; color: var(--text-sub); }
-  .settings-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .settings-row:last-child { border-bottom: none; }
-  .settings-row-left { flex: 1; }
-  .settings-row-label { font-size: 14px; font-weight: 500; color: var(--text); }
-  .settings-row-desc { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
-  .settings-row-value {
-    font-size: 13px; color: var(--text-sub); font-weight: 500;
-    display: flex; align-items: center; gap: 4px;
-  }
-  .settings-row-value svg { width: 14px; height: 14px; color: var(--text-hint); }
-
-  .member-manage-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .member-manage-item:last-child { border-bottom: none; }
-  .member-manage-avatar {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
-  }
-  .member-manage-info { flex: 1; }
-  .member-manage-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .member-manage-role { font-size: 11px; color: var(--text-sub); }
-  .member-manage-actions { display: flex; gap: 6px; }
-  .member-action-btn {
-    width: 30px; height: 30px; border-radius: 8px;
-    background: var(--bg); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-sub);
-  }
-  .member-action-btn:active { background: var(--border); }
-  .member-action-btn svg { width: 14px; height: 14px; }
-  .member-action-btn.danger { color: var(--negative); border-color: rgba(184,114,114,0.3); }
-
-  .pending-badge {
-    padding: 2px 8px; border-radius: 6px;
-    font-size: 10px; font-weight: 600;
-    background: #F5F0E5; color: var(--caution);
-  }
 
   /* ========== DISCOVER POPUP (bottom sheet) ========== */
   .popup-overlay {
@@ -821,13 +572,44 @@
   }
   .popup-action-row .btn-join { flex: 1; padding: 12px; font-size: 14px; border-radius: 12px; }
   .popup-action-row .btn-outline { flex: 1; padding: 12px; font-size: 14px; text-align: center; }
+
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--bg-elevated, #FFFFFF);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 120px;
+    overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
 </style>
 </head>
 <body>
 
 <div class="device">
   <div class="device-inner">
-    <div class="notch"></div>
+    <div class="dynamic-island"></div>
 
     <div class="screens-wrapper">
 
@@ -843,16 +625,22 @@
             </div>
           </div>
           <div class="app-header">
-            <div class="header-brand">nyam</div>
+            <a href="01_home.html" class="header-brand" style="text-decoration:none;cursor:pointer;">nyam</a>
             <div class="header-right">
-              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn" title="알림">
                   <i data-lucide="bell"></i>
                 </button>
                 <div class="notif-badge"></div>
               </div>
-              <div class="header-avatar" onclick="location.href='04_profile.html'">J</div>
+              <div style="position:relative;">
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="avatar-menu" onclick="event.stopPropagation()">
+                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -874,7 +662,7 @@
             <span class="section-header-title">내 버블 (3)</span>
           </div>
 
-          <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
+          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#F5EDE8;"><i data-lucide="utensils-crossed"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">직장 맛집</div>
@@ -886,7 +674,7 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
+          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="wine"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">와인 모임</div>
@@ -898,7 +686,7 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <div class="bubble-card" onclick="showScreen('screen-bubble-detail')">
+          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#E8F0EB;color:var(--positive)"><i data-lucide="home"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">동네 맛집</div>
@@ -1238,497 +1026,6 @@
         </button>
       </div>
 
-      <!-- ============ SCREEN: BUBBLE DETAIL ============ -->
-      <div class="screen hidden" id="screen-bubble-detail">
-        <div class="top-fixed">
-          <div class="status-bar">
-            <span class="status-time">9:41</span>
-            <div class="status-icons">
-              <i data-lucide="signal" style="width:16px;height:16px;"></i>
-              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
-            </div>
-          </div>
-          <div class="app-header">
-            <button class="inner-back-btn" onclick="showScreen('screen-bubbles')">
-              <i data-lucide="chevron-left"></i>
-              <span>버블</span>
-            </button>
-            <div class="header-right">
-              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
-              <div style="position:relative;">
-                <button class="icon-btn" title="알림">
-                  <i data-lucide="bell"></i>
-                </button>
-                <div class="notif-badge"></div>
-              </div>
-              <div class="header-avatar">J</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="scroll-area">
-          <!-- Hero section -->
-          <div class="detail-hero">
-            <div class="detail-hero-icon" style="background:#F5EDE8;color:var(--primary)">
-              <i data-lucide="utensils-crossed"></i>
-            </div>
-            <div class="detail-hero-name">직장 맛집</div>
-            <div class="detail-hero-desc">직장 동료들과 점심 맛집 공유</div>
-            <div class="detail-hero-badges">
-              <span class="pill pill-blue" style="font-size:11px;padding:2px 8px">
-                <i data-lucide="users" style="width:11px;height:11px;"></i> 멤버 8명
-              </span>
-              <span class="pill pill-green" style="font-size:11px;padding:2px 8px">
-                <i data-lucide="heart" style="width:11px;height:11px;"></i> 취향 87% 일치
-              </span>
-              <button class="icon-btn" style="width:28px;height:28px" title="설정" onclick="showScreen('screen-bubble-settings')">
-                <i data-lucide="settings" style="width:14px;height:14px;"></i>
-              </button>
-              <button class="icon-btn" style="width:28px;height:28px" title="초대">
-                <i data-lucide="user-plus" style="width:14px;height:14px;"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Quick stats -->
-          <div class="quick-stats">
-            <div class="quick-stat">
-              <div class="quick-stat-value">47</div>
-              <div class="quick-stat-label">총 기록</div>
-            </div>
-            <div class="quick-stat">
-              <div class="quick-stat-value">87</div>
-              <div class="quick-stat-label">평균 점수</div>
-            </div>
-            <div class="quick-stat">
-              <div class="quick-stat-value">6</div>
-              <div class="quick-stat-label">이번 주</div>
-            </div>
-          </div>
-
-          <!-- Member avatars -->
-          <div class="member-scroll">
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#C17B5E">김</div>
-              <div class="member-name">김영수</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#8B7396">박</div>
-              <div class="member-name">박소연</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#7A9BAE">이</div>
-              <div class="member-name">이준호</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#7EAE8B">최</div>
-              <div class="member-name">최유진</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#C17B5E">정</div>
-              <div class="member-name">정민재</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#C9A96E">윤</div>
-              <div class="member-name">윤서희</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#ec4899">강</div>
-              <div class="member-name">강하늘</div>
-            </div>
-            <div class="member-avatar">
-              <div class="member-avatar-circle" style="background:#14b8a6">나</div>
-              <div class="member-name">나</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Detail tabs (outside scroll so they stick below hero) -->
-        <div class="detail-tabs">
-          <button class="detail-tab active" id="dtab-feed" onclick="switchDetailTab('feed')">피드</button>
-          <button class="detail-tab" id="dtab-restaurants" onclick="switchDetailTab('restaurants')">식당</button>
-          <button class="detail-tab" id="dtab-wines" onclick="switchDetailTab('wines')">와인</button>
-          <button class="detail-tab" id="dtab-stats" onclick="switchDetailTab('stats')">통계</button>
-          <button class="detail-tab" id="dtab-overlap" onclick="switchDetailTab('overlap')">겹치는 곳</button>
-        </div>
-
-        <div class="scroll-area" id="detail-scroll-area">
-          <!-- Feed tab -->
-          <div id="dcontent-feed">
-            <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#C17B5E">김</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">김영수</div>
-                  <div class="feed-time">3시간 전</div>
-                </div>
-                <span class="pill pill-orange" style="font-size:10px;padding:2px 8px">93점</span>
-              </div>
-              <div class="feed-body">
-                <div class="feed-place-name">미진</div>
-                <div class="feed-place-meta">한식 · 을지로 · 혼밥</div>
-                <div class="feed-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
-              </div>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 4</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 2</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-              </div>
-            </div>
-
-            <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#8B7396">박</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">박소연</div>
-                  <div class="feed-time">1일 전</div>
-                </div>
-                <span class="pill pill-orange" style="font-size:10px;padding:2px 8px">94점</span>
-              </div>
-              <div class="feed-body">
-                <div class="feed-place-name">Ch. Margaux 2018</div>
-                <div class="feed-place-meta">와인 · 카베르네 소비뇽 · 페어링</div>
-                <div class="feed-comment">"스테이크 페어링 감동적이었음. 탄닌이 완벽하게 순해진 느낌"</div>
-              </div>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 8</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 5</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-              </div>
-            </div>
-
-            <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#7A9BAE">이</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">이준호</div>
-                  <div class="feed-time">2일 전</div>
-                </div>
-                <span class="pill pill-blue" style="font-size:10px;padding:2px 8px">87점</span>
-              </div>
-              <div class="feed-body">
-                <div class="feed-place-name">도쿄등심</div>
-                <div class="feed-place-meta">일식 · 광화문 · 회식</div>
-              </div>
-              <div class="feed-actions">
-                <button class="feed-action-btn"><i data-lucide="heart"></i> 2</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 1</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-              </div>
-            </div>
-
-            <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#7EAE8B">최</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">최유진</div>
-                  <div class="feed-time">4일 전</div>
-                </div>
-                <span class="pill pill-blue" style="font-size:10px;padding:2px 8px">88점</span>
-              </div>
-              <div class="feed-body">
-                <div class="feed-place-name">스시코우지</div>
-                <div class="feed-place-meta">일식 · 을지로 · 점심</div>
-                <div class="feed-comment">"오마카세 가성비 甲. 점심 런치 세트 강추"</div>
-              </div>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 6</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 3</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Restaurants tab -->
-          <div id="dcontent-restaurants" style="display:none">
-            <div class="sort-bar">
-              <button class="sort-btn" onclick="setSortActive(this)">최신</button>
-              <button class="sort-btn" onclick="setSortActive(this)">만족도순</button>
-              <button class="sort-btn active" onclick="setSortActive(this)">기록수순</button>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">1</div>
-              <div class="rest-icon"><i data-lucide="soup"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">미진</div>
-                <div class="rest-meta">평균 89점 · 기록 5개</div>
-              </div>
-              <div class="rest-score">89</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">2</div>
-              <div class="rest-icon"><i data-lucide="fish"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">스시코우지</div>
-                <div class="rest-meta">평균 85점 · 기록 4개</div>
-              </div>
-              <div class="rest-score">85</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">3</div>
-              <div class="rest-icon"><i data-lucide="beef"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">도쿄등심</div>
-                <div class="rest-meta">평균 82점 · 기록 3개</div>
-              </div>
-              <div class="rest-score">82</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">4</div>
-              <div class="rest-icon"><i data-lucide="utensils-crossed"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">이코이</div>
-                <div class="rest-meta">평균 88점 · 기록 2개</div>
-              </div>
-              <div class="rest-score">88</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">5</div>
-              <div class="rest-icon"><i data-lucide="salad"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">파스타 바르바리</div>
-                <div class="rest-meta">평균 84점 · 기록 2개</div>
-              </div>
-              <div class="rest-score">84</div>
-            </div>
-          </div>
-
-          <!-- Wines tab -->
-          <div id="dcontent-wines" style="display:none">
-            <div class="sort-bar">
-              <button class="sort-btn" onclick="setSortActive(this)">최신</button>
-              <button class="sort-btn active" onclick="setSortActive(this)">만족도순</button>
-              <button class="sort-btn" onclick="setSortActive(this)">기록수순</button>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">1</div>
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Ch. Margaux 2018</div>
-                <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 3개</div>
-              </div>
-              <div class="rest-score" style="color:var(--wine)">94</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">2</div>
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="glass-water"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Krug Grande Cuvee</div>
-                <div class="rest-meta">샴페인 · 블렌드 · 기록 2개</div>
-              </div>
-              <div class="rest-score" style="color:var(--wine)">91</div>
-            </div>
-            <div class="rest-item">
-              <div class="rest-rank">3</div>
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Barolo Brunate 2017</div>
-                <div class="rest-meta">레드 · 네비올로 · 기록 2개</div>
-              </div>
-              <div class="rest-score" style="color:var(--wine)">89</div>
-            </div>
-          </div>
-
-          <!-- Stats tab -->
-          <div id="dcontent-stats" style="display:none">
-            <div class="stats-section">
-              <div class="stats-section-title">공유 랭킹</div>
-              <div class="ranking-list">
-                <div class="ranking-item">
-                  <div class="rank-num rank-1">1</div>
-                  <div style="width:28px;height:28px;background:#C17B5E;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">김</div>
-                  <div class="rank-name">김영수</div>
-                  <div class="rank-count">14개</div>
-                </div>
-                <div class="ranking-item">
-                  <div class="rank-num rank-2">2</div>
-                  <div style="width:28px;height:28px;background:#8B7396;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">박</div>
-                  <div class="rank-name">박소연</div>
-                  <div class="rank-count">11개</div>
-                </div>
-                <div class="ranking-item">
-                  <div class="rank-num rank-3">3</div>
-                  <div style="width:28px;height:28px;background:#7A9BAE;font-size:11px;font-weight:700;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">이</div>
-                  <div class="rank-name">이준호</div>
-                  <div class="rank-count">8개</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="stats-section">
-              <div class="stats-section-title">인기 식당 Top 3</div>
-              <div class="bar-chart">
-                <div class="bar-item">
-                  <div class="bar-label">미진</div>
-                  <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
-                  <div class="bar-value">5개</div>
-                </div>
-                <div class="bar-item">
-                  <div class="bar-label">스시코우지</div>
-                  <div class="bar-track"><div class="bar-fill" style="width:80%"></div></div>
-                  <div class="bar-value">4개</div>
-                </div>
-                <div class="bar-item">
-                  <div class="bar-label">도쿄등심</div>
-                  <div class="bar-track"><div class="bar-fill" style="width:60%"></div></div>
-                  <div class="bar-value">3개</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="stats-section">
-              <div class="stats-section-title">장르 분포</div>
-              <div class="donut-wrap">
-                <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="35" fill="none" stroke="#C17B5E" stroke-width="18"
-                    stroke-dasharray="87.96 131.95" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
-                  <circle cx="50" cy="50" r="35" fill="none" stroke="#7A9BAE" stroke-width="18"
-                    stroke-dasharray="65.97 131.95" stroke-dashoffset="-87.96" transform="rotate(-90 50 50)"/>
-                  <circle cx="50" cy="50" r="35" fill="none" stroke="#7EAE8B" stroke-width="18"
-                    stroke-dasharray="43.98 131.95" stroke-dashoffset="-153.93" transform="rotate(-90 50 50)"/>
-                  <circle cx="50" cy="50" r="35" fill="none" stroke="#D4CFC8" stroke-width="18"
-                    stroke-dasharray="21.99 131.95" stroke-dashoffset="-197.91" transform="rotate(-90 50 50)"/>
-                  <text x="50" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#3D3833">47개</text>
-                </svg>
-                <div class="donut-legend">
-                  <div class="legend-item"><div class="legend-dot" style="background:#C17B5E"></div>한식 40%</div>
-                  <div class="legend-item"><div class="legend-dot" style="background:#7A9BAE"></div>일식 30%</div>
-                  <div class="legend-item"><div class="legend-dot" style="background:#7EAE8B"></div>양식 20%</div>
-                  <div class="legend-item"><div class="legend-dot" style="background:#D4CFC8"></div>기타 10%</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="stats-section" style="border-bottom:none">
-              <div class="stats-section-title">버블 사분면 분포</div>
-              <div class="mini-quad">
-                <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#E8E4DF"></div>
-                <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#E8E4DF"></div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C17B5E;top:22%;left:28%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">김</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#8B7396;top:32%;right:30%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">박</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#7A9BAE;top:40%;left:55%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">이</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#7EAE8B;top:25%;left:42%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">최</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C17B5E;top:55%;left:38%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">정</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#C9A96E;top:60%;right:25%;transform:translate(50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">윤</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#ec4899;top:20%;left:68%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">강</div>
-                <div style="position:absolute;width:20px;height:20px;border-radius:50%;background:#14b8a6;top:35%;left:20%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid #fff">나</div>
-                <div style="position:absolute;top:4px;left:6px;font-size:8px;color:#B5AFA8">만족↑</div>
-                <div style="position:absolute;bottom:4px;left:6px;font-size:8px;color:#B5AFA8">만족↓</div>
-                <div style="position:absolute;top:50%;left:6px;transform:translateY(-50%);font-size:8px;color:#B5AFA8">캐주얼</div>
-                <div style="position:absolute;top:50%;right:6px;transform:translateY(-50%);font-size:8px;color:#B5AFA8">격식</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Overlap tab (겹치는 곳) -->
-          <div id="dcontent-overlap" style="display:none">
-            <div style="padding:12px 20px 8px">
-              <div style="font-size:12px;color:var(--text-sub);display:flex;align-items:center;gap:4px">
-                <i data-lucide="info" style="width:12px;height:12px;"></i>
-                나와 버블 멤버들이 함께 방문한 곳의 점수 비교
-              </div>
-            </div>
-
-            <!-- Overlapping restaurants -->
-            <div style="padding:8px 20px 4px">
-              <div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px">식당</div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="soup"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">미진</div>
-                <div class="rest-meta">한식 · 을지로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-row">
-                  <span class="overlap-my">나 91</span>
-                </div>
-                <div class="overlap-score-row">
-                  <span class="overlap-bubble">버블 89</span>
-                </div>
-              </div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="fish"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">스시코우지</div>
-                <div class="rest-meta">일식 · 을지로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-row">
-                  <span class="overlap-my">나 88</span>
-                </div>
-                <div class="overlap-score-row">
-                  <span class="overlap-bubble">버블 85</span>
-                </div>
-              </div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="beef"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">도쿄등심</div>
-                <div class="rest-meta">일식 · 광화문</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-row">
-                  <span class="overlap-my">나 84</span>
-                </div>
-                <div class="overlap-score-row">
-                  <span class="overlap-bubble">버블 82</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Overlapping wines -->
-            <div style="padding:16px 20px 4px">
-              <div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px">와인</div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Ch. Margaux 2018</div>
-                <div class="rest-meta">레드 · 카베르네 소비뇽</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-row">
-                  <span class="overlap-my">나 92</span>
-                </div>
-                <div class="overlap-score-row">
-                  <span class="overlap-bubble">버블 94</span>
-                </div>
-              </div>
-            </div>
-            <div class="overlap-item" style="border-bottom:none">
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Barolo Brunate 2017</div>
-                <div class="rest-meta">레드 · 네비올로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-row">
-                  <span class="overlap-my">나 87</span>
-                </div>
-                <div class="overlap-score-row">
-                  <span class="overlap-bubble">버블 89</span>
-                </div>
-              </div>
-            </div>
-
-            <div style="padding:16px 20px;text-align:center">
-              <div style="font-size:12px;color:var(--text-hint)">총 5곳 겹침 · 평균 차이 2.4점</div>
-            </div>
-          </div>
-
-          <div style="height:16px"></div>
-        </div>
-
-        <!-- Floating back button -->
-        <button class="fab-back" onclick="showScreen('screen-bubbles')">
-          <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
-        </button>
-      </div>
-
       <!-- ============ SCREEN: BUBBLE CREATE ============ -->
       <div class="screen hidden" id="screen-bubble-create">
         <div class="top-fixed">
@@ -1746,7 +1043,7 @@
               <span>버블</span>
             </button>
             <div class="header-right">
-              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn" title="알림">
                   <i data-lucide="bell"></i>
@@ -1822,263 +1119,6 @@
             </button>
           </div>
         </div>
-      </div>
-
-      <!-- ============ SCREEN: BUBBLE SETTINGS (Owner) ============ -->
-      <div class="screen hidden" id="screen-bubble-settings">
-        <div class="top-fixed">
-          <div class="status-bar">
-            <span class="status-time">9:41</span>
-            <div class="status-icons">
-              <i data-lucide="signal" style="width:16px;height:16px;"></i>
-              <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-              <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
-            </div>
-          </div>
-          <div class="app-header">
-            <button class="inner-back-btn" onclick="showScreen('screen-bubble-detail')">
-              <i data-lucide="chevron-left"></i>
-              <span>직장 맛집</span>
-            </button>
-            <div class="header-right">
-              <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
-              <div style="position:relative;">
-                <button class="icon-btn" title="알림">
-                  <i data-lucide="bell"></i>
-                </button>
-                <div class="notif-badge"></div>
-              </div>
-              <div class="header-avatar">J</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="scroll-area">
-
-          <!-- Basic Info -->
-          <div class="settings-group">
-            <div class="settings-group-title"><i data-lucide="info"></i> 기본 정보</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">버블 이름</div>
-              </div>
-              <div class="settings-row-value">직장 맛집 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">설명</div>
-              </div>
-              <div class="settings-row-value">직장 동료들과... <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">유형</div>
-              </div>
-              <div class="settings-row-value">양방향 <i data-lucide="chevron-right"></i></div>
-            </div>
-          </div>
-
-          <!-- Join Conditions -->
-          <div class="settings-group">
-            <div class="settings-group-title"><i data-lucide="shield-check"></i> 가입 조건</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">가입 승인 필요</div>
-                <div class="settings-row-desc">새 멤버 가입 시 관리자 승인</div>
-              </div>
-              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최소 기록 수</div>
-                <div class="settings-row-desc">가입 신청자의 최소 기록 보유량</div>
-              </div>
-              <div class="settings-row-value">5개 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최소 레벨</div>
-                <div class="settings-row-desc">가입 가능한 최소 사용자 레벨</div>
-              </div>
-              <div class="settings-row-value">Lv.3 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최대 인원</div>
-                <div class="settings-row-desc">버블 최대 멤버 수 제한</div>
-              </div>
-              <div class="settings-row-value">20명 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">초대 링크 만료</div>
-              </div>
-              <div class="settings-row-value">30일 <i data-lucide="chevron-right"></i></div>
-            </div>
-          </div>
-
-          <!-- Search & Visibility -->
-          <div class="settings-group">
-            <div class="settings-group-title"><i data-lucide="eye"></i> 검색 노출</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">탐색에 노출</div>
-                <div class="settings-row-desc">다른 사용자가 버블 탐색에서 발견 가능</div>
-              </div>
-              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">검색 키워드</div>
-                <div class="settings-row-desc">탐색 시 추가 키워드</div>
-              </div>
-              <div class="settings-row-value">3개 설정됨 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">프로필 공개 범위</div>
-                <div class="settings-row-desc">비멤버에게 보이는 정보 수준</div>
-              </div>
-              <div class="settings-row-value">기본 <i data-lucide="chevron-right"></i></div>
-            </div>
-          </div>
-
-          <!-- Member Management -->
-          <div class="settings-group">
-            <div class="settings-group-title">
-              <i data-lucide="users"></i> 멤버 관리
-              <span style="margin-left:auto;font-size:12px;font-weight:500;color:var(--accent-social);cursor:pointer">전체보기</span>
-            </div>
-
-            <!-- Pending -->
-            <div style="font-size:11px;font-weight:600;color:var(--caution);margin-bottom:8px;display:flex;align-items:center;gap:4px">
-              <i data-lucide="clock" style="width:12px;height:12px;"></i> 대기 중 (2)
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#f97316">한</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">한지민</div>
-                <div class="member-manage-role">Lv.5 · 기록 23개 · 취향 78% 일치</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" style="color:var(--positive);border-color:rgba(126,174,139,0.3)" title="승인"><i data-lucide="check"></i></button>
-                <button class="member-action-btn danger" title="거절"><i data-lucide="x"></i></button>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#06b6d4">송</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">송태양</div>
-                <div class="member-manage-role">Lv.3 · 기록 8개 · 취향 65% 일치</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" style="color:var(--positive);border-color:rgba(126,174,139,0.3)" title="승인"><i data-lucide="check"></i></button>
-                <button class="member-action-btn danger" title="거절"><i data-lucide="x"></i></button>
-              </div>
-            </div>
-
-            <!-- Active members -->
-            <div style="font-size:11px;font-weight:600;color:var(--text-hint);margin:12px 0 8px;display:flex;align-items:center;gap:4px">
-              <i data-lucide="users" style="width:12px;height:12px;"></i> 멤버 (8)
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#14b8a6">나</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">나 <span style="font-size:10px;color:var(--accent-social);font-weight:600">오너</span></div>
-                <div class="member-manage-role">Lv.7 · 기록 31개</div>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#C17B5E">김</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">김영수</div>
-                <div class="member-manage-role">Lv.6 · 기록 14개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#8B7396">박</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">박소연</div>
-                <div class="member-manage-role">Lv.5 · 기록 11개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#7A9BAE">이</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">이준호</div>
-                <div class="member-manage-role">Lv.4 · 기록 8개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Stats Overview (owner) -->
-          <div class="settings-group">
-            <div class="settings-group-title"><i data-lucide="bar-chart-3"></i> 버블 통계</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:var(--text)">47</div>
-                <div style="font-size:11px;color:var(--text-sub)">총 기록</div>
-              </div>
-              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:var(--text)">8</div>
-                <div style="font-size:11px;color:var(--text-sub)">멤버 수</div>
-              </div>
-              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:var(--positive)">+12%</div>
-                <div style="font-size:11px;color:var(--text-sub)">주간 활성도</div>
-              </div>
-              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-                <div style="font-size:22px;font-weight:700;color:var(--text)">87</div>
-                <div style="font-size:11px;color:var(--text-sub)">평균 만족도</div>
-              </div>
-            </div>
-            <div style="margin-top:12px">
-              <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">주간 기록 추이</div>
-              <div style="display:flex;align-items:flex-end;gap:4px;height:60px">
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:30%"></div>
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:45%"></div>
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:60%"></div>
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:40%"></div>
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:80%"></div>
-                <div style="flex:1;background:var(--accent-social-light);border-radius:4px 4px 0 0;height:70%"></div>
-                <div style="flex:1;background:var(--accent-social);border-radius:4px 4px 0 0;height:100%"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-hint);margin-top:4px">
-                <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Danger Zone -->
-          <div class="settings-group" style="border-bottom:none">
-            <div class="settings-group-title" style="color:var(--negative)"><i data-lucide="alert-triangle"></i> 위험 영역</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label" style="color:var(--negative)">버블 삭제</div>
-                <div class="settings-row-desc">모든 데이터가 영구 삭제됩니다</div>
-              </div>
-              <div class="settings-row-value" style="color:var(--negative)"><i data-lucide="trash-2"></i></div>
-            </div>
-          </div>
-
-          <div style="height:40px"></div>
-        </div>
-
-        <button class="fab-back" onclick="showScreen('screen-bubble-detail')">
-          <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
-        </button>
       </div>
 
     </div><!-- /screens-wrapper -->
@@ -2292,24 +1332,6 @@
       const el = document.getElementById('discover-' + t);
       if (el) el.style.display = (t === tab) ? '' : 'none';
     });
-  }
-
-  // Bubble detail tab
-  function switchDetailTab(tab) {
-    const tabs = ['feed', 'restaurants', 'wines', 'stats', 'overlap'];
-    tabs.forEach(t => {
-      const tabBtn = document.getElementById('dtab-' + t);
-      if (tabBtn) tabBtn.classList.toggle('active', t === tab);
-      const content = document.getElementById('dcontent-' + t);
-      if (content) content.style.display = (t === tab) ? '' : 'none';
-    });
-  }
-
-  // Sort active
-  function setSortActive(el) {
-    const siblings = el.parentElement.querySelectorAll('.sort-btn');
-    siblings.forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
   }
 
   // Bubble create — type selection
@@ -2550,6 +1572,13 @@
 
   // Init lucide icons
   lucide.createIcons();
+
+  // Close avatar menu on outside click
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
 </script>
 
 </body>

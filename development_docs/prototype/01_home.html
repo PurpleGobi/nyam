@@ -32,9 +32,9 @@
   body {
     background: var(--bg-page);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
+    padding: 8px 0 24px;
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 
@@ -61,18 +61,28 @@
     overflow: hidden;
     position: relative;
   }
-
-  /* Notch */
-  .notch {
+  .dynamic-island {
     position: absolute;
-    top: 0;
+    top: 11px;
     left: 50%;
     transform: translateX(-50%);
-    width: 120px;
-    height: 34px;
-    background: #2A2725;
-    border-radius: 0 0 20px 20px;
+    width: 126px;
+    height: 36px;
+    background: #1A1A1A;
+    border-radius: 20px;
     z-index: 100;
+  }
+  .dynamic-island::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #080C10;
+    box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
   }
 
   /* Status bar */
@@ -492,107 +502,6 @@
     color: var(--primary);
     font-weight: 600;
     margin-bottom: 20px;
-  }
-
-  /* Onboarding restaurant/wine cards */
-  .ob-card {
-    background: var(--bg-card); border-radius:16px; border:1px solid var(--border);
-    padding:14px 16px; transition:all 0.2s;
-  }
-  .ob-card.visited { border-color: var(--primary); background: var(--primary-light); }
-  .ob-card.wishlisted { border-color: #f59e0b; background: #fffbeb; }
-  .ob-card.wine-visited { border-color: var(--wine); background: var(--wine-light); }
-  .ob-card.wine-wishlisted { border-color: #f59e0b; background: #fffbeb; }
-
-  /* Wine onboarding */
-  @keyframes sheetSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-
-  .ob-card-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-  .ob-card-photo {
-    width:48px; height:48px; border-radius:12px; background:var(--bg-page);
-    display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
-  }
-  .ob-card-info { flex:1; }
-  .ob-card-name { font-size:15px; font-weight:600; color:var(--text); }
-  .ob-card-meta { font-size:12px; color:var(--text-sub); display:flex; align-items:center; gap:6px; margin-top:2px; }
-  .ob-card-score { font-size:11px; color:var(--text-hint); margin-top:2px; }
-  .ob-card-source { font-size:10px; color:var(--text-hint); margin-top:3px; line-height:1.3; }
-  .ob-card-rating { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:#7c3aed; background:#f5f3ff; padding:2px 7px; border-radius:6px; }
-  .ob-card-rating svg { width:11px; height:11px; fill:#7c3aed; }
-
-  /* Wine category tabs */
-  /* Unified filter tabs — underline tab style */
-  .ob-filter-tabs {
-    display:flex; gap:0; overflow-x:auto;
-    border-bottom:1.5px solid var(--border);
-    -webkit-overflow-scrolling:touch;
-  }
-  .ob-filter-tabs::-webkit-scrollbar { display:none; }
-  .ob-filter-tab {
-    flex-shrink:0; padding:10px 16px;
-    font-size:14px; font-weight:500; white-space:nowrap;
-    border:none; background:none; color:var(--text-hint);
-    cursor:pointer; transition:all 0.2s;
-    position:relative;
-    display:flex; align-items:center; gap:4px;
-  }
-  .ob-filter-tab::after {
-    content:''; position:absolute; bottom:-1.5px; left:8px; right:8px;
-    height:2.5px; border-radius:2px; background:transparent; transition:background 0.2s;
-  }
-  .ob-filter-tab.active {
-    color:var(--primary); font-weight:700;
-  }
-  .ob-filter-tab.active::after {
-    background:var(--primary);
-  }
-  .ob-filter-tab.wine-tab.active {
-    color:var(--wine);
-  }
-  .ob-filter-tab.wine-tab.active::after {
-    background:var(--wine);
-  }
-
-  .ob-card-actions { display:flex; gap:8px; }
-  .ob-btn {
-    flex:1; padding:10px 0; border-radius:10px; border:1.5px solid var(--border);
-    background:white; font-size:13px; font-weight:600; cursor:pointer;
-    transition:all 0.15s; text-align:center;
-  }
-  .ob-btn:active { transform:scale(0.96); }
-  .ob-btn.visited-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
-  .ob-btn.wish-btn.active { background:#f59e0b; color:white; border-color:#f59e0b; }
-  .ob-btn.wine-visited-btn.active { background:var(--wine); color:white; border-color:var(--wine); }
-
-  .ob-card-gauge {
-    animation:fadeSlideIn 0.25s ease;
-  }
-  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-
-  /* Circle rating inside card */
-  .ob-circle-area {
-    display:flex; align-items:center; justify-content:center;
-    height:90px; cursor:ns-resize; user-select:none; -webkit-user-select:none;
-    touch-action:none; position:relative;
-  }
-  .ob-rating-circle {
-    border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-weight:800; color:#fff;
-    transition:width 0.08s, height 0.08s, background 0.15s, box-shadow 0.15s;
-    pointer-events:none;
-  }
-  .circle-hint {
-    position:absolute; bottom:4px; left:0; right:0;
-    text-align:center; font-size:10px; color:var(--text-hint);
-    pointer-events:none;
-    transition:opacity 0.3s;
-    animation:hintPulse 2s ease-in-out infinite;
-  }
-  .circle-hint.hidden { opacity:0; }
-  @keyframes hintPulse {
-    0%,100% { opacity:0.5; }
-    50% { opacity:1; }
   }
 
   .btn-row {
@@ -3369,6 +3278,37 @@
     color: var(--text-hint);
     margin-top: 3px;
   }
+
+  /* Avatar dropdown menu */
+  .avatar-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--bg-elevated, #FFFFFF);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 120px;
+    overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
@@ -3376,384 +3316,15 @@
 </head>
 <body>
 
+
 <div class="device">
   <div class="device-inner">
-    <div class="notch"></div>
+    <div class="dynamic-island"></div>
 
     <div class="screens-wrapper" id="screensWrapper">
 
-      <!-- SCREEN 1: LOGIN -->
-      <div class="screen active" id="screen-login">
-        <div style="height:44px;"></div>
-        <div class="login-screen scroll-content" style="flex:1;">
-          <div class="login-logo">nyam</div>
-          <div class="login-tagline">나만의 맛 기록을 시작하세요</div>
-          <div class="social-btns">
-            <button class="social-btn btn-kakao" onclick="goToScreen('screen-intro')">
-              <span class="social-btn-icon">💬</span>
-              카카오로 시작
-            </button>
-            <button class="social-btn btn-google" onclick="goToScreen('screen-intro')">
-              <span class="social-btn-icon">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-              </span>
-              Google로 시작
-            </button>
-            <button class="social-btn btn-apple" onclick="goToScreen('screen-intro')">
-              <span class="social-btn-icon">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.42c1.3.07 2.21.76 2.98.82.76-.13 1.49-.72 2.81-.77 1.7-.07 2.97.67 3.76 1.88-3.39 2.02-2.82 6.4.45 7.63-.66 1.31-1.22 2.63-2 3.3zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-              </span>
-              Apple로 시작
-            </button>
-          </div>
-          <div class="login-footer">
-            가입 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의합니다
-          </div>
-        </div>
-      </div>
-
-      <!-- SCREEN 1.5: INTRO -->
-      <div class="screen hidden" id="screen-intro">
-        <div style="height:44px;"></div>
-        <div class="scroll-content" style="flex:1;padding:32px 24px 0;">
-          <!-- Editorial intro -->
-          <div style="margin-bottom:32px;padding:0 4px;">
-            <div style="font-size:20px;font-weight:700;color:var(--text);line-height:1.5;letter-spacing:-0.3px;">
-              당신이 사랑한 한 끼와<br>기억하고 싶은 한 잔을 위한<br>조용한 공간.
-            </div>
-            <div style="font-size:13px;color:var(--text-sub);margin-top:12px;line-height:1.7;">
-              기록은 쌓이고, 취향은 선명해지고,<br>
-              가까운 사람들과 은밀하게 나눌 수 있어요.
-            </div>
-          </div>
-
-          <!-- What to record -->
-          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">
-            뭘 기록해볼까요?
-          </div>
-
-          <!-- Restaurant toggle card -->
-          <div id="introCardRestaurant" onclick="toggleIntroCard('restaurant')" style="
-            padding:16px 20px;border-radius:var(--radius);border:1.5px solid var(--primary);
-            background:var(--primary-light);margin-bottom:8px;cursor:pointer;
-            transition:all 0.2s;text-align:center;
-          ">
-            <div style="font-size:15px;font-weight:600;color:var(--primary);">맛집</div>
-          </div>
-
-          <!-- Wine toggle card -->
-          <div id="introCardWine" onclick="toggleIntroCard('wine')" style="
-            padding:16px 20px;border-radius:var(--radius);border:1.5px solid var(--wine);
-            background:var(--wine-light);margin-bottom:20px;cursor:pointer;
-            transition:all 0.2s;text-align:center;
-          ">
-            <div style="font-size:15px;font-weight:600;color:var(--wine);">와인</div>
-          </div>
-
-          <div style="text-align:center;font-size:12px;color:var(--text-hint);margin-bottom:8px;">
-            나중에 바꿀 수 있어요
-          </div>
-
-          <div style="height:80px;"></div>
-        </div>
-        <button class="floating-next" id="introCta" onclick="startOnboarding()" style="
-          left:50%;right:auto;transform:translateX(-50%);
-          padding:14px 48px;
-        ">시작할게요</button>
-      </div>
-
-      <!-- SCREEN 2: AREA SELECTION -->
-      <div class="screen hidden" id="screen-area">
-        <div style="height:44px;"></div>
-        <div class="onboarding-screen" style="flex:1; display:flex; flex-direction:column; padding:12px 20px;">
-          <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">어디서 주로 드시나요?</div>
-          <div style="font-size:13px;color:var(--text-sub);margin-bottom:8px;">지도에서 동네를 탭하세요 (중복 선택 가능)</div>
-          <div class="location-hint" style="margin-bottom:12px;">
-            📍 현재 위치: 광화문 근처
-          </div>
-
-          <!-- Map: National → City → Area (2-level zoom) -->
-          <div class="area-map-container" id="areaMapContainer">
-
-            <!-- Level 1: National Map -->
-            <div class="map-layer" id="mapNational">
-              <!-- Korea outline hint -->
-              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">도시를 탭하세요</div>
-              <!-- Peninsula shape hint -->
-              <svg viewBox="0 0 200 320" style="position:absolute;top:5%;left:50%;transform:translateX(-50%);width:70%;height:85%;opacity:0.06;">
-                <path d="M100,10 C80,10 55,30 50,60 C45,90 55,120 60,140 C65,160 50,180 55,200 C60,220 70,240 75,260 C80,280 90,300 100,310 C110,300 120,280 125,260 C130,240 140,220 145,200 C150,180 135,160 140,140 C145,120 155,90 150,60 C145,30 120,10 100,10Z" fill="#374151"/>
-              </svg>
-
-              <!-- Major cities -->
-              <div class="city-bubble pulse" onclick="zoomToCity('서울')" style="top:28%;left:52%;">서울</div>
-              <div class="city-bubble" onclick="zoomToCity('인천')" style="top:32%;left:38%;">인천</div>
-              <div class="city-bubble" onclick="zoomToCity('경기')" style="top:24%;left:44%;">경기</div>
-              <div class="city-bubble" onclick="zoomToCity('대전')" style="top:48%;left:46%;">대전</div>
-              <div class="city-bubble" onclick="zoomToCity('대구')" style="top:54%;left:64%;">대구</div>
-              <div class="city-bubble" onclick="zoomToCity('부산')" style="top:68%;left:68%;">부산</div>
-              <div class="city-bubble" onclick="zoomToCity('광주')" style="top:64%;left:34%;">광주</div>
-              <div class="city-bubble" onclick="zoomToCity('제주')" style="top:88%;left:36%;">제주</div>
-            </div>
-
-            <!-- Level 2: City Detail (서울 - default) -->
-            <div class="map-layer hidden-layer" id="mapSeoul" data-city="서울">
-              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
-              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">서울 상권</div>
-              <!-- 한강 -->
-              <div style="position:absolute;top:50%;left:0;right:0;height:22px;background:linear-gradient(180deg,#bfdbfe,#93c5fd,#bfdbfe);opacity:0.4;transform:rotate(-3deg) scaleX(1.1);"></div>
-              <div style="position:absolute;top:52.5%;left:12%;font-size:9px;color:#60a5fa;opacity:0.5;letter-spacing:3px;">한 강</div>
-              <!-- 강북 -->
-              <div class="area-bubble" data-area="종로" style="top:18%;left:42%;">종로</div>
-              <div class="area-bubble" data-area="광화문" style="top:26%;left:34%;">광화문</div>
-              <div class="area-bubble" data-area="을지로" style="top:32%;left:48%;">을지로</div>
-              <div class="area-bubble" data-area="홍대" style="top:35%;left:18%;">홍대</div>
-              <div class="area-bubble" data-area="연남" style="top:24%;left:16%;">연남</div>
-              <div class="area-bubble" data-area="이태원" style="top:38%;left:38%;">이태원</div>
-              <div class="area-bubble" data-area="성수" style="top:34%;left:66%;">성수</div>
-              <div class="area-bubble" data-area="건대" style="top:28%;left:78%;">건대</div>
-              <div class="area-bubble" data-area="신촌" style="top:28%;left:24%;">신촌</div>
-              <div class="area-bubble" data-area="망원" style="top:32%;left:10%;">망원</div>
-              <!-- 강남 -->
-              <div class="area-bubble" data-area="강남" style="top:64%;left:50%;">강남</div>
-              <div class="area-bubble" data-area="잠실" style="top:58%;left:72%;">잠실</div>
-              <div class="area-bubble" data-area="여의도" style="top:54%;left:22%;">여의도</div>
-              <div class="area-bubble" data-area="압구정" style="top:58%;left:56%;">압구정</div>
-              <div class="area-bubble" data-area="서초" style="top:72%;left:42%;">서초</div>
-              <div class="area-bubble" data-area="송파" style="top:66%;left:68%;">송파</div>
-            </div>
-
-            <!-- Level 2: 부산 -->
-            <div class="map-layer hidden-layer" id="mapBusan" data-city="부산">
-              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
-              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">부산 상권</div>
-              <div class="area-bubble" data-area="서면" style="top:35%;left:45%;">서면</div>
-              <div class="area-bubble" data-area="해운대" style="top:30%;left:72%;">해운대</div>
-              <div class="area-bubble" data-area="광안리" style="top:45%;left:65%;">광안리</div>
-              <div class="area-bubble" data-area="남포동" style="top:55%;left:35%;">남포동</div>
-              <div class="area-bubble" data-area="전포" style="top:42%;left:50%;">전포</div>
-              <div class="area-bubble" data-area="센텀시티" style="top:35%;left:62%;">센텀</div>
-            </div>
-
-            <!-- Level 2: 대구 -->
-            <div class="map-layer hidden-layer" id="mapDaegu" data-city="대구">
-              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
-              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">대구 상권</div>
-              <div class="area-bubble" data-area="동성로" style="top:38%;left:48%;">동성로</div>
-              <div class="area-bubble" data-area="수성구" style="top:42%;left:65%;">수성구</div>
-              <div class="area-bubble" data-area="앞산" style="top:58%;left:45%;">앞산</div>
-            </div>
-
-            <!-- Level 2: 제주 -->
-            <div class="map-layer hidden-layer" id="mapJeju" data-city="제주">
-              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
-              <div style="position:absolute;top:8%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-hint);">제주 상권</div>
-              <div class="area-bubble" data-area="제주시" style="top:30%;left:45%;">제주시</div>
-              <div class="area-bubble" data-area="서귀포" style="top:62%;left:48%;">서귀포</div>
-              <div class="area-bubble" data-area="애월" style="top:32%;left:25%;">애월</div>
-              <div class="area-bubble" data-area="함덕" style="top:25%;left:62%;">함덕</div>
-              <div class="area-bubble" data-area="중문" style="top:60%;left:35%;">중문</div>
-              <div class="area-bubble" data-area="성산" style="top:45%;left:78%;">성산</div>
-            </div>
-
-            <!-- Level 2: Generic (other cities) -->
-            <div class="map-layer hidden-layer" id="mapGeneric" data-city="">
-              <button class="map-back-btn" onclick="zoomToNational()">← 전국</button>
-              <div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                <div id="genericCityName" style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;"></div>
-                <div style="font-size:13px;color:var(--text-hint);">상권 데이터 준비 중</div>
-                <div style="font-size:12px;color:var(--text-hint);margin-top:4px;">직접 입력으로 동네를 추가할 수 있어요</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Selected areas display -->
-          <div id="selectedAreas" style="
-            margin-top:12px; min-height:32px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-          ">
-            <span style="font-size:13px; color:var(--text-hint);">선택된 동네가 여기에 표시됩니다</span>
-          </div>
-          <div style="height:60px;"></div>
-        </div>
-        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <button class="ob-skip" onclick="skipRestaurantOnboarding()">건너뛰기</button>
-        <button class="fab-forward" id="areaNextBtn" onclick="goToScreen('screen-restaurants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-      </div>
-
-      <!-- SCREEN 3: RESTAURANT ONBOARDING -->
-      <div class="screen hidden" id="screen-restaurants">
-        <div style="height:44px;"></div>
-        <!-- Header -->
-        <div style="padding:16px 20px 0; background:var(--bg);">
-          <div style="font-size:22px;font-weight:800;color:var(--text);line-height:1.3;">선택한 동네의<br>대표 맛집이에요 🍽️</div>
-          <div style="font-size:14px;color:var(--text-sub);margin-top:6px;margin-bottom:14px;">가봤거나 가보고 싶은 곳을 표시해주세요</div>
-        </div>
-        <!-- Sticky filter tabs -->
-        <div style="padding:0 20px; background:var(--bg); position:sticky; top:0; z-index:10;">
-          <div id="restAreaTabs" class="ob-filter-tabs" style="margin-bottom:0;">
-            <button class="ob-filter-tab active" data-filter="all" onclick="filterRestByArea('all', this)">전체</button>
-          </div>
-        </div>
-        <div class="scroll-content" style="flex:1; padding:12px 20px 0;">
-
-          <div id="restaurantCards" style="display:flex;flex-direction:column;gap:12px;">
-            <!-- injected by JS -->
-          </div>
-
-          <!-- Score Modal (overlay within screen) -->
-          <div id="scoreModal" style="
-            display:none; position:absolute; top:0;left:0;right:0;bottom:0;
-            background:rgba(0,0,0,0.5); z-index:200;
-            display:none; align-items:center; justify-content:center;
-          ">
-            <div style="
-              background:white; border-radius:24px; padding:28px 24px; width:85%;
-              text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);
-            ">
-              <div id="scoreModalName" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
-              <div id="scoreModalMeta" style="font-size:13px;color:var(--text-sub);margin-bottom:20px;"></div>
-              <div style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">만족도를 표시해주세요</div>
-              <!-- Score gauge -->
-              <div style="position:relative;height:48px;background:#F0EDE8;border-radius:24px;overflow:hidden;margin-bottom:8px;cursor:pointer;" id="scoreGaugeTrack">
-                <div id="scoreGaugeFill" style="
-                  position:absolute;top:0;left:0;bottom:0;width:75%;
-                  border-radius:24px; transition:width 0.15s,background 0.15s;
-                  background:#22c55e;
-                "></div>
-                <div id="scoreGaugeLabel" style="
-                  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                  font-size:24px;font-weight:800;color:white;
-                  text-shadow:0 1px 3px rgba(0,0,0,0.2);
-                ">75</div>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-hint);margin-bottom:20px;">
-                <span>별로</span><span>최고</span>
-              </div>
-              <button onclick="confirmScore()" style="
-                width:100%;padding:14px;border-radius:14px;border:none;
-                background:var(--primary);color:white;font-size:15px;font-weight:600;cursor:pointer;
-              ">확인</button>
-            </div>
-          </div>
-
-          <div style="height:80px;"></div><!-- spacer for floating btn -->
-        </div>
-        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <button class="ob-skip" onclick="goToNextAfterRest()">건너뛰기</button>
-        <button class="fab-forward" id="restNextBtn" onclick="goToNextAfterRest()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-      </div>
-
-      <!-- SCREEN 3.5: WINE ONBOARDING (사진 인식 기반) -->
-      <div class="screen hidden" id="screen-wines">
-        <div style="height:44px;"></div>
-        <!-- Header -->
-        <div style="padding:16px 20px 0; background:var(--bg);">
-          <div style="font-size:22px;font-weight:800;color:var(--wine);line-height:1.3;">혹시 와인도<br>즐기시나요? 🍷</div>
-          <div style="font-size:14px;color:var(--text-sub);margin-top:6px;margin-bottom:14px;">사진으로 찾거나 이름으로 검색해서 추가하세요</div>
-        </div>
-
-        <!-- Sticky add buttons / search input -->
-        <div style="padding:0 20px 0; background:var(--bg); position:sticky; top:0; z-index:10;">
-          <!-- Button mode -->
-          <div id="wineStickyButtons" style="display:flex;gap:8px;padding-bottom:12px;border-bottom:1.5px solid var(--border);">
-            <button onclick="simulateWinePhotoUpload()" style="
-              flex:1;padding:11px 0;border-radius:12px;border:1.5px solid var(--wine);
-              background:var(--wine-light);font-size:13px;font-weight:600;color:var(--wine);
-              cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
-            ">📷 사진으로 찾기</button>
-            <button onclick="activateStickySearch()" style="
-              flex:1;padding:11px 0;border-radius:12px;border:1.5px solid var(--border);
-              background:white;font-size:13px;font-weight:600;color:var(--text);
-              cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
-            ">🔍 이름으로 검색</button>
-          </div>
-          <!-- Search input mode (hidden by default) -->
-          <div id="wineStickySearch" style="display:none;padding-bottom:12px;border-bottom:1.5px solid var(--border);">
-            <div style="display:flex;gap:8px;align-items:center;">
-              <div style="position:relative;flex:1;">
-                <input id="wineStickySearchInput" type="text" placeholder="와인 이름 검색..."
-                  onkeydown="if(event.key==='Enter'){event.preventDefault();submitStickySearch();}" style="
-                  width:100%;padding:11px 14px 11px 36px;border-radius:12px;
-                  border:1.5px solid var(--wine);font-size:14px;
-                  background:white;outline:none;box-sizing:border-box;
-                " />
-                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;">🔍</span>
-              </div>
-              <button onclick="submitStickySearch()" style="
-                padding:11px 16px;border-radius:12px;border:none;
-                background:var(--wine);color:white;font-size:13px;font-weight:600;
-                cursor:pointer;white-space:nowrap;
-              ">찾기</button>
-              <button onclick="deactivateStickySearch()" style="
-                background:none;border:none;font-size:14px;font-weight:600;
-                color:var(--text-sub);cursor:pointer;padding:8px;white-space:nowrap;
-              ">취소</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="scroll-content" style="flex:1; padding:12px 20px 0;">
-          <!-- Wine cards list — same ob-card pattern as restaurants -->
-          <div id="wineCardsList" style="display:flex;flex-direction:column;gap:12px;">
-            <!-- Loading card (shown during recognition) -->
-            <div id="wineLoadingCard" class="ob-card" style="display:none;text-align:center;padding:24px;">
-              <div style="font-size:28px;margin-bottom:8px;animation:pulse 1.5s infinite;">🍷</div>
-              <div style="font-size:13px;color:var(--text-sub);">와인을 찾고 있어요...</div>
-            </div>
-
-            <!-- Empty state -->
-            <div id="wineEmptyState" style="text-align:center;padding:40px 20px;color:var(--text-hint);">
-              <div style="font-size:32px;margin-bottom:8px;">🍷</div>
-              <div style="font-size:14px;font-weight:600;margin-bottom:4px;">아직 등록한 와인이 없어요</div>
-              <div style="font-size:12px;">위 버튼으로 와인을 추가해보세요. 건너뛰어도 OK!</div>
-            </div>
-          </div>
-
-          <div style="height:80px;"></div>
-        </div>
-
-        <!-- Wine Search Bottom Sheet -->
-        <div id="wineSearchSheet" style="
-          display:none; position:absolute; bottom:0; left:0; right:0;
-          background:var(--bg); border-radius:24px 24px 0 0;
-          box-shadow:0 -10px 40px rgba(0,0,0,0.15); z-index:200;
-          padding:16px 20px 28px; max-height:60%;
-          animation:sheetSlideUp 0.3s ease;
-          flex-direction:column;
-        ">
-          <div style="width:40px;height:4px;border-radius:2px;background:var(--border-bold);margin:0 auto 12px;"></div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-            <div style="position:relative;flex:1;">
-              <input id="wineSearchInput" type="text" placeholder="와인 이름 검색..."
-                onkeydown="if(event.key==='Enter'){event.preventDefault();submitSheetSearch();}" style="
-                width:100%;padding:12px 14px 12px 36px;border-radius:12px;
-                border:1.5px solid var(--border);font-size:14px;
-                background:var(--bg-card);outline:none;box-sizing:border-box;
-              " onfocus="this.style.borderColor='var(--wine)'" onblur="this.style.borderColor='var(--border)'" />
-              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;">🔍</span>
-            </div>
-            <button onclick="submitSheetSearch()" style="
-              padding:12px 16px;border-radius:12px;border:none;
-              background:var(--wine);color:white;font-size:13px;font-weight:600;
-              cursor:pointer;white-space:nowrap;
-            ">찾기</button>
-          </div>
-          <div id="wineSearchResults" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
-            <div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">와인 이름을 입력해보세요</div>
-          </div>
-        </div>
-        <div id="wineSearchBackdrop" onclick="closeWineSearch()" style="
-          display:none;position:absolute;top:0;left:0;right:0;bottom:0;
-          background:rgba(0,0,0,0.3);z-index:190;
-        "></div>
-
-        <button class="fab-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <button class="ob-skip" onclick="goToScreen('screen-home')">건너뛰기</button>
-        <button class="fab-forward wine-style" onclick="goToScreen('screen-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-        </div>
-      </div>
-
       <!-- SCREEN 4: HOME -->
-      <div class="screen hidden" id="screen-home">
+      <div class="screen active" id="screen-home">
         <!-- Top fixed — glassmorphism on scroll -->
         <div class="top-fixed" id="homeTopFixed">
           <div class="status-bar">
@@ -3765,16 +3336,22 @@
             </div>
           </div>
           <div class="app-header">
-            <div class="header-brand">nyam</div>
+            <a href="01_home.html" class="header-brand" style="text-decoration:none;cursor:pointer;">nyam</a>
             <div class="header-right">
-              <button onclick="goToTab('bubble')" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+              <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 </button>
                 <div class="notif-badge"></div>
               </div>
-              <div class="header-avatar" onclick="alert('프로필/설정')">J</div>
+              <div style="position:relative;">
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="avatar-menu" onclick="event.stopPropagation()">
+                  <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                  <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3868,7 +3445,7 @@
             <!-- ===== 간단 보기 (compact) ===== -->
             <div id="foodCompact" style="display:none;">
               <div class="compact-list">
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank top3">1</div>
                   <div class="compact-thumb food-thumb"></div>
                   <div class="compact-info">
@@ -3877,7 +3454,7 @@
                   </div>
                   <div class="compact-score food-score">92</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank top3">2</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c8a882,#a08060);"></div>
                   <div class="compact-info">
@@ -3886,7 +3463,7 @@
                   </div>
                   <div class="compact-score food-score">88</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank top3">3</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d8c8a0,#887848);"></div>
                   <div class="compact-info">
@@ -3895,7 +3472,7 @@
                   </div>
                   <div class="compact-score food-score">85</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">4</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#e8c8a0,#8a5a38);"></div>
                   <div class="compact-info">
@@ -3904,7 +3481,7 @@
                   </div>
                   <div class="compact-score food-score">83</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">5</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#b8a070,#685830);"></div>
                   <div class="compact-info">
@@ -3913,7 +3490,7 @@
                   </div>
                   <div class="compact-score no-score">—</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">6</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c09060,#6a4028);"></div>
                   <div class="compact-info">
@@ -3922,7 +3499,7 @@
                   </div>
                   <div class="compact-score food-score">80</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">7</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#a89070,#5a4030);"></div>
                   <div class="compact-info">
@@ -3931,7 +3508,7 @@
                   </div>
                   <div class="compact-score food-score">78</div>
                 </div>
-                <div class="compact-item" onclick="alert('식당 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">8</div>
                   <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d0b890,#806840);"></div>
                   <div class="compact-info">
@@ -3947,7 +3524,7 @@
             <div id="foodDetail">
 
             <!-- 1: 미진 — 3소스 다 있음 -->
-            <div class="place-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="place-photo-col" style="background:
                 radial-gradient(ellipse at 30% 60%, rgba(200,160,120,0.8), transparent 60%),
                 radial-gradient(ellipse at 70% 40%, rgba(180,140,100,0.6), transparent 50%),
@@ -3990,7 +3567,7 @@
             </div>
 
             <!-- 2: 스시코우지 — 내 경험 + 미슐랭 -->
-            <div class="place-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="place-photo-col" style="background:
                 radial-gradient(ellipse at 40% 50%, rgba(220,180,150,0.7), transparent 55%),
                 linear-gradient(160deg, #e8c8a0, #c09060 35%, #8a5a38 75%, #6a4028);">
@@ -4028,7 +3605,7 @@
             </div>
 
             <!-- 3: 광화문국밥 — 버블 + 웹 (안 가봄) -->
-            <div class="place-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="place-photo-col" style="background:
                 radial-gradient(ellipse at 50% 55%, rgba(200,180,140,0.7), transparent 50%),
                 linear-gradient(145deg, #d8c8a0, #b8a070 35%, #887848 75%, #685830);">
@@ -4237,7 +3814,7 @@
             <!-- ===== 간단 보기 (compact) ===== -->
             <div id="wineCompact" style="display:none;">
               <div class="compact-list">
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank top3" style="color:var(--wine)">1</div>
                   <div class="compact-thumb wine-thumb">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4248,7 +3825,7 @@
                   </div>
                   <div class="compact-score wine-score">96</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank top3" style="color:var(--wine)">2</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#200c18,#0a0406);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4259,7 +3836,7 @@
                   </div>
                   <div class="compact-score wine-score">94</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank top3" style="color:var(--wine)">3</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1520,#0f0810);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4270,7 +3847,7 @@
                   </div>
                   <div class="compact-score wine-score">93</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">4</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e8dcc8,#a89070);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4281,7 +3858,7 @@
                   </div>
                   <div class="compact-score wine-score">90</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">5</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#1a1018,#080408);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4292,7 +3869,7 @@
                   </div>
                   <div class="compact-score wine-score">89</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">6</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e0d0c0,#906838);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4303,7 +3880,7 @@
                   </div>
                   <div class="compact-score wine-score">87</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">7</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#f0d8d0,#c88888);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4314,7 +3891,7 @@
                   </div>
                   <div class="compact-score wine-score">85</div>
                 </div>
-                <div class="compact-item" onclick="alert('와인 상세')">
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">8</div>
                   <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1020,#100810);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
@@ -4360,7 +3937,7 @@
               <div class="wine-section-label">최근 등록한 와인</div>
             </div>
 
-            <div class="wine-recent-card" onclick="alert('와인 상세')">
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
               <div class="wine-photo-col" style="background:linear-gradient(135deg, #3d1a2a 0%, #1a0a15 100%);">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
@@ -4387,7 +3964,7 @@
               </div>
             </div>
 
-            <div class="wine-recent-card" onclick="alert('와인 상세')">
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
               <div class="wine-photo-col" style="background:linear-gradient(135deg, #200c18 0%, #0a0406 100%);">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
@@ -4407,7 +3984,7 @@
               </div>
             </div>
 
-            <div class="wine-recent-card" onclick="alert('와인 상세')">
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
               <div class="wine-photo-col" style="background:linear-gradient(135deg, #e8dcc8 0%, #a89070 100%);">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
@@ -5442,7 +5019,7 @@
           <div class="discover-list">
 
             <!-- Card 1 -->
-            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="discover-card-photo">
                 🍜
                 <div class="discover-card-badges">
@@ -5464,7 +5041,7 @@
             </div>
 
             <!-- Card 2 -->
-            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="discover-card-photo dc-photo2">
                 🍣
                 <div class="discover-card-badges">
@@ -5486,7 +5063,7 @@
             </div>
 
             <!-- Card 3 -->
-            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="discover-card-photo dc-photo3">
                 🍲
               </div>
@@ -5505,7 +5082,7 @@
             </div>
 
             <!-- Card 4 -->
-            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="discover-card-photo dc-photo4">
                 🥩
                 <div class="discover-card-badges">
@@ -5527,7 +5104,7 @@
             </div>
 
             <!-- Card 5 -->
-            <div class="discover-card" onclick="alert('식당 상세 → 03_detail.html')">
+            <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
               <div class="discover-card-photo" style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);">
                 🍛
               </div>
@@ -5568,51 +5145,8 @@
   // =====================
   // Screen Navigation
   // =====================
-  let currentScreen = 'screen-login';
+  let currentScreen = 'screen-home';
   const screenHistory = [];
-
-  // ── Intro selection state ──
-  const introSelected = { restaurant: true, wine: true };
-
-  function toggleIntroCard(type) {
-    introSelected[type] = !introSelected[type];
-    const card = document.getElementById(type === 'restaurant' ? 'introCardRestaurant' : 'introCardWine');
-    const color = type === 'restaurant' ? 'var(--primary)' : 'var(--wine)';
-    const lightColor = type === 'restaurant' ? 'var(--primary-light)' : 'var(--wine-light)';
-    const label = card.querySelector('div');
-
-    if (introSelected[type]) {
-      card.style.borderColor = color;
-      card.style.background = lightColor;
-      if (label) label.style.color = color;
-    } else {
-      card.style.borderColor = 'var(--border)';
-      card.style.background = 'var(--bg-card)';
-      if (label) label.style.color = 'var(--text-hint)';
-    }
-    updateIntroCta();
-  }
-
-  function updateIntroCta() {
-    const btn = document.getElementById('introCta');
-    if (!introSelected.restaurant && !introSelected.wine) {
-      btn.disabled = true;
-      btn.textContent = '하나 이상 선택해주세요';
-    } else {
-      btn.disabled = false;
-      btn.textContent = '시작할게요';
-    }
-  }
-
-  function startOnboarding() {
-    if (introSelected.restaurant) {
-      goToScreen('screen-area');
-    } else if (introSelected.wine) {
-      goToScreen('screen-wines');
-    } else {
-      goToScreen('screen-home');
-    }
-  }
 
   function goToScreen(targetId) {
     if (targetId === currentScreen) return;
@@ -5633,30 +5167,6 @@
     }, 350);
 
     currentScreen = targetId;
-
-    // Init tabs when entering restaurant onboarding
-    if (targetId === 'screen-restaurants') {
-      initRestAreaTabs();
-      initRestaurantCards();
-      // fab-forward는 항상 동일한 형태 유지
-    }
-  }
-
-  function goToNextAfterRest() {
-    if (introSelected.wine) {
-      goToScreen('screen-wines');
-    } else {
-      goToScreen('screen-home');
-    }
-  }
-
-  function skipRestaurantOnboarding() {
-    // Skip area + restaurant entirely
-    if (introSelected.wine) {
-      goToScreen('screen-wines');
-    } else {
-      goToScreen('screen-home');
-    }
   }
 
   function goBack() {
@@ -5691,624 +5201,6 @@
     } else if (tab === 'bubble') {
       alert('버블 탭 → 05_bubbles.html');
     }
-  }
-
-  // =====================
-  // Area Selection (Screen 2) — National → City → Area map
-  // =====================
-  const selectedAreas = new Set(); // stores "서울·광화문", "부산·해운대" etc.
-
-  const cityMapIds = {
-    '서울': 'mapSeoul',
-    '부산': 'mapBusan',
-    '대구': 'mapDaegu',
-    '제주': 'mapJeju',
-  };
-
-  function zoomToCity(city) {
-    // Hide national map
-    document.getElementById('mapNational').classList.add('zoom-out');
-    // Show city map
-    const mapId = cityMapIds[city];
-    if (mapId) {
-      document.getElementById(mapId).classList.remove('hidden-layer');
-    } else {
-      // Generic for cities without detailed map
-      const generic = document.getElementById('mapGeneric');
-      document.getElementById('genericCityName').textContent = city;
-      generic.dataset.city = city;
-      generic.classList.remove('hidden-layer');
-    }
-  }
-
-  function zoomToNational() {
-    // Hide all city maps
-    document.querySelectorAll('.map-layer').forEach(l => {
-      if (l.id !== 'mapNational') l.classList.add('hidden-layer');
-    });
-    // Show national
-    document.getElementById('mapNational').classList.remove('zoom-out');
-  }
-
-  // Area bubble click handler (delegate)
-  document.getElementById('areaMapContainer').addEventListener('click', (e) => {
-    const bubble = e.target.closest('.area-bubble');
-    if (!bubble) return;
-    const area = bubble.dataset.area;
-    // Find which city map this belongs to
-    const cityLayer = bubble.closest('.map-layer');
-    const city = cityLayer ? cityLayer.dataset.city : '';
-    const key = city ? `${city}·${area}` : area;
-
-    if (selectedAreas.has(key)) {
-      selectedAreas.delete(key);
-      bubble.classList.remove('selected');
-    } else {
-      selectedAreas.add(key);
-      bubble.classList.add('selected');
-    }
-    renderSelectedAreas();
-    updateAreaBtn();
-  });
-
-  function renderSelectedAreas() {
-    const container = document.getElementById('selectedAreas');
-    if (selectedAreas.size === 0) {
-      container.innerHTML = '<span style="font-size:13px;color:var(--text-hint);">선택된 동네가 여기에 표시됩니다</span>';
-      return;
-    }
-    container.innerHTML = '';
-    selectedAreas.forEach(key => {
-      const chip = document.createElement('span');
-      chip.className = 'selected-chip';
-      chip.innerHTML = `${key} <span class="remove" onclick="removeArea('${key}')">×</span>`;
-      container.appendChild(chip);
-    });
-  }
-
-  function removeArea(key) {
-    selectedAreas.delete(key);
-    // Un-highlight the bubble on the map
-    const parts = key.split('·');
-    const areaName = parts.length > 1 ? parts[1] : parts[0];
-    document.querySelectorAll(`.area-bubble[data-area="${areaName}"]`).forEach(b => {
-      b.classList.remove('selected');
-    });
-    renderSelectedAreas();
-    updateAreaBtn();
-  }
-
-  function updateAreaBtn() {
-    // fab-forward는 항상 동일한 형태 유지 — 선택 여부와 무관
-  }
-
-  // No initAreaChips needed — bubbles are in HTML, click handled by delegation
-
-  // =====================
-  // Restaurant Onboarding (Screen 3)
-  // =====================
-  const obRestaurants = [
-    { name: '미진', genre: '한식', area: '광화문', badge: '블루리본', badgeClass: 'blue', icon: '🍜', scores: 'N 4.5 · K 4.2' },
-    { name: '스시코우지', genre: '일식', area: '을지로', badge: '미슐랭 1스타', badgeClass: '', icon: '🍣', scores: 'N 4.6 · G 4.5' },
-    { name: '토속촌', genre: '한식', area: '광화문', badge: null, icon: '🍲', scores: 'N 4.3 · K 4.1' },
-    { name: '도쿄등심', genre: '일식', area: '강남', badge: null, icon: '🥩', scores: 'N 4.4 · G 4.3' },
-    { name: '레스토랑 오르되브르', genre: '양식', area: '성수', badge: '블루리본', badgeClass: 'blue', icon: '🍝', scores: 'N 4.2' },
-    { name: '광화문국밥', genre: '한식', area: '광화문', badge: null, icon: '🥘', scores: 'N 4.1 · K 4.0' },
-  ];
-
-  const restVisited = {}; // { index: score }
-  const restWishlisted = new Set();
-  let currentRestArea = 'all';
-
-  // Build area filter tabs dynamically from selected areas
-  function initRestAreaTabs() {
-    const tabsContainer = document.getElementById('restAreaTabs');
-    tabsContainer.innerHTML = '<button class="ob-filter-tab active" onclick="filterRestByArea(\'all\', this)">전체</button>';
-    // Get unique areas from selectedAreas (format: "서울·광화문" → "광화문")
-    const areas = new Set();
-    selectedAreas.forEach(key => {
-      const parts = key.split('·');
-      areas.add(parts.length > 1 ? parts[1] : parts[0]);
-    });
-    // Fallback if no areas selected
-    if (areas.size === 0) {
-      ['광화문','을지로','강남','성수'].forEach(a => areas.add(a));
-    }
-    areas.forEach(area => {
-      const btn = document.createElement('button');
-      btn.className = 'ob-filter-tab';
-      btn.textContent = area;
-      btn.onclick = function() { filterRestByArea(area, this); };
-      tabsContainer.appendChild(btn);
-    });
-  }
-
-  function filterRestByArea(area, btn) {
-    currentRestArea = area;
-    document.querySelectorAll('#restAreaTabs .ob-filter-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    initRestaurantCards();
-  }
-
-  function initRestaurantCards() {
-    const container = document.getElementById('restaurantCards');
-    container.innerHTML = '';
-    const filtered = currentRestArea === 'all' ? obRestaurants : obRestaurants.filter(r => r.area === currentRestArea);
-    filtered.forEach((r) => {
-      const i = obRestaurants.indexOf(r);
-      const isVisited = restVisited.hasOwnProperty(i);
-      const isWished = restWishlisted.has(i);
-      const card = document.createElement('div');
-      card.className = 'ob-card' + (isVisited ? ' visited' : '') + (isWished ? ' wishlisted' : '');
-      card.id = `rest-card-${i}`;
-      card.innerHTML = `
-        <div class="ob-card-top">
-          <div class="ob-card-photo">${r.icon}</div>
-          <div class="ob-card-info">
-            <div class="ob-card-name">${r.name}</div>
-            <div class="ob-card-meta">
-              ${r.genre} · ${r.area}
-              ${r.badge ? `<span class="badge ${r.badgeClass}">⭐ ${r.badge}</span>` : ''}
-            </div>
-            <div class="ob-card-score">${r.scores}</div>
-          </div>
-        </div>
-        <div class="ob-card-actions" id="rest-actions-${i}" style="${isVisited?'display:none':''}">
-          <button class="ob-btn visited-btn" id="rest-visit-${i}" onclick="toggleRestVisited(${i})">🍽️ 가봤음</button>
-          <button class="ob-btn wish-btn ${isWished?'active':''}" id="rest-wish-${i}" onclick="toggleRestWish(${i})">💛 가보고싶음</button>
-        </div>
-        <div class="ob-card-gauge" id="rest-gauge-${i}" style="${isVisited?'':'display:none'}">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="ob-circle-area" style="flex:1;" id="rest-circle-area-${i}"
-              onpointerdown="startCircleScore(event,'rest',${i})"
-              onpointermove="moveCircleScore(event,'rest',${i})"
-              onpointerup="endCircleScore('rest')"
-              onpointercancel="endCircleScore('rest')">
-              <div class="ob-rating-circle" id="rest-circle-${i}"></div>
-              <span class="circle-hint" id="rest-hint-${i}">↕ 위아래로 드래그</span>
-            </div>
-            <button onclick="cancelRestVisited(${i})" style="
-              background:none;border:none;font-size:16px;color:var(--text-hint);
-              cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
-            ">×</button>
-          </div>
-        </div>
-      `;
-      container.appendChild(card);
-    });
-    // Initialize circles for visited restaurants
-    Object.keys(restVisited).forEach(i => {
-      const circle = document.getElementById(`rest-circle-${i}`);
-      if (circle) applyCircleRating(circle, restVisited[i]);
-    });
-  }
-
-  function toggleRestVisited(i) {
-    const card = document.getElementById(`rest-card-${i}`);
-    const actions = document.getElementById(`rest-actions-${i}`);
-    const gauge = document.getElementById(`rest-gauge-${i}`);
-
-    // Switch: buttons → gauge
-    card.classList.remove('wishlisted');
-    card.classList.add('visited');
-    restWishlisted.delete(i);
-    restVisited[i] = 75;
-    actions.style.display = 'none';
-    gauge.style.display = '';
-    applyCircleRating(document.getElementById(`rest-circle-${i}`), 75);
-    updateRestCount();
-  }
-
-  function cancelRestVisited(i) {
-    const card = document.getElementById(`rest-card-${i}`);
-    const actions = document.getElementById(`rest-actions-${i}`);
-    const gauge = document.getElementById(`rest-gauge-${i}`);
-
-    // Switch: gauge → buttons
-    card.classList.remove('visited');
-    delete restVisited[i];
-    gauge.style.display = 'none';
-    actions.style.display = '';
-    updateRestCount();
-  }
-
-  function toggleRestWish(i) {
-    const card = document.getElementById(`rest-card-${i}`);
-    const btn = document.getElementById(`rest-wish-${i}`);
-
-    if (btn.classList.contains('active')) {
-      btn.classList.remove('active');
-      card.classList.remove('wishlisted');
-      restWishlisted.delete(i);
-    } else {
-      btn.classList.add('active');
-      card.classList.add('wishlisted');
-      restWishlisted.add(i);
-    }
-    updateRestCount();
-  }
-
-  // ── Circle Rating System (shared for restaurant + wine) ──
-  const GAUGE_COLORS = [
-    { max: 20, color: '#C4B5A8' },
-    { max: 40, color: '#B0ADA4' },
-    { max: 60, color: '#9FA5A3' },
-    { max: 80, color: '#889DAB' },
-    { max: 100, color: '#7A9BAE' },
-  ];
-
-  function getCircleColor(score) {
-    return (GAUGE_COLORS.find(g => score <= g.max) || GAUGE_COLORS[4]).color;
-  }
-
-  function applyCircleRating(circle, score) {
-    const s = Math.max(0, Math.min(100, score));
-    const size = 28 + (s / 100) * 52; // 28→80px (compact for card)
-    const color = getCircleColor(s);
-    const glow = size * 0.3;
-    const fontSize = Math.max(11, size * 0.3);
-    circle.style.width = size + 'px';
-    circle.style.height = size + 'px';
-    circle.style.background = color;
-    circle.style.boxShadow = `0 0 ${glow}px ${color}80`;
-    circle.style.fontSize = fontSize + 'px';
-    circle.textContent = Math.round(s);
-  }
-
-  let circleDragging = false;
-  let circleStartY = 0;
-  let circleStartScore = 0;
-  let circleType = '';
-  let circleIdx = 0;
-
-  function startCircleScore(e, type, idx) {
-    circleDragging = true;
-    circleStartY = e.clientY;
-    circleType = type;
-    circleIdx = idx;
-    circleStartScore = type === 'rest' ? (restVisited[idx] || 75) : (wineCards[idx]?.score || 75);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    e.preventDefault();
-    // Hide hint on first drag
-    const hintId = type === 'rest' ? `rest-hint-${idx}` : `wc-hint-${idx}`;
-    const hint = document.getElementById(hintId);
-    if (hint) hint.classList.add('hidden');
-  }
-
-  function moveCircleScore(e, type, idx) {
-    if (!circleDragging || circleType !== type || circleIdx !== idx) return;
-    const dy = circleStartY - e.clientY;
-    const newScore = Math.max(1, Math.min(100, Math.round(circleStartScore + dy * 0.5)));
-    const circleId = type === 'rest' ? `rest-circle-${idx}` : `wc-circle-${idx}`;
-    const circle = document.getElementById(circleId);
-    if (!circle) return;
-    applyCircleRating(circle, newScore);
-    if (type === 'rest') { restVisited[idx] = newScore; }
-    else if (wineCards[idx]) { wineCards[idx].score = newScore; }
-  }
-
-  function endCircleScore(type) { circleDragging = false; }
-
-  // Legacy compat
-  function getScoreColor(score) { return getCircleColor(score); }
-
-  function updateRestCount() {
-    const v = Object.keys(restVisited).length;
-    const w = restWishlisted.size;
-    const el = document.getElementById('onboardingRestCount');
-    if (el) el.textContent = `가봤음 ${v}곳 · 가보고싶음 ${w}곳`;
-  }
-
-  // =====================
-  // Wine Onboarding (Screen 3.5) — Card list, same pattern as restaurants
-  // =====================
-  const wineDB = [
-    { name: '몬테스 알파 까베르네 소비뇽', type: '레드', region: '칠레 콜차과', icon: '🍷', rating: '4.1' },
-    { name: '1865 셀렉티드 빈야드 까베르네', type: '레드', region: '칠레 마울레', icon: '🍷', rating: '4.0' },
-    { name: '카시예로 델 디아블로', type: '레드', region: '칠레', icon: '🍷', rating: '3.8' },
-    { name: '코노 수르 비씨클레타 피노 누아', type: '레드', region: '칠레', icon: '🍷', rating: '3.7' },
-    { name: '루이 라투르 부르고뉴 피노 누아', type: '레드', region: '프랑스 부르고뉴', icon: '🍷', rating: '3.8' },
-    { name: '오이스터 베이 소비뇽 블랑', type: '화이트', region: '뉴질랜드 말보로', icon: '🥂', rating: '3.9' },
-    { name: '클라우디 베이 소비뇽 블랑', type: '화이트', region: '뉴질랜드 말보로', icon: '🥂', rating: '4.0' },
-    { name: '모엣 & 샹동 임페리얼', type: '샴페인', region: '프랑스 샹파뉴', icon: '🫧', rating: '4.1' },
-    { name: '뵈브 클리코 브뤼', type: '샴페인', region: '프랑스 샹파뉴', icon: '🫧', rating: '4.1' },
-    { name: '프레시넷 꼬든 네그로', type: '까바', region: '스페인', icon: '🫧', rating: '3.7' },
-    { name: '위스퍼링 엔젤', type: '로제', region: '프랑스 프로방스', icon: '🌸', rating: '3.9' },
-    { name: '그라브너 리볼라 안포라', type: '오렌지', region: '이탈리아 프리울리', icon: '🧡', rating: '4.2' },
-    { name: '알파카 소비뇽 블랑', type: '화이트', region: '칠레', icon: '🥂', rating: '3.5' },
-    { name: '옐로우테일 시라즈', type: '레드', region: '호주', icon: '🍷', rating: '3.6' },
-    { name: '디아블로 블랙 까베르네', type: '레드', region: '칠레', icon: '🍷', rating: '3.9' },
-  ];
-
-  // State
-  const wineCards = []; // { wine, status: 'pending'|'searching'|'confirmed', score }
-  let searchTargetIdx = null; // which card triggered search (null = sticky button)
-
-  function getWineScoreColor(pct) { return getCircleColor(pct); }
-
-  // ── Render ──
-  function renderWineCards() {
-    const list = document.getElementById('wineCardsList');
-    const loadingCard = document.getElementById('wineLoadingCard');
-    list.innerHTML = '';
-    list.appendChild(loadingCard);
-
-    if (wineCards.length === 0 && loadingCard.style.display === 'none') {
-      const empty = document.createElement('div');
-      empty.id = 'wineEmptyState';
-      empty.style.cssText = 'text-align:center;padding:40px 20px;color:var(--text-hint);';
-      empty.innerHTML = '<div style="font-size:32px;margin-bottom:8px;">🍷</div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">아직 등록한 와인이 없어요</div><div style="font-size:12px;">위 버튼으로 와인을 추가해보세요. 건너뛰어도 OK!</div>';
-      list.appendChild(empty);
-      return;
-    }
-
-    wineCards.forEach((entry, idx) => {
-      const w = entry.wine;
-      const card = document.createElement('div');
-      card.className = 'ob-card' + (entry.status === 'confirmed' ? ' wine-visited' : '');
-      card.id = `wc-${idx}`;
-
-      if (entry.status === 'searching') {
-        // Card shows "재검색중..." loading
-        card.innerHTML = `
-          <div style="text-align:center;padding:16px;">
-            <div style="font-size:20px;margin-bottom:6px;animation:pulse 1.5s infinite;">🔍</div>
-            <div style="font-size:13px;color:var(--text-sub);">다시 찾고 있어요...</div>
-          </div>
-        `;
-        list.appendChild(card);
-        return;
-      }
-
-      card.innerHTML = `
-        <div class="ob-card-top">
-          <div class="ob-card-photo" style="background:var(--wine-light);">${w.icon}</div>
-          <div class="ob-card-info">
-            <div class="ob-card-name" style="color:var(--wine);">${w.name}</div>
-            <div class="ob-card-meta">${w.type} · ${w.region} · ★${w.rating}</div>
-          </div>
-        </div>
-        ${entry.status === 'pending' ? `
-        <div class="ob-card-actions" id="wc-actions-${idx}">
-          <button class="ob-btn wine-visited-btn" onclick="confirmWineCard(${idx})">맞아요</button>
-          <button class="ob-btn" onclick="rejectWineCard(${idx})">다른 와인이에요</button>
-        </div>
-        ` : `
-        <div class="ob-card-gauge" id="wc-gauge-${idx}">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="ob-circle-area" style="flex:1;" id="wc-circle-area-${idx}"
-              onpointerdown="startCircleScore(event,'wine',${idx})"
-              onpointermove="moveCircleScore(event,'wine',${idx})"
-              onpointerup="endCircleScore('wine')"
-              onpointercancel="endCircleScore('wine')">
-              <div class="ob-rating-circle" id="wc-circle-${idx}"></div>
-              <span class="circle-hint" id="wc-hint-${idx}">↕ 위아래로 드래그</span>
-            </div>
-            <button onclick="removeWineCard(${idx})" style="
-              background:none;border:none;font-size:16px;color:var(--text-hint);
-              cursor:pointer;padding:4px;line-height:1;flex-shrink:0;
-            ">×</button>
-          </div>
-        </div>
-        `}
-      `;
-      list.appendChild(card);
-    });
-    // Initialize circles for confirmed cards
-    wineCards.forEach((entry, idx) => {
-      if (entry.status === 'confirmed') {
-        const circle = document.getElementById(`wc-circle-${idx}`);
-        if (circle) applyCircleRating(circle, entry.score);
-      }
-    });
-  }
-
-  // ── Photo recognition ──
-  function simulateWinePhotoUpload() {
-    const loadingCard = document.getElementById('wineLoadingCard');
-    loadingCard.style.display = 'block';
-    const empty = document.getElementById('wineEmptyState');
-    if (empty) empty.style.display = 'none';
-
-    const scenario = Math.random();
-    setTimeout(() => {
-      loadingCard.style.display = 'none';
-      if (scenario < 0.55) {
-        const wine = wineDB[Math.floor(Math.random() * wineDB.length)];
-        if (!wineCards.some(c => c.wine.name === wine.name)) {
-          wineCards.unshift({ wine, status: 'pending', score: 75 });
-        } else { showToast('이미 등록한 와인이에요'); }
-      } else if (scenario < 0.85) {
-        const shuffled = [...wineDB].sort(() => Math.random() - 0.5).slice(0, 3);
-        shuffled.forEach(w => {
-          if (!wineCards.some(c => c.wine.name === w.name))
-            wineCards.unshift({ wine: w, status: 'pending', score: 75 });
-        });
-      } else {
-        showToast('인식이 어려워요 😅 검색해보세요');
-      }
-      renderWineCards();
-    }, 1000);
-  }
-
-  // ── Card actions ──
-  function confirmWineCard(idx) {
-    wineCards[idx].status = 'confirmed';
-    renderWineCards();
-  }
-
-  // "다른 와인이에요" → show loading on card → bottom sheet with alternatives
-  function rejectWineCard(idx) {
-    const rejectedName = wineCards[idx].wine.name;
-    wineCards[idx].status = 'searching';
-    searchTargetIdx = idx;
-    renderWineCards();
-
-    // After 1s, show bottom sheet with other wines (excluding rejected)
-    setTimeout(() => {
-      const alternatives = wineDB
-        .filter(w => w.name !== rejectedName)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 5);
-
-      const container = document.getElementById('wineSearchResults');
-      container.innerHTML = '';
-
-      // Add search input hint at top
-      document.getElementById('wineSearchInput').value = '';
-      document.getElementById('wineSearchInput').placeholder = '다른 와인 검색...';
-
-      alternatives.forEach(w => {
-        const el = document.createElement('div');
-        el.style.cssText = 'padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all 0.15s;';
-        el.onmouseenter = () => { el.style.borderColor = 'var(--wine)'; el.style.background = 'var(--wine-light)'; };
-        el.onmouseleave = () => { el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-card)'; };
-        el.onclick = () => selectSearchResult(w);
-        el.innerHTML = `
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="font-size:18px;">${w.icon}</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--text);">${w.name}</div>
-              <div style="font-size:12px;color:var(--text-sub);">${w.type} · ${w.region} · ★${w.rating}</div>
-            </div>
-          </div>
-        `;
-        container.appendChild(el);
-      });
-
-      showWineSearchSheet();
-    }, 1000);
-  }
-
-  function removeWineCard(idx) {
-    wineCards.splice(idx, 1);
-    renderWineCards();
-  }
-
-  // ── Wine score dragging ──
-  // Wine score drag — now handled by shared circleScore system
-
-  // ── Sticky search (이름으로 검색 button) ──
-  function activateStickySearch() {
-    document.getElementById('wineStickyButtons').style.display = 'none';
-    document.getElementById('wineStickySearch').style.display = 'block';
-    searchTargetIdx = null; // not from a card
-    setTimeout(() => document.getElementById('wineStickySearchInput').focus(), 50);
-  }
-
-  function submitStickySearch() {
-    const query = document.getElementById('wineStickySearchInput').value;
-    if (!query.trim()) { showToast('와인 이름을 입력해주세요'); return; }
-    handleWineSearch(query);
-  }
-
-  function submitSheetSearch() {
-    const query = document.getElementById('wineSearchInput').value;
-    if (!query.trim()) return;
-    handleWineSearch(query);
-  }
-
-  function deactivateStickySearch() {
-    document.getElementById('wineStickySearch').style.display = 'none';
-    document.getElementById('wineStickyButtons').style.display = 'flex';
-    document.getElementById('wineStickySearchInput').value = '';
-    closeWineSearch();
-  }
-
-  // ── Search bottom sheet ──
-  function showWineSearchSheet() {
-    document.getElementById('wineSearchBackdrop').style.display = 'block';
-    document.getElementById('wineSearchSheet').style.display = 'flex';
-  }
-
-  function closeWineSearch() {
-    document.getElementById('wineSearchBackdrop').style.display = 'none';
-    document.getElementById('wineSearchSheet').style.display = 'none';
-    document.getElementById('wineSearchInput').value = '';
-    document.getElementById('wineSearchInput').placeholder = '와인 이름 검색...';
-    const container = document.getElementById('wineSearchResults');
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">와인 이름을 입력해보세요</div>';
-    // Clean up any searching cards if sheet closed without selecting
-    if (searchTargetIdx !== null && wineCards[searchTargetIdx] && wineCards[searchTargetIdx].status === 'searching') {
-      wineCards.splice(searchTargetIdx, 1);
-      searchTargetIdx = null;
-      renderWineCards();
-    }
-  }
-
-  function handleWineSearch(query, fromCardIdx) {
-    // Open bottom sheet with results
-    if (!query.trim()) {
-      closeWineSearch();
-      return;
-    }
-    const results = wineDB.filter(w => w.name.toLowerCase().includes(query.toLowerCase()));
-    const container = document.getElementById('wineSearchResults');
-
-    if (results.length === 0) {
-      showWineSearchSheet();
-      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">검색 결과가 없어요</div>';
-      return;
-    }
-
-    // Copy query to bottom sheet input too
-    document.getElementById('wineSearchInput').value = query;
-
-    container.innerHTML = '';
-    results.forEach(w => {
-      const el = document.createElement('div');
-      el.style.cssText = 'padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all 0.15s;';
-      el.onmouseenter = () => { el.style.borderColor = 'var(--wine)'; el.style.background = 'var(--wine-light)'; };
-      el.onmouseleave = () => { el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-card)'; };
-      el.onclick = () => selectSearchResult(w, fromCardIdx);
-      el.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:18px;">${w.icon}</div>
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);">${w.name}</div>
-            <div style="font-size:12px;color:var(--text-sub);">${w.type} · ${w.region} · ★${w.rating}</div>
-          </div>
-        </div>
-      `;
-      container.appendChild(el);
-    });
-    showWineSearchSheet();
-  }
-
-  function selectSearchResult(wine, fromCardIdx) {
-    if (wineCards.some(c => c.wine.name === wine.name && c.status !== 'searching')) {
-      showToast('이미 등록한 와인이에요');
-      closeWineSearch();
-      return;
-    }
-
-    const idx = fromCardIdx !== undefined ? fromCardIdx : searchTargetIdx;
-    if (idx !== null && idx !== undefined && wineCards[idx] && wineCards[idx].status === 'searching') {
-      // Replace the searching card with the selected wine
-      wineCards[idx] = { wine, status: 'confirmed', score: 75 };
-    } else {
-      // From sticky search — add new confirmed card
-      wineCards.push({ wine, status: 'confirmed', score: 75 });
-    }
-
-    searchTargetIdx = null;
-    closeWineSearch();
-    deactivateStickySearch();
-    renderWineCards();
-  }
-
-  // Toast
-  function showToast(msg) {
-    let toast = document.getElementById('wineToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'wineToast';
-      toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.3s;white-space:nowrap;';
-      document.body.appendChild(toast);
-    }
-    toast.textContent = msg;
-    toast.style.opacity = '1';
-    setTimeout(() => { toast.style.opacity = '0'; }, 2000);
   }
 
   // =====================
@@ -6592,10 +5484,14 @@
   // =====================
   // Init
   // =====================
-  // Area map is initialized in HTML + event delegation
-  initRestaurantCards();
-  // Wine onboarding: no init needed (photo-recognition based, no pre-built list)
   lucide.createIcons();
+
+  // Close avatar menu on outside click
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
 
   // =====================
   // AI Greeting — time-based + record-based + auto-collapse
@@ -6645,7 +5541,7 @@
     if (el.classList.contains('collapsed')) return;
     const id = el.dataset.restaurantId;
     if (id) {
-      alert('식당 상세 페이지로 이동: ' + id);
+      location.href = '02_detail_restaurant.html';
     }
   }
 
