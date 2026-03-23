@@ -23,12 +23,10 @@
     --wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
-    --radius: 16px;
     --positive: #7EAE8B;
     --caution: #C9A96E;
     --negative: #B87272;
     --accent-social: #7A9BAE;
-    --accent-social-light: #EDF2F5;
     --brand: #FF6038;
   }
 
@@ -74,44 +72,42 @@
   .device-inner {
     width: 100%; height: 100%; background: var(--bg);
     border-radius: 42px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
   }
 
   .status-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 28px 0; height: 50px;
-    font-size: 15px; font-weight: 600; color: var(--text);
+    height: 44px; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 24px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    position: relative; z-index: 50;
   }
-  .status-icons { display: flex; gap: 6px; color: var(--text); }
+  .status-time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
 
   .top-fixed {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-    background: rgba(248,246,243,0.88);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    flex-shrink: 0;
+    background: rgba(248,246,243,0.55);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    z-index: 60;
   }
   .app-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 20px 10px;
+    padding: 2px 16px 8px;
+    display: flex; align-items: center;
+    justify-content: space-between;
   }
-  .back-btn {
-    display: flex; align-items: center; gap: 2px;
-    background: none; border: none; cursor: pointer;
-    font-size: 17px; font-weight: 700; color: var(--text); font-family: inherit;
+  .header-brand {
+    font-family: 'Comfortaa', cursive;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.5px; line-height: 1;
+    background: linear-gradient(135deg, #FF6038, #8B7396);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-decoration: none;
   }
-  .back-btn svg { width: 20px; height: 20px; }
-
-  .inner-back-btn {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px 0;
-    color: var(--text);
-  }
-  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
-  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
-  .inner-back-btn:active { opacity: 0.6; }
 
   .header-right { display: flex; gap: 6px; align-items: center; }
   .icon-btn {
@@ -135,7 +131,7 @@
   }
 
   .scroll-area {
-    height: 100%; overflow-y: auto; padding-top: 90px; padding-bottom: 40px;
+    flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px;
     -webkit-overflow-scrolling: touch;
   }
   .scroll-area::-webkit-scrollbar { display: none; }
@@ -194,7 +190,6 @@
   .toggle.on { background: var(--primary); }
   .toggle.on::after { left: 20px; }
 
-  /* Select pill */
   /* nyam-select (inline variant for settings) */
   .nyam-select-wrap { position: relative; display: inline-block; flex-shrink: 0; }
   .nyam-select {
@@ -299,8 +294,6 @@
     padding: 12px 0; border-bottom: 1px solid var(--border);
   }
   .bubble-toggle-item:last-child { border-bottom: none; }
-  .bubble-toggle-item .settings-item-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-sub); }
-  .bubble-toggle-item .settings-item-icon svg { width: 18px; height: 18px; }
   .bubble-toggle-label { flex: 1; font-size: 14px; color: var(--text); }
 
   /* Summary box */
@@ -369,32 +362,6 @@
   .option-card-title { font-size: 15px; font-weight: 600; color: var(--text); }
   .option-card-desc { font-size: 12px; color: var(--text-sub); margin-top: 3px; line-height: 1.4; }
 
-  .option-card-scope {
-    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
-  }
-  .scope-tag {
-    font-size: 10px; padding: 2px 7px; border-radius: 4px;
-    font-weight: 500;
-  }
-  .scope-tag.visible { background: #E8F0EB; color: var(--positive); }
-  .scope-tag.hidden { background: #F5EAEA; color: var(--negative); }
-  .scope-tag.partial { background: #F5F0E5; color: var(--caution); }
-
-  /* Toggle group info */
-  .toggle-scope-list {
-    padding: 8px 16px 12px 46px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
-  .toggle-scope-list:last-child { border-bottom: none; }
-  .toggle-scope-item {
-    font-size: 11px; color: var(--text-hint); line-height: 1.6;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .toggle-scope-item::before {
-    content: ''; width: 4px; height: 4px; border-radius: 50%;
-    background: var(--text-hint); flex-shrink: 0;
-  }
   /* Avatar dropdown menu */
   .avatar-menu {
     display: none;
@@ -425,10 +392,54 @@
   }
   .avatar-menu-item:last-child { border-bottom: none; }
   .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
+
+  /* Header bubbles link */
+  .header-bubbles {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Comfortaa', cursive; font-size: 13px;
+    font-weight: 700; color: var(--brand); padding: 4px 0;
+  }
+
+  /* Privacy toggle item label size override */
+  .settings-item-label--sm { font-size: 14px; }
+
+  /* Section subtitle (inline) */
+  .prv-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .prv-section-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+
+  /* Layer footer note */
+  .prv-layer-note {
+    padding: 6px 4px 0; font-size: 11px;
+    color: var(--text-hint); line-height: 1.5;
+  }
+
+  /* Delete sheet info box */
+  .delete-info {
+    padding: 12px; background: var(--bg);
+    border-radius: 10px; margin-bottom: 16px;
+    font-size: 12px; color: var(--text-sub); line-height: 1.6;
+  }
+  .delete-info-item {
+    display: flex; align-items: flex-start; gap: 5px; margin-bottom: 2px;
+  }
+  .delete-info-item:last-child { margin-bottom: 0; }
+  .delete-info-item::before {
+    content: '·'; color: var(--text-hint); flex-shrink: 0;
+  }
+
+  /* CTA danger button */
+  .btn-danger {
+    width: 100%; padding: 14px; border-radius: 12px;
+    background: var(--negative); border: none;
+    color: #fff; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* Settings item value small */
+  .settings-item-value--sm { font-size: 11px; }
 </style>
 </head>
 <body>
-
 
 <div class="device">
   <div class="device-inner">
@@ -438,20 +449,17 @@
       <div class="status-bar">
         <span class="status-time">9:41</span>
         <div class="status-icons">
-          <i data-lucide="signal" style="width:16px;height:16px;"></i>
-          <i data-lucide="wifi" style="width:16px;height:16px;"></i>
-          <i data-lucide="battery-full" style="width:16px;height:16px;"></i>
+          <i data-lucide="signal"></i>
+          <i data-lucide="wifi"></i>
+          <i data-lucide="battery-full"></i>
         </div>
       </div>
       <div class="app-header">
-        <button class="inner-back-btn" onclick="location.href='03_profile.html'">
-          <i data-lucide="chevron-left"></i>
-          <span>프로필</span>
-        </button>
+        <a href="01_home.html" class="header-brand" style="cursor:pointer;">nyam</a>
         <div class="header-right">
-          <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
+          <button class="header-bubbles" onclick="location.href='04_bubbles.html'">bubbles</button>
           <div style="position:relative;">
-            <button class="icon-btn" title="알림">
+            <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
               <i data-lucide="bell"></i>
             </button>
             <div class="notif-badge"></div>
@@ -497,7 +505,7 @@
 
         <!-- 기본 공개 범위 -->
         <div class="settings-card" style="padding:16px">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">기본 공개 대상</div>
+          <div class="prv-section-title">기본 공개 대상</div>
           <div class="prv-segment" id="prv-base">
             <button class="prv-segment-btn" onclick="setPrivacyBase('public',this)">전체 공개</button>
             <button class="prv-segment-btn active" onclick="setPrivacyBase('bubble',this)">버블만</button>
@@ -506,7 +514,7 @@
 
           <!-- 기록 범위 (전체/버블만일 때) -->
           <div id="prv-records-wrap" style="margin-top:14px">
-            <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">기록은 어디까지?</div>
+            <div class="prv-section-sub">기록은 어디까지?</div>
             <div class="prv-segment" id="prv-records">
               <button class="prv-segment-btn active" onclick="setRecordScope('shared',this)">공유한 기록만</button>
               <button class="prv-segment-btn" onclick="setRecordScope('all',this)">모든 기록</button>
@@ -529,41 +537,41 @@
         <div class="settings-card">
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="star"></i></span>
-            <span class="settings-item-label" style="font-size:14px">점수</span>
+            <span class="settings-item-label settings-item-label--sm">점수</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="message-circle"></i></span>
-            <span class="settings-item-label" style="font-size:14px">한줄평</span>
+            <span class="settings-item-label settings-item-label--sm">한줄평</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="image"></i></span>
-            <span class="settings-item-label" style="font-size:14px">사진</span>
+            <span class="settings-item-label settings-item-label--sm">사진</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="award"></i></span>
-            <span class="settings-item-label" style="font-size:14px">레벨 뱃지</span>
+            <span class="settings-item-label settings-item-label--sm">레벨 뱃지</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="scatter-chart"></i></span>
-            <span class="settings-item-label" style="font-size:14px">사분면</span>
+            <span class="settings-item-label settings-item-label--sm">사분면</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
-            <span class="settings-item-label" style="font-size:14px">소속 버블</span>
+            <span class="settings-item-label settings-item-label--sm">소속 버블</span>
             <button class="toggle" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item" style="opacity:0.5">
             <span class="settings-item-icon"><i data-lucide="wallet"></i></span>
-            <span class="settings-item-label" style="font-size:14px">가격 정보</span>
+            <span class="settings-item-label settings-item-label--sm">가격 정보</span>
             <span style="font-size:11px;color:var(--text-hint)">버블에서만</span>
           </div>
         </div>
-        <div style="padding:6px 4px 0;font-size:11px;color:var(--text-hint);line-height:1.5">
+        <div class="prv-layer-note">
           프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위
         </div>
       </div>
@@ -577,41 +585,41 @@
         <div class="settings-card">
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="star"></i></span>
-            <span class="settings-item-label" style="font-size:14px">점수</span>
+            <span class="settings-item-label settings-item-label--sm">점수</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="message-circle"></i></span>
-            <span class="settings-item-label" style="font-size:14px">한줄평</span>
+            <span class="settings-item-label settings-item-label--sm">한줄평</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="image"></i></span>
-            <span class="settings-item-label" style="font-size:14px">사진</span>
+            <span class="settings-item-label settings-item-label--sm">사진</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="award"></i></span>
-            <span class="settings-item-label" style="font-size:14px">레벨 뱃지</span>
+            <span class="settings-item-label settings-item-label--sm">레벨 뱃지</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="scatter-chart"></i></span>
-            <span class="settings-item-label" style="font-size:14px">사분면</span>
+            <span class="settings-item-label settings-item-label--sm">사분면</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
-            <span class="settings-item-label" style="font-size:14px">소속 버블</span>
+            <span class="settings-item-label settings-item-label--sm">소속 버블</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="wallet"></i></span>
-            <span class="settings-item-label" style="font-size:14px">가격 정보</span>
+            <span class="settings-item-label settings-item-label--sm">가격 정보</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
         </div>
-        <div style="padding:6px 4px 0;font-size:11px;color:var(--text-hint);line-height:1.5">
+        <div class="prv-layer-note">
           모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다.
         </div>
       </div>
@@ -683,7 +691,7 @@
         <div class="settings-card">
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="layout-grid"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">홈 보기 모드</div></div>
+            <div style="flex:1"><div class="settings-item-label">홈 보기 모드</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">상세</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -694,7 +702,7 @@
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="utensils"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">시작 탭</div></div>
+            <div style="flex:1"><div class="settings-item-label">시작 탭</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">식당</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -706,7 +714,7 @@
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="arrow-up-down"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기본 정렬</div></div>
+            <div style="flex:1"><div class="settings-item-label">기본 정렬</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">최신순</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -720,7 +728,7 @@
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="camera"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기록 시 카메라</div></div>
+            <div style="flex:1"><div class="settings-item-label">기록 시 카메라</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">카메라 우선</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -731,7 +739,7 @@
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="share-2"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">기록 후 버블 공유</div></div>
+            <div style="flex:1"><div class="settings-item-label">기록 후 버블 공유</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">매번 물어보기</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -743,7 +751,7 @@
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="thermometer"></i></span>
-            <div style="flex:1"><div class="settings-item-label" style="font-size:15px">와인 온도 단위</div></div>
+            <div style="flex:1"><div class="settings-item-label">와인 온도 단위</div></div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">°C</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
@@ -762,19 +770,19 @@
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="upload"></i></span>
             <span class="settings-item-label">데이터 내보내기</span>
-            <span class="settings-item-value" style="font-size:11px">JSON / CSV</span>
+            <span class="settings-item-value settings-item-value--sm">JSON / CSV</span>
             <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="download"></i></span>
             <span class="settings-item-label">데이터 가져오기</span>
-            <span class="settings-item-value" style="font-size:11px">JSON / CSV</span>
+            <span class="settings-item-value settings-item-value--sm">JSON / CSV</span>
             <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="eraser"></i></span>
             <span class="settings-item-label">캐시 삭제</span>
-            <span class="settings-item-value" style="font-size:11px">12.3 MB</span>
+            <span class="settings-item-value settings-item-value--sm">12.3 MB</span>
             <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
           </div>
         </div>
@@ -825,7 +833,7 @@
       <div style="height:20px"></div>
     </div>
 
-    <!-- ========== SHEET: 계정 삭제 ========== -->
+    <!-- ========== Overlay ========== -->
     <div class="overlay" id="overlay" onclick="closeSheet()"></div>
 
     <!-- ========== SHEET: 버블별 프라이버시 ========== -->
@@ -897,7 +905,7 @@
       <div class="option-sheet-desc">삭제를 요청하면 30일간 복구 가능합니다. 이후 영구 삭제됩니다.</div>
 
       <div style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">기록 처리 방식을 선택하세요</div>
+        <div class="prv-section-title">기록 처리 방식을 선택하세요</div>
 
         <div class="option-card selected" onclick="selectDeleteOption(this)">
           <div class="option-card-radio"></div>
@@ -916,29 +924,14 @@
         </div>
       </div>
 
-      <div style="padding:12px;background:var(--bg);border-radius:10px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
-            <span style="color:var(--text-hint)">·</span> 소속 버블에서 자동 탈퇴
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
-            <span style="color:var(--text-hint)">·</span> 내가 owner인 버블 → 다음 admin에게 이전 (없으면 삭제)
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">
-            <span style="color:var(--text-hint)">·</span> 팔로우 관계 삭제
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:5px">
-            <span style="color:var(--text-hint)">·</span> 소셜 로그인 연결 해제
-          </div>
-        </div>
+      <div class="delete-info">
+        <div class="delete-info-item">소속 버블에서 자동 탈퇴</div>
+        <div class="delete-info-item">내가 owner인 버블 → 다음 admin에게 이전 (없으면 삭제)</div>
+        <div class="delete-info-item">팔로우 관계 삭제</div>
+        <div class="delete-info-item">소셜 로그인 연결 해제</div>
       </div>
 
-      <button onclick="alert('30일 유예 기간이 시작됩니다.')" style="
-        width:100%; padding:14px; border-radius:12px;
-        background:var(--negative); border:none;
-        color:#fff; font-size:15px; font-weight:600;
-        cursor:pointer; font-family:inherit;
-      ">계정 삭제 요청</button>
+      <button class="btn-danger" onclick="alert('30일 유예 기간이 시작됩니다.')">계정 삭제 요청</button>
     </div>
 
   </div>
@@ -947,10 +940,13 @@
 <script>
   lucide.createIcons();
 
-  // Close avatar menu on outside click
+  // Close menus on outside click
   document.addEventListener('click', function(e) {
     document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+    document.querySelectorAll('.nyam-select.open').forEach(function(s) {
+      if (!s.parentElement.contains(e.target)) s.classList.remove('open');
     });
   });
 
@@ -994,7 +990,6 @@
       recordsWrap.style.display = 'none';
       summary.innerHTML = '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다.<br>추천 알고리즘에는 여전히 반영됩니다.';
     }
-    lucide.createIcons();
   }
 
   function setRecordScope(scope, btn) {
@@ -1023,7 +1018,6 @@
     }
 
     openSheet('bubble-custom');
-    lucide.createIcons();
   }
 
   function selectBubbleMode(el, mode) {
@@ -1044,13 +1038,6 @@
     valueEl.textContent = item.textContent.trim();
     select.classList.remove('open');
   }
-
-  // Close dropdowns on outside click
-  document.addEventListener('click', e => {
-    document.querySelectorAll('.nyam-select.open').forEach(s => {
-      if (!s.parentElement.contains(e.target)) s.classList.remove('open');
-    });
-  });
 
   // ===== Sheet open/close =====
   function openSheet(type) {

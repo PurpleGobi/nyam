@@ -168,18 +168,6 @@
   }
   .fab-forward svg { width:22px; height:22px; }
 
-  /* Legacy compat — keep for intro CTA only */
-  .floating-next {
-    position:absolute; bottom:24px; right:20px; z-index:80;
-    padding:14px 24px; border-radius:50px;
-    background:var(--primary); color:white;
-    font-size:15px; font-weight:700; border:none; cursor:pointer;
-    box-shadow:0 4px 20px rgba(193,123,94,0.4);
-    transition:all 0.2s; display:flex; align-items:center; gap:6px;
-  }
-  .floating-next:active { transform:scale(0.95); }
-  .floating-next:disabled { background:var(--border-bold); box-shadow:none; cursor:default; }
-
   /* Scrollable content */
   .scroll-content {
     flex: 1;
@@ -758,7 +746,7 @@
     height: 56px;
     border-radius: 8px;
     object-fit: cover;
-    background: linear-gradient(135deg, #fce7f3 0%, #dbeafe 100%);
+    background: url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -766,8 +754,8 @@
     flex-shrink: 0;
   }
 
-  .photo-thumb:nth-child(2) { background: linear-gradient(135deg, #dcfce7 0%, #fef9c3 100%); }
-  .photo-thumb:nth-child(3) { background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); }
+  .photo-thumb:nth-child(2) { background: url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop') center/cover no-repeat; }
+  .photo-thumb:nth-child(3) { background: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop') center/cover no-repeat; }
 
   .timeline-comment {
     font-size: 13px;
@@ -902,9 +890,9 @@
     font-size: 24px;
   }
 
-  .rc1 { background: linear-gradient(135deg, #fce7f3 0%, #fecaca 100%); }
-  .rc2 { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
-  .rc3 { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+  .rc1 { background: url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop') center/cover no-repeat; }
+  .rc2 { background: url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop') center/cover no-repeat; }
+  .rc3 { background: url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop') center/cover no-repeat; }
 
   .recommend-info { flex: 1; }
   .recommend-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
@@ -1090,7 +1078,7 @@
 
   .discover-card-photo {
     height: 140px;
-    background: linear-gradient(135deg, #fce7f3 0%, #dbeafe 100%);
+    background: url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop') center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1098,9 +1086,9 @@
     position: relative;
   }
 
-  .dc-photo2 { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
-  .dc-photo3 { background: linear-gradient(135deg, #fef9c3 0%, #fed7aa 100%); }
-  .dc-photo4 { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+  .dc-photo2 { background: url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=400&fit=crop') center/cover no-repeat; }
+  .dc-photo3 { background: url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=400&fit=crop') center/cover no-repeat; }
+  .dc-photo4 { background: url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=400&fit=crop') center/cover no-repeat; }
 
   .discover-card-badges {
     position: absolute;
@@ -1163,109 +1151,6 @@
     border: 1px solid var(--border);
     padding: 3px 8px;
     border-radius: 6px;
-  }
-
-  /* =====================
-     Progressive Disclosure Controls
-     ===================== */
-  .pd-control-panel {
-    position: absolute;
-    bottom: 90px;
-    left: 12px;
-    z-index: 40;
-    background: var(--bg-elevated);
-    border-radius: 14px;
-    padding: 10px 12px;
-    box-shadow: 0 4px 24px rgba(61,56,51,0.15), 0 0 0 1px var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    transition: all 0.25s;
-    max-width: 160px;
-  }
-  .pd-control-panel.collapsed {
-    max-width: 40px;
-    padding: 8px;
-    cursor: pointer;
-    overflow: hidden;
-  }
-  .pd-control-panel.collapsed .pd-body { display: none; }
-  .pd-control-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-sub);
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-  .pd-toggle-btn {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: var(--bg-page);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 10px; color: var(--text-sub);
-    flex-shrink: 0;
-  }
-  .pd-body { display: flex; flex-direction: column; gap: 4px; }
-  .pd-btn {
-    padding: 5px 10px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border);
-    background: var(--bg);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-sub);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.15s;
-  }
-  .pd-btn:active { transform: scale(0.95); }
-  .pd-btn.active {
-    background: var(--wine-light);
-    border-color: var(--wine);
-    color: var(--wine);
-  }
-
-  /* Lock overlay for progressive disclosure */
-  .pd-section-wrap { position: relative; }
-  .pd-lock-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(248,246,243,0.85);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    z-index: 5;
-    border-radius: 12px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-  }
-  .pd-lock-overlay.locked {
-    opacity: 1;
-    pointer-events: all;
-  }
-  .pd-lock-icon {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: var(--wine-light);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--wine);
-  }
-  .pd-lock-text {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-sub);
-    text-align: center;
-    line-height: 1.4;
   }
 
   /* =====================
@@ -1391,7 +1276,7 @@
   }
   .rest-record-photo {
     width: 64px; height: 64px; border-radius: 10px; overflow: hidden;
-    background: linear-gradient(135deg, #c8a888 0%, #a8856a 100%);
+    background: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop') center/cover no-repeat;
     display: flex; align-items: center; justify-content: center;
     color: white; flex-shrink: 0; position: relative;
   }
@@ -1733,6 +1618,91 @@
     cursor: pointer; transition: all 0.15s;
   }
   .camera-alt-btn:hover { background: rgba(255,255,255,0.15); }
+
+  /* Photo picker (nudge → album) */
+  .photo-picker-header {
+    padding: 12px 20px 8px; display: flex;
+    align-items: center; justify-content: space-between;
+  }
+  .photo-picker-hint {
+    font-size: 13px; color: var(--text-sub);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .photo-picker-hint svg { width: 14px; height: 14px; }
+  .photo-picker-albums {
+    display: flex; gap: 8px; padding: 0 20px 12px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .photo-picker-albums::-webkit-scrollbar { display: none; }
+  .photo-album-btn {
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-sub); cursor: pointer; white-space: nowrap;
+    font-family: inherit;
+  }
+  .photo-album-btn.active {
+    background: var(--primary); color: #fff;
+    border-color: var(--primary);
+  }
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 2px; padding: 0 2px;
+  }
+  .photo-grid-item {
+    aspect-ratio: 1; border-radius: 2px; overflow: hidden;
+    cursor: pointer; position: relative;
+    transition: opacity 0.15s;
+  }
+  .photo-grid-item:active { opacity: 0.7; }
+  .photo-grid-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .photo-grid-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 2px;
+    font-size: 10px; color: var(--text-hint);
+  }
+  .photo-grid-item.selected::after {
+    content: ''; position: absolute;
+    inset: 0; border: 3px solid var(--primary);
+    border-radius: 2px;
+  }
+  .photo-grid-item.selected .photo-check {
+    display: flex;
+  }
+  .photo-check {
+    display: none; position: absolute; top: 6px; right: 6px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .photo-nudge-badge {
+    position: absolute; top: 6px; left: 6px;
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(0,0,0,0.6); color: #fff;
+    font-size: 9px; font-weight: 600;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .photo-nudge-badge svg { width: 10px; height: 10px; }
+  .photo-picker-footer {
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+  }
+  .photo-picker-footer .btn-next {
+    flex: 1; padding: 14px; border-radius: 12px;
+    font-size: 15px; font-weight: 600; border: none;
+    cursor: pointer; font-family: inherit;
+    background: var(--primary); color: #fff;
+    transition: opacity 0.15s;
+  }
+  .photo-picker-footer .btn-next:disabled {
+    background: var(--border); color: var(--text-hint);
+    cursor: default;
+  }
+  .photo-picker-footer .btn-next:active:not(:disabled) { opacity: 0.9; }
 
   /* Wine confirm */
   .wine-confirm-card {
@@ -2309,10 +2279,10 @@
     flex-shrink: 0;
   }
   .compact-thumb.food-thumb {
-    background: linear-gradient(135deg, #c8a882, #8a6848);
+    background: url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;
   }
   .compact-thumb.wine-thumb {
-    background: linear-gradient(135deg, #3d1a2a, #1a0a15);
+    background: url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;
     display: flex; align-items: center; justify-content: center;
   }
   .compact-info {
@@ -2534,25 +2504,36 @@
     margin-bottom: 10px;
   }
 
-  /* Mini quadrant visualization */
+  /* Mini quadrant visualization — dot on crosshair */
   .mini-quad {
     width: 44px;
     height: 44px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
     border-radius: 10px;
-    overflow: hidden;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    position: relative;
     flex-shrink: 0;
+    overflow: hidden;
   }
-  .mini-quad .q {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.9);
+  .mini-quad::before, .mini-quad::after {
+    content: '';
+    position: absolute;
+    background: var(--border);
+  }
+  .mini-quad::before { /* horizontal crosshair */
+    left: 4px; right: 4px;
+    top: 50%; height: 1px;
+  }
+  .mini-quad::after { /* vertical crosshair */
+    top: 4px; bottom: 4px;
+    left: 50%; width: 1px;
+  }
+  .mini-quad .qd {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
 
   .place-total-score {
@@ -3340,7 +3321,7 @@
             <div class="header-right">
               <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn">
+                <button class="icon-btn" onclick="location.href='06_notifications.html'">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 </button>
                 <div class="notif-badge"></div>
@@ -3374,7 +3355,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div class="nudge-strip-text"><strong>사진 감지</strong> · 3/19 12:34</div>
-            <button class="nudge-strip-action" onclick="fabAddRecord()">기록</button>
+            <button class="nudge-strip-action" onclick="nudgeRecord()">기록</button>
             <button class="nudge-strip-close" onclick="dismissNudge()">✕</button>
           </div>
 
@@ -3428,14 +3409,17 @@
 
             <!-- 서브 네비: 방문 / 찜 / 추천 -->
             <div class="sub-nav" id="foodSubNav">
-              <button class="sub-nav-item active" onclick="setSubNav(this,'foodSubNav')">방문<span class="nav-count">8</span></button>
-              <button class="sub-nav-item" onclick="setSubNav(this,'foodSubNav')">찜<span class="nav-count">3</span></button>
-              <button class="sub-nav-item" onclick="setSubNav(this,'foodSubNav')">추천<span class="nav-count">12</span></button>
+              <button class="sub-nav-item active" onclick="setFoodSubNav('visit', this)">방문<span class="nav-count">8</span></button>
+              <button class="sub-nav-item" onclick="setFoodSubNav('wish', this)">찜<span class="nav-count">3</span></button>
+              <button class="sub-nav-item" onclick="setFoodSubNav('recommend', this)">추천<span class="nav-count">12</span></button>
             </div>
+
+            <!-- ========== SUB: 방문 ========== -->
+            <div id="foodSub-visit">
 
             <!-- Sort row -->
             <div class="sort-row" id="foodSortRow">
-              <div class="sort-label" id="filterSubLabel">5곳</div>
+              <div class="sort-label" id="filterSubLabel">8곳</div>
               <button class="sort-btn" onclick="cycleSort()">
                 <span id="sortLabel">최신순</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -3456,7 +3440,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank top3">2</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c8a882,#a08060);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">미진</div>
                     <div class="compact-meta">한식 · 광화문 · 냉면</div>
@@ -3465,7 +3449,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank top3">3</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d8c8a0,#887848);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">을지로 골뱅이</div>
                     <div class="compact-meta">한식 · 을지로 · 골뱅이</div>
@@ -3474,7 +3458,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">4</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#e8c8a0,#8a5a38);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">리스토란테 에오</div>
                     <div class="compact-meta">이탈리안 · 강남</div>
@@ -3483,7 +3467,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">5</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#b8a070,#685830);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">광화문국밥</div>
                     <div class="compact-meta">한식 · 광화문 · 설렁탕</div>
@@ -3492,7 +3476,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">6</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#c09060,#6a4028);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">오마카세 히든</div>
                     <div class="compact-meta">일식 · 을지로</div>
@@ -3501,7 +3485,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">7</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#a89070,#5a4030);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">하카타 분코</div>
                     <div class="compact-meta">일식 · 홍대 · 라멘</div>
@@ -3510,7 +3494,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">8</div>
-                  <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#d0b890,#806840);"></div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
                   <div class="compact-info">
                     <div class="compact-name">진미 평양냉면</div>
                     <div class="compact-meta">한식 · 강남 · 냉면</div>
@@ -3525,10 +3509,7 @@
 
             <!-- 1: 미진 — 3소스 다 있음 -->
             <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
-              <div class="place-photo-col" style="background:
-                radial-gradient(ellipse at 30% 60%, rgba(200,160,120,0.8), transparent 60%),
-                radial-gradient(ellipse at 70% 40%, rgba(180,140,100,0.6), transparent 50%),
-                linear-gradient(135deg, #c8a882, #a08060 40%, #786048 80%, #5a4030);">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <div class="place-badges">
                   <span class="place-badge blue">블루리본</span>
                 </div>
@@ -3538,10 +3519,7 @@
                 <div class="place-meta">한식 · 광화문 · 냉면</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="q" style="background:#7EAE8B;">맛</div>
-                    <div class="q" style="background:#7A9BAE;">분</div>
-                    <div class="q" style="background:#C9A96E;">가</div>
-                    <div class="q" style="background:#B87272;">재</div>
+                    <div class="qd" style="left:35%;top:55%;width:14px;height:14px;background:var(--primary);"></div>
                   </div>
                   <div class="place-total-score">88</div>
                 </div>
@@ -3568,9 +3546,7 @@
 
             <!-- 2: 스시코우지 — 내 경험 + 미슐랭 -->
             <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
-              <div class="place-photo-col" style="background:
-                radial-gradient(ellipse at 40% 50%, rgba(220,180,150,0.7), transparent 55%),
-                linear-gradient(160deg, #e8c8a0, #c09060 35%, #8a5a38 75%, #6a4028);">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <div class="place-badges">
                   <span class="place-badge michelin">미슐랭 ★</span>
                 </div>
@@ -3580,10 +3556,7 @@
                 <div class="place-meta">일식 · 광화문 · 오마카세</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="q" style="background:#7A9BAE;">맛</div>
-                    <div class="q" style="background:#7A9BAE;">분</div>
-                    <div class="q" style="background:#C9A96E;">가</div>
-                    <div class="q" style="background:#7EAE8B;">재</div>
+                    <div class="qd" style="left:70%;top:30%;width:16px;height:16px;background:var(--primary);"></div>
                   </div>
                   <div class="place-total-score">92</div>
                 </div>
@@ -3606,9 +3579,7 @@
 
             <!-- 3: 광화문국밥 — 버블 + 웹 (안 가봄) -->
             <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
-              <div class="place-photo-col" style="background:
-                radial-gradient(ellipse at 50% 55%, rgba(200,180,140,0.7), transparent 50%),
-                linear-gradient(145deg, #d8c8a0, #b8a070 35%, #887848 75%, #685830);">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop') center/cover no-repeat;">
               </div>
               <div class="place-info-col">
                 <div class="place-name">광화문국밥</div>
@@ -3799,17 +3770,356 @@
 
             <div style="height:100px;"></div>
             </div><!-- /foodDetail -->
+            </div><!-- /foodSub-visit -->
+
+            <!-- ========== SUB: 찜 ========== -->
+            <div id="foodSub-wish" style="display:none;">
+              <div class="sort-row">
+                <div class="sort-label">3곳</div>
+                <button class="sort-btn" onclick="cycleSort()">
+                  <span>저장순</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+
+              <!-- 찜 간단 보기 -->
+              <div id="foodWishCompact" style="display:none;">
+                <div class="compact-list">
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank">1</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">몽탄</div>
+                      <div class="compact-meta">한식 · 을지로 · 바베큐</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank">2</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">라미띠에</div>
+                      <div class="compact-meta">프렌치 · 청담 · 미슐랭★</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank">3</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">정식당</div>
+                      <div class="compact-meta">한식 · 강남 · 미슐랭★★</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 찜 상세 보기 -->
+              <div id="foodWishDetail">
+                <!-- 몽탄 — 버블 추천으로 저장 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop') center/cover no-repeat;">
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">몽탄</div>
+                    <div class="place-meta">한식 · 을지로 · 바베큐</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text"><strong>김영수</strong> 93 · "을지로 최고 바베큐"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.5 K4.3 G4.4</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">3/15 저장</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 라미띠에 — 미슐랭 발견 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <div class="place-badges">
+                      <span class="place-badge michelin">미슐랭 ★</span>
+                    </div>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">라미띠에</div>
+                    <div class="place-meta">프렌치 · 청담 · 비스트로</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.7 K4.5 미슐랭1스타</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">3/10 저장</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 정식당 — 미슐랭 2스타 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <div class="place-badges">
+                      <span class="place-badge michelin">미슐랭 ★★</span>
+                    </div>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">정식당</div>
+                    <div class="place-meta">한식 · 강남 · 코스</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text"><strong>박소연</strong> 95 · "특별한 날 추천"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.8 K4.6 미슐랭2스타</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">2/28 저장</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="height:80px;"></div>
+              </div>
+            </div><!-- /foodSub-wish -->
+
+            <!-- ========== SUB: 추천 ========== -->
+            <div id="foodSub-recommend" style="display:none;">
+              <div class="sort-row">
+                <div class="sort-label">12곳</div>
+                <button class="sort-btn" onclick="cycleSort()">
+                  <span>추천순</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+
+              <!-- 추천 간단 보기 -->
+              <div id="foodRecCompact" style="display:none;">
+                <div class="compact-list">
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank top3" style="color:var(--positive);">1</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">도쿄등심</div>
+                      <div class="compact-meta">일식 · 광화문 · 규카츠 코스</div>
+                    </div>
+                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank top3" style="color:var(--positive);">2</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">토속촌</div>
+                      <div class="compact-meta">한식 · 광화문 · 삼계탕</div>
+                    </div>
+                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank top3" style="color:var(--accent-social);">3</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">비스트로 드 욘트빌</div>
+                      <div class="compact-meta">프렌치 · 을지로</div>
+                    </div>
+                    <div class="compact-score" style="font-size:12px;color:var(--accent-social);font-weight:700;">버블</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank">4</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">하루</div>
+                      <div class="compact-meta">일식 · 성수 · 라멘</div>
+                    </div>
+                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank">5</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">봉피양</div>
+                      <div class="compact-meta">한식 · 종로 · 냉면</div>
+                    </div>
+                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 추천 상세 보기 -->
+              <div id="foodRecDetail">
+                <!-- 도쿄등심 — AI 추천 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <div class="place-badges">
+                      <span class="place-badge blue">블루리본</span>
+                    </div>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">도쿄등심</div>
+                    <div class="place-meta">일식 · 광화문 · 규카츠 코스</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:rgba(126,174,139,0.15);color:var(--positive);">AI</span>
+                        <span class="source-text">"오마카세를 좋아하시니까 여기도 좋아하실 거예요"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.2 K3.9 G4.1</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span>♡ 24</span>
+                      <span>💬 8</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 토속촌 — AI 추천 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop') center/cover no-repeat;">
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">토속촌</div>
+                    <div class="place-meta">한식 · 광화문 · 삼계탕</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:rgba(126,174,139,0.15);color:var(--positive);">AI</span>
+                        <span class="source-text">"광화문 한식 — 아직 안 가보셨죠?"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.2 K4.0 G4.3</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span>♡ 31</span>
+                      <span>💬 12</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 비스트로 드 욘트빌 — 버블 추천 -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop') center/cover no-repeat;">
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">비스트로 드 욘트빌</div>
+                    <div class="place-meta">프렌치 · 을지로</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text"><strong>박소연</strong> 91 · "을지로 프렌치 최고"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.4 K4.2 G4.3</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span>♡ 18</span>
+                      <span>💬 6</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 하루 — AI 추천 (새 동네) -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop') center/cover no-repeat;">
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">하루</div>
+                    <div class="place-meta">일식 · 성수 · 라멘</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:rgba(126,174,139,0.15);color:var(--positive);">AI</span>
+                        <span class="source-text">"성수동 새로운 라멘집 — 탐험해 보세요"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.6 K4.3</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span>♡ 42</span>
+                      <span>💬 15</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 봉피양 — AI 추천 (취향 기반) -->
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop') center/cover no-repeat;">
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">봉피양</div>
+                    <div class="place-meta">한식 · 종로 · 냉면</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:rgba(126,174,139,0.15);color:var(--positive);">AI</span>
+                        <span class="source-text">"냉면 좋아하시잖아요 — 미진이랑 비교해 보세요"</span>
+                      </div>
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">N4.3 K4.1 G4.2</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span>♡ 15</span>
+                      <span>💬 4</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="height:80px;"></div>
+              </div>
+            </div><!-- /foodSub-recommend -->
+
           </div>
 
           <!-- TAB: 와인 — 완전히 다른 세계 -->
           <div class="tab-panel" id="panelWine">
 
-            <!-- 서브 네비: 시음 / 셀러 / 찜 -->
+            <!-- 서브 네비: 시음 / 찜 / 셀러 -->
             <div class="sub-nav" id="wineSubNav">
-              <button class="sub-nav-item active" onclick="setSubNav(this,'wineSubNav')">시음<span class="nav-count">12</span></button>
-              <button class="sub-nav-item" onclick="setSubNav(this,'wineSubNav')">찜<span class="nav-count">8</span></button>
-              <button class="sub-nav-item" onclick="setSubNav(this,'wineSubNav')">셀러<span class="nav-count">5</span></button>
+              <button class="sub-nav-item active" onclick="setWineSubNav('tasting', this)">시음<span class="nav-count">12</span></button>
+              <button class="sub-nav-item" onclick="setWineSubNav('wish', this)">찜<span class="nav-count">8</span></button>
+              <button class="sub-nav-item" onclick="setWineSubNav('cellar', this)">셀러<span class="nav-count">5</span></button>
             </div>
+
+            <!-- ========== SUB: 시음 ========== -->
+            <div id="wineSub-tasting">
 
             <!-- ===== 간단 보기 (compact) ===== -->
             <div id="wineCompact" style="display:none;">
@@ -3827,7 +4137,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank top3" style="color:var(--wine)">2</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#200c18,#0a0406);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3838,7 +4148,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank top3" style="color:var(--wine)">3</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1520,#0f0810);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3849,7 +4159,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">4</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e8dcc8,#a89070);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3860,7 +4170,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">5</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#1a1018,#080408);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3871,7 +4181,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">6</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#e0d0c0,#906838);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3882,7 +4192,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">7</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#f0d8d0,#c88888);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3893,7 +4203,7 @@
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">8</div>
-                  <div class="compact-thumb wine-thumb" style="background:linear-gradient(135deg,#2a1020,#100810);">
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
                   <div class="compact-info">
@@ -3938,7 +4248,7 @@
             </div>
 
             <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
-              <div class="wine-photo-col" style="background:linear-gradient(135deg, #3d1a2a 0%, #1a0a15 100%);">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
               <div class="place-info-col">
@@ -3946,10 +4256,7 @@
                 <div class="place-meta">레드 · 쉬라즈 · 호주</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="q" style="background:#7A9BAE;">향</div>
-                    <div class="q" style="background:#7A9BAE;">맛</div>
-                    <div class="q" style="background:#7EAE8B;">여</div>
-                    <div class="q" style="background:#C9A96E;">가</div>
+                    <div class="qd" style="left:55%;top:20%;width:16px;height:16px;background:var(--wine);"></div>
                   </div>
                   <div class="place-total-score" style="color:var(--wine);">96</div>
                 </div>
@@ -3965,7 +4272,7 @@
             </div>
 
             <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
-              <div class="wine-photo-col" style="background:linear-gradient(135deg, #200c18 0%, #0a0406 100%);">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
               <div class="place-info-col">
@@ -3973,10 +4280,7 @@
                 <div class="place-meta">레드 · 카베르네 · 미국</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="q" style="background:#7A9BAE;">향</div>
-                    <div class="q" style="background:#7EAE8B;">맛</div>
-                    <div class="q" style="background:#C9A96E;">여</div>
-                    <div class="q" style="background:#C9A96E;">가</div>
+                    <div class="qd" style="left:65%;top:28%;width:15px;height:15px;background:var(--wine);"></div>
                   </div>
                   <div class="place-total-score" style="color:var(--wine);">94</div>
                 </div>
@@ -3985,7 +4289,7 @@
             </div>
 
             <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
-              <div class="wine-photo-col" style="background:linear-gradient(135deg, #e8dcc8 0%, #a89070 100%);">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
               </div>
               <div class="place-info-col">
@@ -4328,21 +4632,332 @@
 
             <div style="height:80px;"></div>
             </div><!-- /wineDetail -->
-          </div>
-        </div>
+            </div><!-- /wineSub-tasting -->
 
-        <!-- Progressive Disclosure Demo Control -->
-        <div class="pd-control-panel" id="pdControlPanel">
-          <div class="pd-control-label" onclick="togglePdPanel()">
-            <div class="pd-toggle-btn" id="pdToggleIcon">&#9881;</div>
-            <span>기록 시뮬레이션</span>
-          </div>
-          <div class="pd-body" id="pdBody">
-            <div class="pd-btn active" data-count="25" onclick="setPdCount(25, this)">25개 (전체)</div>
-            <div class="pd-btn" data-count="15" onclick="setPdCount(15, this)">15개</div>
-            <div class="pd-btn" data-count="7" onclick="setPdCount(7, this)">7개</div>
-            <div class="pd-btn" data-count="3" onclick="setPdCount(3, this)">3개</div>
-            <div class="pd-btn" data-count="0" onclick="setPdCount(0, this)">0개</div>
+            <!-- ========== SUB: 찜 ========== -->
+            <div id="wineSub-wish" style="display:none;">
+              <div class="sort-row">
+                <div class="sort-label">8병</div>
+                <button class="sort-btn" onclick="cycleSort()">
+                  <span>저장순</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+
+              <!-- 찜 간단 보기 -->
+              <div id="wineWishCompact" style="display:none;">
+                <div class="compact-list">
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank">1</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Dom Pérignon 2012</div>
+                      <div class="compact-meta">스파클링 · 샴페인 · 프랑스</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank">2</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Sassicaia 2019</div>
+                      <div class="compact-meta">레드 · 토스카나 · 이탈리아</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank">3</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Puligny-Montrachet 2020</div>
+                      <div class="compact-meta">화이트 · 부르고뉴 · 프랑스</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank">4</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Ridge Monte Bello 2018</div>
+                      <div class="compact-meta">레드 · 카베르네 · 미국</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank">5</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Krug Grande Cuvée</div>
+                      <div class="compact-meta">스파클링 · 샴페인 · 프랑스</div>
+                    </div>
+                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 찜 상세 보기 -->
+              <div id="wineWishDetail">
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Dom Pérignon 2012</div>
+                    <div class="place-meta">스파클링 · 샴페인 · 프랑스</div>
+                    <div class="place-sources" style="margin-top:8px;">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text"><strong>김영수</strong> "특별한 날에 꼭"</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/18 저장</span>
+                      <span style="font-size:10px;color:var(--text-hint);">≈ 38만</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Sassicaia 2019</div>
+                    <div class="place-meta">레드 · 토스카나 · 이탈리아</div>
+                    <div class="place-sources" style="margin-top:8px;">
+                      <div class="place-source">
+                        <span class="source-tag web">웹</span>
+                        <span class="source-text">RP 97 · WS 95 · 수퍼 투스칸</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/12 저장</span>
+                      <span style="font-size:10px;color:var(--text-hint);">≈ 28만</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Puligny-Montrachet 2020</div>
+                    <div class="place-meta">화이트 · 부르고뉴 · 프랑스</div>
+                    <div class="place-sources" style="margin-top:8px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:rgba(126,174,139,0.15);color:var(--positive);">AI</span>
+                        <span class="source-text">"화이트 좋아하시면 부르고뉴 도전"</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/5 저장</span>
+                      <span style="font-size:10px;color:var(--text-hint);">≈ 15만</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="height:80px;"></div>
+              </div>
+            </div><!-- /wineSub-wish -->
+
+            <!-- ========== SUB: 셀러 ========== -->
+            <div id="wineSub-cellar" style="display:none;">
+              <div class="sort-row">
+                <div class="sort-label">5병 · 총 225만</div>
+                <button class="sort-btn" onclick="cycleSort()">
+                  <span>구매순</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+
+              <!-- 셀러 간단 보기 -->
+              <div id="wineCellarCompact" style="display:none;">
+                <div class="compact-list">
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank" style="color:var(--wine);">1</div>
+                    <div class="compact-thumb wine-thumb">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Opus One 2020</div>
+                      <div class="compact-meta">레드 · 나파밸리 · 85만</div>
+                    </div>
+                    <div class="compact-score wine-score">94</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank" style="color:var(--wine);">2</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Penfolds Grange 2018</div>
+                      <div class="compact-meta">레드 · 쉬라즈 · 72만</div>
+                    </div>
+                    <div class="compact-score wine-score">96</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank" style="color:var(--wine);">3</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Dom Pérignon 2012</div>
+                      <div class="compact-meta">스파클링 · 샴페인 · 45만</div>
+                    </div>
+                    <div class="compact-score wine-score">93</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank" style="color:var(--wine);">4</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Barolo Riserva 2016</div>
+                      <div class="compact-meta">레드 · 네비올로 · 18만</div>
+                    </div>
+                    <div class="compact-score wine-score">89</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                    <div class="compact-rank" style="color:var(--wine);">5</div>
+                    <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                    </div>
+                    <div class="compact-info">
+                      <div class="compact-name">Cloudy Bay Sauv. Blanc</div>
+                      <div class="compact-meta">화이트 · NZ · 5만</div>
+                    </div>
+                    <div class="compact-score wine-score">90</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 셀러 상세 보기 -->
+              <div id="wineCellarDetail">
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Opus One 2020</div>
+                    <div class="place-meta">레드 · 나파밸리 · 카베르네</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="color:var(--wine);">94</div>
+                    </div>
+                    <div class="place-sources" style="margin-top:2px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-text">구매 <strong>85만</strong> · 2024.01</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--text-hint);">보관 중 · 마실 적기: 2025~2035</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Penfolds Grange 2018</div>
+                    <div class="place-meta">레드 · 쉬라즈 · 호주</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="color:var(--wine);">96</div>
+                    </div>
+                    <div class="place-sources" style="margin-top:2px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-text">구매 <strong>72만</strong> · 2023.11</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--text-hint);">보관 중 · 마실 적기: 2025~2040</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Dom Pérignon 2012</div>
+                    <div class="place-meta">스파클링 · 샴페인 · 프랑스</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="color:var(--wine);">93</div>
+                    </div>
+                    <div class="place-sources" style="margin-top:2px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-text">구매 <strong>45만</strong> · 2024.02</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--positive);font-weight:600;">지금 마시기 좋아요</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Barolo Riserva 2016</div>
+                    <div class="place-meta">레드 · 네비올로 · 이탈리아</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="color:var(--wine);">89</div>
+                    </div>
+                    <div class="place-sources" style="margin-top:2px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-text">구매 <strong>18만</strong> · 2024.01</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--text-hint);">보관 중 · 마실 적기: 2026~2036</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+                  <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="place-info-col">
+                    <div class="place-name">Cloudy Bay Sauv. Blanc 2022</div>
+                    <div class="place-meta">화이트 · 소비뇽 블랑 · NZ</div>
+                    <div class="place-score-row">
+                      <div class="place-total-score" style="color:var(--wine);">90</div>
+                    </div>
+                    <div class="place-sources" style="margin-top:2px;">
+                      <div class="place-source">
+                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-text">구매 <strong>5만</strong> · 2024.03</span>
+                      </div>
+                    </div>
+                    <div class="place-engagement">
+                      <span style="font-size:10px;color:var(--caution);font-weight:600;">빨리 마시세요 (화이트)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="height:80px;"></div>
+              </div>
+            </div><!-- /wineSub-cellar -->
+
           </div>
         </div>
 
@@ -4350,6 +4965,109 @@
         <button class="fab-add" onclick="fabAddRecord()">
           <i data-lucide="plus" style="width:22px;height:22px;"></i>
         </button>
+      </div>
+
+      <!-- ==========================================
+           NUDGE: PHOTO PICKER (사진첩에서 고르기)
+           ========================================== -->
+      <div class="screen hidden" id="screen-nudge-photo-picker">
+        <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
+        <div class="record-nav">
+          <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
+          <div class="record-nav-title">사진 선택</div>
+          <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
+        </div>
+
+        <div class="photo-picker-header">
+          <div class="photo-picker-hint">
+            <i data-lucide="sparkles"></i> 감지된 사진을 선택하세요
+          </div>
+        </div>
+
+        <div class="photo-picker-albums" onclick="if(e=event.target.closest('.photo-album-btn')){this.querySelectorAll('.photo-album-btn').forEach(b=>b.classList.remove('active'));e.classList.add('active');}">
+          <button class="photo-album-btn active">최근 항목</button>
+          <button class="photo-album-btn">음식</button>
+          <button class="photo-album-btn">스크린샷</button>
+          <button class="photo-album-btn">즐겨찾기</button>
+        </div>
+
+        <div class="scroll-content" style="flex:1;overflow-y:auto;">
+          <div class="photo-grid">
+            <!-- 감지된 사진 (하이라이트) -->
+            <div class="photo-grid-item selected" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:var(--primary-light);">
+                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--primary);"></i>
+                <span style="color:var(--primary);">3/19 12:34</span>
+              </div>
+              <div class="photo-nudge-badge"><i data-lucide="sparkles"></i> 감지</div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:var(--primary-light);">
+                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--primary);"></i>
+                <span style="color:var(--primary);">3/19 12:30</span>
+              </div>
+              <div class="photo-nudge-badge"><i data-lucide="sparkles"></i> 감지</div>
+              <div class="photo-check">✓</div>
+            </div>
+            <!-- 일반 사진들 -->
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/19 11:20</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/18 19:45</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/18 13:02</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:var(--wine-light);">
+                <i data-lucide="wine" style="width:20px;height:20px;color:var(--wine);"></i>
+                <span style="color:var(--wine);">3/17 20:15</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/17 14:30</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/16 12:10</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+            <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
+              <div class="photo-grid-placeholder" style="background:#EEE;">
+                <i data-lucide="image" style="width:20px;height:20px;"></i>
+                <span>3/15 18:22</span>
+              </div>
+              <div class="photo-check">✓</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="photo-picker-footer">
+          <button class="btn-next" id="nudgePhotoNext" onclick="nudgePhotoConfirm()">
+            사진 1장 선택 — 다음
+          </button>
+        </div>
       </div>
 
       <!-- ==========================================
@@ -4659,7 +5377,7 @@
             <!-- 연결된 와인 (등록된 와인 → 바로 연결 확인) -->
             <div id="linkedWineList">
               <div class="rest-rec-wine-linked" id="linkedWine1">
-                <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#5a2a3a,#3d1a2a);">
+                <div class="rest-rec-wine-bottle" style="background:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=400&h=400&fit=crop') center/cover no-repeat;">
                   <i data-lucide="wine" style="width:14px;height:14px;color:rgba(255,255,255,0.7);"></i>
                 </div>
                 <div class="rest-rec-wine-info">
@@ -4685,7 +5403,7 @@
               <div id="wineLinkResults" style="display:none;">
                 <!-- 기존 등록 와인 -->
                 <div class="rest-rec-wine-result" onclick="linkExistingWine('Opus One 2020','Red · Napa Valley')">
-                  <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);width:28px;height:40px;">
+                  <div class="rest-rec-wine-bottle" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;width:28px;height:40px;">
                     <i data-lucide="wine" style="width:10px;height:10px;color:rgba(255,255,255,0.7);"></i>
                   </div>
                   <div style="flex:1;">
@@ -4696,7 +5414,7 @@
                 </div>
                 <!-- DB에 있지만 내 기록 없는 와인 -->
                 <div class="rest-rec-wine-result" onclick="linkExistingWine('Sassicaia 2019','Red · Toscana')">
-                  <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);width:28px;height:40px;">
+                  <div class="rest-rec-wine-bottle" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;width:28px;height:40px;">
                     <i data-lucide="wine" style="width:10px;height:10px;color:rgba(255,255,255,0.7);"></i>
                   </div>
                   <div style="flex:1;">
@@ -4742,7 +5460,7 @@
           <!-- AI 인식 결과: 와인 헤더 -->
           <div style="padding:12px 16px 0;">
             <div class="wine-rec-header">
-              <div class="rest-record-photo" style="background:linear-gradient(135deg,#5a2a3a,#3d1a2a);">
+              <div class="rest-record-photo" style="background:url('https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=400&h=400&fit=crop') center/cover no-repeat;">
                 <i data-lucide="wine" style="width:24px;height:24px;"></i>
               </div>
               <div class="rest-record-info">
@@ -4930,7 +5648,7 @@
             <!-- 연결된 식당 -->
             <div id="linkedRestList">
               <div class="rest-rec-wine-linked" id="linkedRest1">
-                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c8a888,#a8856a);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div style="width:32px;height:32px;border-radius:8px;background:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=400&fit=crop') center/cover no-repeat;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                   <i data-lucide="utensils" style="width:14px;height:14px;color:white;"></i>
                 </div>
                 <div class="rest-rec-wine-info">
@@ -5105,7 +5823,7 @@
 
             <!-- Card 5 -->
             <div class="discover-card" onclick="location.href='02_detail_restaurant.html'">
-              <div class="discover-card-photo" style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);">
+              <div class="discover-card-photo" style="background:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=400&fit=crop') center/cover no-repeat;">
                 🍛
               </div>
               <div class="discover-card-body">
@@ -5231,13 +5949,81 @@
     document.querySelectorAll('.view-toggle-btn').forEach(btn => {
       btn.classList.toggle('active', btn.textContent.trim() === (mode === 'compact' ? '간단' : '상세'));
     });
-    // Apply to food tab
-    document.getElementById('foodCompact').style.display = mode === 'compact' ? 'block' : 'none';
-    document.getElementById('foodDetail').style.display = mode === 'detail' ? 'block' : 'none';
-    document.getElementById('foodSortRow').style.display = mode === 'detail' ? '' : 'none';
-    // Apply to wine tab
-    document.getElementById('wineCompact').style.display = mode === 'compact' ? 'block' : 'none';
-    document.getElementById('wineDetail').style.display = mode === 'detail' ? 'block' : 'none';
+    applyFoodViewMode();
+    applyWineViewMode();
+  }
+
+  function applyFoodViewMode() {
+    const mode = currentViewMode;
+    const sub = currentFoodSub;
+    // 방문 탭
+    const fc = document.getElementById('foodCompact');
+    const fd = document.getElementById('foodDetail');
+    const fsr = document.getElementById('foodSortRow');
+    if (sub === 'visit') {
+      if (fc) fc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (fd) fd.style.display = mode === 'detail' ? 'block' : 'none';
+      if (fsr) fsr.style.display = '';
+    } else {
+      if (fc) fc.style.display = 'none';
+      if (fd) fd.style.display = 'none';
+      if (fsr) fsr.style.display = 'none';
+    }
+    // 찜 탭
+    const fwc = document.getElementById('foodWishCompact');
+    const fwd = document.getElementById('foodWishDetail');
+    if (sub === 'wish') {
+      if (fwc) fwc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (fwd) fwd.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (fwc) fwc.style.display = 'none';
+      if (fwd) fwd.style.display = 'none';
+    }
+    // 추천 탭
+    const frc = document.getElementById('foodRecCompact');
+    const frd = document.getElementById('foodRecDetail');
+    if (sub === 'recommend') {
+      if (frc) frc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (frd) frd.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (frc) frc.style.display = 'none';
+      if (frd) frd.style.display = 'none';
+    }
+  }
+
+  function applyWineViewMode() {
+    const mode = currentViewMode;
+    const sub = currentWineSub;
+    // 시음 탭
+    const wc = document.getElementById('wineCompact');
+    const wd = document.getElementById('wineDetail');
+    if (sub === 'tasting') {
+      if (wc) wc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (wd) wd.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (wc) wc.style.display = 'none';
+      if (wd) wd.style.display = 'none';
+    }
+    // 찜 탭
+    const wwc = document.getElementById('wineWishCompact');
+    const wwd = document.getElementById('wineWishDetail');
+    if (sub === 'wish') {
+      if (wwc) wwc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (wwd) wwd.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (wwc) wwc.style.display = 'none';
+      if (wwd) wwd.style.display = 'none';
+    }
+    // 셀러 탭
+    const wcc = document.getElementById('wineCellarCompact');
+    const wcd = document.getElementById('wineCellarDetail');
+    if (sub === 'cellar') {
+      if (wcc) wcc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (wcd) wcd.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (wcc) wcc.style.display = 'none';
+      if (wcd) wcd.style.display = 'none';
+    }
   }
 
   function switchTab(tab) {
@@ -5342,16 +6128,39 @@
     conjs.forEach(c => c.textContent = next);
   }
 
-  // (unused — sort now uses selectSort with chip UI)
-  function cycleSortNotion(el) {
-    const idx = (SORT_OPTIONS.indexOf(el.textContent.replace(' ▾','')) + 1) % SORT_OPTIONS.length;
-    el.textContent = SORT_OPTIONS[idx] + ' ▾';
+  // =====================
+  // Sub-nav: 식당 (방문/찜/추천)
+  // =====================
+  let currentFoodSub = 'visit';
+  function setFoodSubNav(tab, el) {
+    document.querySelectorAll('#foodSubNav .sub-nav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    currentFoodSub = tab;
+    ['visit','wish','recommend'].forEach(t => {
+      const panel = document.getElementById('foodSub-' + t);
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    });
+    applyFoodViewMode();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
   // =====================
-  // Restaurant primary filter
+  // Sub-nav: 와인 (시음/찜/셀러)
   // =====================
-  // Sub-nav (shared by restaurant + wine)
+  let currentWineSub = 'tasting';
+  function setWineSubNav(tab, el) {
+    document.querySelectorAll('#wineSubNav .sub-nav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    currentWineSub = tab;
+    ['tasting','wish','cellar'].forEach(t => {
+      const panel = document.getElementById('wineSub-' + t);
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    });
+    applyWineViewMode();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  // Sub-nav (legacy compat for other pages)
   function setSubNav(el, navId) {
     document.querySelectorAll(`#${navId} .sub-nav-item`).forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -5479,6 +6288,37 @@
       card.style.borderBottom = 'none';
     }, 150);
     setTimeout(() => card.remove(), 400);
+  }
+
+  // Nudge → photo picker (사진첩에서 고르기)
+  function nudgeRecord() {
+    goToScreen('screen-nudge-photo-picker');
+  }
+
+  function togglePhotoSelect(el) {
+    el.classList.toggle('selected');
+    updatePhotoPickerButton();
+  }
+
+  function updatePhotoPickerButton() {
+    const selected = document.querySelectorAll('#screen-nudge-photo-picker .photo-grid-item.selected');
+    const btn = document.getElementById('nudgePhotoNext');
+    const count = selected.length;
+    if (count === 0) {
+      btn.disabled = true;
+      btn.textContent = '사진을 선택하세요';
+    } else {
+      btn.disabled = false;
+      btn.textContent = `사진 ${count}장 선택 — 다음`;
+    }
+  }
+
+  function nudgePhotoConfirm() {
+    // Simulate: selected photo → AI recognition → go to record screen
+    document.getElementById('restRecName').textContent = '스시코우지';
+    document.getElementById('restRecMeta').textContent = '일식 · 을지로 · 120m';
+    recState.type = 'restaurant';
+    goToScreen('screen-rest-record');
   }
 
   // =====================
@@ -5767,7 +6607,7 @@
     const card = document.createElement('div');
     card.className = 'rest-rec-wine-linked';
     card.innerHTML = `
-      <div class="rest-rec-wine-bottle" style="background:linear-gradient(135deg,#4a2030,#2d1020);">
+      <div class="rest-rec-wine-bottle" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;">
         <i data-lucide="wine" style="width:14px;height:14px;color:rgba(255,255,255,0.7);"></i>
       </div>
       <div class="rest-rec-wine-info">
@@ -5893,13 +6733,6 @@
     setTimeout(() => { toast.style.opacity = '0'; }, 2500);
   }
 
-  // Legacy compat — redirect to camera-first flow
-  function startRecord(method) {
-    fabAddRecord();
-  }
-
-  function closeFab() { closeAddSheet(); }
-
   function exitRecord() {
     // Return to home
     recResetAll();
@@ -5945,50 +6778,6 @@
   }
 
   // =============================================
-  // PROGRESSIVE DISCLOSURE DEMO
-  // =============================================
-  let pdRecordCount = 25; // default: all unlocked
-  let pdPanelOpen = true;
-
-  function togglePdPanel() {
-    pdPanelOpen = !pdPanelOpen;
-    const panel = document.getElementById('pdControlPanel');
-    if (pdPanelOpen) {
-      panel.classList.remove('collapsed');
-    } else {
-      panel.classList.add('collapsed');
-    }
-  }
-
-  function setPdCount(count, el) {
-    pdRecordCount = count;
-    // Update active button
-    document.querySelectorAll('.pd-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    // Apply lock/unlock to each section
-    applyProgressiveDisclosure();
-  }
-
-  function applyProgressiveDisclosure() {
-    const sections = [
-      { id: 'pdLockMap', min: 5 },
-      { id: 'pdLockVariety', min: 10 },
-      { id: 'pdLockScore', min: 10 },
-      { id: 'pdLockMonthly', min: 20 },
-    ];
-    sections.forEach(s => {
-      const overlay = document.getElementById(s.id);
-      if (!overlay) return;
-      if (pdRecordCount < s.min) {
-        overlay.classList.add('locked');
-      } else {
-        overlay.classList.remove('locked');
-      }
-    });
-  }
-
-  // Initialize: all unlocked (25 records)
-  applyProgressiveDisclosure();
 </script>
 </body>
 </html>
