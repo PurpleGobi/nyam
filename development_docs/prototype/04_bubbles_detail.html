@@ -123,9 +123,71 @@
   }
   .notif-wrap { position: relative; }
   .notif-badge {
-    position: absolute; top: 4px; right: 4px;
+    pointer-events: none;
+    position: absolute; top: 2px; right: 2px;
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--brand); border: 1.5px solid var(--bg);
+  }
+  .notif-dropdown-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 190; border-radius: 42px;
+  }
+  .notif-dropdown-overlay.open { display: block; }
+  .notif-dropdown {
+    display: none; position: absolute;
+    top: 90px; right: 16px;
+    width: 300px; max-height: 400px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    z-index: 200; overflow: hidden; flex-direction: column;
+  }
+  .notif-dropdown.open { display: flex; }
+  .notif-dropdown-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .notif-dropdown-mark-read {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 500; color: var(--text-hint); font-family: inherit;
+  }
+  .notif-dropdown-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .notif-dropdown-list::-webkit-scrollbar { display: none; }
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; cursor: pointer;
+    border-bottom: 1px solid var(--border); position: relative;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:active { opacity: 0.7; }
+  .notif-item-icon {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; color: var(--text-sub);
+  }
+  .notif-item-icon svg { width: 16px; height: 16px; }
+  .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
+  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .notif-item-body { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+  .notif-item-time { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .notif-item.unread .notif-item-title { font-weight: 600; }
+  .notif-item-dot {
+    position: absolute; top: 15px; right: 12px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
+  }
+  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .notif-action-btn {
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .notif-action-accept { background: var(--text); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: var(--text-hint); border: 1px solid var(--border); }
+  .notif-dropdown-footer {
+    padding: 9px 14px; text-align: center;
+    border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .notif-dropdown-footer a {
+    font-size: 12px; font-weight: 500; color: var(--text-hint); text-decoration: none;
   }
   .icon-btn {
     width: 34px; height: 34px; border-radius: 50%;
@@ -682,6 +744,74 @@
 <div class="device">
   <div class="device-inner">
     <div class="dynamic-island"></div>
+    <div class="notif-dropdown-overlay" id="notifOverlay" onclick="closeNotifDropdown()"></div>
+
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <span class="notif-dropdown-title">알림</span>
+        <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
+      </div>
+      <div class="notif-dropdown-list">
+        <div class="notif-item unread" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">을지로 레벨 4 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">3시간 전</div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">김영수님이 '을지로 맛탐정 클럽' 가입을 신청했어요</div>
+            <div class="notif-item-time">1일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="user-plus"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">이수진님이 팔로우를 요청했어요</div>
+            <div class="notif-item-time">2일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
+            <div class="notif-item-time">3일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="user-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">박민호님이 팔로우를 수락했어요</div>
+            <div class="notif-item-time">5일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">와인 레벨 7 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">1주 전</div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="05_settings.html">알림 설정 →</a>
+      </div>
+    </div>
 
     <div class="screens-wrapper">
 
@@ -704,8 +834,8 @@
             <div class="header-right">
               <button class="bubbles-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div class="notif-wrap">
-                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
-                  <i data-lucide="bell"></i>
+                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
+                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
                 </button>
                 <div class="notif-badge"></div>
               </div>
@@ -713,6 +843,7 @@
                 <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                  <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
                   <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
                 </div>
               </div>
@@ -1482,8 +1613,8 @@
             <div class="header-right">
               <button class="bubbles-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div class="notif-wrap">
-                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
-                  <i data-lucide="bell"></i>
+                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
+                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
                 </button>
                 <div class="notif-badge"></div>
               </div>
@@ -1793,6 +1924,42 @@
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
   });
+
+  // Notification dropdown
+  function toggleNotifDropdown(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('notifDropdown');
+    var ov = document.getElementById('notifOverlay');
+    dd.classList.toggle('open');
+    ov.classList.toggle('open');
+  }
+  function closeNotifDropdown() {
+    document.getElementById('notifDropdown').classList.remove('open');
+    document.getElementById('notifOverlay').classList.remove('open');
+  }
+  function readNotifItem(item) {
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+    closeNotifDropdown();
+  }
+  function markAllNotifRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+      item.classList.remove('unread');
+      var dot = item.querySelector('.notif-item-dot');
+      if (dot) dot.remove();
+    });
+  }
+  function handleNotifAction(btn, action) {
+    var item = btn.closest('.notif-item');
+    var actions = item.querySelector('.notif-item-actions');
+    actions.innerHTML = action === 'accept'
+      ? '<span style="font-size:11px;font-weight:600;color:var(--positive)">수락 완료</span>'
+      : '<span style="font-size:11px;color:var(--text-hint)">거절됨</span>';
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+  }
 
   lucide.createIcons();
 </script>

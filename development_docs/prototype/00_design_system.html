@@ -450,6 +450,41 @@
   }
   .ds-tab-icon-btn:active { color: var(--text); }
   .ds-tab-icon-btn.has-filter { color: var(--primary); }
+  .ds-tab-icon-btn.active-search { color: var(--primary); }
+
+  /* 검색 드롭다운 */
+  .ds-search-dropdown {
+    display: none;
+    position: absolute; right: 0;
+    width: calc(50%);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 8px 12px;
+    z-index: 80;
+  }
+  .ds-search-dropdown.open { display: block; }
+  [data-theme="dark"] .ds-search-dropdown {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+  .ds-search-input-wrap {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .ds-search-input-wrap > i { margin-top: 2px; }
+  .ds-search-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 14px; color: var(--text);
+    font-family: inherit;
+    resize: none; overflow: hidden;
+    min-height: 20px; line-height: 1.4;
+  }
+  .ds-search-input::placeholder { color: var(--text-hint); }
+  .ds-search-clear-btn {
+    background: none; border: none; padding: 2px;
+    cursor: pointer; color: var(--text-hint);
+    display: flex; align-items: center; justify-content: center;
+  }
 
   /* Filter drawer — slides down */
   .ds-filter-drawer {
@@ -1120,7 +1155,7 @@
 <!-- ============================================ -->
 
 <div class="section">
-  <div class="note" style="margin-bottom:12px;">필터 버튼 → 아래로 Notion 스타일 필터 패널 펼침 · 소팅 버튼 → 드롭다운 표시. 두 버튼은 나란히 배치.</div>
+  <div class="note" style="margin-bottom:12px;">필터 버튼 → Notion 스타일 필터 패널 · 소팅 버튼 → 드롭다운 · 검색 버튼 → 검색 입력 드롭다운. 세 버튼 나란히 배치, 상호 배타.</div>
 
   <!-- Filter + Sort 버튼 row -->
   <div style="max-width:340px; position:relative;">
@@ -1130,6 +1165,9 @@
       </button>
       <button class="ds-tab-icon-btn" id="dsSortToggle" onclick="dsToggleSort()" title="정렬">
         <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+      </button>
+      <button class="ds-tab-icon-btn" id="dsSearchToggle" onclick="dsToggleSearch()" title="검색">
+        <i data-lucide="search" style="width:18px;height:18px;"></i>
       </button>
     </div>
 
@@ -1211,6 +1249,17 @@
       <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">이름순</button>
       <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">방문 많은순</button>
     </div>
+
+    <!-- Search dropdown -->
+    <div class="ds-search-dropdown" id="dsSearchDropdown" style="top:42px;">
+      <div class="ds-search-input-wrap">
+        <i data-lucide="search" style="width:16px;height:16px;color:var(--text-tertiary);flex-shrink:0;"></i>
+        <textarea id="dsSearchInput" class="ds-search-input" rows="1" placeholder="식당·와인 이름으로 검색"></textarea>
+        <button class="ds-search-clear-btn" id="dsSearchClearBtn" onclick="dsClearSearch()" style="display:none;">
+          <i data-lucide="x" style="width:14px;height:14px;"></i>
+        </button>
+      </div>
+    </div>
   </div>
 
   <h3 style="margin-top:16px;">States</h3>
@@ -1224,6 +1273,9 @@
         <button class="ds-tab-icon-btn" style="pointer-events:none;">
           <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
         </button>
+        <button class="ds-tab-icon-btn" style="pointer-events:none;">
+          <i data-lucide="search" style="width:18px;height:18px;"></i>
+        </button>
       </div>
     </div>
     <div>
@@ -1234,6 +1286,9 @@
         </button>
         <button class="ds-tab-icon-btn has-filter" style="pointer-events:none;">
           <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ds-tab-icon-btn active-search" style="pointer-events:none;">
+          <i data-lucide="search" style="width:18px;height:18px;"></i>
         </button>
       </div>
     </div>
@@ -1246,7 +1301,9 @@
     <b>활성 상태:</b> <code>color: var(--primary)</code><br>
     <b>필터 패널:</b> max-height 애니메이션 (0 → 260px), Notion 스타일 룰 기반<br>
     <b>소팅 드롭다운:</b> <code>border-radius: 12px</code>, <code>box-shadow: 0 8px 28px</code>, 절대 위치<br>
-    <b>상호 배타:</b> 필터 열면 소팅 닫힘, 소팅 열면 필터 닫힘
+    <b>검색 버튼:</b> <code>search</code> 아이콘, 32×32 터치 영역<br>
+    <b>검색 드롭다운:</b> 우측 정렬, 폭 50%, textarea 자동 확장 (줄바꿈 시 높이 증가)<br>
+    <b>상호 배타:</b> 필터·소팅·검색 중 하나만 열림
   </div>
 </div>
 
@@ -1675,14 +1732,15 @@ function applyRating(circle, score) {
         <span style="font-family:'Comfortaa',cursive;font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;background:linear-gradient(135deg,#FF6038,#8B7396);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">nyam</span>
         <div style="display:flex;align-items:center;gap:6px;">
           <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
-          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;" title="알림" onclick="location.href='06_notifications.html'">
+          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;" title="알림" onclick="location.href='01_home.html'">
             <i data-lucide="bell" style="width:20px;height:20px;"></i>
-            <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
+            <span style="position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
           </button>
           <div style="position:relative;">
             <div onclick="this.querySelector('.avatar-menu').classList.toggle('open')" style="width:30px;height:30px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">J
               <div class="avatar-menu" onclick="event.stopPropagation()">
                 <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
                 <a href="03_profile.html#settings" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
               </div>
             </div>
@@ -1927,9 +1985,9 @@ function applyRating(circle, score) {
         <!-- Right: same as app header -->
         <div style="display:flex;align-items:center;gap:6px;">
           <button style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
-          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;" title="알림" onclick="location.href='06_notifications.html'">
+          <button style="width:34px;height:34px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative;cursor:pointer;" title="알림" onclick="location.href='01_home.html'">
             <i data-lucide="bell" style="width:20px;height:20px;"></i>
-            <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
+            <span style="position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--brand);border:1.5px solid var(--bg);"></span>
           </button>
           <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-food);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">J</div>
         </div>
@@ -2211,6 +2269,8 @@ function applyRating(circle, score) {
     const sortDD = document.getElementById('dsSortDropdown');
     sortDD.classList.remove('open');
     document.getElementById('dsSortToggle').classList.remove('has-filter');
+    document.getElementById('dsSearchDropdown').classList.remove('open');
+    document.getElementById('dsSearchToggle').classList.remove('active-search');
     drawer.classList.toggle('open');
     document.getElementById('dsFilterToggle').classList.toggle('has-filter', drawer.classList.contains('open'));
   }
@@ -2220,9 +2280,47 @@ function applyRating(circle, score) {
     const filterDrawer = document.getElementById('dsFilterDrawer');
     filterDrawer.classList.remove('open');
     document.getElementById('dsFilterToggle').classList.remove('has-filter');
+    document.getElementById('dsSearchDropdown').classList.remove('open');
+    document.getElementById('dsSearchToggle').classList.remove('active-search');
     dd.classList.toggle('open');
     document.getElementById('dsSortToggle').classList.toggle('has-filter', dd.classList.contains('open'));
   }
+
+  function dsToggleSearch() {
+    const dd = document.getElementById('dsSearchDropdown');
+    const btn = document.getElementById('dsSearchToggle');
+    document.getElementById('dsFilterDrawer').classList.remove('open');
+    document.getElementById('dsFilterToggle').classList.remove('has-filter');
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortToggle').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    btn.classList.toggle('active-search', dd.classList.contains('open'));
+    if (dd.classList.contains('open')) {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      setTimeout(() => document.getElementById('dsSearchInput').focus(), 50);
+    }
+  }
+
+  function dsClearSearch() {
+    const input = document.getElementById('dsSearchInput');
+    input.value = '';
+    document.getElementById('dsSearchClearBtn').style.display = 'none';
+    input.focus();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const si = document.getElementById('dsSearchInput');
+    if (si) {
+      si.addEventListener('input', () => {
+        document.getElementById('dsSearchClearBtn').style.display = si.value ? 'flex' : 'none';
+        si.style.height = 'auto';
+        si.style.height = si.scrollHeight + 'px';
+      });
+      si.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    }
+  });
 
   function dsSelectSort(el) {
     el.parentElement.querySelectorAll('.nyam-dropdown-item').forEach(s => s.classList.remove('active'));

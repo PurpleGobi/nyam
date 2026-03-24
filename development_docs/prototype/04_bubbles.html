@@ -158,9 +158,71 @@
     cursor: pointer; flex-shrink: 0;
   }
   .notif-badge {
-    position: absolute; top: 4px; right: 4px;
+    pointer-events: none;
+    position: absolute; top: 2px; right: 2px;
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--brand); border: 1.5px solid var(--bg);
+  }
+  .notif-dropdown-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 190; border-radius: 42px;
+  }
+  .notif-dropdown-overlay.open { display: block; }
+  .notif-dropdown {
+    display: none; position: absolute;
+    top: 90px; right: 16px;
+    width: 300px; max-height: 400px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    z-index: 200; overflow: hidden; flex-direction: column;
+  }
+  .notif-dropdown.open { display: flex; }
+  .notif-dropdown-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .notif-dropdown-mark-read {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 500; color: var(--text-hint); font-family: inherit;
+  }
+  .notif-dropdown-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .notif-dropdown-list::-webkit-scrollbar { display: none; }
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; cursor: pointer;
+    border-bottom: 1px solid var(--border); position: relative;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:active { opacity: 0.7; }
+  .notif-item-icon {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; color: var(--text-sub);
+  }
+  .notif-item-icon svg { width: 16px; height: 16px; }
+  .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
+  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .notif-item-body { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+  .notif-item-time { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .notif-item.unread .notif-item-title { font-weight: 600; }
+  .notif-item-dot {
+    position: absolute; top: 15px; right: 12px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
+  }
+  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .notif-action-btn {
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .notif-action-accept { background: var(--text); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: var(--text-hint); border: 1px solid var(--border); }
+  .notif-dropdown-footer {
+    padding: 9px 14px; text-align: center;
+    border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .notif-dropdown-footer a {
+    font-size: 12px; font-weight: 500; color: var(--text-hint); text-decoration: none;
   }
 
   /* Icon button */
@@ -215,6 +277,413 @@
   }
   .page-title { font-size: 20px; font-weight: 700; color: var(--text); }
   .page-subtitle { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+  /* ========== SUB-NAV CHIPS (home 동일) ========== */
+  .sub-nav {
+    display: flex; gap: 6px;
+    padding: 10px 20px;
+  }
+  .sub-nav-item {
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    color: var(--text-sub); border-radius: 20px;
+    border: 1px solid var(--border); background: none;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .sub-nav-item:active { transform: scale(0.96); }
+  .sub-nav-item.active {
+    background: var(--text); color: var(--bg); border-color: var(--text);
+  }
+  .sub-nav-item .nav-count { font-size: 11px; font-weight: 700; opacity: 0.55; }
+  .sub-nav-item.active .nav-count { opacity: 0.8; }
+
+  /* ========== BUBBLE BANNER (auto-dismiss, home ai-greeting 데칼코마니) ========== */
+  .bubble-banner {
+    padding: 14px 20px 12px;
+    background: var(--bg);
+    max-height: 120px;
+    overflow: hidden;
+    transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.5s ease;
+    opacity: 1;
+  }
+  .bubble-banner.collapsed {
+    max-height: 0; padding: 0 20px; opacity: 0; pointer-events: none;
+  }
+  .bubble-banner-text {
+    font-size: 15px; font-weight: 500; color: var(--text);
+    line-height: 1.55; letter-spacing: -0.2px;
+  }
+  .bubble-banner-text strong { font-weight: 700; }
+  .bubble-banner-sub {
+    font-size: 11px; color: var(--text-hint); margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .bubble-banner-sub .banner-notif {
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .bubble-banner-sub .banner-notif svg { width: 10px; height: 10px; }
+  .bubble-banner-sub .banner-notif strong { font-weight: 700; color: var(--accent-social); }
+
+  /* ========== FILTER DRAWER (home 동일) ========== */
+  .filter-drawer {
+    display: none;
+    background: var(--bg);
+  }
+  .filter-drawer.open { display: block; }
+  .nf-panel { padding: 10px 16px; }
+  .nf-rules { display: flex; flex-direction: column; gap: 6px; }
+  .nf-rule {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
+  }
+  .nf-conj {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    width: 40px; flex-shrink: 0;
+  }
+  .nf-conj.clickable { cursor: pointer; }
+  .nf-conj.clickable:active { color: var(--accent-social); }
+  .nf-rule .nyam-select-wrap { display: inline-block; position: relative; }
+  .nf-rule .nyam-select {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px; font-size: 12px; min-width: 60px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg-card); cursor: pointer;
+    font-family: inherit; font-weight: 500; color: var(--text);
+    user-select: none; transition: all 0.15s;
+  }
+  .nf-rule .nyam-select:hover { border-color: var(--border-bold); }
+  .nf-rule .nyam-select.open { border-color: var(--accent-social); }
+  .nf-rule .nyam-select-value { flex: 1; }
+  .nf-rule .nyam-select-arrow { width: 12px; height: 12px; color: var(--text-hint); transition: transform 0.2s; flex-shrink: 0; }
+  .nf-rule .nyam-select.open .nyam-select-arrow { transform: rotate(180deg); }
+  .nf-rule .nyam-dropdown {
+    display: none; position: absolute;
+    top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px; z-index: 100; min-width: 120px; overflow: hidden;
+  }
+  .nf-rule .nyam-select.open + .nyam-dropdown { display: block; }
+  .nf-rule .nyam-dropdown-item {
+    display: block; width: 100%; padding: 7px 10px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none; border: none;
+    cursor: pointer; font-family: inherit; transition: background 0.1s;
+  }
+  .nf-rule .nyam-dropdown-item:hover { background: var(--bg); }
+  .nf-rule .nyam-dropdown-item.selected { color: var(--accent-social); font-weight: 600; }
+  .nf-rule .nyam-select-wrap[data-role="op"] .nyam-select { min-width: 40px; }
+  .nf-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown { min-width: 140px; }
+  .nf-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text-hint); padding: 2px 4px;
+    margin-left: auto;
+  }
+  .nf-remove:active { color: var(--negative); }
+  .nf-add-row { position: relative; margin-top: 4px; }
+  .nf-add-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--text-hint);
+    padding: 6px 8px; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px; border-radius: 6px;
+  }
+  .nf-add-btn:hover { background: var(--bg); color: var(--text); }
+  .nf-add-btn svg { width: 12px; height: 12px; opacity: 0.5; }
+  .nf-add-dd {
+    display: none; position: absolute; left: 0; top: 100%;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    padding: 4px; z-index: 90; min-width: 180px;
+  }
+  .nf-add-dd.open { display: block; }
+  .nf-add-dd-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 8px 12px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none; border: none;
+    cursor: pointer; font-family: inherit;
+  }
+  .nf-add-dd-item:hover { background: var(--bg); }
+  .nf-add-dd-item svg { width: 14px; height: 14px; color: var(--text-hint); flex-shrink: 0; }
+
+  /* ========== DISCOVER BOTTOM SHEET (device-inner 안) ========== */
+  .discover-sheet-overlay {
+    position: absolute; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.3);
+    border-radius: 42px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .discover-sheet-overlay.show { opacity: 1; pointer-events: auto; }
+  .discover-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 201;
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 80%; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .discover-sheet-overlay.show .discover-sheet { transform: translateY(0); }
+  .discover-sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border); margin: 10px auto 8px;
+    background-color: var(--border-bold);
+  }
+  .discover-sheet-header {
+    padding: 4px 20px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg);
+  }
+  .discover-sheet .discover-sheet-handle,
+  .discover-sheet .filter-drawer,
+  .discover-sheet .ds-search-bar { background: var(--bg); }
+  .discover-sheet-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .discover-sheet-close {
+    background: none; border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-hint);
+  }
+  .discover-sheet-close:active { background: var(--bg-page); }
+  .discover-sheet-body { padding: 0 0 24px; }
+
+  /* Bubbler card expand (공개 프로필 상세) */
+  .bubbler-card-detail {
+    display: none;
+    padding: 10px 0 0;
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .bubbler-card.expanded .bubbler-card-detail { display: block; }
+  .bubbler-card.expanded { border-color: var(--accent-social); }
+  .bubbler-profile-stats {
+    display: flex; gap: 16px; margin-bottom: 8px;
+  }
+  .bubbler-profile-stat {
+    font-size: 11px; color: var(--text-sub);
+  }
+  .bubbler-profile-stat strong { font-weight: 700; color: var(--text); }
+  .bubbler-profile-bubbles {
+    display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .bubbler-profile-bubble {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent-social-light); color: var(--accent-social);
+    font-weight: 600;
+  }
+  .bubbler-profile-bio {
+    font-size: 11px; color: var(--text-hint); margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .bubbler-profile-actions {
+    display: flex; gap: 6px;
+  }
+
+  /* Discover card expand (상세 토글) */
+  .discover-card-detail {
+    display: none;
+    padding: 12px 16px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  .discover-card.expanded .discover-card-detail { display: block; }
+  .discover-card.expanded { border-color: var(--accent-social); }
+
+  /* ========== CONTENT TABS (home 데칼코마니) ========== */
+  .content-tabs {
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 0 16px;
+  }
+  .content-tab {
+    padding: 12px 20px;
+    font-size: 15px; font-weight: 500;
+    color: var(--text-hint);
+    border: none; background: none; cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+    font-family: inherit;
+  }
+  .content-tab::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5px; left: 12px; right: 12px;
+    height: 2.5px; border-radius: 2px;
+    background: transparent;
+    transition: background 0.2s;
+  }
+  .content-tab.active {
+    color: var(--text); font-weight: 700;
+  }
+  .content-tab.active::after {
+    background: var(--accent-social);
+  }
+  .content-tab-spacer { flex: 1; }
+
+  /* Borderless icon buttons for filter/sort */
+  .tab-icon-btn {
+    background: none; border: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-hint);
+    flex-shrink: 0; padding: 0;
+    transition: color 0.15s;
+  }
+  .tab-icon-btn:active { color: var(--text); }
+  .tab-icon-btn.has-filter { color: var(--accent-social); }
+  .tab-icon-btn.active-search { color: var(--accent-social); }
+
+  /* Search dropdown */
+  .search-dropdown {
+    display: none;
+    position: absolute; right: 16px;
+    width: calc(50% - 16px);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 8px 12px;
+    z-index: 80;
+  }
+  .search-dropdown.open { display: block; }
+  .search-input-wrap {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .search-input-wrap > i { margin-top: 2px; }
+  .search-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 14px; color: var(--text);
+    font-family: inherit;
+    resize: none; overflow: hidden;
+    min-height: 20px; line-height: 1.4;
+  }
+  .search-input::placeholder { color: var(--text-hint); }
+  .search-clear-btn {
+    background: none; border: none; padding: 2px;
+    cursor: pointer; color: var(--text-hint);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Sort dropdown */
+  .sort-dropdown {
+    display: none;
+    position: absolute; right: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px;
+    z-index: 80;
+    min-width: 150px;
+  }
+  .sort-dropdown.open { display: block; }
+  .sort-dd-item {
+    display: block; width: 100%;
+    padding: 9px 12px; text-align: left;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text); background: none;
+    border: none; cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .sort-dd-item:hover { background: var(--bg); }
+  .sort-dd-item:active { background: var(--border); }
+  .sort-dd-item.active { color: var(--accent-social); font-weight: 600; }
+
+  /* ========== PEOPLE TAB ========== */
+  .people-panel { display: none; }
+  .people-panel.active { display: block; }
+  .bubble-panel { display: block; }
+  .bubble-panel.hidden { display: none; }
+
+  .people-stats {
+    display: flex; gap: 16px;
+    padding: 12px 20px 8px;
+  }
+  .people-stat {
+    font-size: 13px; color: var(--text-sub);
+  }
+  .people-stat strong {
+    font-weight: 700; color: var(--text); margin-right: 2px;
+  }
+
+  .people-search-bar {
+    margin: 4px 20px 12px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px;
+  }
+  .people-search-bar svg { width: 16px; height: 16px; color: var(--text-hint); flex-shrink: 0; }
+  .people-search-bar input {
+    flex: 1; border: none; background: none; outline: none;
+    font-size: 13px; font-family: inherit; color: var(--text);
+  }
+  .people-search-bar input::placeholder { color: var(--text-hint); }
+
+  .people-filter-chips {
+    display: flex; gap: 6px;
+    padding: 10px 20px;
+  }
+  .people-chip {
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    color: var(--text-sub); border-radius: 20px;
+    border: 1px solid var(--border); background: none;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .people-chip:active { transform: scale(0.96); }
+  .people-chip.active {
+    background: var(--text); color: var(--bg);
+    border-color: var(--text);
+  }
+  .people-chip .chip-count { font-size: 11px; font-weight: 700; opacity: 0.55; }
+  .people-chip.active .chip-count { opacity: 0.8; }
+
+  .person-card {
+    margin: 0 20px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+  }
+  .person-card:active { opacity: 0.8; }
+  .person-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .person-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+  .person-action {
+    padding: 5px 14px; font-size: 12px; font-weight: 600;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: none; color: var(--text-sub); cursor: pointer;
+    font-family: inherit; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .person-action:active { background: var(--bg-page); }
+  .person-action.following {
+    background: var(--accent-social-light); color: var(--accent-social);
+    border-color: var(--accent-social-light);
+  }
+  .person-action.mutual {
+    background: var(--positive); color: white; border-color: var(--positive);
+  }
 
   /* ========== BUBBLE LIST ========== */
   .bubble-card {
@@ -327,25 +796,26 @@
     margin-top: 6px;
   }
 
-  /* ========== DISCOVERY CHIPS ========== */
+  /* ========== DISCOVERY CHIPS (home sub-nav 동일) ========== */
   .discover-chips {
-    display: flex; gap: 6px; padding: 0 20px 12px;
+    display: flex; gap: 6px; padding: 10px 20px;
     overflow-x: auto;
   }
   .discover-chips::-webkit-scrollbar { display: none; }
   .discover-chip {
-    padding: 6px 14px; border-radius: 20px;
-    font-size: 13px; font-weight: 500;
-    background: var(--bg-card); border: 1px solid var(--border);
-    color: var(--text-sub); cursor: pointer; font-family: inherit;
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    color: var(--text-sub); border-radius: 20px;
+    border: 1px solid var(--border); background: none;
+    cursor: pointer; font-family: inherit;
     white-space: nowrap; flex-shrink: 0;
-    display: flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; gap: 4px;
     transition: all 0.15s;
   }
-  .discover-chip svg { width: 14px; height: 14px; }
+  .discover-chip:active { transform: scale(0.96); }
+  .discover-chip svg { width: 12px; height: 12px; }
   .discover-chip.active {
-    background: var(--accent-social); color: #fff;
-    border-color: var(--accent-social);
+    background: var(--text); color: var(--bg);
+    border-color: var(--text);
   }
 
   /* ========== DISCOVERY CARDS ========== */
@@ -412,6 +882,15 @@
     flex-shrink: 0; transition: opacity 0.15s;
   }
   .btn-join:active { opacity: 0.8; }
+  .btn-follow {
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    background: transparent; color: var(--accent-social);
+    border: 1.5px solid var(--accent-social); cursor: pointer; font-family: inherit;
+    flex-shrink: 0; transition: all 0.15s;
+  }
+  .btn-follow:active { background: var(--accent-social-light); }
+  .btn-follow.followed { background: var(--accent-social-light); }
 
   /* ========== BUBBLE CREATE ========== */
   .form-section {
@@ -625,6 +1104,74 @@
 <div class="device">
   <div class="device-inner">
     <div class="dynamic-island"></div>
+    <div class="notif-dropdown-overlay" id="notifOverlay" onclick="closeNotifDropdown()"></div>
+
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <span class="notif-dropdown-title">알림</span>
+        <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
+      </div>
+      <div class="notif-dropdown-list">
+        <div class="notif-item unread" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">을지로 레벨 4 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">3시간 전</div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">김영수님이 '을지로 맛탐정 클럽' 가입을 신청했어요</div>
+            <div class="notif-item-time">1일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="user-plus"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">이수진님이 팔로우를 요청했어요</div>
+            <div class="notif-item-time">2일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
+            <div class="notif-item-time">3일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="user-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">박민호님이 팔로우를 수락했어요</div>
+            <div class="notif-item-time">5일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">와인 레벨 7 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">1주 전</div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="05_settings.html">알림 설정 →</a>
+      </div>
+    </div>
 
     <div class="screens-wrapper">
 
@@ -644,8 +1191,8 @@
             <div class="header-right">
               <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
-                  <i data-lucide="bell"></i>
+                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
+                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
                 </button>
                 <div class="notif-badge"></div>
               </div>
@@ -653,6 +1200,7 @@
                 <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user"></i> 프로필</a>
+                  <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3"></i> 통계</a>
                   <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings"></i> 설정</a>
                 </div>
               </div>
@@ -662,21 +1210,134 @@
 
         <div class="scroll-area">
 
-          <!-- Page title -->
-          <div class="page-title-bar">
-            <h1 class="page-title">버블</h1>
-            <div class="page-subtitle">나의 미식 커뮤니티</div>
+          <!-- Bubble banner (auto-dismiss after 4s) — home ai-greeting 데칼코마니 -->
+          <div class="bubble-banner" id="bubbleBanner">
+            <div class="bubble-banner-text">
+              <strong>직장 맛집에 새 피드가 올라왔어요.</strong><br>
+              와인 모임에 새 멤버가 합류했습니다.
+            </div>
+            <div class="bubble-banner-sub">
+              <span class="banner-notif"><i data-lucide="message-circle"></i> 피드 <strong>+3</strong></span>
+              <span class="banner-notif"><i data-lucide="user-plus"></i> 신규 <strong>1명</strong></span>
+            </div>
           </div>
 
-          <div class="section-header">
-            <span class="section-header-title">내 버블 (3)</span>
+          <!-- Content tabs: 버블 | 버블러 + 탐색 + 필터 + 소팅 -->
+          <div class="content-tabs">
+            <button class="content-tab active" id="tabBubble" onclick="switchSegment('bubble')">버블</button>
+            <button class="content-tab" id="tabPeople" onclick="switchSegment('people')">버블러</button>
+            <div class="content-tab-spacer"></div>
+            <!-- 탐색 (활성 탭에 따라 버블/버블러 시트) -->
+            <button class="tab-icon-btn" id="bDiscoverBtn" onclick="openContextSheet()" title="탐색">
+              <i data-lucide="compass" style="width:18px;height:18px;"></i>
+            </button>
+            <!-- 필터 -->
+            <button class="tab-icon-btn" id="bFilterToggleTab" onclick="toggleBubbleFilterDrawer()" title="필터">
+              <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
+            </button>
+            <!-- 소팅 -->
+            <button class="tab-icon-btn" id="bSortToggle" onclick="toggleBubbleSort()" title="정렬">
+              <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+            </button>
+            <!-- 검색 -->
+            <button class="tab-icon-btn" id="bSearchToggle" onclick="toggleBubbleSearch()" title="검색">
+              <i data-lucide="search" style="width:18px;height:18px;"></i>
+            </button>
           </div>
 
-          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
+          <!-- Filter drawer (home 동일 패턴 — collapse/expand) -->
+          <div class="filter-drawer" id="bFilterDrawer">
+            <div class="nf-panel">
+              <div class="nf-rules" id="bFilterRules">
+                <div class="nf-rule">
+                  <span class="nf-conj">Where</span>
+                  <div class="nyam-select-wrap">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')">
+                      <span class="nyam-select-value">지역</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">지역</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">유형</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">멤버 수</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">활성도</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">가입 방식</button>
+                    </div>
+                  </div>
+                  <div class="nyam-select-wrap" data-role="op">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')">
+                      <span class="nyam-select-value">is</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">is</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">is not</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">contains</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">&ge;</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">&lt;</button>
+                    </div>
+                  </div>
+                  <div class="nyam-select-wrap">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')">
+                      <span class="nyam-select-value">을지로</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">을지로</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">광화문</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">강남</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">성수</button>
+                      <button class="nyam-dropdown-item" onclick="bSelectDD(this)">한남</button>
+                    </div>
+                  </div>
+                  <button class="nf-remove" onclick="bRemoveRule(this)">✕</button>
+                </div>
+              </div>
+              <div class="nf-add-row">
+                <button class="nf-add-btn" onclick="bToggleAddDD(this)">
+                  + 필터 추가 <i data-lucide="chevron-down"></i>
+                </button>
+                <div class="nf-add-dd">
+                  <button class="nf-add-dd-item" onclick="bAddRule(this)"><i data-lucide="plus"></i> 필터 추가</button>
+                  <button class="nf-add-dd-item" onclick="bAddGroup(this)"><i data-lucide="group"></i> 필터 그룹 추가</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sort dropdown -->
+          <div class="sort-dropdown" id="bSortDropdown">
+            <button class="sort-dd-item active" onclick="selectBubbleSort(this)">최신 활동순</button>
+            <button class="sort-dd-item" onclick="selectBubbleSort(this)">멤버 많은순</button>
+            <button class="sort-dd-item" onclick="selectBubbleSort(this)">기록 많은순</button>
+            <button class="sort-dd-item" onclick="selectBubbleSort(this)">이름순</button>
+          </div>
+
+          <!-- 검색 드롭다운 -->
+          <div class="search-dropdown" id="bSearchDropdown">
+            <div class="search-input-wrap">
+              <i data-lucide="search" style="width:16px;height:16px;color:var(--text-tertiary);flex-shrink:0;"></i>
+              <textarea id="bSearchInput" class="search-input" rows="1" placeholder="버블·버블러 이름으로 검색"></textarea>
+              <button class="search-clear-btn" id="bSearchClearBtn" onclick="clearBubbleSearch()" style="display:none;">
+                <i data-lucide="x" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ===== BUBBLE PANEL ===== -->
+          <div class="bubble-panel" id="bubblePanel">
+
+          <div class="sub-nav" id="bubbleSubNav">
+            <button class="sub-nav-item active" onclick="switchBubbleSub(this,'all')">전체 <span class="nav-count">3</span></button>
+            <button class="sub-nav-item" onclick="switchBubbleSub(this,'mine')">운영 <span class="nav-count">1</span></button>
+            <button class="sub-nav-item" onclick="switchBubbleSub(this,'joined')">가입 <span class="nav-count">2</span></button>
+          </div>
+
+          <div class="bubble-card" data-role="mine" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#F5EDE8;"><i data-lucide="utensils-crossed"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">직장 맛집</div>
-              <div class="bubble-meta">멤버 8명 · 기록 47개</div>
+              <div class="bubble-meta">멤버 8명 · 팔로워 24명 · 기록 47개</div>
               <div class="bubble-activity">
                 <span class="activity-dot"></span>최근 활동 2시간 전
               </div>
@@ -684,11 +1345,11 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
+          <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="wine"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">와인 모임</div>
-              <div class="bubble-meta">멤버 5명 · 기록 23개</div>
+              <div class="bubble-meta">멤버 5명 · 팔로워 11명 · 기록 23개</div>
               <div class="bubble-activity">
                 <span class="activity-dot"></span>최근 활동 1일 전
               </div>
@@ -696,11 +1357,11 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <div class="bubble-card" onclick="location.href='04_bubbles_detail.html'">
+          <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
             <div class="bubble-icon" style="background:#E8F0EB;color:var(--positive)"><i data-lucide="home"></i></div>
             <div class="bubble-info">
               <div class="bubble-name">동네 맛집</div>
-              <div class="bubble-meta">멤버 12명 · 기록 31개</div>
+              <div class="bubble-meta">멤버 12명 · 팔로워 38명 · 기록 31개</div>
               <div class="bubble-activity">
                 <span class="activity-dot stale"></span>최근 활동 3일 전
               </div>
@@ -708,328 +1369,97 @@
             <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
           </div>
 
-          <!-- ========== DISCOVERY SECTION ========== -->
-          <div class="section-header" style="margin-top:8px">
-            <span class="section-header-title">버블 탐색</span>
-          </div>
-
-          <!-- Search bar + filter toggle -->
-          <div class="bubble-search-bar">
-            <i data-lucide="search"></i>
-            <input type="text" placeholder="버블 이름, 지역, 키워드 검색..." id="bubbleSearchInput" oninput="filterBubbleSearch()">
-            <button class="search-filter-btn" id="bFilterToggle" onclick="toggleBubbleFilter()">
-              <i data-lucide="sliders-horizontal"></i>
-            </button>
-          </div>
-
-          <!-- Notion-style filter panel -->
-          <div class="bubble-filter-panel" id="bubbleFilterPanel">
-            <div class="bubble-filter-inner">
-              <div class="bf-rules" id="bfRules">
-                <div class="bf-rule">
-                  <span class="bf-conj">Where</span>
-                  <button class="bf-attr" onclick="cycleBfAttr(this)">지역</button>
-                  <span class="bf-is">is</span>
-                  <button class="bf-val" onclick="cycleBfVal(this)">을지로</button>
-                  <button class="bf-remove" onclick="removeBfRule(this)">✕</button>
-                </div>
-              </div>
-              <button class="bf-add-rule" onclick="addBfRule()">+ 필터 추가</button>
-              <div class="bf-result-count" id="bfResultCount">4개 버블 발견</div>
-            </div>
-          </div>
-
-          <!-- Discovery chips -->
-          <div class="discover-chips">
-            <button class="discover-chip active" onclick="switchDiscoverTab('recommend')">
-              <i data-lucide="sparkles"></i> 추천
-            </button>
-            <button class="discover-chip" onclick="switchDiscoverTab('nearby')">
-              <i data-lucide="map-pin"></i> 근처
-            </button>
-            <button class="discover-chip" onclick="switchDiscoverTab('popular')">
-              <i data-lucide="trending-up"></i> 인기
-            </button>
-            <button class="discover-chip" onclick="switchDiscoverTab('new')">
-              <i data-lucide="zap"></i> 새로운
-            </button>
-          </div>
-
-          <!-- Discover content: 추천 (AI taste similarity) -->
-          <div id="discover-recommend">
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
-                  <i data-lucide="flame"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
-                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
-                </div>
-                <div class="discover-card-similarity sim-high">
-                  <i data-lucide="heart"></i>87%
-                </div>
-              </div>
-              <div class="discover-card-overlaps">
-                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 미진</span>
-                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 스시코우지</span>
-                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 도쿄등심</span>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
-                  <i data-lucide="grape"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">내추럴 와인 러버스</div>
-                  <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
-                </div>
-                <div class="discover-card-similarity sim-high">
-                  <i data-lucide="heart"></i>82%
-                </div>
-              </div>
-              <div class="discover-card-overlaps">
-                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Ch. Margaux</span>
-                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Barolo Brunate</span>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">내추럴 와인 페어링 정보 공유</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#E8F0EB;color:var(--positive)">
-                  <i data-lucide="salad"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">비건 프렌들리 서울</div>
-                  <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
-                </div>
-                <div class="discover-card-similarity sim-mid">
-                  <i data-lucide="heart"></i>64%
-                </div>
-              </div>
-              <div class="discover-card-overlaps">
-                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 파스타 바르바리</span>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">채식 친화 레스토랑 탐방</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5F0E5;color:var(--caution)">
-                  <i data-lucide="chef-hat"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">오마카세 탐구회</div>
-                  <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
-                </div>
-                <div class="discover-card-similarity sim-low">
-                  <i data-lucide="heart"></i>48%
-                </div>
-              </div>
-              <div class="discover-card-overlaps">
-                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 스시코우지</span>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">하이엔드 일식 오마카세 전문</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Discover content: 근처 -->
-          <div id="discover-nearby" style="display:none">
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
-                  <i data-lucide="flame"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
-                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="map-pin"></i>0.3km
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#EDF2F5;color:var(--accent-social)">
-                  <i data-lucide="building-2"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">광화문 직장인 점심</div>
-                  <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="map-pin"></i>0.8km
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">광화문·종로 런치 맛집 공유</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
-                  <i data-lucide="wine"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">종로 와인바 투어</div>
-                  <div class="discover-card-meta">멤버 11명 · 기록 67개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="map-pin"></i>1.2km
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">종로 와인바 리뷰 모음</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Discover content: 인기 -->
-          <div id="discover-popular" style="display:none">
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#EDF2F5;color:var(--accent-social)">
-                  <i data-lucide="building-2"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">광화문 직장인 점심</div>
-                  <div class="discover-card-meta">멤버 31명 · 기록 204개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="activity"></i>활발
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">광화문·종로 런치 맛집 공유</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
-                  <i data-lucide="flame"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
-                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="activity"></i>활발
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">을지로·충무로 중심 맛집 탐험대</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)">
-                  <i data-lucide="grape"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">내추럴 와인 러버스</div>
-                  <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="activity"></i>보통
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">내추럴 와인 페어링 정보 공유</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Discover content: 새로운 -->
-          <div id="discover-new" style="display:none">
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5F0E5;color:var(--caution)">
-                  <i data-lucide="chef-hat"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">오마카세 탐구회</div>
-                  <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="clock"></i>3일 전
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">하이엔드 일식 오마카세 전문</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#E8F0EB;color:var(--positive)">
-                  <i data-lucide="salad"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">비건 프렌들리 서울</div>
-                  <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="clock"></i>1주 전
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">채식 친화 레스토랑 탐방</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-
-            <div class="discover-card">
-              <div class="discover-card-top">
-                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)">
-                  <i data-lucide="pizza"></i>
-                </div>
-                <div class="discover-card-info">
-                  <div class="discover-card-name">이태원 피자 헌터</div>
-                  <div class="discover-card-meta">멤버 4명 · 기록 12개</div>
-                </div>
-                <div class="discover-card-badge">
-                  <i data-lucide="clock"></i>2주 전
-                </div>
-              </div>
-              <div class="discover-card-bottom">
-                <div class="discover-card-desc">이태원·한남동 피자 맛집 정복</div>
-                <button class="btn-join">가입 신청</button>
-              </div>
-            </div>
-          </div>
-
           <div style="height:16px"></div>
+          </div><!-- /bubblePanel -->
+
+          <!-- ===== PEOPLE PANEL ===== -->
+          <div class="people-panel" id="peoplePanel">
+
+            <div class="people-filter-chips">
+              <button class="people-chip active" onclick="switchPeopleFilter(this,'all')">전체 <span class="chip-count">20</span></button>
+              <button class="people-chip" onclick="switchPeopleFilter(this,'following')">팔로잉 <span class="chip-count">12</span></button>
+              <button class="people-chip" onclick="switchPeopleFilter(this,'followers')">팔로워 <span class="chip-count">8</span></button>
+              <button class="people-chip" onclick="switchPeopleFilter(this,'mutual')">맞팔 <span class="chip-count">4</span></button>
+            </div>
+
+            <!-- 버블러 리스트 -->
+            <div id="peopleList">
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#C17B5E,#D4956F)">맛</div>
+                <div class="person-info">
+                  <div class="person-name">matjabi_ys</div>
+                  <div class="person-meta">기록 47개 · Lv.8 · 을지로 맛탐정</div>
+                </div>
+                <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#7A9BAE,#92B5C8)">와</div>
+                <div class="person-info">
+                  <div class="person-name">wine_soyeon</div>
+                  <div class="person-meta">기록 32개 · Lv.6 · 와인 모임</div>
+                </div>
+                <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#8B7396,#A890B8)">하</div>
+                <div class="person-info">
+                  <div class="person-name">haeun.eats</div>
+                  <div class="person-meta">기록 28개 · Lv.5</div>
+                </div>
+                <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#7EAE8B,#96C8A2)">준</div>
+                <div class="person-info">
+                  <div class="person-name">junho_gourmet</div>
+                  <div class="person-meta">기록 63개 · Lv.11 · 직장 맛집</div>
+                </div>
+                <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#C9A96E,#D8BC88)">민</div>
+                <div class="person-info">
+                  <div class="person-name">minseo_foodie</div>
+                  <div class="person-meta">기록 19개 · Lv.4</div>
+                </div>
+                <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#B87272,#CC8888)">지</div>
+                <div class="person-info">
+                  <div class="person-name">jiyoon_tasty</div>
+                  <div class="person-meta">기록 8개 · Lv.2</div>
+                </div>
+                <button class="person-action" onclick="toggleFollow(this)">팔로우</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#7A9BAE,#6A8B9E)">서</div>
+                <div class="person-info">
+                  <div class="person-name">seojin.nom</div>
+                  <div class="person-meta">기록 41개 · Lv.9 · 동네 맛집</div>
+                </div>
+                <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
+              </div>
+
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#C17B5E,#A86545)">도</div>
+                <div class="person-info">
+                  <div class="person-name">dohyun_nyam</div>
+                  <div class="person-meta">기록 5개 · Lv.1</div>
+                </div>
+                <button class="person-action" onclick="toggleFollow(this)">팔로우</button>
+              </div>
+            </div>
+
+            <div style="height:16px"></div>
+          </div><!-- /peoplePanel -->
+
         </div>
         <button class="fab-add" onclick="showScreen('screen-bubble-create')">
           <i data-lucide="plus"></i>
@@ -1055,8 +1485,8 @@
             <div class="header-right">
               <button class="header-nav-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
-                  <i data-lucide="bell"></i>
+                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
+                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
                 </button>
                 <div class="notif-badge"></div>
               </div>
@@ -1083,19 +1513,19 @@
             <textarea class="form-input" rows="3" placeholder="어떤 버블인지 설명해주세요" maxlength="100"></textarea>
           </div>
 
-          <!-- Type -->
+          <!-- Visibility -->
           <div class="form-section">
-            <div class="form-label">유형</div>
+            <div class="form-label">공개 설정</div>
             <div class="type-toggle">
-              <div class="type-option selected" onclick="selectType(this)">
-                <div class="type-option-icon"><i data-lucide="repeat"></i></div>
-                <div class="type-option-title">양방향</div>
-                <div class="type-option-desc">모든 멤버가<br>기록 공유</div>
+              <div class="type-option" onclick="selectType(this)" data-val="private">
+                <div class="type-option-icon"><i data-lucide="lock"></i></div>
+                <div class="type-option-title">비공개</div>
+                <div class="type-option-desc">초대받은<br>사람만 접근</div>
               </div>
-              <div class="type-option" onclick="selectType(this)">
-                <div class="type-option-icon"><i data-lucide="eye"></i></div>
-                <div class="type-option-title">열람 전용</div>
-                <div class="type-option-desc">생성자만<br>기록 공유</div>
+              <div class="type-option selected" onclick="selectType(this)" data-val="public">
+                <div class="type-option-icon"><i data-lucide="globe"></i></div>
+                <div class="type-option-title">공개</div>
+                <div class="type-option-desc">누구나 검색<br>팔로우 가능</div>
               </div>
             </div>
           </div>
@@ -1111,14 +1541,26 @@
             </div>
           </div>
 
-          <!-- Join approval -->
-          <div class="form-section" style="border-bottom:none">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div class="form-label" style="margin-bottom:2px">가입 승인 필요</div>
-                <div style="font-size:12px;color:var(--text-sub)">새 멤버 가입 시 관리자 승인 필요</div>
+          <!-- Join Policy (public only) -->
+          <div class="form-section" id="joinPolicySection" style="border-bottom:none">
+            <div class="form-label">가입 정책</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="type-option" style="padding:12px;text-align:left;display:flex;align-items:center;gap:12px" onclick="selectJoinPolicy(this)" data-val="closed">
+                <div class="type-option-icon" style="margin:0"><i data-lucide="eye"></i></div>
+                <div><div class="type-option-title" style="font-size:13px">팔로우만</div><div class="type-option-desc">가입 안 받음. 팔로워는 이름+점수만 열람</div></div>
               </div>
-              <button class="toggle" onclick="this.classList.toggle('on')"></button>
+              <div class="type-option selected" style="padding:12px;text-align:left;display:flex;align-items:center;gap:12px" onclick="selectJoinPolicy(this)" data-val="manual_approve">
+                <div class="type-option-icon" style="margin:0"><i data-lucide="shield-check"></i></div>
+                <div><div class="type-option-title" style="font-size:13px">승인 가입</div><div class="type-option-desc">가입 신청 → 프로필 보고 승인/거절</div></div>
+              </div>
+              <div class="type-option" style="padding:12px;text-align:left;display:flex;align-items:center;gap:12px" onclick="selectJoinPolicy(this)" data-val="auto_approve">
+                <div class="type-option-icon" style="margin:0"><i data-lucide="zap"></i></div>
+                <div><div class="type-option-title" style="font-size:13px">자동 승인</div><div class="type-option-desc">검증 기록 N개 이상이면 자동 가입</div></div>
+              </div>
+              <div class="type-option" style="padding:12px;text-align:left;display:flex;align-items:center;gap:12px" onclick="selectJoinPolicy(this)" data-val="open">
+                <div class="type-option-icon" style="margin:0"><i data-lucide="door-open"></i></div>
+                <div><div class="type-option-title" style="font-size:13px">자유 가입</div><div class="type-option-desc">누구나 바로 가입 가능</div></div>
+              </div>
             </div>
           </div>
 
@@ -1132,6 +1574,451 @@
       </div>
 
     </div><!-- /screens-wrapper -->
+
+    <!-- ========== DISCOVER SHEET (버블 탐색 — bottom sheet) ========== -->
+    <div class="discover-sheet-overlay" id="discoverSheetOverlay" onclick="closeDiscoverSheet()">
+      <div class="discover-sheet" onclick="event.stopPropagation()">
+        <div class="discover-sheet-handle"></div>
+        <!-- Header: 타이틀 + 필터/소팅/검색 + 닫기 -->
+        <div class="discover-sheet-header">
+          <div class="discover-sheet-title">버블 탐색</div>
+          <div style="display:flex;align-items:center;gap:2px;position:relative;">
+            <button class="tab-icon-btn" onclick="alert('지도 검색 — 추후 구현')" title="지도로 검색" style="color:var(--text-sub);">
+              <i data-lucide="map" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="tab-icon-btn" id="dsFilterBtn" onclick="toggleDiscoverFilter()" title="필터">
+              <i data-lucide="sliders-horizontal" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="tab-icon-btn" id="dsSortBtn" onclick="toggleDiscoverSort()" title="정렬">
+              <i data-lucide="arrow-up-down" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="tab-icon-btn" id="dsSearchBtn" onclick="toggleDiscoverSearch()" title="검색">
+              <i data-lucide="search" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="discover-sheet-close" onclick="closeDiscoverSheet()">
+              <i data-lucide="x" style="width:18px;height:18px;"></i>
+            </button>
+
+            <!-- Sort dropdown (nyam-dropdown style) -->
+            <div class="sort-dropdown" id="dsSortDropdown" style="top:100%;right:36px;">
+              <button class="sort-dd-item active" onclick="selectDiscoverSort(this)">추천순</button>
+              <button class="sort-dd-item" onclick="selectDiscoverSort(this)">멤버 많은순</button>
+              <button class="sort-dd-item" onclick="selectDiscoverSort(this)">기록 많은순</button>
+              <button class="sort-dd-item" onclick="selectDiscoverSort(this)">최신순</button>
+            </div>
+
+            <!-- Search dropdown (nyam-dropdown style) -->
+            <div class="sort-dropdown" id="dsSearchDropdown" style="top:100%;right:4px;min-width:200px;">
+              <div style="padding:8px;">
+                <input type="text" id="dsSearchInput" placeholder="버블 이름, 지역, 키워드..."
+                  style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);outline:none;"
+                  onfocus="this.style.borderColor='var(--accent-social)'" onblur="this.style.borderColor='var(--border)'">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter drawer (hidden by default) -->
+        <div class="filter-drawer" id="dsFilterDrawer">
+          <div class="nf-panel">
+            <div class="nf-rules" id="dsFilterRules">
+              <div class="nf-rule">
+                <span class="nf-conj">Where</span>
+                <div class="nyam-select-wrap">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">지역</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">지역</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">유형</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">멤버 수</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">활성도</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">가입 방식</button>
+                  </div>
+                </div>
+                <div class="nyam-select-wrap" data-role="op">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">is</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">is</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">is not</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">contains</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">&ge;</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">&lt;</button>
+                  </div>
+                </div>
+                <div class="nyam-select-wrap">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">을지로</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">을지로</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">광화문</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">강남</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">성수</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">한남</button>
+                  </div>
+                </div>
+                <button class="nf-remove" onclick="dsRemoveRule(this)">✕</button>
+              </div>
+            </div>
+            <div class="nf-add-row">
+              <button class="nf-add-btn" onclick="bToggleAddDD(this)">
+                + 필터 추가 <i data-lucide="chevron-down"></i>
+              </button>
+              <div class="nf-add-dd">
+                <button class="nf-add-dd-item" onclick="dsAddRule()"><i data-lucide="plus"></i> 필터 추가</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="discover-sheet-body">
+          <!-- Tabs -->
+          <div class="discover-chips">
+            <button class="discover-chip active" onclick="switchDiscoverTab('recommend')">
+              <i data-lucide="sparkles"></i> 추천
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('nearby')">
+              <i data-lucide="map-pin"></i> 근처
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('popular')">
+              <i data-lucide="trending-up"></i> 인기
+            </button>
+            <button class="discover-chip" onclick="switchDiscoverTab('new')">
+              <i data-lucide="zap"></i> 새로운
+            </button>
+          </div>
+          <!-- Cards — click to expand detail -->
+          <div>
+            <div class="discover-card" onclick="this.classList.toggle('expanded')">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5EDE8;color:var(--primary)"><i data-lucide="flame"></i></div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">을지로 맛탐정 클럽</div>
+                  <div class="discover-card-meta">멤버 23명 · 기록 156개</div>
+                </div>
+                <div class="discover-card-similarity sim-high"><i data-lucide="heart"></i>87%</div>
+              </div>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 미진</span>
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 스시코우지</span>
+                <span class="overlap-chip"><i data-lucide="utensils-crossed"></i> 도쿄등심</span>
+              </div>
+              <div class="discover-card-detail">
+                <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;">을지로·충무로 중심 맛집 탐험대</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:4px;">시작일 2024.06 · 활성도 활발 · 공개 버블</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:10px;">가입 조건: 검증 기록 3개 이상 · 관리자 승인</div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn-follow" onclick="event.stopPropagation();this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                  <button class="btn-join" onclick="event.stopPropagation()">가입 신청</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="discover-card" onclick="this.classList.toggle('expanded')">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="grape"></i></div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">내추럴 와인 러버스</div>
+                  <div class="discover-card-meta">멤버 15명 · 기록 89개</div>
+                </div>
+                <div class="discover-card-similarity sim-high"><i data-lucide="heart"></i>82%</div>
+              </div>
+              <div class="discover-card-overlaps">
+                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Ch. Margaux</span>
+                <span class="overlap-chip wine-chip"><i data-lucide="wine"></i> Barolo Brunate</span>
+              </div>
+              <div class="discover-card-detail">
+                <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;">내추럴 와인 페어링 정보 공유</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:4px;">시작일 2024.09 · 활성도 보통 · 공개 버블</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:10px;">가입 조건: 와인 기록 2개 이상</div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn-follow" onclick="event.stopPropagation();this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                  <button class="btn-join" onclick="event.stopPropagation()">가입 신청</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="discover-card" onclick="this.classList.toggle('expanded')">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#E8F0EB;color:var(--positive)"><i data-lucide="salad"></i></div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">비건 프렌들리 서울</div>
+                  <div class="discover-card-meta">멤버 9명 · 기록 42개</div>
+                </div>
+                <div class="discover-card-similarity sim-mid"><i data-lucide="heart"></i>64%</div>
+              </div>
+              <div class="discover-card-detail">
+                <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;">채식 친화 레스토랑 탐방</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:10px;">시작일 2025.01 · 자유 가입</div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn-follow" onclick="event.stopPropagation();this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                  <button class="btn-join" onclick="event.stopPropagation()">가입</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="discover-card" onclick="this.classList.toggle('expanded')">
+              <div class="discover-card-top">
+                <div class="discover-card-icon" style="background:#F5F0E5;color:var(--caution)"><i data-lucide="chef-hat"></i></div>
+                <div class="discover-card-info">
+                  <div class="discover-card-name">오마카세 탐구회</div>
+                  <div class="discover-card-meta">멤버 7명 · 기록 35개</div>
+                </div>
+                <div class="discover-card-similarity sim-low"><i data-lucide="heart"></i>48%</div>
+              </div>
+              <div class="discover-card-detail">
+                <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;">하이엔드 일식 오마카세 전문</div>
+                <div style="font-size:11px;color:var(--text-hint);margin-bottom:10px;">시작일 2025.02 · 승인 가입</div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn-follow" onclick="event.stopPropagation();this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== BUBBLER DISCOVER SHEET (버블러 탐색 — 버블 탐색과 동일 구조) ========== -->
+    <div class="discover-sheet-overlay" id="bubblerSheetOverlay" onclick="closeBubblerSheet()">
+      <div class="discover-sheet" onclick="event.stopPropagation()">
+        <div class="discover-sheet-handle"></div>
+        <!-- Header: 버블 탐색 시트와 동일 구조 -->
+        <div class="discover-sheet-header">
+          <div class="discover-sheet-title">버블러 탐색</div>
+          <div style="display:flex;align-items:center;gap:2px;position:relative;">
+            <button class="tab-icon-btn" id="blFilterBtn" onclick="toggleBubblerFilter()" title="필터">
+              <i data-lucide="sliders-horizontal" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="tab-icon-btn" id="blSortBtn" onclick="toggleBubblerSort()" title="정렬">
+              <i data-lucide="arrow-up-down" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="tab-icon-btn" id="blSearchBtn" onclick="toggleBubblerSearch()" title="검색">
+              <i data-lucide="search" style="width:16px;height:16px;"></i>
+            </button>
+            <button class="discover-sheet-close" onclick="closeBubblerSheet()">
+              <i data-lucide="x" style="width:18px;height:18px;"></i>
+            </button>
+
+            <!-- Sort dropdown -->
+            <div class="sort-dropdown" id="blSortDropdown" style="top:100%;right:36px;">
+              <button class="sort-dd-item active" onclick="selectBubblerSort(this)">추천순</button>
+              <button class="sort-dd-item" onclick="selectBubblerSort(this)">레벨 높은순</button>
+              <button class="sort-dd-item" onclick="selectBubblerSort(this)">기록 많은순</button>
+              <button class="sort-dd-item" onclick="selectBubblerSort(this)">취향 일치순</button>
+            </div>
+
+            <!-- Search dropdown -->
+            <div class="sort-dropdown" id="blSearchDropdown" style="top:100%;right:4px;min-width:200px;">
+              <div style="padding:8px;">
+                <input type="text" id="blSearchInput" placeholder="아이디, 닉네임..."
+                  style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);outline:none;"
+                  oninput="filterBubblerSheet(this.value)"
+                  onfocus="this.style.borderColor='var(--accent-social)'" onblur="this.style.borderColor='var(--border)'">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter drawer -->
+        <div class="filter-drawer" id="blFilterDrawer">
+          <div class="nf-panel">
+            <div class="nf-rules" id="blFilterRules">
+              <div class="nf-rule">
+                <span class="nf-conj">Where</span>
+                <div class="nyam-select-wrap">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">레벨</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">레벨</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">기록 수</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">취향 일치</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">소속 버블</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">활동 지역</button>
+                  </div>
+                </div>
+                <div class="nyam-select-wrap" data-role="op">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">&ge;</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">is</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">is not</button>
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">&ge;</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">&lt;</button>
+                  </div>
+                </div>
+                <div class="nyam-select-wrap">
+                  <div class="nyam-select" onclick="this.classList.toggle('open')">
+                    <span class="nyam-select-value">Lv.5</span>
+                    <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                  </div>
+                  <div class="nyam-dropdown">
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">Lv.1</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">Lv.3</button>
+                    <button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">Lv.5</button>
+                    <button class="nyam-dropdown-item" onclick="bSelectDD(this)">Lv.10</button>
+                  </div>
+                </div>
+                <button class="nf-remove" onclick="blRemoveRule(this)">✕</button>
+              </div>
+            </div>
+            <div class="nf-add-row">
+              <button class="nf-add-btn" onclick="bToggleAddDD(this)">
+                + 필터 추가 <i data-lucide="chevron-down"></i>
+              </button>
+              <div class="nf-add-dd">
+                <button class="nf-add-dd-item" onclick="blAddRule()"><i data-lucide="plus"></i> 필터 추가</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탐색 칩 -->
+        <div class="discover-chips">
+          <button class="discover-chip active" onclick="switchBubblerTab(this,'recommend')">추천</button>
+          <button class="discover-chip" onclick="switchBubblerTab(this,'active')">활발</button>
+          <button class="discover-chip" onclick="switchBubblerTab(this,'nearby')">같은 버블</button>
+          <button class="discover-chip" onclick="switchBubblerTab(this,'new')">새로운</button>
+        </div>
+
+        <div class="discover-sheet-body" id="bubblerSheetBody">
+          <div>
+
+            <div class="person-card bubbler-card" onclick="this.classList.toggle('expanded')" style="margin:0 20px 8px;">
+              <div class="person-avatar" style="background:linear-gradient(135deg,#E8A87C,#D68B5E)">울</div>
+              <div class="person-info">
+                <div class="person-name">ulzziro_king</div>
+                <div class="person-meta">Lv.12 · 기록 89개 · 취향 82% 일치</div>
+              </div>
+              <div style="font-size:11px;color:var(--accent-social);font-weight:600;">추천</div>
+              <div class="bubbler-card-detail" onclick="event.stopPropagation()">
+                <div class="bubbler-profile-stats">
+                  <div class="bubbler-profile-stat"><strong>89</strong> 기록</div>
+                  <div class="bubbler-profile-stat"><strong>34</strong> 팔로워</div>
+                  <div class="bubbler-profile-stat"><strong>12</strong> 팔로잉</div>
+                </div>
+                <div class="bubbler-profile-bubbles">
+                  <span class="bubbler-profile-bubble">을지로 맛탐정</span>
+                  <span class="bubbler-profile-bubble">광화문 직장인</span>
+                </div>
+                <div class="bubbler-profile-bio">을지로 골목 탐험가. 숨은 맛집 발굴 전문. 일식·한식 위주.</div>
+                <div class="bubbler-profile-actions">
+                  <button class="btn-follow" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="person-card bubbler-card" onclick="this.classList.toggle('expanded')" style="margin:0 20px 8px;">
+              <div class="person-avatar" style="background:linear-gradient(135deg,#8B7396,#A890B8)">와</div>
+              <div class="person-info">
+                <div class="person-name">winelover_j</div>
+                <div class="person-meta">Lv.9 · 기록 56개 · 취향 76% 일치</div>
+              </div>
+              <div style="font-size:11px;color:var(--accent-social);font-weight:600;">추천</div>
+              <div class="bubbler-card-detail" onclick="event.stopPropagation()">
+                <div class="bubbler-profile-stats">
+                  <div class="bubbler-profile-stat"><strong>56</strong> 기록</div>
+                  <div class="bubbler-profile-stat"><strong>21</strong> 팔로워</div>
+                  <div class="bubbler-profile-stat"><strong>18</strong> 팔로잉</div>
+                </div>
+                <div class="bubbler-profile-bubbles">
+                  <span class="bubbler-profile-bubble">내추럴 와인 러버스</span>
+                  <span class="bubbler-profile-bubble">와인 모임</span>
+                </div>
+                <div class="bubbler-profile-bio">내추럴 와인 덕후. 프렌치 레스토랑 자주 감.</div>
+                <div class="bubbler-profile-actions">
+                  <button class="btn-follow" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="person-card bubbler-card" onclick="this.classList.toggle('expanded')" style="margin:0 20px 8px;">
+              <div class="person-avatar" style="background:linear-gradient(135deg,#7EAE8B,#96C8A2)">비</div>
+              <div class="person-info">
+                <div class="person-name">vegan_seoul</div>
+                <div class="person-meta">Lv.7 · 기록 38개 · 취향 61% 일치</div>
+              </div>
+              <div style="font-size:11px;color:var(--positive);font-weight:600;">활발</div>
+              <div class="bubbler-card-detail" onclick="event.stopPropagation()">
+                <div class="bubbler-profile-stats">
+                  <div class="bubbler-profile-stat"><strong>38</strong> 기록</div>
+                  <div class="bubbler-profile-stat"><strong>15</strong> 팔로워</div>
+                  <div class="bubbler-profile-stat"><strong>22</strong> 팔로잉</div>
+                </div>
+                <div class="bubbler-profile-bubbles">
+                  <span class="bubbler-profile-bubble">비건 프렌들리</span>
+                </div>
+                <div class="bubbler-profile-bio">채식 맛집 탐방 중. 성수·한남 위주로 활동.</div>
+                <div class="bubbler-profile-actions">
+                  <button class="btn-follow" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                  <button class="btn-join" onclick="event.stopPropagation()">맞팔 신청</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="person-card bubbler-card" onclick="this.classList.toggle('expanded')" style="margin:0 20px 8px;">
+              <div class="person-avatar" style="background:linear-gradient(135deg,#C9A96E,#D8BC88)">오</div>
+              <div class="person-info">
+                <div class="person-name">omakase_hunter</div>
+                <div class="person-meta">Lv.14 · 기록 112개 · 취향 55% 일치</div>
+              </div>
+              <div style="font-size:11px;color:var(--text-hint);font-weight:600;">새로운</div>
+              <div class="bubbler-card-detail" onclick="event.stopPropagation()">
+                <div class="bubbler-profile-stats">
+                  <div class="bubbler-profile-stat"><strong>112</strong> 기록</div>
+                  <div class="bubbler-profile-stat"><strong>67</strong> 팔로워</div>
+                  <div class="bubbler-profile-stat"><strong>8</strong> 팔로잉</div>
+                </div>
+                <div class="bubbler-profile-bubbles">
+                  <span class="bubbler-profile-bubble">오마카세 탐구회</span>
+                  <span class="bubbler-profile-bubble">을지로 맛탐정</span>
+                </div>
+                <div class="bubbler-profile-bio">하이엔드 일식 전문. 오마카세 100곳 목표 도전 중.</div>
+                <div class="bubbler-profile-actions">
+                  <button class="btn-follow" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="person-card bubbler-card" onclick="this.classList.toggle('expanded')" style="margin:0 20px 8px;">
+              <div class="person-avatar" style="background:linear-gradient(135deg,#7A9BAE,#92B5C8)">광</div>
+              <div class="person-info">
+                <div class="person-name">gwanghwa_lunch</div>
+                <div class="person-meta">Lv.6 · 기록 31개 · 같은 버블 2개</div>
+              </div>
+              <div style="font-size:11px;color:var(--caution);font-weight:600;">같은 버블</div>
+              <div class="bubbler-card-detail" onclick="event.stopPropagation()">
+                <div class="bubbler-profile-stats">
+                  <div class="bubbler-profile-stat"><strong>31</strong> 기록</div>
+                  <div class="bubbler-profile-stat"><strong>9</strong> 팔로워</div>
+                  <div class="bubbler-profile-stat"><strong>15</strong> 팔로잉</div>
+                </div>
+                <div class="bubbler-profile-bubbles">
+                  <span class="bubbler-profile-bubble">직장 맛집</span>
+                  <span class="bubbler-profile-bubble">광화문 직장인</span>
+                </div>
+                <div class="bubbler-profile-bio">광화문 점심 전문가. 가성비 런치 사냥.</div>
+                <div class="bubbler-profile-actions">
+                  <button class="btn-follow" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+                  <button class="btn-join" onclick="event.stopPropagation()">맞팔 신청</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ========== DISCOVER BUBBLE POPUP (Bottom Sheet) ========== -->
     <div class="popup-overlay" id="discoverPopup" onclick="closeDiscoverPopup(event)">
@@ -1275,7 +2162,8 @@
 
         <!-- Action buttons -->
         <div class="popup-action-row">
-          <button class="btn-join">가입 신청</button>
+          <button class="btn-follow" style="flex:1;padding:12px;font-size:14px;border-radius:12px" onclick="this.classList.toggle('followed');this.textContent=this.classList.contains('followed')?'팔로잉':'팔로우'">팔로우</button>
+          <button class="btn-join" id="popupJoinBtn" style="flex:1">가입 신청</button>
         </div>
       </div>
     </div>
@@ -1330,6 +2218,138 @@
     currentScreen = id;
   }
 
+  // Segment tab switching (버블 / 버블러)
+  function switchSegment(seg) {
+    currentSegment = seg;
+    // Update tab active state
+    document.getElementById('tabBubble').classList.toggle('active', seg === 'bubble');
+    document.getElementById('tabPeople').classList.toggle('active', seg === 'people');
+    // Toggle panels
+    const bp = document.getElementById('bubblePanel');
+    const pp = document.getElementById('peoplePanel');
+    if (seg === 'bubble') {
+      bp.classList.remove('hidden'); bp.classList.add('bubble-panel');
+      pp.classList.remove('active');
+    } else {
+      bp.classList.add('hidden');
+      pp.classList.add('active');
+    }
+    // Close sort dropdown on tab switch
+    document.getElementById('bSortDropdown').classList.remove('open');
+    lucide.createIcons();
+  }
+
+  // Bubble sub-nav filter (전체/운영/가입)
+  function switchBubbleSub(el, filter) {
+    document.querySelectorAll('#bubbleSubNav .sub-nav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('#bubblePanel .bubble-card').forEach(card => {
+      const role = card.getAttribute('data-role');
+      if (filter === 'all') { card.style.display = ''; return; }
+      card.style.display = role === filter ? '' : 'none';
+    });
+  }
+
+  // Sort toggle
+  function toggleBubbleSort() {
+    const dd = document.getElementById('bSortDropdown');
+    document.getElementById('bSearchDropdown').classList.remove('open');
+    document.getElementById('bSearchToggle').classList.remove('active-search');
+    dd.classList.toggle('open');
+    document.getElementById('bSortToggle').classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+  function selectBubbleSort(el) {
+    el.parentElement.querySelectorAll('.sort-dd-item').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('bSortDropdown').classList.remove('open');
+    document.getElementById('bSortToggle').classList.remove('has-filter');
+  }
+
+  function toggleBubbleSearch() {
+    const dd = document.getElementById('bSearchDropdown');
+    const btn = document.getElementById('bSearchToggle');
+    document.getElementById('bFilterDrawer').classList.remove('open');
+    document.getElementById('bFilterToggleTab').classList.remove('has-filter');
+    document.getElementById('bSortDropdown').classList.remove('open');
+    document.getElementById('bSortToggle').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    btn.classList.toggle('active-search', dd.classList.contains('open'));
+    if (dd.classList.contains('open')) {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      setTimeout(() => document.getElementById('bSearchInput').focus(), 50);
+    }
+  }
+
+  function clearBubbleSearch() {
+    const input = document.getElementById('bSearchInput');
+    input.value = '';
+    document.getElementById('bSearchClearBtn').style.display = 'none';
+    input.focus();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const si = document.getElementById('bSearchInput');
+    if (si) {
+      si.addEventListener('input', () => {
+        document.getElementById('bSearchClearBtn').style.display = si.value ? 'flex' : 'none';
+        si.style.height = 'auto';
+        si.style.height = si.scrollHeight + 'px';
+      });
+      si.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    }
+  });
+
+  // Close sort dropdown on outside click
+  document.addEventListener('click', function(e) {
+    const dd = document.getElementById('bSortDropdown');
+    const btn = document.getElementById('bSortToggle');
+    if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) {
+      dd.classList.remove('open');
+      if (btn) btn.classList.remove('has-filter');
+    }
+  });
+
+  // People filter chips
+  function switchPeopleFilter(el, filter) {
+    document.querySelectorAll('.people-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    // Demo: show/hide based on filter
+    document.querySelectorAll('.person-card').forEach(card => {
+      const btn = card.querySelector('.person-action');
+      const type = btn.classList.contains('mutual') ? 'mutual' :
+                   btn.classList.contains('following') ? 'following' :
+                   'follower';
+      if (filter === 'all') { card.style.display = ''; return; }
+      if (filter === 'following') { card.style.display = (type === 'following' || type === 'mutual') ? '' : 'none'; return; }
+      if (filter === 'followers') { card.style.display = (type === 'follower' || type === 'mutual') ? '' : 'none'; return; }
+      if (filter === 'mutual') { card.style.display = type === 'mutual' ? '' : 'none'; return; }
+    });
+  }
+
+  function toggleFollow(btn) {
+    if (btn.classList.contains('mutual')) {
+      btn.classList.remove('mutual');
+      btn.classList.add('following');
+      btn.textContent = '팔로잉';
+    } else if (btn.classList.contains('following')) {
+      btn.classList.remove('following');
+      btn.textContent = '팔로우';
+    } else {
+      btn.classList.add('following');
+      btn.textContent = '팔로잉';
+    }
+  }
+
+  function filterPeople(val) {
+    const q = val.trim().toLowerCase();
+    document.querySelectorAll('.person-card').forEach(card => {
+      const name = card.querySelector('.person-name').textContent.toLowerCase();
+      card.style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+  }
+
   // Discovery tab switching
   function switchDiscoverTab(tab) {
     const tabs = ['recommend', 'nearby', 'popular', 'new'];
@@ -1344,10 +2364,24 @@
     });
   }
 
-  // Bubble create — type selection
+  // Bubble create — type selection (visibility)
   function selectType(el) {
     el.parentElement.querySelectorAll('.type-option').forEach(o => o.classList.remove('selected'));
     el.classList.add('selected');
+    lucide.createIcons();
+    // Show/hide join policy section based on visibility
+    const joinPolicySection = document.getElementById('joinPolicySection');
+    if (joinPolicySection) {
+      const val = el.getAttribute('data-val');
+      joinPolicySection.style.display = (val === 'private') ? 'none' : '';
+    }
+  }
+
+  // Bubble create — join policy selection
+  function selectJoinPolicy(el) {
+    el.parentElement.querySelectorAll('.type-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    lucide.createIcons();
   }
 
   // Bubble create — expire selection
@@ -1357,73 +2391,274 @@
   }
 
   // ============================================================
-  // BUBBLE SEARCH + NOTION FILTER
+  // FILTER DRAWER (home 동일 패턴)
   // ============================================================
-  const BF_ATTRS = ['지역', '유형', '멤버 수', '취향 유사도', '카테고리', '활동량', '공개 여부'];
-  const BF_VALS = {
-    '지역': ['을지로', '광화문', '강남', '홍대', '성수', '이태원', '종로', '전체'],
-    '유형': ['양방향', '열람 전용', '전체'],
-    '멤버 수': ['5명 이하', '5~10명', '10~20명', '20명+', '전체'],
-    '취향 유사도': ['80%+', '60%+', '40%+', '전체'],
-    '카테고리': ['맛집', '와인', '혼합', '전체'],
-    '활동량': ['활발 (주3+)', '보통 (주1+)', '조용', '전체'],
-    '공개 여부': ['공개', '비공개', '전체']
-  };
-
-  function toggleBubbleFilter() {
-    const panel = document.getElementById('bubbleFilterPanel');
-    const btn = document.getElementById('bFilterToggle');
-    panel.classList.toggle('open');
-    btn.classList.toggle('has-filter', panel.classList.contains('open'));
-    lucide.createIcons();
-  }
-
-  function cycleBfAttr(el) {
-    const idx = (BF_ATTRS.indexOf(el.textContent) + 1) % BF_ATTRS.length;
-    el.textContent = BF_ATTRS[idx];
-    const valBtn = el.parentElement.querySelector('.bf-val');
-    if (valBtn) valBtn.textContent = BF_VALS[BF_ATTRS[idx]][0];
-  }
-
-  function cycleBfVal(el) {
-    const attrBtn = el.parentElement.querySelector('.bf-attr');
-    const vals = BF_VALS[attrBtn.textContent] || ['전체'];
-    const idx = (vals.indexOf(el.textContent) + 1) % vals.length;
-    el.textContent = vals[idx];
-    updateBfCount();
-  }
-
-  function removeBfRule(el) {
-    const rules = document.getElementById('bfRules');
-    if (rules.children.length > 1) {
-      el.parentElement.remove();
-      updateBfCount();
+  function toggleBubbleFilterDrawer() {
+    const drawer = document.getElementById('bFilterDrawer');
+    const sortDD = document.getElementById('bSortDropdown');
+    sortDD.classList.remove('open');
+    document.getElementById('bSortToggle').classList.remove('has-filter');
+    document.getElementById('bSearchDropdown').classList.remove('open');
+    document.getElementById('bSearchToggle').classList.remove('active-search');
+    drawer.classList.toggle('open');
+    document.getElementById('bFilterToggleTab').classList.toggle('has-filter', drawer.classList.contains('open'));
+    // Seed default rule if empty and opening
+    if (drawer.classList.contains('open')) {
+      const rules = document.getElementById('bFilterRules');
+      if (rules.querySelectorAll(':scope > .nf-rule').length === 0) {
+        bAddRule();
+      }
+      lucide.createIcons({ nodes: [drawer] });
     }
   }
 
-  function addBfRule() {
-    const rules = document.getElementById('bfRules');
+  function bSelectDD(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+  }
+
+  function bRemoveRule(el) {
+    const rule = el.closest('.nf-rule');
+    const rules = document.getElementById('bFilterRules');
+    if (rules.querySelectorAll(':scope > .nf-rule').length > 1) {
+      rule.remove();
+    } else {
+      rule.remove();
+      document.getElementById('bFilterDrawer').classList.remove('open');
+      document.getElementById('bFilterToggleTab').classList.remove('has-filter');
+    }
+  }
+
+  function bAddRule() {
+    const rules = document.getElementById('bFilterRules');
     const rule = document.createElement('div');
-    rule.className = 'bf-rule';
-    rule.innerHTML = '<span class="bf-conj clickable" onclick="toggleBfConj()">And</span>' +
-      '<button class="bf-attr" onclick="cycleBfAttr(this)">유형</button>' +
-      '<span class="bf-is">is</span>' +
-      '<button class="bf-val" onclick="cycleBfVal(this)">양방향</button>' +
-      '<button class="bf-remove" onclick="removeBfRule(this)">✕</button>';
+    rule.className = 'nf-rule';
+    rule.innerHTML =
+      '<span class="nf-conj clickable" onclick="this.textContent=this.textContent===\'And\'?\'Or\':\'And\'">And</span>' +
+      '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">지역</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div>' +
+      '<div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">지역</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">유형</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">멤버 수</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">활성도</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">가입 방식</button></div></div>' +
+      '<div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">is</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div>' +
+      '<div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">is</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">is not</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">contains</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">\u2265</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">\u003C</button></div></div>' +
+      '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">전체</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div>' +
+      '<div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">전체</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">을지로</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">광화문</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">강남</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">성수</button></div></div>' +
+      '<button class="nf-remove" onclick="bRemoveRule(this)">✕</button>';
+    const addRow = rules.parentElement.querySelector('.nf-add-row');
+    if (addRow) rules.parentElement.insertBefore(rule, addRow); // wrong — should insert into rules
     rules.appendChild(rule);
+    lucide.createIcons({ nodes: [rule] });
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
   }
 
-  function toggleBfConj() {
-    const conjs = document.querySelectorAll('#bfRules .bf-conj.clickable');
-    const current = conjs[0]?.textContent || 'And';
-    conjs.forEach(c => c.textContent = current === 'And' ? 'Or' : 'And');
+  function bAddGroup() {
+    // Simplified: just add a rule for demo
+    bAddRule();
   }
 
-  function updateBfCount() {
-    const counts = [4, 3, 7, 2, 5, 6, 1];
-    const el = document.getElementById('bfResultCount');
-    el.textContent = counts[Math.floor(Math.random() * counts.length)] + '개 버블 발견';
+  function bToggleAddDD(btn) {
+    const dd = btn.parentElement.querySelector('.nf-add-dd');
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+    dd.classList.toggle('open');
   }
+
+  // Close add dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.nf-add-row')) {
+      document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+
+  // ============================================================
+  // DISCOVER SHEET (bottom sheet)
+  // ============================================================
+  // Context-aware sheet opener (버블 탭 → 버블 탐색, 버블러 탭 → 버블러 탐색)
+  let currentSegment = 'bubble';
+  function openContextSheet() {
+    if (currentSegment === 'people') {
+      openBubblerSheet();
+    } else {
+      openDiscoverSheet();
+    }
+  }
+
+  function openDiscoverSheet() {
+    document.getElementById('discoverSheetOverlay').classList.add('show');
+    lucide.createIcons();
+  }
+
+  function closeDiscoverSheet() {
+    document.getElementById('discoverSheetOverlay').classList.remove('show');
+    // Reset all dropdown states
+    document.getElementById('dsFilterDrawer').classList.remove('open');
+    document.getElementById('dsFilterBtn').classList.remove('has-filter');
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortBtn').classList.remove('has-filter');
+    document.getElementById('dsSearchDropdown').classList.remove('open');
+    document.getElementById('dsSearchBtn').classList.remove('has-filter');
+  }
+
+  // Discover sheet — filter toggle
+  function toggleDiscoverFilter() {
+    const drawer = document.getElementById('dsFilterDrawer');
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortBtn').classList.remove('has-filter');
+    document.getElementById('dsSearchDropdown').classList.remove('open');
+    document.getElementById('dsSearchBtn').classList.remove('has-filter');
+    drawer.classList.toggle('open');
+    document.getElementById('dsFilterBtn').classList.toggle('has-filter', drawer.classList.contains('open'));
+    if (drawer.classList.contains('open')) lucide.createIcons({ nodes: [drawer] });
+  }
+
+  // Discover sheet — sort toggle
+  function toggleDiscoverSort() {
+    const dd = document.getElementById('dsSortDropdown');
+    document.getElementById('dsFilterDrawer').classList.remove('open');
+    document.getElementById('dsFilterBtn').classList.remove('has-filter');
+    document.getElementById('dsSearchDropdown').classList.remove('open');
+    document.getElementById('dsSearchBtn').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('dsSortBtn').classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+  function selectDiscoverSort(el) {
+    el.parentElement.querySelectorAll('.sort-dd-item').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortBtn').classList.remove('has-filter');
+  }
+
+  // Discover sheet — search dropdown toggle
+  function toggleDiscoverSearch() {
+    const dd = document.getElementById('dsSearchDropdown');
+    // Close others
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortBtn').classList.remove('has-filter');
+    document.getElementById('dsFilterDrawer').classList.remove('open');
+    document.getElementById('dsFilterBtn').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('dsSearchBtn').classList.toggle('has-filter', dd.classList.contains('open'));
+    if (dd.classList.contains('open')) {
+      setTimeout(function() { document.getElementById('dsSearchInput').focus(); }, 100);
+    }
+  }
+
+  // Discover sheet — filter rule remove (collapse on last)
+  function dsRemoveRule(el) {
+    const rule = el.closest('.nf-rule');
+    const rules = document.getElementById('dsFilterRules');
+    if (rules.querySelectorAll(':scope > .nf-rule').length > 1) {
+      rule.remove();
+    } else {
+      rule.remove();
+      document.getElementById('dsFilterDrawer').classList.remove('open');
+      document.getElementById('dsFilterBtn').classList.remove('has-filter');
+    }
+  }
+
+  function dsAddRule() {
+    bAddRule();
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  // ============================================================
+  // BUBBLER DISCOVER SHEET
+  // ============================================================
+  function openBubblerSheet() {
+    document.getElementById('bubblerSheetOverlay').classList.add('show');
+    lucide.createIcons();
+  }
+
+  function closeBubblerSheet() {
+    document.getElementById('bubblerSheetOverlay').classList.remove('show');
+    document.getElementById('blFilterDrawer').classList.remove('open');
+    document.getElementById('blFilterBtn').classList.remove('has-filter');
+    document.getElementById('blSortDropdown').classList.remove('open');
+    document.getElementById('blSortBtn').classList.remove('has-filter');
+    document.getElementById('blSearchDropdown').classList.remove('open');
+    document.getElementById('blSearchBtn').classList.remove('has-filter');
+  }
+
+  function toggleBubblerFilter() {
+    const drawer = document.getElementById('blFilterDrawer');
+    document.getElementById('blSortDropdown').classList.remove('open');
+    document.getElementById('blSortBtn').classList.remove('has-filter');
+    document.getElementById('blSearchDropdown').classList.remove('open');
+    document.getElementById('blSearchBtn').classList.remove('has-filter');
+    drawer.classList.toggle('open');
+    document.getElementById('blFilterBtn').classList.toggle('has-filter', drawer.classList.contains('open'));
+    if (drawer.classList.contains('open')) lucide.createIcons({ nodes: [drawer] });
+  }
+
+  function toggleBubblerSort() {
+    const dd = document.getElementById('blSortDropdown');
+    document.getElementById('blFilterDrawer').classList.remove('open');
+    document.getElementById('blFilterBtn').classList.remove('has-filter');
+    document.getElementById('blSearchDropdown').classList.remove('open');
+    document.getElementById('blSearchBtn').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('blSortBtn').classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+
+  function selectBubblerSort(el) {
+    el.parentElement.querySelectorAll('.sort-dd-item').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('blSortDropdown').classList.remove('open');
+    document.getElementById('blSortBtn').classList.remove('has-filter');
+  }
+
+  function toggleBubblerSearch() {
+    const dd = document.getElementById('blSearchDropdown');
+    document.getElementById('blFilterDrawer').classList.remove('open');
+    document.getElementById('blFilterBtn').classList.remove('has-filter');
+    document.getElementById('blSortDropdown').classList.remove('open');
+    document.getElementById('blSortBtn').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('blSearchBtn').classList.toggle('has-filter', dd.classList.contains('open'));
+    if (dd.classList.contains('open')) {
+      setTimeout(function() { document.getElementById('blSearchInput').focus(); }, 100);
+    }
+  }
+
+  function blRemoveRule(el) {
+    const rule = el.closest('.nf-rule');
+    const rules = document.getElementById('blFilterRules');
+    if (rules.querySelectorAll(':scope > .nf-rule').length > 1) {
+      rule.remove();
+    } else {
+      rule.remove();
+      document.getElementById('blFilterDrawer').classList.remove('open');
+      document.getElementById('blFilterBtn').classList.remove('has-filter');
+    }
+  }
+
+  function blAddRule() {
+    bAddRule(); // reuse bubble filter rule builder
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  function switchBubblerTab(el, tab) {
+    el.parentElement.querySelectorAll('.discover-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function filterBubblerSheet(val) {
+    const q = val.trim().toLowerCase();
+    document.querySelectorAll('#bubblerSheetBody .bubbler-card').forEach(card => {
+      const name = card.querySelector('.person-name').textContent.toLowerCase();
+      card.style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+  }
+
+  // Legacy stubs (old filter functions — replaced by new filter drawer)
+  function cycleBfVal() {}
+  function cycleBfAttr() {}
+  function removeBfRule() {}
+  function addBfRule_old() {}
+  function toggleBfConj() {}
+  function updateBfCount() {}
+  function toggleBubbleFilter() { toggleBubbleFilterDrawer(); }
 
   function filterBubbleSearch() {
     // Mock search — just visual feedback
@@ -1440,13 +2675,13 @@
   // DISCOVER POPUP (bottom sheet)
   // ============================================================
   const BUBBLE_DATA = {
-    '을지로 맛탐정 클럽': { desc:'을지로·충무로 중심 맛집 탐험대', icon:'flame', bg:'#F5EDE8', color:'var(--primary)', started:'2025.08', months:'7개월', members:23, maxMembers:30, growth:'+18%', activity:'매우 활발', freq:'2.3일', satisfaction:4.7, match:87, overlap:'겹치는 맛집 3곳 · 와인 2종', levels:{한식:8,일식:6,양식:5,와인:6,카페:3}, join:{approval:true, minRecords:5, minLevel:3}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
-    '내추럴 와인 러버스': { desc:'내추럴 와인 페어링 정보 공유', icon:'grape', bg:'#F0ECF3', color:'var(--wine)', started:'2025.10', months:'5개월', members:15, maxMembers:20, growth:'+9%', activity:'활발', freq:'3.1일', satisfaction:4.5, match:82, overlap:'겹치는 와인 2종', levels:{와인:9,양식:5,일식:4,한식:3,카페:2}, join:{approval:true, minRecords:3, minLevel:2}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'멤버 공개', scores:'비공개'} },
-    '비건 프렌들리 서울': { desc:'채식 친화 레스토랑 탐방', icon:'salad', bg:'#E8F0EB', color:'var(--positive)', started:'2025.12', months:'3개월', members:9, maxMembers:50, growth:'+25%', activity:'보통', freq:'5.2일', satisfaction:4.2, match:64, overlap:'겹치는 맛집 1곳', levels:{양식:6,한식:4,카페:5,일식:2,와인:1}, join:{approval:false, minRecords:0, minLevel:1}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
-    '오마카세 탐구회': { desc:'하이엔드 일식 오마카세 전문', icon:'chef-hat', bg:'#F5F0E5', color:'var(--caution)', started:'2026.01', months:'2개월', members:7, maxMembers:15, growth:'+42%', activity:'보통', freq:'4.8일', satisfaction:4.3, match:48, overlap:'겹치는 맛집 1곳', levels:{일식:8,양식:3,한식:2,와인:4,카페:1}, join:{approval:true, minRecords:10, minLevel:4}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'멤버 공개', scores:'멤버 공개'} },
-    '광화문 직장인 점심': { desc:'광화문·종로 런치 맛집 공유', icon:'building-2', bg:'#EDF2F5', color:'var(--accent-social)', started:'2025.06', months:'9개월', members:31, maxMembers:50, growth:'+8%', activity:'매우 활발', freq:'1.8일', satisfaction:4.4, match:71, overlap:'겹치는 맛집 2곳', levels:{한식:9,일식:5,양식:4,카페:4,와인:2}, join:{approval:false, minRecords:1, minLevel:1}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
-    '종로 와인바 투어': { desc:'종로 와인바 리뷰 모음', icon:'wine', bg:'#F0ECF3', color:'var(--wine)', started:'2025.11', months:'4개월', members:11, maxMembers:20, growth:'+14%', activity:'활발', freq:'3.5일', satisfaction:4.6, match:73, overlap:'겹치는 와인 1종', levels:{와인:7,양식:5,일식:3,한식:3,카페:3}, join:{approval:true, minRecords:5, minLevel:3}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'비공개', scores:'멤버 공개'} },
-    '이태원 피자 헌터': { desc:'이태원·한남동 피자 맛집 정복', icon:'pizza', bg:'#F5EDE8', color:'var(--primary)', started:'2026.02', months:'1개월', members:4, maxMembers:30, growth:'+100%', activity:'조용', freq:'7.0일', satisfaction:4.0, match:55, overlap:'겹치는 맛집 0곳', levels:{양식:5,한식:2,일식:1,와인:1,카페:2}, join:{approval:false, minRecords:0, minLevel:1}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} }
+    '을지로 맛탐정 클럽': { desc:'을지로·충무로 중심 맛집 탐험대', icon:'flame', bg:'#F5EDE8', color:'var(--primary)', started:'2025.08', months:'7개월', members:23, maxMembers:30, growth:'+18%', activity:'매우 활발', freq:'2.3일', satisfaction:4.7, match:87, overlap:'겹치는 맛집 3곳 · 와인 2종', levels:{한식:8,일식:6,양식:5,와인:6,카페:3}, join:{joinPolicy:'manual_approve', minVerified:5}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
+    '내추럴 와인 러버스': { desc:'내추럴 와인 페어링 정보 공유', icon:'grape', bg:'#F0ECF3', color:'var(--wine)', started:'2025.10', months:'5개월', members:15, maxMembers:20, growth:'+9%', activity:'활발', freq:'3.1일', satisfaction:4.5, match:82, overlap:'겹치는 와인 2종', levels:{와인:9,양식:5,일식:4,한식:3,카페:2}, join:{joinPolicy:'manual_approve', minVerified:3}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'멤버 공개', scores:'비공개'} },
+    '비건 프렌들리 서울': { desc:'채식 친화 레스토랑 탐방', icon:'salad', bg:'#E8F0EB', color:'var(--positive)', started:'2025.12', months:'3개월', members:9, maxMembers:50, growth:'+25%', activity:'보통', freq:'5.2일', satisfaction:4.2, match:64, overlap:'겹치는 맛집 1곳', levels:{양식:6,한식:4,카페:5,일식:2,와인:1}, join:{joinPolicy:'open'}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
+    '오마카세 탐구회': { desc:'하이엔드 일식 오마카세 전문', icon:'chef-hat', bg:'#F5F0E5', color:'var(--caution)', started:'2026.01', months:'2개월', members:7, maxMembers:15, growth:'+42%', activity:'보통', freq:'4.8일', satisfaction:4.3, match:48, overlap:'겹치는 맛집 1곳', levels:{일식:8,양식:3,한식:2,와인:4,카페:1}, join:{joinPolicy:'closed'}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'멤버 공개', scores:'멤버 공개'} },
+    '광화문 직장인 점심': { desc:'광화문·종로 런치 맛집 공유', icon:'building-2', bg:'#EDF2F5', color:'var(--accent-social)', started:'2025.06', months:'9개월', members:31, maxMembers:50, growth:'+8%', activity:'매우 활발', freq:'1.8일', satisfaction:4.4, match:71, overlap:'겹치는 맛집 2곳', levels:{한식:9,일식:5,양식:4,카페:4,와인:2}, join:{joinPolicy:'open'}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} },
+    '종로 와인바 투어': { desc:'종로 와인바 리뷰 모음', icon:'wine', bg:'#F0ECF3', color:'var(--wine)', started:'2025.11', months:'4개월', members:11, maxMembers:20, growth:'+14%', activity:'활발', freq:'3.5일', satisfaction:4.6, match:73, overlap:'겹치는 와인 1종', levels:{와인:7,양식:5,일식:3,한식:3,카페:3}, join:{joinPolicy:'auto_approve', minVerified:5}, privacy:{records:'선택한 기록만', profile:'항상 공개', quadrant:'비공개', scores:'멤버 공개'} },
+    '이태원 피자 헌터': { desc:'이태원·한남동 피자 맛집 정복', icon:'pizza', bg:'#F5EDE8', color:'var(--primary)', started:'2026.02', months:'1개월', members:4, maxMembers:30, growth:'+100%', activity:'조용', freq:'7.0일', satisfaction:4.0, match:55, overlap:'겹치는 맛집 0곳', levels:{양식:5,한식:2,일식:1,와인:1,카페:2}, join:{joinPolicy:'open'}, privacy:{records:'전체 공개', profile:'항상 공개', quadrant:'비공개', scores:'비공개'} }
   };
 
   function openDiscoverPopup(name) {
@@ -1515,20 +2750,40 @@
     const j = data.join;
     const remaining = data.maxMembers - data.members;
     let joinHTML = '<div class="popup-info-list">';
-    if (j.approval) {
-      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>관리자 승인 필요</span></div>';
-    } else {
-      joinHTML += '<div class="popup-info-row"><i data-lucide="zap" style="color:var(--caution)"></i><span>즉시 가입 가능</span></div>';
+    if (j.joinPolicy === 'closed') {
+      joinHTML += '<div class="popup-info-row"><i data-lucide="eye" style="color:var(--text-hint)"></i><span>팔로우만 가능 (가입 안 받음)</span></div>';
+    } else if (j.joinPolicy === 'manual_approve') {
+      joinHTML += '<div class="popup-info-row"><i data-lucide="shield-check" style="color:var(--positive)"></i><span>관리자 승인 필요</span></div>';
+      if (j.minVerified > 0) {
+        joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>검증 기록 ' + j.minVerified + '개 이상</span></div>';
+      }
+    } else if (j.joinPolicy === 'auto_approve') {
+      joinHTML += '<div class="popup-info-row"><i data-lucide="zap" style="color:var(--caution)"></i><span>검증 기록 ' + (j.minVerified || 0) + '개 이상 자동 승인</span></div>';
+    } else if (j.joinPolicy === 'open') {
+      joinHTML += '<div class="popup-info-row"><i data-lucide="door-open" style="color:var(--positive)"></i><span>누구나 가입 가능</span></div>';
     }
-    if (j.minRecords > 0) {
-      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>최소 기록 ' + j.minRecords + '개 이상</span></div>';
+    if (j.joinPolicy !== 'closed') {
+      joinHTML += '<div class="popup-info-row" style="color:var(--text-sub)"><i data-lucide="users" style="color:var(--text-hint)"></i><span>현재 ' + data.members + '/' + data.maxMembers + '명 (여유 ' + remaining + '자리)</span></div>';
     }
-    if (j.minLevel > 1) {
-      joinHTML += '<div class="popup-info-row"><i data-lucide="check-circle" style="color:var(--positive)"></i><span>최소 Lv.' + j.minLevel + ' 이상</span></div>';
-    }
-    joinHTML += '<div class="popup-info-row" style="color:var(--text-sub)"><i data-lucide="users" style="color:var(--text-hint)"></i><span>현재 ' + data.members + '/' + data.maxMembers + '명 (여유 ' + remaining + '자리)</span></div>';
     joinHTML += '</div>';
     joinEl.innerHTML = joinHTML;
+
+    // Show/hide join button based on joinPolicy
+    const popupJoinBtn = document.getElementById('popupJoinBtn');
+    if (popupJoinBtn) {
+      if (j.joinPolicy === 'closed') {
+        popupJoinBtn.style.display = 'none';
+      } else {
+        popupJoinBtn.style.display = '';
+        popupJoinBtn.textContent = j.joinPolicy === 'manual_approve' ? '가입 신청' : '가입';
+      }
+    }
+    // Reset follow button state in popup
+    const popupFollowBtn = popup.querySelector('.popup-action-row .btn-follow');
+    if (popupFollowBtn) {
+      popupFollowBtn.classList.remove('followed');
+      popupFollowBtn.textContent = '팔로우';
+    }
 
     // Update privacy
     const privEl = document.getElementById('popupPrivacy');
@@ -1572,13 +2827,49 @@
     const nameEl = card.querySelector('.discover-card-name');
     if (nameEl) {
       const name = nameEl.textContent;
-      // Don't override if btn-join was clicked
+      // Don't override if btn-join or btn-follow was clicked
       card.addEventListener('click', function(e) {
-        if (e.target.closest('.btn-join')) return;
+        if (e.target.closest('.btn-join') || e.target.closest('.btn-follow')) return;
         openDiscoverPopup(name);
       });
     }
   });
+
+  // Notification dropdown
+  function toggleNotifDropdown(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('notifDropdown');
+    var ov = document.getElementById('notifOverlay');
+    dd.classList.toggle('open');
+    ov.classList.toggle('open');
+  }
+  function closeNotifDropdown() {
+    document.getElementById('notifDropdown').classList.remove('open');
+    document.getElementById('notifOverlay').classList.remove('open');
+  }
+  function readNotifItem(item) {
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+    closeNotifDropdown();
+  }
+  function markAllNotifRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+      item.classList.remove('unread');
+      var dot = item.querySelector('.notif-item-dot');
+      if (dot) dot.remove();
+    });
+  }
+  function handleNotifAction(btn, action) {
+    var item = btn.closest('.notif-item');
+    var actions = item.querySelector('.notif-item-actions');
+    actions.innerHTML = action === 'accept'
+      ? '<span style="font-size:11px;font-weight:600;color:var(--positive)">수락 완료</span>'
+      : '<span style="font-size:11px;color:var(--text-hint)">거절됨</span>';
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+  }
 
   // Init lucide icons
   lucide.createIcons();
@@ -1589,6 +2880,19 @@
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
   });
+
+  // Bubble banner auto-dismiss
+  setTimeout(function() {
+    const banner = document.getElementById('bubbleBanner');
+    if (banner) {
+      banner.classList.add('collapsed');
+      // Show compact title after collapse
+      setTimeout(function() {
+        const titleBar = document.getElementById('bubbleTitleBar');
+        if (titleBar) titleBar.style.display = '';
+      }, 600);
+    }
+  }, 4000);
 </script>
 
 </body>

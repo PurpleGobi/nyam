@@ -366,7 +366,7 @@ CREATE TABLE follows (
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id),
-  type VARCHAR(20) NOT NULL,
+  type VARCHAR(20) NOT NULL,  -- 'bubble_join_request' | 'bubble_join_approved' | 'level_up' | 'follow_request' | 'follow_accepted'
   actor_id UUID REFERENCES users(id),
   target_type VARCHAR(20),
   target_id UUID,

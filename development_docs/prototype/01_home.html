@@ -1608,14 +1608,16 @@
   .camera-btn.wine-btn { background: var(--wine); }
   .camera-btn:active { transform: scale(0.9); }
   .camera-alt {
-    display: flex; gap: 16px; margin-top: 16px;
+    display: flex; gap: 8px; margin-top: 16px;
+    flex-wrap: wrap; justify-content: center;
   }
   .camera-alt-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border-radius: 50px;
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 50px;
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
   }
   .camera-alt-btn:hover { background: rgba(255,255,255,0.15); }
 
@@ -2005,14 +2007,89 @@
   /* Notification badge */
   .notif-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    background: #ef4444;
+    top: 2px;
+    right: 2px;
+    width: 7px;
+    height: 7px;
+    background: var(--brand);
     border-radius: 50%;
-    border: 2px solid var(--bg);
+    border: 1.5px solid var(--bg);
+    pointer-events: none;
   }
+
+  /* ========== Notification Dropdown ========== */
+  .notif-dropdown-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 190; border-radius: 42px;
+  }
+  .notif-dropdown-overlay.open { display: block; }
+  .notif-dropdown {
+    display: none; position: absolute;
+    top: 90px; right: 16px;
+    width: 300px; max-height: 400px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    z-index: 200; overflow: hidden;
+    flex-direction: column;
+  }
+  .notif-dropdown.open { display: flex; }
+  .notif-dropdown-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .notif-dropdown-mark-read {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 500; color: var(--text-hint); font-family: inherit;
+  }
+  .notif-dropdown-mark-read:active { opacity: 0.6; }
+  .notif-dropdown-list {
+    flex: 1; overflow-y: auto; scrollbar-width: none;
+  }
+  .notif-dropdown-list::-webkit-scrollbar { display: none; }
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:active { opacity: 0.7; }
+  .notif-item-icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; color: var(--text-sub);
+  }
+  .notif-item-icon svg { width: 16px; height: 16px; }
+  .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
+  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .notif-item-body { font-size: 12px; color: #8C8580; margin-top: 1px; line-height: 1.3; }
+  .notif-item-time { font-size: 11px; color: #B5AFA8; margin-top: 2px; }
+  .notif-item.unread .notif-item-title { font-weight: 600; }
+  .notif-item-dot {
+    position: absolute; top: 15px; right: 12px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #FF6038;
+  }
+  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .notif-action-btn {
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .notif-action-btn:active { opacity: 0.8; }
+  .notif-action-accept { background: var(--text); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: #B5AFA8; border: 1px solid var(--border); }
+  .notif-dropdown-footer {
+    padding: 9px 14px; text-align: center;
+    border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .notif-dropdown-footer a {
+    font-size: 12px; font-weight: 500; color: var(--text-hint);
+    text-decoration: none; cursor: pointer;
+  }
+  .notif-dropdown-footer a:active { opacity: 0.6; }
 
   /* Wine section title style */
   .wine-section-title {
@@ -2238,33 +2315,92 @@
   }
   .content-tab-spacer { flex: 1; }
 
-  /* View toggle — 간단/상세 */
-  .view-toggle {
-    display: flex;
-    background: var(--bg-page);
-    border-radius: 8px;
-    padding: 2px;
-    margin-right: 8px;
-    flex-shrink: 0;
+  /* View cycle button — card/list/calendar */
+  .view-cycle-btn {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); margin-right: 4px; flex-shrink: 0;
+    transition: all 0.15s; position: relative;
   }
-  .view-toggle-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-hint);
-    border: none;
-    background: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s;
-    white-space: nowrap;
+  .view-cycle-btn:active { background: var(--bg-page); }
+  .view-cycle-btn svg { width: 18px; height: 18px; }
+
+  /* Calendar — photo diary style */
+  .calendar-view { padding: 0 16px; }
+  .calendar-month {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    padding: 12px 4px 8px; display: flex; align-items: center; gap: 8px;
   }
-  .view-toggle-btn.active {
+  .calendar-month svg { width: 16px; height: 16px; color: var(--text-sub); cursor: pointer; }
+  .calendar-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 3px; margin-bottom: 8px;
+  }
+  .calendar-weekday {
+    font-size: 10px; font-weight: 600; color: var(--text-hint);
+    text-align: center; padding: 4px 0;
+  }
+  .calendar-day {
+    aspect-ratio: 1; border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text-sub);
+    position: relative; cursor: pointer;
+    transition: all 0.15s; overflow: hidden;
     background: var(--bg-card);
-    color: var(--text);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
+  .calendar-day:active { transform: scale(0.95); }
+  .calendar-day.empty { background: transparent; cursor: default; }
+  .calendar-day.empty:active { transform: none; }
+  .calendar-day.today {
+    font-weight: 700; color: var(--text);
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .calendar-day.today.wine-cal { box-shadow: 0 0 0 2px var(--wine); }
+  .calendar-day.selected {
+    box-shadow: 0 0 0 2px var(--accent-social);
+  }
+  /* Photo in calendar cell */
+  .calendar-day.has-photo {
+    background-size: cover; background-position: center;
+    color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    font-weight: 600;
+  }
+  .calendar-day.has-photo::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.35) 100%);
+    border-radius: 8px;
+  }
+  .calendar-day.has-photo .cal-day-num {
+    position: relative; z-index: 1;
+  }
+  .calendar-day .cal-day-num {
+    font-size: 11px; line-height: 1;
+  }
+  .calendar-day .cal-score {
+    position: absolute; bottom: 2px; right: 3px;
+    font-size: 8px; font-weight: 700; z-index: 1;
+    opacity: 0.9;
+  }
+  .calendar-day .cal-count {
+    position: absolute; top: 2px; right: 3px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 8px; font-weight: 700; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .calendar-day .cal-count.wine-count { background: var(--wine); }
+  /* Selected day detail */
+  .calendar-day-detail {
+    margin-top: 4px; padding: 12px 4px;
+    border-top: 1px solid var(--border);
+  }
+  .calendar-day-detail-header {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .calendar-day-detail-header svg { width: 14px; height: 14px; color: var(--text-sub); }
 
   /* Compact list item */
   .compact-list { padding: 0 16px; }
@@ -2325,6 +2461,7 @@
   }
   .compact-score.food-score { color: var(--primary); }
   .compact-score.wine-score { color: var(--wine); }
+  .compact-score.not-mine { color: var(--text-hint); }
   .compact-score.no-score { font-size: 14px; color: var(--text-hint); font-weight: 600; }
 
   /* Filter toggle */
@@ -2356,15 +2493,44 @@
   }
   .tab-icon-btn:active { color: var(--text); }
   .tab-icon-btn.has-filter { color: var(--primary); }
+  .tab-icon-btn.active-search { color: var(--primary); }
+
+  /* 검색 드롭다운 */
+  .search-dropdown {
+    display: none;
+    position: absolute; right: 16px;
+    width: calc(50% - 16px);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 8px 12px;
+    z-index: 80;
+  }
+  .search-dropdown.open { display: block; }
+  .search-input-wrap {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .search-input-wrap > i { margin-top: 2px; }
+  .search-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 14px; color: var(--text);
+    font-family: inherit;
+    resize: none; overflow: hidden;
+    min-height: 20px; line-height: 1.4;
+  }
+  .search-input::placeholder { color: var(--text-hint); }
+  .search-clear-btn {
+    background: none; border: none; padding: 2px;
+    cursor: pointer; color: var(--text-hint);
+    display: flex; align-items: center; justify-content: center;
+  }
 
   .filter-drawer {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
+    display: none;
+    background: var(--bg);
   }
-  .filter-drawer.open { max-height: 200px; }
+  .filter-drawer.open { display: block; }
 
   /* Notion-style filter panel */
   .notion-filter-panel { padding: 10px 16px; }
@@ -2378,30 +2544,86 @@
     width: 40px; flex-shrink: 0; cursor: pointer;
   }
   .notion-conjunction.clickable:active { color: var(--primary); }
-  .notion-attr, .notion-val {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 6px; padding: 3px 8px;
-    font-size: 12px; font-weight: 500; color: var(--text);
-    cursor: pointer; font-family: inherit;
+
+  /* nyam-select base styles for filter dropdowns */
+  .nyam-select-wrap { position: relative; display: inline-block; }
+  .nyam-select {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg-card);
+    cursor: pointer; font-family: var(--font);
+    font-size: 13px; font-weight: 500; color: var(--text);
+    transition: all 0.15s; user-select: none; min-width: 100px;
   }
-  .notion-attr:active, .notion-val:active { border-color: var(--primary); }
-  .notion-is { font-size: 11px; color: var(--text-hint); }
+  .nyam-select:hover { border-color: var(--border-bold); }
+  .nyam-select.open { border-color: var(--accent-food); }
+  .nyam-select-value { flex: 1; }
+  .nyam-select-arrow {
+    width: 16px; height: 16px; color: var(--text-hint);
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .nyam-select.open .nyam-select-arrow { transform: rotate(180deg); }
+  .nyam-dropdown {
+    display: none; position: absolute;
+    top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px; z-index: 100; overflow: hidden;
+  }
+  .nyam-select.open + .nyam-dropdown { display: block; }
+
+  /* Filter inline dropdowns — compact nyam-select */
+  .notion-filter-rule .nyam-select-wrap { display: inline-block; }
+  .notion-filter-rule .nyam-select {
+    padding: 3px 8px; font-size: 12px; min-width: 60px;
+    border-radius: 6px; gap: 4px;
+  }
+  .notion-filter-rule .nyam-select-arrow { width: 12px; height: 12px; }
+  .notion-filter-rule .nyam-dropdown { min-width: 120px; }
+  .notion-filter-rule .nyam-dropdown-item { padding: 7px 10px; font-size: 12px; }
+  .notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-select {
+    padding: 3px 8px; font-size: 12px; min-width: 40px;
+    border-radius: 6px; gap: 4px;
+  }
+  .notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-select-arrow { width: 12px; height: 12px; }
+  .notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown { min-width: 140px; }
+  .notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown-item { padding: 7px 10px; font-size: 12px; }
   .notion-remove {
     background: none; border: none; cursor: pointer;
     font-size: 12px; color: var(--text-hint); padding: 2px 4px;
     margin-left: auto;
   }
   .notion-remove:active { color: var(--negative); }
+  .notion-add-row {
+    position: relative; margin-top: 4px;
+  }
   .notion-add-rule {
     background: none; border: none; cursor: pointer;
-    font-size: 12px; font-weight: 500; color: var(--primary);
-    padding: 6px 0 2px; font-family: inherit;
+    font-size: 12px; font-weight: 500; color: var(--text-hint);
+    padding: 6px 8px; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 6px;
   }
-  .notion-sort-row {
+  .notion-add-rule:hover { background: var(--bg); color: var(--text); }
+  .notion-add-rule svg { width: 12px; height: 12px; opacity: 0.5; }
+  .notion-add-dd {
+    display: none; position: absolute; left: 0; top: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    padding: 4px; z-index: 90; min-width: 180px;
+  }
+  .notion-add-dd.open { display: block; }
+  .notion-add-dd-item {
     display: flex; align-items: center; gap: 8px;
-    padding-top: 8px; margin-top: 6px;
-    border-top: 1px solid var(--border);
+    width: 100%; padding: 8px 12px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none;
+    border: none; cursor: pointer; font-family: inherit;
   }
+  .notion-add-dd-item:hover { background: var(--bg); }
+  .notion-add-dd-item svg { width: 14px; height: 14px; color: var(--text-hint); flex-shrink: 0; }
   /* Sort dropdown (nyam-dropdown style) */
   .sort-dropdown {
     display: none;
@@ -2427,7 +2649,8 @@
   }
   .nyam-dropdown-item:hover { background: var(--bg); }
   .nyam-dropdown-item:active { background: var(--border); }
-  .nyam-dropdown-item.active {
+  .nyam-dropdown-item.active,
+  .nyam-dropdown-item.selected {
     color: var(--primary); font-weight: 600;
   }
 
@@ -2598,9 +2821,8 @@
     color: var(--text-hint);
   }
 
-  /* Unrated variant */
-  .place-card.unrated .place-photo-col { opacity: 0.45; }
-  .place-card.unrated .place-total-score { color: var(--text-hint); }
+  /* Not-mine variant — show score in muted color */
+  .place-total-score.not-mine { color: var(--text-hint); }
 
   /* =====================
      Wine card — same L/R split
@@ -2631,33 +2853,43 @@
 
   /* Sub-nav — 식당/와인 공통 */
   .sub-nav {
-    display: flex;
-    margin: 0 16px;
-    background: var(--bg-page);
-    border-radius: 10px;
-    padding: 3px;
+    display: flex; gap: 6px;
+    padding: 2px 16px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--bg);
   }
+  .sub-nav::-webkit-scrollbar { display: none; }
   .sub-nav-item {
-    flex: 1;
-    padding: 7px 0;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-hint);
-    border-radius: 8px;
-    border: none;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sub);
+    border-radius: 20px;
+    border: 1px solid var(--border);
     background: none;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
   }
+  .sub-nav-item:active { transform: scale(0.96); }
   .sub-nav-item.active {
-    background: var(--bg-card);
-    color: var(--text);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
   }
   .sub-nav-item .nav-count {
-    font-weight: 800;
-    margin-left: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.55;
+  }
+  .sub-nav-item.active .nav-count {
+    opacity: 0.8;
   }
 
   /* Wine camera buttons */
@@ -2687,7 +2919,7 @@
 
   /* Tab content panels */
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; padding-top: 14px; }
+  .tab-panel.active { display: flex; flex-direction: column; padding-top: 14px; min-height: 0; }
 
   /* =====================
      Restaurant filter bar
@@ -2723,10 +2955,7 @@
 
   /* Sort dropdown */
   .sort-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 16px 4px;
+    display: none;
   }
   .sort-label {
     font-size: 11px;
@@ -2758,6 +2987,41 @@
   }
   .sort-btn:active { background: var(--bg-page); }
   .sort-btn svg { width: 12px; height: 12px; }
+
+  /* Inline pager (sub-nav 우측) */
+  .inline-pager {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding-right: 14px;
+    flex-shrink: 0;
+  }
+  .inline-pager.visible { display: flex; }
+  .inline-pager-info {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    min-width: 28px;
+    text-align: center;
+  }
+  .inline-pager button {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+  }
+  .inline-pager button:active { transform: scale(0.9); }
+  .inline-pager button:disabled { opacity: 0.2; pointer-events: none; }
 
   /* =====================
      Wine tab — full redesign
@@ -2816,6 +3080,27 @@
     height: 6px;
     background: var(--bg-page);
     margin: 18px 0;
+  }
+
+  /* Progressive Disclosure — lock overlay */
+  .pd-section-wrap {
+    position: relative;
+  }
+  .pd-lock-overlay {
+    position: absolute; inset: 0; z-index: 10;
+    background: rgba(248,246,243,0.85);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; border-radius: 12px;
+  }
+  .pd-lock-icon { color: var(--text-hint); }
+  .pd-lock-text {
+    font-size: 12px; font-weight: 600; color: var(--text-hint);
+  }
+  .pd-section-wrap.unlocked .pd-lock-overlay { display: none; }
+  [data-theme="dark"] .pd-lock-overlay {
+    background: rgba(30,28,26,0.85);
   }
 
   .wine-taste-map {
@@ -3304,6 +3589,46 @@
   }
   .avatar-menu-item:last-child { border-bottom: none; }
   .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
+
+  /* Following tab — filter chips */
+  .follow-chip {
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-sub); cursor: pointer; font-family: inherit;
+    white-space: nowrap; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .follow-chip svg { width: 12px; height: 12px; }
+  .follow-chip.active {
+    background: var(--accent-social); color: #fff;
+    border-color: var(--accent-social);
+  }
+
+  /* Following tab — source row & badges */
+  .source-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 6px; font-size: 11px; color: var(--text-sub);
+  }
+  .source-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .follow-score-badge {
+    font-size: 20px; font-weight: 800;
+    margin: 4px 0 2px;
+  }
+  .place-tags {
+    display: flex; gap: 4px; margin: 4px 0;
+  }
+  .tag-item {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .tag-item.tag-pos { background: rgba(76,175,80,0.12); color: var(--positive); }
+  .tag-item.tag-neg { background: rgba(244,67,54,0.12); color: var(--negative, #E53935); }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
@@ -3313,7 +3638,75 @@
 
 
 <div class="device">
-  <div class="device-inner">
+  <div class="device-inner" style="position:relative;">
+    <div class="notif-dropdown-overlay" id="notifOverlay" onclick="closeNotifDropdown()"></div>
+    <!-- Notification Dropdown (device-inner 직속, overlay 위) -->
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <span class="notif-dropdown-title">알림</span>
+        <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
+      </div>
+      <div class="notif-dropdown-list">
+        <div class="notif-item unread" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">을지로 레벨 4 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">3시간 전</div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">김영수님이 '을지로 맛탐정 클럽' 가입을 신청했어요</div>
+            <div class="notif-item-time">1일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="user-plus"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">이수진님이 팔로우를 요청했어요</div>
+            <div class="notif-item-time">2일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
+            <div class="notif-item-time">3일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="user-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">박민호님이 팔로우를 수락했어요</div>
+            <div class="notif-item-time">5일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">와인 레벨 7 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">1주 전</div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="05_settings.html">알림 설정 →</a>
+      </div>
+    </div>
     <div class="dynamic-island"></div>
 
     <div class="screens-wrapper" id="screensWrapper">
@@ -3335,22 +3728,22 @@
             <div class="header-right">
               <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
-                <button class="icon-btn" onclick="location.href='06_notifications.html'">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <button class="icon-btn" onclick="toggleNotifDropdown(event)">
+                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
                 </button>
-                <div class="notif-badge"></div>
+                <div class="notif-badge" id="notifBadge"></div>
               </div>
               <div style="position:relative;">
                 <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+                  <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
                   <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
         <!-- Scrollable content (tabs scroll with content, not sticky) -->
         <div class="scroll-content" id="homeScroll" style="flex:1;" >
 
@@ -3378,11 +3771,14 @@
             <button class="content-tab active" id="tabFood" onclick="switchTab('food')">식당</button>
             <button class="content-tab" id="tabWine" onclick="switchTab('wine')">와인</button>
             <div class="content-tab-spacer"></div>
-            <!-- 간단/상세 토글 -->
-            <div class="view-toggle" id="viewToggle">
-              <button class="view-toggle-btn" onclick="setViewMode('compact')">간단</button>
-              <button class="view-toggle-btn active" onclick="setViewMode('detail')">상세</button>
-            </div>
+            <!-- 뷰 사이클: card → list → calendar -->
+            <button class="view-cycle-btn" id="viewCycleBtn" onclick="cycleViewMode()" title="보기 전환">
+              <i data-lucide="layout-grid"></i>
+            </button>
+            <!-- 지도 -->
+            <button class="view-cycle-btn" id="mapBtn" onclick="toggleMapView()" title="지도">
+              <i data-lucide="map"></i>
+            </button>
             <!-- 필터 (좌) -->
             <button class="tab-icon-btn" id="filterToggle" onclick="toggleFilter()" title="필터">
               <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
@@ -3391,6 +3787,21 @@
             <button class="tab-icon-btn" id="sortToggle" onclick="toggleSort()" title="정렬">
               <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
             </button>
+            <!-- 검색 -->
+            <button class="tab-icon-btn" id="searchToggle" onclick="toggleSearch()" title="검색">
+              <i data-lucide="search" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+
+          <!-- 검색 드롭다운 -->
+          <div class="search-dropdown" id="searchDropdown">
+            <div class="search-input-wrap">
+              <i data-lucide="search" style="width:16px;height:16px;color:var(--text-tertiary);flex-shrink:0;"></i>
+              <textarea id="searchInput" class="search-input" rows="1" placeholder="식당·와인 이름으로 검색"></textarea>
+              <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()" style="display:none;">
+                <i data-lucide="x" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Notion-style filter panel — hidden by default -->
@@ -3399,13 +3810,67 @@
               <div class="notion-filter-rules" id="filterRules">
                 <div class="notion-filter-rule">
                   <span class="notion-conjunction">Where</span>
-                  <button class="notion-attr" onclick="cycleAttr(this)">상황</button>
-                  <span class="notion-is">is</span>
-                  <button class="notion-val" onclick="cycleVal(this)">전체</button>
-                  <button class="notion-remove" onclick="removeRule(this)">✕</button>
+                  <div class="nyam-select-wrap">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')" data-role="attr">
+                      <span class="nyam-select-value">상황</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="hmSelectAttr(this)">상황</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">음식종류</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">위치</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">점수</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">시기</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">동반자</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">명성</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectAttr(this)">가격대</button>
+                    </div>
+                  </div>
+                  <div class="nyam-select-wrap" data-role="op">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')">
+                      <span class="nyam-select-value">is</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="hmSelectOp(this)">is</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectOp(this)">is not</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectOp(this)">contains</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectOp(this)">does not contain</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectOp(this)">&ge;</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectOp(this)">&lt;</button>
+                    </div>
+                  </div>
+                  <div class="nyam-select-wrap">
+                    <div class="nyam-select" onclick="this.classList.toggle('open')" data-role="val">
+                      <span class="nyam-select-value">전체</span>
+                      <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+                    </div>
+                    <div class="nyam-dropdown">
+                      <button class="nyam-dropdown-item selected" onclick="hmSelectVal(this)">전체</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">혼밥</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">데이트</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">회식</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">가족</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">친구</button>
+                      <button class="nyam-dropdown-item" onclick="hmSelectVal(this)">술자리</button>
+                    </div>
+                  </div>
+                  <button class="notion-remove" onclick="hmRemoveRule(this)">✕</button>
                 </div>
               </div>
-              <button class="notion-add-rule" onclick="addFilterRule()">+ 필터 추가</button>
+              <div class="notion-add-row">
+                <button class="notion-add-rule" onclick="hmToggleAddDD(this)">
+                  + 필터 추가 <i data-lucide="chevron-down"></i>
+                </button>
+                <div class="notion-add-dd" id="hmAddDD">
+                  <button class="notion-add-dd-item" onclick="hmAddFilterRule(this)">
+                    <i data-lucide="plus"></i> 필터 추가
+                  </button>
+                  <button class="notion-add-dd-item" onclick="hmAddFilterGroup(this)">
+                    <i data-lucide="group"></i> 필터 그룹 추가
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3418,27 +3883,96 @@
             <button class="nyam-dropdown-item" onclick="selectSort(this)">방문 많은순</button>
           </div>
 
+          <!-- MAP VIEW (overlay) -->
+          <div id="mapView" style="display:none">
+            <div style="position:relative;width:100%;height:320px;background:#E8E4DF;border-radius:0 0 16px 16px;overflow:hidden">
+              <!-- Mock map background -->
+              <div style="position:absolute;inset:0;background:linear-gradient(145deg,#EDE9E3 0%,#E0DCD5 40%,#D8D4CC 100%)">
+                <!-- Grid lines -->
+                <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:0.15">
+                  <line x1="0" y1="80" x2="100%" y2="80" stroke="var(--text-hint)" stroke-width="0.5"/>
+                  <line x1="0" y1="160" x2="100%" y2="160" stroke="var(--text-hint)" stroke-width="0.5"/>
+                  <line x1="0" y1="240" x2="100%" y2="240" stroke="var(--text-hint)" stroke-width="0.5"/>
+                  <line x1="90" y1="0" x2="90" y2="100%" stroke="var(--text-hint)" stroke-width="0.5"/>
+                  <line x1="180" y1="0" x2="180" y2="100%" stroke="var(--text-hint)" stroke-width="0.5"/>
+                  <line x1="270" y1="0" x2="270" y2="100%" stroke="var(--text-hint)" stroke-width="0.5"/>
+                </svg>
+                <!-- Area labels -->
+                <div style="position:absolute;top:40px;left:60px;font-size:11px;color:var(--text-hint);font-weight:500">광화문</div>
+                <div style="position:absolute;top:120px;left:160px;font-size:11px;color:var(--text-hint);font-weight:500">을지로</div>
+                <div style="position:absolute;top:200px;right:60px;font-size:11px;color:var(--text-hint);font-weight:500">강남</div>
+                <div style="position:absolute;top:80px;right:40px;font-size:11px;color:var(--text-hint);font-weight:500">성수</div>
+                <!-- Pin markers -->
+                <div style="position:absolute;top:50px;left:100px;cursor:pointer" onclick="alert('스시코우지 92')">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                    <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">92</span>
+                  </div>
+                </div>
+                <div style="position:absolute;top:55px;left:160px;cursor:pointer" onclick="alert('미진 88')">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                    <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">88</span>
+                  </div>
+                </div>
+                <div style="position:absolute;top:130px;left:180px;cursor:pointer" onclick="alert('을지로 골뱅이 85')">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                    <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">85</span>
+                  </div>
+                </div>
+                <div style="position:absolute;top:210px;right:70px;cursor:pointer" onclick="alert('도쿄등심 90')">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                    <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">90</span>
+                  </div>
+                </div>
+                <div style="position:absolute;top:100px;right:50px;cursor:pointer" onclick="alert('그린 키친 85')">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                    <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">85</span>
+                  </div>
+                </div>
+                <!-- Current location -->
+                <div style="position:absolute;top:90px;left:140px">
+                  <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-social);border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(122,155,174,0.25)"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Bottom list (scrollable) -->
+            <div style="padding:12px 16px 0">
+              <div style="font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:8px">지도에 표시된 5곳</div>
+              <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                <div class="compact-rank top3">1</div>
+                <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#D4C5B0,#E8DDD0)"></div>
+                <div class="compact-info"><div class="compact-name">스시코우지</div><div class="compact-meta">일식 · 광화문 · 0.3km</div></div>
+                <div class="compact-score food-score">92</div>
+              </div>
+              <div class="compact-item">
+                <div class="compact-rank top3">2</div>
+                <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#C4B5A0,#D8CDB8)"></div>
+                <div class="compact-info"><div class="compact-name">도쿄등심</div><div class="compact-meta">일식 · 강남 · 2.1km</div></div>
+                <div class="compact-score food-score">90</div>
+              </div>
+              <div class="compact-item">
+                <div class="compact-rank top3">3</div>
+                <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#B8A890,#D0C8B8)"></div>
+                <div class="compact-info"><div class="compact-name">미진</div><div class="compact-meta">한식 · 광화문 · 0.5km</div></div>
+                <div class="compact-score food-score">88</div>
+              </div>
+            </div>
+          </div><!-- /mapView -->
+
           <!-- TAB: 식당 -->
           <div class="tab-panel active" id="panelFood">
 
-            <!-- 서브 네비: 방문 / 찜 / 추천 -->
+            <!-- 서브 네비: 방문 / 찜 / 추천 / 팔로잉 + 페이지 네비 -->
             <div class="sub-nav" id="foodSubNav">
               <button class="sub-nav-item active" onclick="setFoodSubNav('visit', this)">방문<span class="nav-count">8</span></button>
               <button class="sub-nav-item" onclick="setFoodSubNav('wish', this)">찜<span class="nav-count">3</span></button>
               <button class="sub-nav-item" onclick="setFoodSubNav('recommend', this)">추천<span class="nav-count">12</span></button>
+              <button class="sub-nav-item" onclick="setFoodSubNav('following', this)">팔로잉<span class="nav-count">5</span></button>
+              <div class="inline-pager" id="foodPager"></div>
             </div>
 
             <!-- ========== SUB: 방문 ========== -->
             <div id="foodSub-visit">
 
-            <!-- Sort row -->
-            <div class="sort-row" id="foodSortRow">
-              <div class="sort-label" id="filterSubLabel">8곳</div>
-              <button class="sort-btn" onclick="cycleSort()">
-                <span id="sortLabel">최신순</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-            </div>
 
             <!-- ===== 간단 보기 (compact) ===== -->
             <div id="foodCompact" style="display:none;">
@@ -3486,7 +4020,7 @@
                     <div class="compact-name">광화문국밥</div>
                     <div class="compact-meta">한식 · 광화문 · 설렁탕</div>
                   </div>
-                  <div class="compact-score no-score">—</div>
+                  <div class="compact-score not-mine">91</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                   <div class="compact-rank">6</div>
@@ -3514,6 +4048,42 @@
                     <div class="compact-meta">한식 · 강남 · 냉면</div>
                   </div>
                   <div class="compact-score food-score">76</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="compact-rank">9</div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1555126634-323283e090fa?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">도쿄등심</div>
+                    <div class="compact-meta">일식 · 강남 · 규카츠</div>
+                  </div>
+                  <div class="compact-score food-score">74</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="compact-rank">10</div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">목란</div>
+                    <div class="compact-meta">중식 · 을지로</div>
+                  </div>
+                  <div class="compact-score food-score">72</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="compact-rank">11</div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">봉피양</div>
+                    <div class="compact-meta">한식 · 종로 · 냉면</div>
+                  </div>
+                  <div class="compact-score food-score">70</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="compact-rank">12</div>
+                  <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop') center/cover no-repeat;"></div>
+                  <div class="compact-info">
+                    <div class="compact-name">그린 키친</div>
+                    <div class="compact-meta">양식 · 성수 · 샐러드</div>
+                  </div>
+                  <div class="compact-score food-score">68</div>
                 </div>
               </div>
             </div>
@@ -3599,7 +4169,7 @@
                 <div class="place-name">광화문국밥</div>
                 <div class="place-meta">한식 · 광화문 · 설렁탕</div>
                 <div class="place-score-row">
-                  <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                  <div class="place-total-score not-mine">91</div>
                 </div>
                 <div class="place-sources">
                   <div class="place-source">
@@ -3618,16 +4188,101 @@
               </div>
             </div>
 
-            <!-- 더보기 -->
-            <button onclick="setViewMode('compact')" style="
-              display:flex;align-items:center;justify-content:center;gap:6px;
-              width:calc(100% - 32px);margin:0 16px 4px;padding:12px;
-              border-radius:12px;border:1.5px solid var(--border);
-              background:var(--bg-card);font-size:13px;font-weight:600;
-              color:var(--text-sub);cursor:pointer;transition:all 0.15s;
-            ">전체 보기 · 5곳 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+            <!-- 4: 을지로 골뱅이 -->
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop') center/cover no-repeat;">
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">을지로 골뱅이</div>
+                <div class="place-meta">한식 · 을지로 · 골뱅이</div>
+                <div class="place-score-row">
+                  <div class="mini-quad">
+                    <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--primary);"></div>
+                  </div>
+                  <div class="place-total-score">85</div>
+                </div>
+                <div class="place-sources">
+                  <div class="place-source">
+                    <span class="source-tag me">나</span>
+                    <span class="source-text"><strong>85</strong> · 회식 3/12</span>
+                  </div>
+                  <div class="place-source">
+                    <span class="source-tag web">웹</span>
+                    <span class="source-text">N4.3 K4.0 G4.2</span>
+                  </div>
+                </div>
+                <div class="place-engagement">
+                  <span>♡ 6</span>
+                  <span>💬 2</span>
+                </div>
+              </div>
+            </div>
 
-            <!-- ═══ 통계 섹션 ═══ -->
+            <!-- 5: 리스토란테 에오 -->
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=400&fit=crop') center/cover no-repeat;">
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">리스토란테 에오</div>
+                <div class="place-meta">이탈리안 · 강남</div>
+                <div class="place-score-row">
+                  <div class="mini-quad">
+                    <div class="qd" style="left:50%;top:35%;width:15px;height:15px;background:var(--primary);"></div>
+                  </div>
+                  <div class="place-total-score">83</div>
+                </div>
+                <div class="place-sources">
+                  <div class="place-source">
+                    <span class="source-tag me">나</span>
+                    <span class="source-text"><strong>83</strong> · 기념일 3/8</span>
+                  </div>
+                  <div class="place-source">
+                    <span class="source-tag web">웹</span>
+                    <span class="source-text">N4.5 K4.2 G4.4</span>
+                  </div>
+                </div>
+                <div class="place-engagement">
+                  <span>♡ 10</span>
+                  <span>💬 4</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 6: 오마카세 히든 -->
+            <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+              <div class="place-photo-col" style="background:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=400&fit=crop') center/cover no-repeat;">
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">오마카세 히든</div>
+                <div class="place-meta">일식 · 을지로</div>
+                <div class="place-score-row">
+                  <div class="mini-quad">
+                    <div class="qd" style="left:60%;top:40%;width:14px;height:14px;background:var(--primary);"></div>
+                  </div>
+                  <div class="place-total-score">80</div>
+                </div>
+                <div class="place-sources">
+                  <div class="place-source">
+                    <span class="source-tag me">나</span>
+                    <span class="source-text"><strong>80</strong> · 혼밥 3/5</span>
+                  </div>
+                  <div class="place-source">
+                    <span class="source-tag bubble">버블</span>
+                    <span class="source-text"><strong>박소연</strong> 87 · "숨은 보석"</span>
+                  </div>
+                </div>
+                <div class="place-engagement">
+                  <span>♡ 15</span>
+                  <span>💬 7</span>
+                </div>
+              </div>
+            </div>
+
+
+            </div><!-- /foodDetail 카드 영역 끝 -->
+
+            <!-- ═══ 식당 통계 패널 (통계 아이콘으로 토글) ═══ -->
+            <div id="foodStatsPanel" style="display:none">
             <div class="wine-divider"></div>
 
             <!-- 세계지도 (가본 식당) -->
@@ -3783,7 +4438,73 @@
             </div>
 
             <div style="height:100px;"></div>
-            </div><!-- /foodDetail -->
+            </div><!-- /foodStatsPanel -->
+
+            <!-- ===== 캘린더 보기 — 사진 다이어리 (calendar) ===== -->
+            <div id="foodCalendar" style="display:none">
+              <div class="calendar-view">
+                <div class="calendar-month"><i data-lucide="chevron-left"></i> 2026년 3월 <i data-lucide="chevron-right"></i></div>
+                <div class="calendar-grid">
+                  <div class="calendar-weekday">일</div><div class="calendar-weekday">월</div><div class="calendar-weekday">화</div><div class="calendar-weekday">수</div><div class="calendar-weekday">목</div><div class="calendar-weekday">금</div><div class="calendar-weekday">토</div>
+                  <div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div>
+                  <div class="calendar-day"><span class="cal-day-num">1</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">2</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"><span class="cal-day-num">3</span><span class="cal-score">88</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">4</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">5</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">6</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&h=200&fit=crop')"><span class="cal-day-num">7</span><span class="cal-score">92</span><span class="cal-count">2</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">8</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">9</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">10</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">11</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop')"><span class="cal-day-num">12</span><span class="cal-score">85</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">13</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">14</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">15</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">16</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1555126634-323283e090fa?w=200&h=200&fit=crop')"><span class="cal-day-num">17</span><span class="cal-score">90</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">18</span></div>
+                  <div class="calendar-day has-photo selected" style="background-image:url('https://images.unsplash.com/photo-1540648639573-8c848de23f0a?w=200&h=200&fit=crop')"><span class="cal-day-num">19</span><span class="cal-score">92</span><span class="cal-count">2</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">20</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">21</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">22</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">23</span></div>
+                  <div class="calendar-day today"><span class="cal-day-num">24</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">25</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">26</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">27</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">28</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">29</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">30</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">31</span></div>
+                </div>
+
+                <!-- Selected day detail -->
+                <div class="calendar-day-detail">
+                  <div class="calendar-day-detail-header"><i data-lucide="calendar"></i> 3월 19일 (수) · 2곳 방문</div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank top3" style="width:auto;font-size:10px;color:var(--text-hint)">점심</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1540648639573-8c848de23f0a?w=200&h=200&fit=crop') center/cover"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">스시코우지</div>
+                      <div class="compact-meta">일식 · 광화문 · 혼밥</div>
+                    </div>
+                    <div class="compact-score food-score">92</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-rank top3" style="width:auto;font-size:10px;color:var(--text-hint)">저녁</div>
+                    <div class="compact-thumb food-thumb" style="background:url('https://images.unsplash.com/photo-1555126634-323283e090fa?w=200&h=200&fit=crop') center/cover"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">도쿄등심</div>
+                      <div class="compact-meta">일식 · 강남 · 데이트</div>
+                    </div>
+                    <div class="compact-score food-score">90</div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /foodCalendar -->
+
             </div><!-- /foodSub-visit -->
 
             <!-- ========== SUB: 찜 ========== -->
@@ -3806,7 +4527,7 @@
                       <div class="compact-name">몽탄</div>
                       <div class="compact-meta">한식 · 을지로 · 바베큐</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                    <div class="compact-score not-mine">93</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank">2</div>
@@ -3815,7 +4536,7 @@
                       <div class="compact-name">라미띠에</div>
                       <div class="compact-meta">프렌치 · 청담 · 미슐랭★</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                    <div class="compact-score not-mine">87</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank">3</div>
@@ -3824,7 +4545,7 @@
                       <div class="compact-name">정식당</div>
                       <div class="compact-meta">한식 · 강남 · 미슐랭★★</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--primary);"></i></div>
+                    <div class="compact-score not-mine">89</div>
                   </div>
                 </div>
               </div>
@@ -3839,7 +4560,7 @@
                     <div class="place-name">몽탄</div>
                     <div class="place-meta">한식 · 을지로 · 바베큐</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">93</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -3868,7 +4589,7 @@
                     <div class="place-name">라미띠에</div>
                     <div class="place-meta">프렌치 · 청담 · 비스트로</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">87</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -3893,7 +4614,7 @@
                     <div class="place-name">정식당</div>
                     <div class="place-meta">한식 · 강남 · 코스</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">89</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -3911,7 +4632,6 @@
                   </div>
                 </div>
 
-                <div style="height:80px;"></div>
               </div>
             </div><!-- /foodSub-wish -->
 
@@ -3935,7 +4655,7 @@
                       <div class="compact-name">도쿄등심</div>
                       <div class="compact-meta">일식 · 광화문 · 규카츠 코스</div>
                     </div>
-                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                    <div class="compact-score not-mine">82</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank top3" style="color:var(--positive);">2</div>
@@ -3944,7 +4664,7 @@
                       <div class="compact-name">토속촌</div>
                       <div class="compact-meta">한식 · 광화문 · 삼계탕</div>
                     </div>
-                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                    <div class="compact-score not-mine">84</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank top3" style="color:var(--accent-social);">3</div>
@@ -3953,7 +4673,7 @@
                       <div class="compact-name">비스트로 드 욘트빌</div>
                       <div class="compact-meta">프렌치 · 을지로</div>
                     </div>
-                    <div class="compact-score" style="font-size:12px;color:var(--accent-social);font-weight:700;">버블</div>
+                    <div class="compact-score not-mine">91</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank">4</div>
@@ -3962,7 +4682,7 @@
                       <div class="compact-name">하루</div>
                       <div class="compact-meta">일식 · 성수 · 라멘</div>
                     </div>
-                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                    <div class="compact-score not-mine">86</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
                     <div class="compact-rank">5</div>
@@ -3971,7 +4691,7 @@
                       <div class="compact-name">봉피양</div>
                       <div class="compact-meta">한식 · 종로 · 냉면</div>
                     </div>
-                    <div class="compact-score" style="font-size:12px;color:var(--positive);font-weight:700;">AI 추천</div>
+                    <div class="compact-score not-mine">83</div>
                   </div>
                 </div>
               </div>
@@ -3989,7 +4709,7 @@
                     <div class="place-name">도쿄등심</div>
                     <div class="place-meta">일식 · 광화문 · 규카츠 코스</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">82</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -4016,7 +4736,7 @@
                     <div class="place-name">토속촌</div>
                     <div class="place-meta">한식 · 광화문 · 삼계탕</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">84</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -4043,7 +4763,7 @@
                     <div class="place-name">비스트로 드 욘트빌</div>
                     <div class="place-meta">프렌치 · 을지로</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">91</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -4070,7 +4790,7 @@
                     <div class="place-name">하루</div>
                     <div class="place-meta">일식 · 성수 · 라멘</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">86</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -4097,7 +4817,7 @@
                     <div class="place-name">봉피양</div>
                     <div class="place-meta">한식 · 종로 · 냉면</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="font-size:16px;color:var(--text-hint);font-weight:600;">—</div>
+                      <div class="place-total-score not-mine">83</div>
                     </div>
                     <div class="place-sources">
                       <div class="place-source">
@@ -4116,20 +4836,180 @@
                   </div>
                 </div>
 
-                <div style="height:80px;"></div>
               </div>
             </div><!-- /foodSub-recommend -->
+
+            <!-- ========== SUB: 팔로잉 ========== -->
+            <div id="foodSub-following" style="display:none">
+
+              <!-- Sort row (hidden — integrated into top sort button) -->
+              <div class="sort-row">
+                <div class="sort-label">5곳</div>
+                <span style="font-size:12px;color:var(--text-sub)">점수순</span>
+              </div>
+
+              <!-- Following compact view -->
+              <div id="followingCompact">
+                <div class="compact-list">
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#D4C5B0,#E8DDD0)"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">스시미나미</div>
+                      <div class="compact-meta">일식 · 을지로</div>
+                    </div>
+                    <div class="compact-score food-score">94</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#C4B5A0,#D8CDB8)"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">라멘진야</div>
+                      <div class="compact-meta">일식 · 광화문</div>
+                    </div>
+                    <div class="compact-score food-score">91</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#B8A090,#D0C0B0)"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">리스토란테 에오</div>
+                      <div class="compact-meta">이탈리안 · 한남</div>
+                    </div>
+                    <div class="compact-score food-score">89</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#C0B0A0,#D4C8B8)"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">목란</div>
+                      <div class="compact-meta">중식 · 을지로</div>
+                    </div>
+                    <div class="compact-score food-score">87</div>
+                  </div>
+                  <div class="compact-item" onclick="location.href='02_detail_restaurant.html'">
+                    <div class="compact-thumb food-thumb" style="background:linear-gradient(135deg,#A8C0B0,#C0D8C8)"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">그린 키친</div>
+                      <div class="compact-meta">양식 · 성수</div>
+                    </div>
+                    <div class="compact-score food-score">85</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Following detailed view (hidden by default) -->
+              <div id="followingDetailed">
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:linear-gradient(135deg,#D4C5B0,#E8DDD0)"></div>
+                  <div class="place-info-col">
+                    <div class="place-name">스시미나미</div>
+                    <div class="place-meta">일식 · 을지로</div>
+                    <div class="place-score-row">
+                      <div class="mini-quad">
+                        <div class="qd" style="left:65%;top:25%;width:16px;height:16px;background:var(--primary);"></div>
+                      </div>
+                      <div class="place-total-score">94</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text">을지로 맛탐정 · <strong>94</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:linear-gradient(135deg,#C4B5A0,#D8CDB8)"></div>
+                  <div class="place-info-col">
+                    <div class="place-name">라멘진야</div>
+                    <div class="place-meta">일식 · 광화문</div>
+                    <div class="place-score-row">
+                      <div class="mini-quad">
+                        <div class="qd" style="left:55%;top:30%;width:14px;height:14px;background:var(--primary);"></div>
+                      </div>
+                      <div class="place-total-score">91</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text">광화문 직장인 · <strong>91</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:linear-gradient(135deg,#B8A090,#D0C0B0)"></div>
+                  <div class="place-info-col">
+                    <div class="place-name">리스토란테 에오</div>
+                    <div class="place-meta">이탈리안 · 한남</div>
+                    <div class="place-score-row">
+                      <div class="mini-quad">
+                        <div class="qd" style="left:50%;top:35%;width:14px;height:14px;background:var(--primary);"></div>
+                      </div>
+                      <div class="place-total-score">89</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag me">맞팔</span>
+                        <span class="source-text"><strong>박소연</strong> 89 · "파스타가 압도적"</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:linear-gradient(135deg,#C0B0A0,#D4C8B8)"></div>
+                  <div class="place-info-col">
+                    <div class="place-name">목란</div>
+                    <div class="place-meta">중식 · 을지로</div>
+                    <div class="place-score-row">
+                      <div class="mini-quad">
+                        <div class="qd" style="left:45%;top:40%;width:14px;height:14px;background:var(--primary);"></div>
+                      </div>
+                      <div class="place-total-score">87</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag bubble">버블</span>
+                        <span class="source-text">을지로 맛탐정 · <strong>87</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="place-card" onclick="location.href='02_detail_restaurant.html'">
+                  <div class="place-photo-col" style="background:linear-gradient(135deg,#A8C0B0,#C0D8C8)"></div>
+                  <div class="place-info-col">
+                    <div class="place-name">그린 키친</div>
+                    <div class="place-meta">양식 · 성수</div>
+                    <div class="place-score-row">
+                      <div class="mini-quad">
+                        <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--primary);"></div>
+                      </div>
+                      <div class="place-total-score">85</div>
+                    </div>
+                    <div class="place-sources">
+                      <div class="place-source">
+                        <span class="source-tag me">맞팔</span>
+                        <span class="source-text"><strong>김영수</strong> 85 · "채식 맛집"</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
 
           </div>
 
           <!-- TAB: 와인 — 완전히 다른 세계 -->
           <div class="tab-panel" id="panelWine">
 
-            <!-- 서브 네비: 시음 / 찜 / 셀러 -->
+            <!-- 서브 네비: 시음 / 찜 / 셀러 + 페이지 네비 -->
             <div class="sub-nav" id="wineSubNav">
               <button class="sub-nav-item active" onclick="setWineSubNav('tasting', this)">시음<span class="nav-count">12</span></button>
               <button class="sub-nav-item" onclick="setWineSubNav('wish', this)">찜<span class="nav-count">8</span></button>
               <button class="sub-nav-item" onclick="setWineSubNav('cellar', this)">셀러<span class="nav-count">5</span></button>
+              <div class="inline-pager" id="winePager"></div>
             </div>
 
             <!-- ========== SUB: 시음 ========== -->
@@ -4226,35 +5106,55 @@
                   </div>
                   <div class="compact-score wine-score">82</div>
                 </div>
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                  <div class="compact-rank">9</div>
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1560148218-1a83060f7b32?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Tignanello 2019</div>
+                    <div class="compact-meta">레드 · 산지오베제 · 이탈리아</div>
+                  </div>
+                  <div class="compact-score wine-score">80</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                  <div class="compact-rank">10</div>
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Riesling Spätlese 2021</div>
+                    <div class="compact-meta">화이트 · 리슬링 · 독일</div>
+                  </div>
+                  <div class="compact-score wine-score">78</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                  <div class="compact-rank">11</div>
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Vega Sicilia Unico 2011</div>
+                    <div class="compact-meta">레드 · 템프라니요 · 스페인</div>
+                  </div>
+                  <div class="compact-score wine-score">75</div>
+                </div>
+                <div class="compact-item" onclick="location.href='02_detail_wine.html'">
+                  <div class="compact-rank">12</div>
+                  <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
+                  </div>
+                  <div class="compact-info">
+                    <div class="compact-name">Sancerre Blanc 2022</div>
+                    <div class="compact-meta">화이트 · 소비뇽 블랑 · 프랑스</div>
+                  </div>
+                  <div class="compact-score wine-score">73</div>
+                </div>
               </div>
             </div>
 
             <!-- ===== 상세 보기 (detail) ===== -->
             <div id="wineDetail">
-
-            <!-- 카메라 3모드 -->
-            <div style="margin:10px 16px 0;">
-              <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span style="font-size:11px;font-weight:500;color:var(--text-hint);">촬영으로 확인하세요</span>
-              </div>
-              <div style="display:flex;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);overflow:hidden;">
-                <div onclick="alert('개별확인 → 1병 라벨 촬영')" style="flex:1;padding:12px 8px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;border-right:1px solid var(--border);">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--wine)" stroke-width="1.8"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/><line x1="12" y1="18" x2="12" y2="20" opacity="0.4"/></svg>
-                  <span style="font-size:12px;font-weight:600;color:var(--text-sub);">개별</span>
-                </div>
-                <div onclick="alert('진열장확인 → 여러 병 촬영')" style="flex:1;padding:12px 8px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;border-right:1px solid var(--border);">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--wine)" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  <span style="font-size:12px;font-weight:600;color:var(--text-sub);">진열장</span>
-                </div>
-                <div onclick="alert('영수증확인 → 구매 목록 정리')" style="flex:1;padding:12px 8px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--wine)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
-                  <span style="font-size:12px;font-weight:600;color:var(--text-sub);">영수증</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="wine-divider"></div>
 
             <!-- 최근 등록한 와인 -->
             <div style="margin:0 16px 0;">
@@ -4322,6 +5222,62 @@
               </div>
             </div>
 
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1560148218-1a83060f7b32?w=400&h=400&fit=crop') center/cover no-repeat;">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">Barolo Riserva 2016</div>
+                <div class="place-meta">레드 · 네비올로 · 이탈리아</div>
+                <div class="place-score-row">
+                  <div class="mini-quad">
+                    <div class="qd" style="left:45%;top:30%;width:15px;height:15px;background:var(--wine);"></div>
+                  </div>
+                  <div class="place-total-score" style="color:var(--wine);">89</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/10</div>
+              </div>
+            </div>
+
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">Moët Impérial</div>
+                <div class="place-meta">스파클링 · 샤르도네 · 프랑스</div>
+                <div class="place-score-row">
+                  <div class="place-total-score" style="color:var(--wine);">87</div>
+                </div>
+                <div class="wine-bubble-row">
+                  <div class="wine-bubble-avatars">
+                    <div class="mini-av" style="background:linear-gradient(135deg,#6B4C8A,#9b7fc0);">박</div>
+                  </div>
+                  <span>박소연 85 · "브런치에 딱"</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/7</div>
+              </div>
+            </div>
+
+            <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
+              <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;">
+                <div style="color:rgba(255,255,255,0.3);"><i data-lucide="wine" style="width:40px;height:40px;"></i></div>
+              </div>
+              <div class="place-info-col">
+                <div class="place-name">Whispering Angel</div>
+                <div class="place-meta">로제 · 그르나슈 · 프랑스</div>
+                <div class="place-score-row">
+                  <div class="place-total-score" style="color:var(--wine);">85</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/3</div>
+              </div>
+            </div>
+
+
+            </div><!-- /wineDetail 카드 영역 끝 -->
+
+            <!-- ═══ 와인 통계 패널 (통계 아이콘으로 토글) ═══ -->
+            <div id="wineStatsPanel" style="display:none">
             <div class="wine-divider"></div>
 
             <!-- 산지 지도 — 드릴다운: 세계 → 국가 → 산지 -->
@@ -4645,7 +5601,73 @@
             </div><!-- /pd-section-wrap monthly -->
 
             <div style="height:80px;"></div>
-            </div><!-- /wineDetail -->
+            </div><!-- /wineStatsPanel -->
+
+            <!-- ===== 와인 캘린더 — 사진 다이어리 ===== -->
+            <div id="wineCalendar" style="display:none">
+              <div class="calendar-view">
+                <div class="calendar-month"><i data-lucide="chevron-left"></i> 2026년 3월 <i data-lucide="chevron-right"></i></div>
+                <div class="calendar-grid">
+                  <div class="calendar-weekday">일</div><div class="calendar-weekday">월</div><div class="calendar-weekday">화</div><div class="calendar-weekday">수</div><div class="calendar-weekday">목</div><div class="calendar-weekday">금</div><div class="calendar-weekday">토</div>
+                  <div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div><div class="calendar-day empty"></div>
+                  <div class="calendar-day"><span class="cal-day-num">1</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">2</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">3</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">4</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"><span class="cal-day-num">5</span><span class="cal-score" style="color:#F0ECF3">93</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">6</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=200&h=200&fit=crop')"><span class="cal-day-num">7</span><span class="cal-score" style="color:#F0ECF3">88</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">8</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">9</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">10</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">11</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">12</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">13</span></div>
+                  <div class="calendar-day has-photo selected" style="background-image:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=200&h=200&fit=crop')"><span class="cal-day-num">14</span><span class="cal-score" style="color:#F0ECF3">96</span><span class="cal-count wine-count">2</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">15</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">16</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">17</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">18</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">19</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">20</span></div>
+                  <div class="calendar-day has-photo" style="background-image:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=200&h=200&fit=crop')"><span class="cal-day-num">21</span><span class="cal-score" style="color:#F0ECF3">91</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">22</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">23</span></div>
+                  <div class="calendar-day today wine-cal"><span class="cal-day-num">24</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">25</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">26</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">27</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">28</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">29</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">30</span></div>
+                  <div class="calendar-day"><span class="cal-day-num">31</span></div>
+                </div>
+
+                <!-- Selected day detail -->
+                <div class="calendar-day-detail">
+                  <div class="calendar-day-detail-header"><i data-lucide="calendar"></i> 3월 14일 (토) · 2병 시음</div>
+                  <div class="compact-item">
+                    <div class="compact-rank top3" style="width:auto;font-size:10px;color:var(--text-hint)">디너</div>
+                    <div class="compact-thumb" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=200&h=200&fit=crop') center/cover;border-radius:10px"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">Penfolds Grange 2018</div>
+                      <div class="compact-meta" style="color:var(--wine)">Shiraz · 바로사 밸리</div>
+                    </div>
+                    <div class="compact-score" style="color:var(--wine)">96</div>
+                  </div>
+                  <div class="compact-item">
+                    <div class="compact-rank top3" style="width:auto;font-size:10px;color:var(--text-hint)">2차</div>
+                    <div class="compact-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=200&h=200&fit=crop') center/cover;border-radius:10px"></div>
+                    <div class="compact-info">
+                      <div class="compact-name">Barolo Brunate 2017</div>
+                      <div class="compact-meta" style="color:var(--wine)">Nebbiolo · 피에몬테</div>
+                    </div>
+                    <div class="compact-score" style="color:var(--wine)">91</div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /wineCalendar -->
+
             </div><!-- /wineSub-tasting -->
 
             <!-- ========== SUB: 찜 ========== -->
@@ -4670,7 +5692,7 @@
                       <div class="compact-name">Dom Pérignon 2012</div>
                       <div class="compact-meta">스파클링 · 샴페인 · 프랑스</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                    <div class="compact-score not-mine">95</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                     <div class="compact-rank">2</div>
@@ -4681,7 +5703,7 @@
                       <div class="compact-name">Sassicaia 2019</div>
                       <div class="compact-meta">레드 · 토스카나 · 이탈리아</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                    <div class="compact-score not-mine">93</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                     <div class="compact-rank">3</div>
@@ -4692,7 +5714,7 @@
                       <div class="compact-name">Puligny-Montrachet 2020</div>
                       <div class="compact-meta">화이트 · 부르고뉴 · 프랑스</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                    <div class="compact-score not-mine">91</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                     <div class="compact-rank">4</div>
@@ -4703,7 +5725,7 @@
                       <div class="compact-name">Ridge Monte Bello 2018</div>
                       <div class="compact-meta">레드 · 카베르네 · 미국</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                    <div class="compact-score not-mine">94</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                     <div class="compact-rank">5</div>
@@ -4714,7 +5736,7 @@
                       <div class="compact-name">Krug Grande Cuvée</div>
                       <div class="compact-meta">스파클링 · 샴페인 · 프랑스</div>
                     </div>
-                    <div class="compact-score no-score"><i data-lucide="bookmark" style="width:16px;height:16px;color:var(--wine);"></i></div>
+                    <div class="compact-score not-mine">96</div>
                   </div>
                 </div>
               </div>
@@ -4781,7 +5803,6 @@
                   </div>
                 </div>
 
-                <div style="height:80px;"></div>
               </div>
             </div><!-- /wineSub-wish -->
 
@@ -5209,6 +6230,12 @@
               </button>
               <button class="camera-alt-btn" onclick="goToScreen('screen-add-wine-search')">
                 <i data-lucide="search" style="width:14px;height:14px;"></i> 이름으로 검색
+              </button>
+              <button class="camera-alt-btn" onclick="alert('진열장 → 여러 병 촬영')">
+                <i data-lucide="layout-grid" style="width:14px;height:14px;"></i> 진열장
+              </button>
+              <button class="camera-alt-btn" onclick="alert('영수증 → 구매 목록 정리')">
+                <i data-lucide="receipt" style="width:14px;height:14px;"></i> 영수증
               </button>
             </div>
           </div>
@@ -5953,18 +6980,191 @@
   let savedFilter = '전체'; // persist last filter
 
   // =====================
-  // View mode toggle (간단/상세)
+  // View cycle: card → list → calendar
   // =====================
+  const VIEW_MODES = ['detail', 'compact', 'calendar'];
+  const VIEW_ICONS = { detail: 'layout-grid', compact: 'list', calendar: 'calendar' };
   let currentViewMode = 'detail';
+
+  function cycleViewMode() {
+    const idx = VIEW_MODES.indexOf(currentViewMode);
+    currentViewMode = VIEW_MODES[(idx + 1) % VIEW_MODES.length];
+    // Update icon
+    const btn = document.getElementById('viewCycleBtn');
+    btn.innerHTML = '<i data-lucide="' + VIEW_ICONS[currentViewMode] + '"></i>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    applyFoodViewMode();
+    applyWineViewMode();
+  }
+
+  // =====================
+  // Stats panel toggle
+  // =====================
+  function toggleStats(tab) {
+    const panelId = tab === 'food' ? 'foodStatsPanel' : 'wineStatsPanel';
+    const btnId = tab === 'food' ? 'foodStatsBtn' : 'wineStatsBtn';
+    const panel = document.getElementById(panelId);
+    const btn = document.getElementById(btnId);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    btn.style.color = isOpen ? '' : 'var(--accent-social)';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  let mapViewActive = false;
+  function toggleMapView() {
+    mapViewActive = !mapViewActive;
+    const mapView = document.getElementById('mapView');
+    const panelFood = document.getElementById('panelFood');
+    const panelWine = document.getElementById('panelWine');
+    const mapBtn = document.getElementById('mapBtn');
+    if (mapViewActive) {
+      mapView.style.display = 'block';
+      if (panelFood) panelFood.style.display = 'none';
+      if (panelWine) panelWine.style.display = 'none';
+      mapBtn.style.color = 'var(--accent-social)';
+    } else {
+      mapView.style.display = 'none';
+      // Restore active tab
+      const isFood = document.getElementById('tabFood').classList.contains('active');
+      if (panelFood) panelFood.style.display = isFood ? 'block' : 'none';
+      if (panelWine) panelWine.style.display = isFood ? 'none' : 'block';
+      mapBtn.style.color = '';
+      applyFoodViewMode();
+      applyWineViewMode();
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  // =====================
+  // Pagination system (inline in sub-nav)
+  // =====================
+  const pagerState = {}; // { containerId: { page, totalPages, perPage, items } }
+
+  // Which inline pager element to use per tab
+  function getPagerEl(containerId) {
+    // Food containers → foodPager, Wine containers → winePager
+    if (containerId.startsWith('food') || containerId.startsWith('follow')) return document.getElementById('foodPager');
+    if (containerId.startsWith('wine')) return document.getElementById('winePager');
+    return null;
+  }
+
+  // Find the active container for a given tab
+  function getActiveContainerId(tab) {
+    const mode = currentViewMode;
+    if (tab === 'food') {
+      const sub = currentFoodSub;
+      if (sub === 'visit') return mode === 'detail' ? 'foodDetail' : mode === 'compact' ? 'foodCompact' : null;
+      if (sub === 'wish') return mode === 'detail' ? 'foodWishDetail' : mode === 'compact' ? 'foodWishCompact' : null;
+      if (sub === 'recommend') return mode === 'detail' ? 'foodRecDetail' : mode === 'compact' ? 'foodRecCompact' : null;
+      if (sub === 'following') return mode === 'detail' ? 'followingDetailed' : mode === 'compact' ? 'followingCompact' : null;
+    }
+    if (tab === 'wine') {
+      const sub = currentWineSub;
+      if (sub === 'tasting') return mode === 'detail' ? 'wineDetail' : mode === 'compact' ? 'wineCompact' : null;
+      if (sub === 'wish') return mode === 'detail' ? 'wineWishDetail' : mode === 'compact' ? 'wineWishCompact' : null;
+      if (sub === 'cellar') return mode === 'detail' ? 'wineCellarDetail' : mode === 'compact' ? 'wineCellarCompact' : null;
+    }
+    return null;
+  }
+
+  function initPager(containerId, perPage, itemSelector) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const items = container.querySelectorAll(itemSelector);
+    const total = items.length;
+    const totalPages = Math.ceil(total / perPage);
+    if (totalPages <= 0) return;
+    pagerState[containerId] = { page: 0, totalPages, perPage, items: Array.from(items) };
+    // Apply first page
+    items.forEach((item, i) => { item.style.display = i < perPage ? '' : 'none'; });
+  }
+
+  function renderInlinePager(tab) {
+    const cid = getActiveContainerId(tab);
+    const pagerEl = document.getElementById(tab === 'food' ? 'foodPager' : 'winePager');
+    if (!pagerEl) return;
+    const state = cid ? pagerState[cid] : null;
+    if (!state || state.totalPages <= 1) {
+      pagerEl.classList.remove('visible');
+      pagerEl.innerHTML = '';
+      return;
+    }
+    const { page, totalPages } = state;
+    pagerEl.classList.add('visible');
+    pagerEl.innerHTML =
+      '<button onclick="pagePrev(\'' + tab + '\')" ' + (page === 0 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>' +
+      '<span class="inline-pager-info">' + (page + 1) + '/' + totalPages + '</span>' +
+      '<button onclick="pageNext(\'' + tab + '\')" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function applyPage(containerId) {
+    const state = pagerState[containerId];
+    if (!state) return;
+    const { page, perPage, items } = state;
+    items.forEach((item, i) => {
+      item.style.display = (i >= page * perPage && i < (page + 1) * perPage) ? '' : 'none';
+    });
+  }
+
+  function pagePrev(tab) {
+    const cid = getActiveContainerId(tab);
+    const s = cid ? pagerState[cid] : null;
+    if (!s || s.page <= 0) return;
+    s.page--;
+    applyPage(cid);
+    renderInlinePager(tab);
+  }
+  function pageNext(tab) {
+    const cid = getActiveContainerId(tab);
+    const s = cid ? pagerState[cid] : null;
+    if (!s || s.page >= s.totalPages - 1) return;
+    s.page++;
+    applyPage(cid);
+    renderInlinePager(tab);
+  }
+
+  function initAllPagers() {
+    // Food 방문
+    initPager('foodDetail', 3, '.place-card');
+    initPager('foodCompact', 10, '.compact-item');
+    // Food 찜
+    initPager('foodWishDetail', 3, '.place-card');
+    initPager('foodWishCompact', 10, '.compact-item');
+    // Food 추천
+    initPager('foodRecDetail', 3, '.place-card');
+    initPager('foodRecCompact', 10, '.compact-item');
+    // Food 팔로잉
+    initPager('followingDetailed', 3, '.place-card');
+    initPager('followingCompact', 10, '.compact-item');
+    // Wine 시음
+    initPager('wineDetail', 3, '.wine-recent-card');
+    initPager('wineCompact', 10, '.compact-item');
+    // Wine 찜
+    initPager('wineWishDetail', 3, '.wine-recent-card');
+    initPager('wineWishCompact', 10, '.compact-item');
+    // Wine 셀러
+    initPager('wineCellarDetail', 3, '.wine-recent-card');
+    initPager('wineCellarCompact', 10, '.compact-item');
+    // Render current
+    renderInlinePager('food');
+    renderInlinePager('wine');
+  }
 
   function setViewMode(mode) {
     currentViewMode = mode;
-    // Update toggle buttons
-    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent.trim() === (mode === 'compact' ? '간단' : '상세'));
-    });
+    const btn = document.getElementById('viewCycleBtn');
+    if (btn) {
+      btn.innerHTML = '<i data-lucide="' + VIEW_ICONS[currentViewMode] + '"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
     applyFoodViewMode();
     applyWineViewMode();
+    setTimeout(function() { renderInlinePager('food'); renderInlinePager('wine'); }, 50);
   }
 
   function applyFoodViewMode() {
@@ -5973,14 +7173,17 @@
     // 방문 탭
     const fc = document.getElementById('foodCompact');
     const fd = document.getElementById('foodDetail');
+    const fcal = document.getElementById('foodCalendar');
     const fsr = document.getElementById('foodSortRow');
     if (sub === 'visit') {
       if (fc) fc.style.display = mode === 'compact' ? 'block' : 'none';
       if (fd) fd.style.display = mode === 'detail' ? 'block' : 'none';
-      if (fsr) fsr.style.display = '';
+      if (fcal) fcal.style.display = mode === 'calendar' ? 'block' : 'none';
+      if (fsr) fsr.style.display = mode === 'calendar' ? 'none' : '';
     } else {
       if (fc) fc.style.display = 'none';
       if (fd) fd.style.display = 'none';
+      if (fcal) fcal.style.display = 'none';
       if (fsr) fsr.style.display = 'none';
     }
     // 찜 탭
@@ -6003,6 +7206,16 @@
       if (frc) frc.style.display = 'none';
       if (frd) frd.style.display = 'none';
     }
+    // 팔로잉 탭
+    const flc = document.getElementById('followingCompact');
+    const fld = document.getElementById('followingDetailed');
+    if (sub === 'following') {
+      if (flc) flc.style.display = mode === 'compact' ? 'block' : 'none';
+      if (fld) fld.style.display = mode === 'detail' ? 'block' : 'none';
+    } else {
+      if (flc) flc.style.display = 'none';
+      if (fld) fld.style.display = 'none';
+    }
   }
 
   function applyWineViewMode() {
@@ -6011,12 +7224,15 @@
     // 시음 탭
     const wc = document.getElementById('wineCompact');
     const wd = document.getElementById('wineDetail');
+    const wcal = document.getElementById('wineCalendar');
     if (sub === 'tasting') {
       if (wc) wc.style.display = mode === 'compact' ? 'block' : 'none';
       if (wd) wd.style.display = mode === 'detail' ? 'block' : 'none';
+      if (wcal) wcal.style.display = mode === 'calendar' ? 'block' : 'none';
     } else {
       if (wc) wc.style.display = 'none';
       if (wd) wd.style.display = 'none';
+      if (wcal) wcal.style.display = 'none';
     }
     // 찜 탭
     const wwc = document.getElementById('wineWishCompact');
@@ -6048,7 +7264,15 @@
     // Show/hide panels
     document.getElementById('panelFood').className = 'tab-panel' + (tab === 'food' ? ' active' : '');
     document.getElementById('panelWine').className = 'tab-panel' + (tab === 'wine' ? ' active' : '');
-    // Filter button is always visible (both tabs use same filter system)
+    // 지도 버튼: 식당 탭에서만 표시
+    const mapBtn = document.getElementById('mapBtn');
+    if (mapBtn) mapBtn.style.display = tab === 'food' ? '' : 'none';
+    // 와인 탭 전환 시 지도 뷰 닫기
+    if (tab === 'wine' && mapViewActive) {
+      mapViewActive = false;
+      document.getElementById('mapView').style.display = 'none';
+      if (mapBtn) mapBtn.style.color = '';
+    }
     // Close filter drawer when switching tabs
     document.getElementById('filterDrawer').classList.remove('open');
     // Maintain view mode across tabs
@@ -6061,19 +7285,35 @@
   function toggleFilter() {
     const drawer = document.getElementById('filterDrawer');
     const sortDD = document.getElementById('sortDropdown');
-    // close sort dropdown if open
     sortDD.classList.remove('open');
     document.getElementById('sortToggle').classList.remove('has-filter');
+    // 검색 닫기
+    document.getElementById('searchDropdown').classList.remove('open');
+    document.getElementById('searchToggle').classList.remove('active-search');
     drawer.classList.toggle('open');
     document.getElementById('filterToggle').classList.toggle('has-filter', drawer.classList.contains('open'));
+    // If opening and no rules exist, seed a default one
+    if (drawer.classList.contains('open')) {
+      const rules = document.getElementById('filterRules');
+      if (rules.querySelectorAll(':scope > .notion-filter-rule').length === 0) {
+        const rule = hmBuildRule();
+        rule.querySelector('.notion-conjunction').textContent = 'Where';
+        rule.querySelector('.notion-conjunction').classList.remove('clickable');
+        rule.querySelector('.notion-conjunction').removeAttribute('onclick');
+        rules.insertBefore(rule, rules.firstChild);
+        lucide.createIcons({ nodes: [rule] });
+      }
+    }
   }
 
   function toggleSort() {
     const dd = document.getElementById('sortDropdown');
     const filterDrawer = document.getElementById('filterDrawer');
-    // close filter if open
     filterDrawer.classList.remove('open');
     document.getElementById('filterToggle').classList.remove('has-filter');
+    // 검색 닫기
+    document.getElementById('searchDropdown').classList.remove('open');
+    document.getElementById('searchToggle').classList.remove('active-search');
     dd.classList.toggle('open');
     document.getElementById('sortToggle').classList.toggle('has-filter', dd.classList.contains('open'));
   }
@@ -6085,7 +7325,47 @@
     document.getElementById('sortToggle').classList.remove('has-filter');
   }
 
-  // Notion-style filter interactions
+  /* ── 검색 토글 ── */
+  function toggleSearch() {
+    const dd = document.getElementById('searchDropdown');
+    const btn = document.getElementById('searchToggle');
+    // 다른 패널 닫기
+    document.getElementById('filterDrawer').classList.remove('open');
+    document.getElementById('filterToggle').classList.remove('has-filter');
+    const sd = document.getElementById('sortDropdown');
+    if (sd) sd.classList.remove('open');
+    document.getElementById('sortToggle').classList.remove('has-filter');
+
+    dd.classList.toggle('open');
+    btn.classList.toggle('active-search', dd.classList.contains('open'));
+    if (dd.classList.contains('open')) {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      setTimeout(() => document.getElementById('searchInput').focus(), 50);
+    }
+  }
+
+  function clearSearch() {
+    const input = document.getElementById('searchInput');
+    input.value = '';
+    document.getElementById('searchClearBtn').style.display = 'none';
+    input.focus();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const si = document.getElementById('searchInput');
+    if (si) {
+      si.addEventListener('input', () => {
+        document.getElementById('searchClearBtn').style.display = si.value ? 'flex' : 'none';
+        si.style.height = 'auto';
+        si.style.height = si.scrollHeight + 'px';
+      });
+      si.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    }
+  });
+
+  // Notion-style filter — data
   const FOOD_ATTRS = ['상황','음식종류','위치','점수','시기','동반자','명성','가격대'];
   const FOOD_VALS = {
     '상황': ['전체','혼밥','데이트','회식','가족','친구','술자리'],
@@ -6097,50 +7377,192 @@
     '명성': ['전체','미슐랭','블루리본','TV출연','수상없음'],
     '가격대': ['전체','~2만','2~5만','5~10만','10만+']
   };
-  const SORT_OPTIONS = ['최신순','점수 높은순','점수 낮은순','이름순','방문 많은순'];
 
-  function cycleAttr(el) {
-    const attrs = FOOD_ATTRS;
-    const idx = (attrs.indexOf(el.textContent) + 1) % attrs.length;
-    el.textContent = attrs[idx];
-    // reset value when attr changes
-    const valBtn = el.parentElement.querySelector('.notion-val');
-    if (valBtn) valBtn.textContent = FOOD_VALS[attrs[idx]][0];
-  }
-
-  function cycleVal(el) {
-    const attrBtn = el.parentElement.querySelector('.notion-attr');
-    const vals = FOOD_VALS[attrBtn.textContent] || ['전체'];
-    const idx = (vals.indexOf(el.textContent) + 1) % vals.length;
-    el.textContent = vals[idx];
-  }
-
-  function removeRule(el) {
-    const rule = el.parentElement;
-    const rules = document.getElementById('filterRules');
-    if (rules.children.length > 1) {
-      rule.remove();
+  // Dropdown select helpers
+  function hmSelectAttr(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+    // Rebuild value dropdown
+    const rule = wrap.closest('.notion-filter-rule');
+    const valWrap = rule.querySelectorAll('.nyam-select-wrap:not([data-role="op"])')[1];
+    if (valWrap) {
+      const vals = FOOD_VALS[item.textContent] || ['전체'];
+      const valDD = valWrap.querySelector('.nyam-dropdown');
+      valDD.innerHTML = vals.map((v, i) =>
+        '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="hmSelectVal(this)">' + v + '</button>'
+      ).join('');
+      valWrap.querySelector('.nyam-select-value').textContent = vals[0];
     }
   }
 
-  function addFilterRule() {
-    const rules = document.getElementById('filterRules');
-    const rule = document.createElement('div');
-    rule.className = 'notion-filter-rule';
-    rule.innerHTML = '<span class="notion-conjunction clickable" onclick="toggleConjunction()">And</span>' +
-      '<button class="notion-attr" onclick="cycleAttr(this)">상황</button>' +
-      '<span class="notion-is">is</span>' +
-      '<button class="notion-val" onclick="cycleVal(this)">전체</button>' +
-      '<button class="notion-remove" onclick="removeRule(this)">✕</button>';
-    rules.appendChild(rule);
+  function hmSelectOp(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
   }
 
-  function toggleConjunction() {
-    const conjs = document.querySelectorAll('.notion-conjunction.clickable');
-    const current = conjs[0]?.textContent || 'And';
-    const next = current === 'And' ? 'Or' : 'And';
-    conjs.forEach(c => c.textContent = next);
+  function hmSelectVal(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
   }
+
+  // Remove rule — if last in group, remove group
+  function hmRemoveRule(el) {
+    const rule = el.closest('.notion-filter-rule');
+    const group = rule.closest('[data-role="filter-group"]');
+    if (group) {
+      rule.remove();
+      if (group.querySelectorAll('.notion-filter-rule').length === 0) {
+        group.closest('.notion-filter-rule[style]')?.remove() || group.parentElement.remove();
+      }
+    } else {
+      const rootRules = document.getElementById('filterRules');
+      if (rootRules.querySelectorAll(':scope > .notion-filter-rule').length > 1) {
+        rule.remove();
+      } else {
+        // Last rule — collapse the filter drawer
+        rule.remove();
+        document.getElementById('filterDrawer').classList.remove('open');
+        document.getElementById('filterToggle').classList.remove('has-filter');
+      }
+    }
+  }
+
+  // Build new rule element
+  function hmBuildRule() {
+    const rule = document.createElement('div');
+    rule.className = 'notion-filter-rule';
+    const attrItems = FOOD_ATTRS.map((a, i) =>
+      '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="hmSelectAttr(this)">' + a + '</button>'
+    ).join('');
+    const valItems = FOOD_VALS['상황'].map((v, i) =>
+      '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="hmSelectVal(this)">' + v + '</button>'
+    ).join('');
+    rule.innerHTML =
+      '<span class="notion-conjunction clickable" onclick="hmToggleConjunction(this)">And</span>' +
+      '<div class="nyam-select-wrap">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')" data-role="attr">' +
+          '<span class="nyam-select-value">상황</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' + attrItems + '</div>' +
+      '</div>' +
+      '<div class="nyam-select-wrap" data-role="op">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')">' +
+          '<span class="nyam-select-value">is</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' +
+          '<button class="nyam-dropdown-item selected" onclick="hmSelectOp(this)">is</button>' +
+          '<button class="nyam-dropdown-item" onclick="hmSelectOp(this)">is not</button>' +
+          '<button class="nyam-dropdown-item" onclick="hmSelectOp(this)">contains</button>' +
+          '<button class="nyam-dropdown-item" onclick="hmSelectOp(this)">does not contain</button>' +
+          '<button class="nyam-dropdown-item" onclick="hmSelectOp(this)">\u2265</button>' +
+          '<button class="nyam-dropdown-item" onclick="hmSelectOp(this)">\u003C</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="nyam-select-wrap">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')" data-role="val">' +
+          '<span class="nyam-select-value">전체</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' + valItems + '</div>' +
+      '</div>' +
+      '<button class="notion-remove" onclick="hmRemoveRule(this)">✕</button>';
+    return rule;
+  }
+
+  // Insert target — group inner or root
+  function hmGetInsertTarget(triggerEl) {
+    const group = triggerEl.closest('[data-role="filter-group"]');
+    if (group) return group;
+    return document.getElementById('filterRules');
+  }
+
+  function hmGetGroupDepth(el) {
+    let depth = 0, node = el;
+    while (node) { node = node.parentElement?.closest('[data-role="filter-group"]'); if (node) depth++; }
+    return depth;
+  }
+
+  function hmAddFilterRule(triggerEl) {
+    const container = hmGetInsertTarget(triggerEl);
+    const addRow = container.querySelector(':scope > .notion-add-row');
+    const rule = hmBuildRule();
+    addRow ? container.insertBefore(rule, addRow) : container.appendChild(rule);
+    lucide.createIcons({ nodes: [rule] });
+    document.querySelectorAll('.notion-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  function hmAddFilterGroup(triggerEl) {
+    const depth = hmGetGroupDepth(triggerEl);
+    if (depth >= 2) return;
+    const container = hmGetInsertTarget(triggerEl);
+    const addRow = container.querySelector(':scope > .notion-add-row');
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'notion-filter-rule';
+    wrapper.style.alignItems = 'flex-start';
+
+    const firstRule = hmBuildRule();
+    firstRule.querySelector('.notion-conjunction').textContent = 'Where';
+    firstRule.querySelector('.notion-conjunction').classList.remove('clickable');
+    firstRule.querySelector('.notion-conjunction').removeAttribute('onclick');
+
+    const nextDepth = depth + 1;
+    const bgColor = nextDepth % 2 === 1 ? 'var(--bg)' : 'var(--bg-card)';
+    const groupInner = document.createElement('div');
+    groupInner.setAttribute('data-role', 'filter-group');
+    groupInner.style.cssText = 'flex:1; background:' + bgColor + '; border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:6px;';
+    groupInner.appendChild(firstRule);
+
+    const showGroupBtn = nextDepth < 2;
+    const groupAddRow = document.createElement('div');
+    groupAddRow.className = 'notion-add-row';
+    groupAddRow.innerHTML =
+      '<button class="notion-add-rule" onclick="hmToggleAddDD(this)">' +
+        '+ 필터 추가 <i data-lucide="chevron-down"></i>' +
+      '</button>' +
+      '<div class="notion-add-dd">' +
+        '<button class="notion-add-dd-item" onclick="hmAddFilterRule(this)"><i data-lucide="plus"></i> 필터 추가</button>' +
+        (showGroupBtn ? '<button class="notion-add-dd-item" onclick="hmAddFilterGroup(this)"><i data-lucide="group"></i> 필터 그룹 추가</button>' : '') +
+      '</div>';
+    groupInner.appendChild(groupAddRow);
+
+    wrapper.innerHTML = '<span class="notion-conjunction clickable" onclick="hmToggleConjunction(this)" style="padding-top:6px;">And</span>';
+    wrapper.appendChild(groupInner);
+    addRow ? container.insertBefore(wrapper, addRow) : container.appendChild(wrapper);
+    lucide.createIcons({ nodes: [wrapper] });
+    document.querySelectorAll('.notion-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  function hmToggleConjunction(el) {
+    el.textContent = el.textContent === 'And' ? 'Or' : 'And';
+  }
+
+  function hmToggleAddDD(btn) {
+    const dd = btn.parentElement.querySelector('.notion-add-dd');
+    document.querySelectorAll('.notion-add-dd.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+    dd.classList.toggle('open');
+  }
+
+  // Close add dropdowns on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.notion-add-row')) {
+      document.querySelectorAll('.notion-add-dd.open').forEach(d => d.classList.remove('open'));
+    }
+  });
 
   // =====================
   // Sub-nav: 식당 (방문/찜/추천)
@@ -6150,11 +7572,18 @@
     document.querySelectorAll('#foodSubNav .sub-nav-item').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     currentFoodSub = tab;
-    ['visit','wish','recommend'].forEach(t => {
+    ['visit','wish','recommend','following'].forEach(t => {
       const panel = document.getElementById('foodSub-' + t);
       if (panel) panel.style.display = t === tab ? 'block' : 'none';
     });
     applyFoodViewMode();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    setTimeout(function() { renderInlinePager('food'); }, 50);
+  }
+
+  function switchFollowFilter(el, filter) {
+    el.parentElement.querySelectorAll('.follow-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
@@ -6172,6 +7601,7 @@
     });
     applyWineViewMode();
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    setTimeout(function() { renderInlinePager('wine'); }, 50);
   }
 
   // Sub-nav (legacy compat for other pages)
@@ -6339,6 +7769,7 @@
   // Init
   // =====================
   lucide.createIcons();
+  initAllPagers();
 
   // Close avatar menu on outside click
   document.addEventListener('click', function(e) {
@@ -6794,6 +8225,62 @@
   }
 
   // =============================================
+
+  // ========== Notification Dropdown ==========
+  function toggleNotifDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('notifDropdown');
+    const ov = document.getElementById('notifOverlay');
+    const isOpen = dd.classList.contains('open');
+    dd.classList.toggle('open');
+    ov.classList.toggle('open');
+    if (!isOpen) {
+      // Close avatar menu if open
+      document.querySelectorAll('.avatar-menu.open').forEach(m => m.classList.remove('open'));
+    }
+  }
+
+  function closeNotifDropdown() {
+    document.getElementById('notifDropdown').classList.remove('open');
+    document.getElementById('notifOverlay').classList.remove('open');
+  }
+
+  function readNotifItem(item) {
+    item.classList.remove('unread');
+    const dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+    updateNotifBadge();
+    closeNotifDropdown();
+  }
+
+  function markAllNotifRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(item => {
+      item.classList.remove('unread');
+      const dot = item.querySelector('.notif-item-dot');
+      if (dot) dot.remove();
+    });
+    updateNotifBadge();
+  }
+
+  function handleNotifAction(btn, action) {
+    const item = btn.closest('.notif-item');
+    const actions = item.querySelector('.notif-item-actions');
+    if (action === 'accept') {
+      actions.innerHTML = '<span style="font-size:11px;font-weight:600;color:#7EAE8B">수락 완료</span>';
+    } else {
+      actions.innerHTML = '<span style="font-size:11px;color:#B5AFA8">거절됨</span>';
+    }
+    item.classList.remove('unread');
+    const dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+    updateNotifBadge();
+  }
+
+  function updateNotifBadge() {
+    const count = document.querySelectorAll('.notif-item.unread').length;
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = count > 0 ? '' : 'none';
+  }
 </script>
 </body>
 </html>

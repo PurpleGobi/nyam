@@ -118,7 +118,8 @@
   }
   .icon-btn svg { width: 20px; height: 20px; }
   .notif-badge {
-    position: absolute; top: 4px; right: 4px;
+    pointer-events: none;
+    position: absolute; top: 2px; right: 2px;
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--brand); border: 1.5px solid var(--bg);
   }
@@ -437,6 +438,69 @@
 
   /* Settings item value small */
   .settings-item-value--sm { font-size: 11px; }
+
+  /* Notification Dropdown */
+  .notif-dropdown-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 190; border-radius: 42px;
+  }
+  .notif-dropdown-overlay.open { display: block; }
+  .notif-dropdown {
+    display: none; position: absolute;
+    top: 90px; right: 16px;
+    width: 300px; max-height: 400px;
+    background: var(--bg-elevated, #FFFFFF); border: 1px solid var(--border, #E8E4DF);
+    border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    z-index: 200; overflow: hidden; flex-direction: column;
+  }
+  .notif-dropdown.open { display: flex; }
+  .notif-dropdown-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--border, #E8E4DF); flex-shrink: 0;
+  }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text, #3D3833); }
+  .notif-dropdown-mark-read {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 500; color: var(--text-hint, #B5AFA8); font-family: inherit;
+  }
+  .notif-dropdown-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .notif-dropdown-list::-webkit-scrollbar { display: none; }
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; cursor: pointer;
+    border-bottom: 1px solid var(--border, #E8E4DF); position: relative;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:active { opacity: 0.7; }
+  .notif-item-icon {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; color: var(--text-sub, #8C8580);
+  }
+  .notif-item-icon svg { width: 16px; height: 16px; }
+  .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
+  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text, #3D3833); line-height: 1.4; }
+  .notif-item-body { font-size: 12px; color: var(--text-sub, #8C8580); margin-top: 1px; }
+  .notif-item-time { font-size: 11px; color: var(--text-hint, #B5AFA8); margin-top: 2px; }
+  .notif-item.unread .notif-item-title { font-weight: 600; }
+  .notif-item-dot {
+    position: absolute; top: 15px; right: 12px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand, #FF6038);
+  }
+  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .notif-action-btn {
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .notif-action-accept { background: var(--text, #3D3833); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: var(--text-hint, #B5AFA8); border: 1px solid var(--border, #E8E4DF); }
+  .notif-dropdown-footer {
+    padding: 9px 14px; text-align: center;
+    border-top: 1px solid var(--border, #E8E4DF); flex-shrink: 0;
+  }
+  .notif-dropdown-footer a {
+    font-size: 12px; font-weight: 500; color: var(--text-hint, #B5AFA8); text-decoration: none;
+  }
 </style>
 </head>
 <body>
@@ -444,6 +508,7 @@
 <div class="device">
   <div class="device-inner">
     <div class="dynamic-island"></div>
+    <div class="notif-dropdown-overlay" id="notifOverlay" onclick="closeNotifDropdown()"></div>
 
     <div class="top-fixed">
       <div class="status-bar">
@@ -459,8 +524,8 @@
         <div class="header-right">
           <button class="header-bubbles" onclick="location.href='04_bubbles.html'">bubbles</button>
           <div style="position:relative;">
-            <button class="icon-btn" title="알림" onclick="location.href='06_notifications.html'">
-              <i data-lucide="bell"></i>
+            <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
+              <i data-lucide="bell" style="width:20px;height:20px;"></i>
             </button>
             <div class="notif-badge"></div>
           </div>
@@ -468,10 +533,78 @@
             <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
             <div class="avatar-menu" onclick="event.stopPropagation()">
               <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
+              <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
               <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <span class="notif-dropdown-title">알림</span>
+        <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
+      </div>
+      <div class="notif-dropdown-list">
+        <div class="notif-item unread" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">을지로 레벨 4 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">3시간 전</div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">김영수님이 '을지로 맛탐정 클럽' 가입을 신청했어요</div>
+            <div class="notif-item-time">1일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-item-icon"><i data-lucide="user-plus"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">이수진님이 팔로우를 요청했어요</div>
+            <div class="notif-item-time">2일 전</div>
+            <div class="notif-item-actions">
+              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+            </div>
+          </div>
+          <div class="notif-item-dot"></div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
+            <div class="notif-item-time">3일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="user-check"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">박민호님이 팔로우를 수락했어요</div>
+            <div class="notif-item-time">5일 전</div>
+          </div>
+        </div>
+        <div class="notif-item" onclick="readNotifItem(this)">
+          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">와인 레벨 7 달성!</div>
+            <div class="notif-item-body">기록이 쌓이고 있어요</div>
+            <div class="notif-item-time">1주 전</div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="05_settings.html">알림 설정 →</a>
       </div>
     </div>
 
@@ -667,13 +800,23 @@
         <div class="settings-section-title">알림</div>
         <div class="settings-card">
           <div class="settings-item">
-            <span class="settings-item-icon"><i data-lucide="clock"></i></span>
-            <span class="settings-item-label">넛지 설정</span>
-            <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
-          </div>
-          <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="bell"></i></span>
             <span class="settings-item-label">푸시 알림</span>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="trophy"></i></span>
+            <span class="settings-item-label">레벨업 알림</span>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
+            <span class="settings-item-label">버블 가입 알림</span>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="user-plus"></i></span>
+            <span class="settings-item-label">팔로우 알림</span>
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="settings-item">
@@ -685,33 +828,111 @@
         </div>
       </div>
 
-      <!-- 디폴트 설정 -->
+      <!-- 디폴트 설정 — 화면 -->
       <div class="settings-section">
-        <div class="settings-section-title">디폴트 설정</div>
+        <div class="settings-section-title">화면 디폴트</div>
         <div class="settings-card">
           <div class="settings-item">
-            <span class="settings-item-icon"><i data-lucide="layout-grid"></i></span>
-            <div style="flex:1"><div class="settings-item-label">홈 보기 모드</div></div>
+            <span class="settings-item-icon"><i data-lucide="home"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label">랜딩 화면</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">앱 실행 시 첫 화면</div>
+            </div>
             <div class="nyam-select-wrap">
-              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">상세</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
-                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">상세</button>
-                <button class="nyam-dropdown-item" onclick="selectNyam(this)">간단</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">홈</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">버블</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">프로필</button>
               </div>
             </div>
           </div>
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="utensils"></i></span>
-            <div style="flex:1"><div class="settings-item-label">시작 탭</div></div>
+            <div style="flex:1">
+              <div class="settings-item-label">홈 시작 탭</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">홈 진입 시 식당/와인</div>
+            </div>
             <div class="nyam-select-wrap">
-              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">식당</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
               <div class="nyam-dropdown">
-                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">식당</button>
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">식당</button>
                 <button class="nyam-dropdown-item" onclick="selectNyam(this)">와인</button>
-                <button class="nyam-dropdown-item" onclick="selectNyam(this)">마지막 사용</button>
               </div>
             </div>
           </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="map-pin"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label">식당 서브탭</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">식당 탭 진입 시 기본 필터</div>
+            </div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">방문</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">찜</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">추천</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">팔로잉</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="wine"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label">와인 서브탭</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">와인 탭 진입 시 기본 필터</div>
+            </div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">시음</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">찜</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">셀러</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label">버블 시작 탭</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">버블 페이지 진입 시 탭</div>
+            </div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">버블</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">버블러</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-icon"><i data-lucide="layout-grid"></i></span>
+            <div style="flex:1">
+              <div class="settings-item-label">홈 보기 모드</div>
+              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">리스트 간단/상세</div>
+            </div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="selectNyam(this)">마지막 사용</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">상세</button>
+                <button class="nyam-dropdown-item" onclick="selectNyam(this)">간단</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 디폴트 설정 — 기능 -->
+      <div class="settings-section">
+        <div class="settings-section-title">기능 디폴트</div>
+        <div class="settings-card">
           <div class="settings-item">
             <span class="settings-item-icon"><i data-lucide="arrow-up-down"></i></span>
             <div style="flex:1"><div class="settings-item-label">기본 정렬</div></div>
@@ -939,6 +1160,42 @@
 
 <script>
   lucide.createIcons();
+
+  // Notification dropdown
+  function toggleNotifDropdown(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('notifDropdown');
+    var ov = document.getElementById('notifOverlay');
+    dd.classList.toggle('open');
+    ov.classList.toggle('open');
+  }
+  function closeNotifDropdown() {
+    document.getElementById('notifDropdown').classList.remove('open');
+    document.getElementById('notifOverlay').classList.remove('open');
+  }
+  function readNotifItem(item) {
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+    closeNotifDropdown();
+  }
+  function markAllNotifRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+      item.classList.remove('unread');
+      var dot = item.querySelector('.notif-item-dot');
+      if (dot) dot.remove();
+    });
+  }
+  function handleNotifAction(btn, action) {
+    var item = btn.closest('.notif-item');
+    var actions = item.querySelector('.notif-item-actions');
+    actions.innerHTML = action === 'accept'
+      ? '<span style="font-size:11px;font-weight:600;color:#7EAE8B">수락 완료</span>'
+      : '<span style="font-size:11px;color:#B5AFA8">거절됨</span>';
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-item-dot');
+    if (dot) dot.remove();
+  }
 
   // Close menus on outside click
   document.addEventListener('click', function(e) {
