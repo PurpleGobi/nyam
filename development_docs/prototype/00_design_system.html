@@ -437,6 +437,115 @@
   .tab.active-wine::after { background: var(--accent-wine); }
 
   /* ============================================
+     9-B. FILTER / SORT SYSTEM
+     ============================================ */
+  /* Borderless icon buttons for filter/sort */
+  .ds-tab-icon-btn {
+    background: none; border: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-hint);
+    flex-shrink: 0; padding: 0;
+    transition: color 0.15s;
+  }
+  .ds-tab-icon-btn:active { color: var(--text); }
+  .ds-tab-icon-btn.has-filter { color: var(--primary); }
+
+  /* Filter drawer — slides down */
+  .ds-filter-drawer {
+    display: none;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+  }
+  .ds-filter-drawer.open { display: block; }
+
+  /* Notion-style filter panel */
+  .ds-notion-filter-panel { padding: 10px 16px; }
+  .ds-notion-filter-rules { display: flex; flex-direction: column; gap: 6px; }
+  .ds-notion-filter-rule {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
+  }
+  .ds-notion-conjunction {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    width: 40px; flex-shrink: 0; cursor: pointer;
+  }
+  .ds-notion-conjunction.clickable:active { color: var(--primary); }
+  /* Filter inline dropdowns — reuses nyam-select system at compact size */
+  .ds-notion-filter-rule .nyam-select-wrap { display: inline-block; }
+  .ds-notion-filter-rule .nyam-select {
+    padding: 3px 8px; font-size: 12px; min-width: 60px;
+    border-radius: 6px; gap: 4px;
+  }
+  .ds-notion-filter-rule .nyam-select-arrow { width: 12px; height: 12px; }
+  .ds-notion-filter-rule .nyam-dropdown { min-width: 120px; }
+  .ds-notion-filter-rule .nyam-dropdown-item { padding: 7px 10px; font-size: 12px; }
+  .ds-notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-select {
+    padding: 3px 8px; font-size: 12px; min-width: 40px;
+    border-radius: 6px; gap: 4px;
+  }
+  .ds-notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-select-arrow { width: 12px; height: 12px; }
+  .ds-notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown { min-width: 140px; }
+  .ds-notion-filter-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown-item { padding: 7px 10px; font-size: 12px; }
+  .ds-notion-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text-hint); padding: 2px 4px;
+    margin-left: auto;
+  }
+  .ds-notion-remove:active { color: var(--negative); }
+  .ds-notion-add-row {
+    position: relative; margin-top: 4px;
+  }
+  .ds-notion-add-rule {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--text-hint);
+    padding: 6px 8px; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 6px;
+  }
+  .ds-notion-add-rule:hover { background: var(--bg); color: var(--text); }
+  .ds-notion-add-rule svg { width: 12px; height: 12px; opacity: 0.5; }
+  .ds-notion-add-dd {
+    display: none; position: absolute; left: 0; top: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    padding: 4px; z-index: 90; min-width: 180px;
+  }
+  .ds-notion-add-dd.open { display: block; }
+  .ds-notion-add-dd-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 8px 12px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none;
+    border: none; cursor: pointer; font-family: inherit;
+  }
+  .ds-notion-add-dd-item:hover { background: var(--bg); }
+  .ds-notion-add-dd-item svg { width: 14px; height: 14px; color: var(--text-hint); flex-shrink: 0; }
+  [data-theme="dark"] .ds-notion-add-dd {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  /* Sort dropdown */
+  .ds-sort-dropdown {
+    display: none;
+    position: absolute; right: 0; top: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px;
+    z-index: 80;
+    min-width: 140px;
+  }
+  .ds-sort-dropdown.open { display: block; }
+
+  [data-theme="dark"] .ds-sort-dropdown {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+
+  /* ============================================
      10. BOTTOM SHEET
      ============================================ */
   .sheet {
@@ -1003,6 +1112,141 @@
     <button class="tab">레드</button>
     <button class="tab">화이트</button>
     <button class="tab">스파클링</button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<h2>7-B. Filter / Sort System</h2>
+<!-- ============================================ -->
+
+<div class="section">
+  <div class="note" style="margin-bottom:12px;">필터 버튼 → 아래로 Notion 스타일 필터 패널 펼침 · 소팅 버튼 → 드롭다운 표시. 두 버튼은 나란히 배치.</div>
+
+  <!-- Filter + Sort 버튼 row -->
+  <div style="max-width:340px; position:relative;">
+    <div style="display:flex; align-items:center; gap:8px; justify-content:flex-end; padding:8px 0;">
+      <button class="ds-tab-icon-btn" id="dsFilterToggle" onclick="dsToggleFilter()" title="필터">
+        <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
+      </button>
+      <button class="ds-tab-icon-btn" id="dsSortToggle" onclick="dsToggleSort()" title="정렬">
+        <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+      </button>
+    </div>
+
+    <!-- Notion-style filter panel — hidden by default -->
+    <div class="ds-filter-drawer" id="dsFilterDrawer">
+      <div class="ds-notion-filter-panel">
+        <div class="ds-notion-filter-rules" id="dsFilterRules">
+          <div class="ds-notion-filter-rule">
+            <span class="ds-notion-conjunction">Where</span>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')" data-role="attr">
+                <span class="nyam-select-value">상황</span>
+                <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+              </div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="dsSelectAttr(this)">상황</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">음식종류</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">위치</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">점수</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">시기</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">동반자</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">명성</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectAttr(this)">가격대</button>
+              </div>
+            </div>
+            <div class="nyam-select-wrap" data-role="op">
+              <div class="nyam-select" onclick="this.classList.toggle('open')">
+                <span class="nyam-select-value">is</span>
+                <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+              </div>
+              <div class="nyam-dropdown">
+                <button class="nyam-dropdown-item selected" onclick="dsSelectOp(this)">is</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectOp(this)">is not</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectOp(this)">contains</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectOp(this)">does not contain</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectOp(this)">&ge;</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectOp(this)">&lt;</button>
+              </div>
+            </div>
+            <div class="nyam-select-wrap">
+              <div class="nyam-select" onclick="this.classList.toggle('open')" data-role="val">
+                <span class="nyam-select-value">전체</span>
+                <i data-lucide="chevron-down" class="nyam-select-arrow"></i>
+              </div>
+              <div class="nyam-dropdown" id="dsValDropdown0">
+                <button class="nyam-dropdown-item selected" onclick="dsSelectVal(this)">전체</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">혼밥</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">데이트</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">회식</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">가족</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">친구</button>
+                <button class="nyam-dropdown-item" onclick="dsSelectVal(this)">술자리</button>
+              </div>
+            </div>
+            <button class="ds-notion-remove" onclick="dsRemoveRule(this)">✕</button>
+          </div>
+        </div>
+        <div class="ds-notion-add-row">
+          <button class="ds-notion-add-rule" onclick="dsToggleAddDD(this)">
+            + 필터 추가 <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="ds-notion-add-dd" id="dsAddDD">
+            <button class="ds-notion-add-dd-item" onclick="dsAddFilterRule(this)">
+              <i data-lucide="plus"></i> 필터 추가
+            </button>
+            <button class="ds-notion-add-dd-item" onclick="dsAddFilterGroup(this)">
+              <i data-lucide="group"></i> 필터 그룹 추가
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sort dropdown -->
+    <div class="ds-sort-dropdown" id="dsSortDropdown" style="top:42px;">
+      <button class="nyam-dropdown-item active" onclick="dsSelectSort(this)">최신순</button>
+      <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">점수 높은순</button>
+      <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">점수 낮은순</button>
+      <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">이름순</button>
+      <button class="nyam-dropdown-item" onclick="dsSelectSort(this)">방문 많은순</button>
+    </div>
+  </div>
+
+  <h3 style="margin-top:16px;">States</h3>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:4px;">Default (닫힘)</div>
+      <div style="display:flex;gap:8px;">
+        <button class="ds-tab-icon-btn" style="pointer-events:none;">
+          <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ds-tab-icon-btn" style="pointer-events:none;">
+          <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:4px;">Active (열림)</div>
+      <div style="display:flex;gap:8px;">
+        <button class="ds-tab-icon-btn has-filter" style="pointer-events:none;">
+          <i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ds-tab-icon-btn has-filter" style="pointer-events:none;">
+          <i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:16px;">Spec</h3>
+  <div class="note">
+    <b>필터 버튼:</b> <code>sliders-horizontal</code> 아이콘, 32×32 터치 영역<br>
+    <b>소팅 버튼:</b> <code>arrow-up-down</code> 아이콘, 32×32 터치 영역<br>
+    <b>활성 상태:</b> <code>color: var(--primary)</code><br>
+    <b>필터 패널:</b> max-height 애니메이션 (0 → 260px), Notion 스타일 룰 기반<br>
+    <b>소팅 드롭다운:</b> <code>border-radius: 12px</code>, <code>box-shadow: 0 8px 28px</code>, 절대 위치<br>
+    <b>상호 배타:</b> 필터 열면 소팅 닫힘, 소팅 열면 필터 닫힘
   </div>
 </div>
 
@@ -1945,6 +2189,263 @@ function applyRating(circle, score) {
     document.querySelectorAll('.avatar-menu.open').forEach(m => {
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
+  });
+
+  // ============================================================
+  // FILTER / SORT SYSTEM — Design System demo
+  // ============================================================
+  const DS_FOOD_ATTRS = ['상황','음식종류','위치','점수','시기','동반자','명성','가격대'];
+  const DS_FOOD_VALS = {
+    '상황': ['전체','혼밥','데이트','회식','가족','친구','술자리'],
+    '음식종류': ['전체','한식','일식','양식','중식','이탈리안','프렌치','동남아'],
+    '위치': ['전체','강남','을지로','청담','이태원','홍대','광화문','성수','한남'],
+    '점수': ['전체','90+','80~89','70~79','~69'],
+    '시기': ['전체','최근 1주','1개월','3개월','6개월','1년+'],
+    '동반자': ['전체','혼자','2인','3~4인','5인+'],
+    '명성': ['전체','미슐랭','블루리본','TV출연','수상없음'],
+    '가격대': ['전체','~2만','2~5만','5~10만','10만+']
+  };
+
+  function dsToggleFilter() {
+    const drawer = document.getElementById('dsFilterDrawer');
+    const sortDD = document.getElementById('dsSortDropdown');
+    sortDD.classList.remove('open');
+    document.getElementById('dsSortToggle').classList.remove('has-filter');
+    drawer.classList.toggle('open');
+    document.getElementById('dsFilterToggle').classList.toggle('has-filter', drawer.classList.contains('open'));
+  }
+
+  function dsToggleSort() {
+    const dd = document.getElementById('dsSortDropdown');
+    const filterDrawer = document.getElementById('dsFilterDrawer');
+    filterDrawer.classList.remove('open');
+    document.getElementById('dsFilterToggle').classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('dsSortToggle').classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+
+  function dsSelectSort(el) {
+    el.parentElement.querySelectorAll('.nyam-dropdown-item').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('dsSortDropdown').classList.remove('open');
+    document.getElementById('dsSortToggle').classList.remove('has-filter');
+  }
+
+  // Attribute dropdown select — rebuild value dropdown when attr changes
+  function dsSelectAttr(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+
+    // Rebuild sibling value dropdown (attr=0, op=1, val=2)
+    const rule = wrap.closest('.ds-notion-filter-rule');
+    const valWrap = rule.querySelectorAll('.nyam-select-wrap:not([data-role="op"])')[1];
+    if (valWrap) {
+      const vals = DS_FOOD_VALS[item.textContent] || ['전체'];
+      const valDD = valWrap.querySelector('.nyam-dropdown');
+      valDD.innerHTML = vals.map((v, i) =>
+        '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="dsSelectVal(this)">' + v + '</button>'
+      ).join('');
+      valWrap.querySelector('.nyam-select-value').textContent = vals[0];
+    }
+  }
+
+  // Value dropdown select
+  function dsSelectVal(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+  }
+
+  // Operator dropdown select
+  function dsSelectOp(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+  }
+
+  function dsRemoveRule(el) {
+    const rule = el.closest('.ds-notion-filter-rule');
+    const group = rule.closest('[data-role="filter-group"]');
+    if (group) {
+      // Inside a subgroup — remove the rule
+      rule.remove();
+      // If no more rules left in this group, remove the entire group wrapper
+      const remaining = group.querySelectorAll('.ds-notion-filter-rule');
+      if (remaining.length === 0) {
+        group.closest('.ds-notion-filter-rule[style]')?.remove() || group.parentElement.remove();
+      }
+    } else {
+      // Root level — keep at least 1 rule
+      const rootRules = document.getElementById('dsFilterRules');
+      if (rootRules.querySelectorAll(':scope > .ds-notion-filter-rule').length > 1) {
+        rule.remove();
+      }
+    }
+  }
+
+  // Helper: build a new rule element
+  function dsBuildRule() {
+    const rule = document.createElement('div');
+    rule.className = 'ds-notion-filter-rule';
+    const attrItems = DS_FOOD_ATTRS.map((a, i) =>
+      '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="dsSelectAttr(this)">' + a + '</button>'
+    ).join('');
+    const valItems = DS_FOOD_VALS['상황'].map((v, i) =>
+      '<button class="nyam-dropdown-item' + (i === 0 ? ' selected' : '') + '" onclick="dsSelectVal(this)">' + v + '</button>'
+    ).join('');
+    rule.innerHTML =
+      '<span class="ds-notion-conjunction clickable" onclick="dsToggleConjunction(this)">And</span>' +
+      '<div class="nyam-select-wrap">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')" data-role="attr">' +
+          '<span class="nyam-select-value">상황</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' + attrItems + '</div>' +
+      '</div>' +
+      '<div class="nyam-select-wrap" data-role="op">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')">' +
+          '<span class="nyam-select-value">is</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' +
+          '<button class="nyam-dropdown-item selected" onclick="dsSelectOp(this)">is</button>' +
+          '<button class="nyam-dropdown-item" onclick="dsSelectOp(this)">is not</button>' +
+          '<button class="nyam-dropdown-item" onclick="dsSelectOp(this)">contains</button>' +
+          '<button class="nyam-dropdown-item" onclick="dsSelectOp(this)">does not contain</button>' +
+          '<button class="nyam-dropdown-item" onclick="dsSelectOp(this)">\u2265</button>' +
+          '<button class="nyam-dropdown-item" onclick="dsSelectOp(this)">\u003C</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="nyam-select-wrap">' +
+        '<div class="nyam-select" onclick="this.classList.toggle(\'open\')" data-role="val">' +
+          '<span class="nyam-select-value">전체</span>' +
+          '<i data-lucide="chevron-down" class="nyam-select-arrow"></i>' +
+        '</div>' +
+        '<div class="nyam-dropdown">' + valItems + '</div>' +
+      '</div>' +
+      '<button class="ds-notion-remove" onclick="dsRemoveRule(this)">✕</button>';
+    return rule;
+  }
+
+  // Find the container to insert into — either a group's inner container or the root rules
+  function dsGetInsertTarget(triggerEl) {
+    // If inside a group, insert into that group's column container (before the add-row)
+    const group = triggerEl.closest('[data-role="filter-group"]');
+    if (group) return group;
+    return document.getElementById('dsFilterRules');
+  }
+
+  function dsAddFilterRule(triggerEl) {
+    const container = dsGetInsertTarget(triggerEl);
+    const addRow = container.querySelector(':scope > .ds-notion-add-row');
+    const rule = dsBuildRule();
+    if (addRow) {
+      container.insertBefore(rule, addRow);
+    } else {
+      container.appendChild(rule);
+    }
+    lucide.createIcons({ nodes: [rule] });
+    document.querySelectorAll('.ds-notion-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  function dsToggleConjunction(el) {
+    el.textContent = el.textContent === 'And' ? 'Or' : 'And';
+  }
+
+  // Toggle "+ 필터 추가" dropdown
+  function dsToggleAddDD(btn) {
+    const dd = btn.parentElement.querySelector('.ds-notion-add-dd');
+    // close all other add dropdowns
+    document.querySelectorAll('.ds-notion-add-dd.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+    dd.classList.toggle('open');
+  }
+
+  // Get nesting depth of filter groups (0 = root, 1 = first subgroup, 2 = max)
+  function dsGetGroupDepth(el) {
+    let depth = 0;
+    let node = el;
+    while (node) {
+      node = node.parentElement?.closest('[data-role="filter-group"]');
+      if (node) depth++;
+    }
+    return depth;
+  }
+
+  // Add filter group (nested block with its own rule + add button)
+  // Max 2 levels of nesting
+  function dsAddFilterGroup(triggerEl) {
+    const depth = dsGetGroupDepth(triggerEl);
+    if (depth >= 2) return; // max depth reached
+
+    const container = dsGetInsertTarget(triggerEl);
+    const addRow = container.querySelector(':scope > .ds-notion-add-row');
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ds-notion-filter-rule';
+    wrapper.style.alignItems = 'flex-start';
+
+    const firstRule = dsBuildRule();
+    firstRule.querySelector('.ds-notion-conjunction').textContent = 'Where';
+    firstRule.querySelector('.ds-notion-conjunction').classList.remove('clickable');
+    firstRule.querySelector('.ds-notion-conjunction').removeAttribute('onclick');
+
+    // Alternate background: depth 0→var(--bg), depth 1→var(--bg-card)
+    const nextDepth = depth + 1;
+    const bgColor = nextDepth % 2 === 1 ? 'var(--bg)' : 'var(--bg-card)';
+
+    const groupInner = document.createElement('div');
+    groupInner.setAttribute('data-role', 'filter-group');
+    groupInner.style.cssText = 'flex:1; background:' + bgColor + '; border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:6px;';
+    groupInner.appendChild(firstRule);
+
+    // Group's own add button — hide "필터 그룹 추가" if at max depth
+    const groupAddRow = document.createElement('div');
+    groupAddRow.className = 'ds-notion-add-row';
+    const showGroupBtn = nextDepth < 2;
+    groupAddRow.innerHTML =
+      '<button class="ds-notion-add-rule" onclick="dsToggleAddDD(this)">' +
+        '+ 필터 추가 <i data-lucide="chevron-down"></i>' +
+      '</button>' +
+      '<div class="ds-notion-add-dd">' +
+        '<button class="ds-notion-add-dd-item" onclick="dsAddFilterRule(this)"><i data-lucide="plus"></i> 필터 추가</button>' +
+        (showGroupBtn ? '<button class="ds-notion-add-dd-item" onclick="dsAddFilterGroup(this)"><i data-lucide="group"></i> 필터 그룹 추가</button>' : '') +
+      '</div>';
+    groupInner.appendChild(groupAddRow);
+
+    wrapper.innerHTML = '<span class="ds-notion-conjunction clickable" onclick="dsToggleConjunction(this)" style="padding-top:6px;">And</span>';
+    wrapper.appendChild(groupInner);
+
+    if (addRow) {
+      container.insertBefore(wrapper, addRow);
+    } else {
+      container.appendChild(wrapper);
+    }
+    lucide.createIcons({ nodes: [wrapper] });
+    document.querySelectorAll('.ds-notion-add-dd.open').forEach(d => d.classList.remove('open'));
+  }
+
+  // Close sort dropdown + add dropdown on outside click
+  document.addEventListener('click', e => {
+    const sortDD = document.getElementById('dsSortDropdown');
+    const sortBtn = document.getElementById('dsSortToggle');
+    if (sortDD && sortBtn && !sortDD.contains(e.target) && !sortBtn.contains(e.target)) {
+      sortDD.classList.remove('open');
+      sortBtn.classList.remove('has-filter');
+    }
+    // close add dropdowns
+    if (!e.target.closest('.ds-notion-add-row')) {
+      document.querySelectorAll('.ds-notion-add-dd.open').forEach(d => d.classList.remove('open'));
+    }
   });
 
   // Dark mode toggle

@@ -42,6 +42,11 @@ CREATE TABLE users (
   show_bubbles BOOLEAN DEFAULT true,   -- 소속 버블 표시 (프로필+Wrapped+버블피드 전체 적용) → SETTINGS.md §5
   show_levels BOOLEAN DEFAULT true,    -- 레벨 표시 (프로필+Wrapped+기록옆뱃지 전체 적용) → SETTINGS.md §5
   show_quadrant BOOLEAN DEFAULT true,  -- 사분면 표시 (프로필+버블피드+상세L9 전체 적용) → SETTINGS.md §5
+  total_xp INT DEFAULT 0,               -- 누적 XP (절대 안 줄어듦)
+  active_xp INT DEFAULT 0,              -- 최근 6개월 XP (자동 갱신)
+  active_verified INT DEFAULT 0,         -- 최근 6개월 검증 기록 수
+  auth_provider VARCHAR(20) NOT NULL,    -- 'kakao' | 'google' | 'apple'
+  auth_provider_id VARCHAR(100) NOT NULL UNIQUE,  -- 소셜 계정 1:1 매핑 (중복 가입 차단)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -178,6 +183,11 @@ CREATE TABLE records (
   linked_restaurant_id UUID REFERENCES restaurants(id),  -- 와인 기록의 식당 연결
   linked_wine_id UUID REFERENCES wines(id),              -- 식당 기록의 와인 연결
 
+  has_exif_gps BOOLEAN DEFAULT false,
+  exif_verified BOOLEAN DEFAULT false,     -- GPS가 식당 위치 반경 200m 이내일 때 true
+  record_quality_xp INT DEFAULT 0,         -- 이 기록으로 획득한 총 XP (비정규화)
+  score_updated_at TIMESTAMPTZ,            -- 만족도 점수 마지막 부여 시점 (6개월 제한 기준)
+
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -240,7 +250,9 @@ CREATE TABLE xp_history (
   axis_type VARCHAR(20),
   axis_value VARCHAR(50),
   xp_amount INT,
-  reason VARCHAR(50),  -- 'record' | 'photo' | 'comment_bonus' | 'area_verify'
+  reason VARCHAR(50),  -- 'record_name' | 'record_score' | 'record_photo' | 'record_full'
+                       -- | 'category' | 'social_share' | 'social_like' | 'social_follow' | 'social_mutual'
+                       -- | 'bonus_onboard' | 'bonus_first_record' | 'bonus_first_bubble' | 'bonus_first_share'
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -250,18 +262,36 @@ CREATE TABLE level_thresholds (
   color VARCHAR(10)
 );
 
-INSERT INTO level_thresholds VALUES
-  (1, 0, NULL), (2, 40, 'green'), (3, 100, 'green'),
-  (4, 200, 'blue'), (5, 350, 'blue'),
-  (6, 560, 'purple'), (7, 850, 'purple'),
-  (8, 1250, 'orange'), (9, 1800, 'orange'),
-  (10, 2500, 'gold');
+-- 레벨 커브는 XP_SYSTEM.md §5 참조. 게임 스타일 비선형 커브.
+-- 공식: required_xp = ROUND(base * (level^exponent - 1)), base/exponent는 XP_SYSTEM.md 정의
+-- 주요 마일스톤: Lv.2=3XP, Lv.10=48XP, Lv.30=396XP, Lv.50=2,036XP, Lv.72≈10,000XP
+-- INSERT 값은 XP_SYSTEM.md §5 테이블에서 생성. seed 스크립트에서 일괄 삽입.
 
+```
+
+### 활성 XP 갱신 (Cron)
+
+```sql
+-- 매일 또는 주간 실행: 활성 XP 재계산
+UPDATE users SET
+  active_xp = (
+    SELECT COALESCE(SUM(record_quality_xp), 0)
+    FROM records
+    WHERE user_id = users.id
+      AND created_at > NOW() - INTERVAL '6 months'
+  ),
+  active_verified = (
+    SELECT COUNT(*)
+    FROM records
+    WHERE user_id = users.id
+      AND exif_verified = true
+      AND created_at > NOW() - INTERVAL '6 months'
+  );
 ```
 
 ---
 
-## 4. 소셜 관련 테이블 (Phase 2)
+## 4. 소셜 관련 테이블
 
 → 상세: `pages/BUBBLE.md`
 
@@ -271,11 +301,15 @@ CREATE TABLE bubbles (
   name VARCHAR(20) NOT NULL,
   description VARCHAR(100),
   identity VARCHAR(20) DEFAULT 'all',         -- 'all' | 'restaurant' | 'wine' (라벨일 뿐, 제한 없음)
-  visibility VARCHAR(20) DEFAULT 'private',   -- 'private' | 'members' | 'public'
+  visibility VARCHAR(20) DEFAULT 'private',   -- 'private' | 'public'
   exposure_level VARCHAR(20) DEFAULT 'rating_only',  -- 'rating_only' | 'rating_and_comment'
   allow_comments BOOLEAN DEFAULT true,
   allow_external_share BOOLEAN DEFAULT false,
-  min_xp_level INT DEFAULT 0,                -- members 버블 가입 최소 경험치 레벨 (0 = 제한 없음)
+  join_policy VARCHAR(20) DEFAULT 'invite_only',  -- 'invite_only' | 'manual_approve' | 'auto_approve' | 'open' | 'closed'
+  approve_criteria_type VARCHAR(10) DEFAULT 'and', -- 'and' | 'or' — 총 XP와 활성 XP 조합 조건
+  approve_min_total_xp INT DEFAULT 0,              -- auto_approve 총 XP 최소 기준
+  approve_min_active_verified INT DEFAULT 10,       -- auto_approve 활성 검증 기록 최소 기준
+  follower_count INT DEFAULT 0,                     -- 비정규화 (성능)
   icon_url TEXT,
   created_by UUID REFERENCES users(id),
   invite_code VARCHAR(20) UNIQUE,
@@ -286,7 +320,8 @@ CREATE TABLE bubbles (
 CREATE TABLE bubble_members (
   bubble_id UUID REFERENCES bubbles(id),
   user_id UUID REFERENCES users(id),
-  role VARCHAR(20) DEFAULT 'member',  -- 'owner' | 'admin' | 'member' | 'subscriber'
+  role VARCHAR(20) DEFAULT 'member',  -- 'owner' | 'admin' | 'member' | 'follower'
+  -- 기존 'subscriber' → 'follower'로 변경. follower도 동일 테이블에 저장.
   joined_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY(bubble_id, user_id)
 );
