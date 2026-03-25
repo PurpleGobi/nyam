@@ -17,6 +17,8 @@
     --text-hint: #B5AFA8;
     --primary: #C17B5E;
     --primary-light: #F5EDE8;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
     --wine: #8B7396;
     --wine-light: #F0ECF3;
     --border: #E8E4DF;
@@ -867,6 +869,102 @@
     color: #fff;
   }
   .filter-chip:active { transform: scale(0.95); }
+
+  /* Chips + Pager wrapper */
+  .chips-pager-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .chips-pager-wrap .saved-chips-row {
+    flex: 1; min-width: 0;
+  }
+  /* Scrollable spacer so last chip isn't hidden behind pager */
+  .chips-pager-wrap.has-pager .saved-chips-row::after {
+    content: '';
+    flex-shrink: 0;
+    width: 80px; /* pager width clearance */
+  }
+  .chips-pager-wrap .inline-pager {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    margin-left: 0;
+    padding-right: 16px;
+    z-index: 2;
+    display: none; /* shown via .visible */
+    align-items: center;
+    background: var(--bg);
+  }
+  /* Fade mask before pager */
+  .chips-pager-wrap .inline-pager.visible::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 0; bottom: 0; width: 24px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+  }
+
+  /* Saved filter chips (from filter engine) */
+  .saved-chips-row {
+    display: flex; gap: 6px; padding: 8px 16px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .saved-chips-row::-webkit-scrollbar { display: none; }
+  .saved-chips-row:empty { display: none; }
+  .saved-chip {
+    position: relative;
+    padding: 4px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--bg);
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; white-space: nowrap; min-height: 26px;
+    display: flex; align-items: center; transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .saved-chip.active {
+    background: var(--accent-food); border-color: var(--accent-food); color: #fff;
+  }
+  .saved-chip:active { transform: scale(0.95); }
+  .saved-chip .chip-delete {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--negative, #B87272); color: #fff;
+    border: 1.5px solid var(--bg-card); font-size: 8px;
+    line-height: 1; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .saved-chip.manage-mode .chip-delete { display: flex; }
+  /* Chip save bar inside filter panel */
+  .filter-chip-bar {
+    display: none;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+    gap: 8px; align-items: center;
+  }
+  .filter-chip-bar.show { display: flex; }
+  .chip-name-input {
+    flex: 1; padding: 6px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); font-size: 12px;
+    font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; min-width: 0;
+  }
+  .chip-name-input:focus { border-color: var(--accent-food); }
+  .chip-name-input::placeholder { color: var(--text-hint); }
+  .chip-save-btn {
+    padding: 6px 14px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    background: var(--accent-food); color: #fff;
+  }
+  .chip-save-btn:active { transform: scale(0.95); opacity: 0.85; }
+  .chip-save-btn.edit-mode { background: var(--text); color: var(--bg); }
+  .chip-cancel-btn {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; white-space: nowrap; background: var(--bg);
+    color: var(--text-sub); display: none;
+  }
+  .chip-cancel-btn.show { display: inline-block; }
 
   .recommend-card {
     display: flex;
@@ -2477,10 +2575,10 @@
   }
   .filter-toggle:active { transform: scale(0.92); }
   .filter-toggle.has-filter {
-    border-color: var(--primary);
-    background: var(--primary-light);
+    border-color: var(--accent-food);
+    background: var(--accent-food-light);
   }
-  .filter-toggle.has-filter svg { stroke: var(--primary); }
+  .filter-toggle.has-filter svg { stroke: var(--accent-food); }
 
   /* Borderless icon buttons for filter/sort */
   .tab-icon-btn {
@@ -2492,8 +2590,8 @@
     transition: color 0.15s;
   }
   .tab-icon-btn:active { color: var(--text); }
-  .tab-icon-btn.has-filter { color: var(--primary); }
-  .tab-icon-btn.active-search { color: var(--primary); }
+  .tab-icon-btn.has-filter { color: var(--accent-food); }
+  .tab-icon-btn.active-search { color: var(--accent-food); }
 
   /* 검색 드롭다운 */
   .search-dropdown {
@@ -2919,7 +3017,7 @@
 
   /* Tab content panels */
   .tab-panel { display: none; }
-  .tab-panel.active { display: flex; flex-direction: column; padding-top: 14px; min-height: 0; }
+  .tab-panel.active { display: flex; flex-direction: column; padding-top: 0; min-height: 0; }
 
   /* =====================
      Restaurant filter bar
@@ -3871,7 +3969,19 @@
                   </button>
                 </div>
               </div>
+              <!-- Filter chip save/edit bar -->
+              <div class="filter-chip-bar" id="hmChipBar">
+                <input class="chip-name-input" id="hmChipNameInput" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+                <button class="chip-cancel-btn" id="hmChipCancelBtn" onclick="hmCancelChipEdit()">취소</button>
+                <button class="chip-save-btn" id="hmChipSaveBtn" onclick="hmSaveChip()">필터칩 추가</button>
+              </div>
             </div>
+          </div>
+
+          <!-- Saved filter chips + pager (food) -->
+          <div class="chips-pager-wrap" id="foodChipsWrap">
+            <div class="saved-chips-row" id="hmSavedChips"></div>
+            <div class="inline-pager" id="foodPager"></div>
           </div>
 
           <!-- Sort dropdown (nyam-dropdown style) -->
@@ -3961,13 +4071,12 @@
           <!-- TAB: 식당 -->
           <div class="tab-panel active" id="panelFood">
 
-            <!-- 서브 네비: 방문 / 찜 / 추천 / 팔로잉 + 페이지 네비 -->
-            <div class="sub-nav" id="foodSubNav">
+            <!-- 서브 네비: 필터칩이 대체 (방문/찜/추천/팔로잉) — 페이지 네비만 유지 -->
+            <div class="sub-nav" id="foodSubNav" style="display:none;">
               <button class="sub-nav-item active" onclick="setFoodSubNav('visit', this)">방문<span class="nav-count">8</span></button>
               <button class="sub-nav-item" onclick="setFoodSubNav('wish', this)">찜<span class="nav-count">3</span></button>
               <button class="sub-nav-item" onclick="setFoodSubNav('recommend', this)">추천<span class="nav-count">12</span></button>
               <button class="sub-nav-item" onclick="setFoodSubNav('following', this)">팔로잉<span class="nav-count">5</span></button>
-              <div class="inline-pager" id="foodPager"></div>
             </div>
 
             <!-- ========== SUB: 방문 ========== -->
@@ -5004,11 +5113,16 @@
           <!-- TAB: 와인 — 완전히 다른 세계 -->
           <div class="tab-panel" id="panelWine">
 
-            <!-- 서브 네비: 시음 / 찜 / 셀러 + 페이지 네비 -->
-            <div class="sub-nav" id="wineSubNav">
+            <!-- 서브 네비: 필터칩이 대체 (시음/찜/셀러) — 숨김 -->
+            <div class="sub-nav" id="wineSubNav" style="display:none;">
               <button class="sub-nav-item active" onclick="setWineSubNav('tasting', this)">시음<span class="nav-count">12</span></button>
               <button class="sub-nav-item" onclick="setWineSubNav('wish', this)">찜<span class="nav-count">8</span></button>
               <button class="sub-nav-item" onclick="setWineSubNav('cellar', this)">셀러<span class="nav-count">5</span></button>
+            </div>
+
+            <!-- Wine chips + pager -->
+            <div class="chips-pager-wrap" id="wineChipsWrap">
+              <div class="saved-chips-row" id="hmWineSavedChips"></div>
               <div class="inline-pager" id="winePager"></div>
             </div>
 
@@ -5060,7 +5174,7 @@
                     <div class="compact-name">Cloudy Bay Sauv. Blanc</div>
                     <div class="compact-meta">화이트 · 소비뇽 블랑 · NZ</div>
                   </div>
-                  <div class="compact-score wine-score">90</div>
+                  <div class="compact-score not-mine">90</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">5</div>
@@ -5082,7 +5196,7 @@
                     <div class="compact-name">Moët Impérial</div>
                     <div class="compact-meta">스파클링 · 샤르도네 · 프랑스</div>
                   </div>
-                  <div class="compact-score wine-score">87</div>
+                  <div class="compact-score not-mine">87</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">7</div>
@@ -5093,7 +5207,7 @@
                     <div class="compact-name">Whispering Angel</div>
                     <div class="compact-meta">로제 · 그르나슈 · 프랑스</div>
                   </div>
-                  <div class="compact-score wine-score">85</div>
+                  <div class="compact-score not-mine">85</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">8</div>
@@ -5115,7 +5229,7 @@
                     <div class="compact-name">Tignanello 2019</div>
                     <div class="compact-meta">레드 · 산지오베제 · 이탈리아</div>
                   </div>
-                  <div class="compact-score wine-score">80</div>
+                  <div class="compact-score not-mine">80</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">10</div>
@@ -5126,7 +5240,7 @@
                     <div class="compact-name">Riesling Spätlese 2021</div>
                     <div class="compact-meta">화이트 · 리슬링 · 독일</div>
                   </div>
-                  <div class="compact-score wine-score">78</div>
+                  <div class="compact-score not-mine">78</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
                   <div class="compact-rank">11</div>
@@ -5148,18 +5262,13 @@
                     <div class="compact-name">Sancerre Blanc 2022</div>
                     <div class="compact-meta">화이트 · 소비뇽 블랑 · 프랑스</div>
                   </div>
-                  <div class="compact-score wine-score">73</div>
+                  <div class="compact-score not-mine">73</div>
                 </div>
               </div>
             </div>
 
             <!-- ===== 상세 보기 (detail) ===== -->
             <div id="wineDetail">
-
-            <!-- 최근 등록한 와인 -->
-            <div style="margin:0 16px 0;">
-              <div class="wine-section-label">최근 등록한 와인</div>
-            </div>
 
             <div class="wine-recent-card" onclick="location.href='02_detail_wine.html'">
               <div class="wine-photo-col" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=400&h=400&fit=crop') center/cover no-repeat;">
@@ -5210,7 +5319,7 @@
                 <div class="place-name">Cloudy Bay Sauv. Blanc</div>
                 <div class="place-meta">화이트 · 소비뇽 블랑 · NZ</div>
                 <div class="place-score-row">
-                  <div class="place-total-score" style="color:var(--wine);">90</div>
+                  <div class="place-total-score not-mine">90</div>
                 </div>
                 <div class="wine-bubble-row">
                   <div class="wine-bubble-avatars">
@@ -5247,7 +5356,7 @@
                 <div class="place-name">Moët Impérial</div>
                 <div class="place-meta">스파클링 · 샤르도네 · 프랑스</div>
                 <div class="place-score-row">
-                  <div class="place-total-score" style="color:var(--wine);">87</div>
+                  <div class="place-total-score not-mine">87</div>
                 </div>
                 <div class="wine-bubble-row">
                   <div class="wine-bubble-avatars">
@@ -5267,7 +5376,7 @@
                 <div class="place-name">Whispering Angel</div>
                 <div class="place-meta">로제 · 그르나슈 · 프랑스</div>
                 <div class="place-score-row">
-                  <div class="place-total-score" style="color:var(--wine);">85</div>
+                  <div class="place-total-score not-mine">85</div>
                 </div>
                 <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/3</div>
               </div>
@@ -7089,6 +7198,9 @@
     if (!state || state.totalPages <= 1) {
       pagerEl.classList.remove('visible');
       pagerEl.innerHTML = '';
+      // Update wrapper class
+      const wrap = pagerEl.closest('.chips-pager-wrap');
+      if (wrap) wrap.classList.remove('has-pager');
       return;
     }
     const { page, totalPages } = state;
@@ -7099,6 +7211,9 @@
       '<span class="inline-pager-info">' + (page + 1) + '/' + totalPages + '</span>' +
       '<button onclick="pageNext(\'' + tab + '\')" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>' +
         '<i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>';
+    // Update wrapper class
+    const wrap = pagerEl.closest('.chips-pager-wrap');
+    if (wrap) wrap.classList.add('has-pager');
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
@@ -7277,6 +7392,10 @@
     document.getElementById('filterDrawer').classList.remove('open');
     // Maintain view mode across tabs
     setViewMode(currentViewMode);
+    hmRenderChips(); // refresh chips for new tab
+    // food chips wrap is outside tab panels — toggle visibility
+    const foodWrap = document.getElementById('foodChipsWrap');
+    if (foodWrap) foodWrap.style.display = tab === 'food' ? '' : 'none';
   }
 
   // =====================
@@ -7304,6 +7423,9 @@
         lucide.createIcons({ nodes: [rule] });
       }
     }
+    hmUpdateChipBar();
+    hmRenderChips();
+    if (hmEditingChipId && !drawer.classList.contains('open')) hmCancelChipEdit();
   }
 
   function toggleSort() {
@@ -7363,6 +7485,7 @@
         if (e.key === 'Enter') e.preventDefault();
       });
     }
+    hmInitDefaultChips();
   });
 
   // Notion-style filter — data
@@ -7426,15 +7549,20 @@
       if (group.querySelectorAll('.notion-filter-rule').length === 0) {
         group.closest('.notion-filter-rule[style]')?.remove() || group.parentElement.remove();
       }
+      hmRenderChips();
     } else {
       const rootRules = document.getElementById('filterRules');
       if (rootRules.querySelectorAll(':scope > .notion-filter-rule').length > 1) {
         rule.remove();
+        hmRenderChips();
       } else {
         // Last rule — collapse the filter drawer
         rule.remove();
         document.getElementById('filterDrawer').classList.remove('open');
         document.getElementById('filterToggle').classList.remove('has-filter');
+        hmUpdateChipBar();
+        hmRenderChips();
+        if (hmEditingChipId) hmCancelChipEdit();
       }
     }
   }
@@ -7563,6 +7691,200 @@
       document.querySelectorAll('.notion-add-dd.open').forEach(d => d.classList.remove('open'));
     }
   });
+
+  // =====================
+  // Filter Chip Management (Home)
+  // =====================
+  let hmChipStore = [];
+  let hmEditingChipId = null;
+  let hmChipIdCounter = 0;
+
+  // Default chips — these are the "built-in" filter presets
+  const HM_DEFAULT_CHIPS = {
+    food: [
+      { name: '방문', rules: [{attr:'상태', op:'is', val:'방문'}] },
+      { name: '찜', rules: [{attr:'상태', op:'is', val:'찜'}] },
+      { name: '추천', rules: [{attr:'상태', op:'is', val:'추천'}] },
+      { name: '팔로잉', rules: [{attr:'상태', op:'is', val:'팔로잉'}] },
+    ],
+    wine: [
+      { name: '시음', rules: [{attr:'상태', op:'is', val:'시음'}] },
+      { name: '찜', rules: [{attr:'상태', op:'is', val:'찜'}] },
+      { name: '셀러', rules: [{attr:'상태', op:'is', val:'셀러'}] },
+    ]
+  };
+
+  // Track which chip is "active" for routing (not editing)
+  let hmActiveChipId = null;       // food tab active chip
+  let hmWineActiveChipId = null;   // wine tab active chip
+
+  function hmInitDefaultChips() {
+    HM_DEFAULT_CHIPS.food.forEach(c => {
+      hmChipStore.push({ id: ++hmChipIdCounter, name: c.name, rules: c.rules, tab: 'food' });
+    });
+    HM_DEFAULT_CHIPS.wine.forEach(c => {
+      hmChipStore.push({ id: ++hmChipIdCounter, name: c.name, rules: c.rules, tab: 'wine' });
+    });
+    // First chip per tab active by default
+    hmActiveChipId = 1; // food: "방문"
+    hmWineActiveChipId = hmChipStore.find(c => c.tab === 'wine')?.id || null; // wine: "시음"
+    hmRenderChips();
+  }
+
+  function hmSerializeRules() {
+    const rules = [];
+    document.querySelectorAll('#filterRules > .notion-filter-rule').forEach(rule => {
+      const wraps = rule.querySelectorAll('.nyam-select-wrap');
+      if (wraps.length < 2) return;
+      const attrWrap = wraps[0];
+      const opWrap = rule.querySelector('.nyam-select-wrap[data-role="op"]');
+      const valWrap = wraps[wraps.length - 1];
+      rules.push({
+        attr: attrWrap?.querySelector('.nyam-select-value')?.textContent || '',
+        op: opWrap?.querySelector('.nyam-select-value')?.textContent || 'is',
+        val: valWrap?.querySelector('.nyam-select-value')?.textContent || '전체',
+      });
+    });
+    return rules;
+  }
+
+  function hmDeserializeRules(rules) {
+    const container = document.getElementById('filterRules');
+    container.querySelectorAll('.notion-filter-rule').forEach(r => r.remove());
+    rules.forEach((r, i) => {
+      const ruleEl = hmBuildRule();
+      const conj = ruleEl.querySelector('.notion-conjunction');
+      if (i === 0) { conj.textContent = 'Where'; conj.classList.remove('clickable'); conj.removeAttribute('onclick'); }
+      const attrVal = ruleEl.querySelector('[data-role="attr"] .nyam-select-value');
+      if (attrVal) attrVal.textContent = r.attr;
+      const valWrap = ruleEl.querySelectorAll('.nyam-select-wrap:not([data-role="op"])')[1];
+      if (valWrap) {
+        const vals = FOOD_VALS[r.attr] || ['전체'];
+        const valDD = valWrap.querySelector('.nyam-dropdown');
+        valDD.innerHTML = vals.map(v =>
+          '<button class="nyam-dropdown-item' + (v === r.val ? ' selected' : '') + '" onclick="hmSelectVal(this)">' + v + '</button>'
+        ).join('');
+        valWrap.querySelector('.nyam-select-value').textContent = r.val;
+      }
+      const opVal = ruleEl.querySelector('[data-role="op"]')?.closest('.nyam-select-wrap')?.querySelector('.nyam-select-value');
+      if (opVal) opVal.textContent = r.op;
+      const addRow = container.querySelector('.notion-add-row');
+      container.insertBefore(ruleEl, addRow);
+    });
+    lucide.createIcons({ nodes: [container] });
+  }
+
+  function hmUpdateChipBar() {
+    const bar = document.getElementById('hmChipBar');
+    const drawer = document.getElementById('filterDrawer');
+    bar.classList.toggle('show', drawer.classList.contains('open'));
+  }
+
+  // Chip count lookup (from sub-nav counts)
+  const HM_CHIP_COUNTS = {
+    '방문': 8, '찜': 3, '추천': 12, '팔로잉': 5,
+    '시음': 12, '셀러': 5
+  };
+  // 와인 찜은 식당 찜과 겹치므로 탭별 구분
+  function hmGetChipCount(name, tab) {
+    if (name === '찜') return tab === 'wine' ? 8 : 3;
+    return HM_CHIP_COUNTS[name] || 0;
+  }
+
+  function hmRenderChipRow(rowId, tabFilter, activeId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const isManaging = document.getElementById('filterDrawer')?.classList.contains('open');
+    const chips = hmChipStore.filter(c => c.tab === tabFilter);
+    row.innerHTML = chips.map(c => {
+      const isActive = isManaging ? (c.id === hmEditingChipId) : (c.id === activeId);
+      const count = hmGetChipCount(c.name, c.tab);
+      const label = c.name + (count > 0 ? ' <span style="opacity:0.6;font-weight:500;">' + count + '</span>' : '');
+      return '<button class="saved-chip' + (isManaging ? ' manage-mode' : '') + (isActive ? ' active' : '') + '" data-chip-id="' + c.id + '" onclick="hmClickChip(' + c.id + ')">' +
+        label +
+        '<span class="chip-delete" onclick="event.stopPropagation(); hmDeleteChip(' + c.id + ')">✕</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  function hmRenderChips() {
+    hmRenderChipRow('hmSavedChips', 'food', hmActiveChipId);
+    hmRenderChipRow('hmWineSavedChips', 'wine', hmWineActiveChipId);
+  }
+
+  function hmClickChip(id) {
+    const drawer = document.getElementById('filterDrawer');
+    const chip = hmChipStore.find(c => c.id === id);
+    if (!chip) return;
+    if (drawer.classList.contains('open')) {
+      hmEditingChipId = id;
+      hmDeserializeRules(chip.rules);
+      document.getElementById('hmChipNameInput').value = chip.name;
+      const saveBtn = document.getElementById('hmChipSaveBtn');
+      saveBtn.textContent = '수정 저장';
+      saveBtn.classList.add('edit-mode');
+      document.getElementById('hmChipCancelBtn').classList.add('show');
+      hmRenderChips();
+    } else {
+      // Set active chip per tab and re-render
+      if (currentHomeTab === 'wine') {
+        hmWineActiveChipId = id;
+      } else {
+        hmActiveChipId = id;
+      }
+      hmRenderChips();
+      // Route to sub-nav panel based on chip name
+      const foodSubMap = { '방문': 'visit', '찜': 'wish', '추천': 'recommend', '팔로잉': 'following' };
+      const wineSubMap = { '시음': 'tasting', '찜': 'wish', '셀러': 'cellar' };
+      if (currentHomeTab === 'food') {
+        const subKey = foodSubMap[chip.name];
+        if (subKey) {
+          const navBtn = document.querySelector('#foodSubNav .sub-nav-item[onclick*="' + subKey + '"]');
+          if (navBtn) setFoodSubNav(subKey, navBtn);
+        }
+      } else if (currentHomeTab === 'wine') {
+        const subKey = wineSubMap[chip.name];
+        if (subKey) {
+          const navBtn = document.querySelector('#wineSubNav .sub-nav-item[onclick*="' + subKey + '"]');
+          if (navBtn) setWineSubNav(subKey, navBtn);
+        }
+      }
+    }
+  }
+
+  function hmSaveChip() {
+    const nameInput = document.getElementById('hmChipNameInput');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--negative)'; setTimeout(() => nameInput.style.borderColor = '', 1000); return; }
+    const rules = hmSerializeRules();
+    if (rules.length === 0) return;
+    const tab = currentHomeTab || 'food';
+    if (hmEditingChipId) {
+      const chip = hmChipStore.find(c => c.id === hmEditingChipId);
+      if (chip) { chip.name = name; chip.rules = rules; }
+      hmCancelChipEdit();
+    } else {
+      hmChipStore.push({ id: ++hmChipIdCounter, name, rules, tab });
+      nameInput.value = '';
+    }
+    hmRenderChips();
+  }
+
+  function hmCancelChipEdit() {
+    hmEditingChipId = null;
+    document.getElementById('hmChipNameInput').value = '';
+    const saveBtn = document.getElementById('hmChipSaveBtn');
+    saveBtn.textContent = '필터칩 추가';
+    saveBtn.classList.remove('edit-mode');
+    document.getElementById('hmChipCancelBtn').classList.remove('show');
+    hmRenderChips();
+  }
+
+  function hmDeleteChip(id) {
+    hmChipStore = hmChipStore.filter(c => c.id !== id);
+    if (hmEditingChipId === id) hmCancelChipEdit();
+    hmRenderChips();
+  }
 
   // =====================
   // Sub-nav: 식당 (방문/찜/추천)

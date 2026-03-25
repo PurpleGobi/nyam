@@ -409,6 +409,125 @@
   .nf-add-dd-item:hover { background: var(--bg); }
   .nf-add-dd-item svg { width: 14px; height: 14px; color: var(--text-hint); flex-shrink: 0; }
 
+  /* Chips + Pager wrapper */
+  .chips-pager-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .chips-pager-wrap .saved-chips-row { flex: 1; min-width: 0; }
+  .chips-pager-wrap.has-pager .saved-chips-row::after {
+    content: '';
+    flex-shrink: 0;
+    width: 80px;
+  }
+  /* Inline pager */
+  .inline-pager {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .inline-pager.visible { display: flex; }
+  .inline-pager-info {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    min-width: 28px;
+    text-align: center;
+  }
+  .inline-pager button {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: var(--bg-card);
+    color: var(--text-sub); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: all 0.15s;
+    flex-shrink: 0; padding: 0;
+  }
+  .inline-pager button:active { transform: scale(0.9); }
+  .inline-pager button:disabled { opacity: 0.2; pointer-events: none; }
+
+  .chips-pager-wrap .saved-chips-row { flex: 1; min-width: 0; }
+  .chips-pager-wrap.has-pager .saved-chips-row::after {
+    content: '';
+    flex-shrink: 0;
+    width: 80px;
+  }
+  .chips-pager-wrap .inline-pager {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    padding-right: 16px;
+    z-index: 2;
+    background: var(--bg);
+  }
+  .chips-pager-wrap .inline-pager.visible::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 0; bottom: 0; width: 24px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+  }
+
+  /* Saved filter chips (from filter engine) */
+  .saved-chips-row {
+    display: flex; gap: 6px; padding: 8px 16px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .saved-chips-row::-webkit-scrollbar { display: none; }
+  .saved-chips-row:empty { display: none; }
+  .saved-chip {
+    position: relative;
+    padding: 4px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--bg);
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; white-space: nowrap; min-height: 26px;
+    display: flex; align-items: center; transition: all 0.15s;
+    flex-shrink: 0; font-family: inherit;
+  }
+  .saved-chip.active {
+    background: var(--accent-social, #7A9BAE); border-color: var(--accent-social, #7A9BAE); color: #fff;
+  }
+  .saved-chip:active { transform: scale(0.95); }
+  .saved-chip .chip-delete {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--negative, #B87272); color: #fff;
+    border: 1.5px solid var(--bg-card); font-size: 8px;
+    line-height: 1; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .saved-chip.manage-mode .chip-delete { display: flex; }
+  .filter-chip-bar {
+    display: none;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+    gap: 8px; align-items: center;
+  }
+  .filter-chip-bar.show { display: flex; }
+  .chip-name-input {
+    flex: 1; padding: 6px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); font-size: 12px;
+    font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; min-width: 0;
+  }
+  .chip-name-input:focus { border-color: var(--accent-social, #7A9BAE); }
+  .chip-name-input::placeholder { color: var(--text-hint); }
+  .chip-save-btn {
+    padding: 6px 14px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    background: var(--accent-social, #7A9BAE); color: #fff;
+  }
+  .chip-save-btn:active { transform: scale(0.95); opacity: 0.85; }
+  .chip-save-btn.edit-mode { background: var(--text); color: var(--bg); }
+  .chip-cancel-btn {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; white-space: nowrap; background: var(--bg);
+    color: var(--text-sub); display: none;
+  }
+  .chip-cancel-btn.show { display: inline-block; }
+
   /* ========== DISCOVER BOTTOM SHEET (device-inner 안) ========== */
   .discover-sheet-overlay {
     position: absolute; inset: 0; z-index: 200;
@@ -651,16 +770,15 @@
   .people-chip .chip-count { font-size: 11px; font-weight: 700; opacity: 0.55; }
   .people-chip.active .chip-count { opacity: 0.8; }
 
+  .people-list { padding: 0 16px; }
   .person-card {
-    margin: 0 20px 8px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
   }
-  .person-card:active { opacity: 0.8; }
+  .person-card:last-child { border-bottom: none; }
+  .person-card:active { opacity: 0.7; }
   .person-avatar {
     width: 40px; height: 40px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -685,34 +803,36 @@
     background: var(--positive); color: white; border-color: var(--positive);
   }
 
-  /* ========== BUBBLE LIST ========== */
+  /* ========== BUBBLE LIST (compact style) ========== */
+  .bubble-list { padding: 0 16px; }
   .bubble-card {
-    margin: 0 20px 12px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px; cursor: pointer;
-    display: flex; align-items: center; gap: 14px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
   }
-  .bubble-card:active { opacity: 0.8; }
+  .bubble-card:last-child { border-bottom: none; }
+  .bubble-card:active { opacity: 0.7; }
   .bubble-icon {
-    width: 48px; height: 48px; border-radius: 14px;
+    width: 40px; height: 40px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; color: var(--primary);
   }
-  .bubble-icon svg { width: 22px; height: 22px; }
-  .bubble-info { flex: 1; }
-  .bubble-name { font-size: 16px; font-weight: 600; color: var(--text); }
-  .bubble-meta { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
-  .bubble-activity { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+  .bubble-icon svg { width: 18px; height: 18px; }
+  .bubble-info { flex: 1; min-width: 0; }
+  .bubble-name {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bubble-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+  .bubble-activity { display: none; /* hidden in compact mode */ }
   .activity-dot {
     display: inline-block; width: 6px; height: 6px;
     background: #7EAE8B; border-radius: 50%;
     margin-right: 4px; vertical-align: middle;
   }
   .activity-dot.stale { background: #D4CFC8; }
-  .bubble-chevron { color: #D4CFC8; display: flex; align-items: center; }
-  .bubble-chevron svg { width: 16px; height: 16px; }
+  /* bubble-chevron removed — now using compact list style */
 
   .btn-primary {
     background: var(--primary); color: #fff;
@@ -1302,7 +1422,19 @@
                   <button class="nf-add-dd-item" onclick="bAddGroup(this)"><i data-lucide="group"></i> 필터 그룹 추가</button>
                 </div>
               </div>
+              <!-- Filter chip save/edit bar -->
+              <div class="filter-chip-bar" id="bChipBar">
+                <input class="chip-name-input" id="bChipNameInput" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+                <button class="chip-cancel-btn" id="bChipCancelBtn" onclick="bCancelChipEdit()">취소</button>
+                <button class="chip-save-btn" id="bChipSaveBtn" onclick="bSaveChip()">필터칩 추가</button>
+              </div>
             </div>
+          </div>
+
+          <!-- Saved filter chips + pager (bubble) -->
+          <div class="chips-pager-wrap" id="bubbleChipsWrap">
+            <div class="saved-chips-row" id="bSavedChips"></div>
+            <div class="inline-pager" id="bubblePager"></div>
           </div>
 
           <!-- Sort dropdown -->
@@ -1327,81 +1459,86 @@
           <!-- ===== BUBBLE PANEL ===== -->
           <div class="bubble-panel" id="bubblePanel">
 
-          <div class="sub-nav" id="bubbleSubNav">
+          <!-- 서브 네비: 필터칩이 대체 (전체/운영/가입) — 숨김 -->
+          <div class="sub-nav" id="bubbleSubNav" style="display:none;">
             <button class="sub-nav-item active" onclick="switchBubbleSub(this,'all')">전체 <span class="nav-count">3</span></button>
             <button class="sub-nav-item" onclick="switchBubbleSub(this,'mine')">운영 <span class="nav-count">1</span></button>
             <button class="sub-nav-item" onclick="switchBubbleSub(this,'joined')">가입 <span class="nav-count">2</span></button>
           </div>
 
-          <div class="bubble-card" data-role="mine" onclick="location.href='04_bubbles_detail.html'">
-            <div class="bubble-icon" style="background:#F5EDE8;"><i data-lucide="utensils-crossed"></i></div>
-            <div class="bubble-info">
-              <div class="bubble-name">직장 맛집</div>
-              <div class="bubble-meta">멤버 8명 · 팔로워 24명 · 기록 47개</div>
-              <div class="bubble-activity">
-                <span class="activity-dot"></span>최근 활동 2시간 전
+          <div class="bubble-list">
+            <div class="bubble-card" data-role="mine" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#F5EDE8;"><i data-lucide="utensils-crossed"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">직장 맛집</div>
+                <div class="bubble-meta">멤버 8명 · 기록 47개</div>
               </div>
             </div>
-            <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
-          </div>
-
-          <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
-            <div class="bubble-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="wine"></i></div>
-            <div class="bubble-info">
-              <div class="bubble-name">와인 모임</div>
-              <div class="bubble-meta">멤버 5명 · 팔로워 11명 · 기록 23개</div>
-              <div class="bubble-activity">
-                <span class="activity-dot"></span>최근 활동 1일 전
+            <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="wine"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">와인 모임</div>
+                <div class="bubble-meta">멤버 5명 · 기록 23개</div>
               </div>
             </div>
-            <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
-          </div>
-
-          <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
-            <div class="bubble-icon" style="background:#E8F0EB;color:var(--positive)"><i data-lucide="home"></i></div>
-            <div class="bubble-info">
-              <div class="bubble-name">동네 맛집</div>
-              <div class="bubble-meta">멤버 12명 · 팔로워 38명 · 기록 31개</div>
-              <div class="bubble-activity">
-                <span class="activity-dot stale"></span>최근 활동 3일 전
+            <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#E8F0EB;color:var(--positive)"><i data-lucide="home"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">동네 맛집</div>
+                <div class="bubble-meta">멤버 12명 · 기록 31개</div>
               </div>
             </div>
-            <div class="bubble-chevron"><i data-lucide="chevron-right"></i></div>
+            <div class="bubble-card" data-role="mine" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#FFF3E0;color:var(--caution)"><i data-lucide="coffee"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">카페 투어</div>
+                <div class="bubble-meta">멤버 6명 · 기록 18개</div>
+              </div>
+            </div>
+            <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#EDF2F5;color:var(--accent-social)"><i data-lucide="map-pin"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">성수 맛집</div>
+                <div class="bubble-meta">멤버 15명 · 기록 52개</div>
+              </div>
+            </div>
+            <div class="bubble-card" data-role="joined" onclick="location.href='04_bubbles_detail.html'">
+              <div class="bubble-icon" style="background:#F5EDE8;"><i data-lucide="flame"></i></div>
+              <div class="bubble-info">
+                <div class="bubble-name">매운맛 챌린지</div>
+                <div class="bubble-meta">멤버 9명 · 기록 27개</div>
+              </div>
+            </div>
           </div>
-
-          <div style="height:16px"></div>
           </div><!-- /bubblePanel -->
 
           <!-- ===== PEOPLE PANEL ===== -->
           <div class="people-panel" id="peoplePanel">
 
-            <div class="people-filter-chips">
-              <button class="people-chip active" onclick="switchPeopleFilter(this,'all')">전체 <span class="chip-count">20</span></button>
-              <button class="people-chip" onclick="switchPeopleFilter(this,'following')">팔로잉 <span class="chip-count">12</span></button>
-              <button class="people-chip" onclick="switchPeopleFilter(this,'followers')">팔로워 <span class="chip-count">8</span></button>
-              <button class="people-chip" onclick="switchPeopleFilter(this,'mutual')">맞팔 <span class="chip-count">4</span></button>
+            <!-- Saved filter chips + pager (bubbler) -->
+            <div class="chips-pager-wrap" id="peopleChipsWrap">
+              <div class="saved-chips-row" id="blSavedChips"></div>
+              <div class="inline-pager" id="peoplePager"></div>
             </div>
 
             <!-- 버블러 리스트 -->
-            <div id="peopleList">
+            <div id="peopleList" class="people-list">
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#C17B5E,#D4956F)">맛</div>
                 <div class="person-info">
                   <div class="person-name">matjabi_ys</div>
-                  <div class="person-meta">기록 47개 · Lv.8 · 을지로 맛탐정</div>
+                  <div class="person-meta">기록 47개 · Lv.8</div>
                 </div>
                 <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#7A9BAE,#92B5C8)">와</div>
                 <div class="person-info">
                   <div class="person-name">wine_soyeon</div>
-                  <div class="person-meta">기록 32개 · Lv.6 · 와인 모임</div>
+                  <div class="person-meta">기록 32개 · Lv.6</div>
                 </div>
                 <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#8B7396,#A890B8)">하</div>
                 <div class="person-info">
@@ -1410,16 +1547,14 @@
                 </div>
                 <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#7EAE8B,#96C8A2)">준</div>
                 <div class="person-info">
                   <div class="person-name">junho_gourmet</div>
-                  <div class="person-meta">기록 63개 · Lv.11 · 직장 맛집</div>
+                  <div class="person-meta">기록 63개 · Lv.11</div>
                 </div>
                 <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#C9A96E,#D8BC88)">민</div>
                 <div class="person-info">
@@ -1428,7 +1563,6 @@
                 </div>
                 <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#B87272,#CC8888)">지</div>
                 <div class="person-info">
@@ -1437,16 +1571,14 @@
                 </div>
                 <button class="person-action" onclick="toggleFollow(this)">팔로우</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#7A9BAE,#6A8B9E)">서</div>
                 <div class="person-info">
                   <div class="person-name">seojin.nom</div>
-                  <div class="person-meta">기록 41개 · Lv.9 · 동네 맛집</div>
+                  <div class="person-meta">기록 41개 · Lv.9</div>
                 </div>
                 <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
               </div>
-
               <div class="person-card">
                 <div class="person-avatar" style="background:linear-gradient(135deg,#C17B5E,#A86545)">도</div>
                 <div class="person-info">
@@ -1455,9 +1587,39 @@
                 </div>
                 <button class="person-action" onclick="toggleFollow(this)">팔로우</button>
               </div>
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#E8A87C,#D68B5E)">울</div>
+                <div class="person-info">
+                  <div class="person-name">woori_table</div>
+                  <div class="person-meta">기록 35개 · Lv.7</div>
+                </div>
+                <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
+              </div>
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#9FA5A3,#B8BEB8)">영</div>
+                <div class="person-info">
+                  <div class="person-name">young_chef</div>
+                  <div class="person-meta">기록 22개 · Lv.5</div>
+                </div>
+                <button class="person-action mutual" onclick="toggleFollow(this)">맞팔</button>
+              </div>
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#889DAB,#6E8899)">수</div>
+                <div class="person-info">
+                  <div class="person-name">sujin_wine</div>
+                  <div class="person-meta">기록 15개 · Lv.3</div>
+                </div>
+                <button class="person-action" onclick="toggleFollow(this)">팔로우</button>
+              </div>
+              <div class="person-card">
+                <div class="person-avatar" style="background:linear-gradient(135deg,#C4B5A8,#B0A698)">태</div>
+                <div class="person-info">
+                  <div class="person-name">taehee_eats</div>
+                  <div class="person-meta">기록 11개 · Lv.3</div>
+                </div>
+                <button class="person-action following" onclick="toggleFollow(this)">팔로잉</button>
+              </div>
             </div>
-
-            <div style="height:16px"></div>
           </div><!-- /peoplePanel -->
 
         </div>
@@ -1880,6 +2042,12 @@
                 <button class="nf-add-dd-item" onclick="blAddRule()"><i data-lucide="plus"></i> 필터 추가</button>
               </div>
             </div>
+            <!-- Filter chip save/edit bar (bubbler) -->
+            <div class="filter-chip-bar" id="blChipBar">
+              <input class="chip-name-input" id="blChipNameInput" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+              <button class="chip-cancel-btn" id="blChipCancelBtn" onclick="blCancelChipEdit()">취소</button>
+              <button class="chip-save-btn" id="blChipSaveBtn" onclick="blSaveChip()">필터칩 추가</button>
+            </div>
           </div>
         </div>
 
@@ -2236,6 +2404,12 @@
     }
     // Close sort dropdown on tab switch
     document.getElementById('bSortDropdown').classList.remove('open');
+    bCurrentSegment = seg;
+    bRenderChips();
+    // bubble chips wrap is outside panels — toggle visibility
+    const bubbleWrap = document.getElementById('bubbleChipsWrap');
+    if (bubbleWrap) bubbleWrap.style.display = seg === 'bubble' ? '' : 'none';
+    bRenderPager(seg);
     lucide.createIcons();
   }
 
@@ -2287,7 +2461,96 @@
     input.focus();
   }
 
+  // =====================
+  // Pagination system
+  // =====================
+  const bPagerState = {};
+
+  function bGetPagerEl(segment) {
+    return document.getElementById(segment === 'bubble' ? 'bubblePager' : 'peoplePager');
+  }
+
+  function bInitPager(containerId, perPage, itemSelector) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const items = container.querySelectorAll(itemSelector);
+    const total = items.length;
+    const totalPages = Math.ceil(total / perPage);
+    if (totalPages <= 0) return;
+    bPagerState[containerId] = { page: 0, totalPages, perPage, items: Array.from(items) };
+    items.forEach((item, i) => { item.style.display = i < perPage ? '' : 'none'; });
+  }
+
+  function bGetActiveContainerId(segment) {
+    if (segment === 'bubble') return 'bubblePanel';
+    if (segment === 'people') return 'peopleList';
+    return null;
+  }
+
+  function bRenderPager(segment) {
+    const cid = bGetActiveContainerId(segment);
+    const pagerEl = bGetPagerEl(segment);
+    if (!pagerEl) return;
+    const state = cid ? bPagerState[cid] : null;
+    if (!state || state.totalPages <= 1) {
+      pagerEl.classList.remove('visible');
+      pagerEl.innerHTML = '';
+      const wrap = pagerEl.closest('.chips-pager-wrap');
+      if (wrap) wrap.classList.remove('has-pager');
+      return;
+    }
+    const { page, totalPages } = state;
+    pagerEl.classList.add('visible');
+    pagerEl.innerHTML =
+      '<button onclick="bPagePrev(\'' + segment + '\')" ' + (page === 0 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>' +
+      '<span class="inline-pager-info">' + (page + 1) + '/' + totalPages + '</span>' +
+      '<button onclick="bPageNext(\'' + segment + '\')" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>';
+    const wrap = pagerEl.closest('.chips-pager-wrap');
+    if (wrap) wrap.classList.add('has-pager');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function bApplyPage(containerId) {
+    const state = bPagerState[containerId];
+    if (!state) return;
+    const { page, perPage, items } = state;
+    items.forEach((item, i) => {
+      item.style.display = (i >= page * perPage && i < (page + 1) * perPage) ? '' : 'none';
+    });
+  }
+
+  function bPagePrev(segment) {
+    const cid = bGetActiveContainerId(segment);
+    const s = cid ? bPagerState[cid] : null;
+    if (!s || s.page <= 0) return;
+    s.page--;
+    bApplyPage(cid);
+    bRenderPager(segment);
+  }
+
+  function bPageNext(segment) {
+    const cid = bGetActiveContainerId(segment);
+    const s = cid ? bPagerState[cid] : null;
+    if (!s || s.page >= s.totalPages - 1) return;
+    s.page++;
+    bApplyPage(cid);
+    bRenderPager(segment);
+  }
+
+  function bInitAllPagers() {
+    // Bubble list — 10 per page (6 items → no pager)
+    bInitPager('bubblePanel', 10, '.bubble-card');
+    // People list — 10 per page (12 items → 2 pages)
+    bInitPager('peopleList', 10, '.person-card');
+    bRenderPager('bubble');
+    bRenderPager('people');
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    bInitDefaultChips();
+    bInitAllPagers();
     const si = document.getElementById('bSearchInput');
     if (si) {
       si.addEventListener('input', () => {
@@ -2313,10 +2576,9 @@
 
   // People filter chips
   function switchPeopleFilter(el, filter) {
-    document.querySelectorAll('.people-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    // Demo: show/hide based on filter
-    document.querySelectorAll('.person-card').forEach(card => {
+    // Show/hide based on filter
+    const cards = document.querySelectorAll('#peopleList .person-card');
+    cards.forEach(card => {
       const btn = card.querySelector('.person-action');
       const type = btn.classList.contains('mutual') ? 'mutual' :
                    btn.classList.contains('following') ? 'following' :
@@ -2326,6 +2588,15 @@
       if (filter === 'followers') { card.style.display = (type === 'follower' || type === 'mutual') ? '' : 'none'; return; }
       if (filter === 'mutual') { card.style.display = type === 'mutual' ? '' : 'none'; return; }
     });
+    // Re-init pager for visible cards only
+    const visibleCards = Array.from(cards).filter(c => c.style.display !== 'none');
+    if (visibleCards.length > 10) {
+      bPagerState['peopleList'] = { page: 0, totalPages: Math.ceil(visibleCards.length / 10), perPage: 10, items: visibleCards };
+      visibleCards.forEach((item, i) => { item.style.display = i < 10 ? '' : 'none'; });
+    } else {
+      delete bPagerState['peopleList'];
+    }
+    bRenderPager('people');
   }
 
   function toggleFollow(btn) {
@@ -2410,6 +2681,8 @@
       }
       lucide.createIcons({ nodes: [drawer] });
     }
+    bUpdateChipBar();
+    bRenderChips();
   }
 
   function bSelectDD(item) {
@@ -2589,6 +2862,10 @@
     drawer.classList.toggle('open');
     document.getElementById('blFilterBtn').classList.toggle('has-filter', drawer.classList.contains('open'));
     if (drawer.classList.contains('open')) lucide.createIcons({ nodes: [drawer] });
+    // Update bubbler chip bar visibility
+    const blBar = document.getElementById('blChipBar');
+    if (blBar) blBar.classList.toggle('show', drawer.classList.contains('open'));
+    bRenderChips();
   }
 
   function toggleBubblerSort() {
@@ -2659,6 +2936,211 @@
   function toggleBfConj() {}
   function updateBfCount() {}
   function toggleBubbleFilter() { toggleBubbleFilterDrawer(); }
+
+  // =====================
+  // Filter Chip Management (Bubbles)
+  // =====================
+  let bChipStore = [];
+  let bEditingChipId = null;
+  let bChipIdCounter = 0;
+
+  // Default chips
+  const B_DEFAULT_CHIPS = {
+    bubble: [
+      { name: '전체', rules: [] },
+      { name: '운영', rules: [{attr:'유형', op:'is', val:'운영'}] },
+      { name: '가입', rules: [{attr:'유형', op:'is', val:'가입'}] },
+    ],
+    people: [
+      { name: '전체', rules: [] },
+      { name: '팔로잉', rules: [{attr:'관계', op:'is', val:'팔로잉'}] },
+      { name: '팔로워', rules: [{attr:'관계', op:'is', val:'팔로워'}] },
+      { name: '맞팔', rules: [{attr:'관계', op:'is', val:'맞팔'}] },
+    ]
+  };
+
+  let bCurrentSegment = 'bubble';
+  let bActiveChipId = null;      // bubble tab active chip
+  let blActiveChipId = null;     // people tab active chip
+
+  function bInitDefaultChips() {
+    B_DEFAULT_CHIPS.bubble.forEach(c => {
+      bChipStore.push({ id: ++bChipIdCounter, name: c.name, rules: c.rules, segment: 'bubble' });
+    });
+    B_DEFAULT_CHIPS.people.forEach(c => {
+      bChipStore.push({ id: ++bChipIdCounter, name: c.name, rules: c.rules, segment: 'people' });
+    });
+    // First chip per segment active
+    bActiveChipId = bChipStore.find(c => c.segment === 'bubble')?.id || null;
+    blActiveChipId = bChipStore.find(c => c.segment === 'people')?.id || null;
+    bRenderChips();
+  }
+
+  function bSerializeRules(containerId) {
+    const rules = [];
+    const container = document.getElementById(containerId || 'bFilterRules');
+    if (!container) return rules;
+    container.querySelectorAll(':scope > .nf-rule').forEach(rule => {
+      const wraps = rule.querySelectorAll('.nyam-select-wrap');
+      if (wraps.length < 2) return;
+      rules.push({
+        attr: wraps[0]?.querySelector('.nyam-select-value')?.textContent || '',
+        op: rule.querySelector('[data-role="op"] .nyam-select-value')?.textContent || 'is',
+        val: wraps[wraps.length - 1]?.querySelector('.nyam-select-value')?.textContent || '전체',
+      });
+    });
+    return rules;
+  }
+
+  function bUpdateChipBar() {
+    const bar = document.getElementById('bChipBar');
+    const drawer = document.getElementById('bFilterDrawer');
+    if (bar) bar.classList.toggle('show', drawer?.classList.contains('open'));
+  }
+
+  // Count helpers for chip labels
+  function bGetChipCount(chip) {
+    if (chip.segment === 'bubble') {
+      const cards = document.querySelectorAll('#bubblePanel .bubble-card');
+      const subMap = { '전체': 'all', '운영': 'mine', '가입': 'joined' };
+      const filter = subMap[chip.name];
+      if (!filter || filter === 'all') return cards.length;
+      return Array.from(cards).filter(c => c.getAttribute('data-role') === filter).length;
+    }
+    if (chip.segment === 'people') {
+      const cards = document.querySelectorAll('#peopleList .person-card');
+      const filterMap = { '전체': 'all', '팔로잉': 'following', '팔로워': 'followers', '맞팔': 'mutual' };
+      const filter = filterMap[chip.name];
+      if (!filter || filter === 'all') return cards.length;
+      return Array.from(cards).filter(card => {
+        const btn = card.querySelector('.person-action');
+        const type = btn.classList.contains('mutual') ? 'mutual' :
+                     btn.classList.contains('following') ? 'following' : 'follower';
+        if (filter === 'following') return type === 'following' || type === 'mutual';
+        if (filter === 'followers') return type === 'follower' || type === 'mutual';
+        if (filter === 'mutual') return type === 'mutual';
+        return true;
+      }).length;
+    }
+    return 0;
+  }
+
+  function bRenderChipRow(rowId, segFilter, activeId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const isBubbleManaging = document.getElementById('bFilterDrawer')?.classList.contains('open');
+    const isBubblerManaging = document.getElementById('blFilterDrawer')?.classList.contains('open');
+    const isManaging = segFilter === 'bubble' ? isBubbleManaging : isBubblerManaging;
+    const chips = bChipStore.filter(c => c.segment === segFilter);
+    row.innerHTML = chips.map(c => {
+      const isActive = isManaging ? (c.id === bEditingChipId) : (c.id === activeId);
+      const count = bGetChipCount(c);
+      const label = c.name + (count > 0 ? ' <span style="opacity:0.6;font-weight:500;">' + count + '</span>' : '');
+      return '<button class="saved-chip' + (isManaging ? ' manage-mode' : '') + (isActive ? ' active' : '') + '" data-chip-id="' + c.id + '" onclick="bClickChip(' + c.id + ')">' +
+        label +
+        '<span class="chip-delete" onclick="event.stopPropagation(); bDeleteChip(' + c.id + ')">✕</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  function bRenderChips() {
+    bRenderChipRow('bSavedChips', 'bubble', bActiveChipId);
+    bRenderChipRow('blSavedChips', 'people', blActiveChipId);
+  }
+
+  function bClickChip(id) {
+    const chip = bChipStore.find(c => c.id === id);
+    if (!chip) return;
+    const drawer = document.getElementById('bFilterDrawer');
+    if (drawer?.classList.contains('open') && chip.segment === 'bubble') {
+      // Edit mode
+      bEditingChipId = id;
+      document.getElementById('bChipNameInput').value = chip.name;
+      const saveBtn = document.getElementById('bChipSaveBtn');
+      saveBtn.textContent = '수정 저장';
+      saveBtn.classList.add('edit-mode');
+      document.getElementById('bChipCancelBtn').classList.add('show');
+      bRenderChips();
+    } else {
+      // Set active chip and re-render
+      if (chip.segment === 'bubble') {
+        bActiveChipId = id;
+        // Route: bubble sub-nav
+        const bubbleSubMap = { '전체': 'all', '운영': 'mine', '가입': 'joined' };
+        const subKey = bubbleSubMap[chip.name];
+        if (subKey) {
+          const navBtn = document.querySelector('#bubbleSubNav .sub-nav-item[onclick*="' + subKey + '"]');
+          if (navBtn) switchBubbleSub(navBtn, subKey);
+        }
+      } else if (chip.segment === 'people') {
+        blActiveChipId = id;
+        // Route: people filter — call directly (no legacy buttons)
+        const peopleFilterMap = { '전체': 'all', '팔로잉': 'following', '팔로워': 'followers', '맞팔': 'mutual' };
+        const filterKey = peopleFilterMap[chip.name];
+        if (filterKey) switchPeopleFilter(null, filterKey);
+      }
+      bRenderChips();
+    }
+  }
+
+  function bSaveChip() {
+    const nameInput = document.getElementById('bChipNameInput');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--negative)'; setTimeout(() => nameInput.style.borderColor = '', 1000); return; }
+    const rules = bSerializeRules('bFilterRules');
+    if (bEditingChipId) {
+      const chip = bChipStore.find(c => c.id === bEditingChipId);
+      if (chip) { chip.name = name; chip.rules = rules; }
+      bCancelChipEdit();
+    } else {
+      bChipStore.push({ id: ++bChipIdCounter, name, rules, segment: 'bubble' });
+      nameInput.value = '';
+    }
+    bRenderChips();
+  }
+
+  function bCancelChipEdit() {
+    bEditingChipId = null;
+    document.getElementById('bChipNameInput').value = '';
+    const saveBtn = document.getElementById('bChipSaveBtn');
+    saveBtn.textContent = '필터칩 추가';
+    saveBtn.classList.remove('edit-mode');
+    document.getElementById('bChipCancelBtn').classList.remove('show');
+    bRenderChips();
+  }
+
+  function bDeleteChip(id) {
+    bChipStore = bChipStore.filter(c => c.id !== id);
+    if (bEditingChipId === id) bCancelChipEdit();
+    bRenderChips();
+  }
+
+  // Bubbler (people) chip save/edit (mirrors bubble chip system)
+  function blSaveChip() {
+    const nameInput = document.getElementById('blChipNameInput');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--negative)'; setTimeout(() => nameInput.style.borderColor = '', 1000); return; }
+    const rules = bSerializeRules('blFilterRules');
+    if (bEditingChipId) {
+      const chip = bChipStore.find(c => c.id === bEditingChipId);
+      if (chip) { chip.name = name; chip.rules = rules; }
+      blCancelChipEdit();
+    } else {
+      bChipStore.push({ id: ++bChipIdCounter, name, rules, segment: 'people' });
+      nameInput.value = '';
+    }
+    bRenderChips();
+  }
+
+  function blCancelChipEdit() {
+    bEditingChipId = null;
+    document.getElementById('blChipNameInput').value = '';
+    const saveBtn = document.getElementById('blChipSaveBtn');
+    saveBtn.textContent = '필터칩 추가';
+    saveBtn.classList.remove('edit-mode');
+    document.getElementById('blChipCancelBtn').classList.remove('show');
+    bRenderChips();
+  }
 
   function filterBubbleSearch() {
     // Mock search — just visual feedback

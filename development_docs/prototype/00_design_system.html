@@ -449,8 +449,8 @@
     transition: color 0.15s;
   }
   .ds-tab-icon-btn:active { color: var(--text); }
-  .ds-tab-icon-btn.has-filter { color: var(--primary); }
-  .ds-tab-icon-btn.active-search { color: var(--primary); }
+  .ds-tab-icon-btn.has-filter { color: var(--accent-food); }
+  .ds-tab-icon-btn.active-search { color: var(--accent-food); }
 
   /* 검색 드롭다운 */
   .ds-search-dropdown {
@@ -505,7 +505,7 @@
     font-size: 11px; font-weight: 600; color: var(--text-hint);
     width: 40px; flex-shrink: 0; cursor: pointer;
   }
-  .ds-notion-conjunction.clickable:active { color: var(--primary); }
+  .ds-notion-conjunction.clickable:active { color: var(--accent-food); }
   /* Filter inline dropdowns — reuses nyam-select system at compact size */
   .ds-notion-filter-rule .nyam-select-wrap { display: inline-block; }
   .ds-notion-filter-rule .nyam-select {
@@ -561,6 +561,73 @@
   [data-theme="dark"] .ds-notion-add-dd {
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   }
+
+  /* Filter chip management — save/edit bar */
+  .ds-filter-chip-bar {
+    display: none; /* shown when filters are active */
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+    gap: 8px; align-items: center;
+  }
+  .ds-filter-chip-bar.show { display: flex; }
+  .ds-chip-name-input {
+    flex: 1; padding: 6px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); font-size: 12px;
+    font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; min-width: 0;
+  }
+  .ds-chip-name-input:focus { border-color: var(--accent-food); }
+  .ds-chip-name-input::placeholder { color: var(--text-hint); }
+  .ds-chip-save-btn {
+    padding: 6px 14px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    background: var(--accent-food); color: #fff;
+  }
+  .ds-chip-save-btn:active { transform: scale(0.95); opacity: 0.85; }
+  .ds-chip-save-btn.edit-mode {
+    background: var(--text); color: var(--bg);
+  }
+  .ds-chip-cancel-btn {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; white-space: nowrap; background: var(--bg);
+    color: var(--text-sub); display: none;
+  }
+  .ds-chip-cancel-btn.show { display: inline-block; }
+  .ds-chip-cancel-btn:active { background: var(--border); }
+
+  /* Saved filter chips row */
+  .ds-saved-chips-row {
+    display: flex; gap: 6px; padding: 8px 0;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ds-saved-chips-row::-webkit-scrollbar { display: none; }
+  .ds-saved-chips-row:empty { display: none; }
+  .ds-saved-chip {
+    position: relative;
+    padding: 4px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--bg);
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; white-space: nowrap; min-height: 26px;
+    display: flex; align-items: center; transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .ds-saved-chip.active {
+    background: var(--accent-food); border-color: var(--accent-food); color: #fff;
+  }
+  .ds-saved-chip:active { transform: scale(0.95); }
+  /* Delete x button — shown in manage mode */
+  .ds-saved-chip .ds-chip-delete {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--negative, #E53935); color: #fff;
+    border: 1.5px solid var(--bg-card); font-size: 8px;
+    line-height: 1; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .ds-saved-chip.manage-mode .ds-chip-delete { display: flex; }
 
   /* Sort dropdown */
   .ds-sort-dropdown {
@@ -1238,8 +1305,17 @@
             </button>
           </div>
         </div>
+        <!-- Filter chip save/edit bar -->
+        <div class="ds-filter-chip-bar" id="dsChipBar">
+          <input class="ds-chip-name-input" id="dsChipNameInput" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+          <button class="ds-chip-cancel-btn" id="dsChipCancelBtn" onclick="dsCancelChipEdit()">취소</button>
+          <button class="ds-chip-save-btn" id="dsChipSaveBtn" onclick="dsSaveChip()">필터칩 추가</button>
+        </div>
       </div>
     </div>
+
+    <!-- Saved filter chips -->
+    <div class="ds-saved-chips-row" id="dsSavedChips"></div>
 
     <!-- Sort dropdown -->
     <div class="ds-sort-dropdown" id="dsSortDropdown" style="top:42px;">
@@ -1298,12 +1374,17 @@
   <div class="note">
     <b>필터 버튼:</b> <code>sliders-horizontal</code> 아이콘, 32×32 터치 영역<br>
     <b>소팅 버튼:</b> <code>arrow-up-down</code> 아이콘, 32×32 터치 영역<br>
-    <b>활성 상태:</b> <code>color: var(--primary)</code><br>
+    <b>활성 상태:</b> <code>color: var(--accent-food)</code><br>
     <b>필터 패널:</b> max-height 애니메이션 (0 → 260px), Notion 스타일 룰 기반<br>
     <b>소팅 드롭다운:</b> <code>border-radius: 12px</code>, <code>box-shadow: 0 8px 28px</code>, 절대 위치<br>
     <b>검색 버튼:</b> <code>search</code> 아이콘, 32×32 터치 영역<br>
     <b>검색 드롭다운:</b> 우측 정렬, 폭 50%, textarea 자동 확장 (줄바꿈 시 높이 증가)<br>
-    <b>상호 배타:</b> 필터·소팅·검색 중 하나만 열림
+    <b>상호 배타:</b> 필터·소팅·검색 중 하나만 열림<br><br>
+    <b>필터칩 관리:</b> 필터 조건 설정 시 하단에 "필터칩 추가" 바 표시<br>
+    <b>칩 추가:</b> 이름 입력 → "필터칩 추가" 버튼 → 필터칩 행에 추가<br>
+    <b>칩 수정:</b> 기존 칩 클릭 → 필터 패널에 조건 로드 → "수정 저장" 모드<br>
+    <b>칩 삭제:</b> 필터 패널 열린 상태에서 칩 우상단 ✕ 버튼 표시<br>
+    <b>기본 칩:</b> home.html의 식당/와인, bubbles.html의 버블/버블러 필터칩은 이 시스템으로 생성된 default 칩
   </div>
 </div>
 
@@ -2531,6 +2612,189 @@ function applyRating(circle, score) {
     lucide.createIcons({ nodes: [wrapper] });
     document.querySelectorAll('.ds-notion-add-dd.open').forEach(d => d.classList.remove('open'));
   }
+
+  // ============================================================
+  // FILTER CHIP MANAGEMENT
+  // ============================================================
+  let dsChipStore = [];    // [{id, name, rules: serialized}]
+  let dsEditingChipId = null;
+  let dsChipIdCounter = 0;
+
+  // Default chips to demonstrate the system
+  const DS_DEFAULT_CHIPS = [
+    { name: '광화문 맛집', rules: [{attr:'위치', op:'is', val:'광화문'}] },
+    { name: '혼밥 85+', rules: [{attr:'상황', op:'is', val:'혼밥'}, {attr:'점수', op:'≥', val:'85'}] },
+  ];
+
+  function dsInitDefaultChips() {
+    DS_DEFAULT_CHIPS.forEach(c => {
+      const id = ++dsChipIdCounter;
+      dsChipStore.push({ id, name: c.name, rules: c.rules });
+    });
+    dsRenderChips();
+  }
+
+  // Serialize current filter rules from the panel
+  function dsSerializeRules() {
+    const rules = [];
+    document.querySelectorAll('#dsFilterRules > .ds-notion-filter-rule').forEach(rule => {
+      const wraps = rule.querySelectorAll('.nyam-select-wrap');
+      if (wraps.length < 2) return; // skip groups for simplicity in demo
+      const attrWrap = wraps[0];
+      const opWrap = rule.querySelector('.nyam-select-wrap[data-role="op"]');
+      const valWrap = wraps[wraps.length - 1];
+      rules.push({
+        attr: attrWrap?.querySelector('.nyam-select-value')?.textContent || '',
+        op: opWrap?.querySelector('.nyam-select-value')?.textContent || 'is',
+        val: valWrap?.querySelector('.nyam-select-value')?.textContent || '전체',
+      });
+    });
+    return rules;
+  }
+
+  // Deserialize rules into the panel
+  function dsDeserializeRules(rules) {
+    const container = document.getElementById('dsFilterRules');
+    // Remove all existing rules
+    container.querySelectorAll('.ds-notion-filter-rule').forEach(r => r.remove());
+    rules.forEach((r, i) => {
+      const ruleEl = dsBuildRule();
+      // Set conjunction
+      const conj = ruleEl.querySelector('.ds-notion-conjunction');
+      if (i === 0) {
+        conj.textContent = 'Where';
+        conj.classList.remove('clickable');
+        conj.removeAttribute('onclick');
+      }
+      // Set attr
+      const attrVal = ruleEl.querySelector('[data-role="attr"] .nyam-select-value');
+      if (attrVal) attrVal.textContent = r.attr;
+      // Rebuild val dropdown
+      const valWrap = ruleEl.querySelectorAll('.nyam-select-wrap:not([data-role="op"])')[1];
+      if (valWrap) {
+        const vals = DS_FOOD_VALS[r.attr] || ['전체'];
+        const valDD = valWrap.querySelector('.nyam-dropdown');
+        valDD.innerHTML = vals.map(v =>
+          '<button class="nyam-dropdown-item' + (v === r.val ? ' selected' : '') + '" onclick="dsSelectVal(this)">' + v + '</button>'
+        ).join('');
+        valWrap.querySelector('.nyam-select-value').textContent = r.val;
+      }
+      // Set op
+      const opVal = ruleEl.querySelector('[data-role="op"]')?.closest('.nyam-select-wrap')?.querySelector('.nyam-select-value');
+      if (opVal) opVal.textContent = r.op;
+      // Mark selected in attr dropdown
+      const attrDD = ruleEl.querySelector('[data-role="attr"]')?.closest('.nyam-select-wrap')?.querySelectorAll('.nyam-dropdown-item');
+      attrDD?.forEach(item => {
+        item.classList.toggle('selected', item.textContent === r.attr);
+      });
+      const addRow = container.querySelector('.ds-notion-add-row');
+      container.insertBefore(ruleEl, addRow);
+    });
+    lucide.createIcons({ nodes: [container] });
+  }
+
+  // Show/hide chip bar based on filter state
+  function dsUpdateChipBar() {
+    const bar = document.getElementById('dsChipBar');
+    const drawer = document.getElementById('dsFilterDrawer');
+    if (!drawer.classList.contains('open')) {
+      bar.classList.remove('show');
+      return;
+    }
+    bar.classList.add('show');
+  }
+
+  // Render saved chips
+  function dsRenderChips() {
+    const row = document.getElementById('dsSavedChips');
+    const isManaging = document.getElementById('dsFilterDrawer')?.classList.contains('open');
+    row.innerHTML = dsChipStore.map(c =>
+      '<button class="ds-saved-chip' + (isManaging ? ' manage-mode' : '') + (c.id === dsEditingChipId ? ' active' : '') + '" data-chip-id="' + c.id + '" onclick="dsClickChip(' + c.id + ')">' +
+        c.name +
+        '<span class="ds-chip-delete" onclick="event.stopPropagation(); dsDeleteChip(' + c.id + ')">✕</span>' +
+      '</button>'
+    ).join('');
+  }
+
+  // Click a chip: if filter panel open → load for editing; otherwise → toggle active (apply filter)
+  function dsClickChip(id) {
+    const drawer = document.getElementById('dsFilterDrawer');
+    const chip = dsChipStore.find(c => c.id === id);
+    if (!chip) return;
+
+    if (drawer.classList.contains('open')) {
+      // Edit mode
+      dsEditingChipId = id;
+      dsDeserializeRules(chip.rules);
+      document.getElementById('dsChipNameInput').value = chip.name;
+      const saveBtn = document.getElementById('dsChipSaveBtn');
+      saveBtn.textContent = '수정 저장';
+      saveBtn.classList.add('edit-mode');
+      document.getElementById('dsChipCancelBtn').classList.add('show');
+      dsRenderChips();
+    } else {
+      // Toggle active
+      const el = document.querySelector('[data-chip-id="' + id + '"]');
+      el?.classList.toggle('active');
+    }
+  }
+
+  // Save (add or update) chip
+  function dsSaveChip() {
+    const nameInput = document.getElementById('dsChipNameInput');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--negative, #E53935)'; setTimeout(() => nameInput.style.borderColor = '', 1000); return; }
+
+    const rules = dsSerializeRules();
+    if (rules.length === 0) return;
+
+    if (dsEditingChipId) {
+      // Update existing
+      const chip = dsChipStore.find(c => c.id === dsEditingChipId);
+      if (chip) { chip.name = name; chip.rules = rules; }
+      dsCancelChipEdit();
+    } else {
+      // Add new
+      const id = ++dsChipIdCounter;
+      dsChipStore.push({ id, name, rules });
+      nameInput.value = '';
+    }
+    dsRenderChips();
+  }
+
+  // Cancel chip edit
+  function dsCancelChipEdit() {
+    dsEditingChipId = null;
+    document.getElementById('dsChipNameInput').value = '';
+    const saveBtn = document.getElementById('dsChipSaveBtn');
+    saveBtn.textContent = '필터칩 추가';
+    saveBtn.classList.remove('edit-mode');
+    document.getElementById('dsChipCancelBtn').classList.remove('show');
+    dsRenderChips();
+  }
+
+  // Delete chip
+  function dsDeleteChip(id) {
+    dsChipStore = dsChipStore.filter(c => c.id !== id);
+    if (dsEditingChipId === id) dsCancelChipEdit();
+    dsRenderChips();
+  }
+
+  // Patch dsToggleFilter to also update chip bar & manage mode
+  const _origDsToggleFilter = dsToggleFilter;
+  dsToggleFilter = function() {
+    _origDsToggleFilter();
+    dsUpdateChipBar();
+    dsRenderChips(); // refresh manage-mode state
+    if (dsEditingChipId && !document.getElementById('dsFilterDrawer').classList.contains('open')) {
+      dsCancelChipEdit();
+    }
+  };
+
+  // Init default chips on load
+  document.addEventListener('DOMContentLoaded', () => {
+    dsInitDefaultChips();
+  });
 
   // Close sort dropdown + add dropdown on outside click
   document.addEventListener('click', e => {
