@@ -98,6 +98,16 @@
     display: flex; align-items: center;
     justify-content: space-between;
   }
+
+  /* Inner page back */
+  .inner-back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; color: var(--text);
+  }
+  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
+  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
+  .inner-back-btn:active { opacity: 0.6; }
   .header-brand {
     font-family: 'Comfortaa', cursive;
     font-size: 22px; font-weight: 700;
@@ -520,7 +530,10 @@
         </div>
       </div>
       <div class="app-header">
-        <a href="01_home.html" class="header-brand" style="cursor:pointer;">nyam</a>
+        <button class="inner-back-btn" onclick="history.back()">
+          <i data-lucide="chevron-left"></i>
+          <span>설정</span>
+        </button>
         <div class="header-right">
           <button class="header-bubbles" onclick="location.href='04_bubbles.html'">bubbles</button>
           <div style="position:relative;">
@@ -533,7 +546,7 @@
             <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
             <div class="avatar-menu" onclick="event.stopPropagation()">
               <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
-              <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
+
               <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
             </div>
           </div>

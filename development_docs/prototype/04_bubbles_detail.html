@@ -39,7 +39,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 
-  /* Device Frame */
+  /* ── Device ── */
   .device {
     width: 390px; height: 844px; background: #2A2725;
     border-radius: 52px; padding: 12px;
@@ -52,595 +52,648 @@
   }
   .dynamic-island {
     position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
-    width: 126px; height: 36px; background: #1A1A1A;
-    border-radius: 20px; z-index: 100;
+    width: 126px; height: 36px; background: #1A1A1A; border-radius: 20px; z-index: 100;
   }
   .dynamic-island::after {
     content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-    width: 12px; height: 12px; border-radius: 50%;
-    background: #080C10; box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
+    width: 12px; height: 12px; border-radius: 50%; background: #080C10;
   }
 
-  /* Status bar */
-  .status-bar {
-    height: 44px; display: flex; align-items: flex-end;
-    justify-content: space-between; padding: 0 24px 6px;
-    font-size: 12px; font-weight: 600; color: var(--text);
-    position: relative; z-index: 50;
-  }
-  .status-time { font-size: 15px; font-weight: 700; }
-  .status-icons { display: flex; gap: 6px; align-items: center; }
-  .status-icons svg { width: 16px; height: 16px; }
-
-  /* Screen system */
-  .screens-wrapper {
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;
-  }
+  /* ── Screens ── */
+  .screens-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; }
   .screen {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%; background: var(--bg);
-    display: flex; flex-direction: column;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg); display: flex; flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;
   }
   .screen.hidden { transform: translateX(100%); }
   .screen.slide-out { transform: translateX(-100%); }
   .screen.active { transform: translateX(0); }
 
-  /* FAB Back */
-  .fab-back {
-    position: absolute; bottom: 28px; left: 16px; z-index: 85;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(248,246,243,0.88);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text); transition: transform 0.15s;
+  /* ── Status bar ── */
+  .status-bar {
+    height: 44px; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 24px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text); position: relative; z-index: 50;
   }
-  .fab-back:active { transform: scale(0.9); }
+  .status-time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
 
-  /* Top fixed */
+  /* ── Top fixed header ── */
   .top-fixed {
-    flex-shrink: 0;
-    background: rgba(248,246,243,0.55);
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    flex-shrink: 0; background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
     z-index: 60;
   }
   .app-header {
-    padding: 2px 16px 8px;
-    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 16px 10px; display: flex; align-items: center; justify-content: space-between;
   }
+  .inner-back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer; padding: 4px 0; color: var(--text);
+  }
+  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
+  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
+  .inner-back-btn:active { opacity: 0.6; }
   .header-right { display: flex; gap: 6px; align-items: center; }
-  .header-avatar {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--primary);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: #fff;
-    cursor: pointer; flex-shrink: 0;
+  .bubbles-link {
+    font-family: 'Comfortaa', cursive; font-size: 13px; font-weight: 700;
+    color: var(--text-sub); background: none; border: none; cursor: pointer; padding: 4px 6px;
   }
   .notif-wrap { position: relative; }
-  .notif-badge {
-    pointer-events: none;
-    position: absolute; top: 2px; right: 2px;
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--brand); border: 1.5px solid var(--bg);
-  }
-  .notif-dropdown-overlay {
-    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-    z-index: 190; border-radius: 42px;
-  }
-  .notif-dropdown-overlay.open { display: block; }
-  .notif-dropdown {
-    display: none; position: absolute;
-    top: 90px; right: 16px;
-    width: 300px; max-height: 400px;
-    background: var(--bg-elevated); border: 1px solid var(--border);
-    border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
-    z-index: 200; overflow: hidden; flex-direction: column;
-  }
-  .notif-dropdown.open { display: flex; }
-  .notif-dropdown-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
-  }
-  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
-  .notif-dropdown-mark-read {
-    background: none; border: none; cursor: pointer;
-    font-size: 11px; font-weight: 500; color: var(--text-hint); font-family: inherit;
-  }
-  .notif-dropdown-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
-  .notif-dropdown-list::-webkit-scrollbar { display: none; }
-  .notif-item {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 11px 14px; cursor: pointer;
-    border-bottom: 1px solid var(--border); position: relative;
-  }
-  .notif-item:last-child { border-bottom: none; }
-  .notif-item:active { opacity: 0.7; }
-  .notif-item-icon {
-    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 1px; color: var(--text-sub);
-  }
-  .notif-item-icon svg { width: 16px; height: 16px; }
-  .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
-  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
-  .notif-item-body { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
-  .notif-item-time { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
-  .notif-item.unread .notif-item-title { font-weight: 600; }
-  .notif-item-dot {
-    position: absolute; top: 15px; right: 12px;
-    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
-  }
-  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
-  .notif-action-btn {
-    padding: 3px 10px; border-radius: 6px;
-    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
-  .notif-action-accept { background: var(--text); color: #fff; border: none; }
-  .notif-action-decline { background: transparent; color: var(--text-hint); border: 1px solid var(--border); }
-  .notif-dropdown-footer {
-    padding: 9px 14px; text-align: center;
-    border-top: 1px solid var(--border); flex-shrink: 0;
-  }
-  .notif-dropdown-footer a {
-    font-size: 12px; font-weight: 500; color: var(--text-hint); text-decoration: none;
-  }
   .icon-btn {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: transparent; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text); position: relative; transition: background 0.15s;
+    width: 34px; height: 34px; border-radius: 50%; background: transparent; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text);
   }
-  .icon-btn:active { background: var(--bg-card); }
   .icon-btn svg { width: 20px; height: 20px; }
-  .icon-btn-sm { width: 28px; height: 28px; }
-  .icon-btn-sm svg { width: 14px; height: 14px; }
-  .bubbles-link {
-    background: none; border: none; cursor: pointer;
-    font-family: 'Comfortaa', cursive;
-    font-size: 13px; font-weight: 700; color: var(--brand); padding: 4px 0;
+  .notif-badge {
+    pointer-events: none; position: absolute; top: 2px; right: 2px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--brand); border: 1.5px solid var(--bg);
+  }
+  .header-avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; flex-shrink: 0;
   }
 
-  /* Scroll */
+  /* ── Scroll area ── */
   .scroll-area {
     flex: 1; overflow-y: auto; overflow-x: hidden;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .scroll-area::-webkit-scrollbar { display: none; }
 
-  /* Inner page back */
-  .inner-back-btn {
-    display: flex; align-items: center; gap: 2px;
-    background: none; border: none; cursor: pointer;
-    padding: 4px 0; color: var(--text);
+  /* ── FAB back ── */
+  .fab-back {
+    position: absolute; bottom: 28px; left: 16px; z-index: 85;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(248,246,243,0.88); backdrop-filter: blur(12px);
+    border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); transition: transform 0.15s;
   }
-  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
-  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
-  .inner-back-btn:active { opacity: 0.6; }
+  .fab-back:active { transform: scale(0.92); }
 
-  /* Pill */
+  /* ── Pill ── */
   .pill {
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
   }
-  .pill-green { background: #E8F0EB; color: var(--positive); }
   .pill-blue { background: var(--accent-social-light); color: var(--accent-social); }
+  .pill-green { background: rgba(126,174,139,0.15); color: var(--positive); }
   .pill-orange { background: var(--primary-light); color: var(--primary); }
-  .pill-sm { font-size: 11px; padding: 2px 8px; }
-  .pill-xs { font-size: 10px; padding: 2px 8px; }
+  .pill-xs { font-size: 10px; padding: 2px 7px; }
+  .pill-sm { font-size: 10px; }
 
-  /* ========== HERO — Compact & Engaging ========== */
+  /* ── Notif dropdown ── */
+  .notif-dropdown-overlay {
+    display: none; position: absolute; inset: 0; z-index: 90;
+  }
+  .notif-dropdown-overlay.open { display: block; }
+  .notif-dropdown {
+    display: none; position: absolute; top: 88px; left: 12px; right: 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); z-index: 95; overflow: hidden;
+  }
+  .notif-dropdown.open { display: block; }
+  .notif-dropdown-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .notif-dropdown-mark-read { font-size: 12px; color: var(--accent-social); background: none; border: none; cursor: pointer; }
+  .notif-dropdown-list { max-height: 260px; overflow-y: auto; }
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer; position: relative; transition: background 0.1s;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item.unread { background: rgba(122,155,174,0.05); }
+  .notif-item:active { background: var(--bg-section); }
+  .notif-item-icon {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--bg-section);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-sub);
+  }
+  .notif-item-icon svg { width: 14px; height: 14px; }
+  .notif-item-content { flex: 1; }
+  .notif-item-title { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .notif-item-body { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .notif-item-time { font-size: 10px; color: var(--text-hint); margin-top: 2px; }
+  .notif-item-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .notif-item:not(.unread) .notif-item-dot { display: none; }
+  .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .notif-action-btn {
+    padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border);
+  }
+  .notif-action-accept { background: var(--text); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: var(--text-hint); }
+  .notif-dropdown-footer { padding: 10px 16px; text-align: center; }
+  .notif-dropdown-footer a { font-size: 12px; color: var(--text-hint); text-decoration: none; }
+
+  /* ── Avatar menu ── */
+  .avatar-menu {
+    display: none; position: absolute; top: calc(100% + 6px); right: 0;
+    background: #FFFFFF; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 200; min-width: 120px; overflow: hidden;
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    font-size: 13px; font-weight: 500; color: var(--text); text-decoration: none;
+    cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s;
+  }
+  .avatar-menu-item:last-child { border-bottom: none; }
+  .avatar-menu-item:active { background: var(--bg-page); }
+
+  /* ══════════════════════════════════════
+     BUBBLE DETAIL — HERO
+  ══════════════════════════════════════ */
   .detail-hero {
-    padding: 16px 20px 0;
-    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px 20px 0; display: flex; gap: 14px; align-items: center;
   }
   .detail-hero-icon {
-    width: 56px; height: 56px; border-radius: 16px;
+    width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; position: relative;
+    font-size: 22px;
   }
-  .detail-hero-icon svg { width: 24px; height: 24px; }
-  /* Activity pulse ring */
-  .detail-hero-icon::after {
-    content: ''; position: absolute; inset: -3px;
-    border-radius: 19px; border: 2px solid var(--positive);
-    opacity: 0.6;
-    animation: heroPulse 2.5s ease-in-out infinite;
-  }
-  @keyframes heroPulse {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.04); }
-  }
+  .detail-hero-icon svg { width: 22px; height: 22px; }
   .detail-hero-text { flex: 1; min-width: 0; }
   .detail-hero-name {
-    font-size: 18px; font-weight: 700; color: var(--text);
+    font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.2;
     display: flex; align-items: center; gap: 6px;
   }
+  .detail-hero-name .icon-btn { width: 28px; height: 28px; color: var(--text-hint); margin-left: auto; }
+  .detail-hero-name .icon-btn svg { width: 16px; height: 16px; }
   .detail-hero-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-  .hero-badges {
-    display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; align-items: center;
-  }
-  .hero-actions {
-    display: flex; gap: 4px; margin-left: auto; flex-shrink: 0;
-  }
+  .hero-badges { display: flex; gap: 5px; margin-top: 6px; align-items: center; }
 
-  /* Inline Stats Chips (replaces quick-stats card) */
+  /* ── Stats row ── */
   .hero-stats {
-    display: flex; gap: 6px; padding: 10px 20px 0;
+    display: flex; gap: 0; padding: 14px 20px 0;
   }
   .hero-stat-chip {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    padding: 8px 0; border-radius: 10px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    cursor: default;
+    flex: 1; text-align: center; padding: 10px 0;
+    border-right: 1px solid var(--border);
   }
-  .hero-stat-val { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1; }
-  .hero-stat-lbl { font-size: 9px; color: var(--text-sub); margin-top: 3px; letter-spacing: 0.2px; }
+  .hero-stat-chip:last-child { border-right: none; }
+  .hero-stat-val { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; }
+  .hero-stat-lbl { font-size: 10px; color: var(--text-sub); margin-top: 3px; }
 
-  /* ========== THIS WEEK STORY CARD ========== */
-  .story-card {
-    margin: 12px 20px 0;
-    background: linear-gradient(135deg, var(--accent-social-light) 0%, #E3EEF4 100%);
-    border: 1px solid rgba(122,155,174,0.25);
-    border-radius: 14px; padding: 14px 16px;
-    position: relative; overflow: hidden;
-    cursor: pointer; transition: transform 0.15s;
+  /* ══════════════════════════════════════
+     WEEKLY LEADERBOARD
+  ══════════════════════════════════════ */
+  .weekly-leaderboard {
+    margin: 14px 20px 0;
+    background: linear-gradient(135deg, #FFF8F0 0%, #FFF3E8 100%);
+    border: 1px solid rgba(201,169,110,0.3); border-radius: 16px; overflow: hidden;
   }
-  .story-card:active { transform: scale(0.98); }
-  .story-card-header {
-    display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  .wl-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px 0;
   }
-  .story-card-label {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.8px; color: var(--accent-social);
+  .wl-title {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 800; color: var(--text);
+    text-transform: uppercase; letter-spacing: 0.4px;
   }
-  .story-card-period {
-    font-size: 10px; color: var(--text-hint); margin-left: auto;
+  .wl-title svg { width: 13px; height: 13px; color: var(--caution); }
+  .wl-reset { font-size: 10px; color: var(--text-hint); }
+  .wl-rows { padding: 8px 0 4px; }
+  .wl-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+    cursor: default; transition: background 0.1s;
   }
-  .story-highlights {
-    display: flex; gap: 14px; align-items: center;
+  .wl-row.wl-me {
+    background: rgba(201,169,110,0.12); margin: 2px 6px;
+    border-radius: 10px; padding: 6px 8px;
   }
-  .story-highlight {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  .wl-medal { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+  .wl-rank-num {
+    font-size: 13px; font-weight: 800; color: var(--text-hint);
+    width: 20px; text-align: center; flex-shrink: 0;
   }
-  .story-highlight-val {
-    font-size: 20px; font-weight: 800; color: var(--text); line-height: 1;
-  }
-  .story-highlight-lbl { font-size: 9px; color: var(--text-sub); }
-  .story-divider {
-    width: 1px; height: 28px; background: rgba(122,155,174,0.3);
-  }
-  .story-explorer {
-    flex: 1; min-width: 0;
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.5); border-radius: 10px;
-    padding: 6px 10px;
-  }
-  .story-explorer-avatar {
-    width: 28px; height: 28px; border-radius: 50%;
+  .wl-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    font-size: 11px; font-weight: 700; color: #fff;
   }
-  .story-explorer-text { font-size: 11px; color: var(--text); line-height: 1.3; }
-  .story-explorer-text strong { font-weight: 700; }
+  .wl-info { flex: 1; min-width: 0; }
+  .wl-name { font-size: 12px; font-weight: 700; color: var(--text); }
+  .wl-bars { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+  .wl-bar-track {
+    flex: 1; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden;
+  }
+  .wl-bar-fill { height: 100%; background: var(--caution); border-radius: 2px; }
+  .wl-count { font-size: 10px; color: var(--text-hint); white-space: nowrap; }
+  .wl-change { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .wl-change.up { color: var(--positive); }
+  .wl-change.down { color: var(--negative); }
+  .wl-change.same { color: var(--text-hint); }
+  .wl-me-cta {
+    font-size: 10px; color: var(--caution); font-weight: 600;
+    background: none; border: 1px solid rgba(201,169,110,0.4);
+    border-radius: 8px; padding: 3px 8px; cursor: pointer; white-space: nowrap;
+    flex-shrink: 0;
+  }
 
-  /* ========== DETAIL TABS (4 tabs) ========== */
+  /* ══════════════════════════════════════
+     BUBBLE INFO collapse
+  ══════════════════════════════════════ */
+  .bubble-info {
+    margin: 10px 20px 0; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .bubble-info-trigger {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px; background: none; border: none; cursor: pointer;
+    text-align: left; color: var(--text);
+  }
+  .bubble-info-trigger-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .bubble-info-trigger-icon svg { width: 13px; height: 13px; }
+  .bubble-info-trigger-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .bubble-info-trigger-sub { font-size: 11px; color: var(--text-hint); }
+  .bubble-info-chevron {
+    width: 16px; height: 16px; color: var(--text-hint); transition: transform 0.25s; flex-shrink: 0;
+  }
+  .bubble-info.open .bubble-info-chevron { transform: rotate(180deg); }
+  .bubble-info-body { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border); }
+  .bubble-info.open .bubble-info-body { display: block; }
+  .bubble-info-section { padding-top: 11px; }
+  .bubble-info-section + .bubble-info-section { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+  .bubble-info-section-title {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--text-sub); margin-bottom: 7px;
+  }
+  .bubble-info-section-title svg { width: 11px; height: 11px; }
+  .bubble-info-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .bubble-info-chip {
+    display: flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; background: var(--bg-section);
+    color: var(--text-sub); border: 1px solid var(--border);
+  }
+  .bubble-info-chip svg { width: 11px; height: 11px; }
+  .bubble-info-chip.highlight { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .bubble-info-rules { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .bubble-info-rule {
+    display: flex; align-items: flex-start; gap: 7px;
+    font-size: 12px; color: var(--text); line-height: 1.45;
+  }
+  .bubble-info-rule-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--primary); margin-top: 5px; flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════
+     TABS (3)
+  ══════════════════════════════════════ */
   .detail-tabs {
     display: flex; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 50;
-    background: var(--bg);
+    position: sticky; top: 0; z-index: 50; background: var(--bg);
+    margin-top: 10px;
   }
   .detail-tab {
-    flex: 1; padding: 10px 0; text-align: center;
-    font-size: 13px; font-weight: 500;
-    color: var(--text-sub); cursor: pointer;
-    border: none; border-bottom: 2px solid transparent;
-    background: none; transition: all 0.15s;
+    flex: 1; padding: 11px 0; text-align: center;
+    font-size: 13px; font-weight: 500; color: var(--text-sub); cursor: pointer;
+    border: none; border-bottom: 2px solid transparent; background: none; transition: all 0.15s;
   }
   .detail-tab.active {
-    color: var(--accent-social); border-bottom-color: var(--accent-social);
-    font-weight: 700;
+    color: var(--primary); border-bottom-color: var(--primary); font-weight: 700;
   }
 
-  /* ========== FEED TAB ========== */
-  .feed-card {
-    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  /* ══════════════════════════════════════
+     FEED TAB — redesigned
+  ══════════════════════════════════════ */
+  .feed-spotlight {
+    margin: 12px 16px; background: linear-gradient(135deg, #FFF8F0, #FFF3E8);
+    border: 1px solid rgba(201,169,110,0.3); border-radius: 14px; padding: 11px 13px;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
   }
-  .feed-top {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  .feed-spotlight-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--caution); color: #fff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .feed-spotlight-icon svg { width: 15px; height: 15px; }
+  .feed-spotlight-text { flex: 1; }
+  .feed-spotlight-label { font-size: 11px; font-weight: 700; color: var(--caution); text-transform: uppercase; letter-spacing: 0.4px; }
+  .feed-spotlight-title { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 1px; }
+  .feed-spotlight-sub { font-size: 11px; color: var(--text-hint); margin-top: 1px; }
+  .feed-spotlight-badge {
+    font-size: 10px; font-weight: 700; color: var(--caution);
+    background: rgba(201,169,110,0.15); border-radius: 8px; padding: 3px 7px;
+    flex-shrink: 0;
+  }
+
+  .feed-group-banner {
+    display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--accent-social-light); font-size: 12px; color: var(--accent-social);
+    font-weight: 700; border-bottom: 1px solid rgba(122,155,174,0.15);
+    border-top: 1px solid rgba(122,155,174,0.15);
+  }
+  .feed-group-banner svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .feed-card {
+    padding: 14px 16px 10px; border-bottom: 6px solid var(--bg-section);
+    cursor: default;
+  }
+  .feed-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
   }
   .feed-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: #fff;
+    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    cursor: pointer;
   }
-  .feed-user-info { flex: 1; }
-  .feed-user-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .feed-time { font-size: 11px; color: var(--text-sub); }
-  .feed-body {
-    background: var(--bg-card); border-radius: 10px;
-    padding: 10px 12px; margin-bottom: 8px;
-    cursor: pointer; transition: background 0.15s;
-    text-decoration: none; display: block;
+  .feed-user-info { flex: 1; cursor: pointer; }
+  .feed-user-name-row { display: flex; align-items: center; gap: 5px; }
+  .feed-user-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .feed-user-level { font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-light); border-radius: 6px; padding: 1px 5px; }
+  .feed-time { font-size: 11px; color: var(--text-hint); margin-top: 1px; }
+
+  /* Score + place block */
+  .feed-place-block {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; cursor: pointer;
+    text-decoration: none;
   }
-  .feed-body:active { background: var(--bg-section); }
-  .feed-place-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .feed-score-badge {
+    width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--primary); color: #fff;
+  }
+  .feed-score-badge.wine-badge { background: var(--wine); }
+  .feed-score-num { font-size: 18px; font-weight: 900; line-height: 1; }
+  .feed-score-label { font-size: 8px; font-weight: 600; opacity: 0.75; margin-top: 1px; }
+  .feed-place-info { flex: 1; min-width: 0; }
+  .feed-place-name { font-size: 15px; font-weight: 800; color: var(--text); }
   .feed-place-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-  .feed-comment { font-size: 13px; color: var(--text); margin-top: 6px; font-style: italic; }
-  .feed-photos { display: flex; gap: 5px; margin-top: 8px; }
-  .feed-photo {
-    width: 52px; height: 52px; border-radius: 8px;
-    background: var(--bg-section) center/cover no-repeat; flex-shrink: 0;
+  .feed-place-hot {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 700; color: #E55A35;
+    background: #FFF0EC; border-radius: 6px; padding: 1px 6px; margin-top: 3px;
   }
-  .feed-actions { display: flex; gap: 12px; align-items: center; }
+  .feed-place-hot svg { width: 9px; height: 9px; }
+
+  /* Photos */
+  .feed-photos { display: flex; gap: 4px; margin-bottom: 8px; }
+  .feed-photo {
+    flex: 1; aspect-ratio: 1; border-radius: 10px;
+    background: var(--bg-section) center/cover no-repeat; max-height: 110px;
+  }
+  .feed-photo-more {
+    flex: 1; aspect-ratio: 1; border-radius: 10px; max-height: 110px;
+    background: rgba(0,0,0,0.45) center/cover no-repeat; position: relative; overflow: hidden;
+  }
+  .feed-photo-more-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #fff; border-radius: 10px;
+  }
+
+  /* Comment */
+  .feed-comment {
+    font-size: 13px; color: var(--text); font-style: italic;
+    line-height: 1.45; margin-bottom: 10px;
+    padding-left: 8px; border-left: 2px solid var(--border-bold);
+  }
+
+  /* Reactions */
+  .feed-reactions {
+    display: flex; gap: 5px; margin-bottom: 8px;
+  }
+  .react-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 3px;
+    padding: 6px 0; font-size: 11px; font-weight: 600; color: var(--text-hint);
+    background: var(--bg-section); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .react-btn svg { width: 12px; height: 12px; }
+  .react-btn.reacted-want { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .react-btn.reacted-check { background: rgba(126,174,139,0.15); color: var(--positive); border-color: transparent; }
+  .react-btn.reacted-fire { background: #FFF0EC; color: #E55A35; border-color: transparent; }
+
+  /* Seen by */
+  .feed-footer {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .feed-seen-avatars { display: flex; }
+  .feed-seen-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 700; color: #fff;
+    margin-left: -5px; border: 2px solid var(--bg);
+  }
+  .feed-seen-dot:first-child { margin-left: 0; }
+  .feed-seen-text { font-size: 11px; color: var(--text-hint); }
+  .feed-action-btns { margin-left: auto; display: flex; gap: 12px; }
   .feed-action-btn {
-    background: none; border: none; cursor: pointer;
-    font-size: 13px; color: var(--text-sub);
+    background: none; border: none; cursor: pointer; font-size: 13px; color: var(--text-sub);
     display: flex; align-items: center; gap: 4px; padding: 0;
   }
   .feed-action-btn svg { width: 16px; height: 16px; }
   .feed-action-btn.liked { color: var(--negative); }
-  /* Seen-by indicator */
-  .feed-seen {
-    display: flex; align-items: center; gap: 4px;
-    margin-left: auto; font-size: 10px; color: var(--text-hint);
-  }
-  .feed-seen-avatars {
-    display: flex;
-  }
-  .feed-seen-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 7px; font-weight: 700; color: #fff;
-    margin-left: -4px; border: 1.5px solid var(--bg);
-  }
-  .feed-seen-dot:first-child { margin-left: 0; }
-  /* Same-place group banner */
-  .feed-group-banner {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 20px; background: var(--accent-social-light);
-    font-size: 12px; color: var(--accent-social); font-weight: 600;
-    border-bottom: 1px solid rgba(122,155,174,0.2);
-  }
-  .feed-group-banner svg { width: 14px; height: 14px; }
 
-  /* ========== RANKINGS TAB (merged restaurant+wine) ========== */
+  /* ══════════════════════════════════════
+     RANKINGS TAB — redesigned
+  ══════════════════════════════════════ */
   .ranking-sub-toggle {
-    display: flex; gap: 0; margin: 0 20px;
-    background: var(--bg-section); border-radius: 10px;
-    padding: 3px; margin-top: 10px;
+    display: flex; gap: 0; margin: 12px 16px 0;
+    background: var(--bg-section); border-radius: 10px; padding: 3px;
   }
   .ranking-sub-btn {
     flex: 1; padding: 7px 0; text-align: center;
-    font-size: 12px; font-weight: 600;
-    color: var(--text-hint); cursor: pointer;
-    border: none; background: none; border-radius: 8px;
-    transition: all 0.2s;
+    font-size: 12px; font-weight: 600; color: var(--text-hint);
+    cursor: pointer; border: none; background: none; border-radius: 8px; transition: all 0.2s;
   }
   .ranking-sub-btn.active {
-    background: var(--bg-elevated, #fff);
-    color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    background: var(--bg-card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
-  .sort-bar {
-    display: flex; gap: 6px; padding: 10px 20px;
-    border-bottom: 1px solid var(--border);
+
+  /* Top 3 podium */
+  .rank-podium {
+    padding: 14px 16px 8px; display: flex; gap: 8px; align-items: flex-end;
   }
+  .rank-podium-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; text-decoration: none;
+    transition: transform 0.15s;
+  }
+  .rank-podium-item:active { transform: scale(0.96); }
+  .rank-podium-photo {
+    width: 100%; aspect-ratio: 1; border-radius: 12px;
+    background: var(--bg-section) center/cover no-repeat; position: relative; overflow: hidden;
+  }
+  .rank-podium-item.rank-1 .rank-podium-photo { border-radius: 14px; }
+  .rank-podium-badge {
+    position: absolute; top: 5px; left: 5px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .badge-gold { background: var(--caution); }
+  .badge-silver { background: #A0A8B0; }
+  .badge-bronze { background: #A08060; }
+  .rank-podium-score {
+    position: absolute; bottom: 5px; right: 5px;
+    font-size: 13px; font-weight: 900; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  .rank-podium-name {
+    font-size: 11px; font-weight: 700; color: var(--text);
+    text-align: center; line-height: 1.3; word-break: keep-all;
+  }
+  .rank-podium-meta { font-size: 10px; color: var(--text-hint); text-align: center; }
+  .rank-podium-item.rank-2 .rank-podium-photo { height: 88px; }
+  .rank-podium-item.rank-1 .rank-podium-photo { height: 110px; }
+  .rank-podium-item.rank-3 .rank-podium-photo { height: 76px; }
+
+  /* Rest list */
+  .rank-list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .rank-list-header-label { font-size: 11px; font-weight: 700; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.5px; }
+  .sort-btns { display: flex; gap: 4px; }
   .sort-btn {
-    padding: 5px 12px; border-radius: 8px;
-    font-size: 12px; font-weight: 500;
-    background: var(--bg-card); border: 1px solid var(--border);
-    color: var(--text-sub); cursor: pointer;
+    padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 500;
+    background: none; border: 1px solid var(--border); color: var(--text-sub); cursor: pointer;
   }
-  .sort-btn.active {
-    background: var(--accent-social); color: #fff;
-    border-color: var(--accent-social);
-  }
-  .rest-item {
-    padding: 12px 20px; display: flex;
-    align-items: center; gap: 12px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer; transition: background 0.15s;
+  .sort-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .rank-item {
+    display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s;
     text-decoration: none;
   }
-  .rest-item:active { background: var(--bg-card); }
-  .rest-rank {
-    width: 24px; font-size: 14px; font-weight: 700;
-    color: var(--text-sub); text-align: center; flex-shrink: 0;
+  .rank-item:active { background: var(--bg-card); }
+  .rank-num {
+    width: 22px; font-size: 13px; font-weight: 700; color: var(--text-sub); text-align: center; flex-shrink: 0;
   }
-  .rest-rank.top-1 { color: var(--caution); }
-  .rest-rank.top-2 { color: var(--text-sub); }
-  .rest-rank.top-3 { color: #A08060; }
-  .rest-icon {
+  .rank-thumb {
     width: 44px; height: 44px; border-radius: 10px;
-    background: var(--primary-light) center/cover no-repeat;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; color: var(--primary); overflow: hidden;
+    background: var(--primary-light) center/cover no-repeat; flex-shrink: 0; overflow: hidden;
   }
-  .rest-icon svg { width: 18px; height: 18px; }
-  .rest-icon.has-photo svg { display: none; }
-  .rest-info { flex: 1; }
-  .rest-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .rest-meta { font-size: 12px; color: var(--text-sub); }
-  .rest-score { font-size: 15px; font-weight: 700; color: var(--primary); }
-  /* Genre distribution mini bar (inline in rankings) */
-  .genre-mini {
-    padding: 12px 20px; display: flex; gap: 4px; align-items: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .genre-mini-bar {
-    height: 6px; border-radius: 3px; transition: width 0.3s;
-  }
-  .genre-mini-label {
-    font-size: 9px; color: var(--text-hint); white-space: nowrap; margin-left: 6px;
-  }
+  .rank-info { flex: 1; min-width: 0; }
+  .rank-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .rank-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+  .rank-score-col { flex-shrink: 0; text-align: right; }
+  .rank-score { font-size: 16px; font-weight: 800; color: var(--primary); }
+  .rank-score.wine { color: var(--wine); }
+  .rank-delta { font-size: 10px; color: var(--positive); font-weight: 600; }
+  .rank-delta.down { color: var(--negative); }
 
-  /* ========== OVERLAP TAB ========== */
-  .overlap-header-note {
-    padding: 12px 20px 8px;
-    font-size: 12px; color: var(--text-sub);
-    display: flex; align-items: center; gap: 4px;
+  /* ══════════════════════════════════════
+     MEMBERS TAB — 2-column card grid
+  ══════════════════════════════════════ */
+  .members-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 4px;
   }
-  .overlap-header-note svg { width: 12px; height: 12px; flex-shrink: 0; }
-  .overlap-section-label {
-    padding: 8px 20px 4px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.5px; color: var(--text-hint);
+  .members-header-label { font-size: 12px; font-weight: 700; color: var(--text); }
+  .members-header-sub { font-size: 11px; color: var(--text-hint); }
+  .members-sort { display: flex; gap: 4px; }
+
+  .members-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; padding: 8px 16px;
   }
-  .overlap-item {
-    padding: 12px 20px; display: flex;
-    align-items: center; gap: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .overlap-scores {
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-  }
-  .overlap-score-badge {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700;
-  }
-  .overlap-score-my {
-    background: var(--accent-social-light); color: var(--accent-social);
-  }
-  .overlap-score-bubble {
-    background: var(--bg-section); color: var(--text-hint);
-  }
-  .overlap-vs {
-    font-size: 9px; color: var(--text-hint); font-weight: 600;
-  }
-  .overlap-summary {
-    padding: 14px 20px; text-align: center;
-    font-size: 12px; color: var(--text-hint);
-    border-top: 1px solid var(--border);
-  }
-  /* Mini quadrant in overlap */
-  .mini-quad-section {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .mini-quad-title {
-    font-size: 12px; font-weight: 600; color: var(--text-sub);
-    margin-bottom: 10px; display: flex; align-items: center; gap: 4px;
-  }
-  .mini-quad-title svg { width: 13px; height: 13px; }
-  .mini-quad {
-    width: 100%; aspect-ratio: 1.2; border-radius: 12px;
+  .member-card {
     background: var(--bg-card); border: 1px solid var(--border);
-    position: relative; overflow: hidden;
+    border-radius: 14px; padding: 12px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; transition: all 0.15s; text-decoration: none;
+    position: relative;
   }
-  .mini-quad-axis-h {
-    position: absolute; top: 50%; left: 0; right: 0;
-    height: 1px; background: var(--border);
+  .member-card:active { transform: scale(0.97); background: var(--bg-section); }
+  .member-card.is-me {
+    border-color: rgba(20,184,166,0.4);
+    background: rgba(20,184,166,0.04);
   }
-  .mini-quad-axis-v {
-    position: absolute; left: 50%; top: 0; bottom: 0;
-    width: 1px; background: var(--border);
-  }
-  .mini-quad-dot {
-    position: absolute; width: 22px; height: 22px; border-radius: 50%;
-    transform: translate(-50%, -50%);
+  .member-card-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 700; color: #fff;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-    transition: transform 0.3s;
+    font-size: 18px; font-weight: 700; color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
-  .mini-quad-dot.me {
-    width: 26px; height: 26px; font-size: 10px;
-    border: 2px solid var(--accent-social);
-    box-shadow: 0 0 0 3px rgba(122,155,174,0.2), 0 1px 4px rgba(0,0,0,0.15);
+  .member-card-name {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    text-align: center; margin-top: 1px;
   }
-  .mini-quad-label {
-    position: absolute; font-size: 8px; color: var(--text-hint);
-  }
-
-  /* ========== MEMBERS TAB ========== */
-  .member-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .member-row.me { background: var(--bg-card); }
-  .member-row-avatar {
-    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #fff;
-  }
-  .member-row-info { flex: 1; min-width: 0; }
-  .member-row-name-line {
-    display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
-  }
-  .member-row-name { font-size: 14px; font-weight: 700; color: var(--text); }
-  .member-level-badge {
-    font-size: 10px; font-weight: 600;
-    background: var(--bg-page); color: var(--text-sub);
-    border-radius: 20px; padding: 2px 7px;
-    border: 1px solid var(--border); white-space: nowrap;
-  }
-  .member-level-badge.lv-high {
-    background: var(--primary-light); color: var(--primary); border-color: transparent;
-  }
-  .member-level-badge.lv-mid {
-    background: var(--accent-social-light); color: var(--accent-social); border-color: transparent;
-  }
-  .member-taste-tags {
-    display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 5px;
-  }
-  .taste-tag {
-    font-size: 11px; font-weight: 500; color: var(--text-sub);
-    background: var(--bg-page); border-radius: 6px;
-    padding: 2px 7px; border: 1px solid var(--border);
-  }
-  .taste-tag.wine-tag {
-    background: var(--wine-light); color: var(--wine); border-color: transparent;
-  }
-  .member-row-stats {
-    display: flex; align-items: center; gap: 4px;
-    font-size: 11px; color: var(--text-sub);
-  }
-  .member-stat-dot { color: var(--border-bold); }
-  .member-overlap-count {
-    color: var(--accent-social); font-weight: 600;
-    display: flex; align-items: center; gap: 2px;
-  }
-  .member-follow-btn {
-    flex-shrink: 0;
-    padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    background: var(--accent-social); color: #fff;
-    border: none; cursor: pointer; transition: background 0.15s;
-  }
-  .member-follow-btn.following {
-    background: var(--bg-page); color: var(--text-sub);
+  .member-card-level {
+    font-size: 10px; font-weight: 600; color: var(--text-sub);
+    background: var(--bg-section); border-radius: 6px; padding: 2px 7px;
     border: 1px solid var(--border);
   }
-  /* Explorer badge (replaces competitive ranking) */
-  .member-explorer-badge {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-size: 10px; font-weight: 600; color: var(--caution);
-    background: #F5F0E5; border-radius: 10px; padding: 2px 7px;
+  .member-card-level.lv-high { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .member-card-level.lv-mid { background: var(--accent-social-light); color: var(--accent-social); border-color: transparent; }
+  /* Match bar */
+  .member-card-match {
+    width: 100%; margin-top: 3px;
   }
-  .member-explorer-badge svg { width: 10px; height: 10px; }
+  .match-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; margin-bottom: 3px;
+  }
+  .match-label-text { color: var(--text-sub); font-weight: 500; }
+  .match-pct { font-weight: 800; }
+  .match-high { color: var(--positive); }
+  .match-mid { color: var(--accent-social); }
+  .match-low { color: var(--text-hint); }
+  .match-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .match-fill { height: 100%; border-radius: 2px; }
+  .fill-high { background: var(--positive); }
+  .fill-mid { background: var(--accent-social); }
+  .fill-low { background: var(--text-hint); }
+  /* Mini stats */
+  .member-card-stats {
+    display: flex; gap: 8px; margin-top: 2px;
+  }
+  .mcs { font-size: 10px; color: var(--text-hint); display: flex; align-items: center; gap: 2px; }
+  .mcs svg { width: 10px; height: 10px; }
+  .mcs strong { color: var(--text-sub); font-weight: 700; }
+  /* Badges */
+  .member-card-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-size: 9px; font-weight: 700; color: var(--caution);
+    background: rgba(201,169,110,0.15); border-radius: 6px; padding: 2px 5px;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .member-card-badge svg { width: 9px; height: 9px; }
+  .member-card-follow {
+    width: 100%; margin-top: 4px; padding: 6px 0; border-radius: 8px;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--border); background: var(--accent-social);
+    color: #fff; transition: all 0.15s;
+  }
+  .member-card-follow.following {
+    background: var(--bg-section); color: var(--text-sub); border-color: var(--border);
+  }
+  .member-card-follow.is-me-btn {
+    background: transparent; color: var(--text-hint); border-color: var(--border);
+    cursor: default;
+  }
 
-  /* ========== BUBBLE SETTINGS ========== */
-  .settings-group {
-    padding: 16px 20px;
-    border-bottom: 8px solid var(--bg-section);
-  }
+  /* ══════════════════════════════════════
+     SETTINGS SCREEN (preserved)
+  ══════════════════════════════════════ */
+  .settings-group { padding: 16px 20px; border-bottom: 8px solid var(--bg-section); }
   .settings-group-title {
-    font-size: 14px; font-weight: 700; color: var(--text);
-    margin-bottom: 12px;
+    font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px;
     display: flex; align-items: center; gap: 6px;
   }
   .settings-group-title svg { width: 16px; height: 16px; color: var(--text-sub); }
-  .settings-group-action {
-    margin-left: auto; font-size: 12px; font-weight: 500;
-    color: var(--accent-social); cursor: pointer;
-  }
+  .settings-group-action { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--accent-social); cursor: pointer; }
   .settings-row {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 0; border-bottom: 1px solid var(--border);
@@ -649,92 +702,35 @@
   .settings-row-left { flex: 1; }
   .settings-row-label { font-size: 14px; font-weight: 500; color: var(--text); }
   .settings-row-desc { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
-  .settings-row-value {
-    font-size: 13px; color: var(--text-sub); font-weight: 500;
-    display: flex; align-items: center; gap: 4px;
-  }
+  .settings-row-value { font-size: 13px; color: var(--text-sub); font-weight: 500; display: flex; align-items: center; gap: 4px; }
   .settings-row-value svg { width: 14px; height: 14px; color: var(--text-hint); }
-  .member-manage-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 0; border-bottom: 1px solid var(--border);
-  }
+  .member-manage-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .member-manage-item:last-child { border-bottom: none; }
-  .member-manage-avatar {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
-  }
+  .member-manage-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
   .member-manage-info { flex: 1; }
   .member-manage-name { font-size: 14px; font-weight: 600; color: var(--text); }
   .member-manage-role { font-size: 11px; color: var(--text-sub); }
   .member-manage-actions { display: flex; gap: 6px; }
-  .member-action-btn {
-    width: 30px; height: 30px; border-radius: 8px;
-    background: var(--bg); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-sub);
-  }
+  .member-action-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); }
   .member-action-btn:active { background: var(--border); }
   .member-action-btn svg { width: 14px; height: 14px; }
   .member-action-btn.danger { color: var(--negative); border-color: rgba(184,114,114,0.3); }
   .member-action-btn.approve { color: var(--positive); border-color: rgba(126,174,139,0.3); }
   .owner-badge { font-size: 10px; color: var(--accent-social); font-weight: 600; }
-  .pending-label {
-    font-size: 11px; font-weight: 600; color: var(--caution);
-    margin-bottom: 8px; display: flex; align-items: center; gap: 4px;
-  }
-  .member-count-label {
-    font-size: 11px; font-weight: 600; color: var(--text-hint);
-    margin: 12px 0 8px; display: flex; align-items: center; gap: 4px;
-  }
+  .pending-label { font-size: 11px; font-weight: 600; color: var(--caution); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+  .member-count-label { font-size: 11px; font-weight: 600; color: var(--text-hint); margin: 12px 0 8px; display: flex; align-items: center; gap: 4px; }
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .stat-card {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px; text-align: center;
-  }
+  .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
   .stat-card-value { font-size: 22px; font-weight: 700; color: var(--text); }
   .stat-card-label { font-size: 11px; color: var(--text-sub); }
   .weekly-chart { display: flex; align-items: flex-end; gap: 4px; height: 60px; }
-  .weekly-bar {
-    flex: 1; background: var(--accent-social-light); border-radius: 4px 4px 0 0;
-  }
+  .weekly-bar { flex: 1; background: var(--accent-social-light); border-radius: 4px 4px 0 0; }
   .weekly-bar.current { background: var(--accent-social); }
-  .weekly-labels {
-    display: flex; justify-content: space-between;
-    font-size: 9px; color: var(--text-hint); margin-top: 4px;
-  }
-  .toggle {
-    width: 44px; height: 26px;
-    background: var(--border-bold); border-radius: 13px;
-    position: relative; cursor: pointer;
-    transition: background 0.2s; flex-shrink: 0; border: none;
-  }
-  .toggle::after {
-    content: ''; position: absolute; top: 2px; left: 2px;
-    width: 22px; height: 22px;
-    background: #fff; border-radius: 50%;
-    transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
+  .weekly-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-hint); margin-top: 4px; }
+  .toggle { width: 44px; height: 26px; background: var(--border-bold); border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: #fff; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
   .toggle.on { background: var(--accent-social); }
   .toggle.on::after { left: 20px; }
-
-  /* Avatar dropdown menu */
-  .avatar-menu {
-    display: none; position: absolute;
-    top: calc(100% + 6px); right: 0;
-    background: #FFFFFF; border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    z-index: 200; min-width: 120px; overflow: hidden;
-  }
-  .avatar-menu.open { display: block; }
-  .avatar-menu-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; font-size: 13px; font-weight: 500;
-    color: var(--text); text-decoration: none; cursor: pointer;
-    border-bottom: 1px solid var(--border); transition: background 0.1s;
-  }
-  .avatar-menu-item:last-child { border-bottom: none; }
-  .avatar-menu-item:active { background: var(--bg-page); }
 
   .hidden { display: none !important; }
 </style>
@@ -746,104 +742,34 @@
     <div class="dynamic-island"></div>
     <div class="notif-dropdown-overlay" id="notifOverlay" onclick="closeNotifDropdown()"></div>
 
-    <div class="notif-dropdown" id="notifDropdown">
-      <div class="notif-dropdown-header">
-        <span class="notif-dropdown-title">알림</span>
-        <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
-      </div>
-      <div class="notif-dropdown-list">
-        <div class="notif-item unread" onclick="readNotifItem(this)">
-          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">을지로 레벨 4 달성!</div>
-            <div class="notif-item-body">기록이 쌓이고 있어요</div>
-            <div class="notif-item-time">3시간 전</div>
-          </div>
-          <div class="notif-item-dot"></div>
-        </div>
-        <div class="notif-item unread">
-          <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">김영수님이 '을지로 맛탐정 클럽' 가입을 신청했어요</div>
-            <div class="notif-item-time">1일 전</div>
-            <div class="notif-item-actions">
-              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
-              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
-            </div>
-          </div>
-          <div class="notif-item-dot"></div>
-        </div>
-        <div class="notif-item unread">
-          <div class="notif-item-icon"><i data-lucide="user-plus"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">이수진님이 팔로우를 요청했어요</div>
-            <div class="notif-item-time">2일 전</div>
-            <div class="notif-item-actions">
-              <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
-              <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
-            </div>
-          </div>
-          <div class="notif-item-dot"></div>
-        </div>
-        <div class="notif-item" onclick="readNotifItem(this)">
-          <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
-            <div class="notif-item-time">3일 전</div>
-          </div>
-        </div>
-        <div class="notif-item" onclick="readNotifItem(this)">
-          <div class="notif-item-icon"><i data-lucide="user-check"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">박민호님이 팔로우를 수락했어요</div>
-            <div class="notif-item-time">5일 전</div>
-          </div>
-        </div>
-        <div class="notif-item" onclick="readNotifItem(this)">
-          <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">와인 레벨 7 달성!</div>
-            <div class="notif-item-body">기록이 쌓이고 있어요</div>
-            <div class="notif-item-time">1주 전</div>
-          </div>
-        </div>
-      </div>
-      <div class="notif-dropdown-footer">
-        <a href="05_settings.html">알림 설정 →</a>
-      </div>
-    </div>
-
     <div class="screens-wrapper">
 
-      <!-- ============ SCREEN: BUBBLE DETAIL ============ -->
+      <!-- ════════════════════════════════════
+           SCREEN: BUBBLE DETAIL
+      ════════════════════════════════════ -->
       <div class="screen active" id="screen-bubble-detail">
+
         <div class="top-fixed">
           <div class="status-bar">
             <span class="status-time">9:41</span>
             <div class="status-icons">
-              <i data-lucide="signal"></i>
-              <i data-lucide="wifi"></i>
-              <i data-lucide="battery-full"></i>
+              <i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i>
             </div>
           </div>
           <div class="app-header">
             <button class="inner-back-btn" onclick="location.href='04_bubbles.html'">
-              <i data-lucide="chevron-left"></i>
-              <span>버블</span>
+              <i data-lucide="chevron-left"></i><span>버블</span>
             </button>
             <div class="header-right">
               <button class="bubbles-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div class="notif-wrap">
-                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
-                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
-                </button>
+                <button class="icon-btn" onclick="toggleNotifDropdown(event)"><i data-lucide="bell" style="width:20px;height:20px;"></i></button>
                 <div class="notif-badge"></div>
               </div>
               <div style="position:relative;">
                 <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
-                  <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
                   <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
                 </div>
               </div>
@@ -851,8 +777,48 @@
           </div>
         </div>
 
-        <div class="scroll-area" id="detail-scroll-area">
-          <!-- Hero — Compact 2-column -->
+        <!-- Notif dropdown -->
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <span class="notif-dropdown-title">알림</span>
+            <button class="notif-dropdown-mark-read" onclick="event.stopPropagation();markAllNotifRead()">모두 읽음</button>
+          </div>
+          <div class="notif-dropdown-list">
+            <div class="notif-item unread" onclick="readNotifItem(this)">
+              <div class="notif-item-icon"><i data-lucide="trophy"></i></div>
+              <div class="notif-item-content">
+                <div class="notif-item-title">을지로 레벨 4 달성!</div>
+                <div class="notif-item-body">기록이 쌓이고 있어요</div>
+                <div class="notif-item-time">3시간 전</div>
+              </div>
+              <div class="notif-item-dot"></div>
+            </div>
+            <div class="notif-item unread">
+              <div class="notif-item-icon"><i data-lucide="circle-dot"></i></div>
+              <div class="notif-item-content">
+                <div class="notif-item-title">김영수님이 가입을 신청했어요</div>
+                <div class="notif-item-time">1일 전</div>
+                <div class="notif-item-actions">
+                  <button class="notif-action-btn notif-action-accept" onclick="event.stopPropagation();handleNotifAction(this,'accept')">수락</button>
+                  <button class="notif-action-btn notif-action-decline" onclick="event.stopPropagation();handleNotifAction(this,'decline')">거절</button>
+                </div>
+              </div>
+              <div class="notif-item-dot"></div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-item-icon"><i data-lucide="circle-check"></i></div>
+              <div class="notif-item-content">
+                <div class="notif-item-title">'와인러버' 가입이 승인되었어요</div>
+                <div class="notif-item-time">3일 전</div>
+              </div>
+            </div>
+          </div>
+          <div class="notif-dropdown-footer"><a href="05_settings.html">알림 설정 →</a></div>
+        </div>
+
+        <div class="scroll-area">
+
+          <!-- HERO -->
           <div class="detail-hero">
             <div class="detail-hero-icon" style="background:#F5EDE8;color:var(--primary)">
               <i data-lucide="utensils-crossed"></i>
@@ -860,26 +826,22 @@
             <div class="detail-hero-text">
               <div class="detail-hero-name">
                 직장 맛집
-                <button class="icon-btn icon-btn-sm" title="설정" onclick="showScreen('screen-bubble-settings')">
+                <button class="icon-btn" onclick="showScreen('screen-bubble-settings')">
                   <i data-lucide="settings"></i>
                 </button>
               </div>
               <div class="detail-hero-desc">직장 동료들과 점심 맛집 공유</div>
               <div class="hero-badges">
-                <span class="pill pill-blue pill-sm">
-                  <i data-lucide="users" style="width:11px;height:11px;"></i> 8명
-                </span>
-                <span class="pill pill-green pill-sm">
-                  <i data-lucide="heart" style="width:11px;height:11px;"></i> 87% 일치
-                </span>
-                <button class="icon-btn icon-btn-sm" title="초대" style="margin-left:auto;">
-                  <i data-lucide="user-plus"></i>
+                <span class="pill pill-blue pill-sm"><i data-lucide="users" style="width:10px;height:10px;"></i> 8명</span>
+                <span class="pill pill-green pill-sm"><i data-lucide="heart" style="width:10px;height:10px;"></i> 87% 일치</span>
+                <button class="icon-btn" style="width:26px;height:26px;margin-left:auto;color:var(--accent-social)">
+                  <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Inline Stats Chips -->
+          <!-- STATS -->
           <div class="hero-stats">
             <div class="hero-stat-chip">
               <div class="hero-stat-val">47</div>
@@ -899,940 +861,681 @@
             </div>
           </div>
 
-          <!-- This Week Story Card -->
-          <div class="story-card">
-            <div class="story-card-header">
-              <i data-lucide="sparkles" style="width:12px;height:12px;color:var(--accent-social)"></i>
-              <span class="story-card-label">이번 주 하이라이트</span>
-              <span class="story-card-period">3.17 — 3.23</span>
+          <!-- WEEKLY LEADERBOARD -->
+          <div class="weekly-leaderboard">
+            <div class="wl-header">
+              <div class="wl-title"><i data-lucide="trophy"></i> 이번 주 랭킹</div>
+              <div class="wl-reset">월요일 리셋 · 3일 남음</div>
             </div>
-            <div class="story-highlights">
-              <div class="story-highlight">
-                <div class="story-highlight-val">6</div>
-                <div class="story-highlight-lbl">새 기록</div>
-              </div>
-              <div class="story-divider"></div>
-              <div class="story-highlight">
-                <div class="story-highlight-val">3</div>
-                <div class="story-highlight-lbl">새 발견</div>
-              </div>
-              <div class="story-divider"></div>
-              <div class="story-explorer">
-                <div class="story-explorer-avatar" style="background:#C17B5E">김</div>
-                <div class="story-explorer-text">
-                  <strong>김영수</strong>님이 3곳 탐험
+            <div class="wl-rows">
+              <div class="wl-row">
+                <div class="wl-medal">🥇</div>
+                <div class="wl-avatar" style="background:#C17B5E">김</div>
+                <div class="wl-info">
+                  <div class="wl-name">김영수</div>
+                  <div class="wl-bars">
+                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:100%"></div></div>
+                    <div class="wl-count">6기록</div>
+                  </div>
                 </div>
+                <div class="wl-change up">↑1</div>
+              </div>
+              <div class="wl-row">
+                <div class="wl-medal">🥈</div>
+                <div class="wl-avatar" style="background:#8B7396">박</div>
+                <div class="wl-info">
+                  <div class="wl-name">박소연</div>
+                  <div class="wl-bars">
+                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:67%"></div></div>
+                    <div class="wl-count">4기록</div>
+                  </div>
+                </div>
+                <div class="wl-change down">↓1</div>
+              </div>
+              <div class="wl-row">
+                <div class="wl-medal">🥉</div>
+                <div class="wl-avatar" style="background:#7EAE8B">최</div>
+                <div class="wl-info">
+                  <div class="wl-name">최유진</div>
+                  <div class="wl-bars">
+                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:50%"></div></div>
+                    <div class="wl-count">3기록</div>
+                  </div>
+                </div>
+                <div class="wl-change same">—</div>
+              </div>
+              <div class="wl-row wl-me">
+                <div class="wl-rank-num">4</div>
+                <div class="wl-avatar" style="background:#14b8a6">나</div>
+                <div class="wl-info">
+                  <div class="wl-name" style="color:var(--caution);font-weight:800">나 (정지훈)</div>
+                  <div class="wl-bars">
+                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:33%"></div></div>
+                    <div class="wl-count">2기록</div>
+                  </div>
+                </div>
+                <button class="wl-me-cta">+1하면 3위</button>
               </div>
             </div>
           </div>
 
-          <!-- Sticky Tabs -->
+          <!-- BUBBLE INFO collapse -->
+          <div class="bubble-info" id="bubbleInfo">
+            <button class="bubble-info-trigger" onclick="toggleBubbleInfo()">
+              <div class="bubble-info-trigger-icon"><i data-lucide="info"></i></div>
+              <span class="bubble-info-trigger-label">버블 정보</span>
+              <span class="bubble-info-trigger-sub">가입조건 · 규칙</span>
+              <i data-lucide="chevron-down" class="bubble-info-chevron"></i>
+            </button>
+            <div class="bubble-info-body">
+              <div class="bubble-info-section">
+                <div class="bubble-info-section-title"><i data-lucide="shield-check"></i> 가입 조건</div>
+                <div class="bubble-info-chips">
+                  <span class="bubble-info-chip highlight"><i data-lucide="file-check"></i> 승인 필요</span>
+                  <span class="bubble-info-chip"><i data-lucide="pencil-line"></i> 기록 5개 이상</span>
+                  <span class="bubble-info-chip"><i data-lucide="star"></i> Lv.3 이상</span>
+                  <span class="bubble-info-chip"><i data-lucide="users"></i> 최대 20명</span>
+                </div>
+              </div>
+              <div class="bubble-info-section">
+                <div class="bubble-info-section-title"><i data-lucide="scroll-text"></i> 버블 규칙</div>
+                <ul class="bubble-info-rules">
+                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>직장 주변(을지로·광화문) 식당 위주로 기록해주세요</span></li>
+                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>점수는 솔직하게 — 광고성 기록은 삭제됩니다</span></li>
+                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>월 1회 이상 기록이 없으면 자동 비활성화될 수 있어요</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABS -->
           <div class="detail-tabs">
             <button class="detail-tab active" id="dtab-feed" onclick="switchDetailTab('feed')">피드</button>
             <button class="detail-tab" id="dtab-rankings" onclick="switchDetailTab('rankings')">랭킹</button>
-            <button class="detail-tab" id="dtab-overlap" onclick="switchDetailTab('overlap')">겹침</button>
             <button class="detail-tab" id="dtab-members" onclick="switchDetailTab('members')">멤버</button>
           </div>
 
-          <!-- ===== FEED TAB ===== -->
+          <!-- ── FEED TAB ── -->
           <div id="dcontent-feed">
-            <!-- Same-place group banner -->
-            <div class="feed-group-banner">
-              <i data-lucide="map-pin"></i>
-              미진 — 이번 주 3명이 방문했어요
+
+            <!-- 우리만의 성지 spotlight -->
+            <div class="feed-spotlight" onclick="location.href='02_detail_restaurant.html?from=bubble'">
+              <div class="feed-spotlight-icon"><i data-lucide="crown"></i></div>
+              <div class="feed-spotlight-text">
+                <div class="feed-spotlight-label">버블 성지</div>
+                <div class="feed-spotlight-title">미진 — 이번 주 3명 방문</div>
+                <div class="feed-spotlight-sub">을지로 한식 · 버블 평균 89점</div>
+              </div>
+              <div class="feed-spotlight-badge">8명 중 6명</div>
             </div>
 
+            <!-- Group banner -->
+            <div class="feed-group-banner">
+              <i data-lucide="map-pin"></i> 미진 — 이번 주 3명이 방문했어요
+            </div>
+
+            <!-- Feed card 1 -->
             <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#C17B5E">김</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">김영수</div>
+              <div class="feed-header">
+                <div class="feed-avatar" style="background:#C17B5E" onclick="location.href='04_bubbler_profile.html'">김</div>
+                <div class="feed-user-info" onclick="location.href='04_bubbler_profile.html'">
+                  <div class="feed-user-name-row">
+                    <div class="feed-user-name">김영수</div>
+                    <span class="feed-user-level">Lv.9</span>
+                  </div>
                   <div class="feed-time">3시간 전</div>
                 </div>
-                <span class="pill pill-orange pill-xs">93</span>
               </div>
-              <a class="feed-body" href="02_detail_restaurant.html?from=bubble">
-                <div class="feed-place-name">미진</div>
-                <div class="feed-place-meta">한식 · 을지로 · 혼밥</div>
-                <div class="feed-photos">
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop')"></div>
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop')"></div>
+              <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
+                <div class="feed-score-badge">
+                  <div class="feed-score-num">93</div>
+                  <div class="feed-score-label">SCORE</div>
                 </div>
-                <div class="feed-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
+                <div class="feed-place-info">
+                  <div class="feed-place-name">미진</div>
+                  <div class="feed-place-meta">한식 · 을지로 · 혼밥</div>
+                  <div class="feed-place-hot"><i data-lucide="flame"></i> 이번 주 핫</div>
+                </div>
               </a>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 4</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 2</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-                <div class="feed-seen">
-                  <div class="feed-seen-avatars">
-                    <div class="feed-seen-dot" style="background:#8B7396">박</div>
-                    <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
-                    <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
-                  </div>
-                  +4 확인
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop')"></div>
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop')"></div>
+              </div>
+              <div class="feed-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
+              <div class="feed-reactions">
+                <button class="react-btn reacted-want" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 3</button>
+                <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 5</button>
+                <button class="react-btn" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 2</button>
+              </div>
+              <div class="feed-footer">
+                <div class="feed-seen-avatars">
+                  <div class="feed-seen-dot" style="background:#8B7396">박</div>
+                  <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
+                  <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
+                </div>
+                <div class="feed-seen-text">외 4명이 봤어요</div>
+                <div class="feed-action-btns">
+                  <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 4</button>
+                  <button class="feed-action-btn"><i data-lucide="message-circle"></i> 2</button>
                 </div>
               </div>
             </div>
 
+            <!-- Feed card 2 -->
             <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#8B7396">박</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">박소연</div>
+              <div class="feed-header">
+                <div class="feed-avatar" style="background:#8B7396" onclick="location.href='04_bubbler_profile.html'">박</div>
+                <div class="feed-user-info" onclick="location.href='04_bubbler_profile.html'">
+                  <div class="feed-user-name-row">
+                    <div class="feed-user-name">박소연</div>
+                    <span class="feed-user-level">Lv.8</span>
+                  </div>
                   <div class="feed-time">1일 전</div>
                 </div>
-                <span class="pill pill-orange pill-xs">94</span>
               </div>
-              <a class="feed-body" href="02_detail_wine.html?from=bubble">
-                <div class="feed-place-name">Ch. Margaux 2018</div>
-                <div class="feed-place-meta">와인 · 카베르네 소비뇽 · 페어링</div>
-                <div class="feed-photos">
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop')"></div>
+              <a class="feed-place-block" href="02_detail_wine.html?from=bubble">
+                <div class="feed-score-badge wine-badge">
+                  <div class="feed-score-num">94</div>
+                  <div class="feed-score-label">SCORE</div>
                 </div>
-                <div class="feed-comment">"스테이크 페어링 감동적이었음. 탄닌이 완벽하게 순해진 느낌"</div>
+                <div class="feed-place-info">
+                  <div class="feed-place-name">Ch. Margaux 2018</div>
+                  <div class="feed-place-meta">와인 · 카베르네 소비뇽 · 페어링</div>
+                </div>
               </a>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 8</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 5</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-                <div class="feed-seen">
-                  <div class="feed-seen-avatars">
-                    <div class="feed-seen-dot" style="background:#C17B5E">김</div>
-                    <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
-                  </div>
-                  +5 확인
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop')"></div>
+              </div>
+              <div class="feed-comment">"스테이크 페어링 감동적이었음. 탄닌이 완벽하게 순해진 느낌"</div>
+              <div class="feed-reactions">
+                <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 6</button>
+                <button class="react-btn" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 2</button>
+                <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 7</button>
+              </div>
+              <div class="feed-footer">
+                <div class="feed-seen-avatars">
+                  <div class="feed-seen-dot" style="background:#C17B5E">김</div>
+                  <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
+                </div>
+                <div class="feed-seen-text">외 5명이 봤어요</div>
+                <div class="feed-action-btns">
+                  <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 8</button>
+                  <button class="feed-action-btn"><i data-lucide="message-circle"></i> 5</button>
                 </div>
               </div>
             </div>
 
+            <!-- Feed card 3 -->
             <div class="feed-card">
-              <div class="feed-top">
-                <div class="feed-avatar" style="background:#7A9BAE">이</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name">이준호</div>
-                  <div class="feed-time">2일 전</div>
-                </div>
-                <span class="pill pill-blue pill-xs">87</span>
-              </div>
-              <a class="feed-body" href="02_detail_restaurant.html?from=bubble">
-                <div class="feed-place-name">도쿄등심</div>
-                <div class="feed-place-meta">일식 · 광화문 · 회식</div>
-                <div class="feed-photos">
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop')"></div>
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=400&fit=crop')"></div>
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop')"></div>
-                </div>
-              </a>
-              <div class="feed-actions">
-                <button class="feed-action-btn"><i data-lucide="heart"></i> 2</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 1</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-                <div class="feed-seen">
-                  <div class="feed-seen-avatars">
-                    <div class="feed-seen-dot" style="background:#C17B5E">김</div>
-                  </div>
-                  +3 확인
-                </div>
-              </div>
-            </div>
-
-            <div class="feed-card">
-              <div class="feed-top">
+              <div class="feed-header">
                 <div class="feed-avatar" style="background:#7EAE8B">최</div>
                 <div class="feed-user-info">
-                  <div class="feed-user-name">최유진</div>
+                  <div class="feed-user-name-row">
+                    <div class="feed-user-name">최유진</div>
+                    <span class="feed-user-level">Lv.7</span>
+                  </div>
                   <div class="feed-time">4일 전</div>
                 </div>
-                <span class="pill pill-blue pill-xs">88</span>
               </div>
-              <a class="feed-body" href="02_detail_restaurant.html?from=bubble">
-                <div class="feed-place-name">스시코우지</div>
-                <div class="feed-place-meta">일식 · 을지로 · 점심</div>
-                <div class="feed-photos">
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=400&fit=crop')"></div>
-                  <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&h=400&fit=crop')"></div>
+              <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
+                <div class="feed-score-badge">
+                  <div class="feed-score-num">88</div>
+                  <div class="feed-score-label">SCORE</div>
                 </div>
-                <div class="feed-comment">"오마카세 가성비 甲. 점심 런치 세트 강추"</div>
+                <div class="feed-place-info">
+                  <div class="feed-place-name">스시코우지</div>
+                  <div class="feed-place-meta">일식 · 을지로 · 점심</div>
+                </div>
               </a>
-              <div class="feed-actions">
-                <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 6</button>
-                <button class="feed-action-btn"><i data-lucide="message-circle"></i> 3</button>
-                <button class="feed-action-btn"><i data-lucide="bookmark"></i></button>
-                <div class="feed-seen">
-                  <div class="feed-seen-avatars">
-                    <div class="feed-seen-dot" style="background:#8B7396">박</div>
-                    <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
-                  </div>
-                  +6 확인
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=400&fit=crop')"></div>
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&h=400&fit=crop')"></div>
+              </div>
+              <div class="feed-comment">"오마카세 가성비 甲. 점심 런치 세트 강추"</div>
+              <div class="feed-reactions">
+                <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 8</button>
+                <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 3</button>
+                <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 9</button>
+              </div>
+              <div class="feed-footer">
+                <div class="feed-seen-avatars">
+                  <div class="feed-seen-dot" style="background:#8B7396">박</div>
+                  <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
+                </div>
+                <div class="feed-seen-text">외 6명이 봤어요</div>
+                <div class="feed-action-btns">
+                  <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 6</button>
+                  <button class="feed-action-btn"><i data-lucide="message-circle"></i> 3</button>
                 </div>
               </div>
             </div>
+
+            <div style="height:16px"></div>
           </div>
 
-          <!-- ===== RANKINGS TAB (merged) ===== -->
+          <!-- ── RANKINGS TAB ── -->
           <div id="dcontent-rankings" style="display:none">
-            <!-- Sub-toggle: 식당 / 와인 -->
             <div class="ranking-sub-toggle">
-              <button class="ranking-sub-btn active" id="rank-sub-food" onclick="switchRankingSub('food')">식당</button>
-              <button class="ranking-sub-btn" id="rank-sub-wine" onclick="switchRankingSub('wine')">와인</button>
+              <button class="ranking-sub-btn active" id="rank-sub-food" onclick="switchRankingSub('food')">🍽 식당</button>
+              <button class="ranking-sub-btn" id="rank-sub-wine" onclick="switchRankingSub('wine')">🍷 와인</button>
             </div>
 
-            <!-- Food rankings -->
-            <div id="ranking-food" onclick="if(event.target.closest('.rest-item')&&!event.target.closest('.sort-bar'))location.href='02_detail_restaurant.html?from=bubble'">
-              <!-- Genre mini distribution bar -->
-              <div class="genre-mini">
-                <div class="genre-mini-bar" style="width:40%;background:var(--primary)"></div>
-                <div class="genre-mini-bar" style="width:30%;background:var(--accent-social)"></div>
-                <div class="genre-mini-bar" style="width:20%;background:var(--positive)"></div>
-                <div class="genre-mini-bar" style="width:10%;background:var(--border-bold)"></div>
-                <span class="genre-mini-label">한식 40% · 일식 30% · 양식 20%</span>
+            <!-- FOOD -->
+            <div id="ranking-food">
+              <!-- Top 3 Podium -->
+              <div class="rank-podium">
+                <!-- 2위 -->
+                <a class="rank-podium-item rank-2" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-silver">2</div>
+                    <div class="rank-podium-score">85</div>
+                  </div>
+                  <div class="rank-podium-name">스시코우지</div>
+                  <div class="rank-podium-meta">기록 4개</div>
+                </a>
+                <!-- 1위 -->
+                <a class="rank-podium-item rank-1" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-gold">👑</div>
+                    <div class="rank-podium-score">89</div>
+                  </div>
+                  <div class="rank-podium-name">미진</div>
+                  <div class="rank-podium-meta">기록 5개</div>
+                </a>
+                <!-- 3위 -->
+                <a class="rank-podium-item rank-3" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-bronze">3</div>
+                    <div class="rank-podium-score">82</div>
+                  </div>
+                  <div class="rank-podium-name">도쿄등심</div>
+                  <div class="rank-podium-meta">기록 3개</div>
+                </a>
               </div>
-              <div class="sort-bar">
-                <button class="sort-btn" onclick="setSortActive(this)">최신</button>
-                <button class="sort-btn" onclick="setSortActive(this)">만족도순</button>
-                <button class="sort-btn active" onclick="setSortActive(this)">기록수순</button>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank top-1">1</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"><i data-lucide="soup"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">미진</div>
-                  <div class="rest-meta">평균 89점 · 기록 5개</div>
+
+              <div class="rank-list-header">
+                <div class="rank-list-header-label">4위 이하</div>
+                <div class="sort-btns">
+                  <button class="sort-btn" onclick="setSortActive(this)">최신</button>
+                  <button class="sort-btn" onclick="setSortActive(this)">만족도</button>
+                  <button class="sort-btn active" onclick="setSortActive(this)">기록수</button>
                 </div>
-                <div class="rest-score">89</div>
               </div>
-              <div class="rest-item">
-                <div class="rest-rank top-2">2</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&h=200&fit=crop')"><i data-lucide="fish"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">스시코우지</div>
-                  <div class="rest-meta">평균 85점 · 기록 4개</div>
+              <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                <div class="rank-num">4</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">이코이</div>
+                  <div class="rank-meta">일식 · 을지로 · 기록 2개</div>
                 </div>
-                <div class="rest-score">85</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank top-3">3</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop')"><i data-lucide="beef"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">도쿄등심</div>
-                  <div class="rest-meta">평균 82점 · 기록 3개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score">88</div>
+                  <div class="rank-delta">▲3</div>
                 </div>
-                <div class="rest-score">82</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">4</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=200&h=200&fit=crop')"><i data-lucide="utensils-crossed"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">이코이</div>
-                  <div class="rest-meta">평균 88점 · 기록 2개</div>
+              </a>
+              <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                <div class="rank-num">5</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">파스타 바르바리</div>
+                  <div class="rank-meta">양식 · 광화문 · 기록 2개</div>
                 </div>
-                <div class="rest-score">88</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">5</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=200&h=200&fit=crop')"><i data-lucide="salad"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">파스타 바르바리</div>
-                  <div class="rest-meta">평균 84점 · 기록 2개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score">84</div>
+                  <div class="rank-delta">NEW</div>
                 </div>
-                <div class="rest-score">84</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">6</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=200&h=200&fit=crop')"><i data-lucide="sandwich"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">광화문국밥</div>
-                  <div class="rest-meta">평균 83점 · 기록 2개</div>
+              </a>
+              <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                <div class="rank-num">6</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">광화문국밥</div>
+                  <div class="rank-meta">한식 · 광화문 · 기록 2개</div>
                 </div>
-                <div class="rest-score">83</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">7</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=200&h=200&fit=crop')"><i data-lucide="flame"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">온더보더</div>
-                  <div class="rest-meta">평균 81점 · 기록 2개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score">83</div>
+                  <div class="rank-delta down">▼1</div>
                 </div>
-                <div class="rest-score">81</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">8</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&h=200&fit=crop')"><i data-lucide="egg-fried"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">을지면옥</div>
-                  <div class="rest-meta">평균 80점 · 기록 1개</div>
+              </a>
+              <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                <div class="rank-num">7</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">을지면옥</div>
+                  <div class="rank-meta">한식 · 을지로 · 기록 1개</div>
                 </div>
-                <div class="rest-score">80</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">9</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=200&h=200&fit=crop')"><i data-lucide="cookie"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">르꼬숑</div>
-                  <div class="rest-meta">평균 79점 · 기록 1개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score">80</div>
                 </div>
-                <div class="rest-score">79</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">10</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=200&fit=crop')"><i data-lucide="utensils-crossed"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">진진</div>
-                  <div class="rest-meta">평균 78점 · 기록 1개</div>
-                </div>
-                <div class="rest-score">78</div>
-              </div>
+              </a>
             </div>
 
-            <!-- Wine rankings -->
-            <div id="ranking-wine" style="display:none" onclick="if(event.target.closest('.rest-item')&&!event.target.closest('.sort-bar'))location.href='02_detail_wine.html?from=bubble'">
-              <div class="genre-mini">
-                <div class="genre-mini-bar" style="width:55%;background:var(--wine)"></div>
-                <div class="genre-mini-bar" style="width:25%;background:var(--caution)"></div>
-                <div class="genre-mini-bar" style="width:20%;background:var(--border-bold)"></div>
-                <span class="genre-mini-label">레드 55% · 샴페인 25% · 기타</span>
+            <!-- WINE -->
+            <div id="ranking-wine" style="display:none">
+              <div class="rank-podium">
+                <a class="rank-podium-item rank-2" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-silver">2</div>
+                    <div class="rank-podium-score">91</div>
+                  </div>
+                  <div class="rank-podium-name">Barolo Brunate 2017</div>
+                  <div class="rank-podium-meta">기록 3개</div>
+                </a>
+                <a class="rank-podium-item rank-1" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-gold">👑</div>
+                    <div class="rank-podium-score">94</div>
+                  </div>
+                  <div class="rank-podium-name">Ch. Margaux 2018</div>
+                  <div class="rank-podium-meta">기록 4개</div>
+                </a>
+                <a class="rank-podium-item rank-3" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1574870111867-089730e5a72b?w=300&h=300&fit=crop')">
+                    <div class="rank-podium-badge badge-bronze">3</div>
+                    <div class="rank-podium-score">90</div>
+                  </div>
+                  <div class="rank-podium-name">Opus One 2019</div>
+                  <div class="rank-podium-meta">기록 2개</div>
+                </a>
               </div>
-              <div class="sort-bar">
-                <button class="sort-btn" onclick="setSortActive(this)">최신</button>
-                <button class="sort-btn active" onclick="setSortActive(this)">만족도순</button>
-                <button class="sort-btn" onclick="setSortActive(this)">기록수순</button>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank top-1">1</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Ch. Margaux 2018</div>
-                  <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 3개</div>
+              <div class="rank-list-header">
+                <div class="rank-list-header-label">4위 이하</div>
+                <div class="sort-btns">
+                  <button class="sort-btn active" onclick="setSortActive(this)">만족도</button>
+                  <button class="sort-btn" onclick="setSortActive(this)">기록수</button>
                 </div>
-                <div class="rest-score" style="color:var(--wine)">94</div>
               </div>
-              <div class="rest-item">
-                <div class="rest-rank top-2">2</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=200&h=200&fit=crop')"><i data-lucide="glass-water"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Krug Grande Cuvee</div>
-                  <div class="rest-meta">샴페인 · 블렌드 · 기록 2개</div>
+              <a class="rank-item" href="02_detail_wine.html?from=bubble">
+                <div class="rank-num">4</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1566995541428-f2246c17cda1?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">Cloudy Bay SB 2022</div>
+                  <div class="rank-meta">화이트 · 소비뇽 블랑 · 기록 2개</div>
                 </div>
-                <div class="rest-score" style="color:var(--wine)">91</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank top-3">3</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Barolo Brunate 2017</div>
-                  <div class="rest-meta">레드 · 네비올로 · 기록 2개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score wine">85</div>
                 </div>
-                <div class="rest-score" style="color:var(--wine)">89</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">4</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Opus One 2019</div>
-                  <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 2개</div>
+              </a>
+              <a class="rank-item" href="02_detail_wine.html?from=bubble">
+                <div class="rank-num">5</div>
+                <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1560148218-1a83060f7b32?w=200&h=200&fit=crop')"></div>
+                <div class="rank-info">
+                  <div class="rank-name">Whispering Angel 2023</div>
+                  <div class="rank-meta">로제 · 그르나슈 · 기록 1개</div>
                 </div>
-                <div class="rest-score" style="color:var(--wine)">88</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">5</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=200&h=200&fit=crop')"><i data-lucide="glass-water"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Dom Pérignon 2012</div>
-                  <div class="rest-meta">샴페인 · 블렌드 · 기록 1개</div>
+                <div class="rank-score-col">
+                  <div class="rank-score wine">84</div>
+                  <div class="rank-delta">NEW</div>
                 </div>
-                <div class="rest-score" style="color:var(--wine)">87</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">6</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Sassicaia 2018</div>
-                  <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 1개</div>
-                </div>
-                <div class="rest-score" style="color:var(--wine)">86</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">7</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1566995541428-f2246c17cda1?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Cloudy Bay SB 2022</div>
-                  <div class="rest-meta">화이트 · 소비뇽 블랑 · 기록 1개</div>
-                </div>
-                <div class="rest-score" style="color:var(--wine)">85</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">8</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1560148218-1a83060f7b32?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Whispering Angel 2023</div>
-                  <div class="rest-meta">로제 · 그르나슈 · 기록 1개</div>
-                </div>
-                <div class="rest-score" style="color:var(--wine)">84</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">9</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">Montes Alpha CS</div>
-                  <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 1개</div>
-                </div>
-                <div class="rest-score" style="color:var(--wine)">82</div>
-              </div>
-              <div class="rest-item">
-                <div class="rest-rank">10</div>
-                <div class="rest-icon has-photo" style="background-image:url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=200&h=200&fit=crop')"><i data-lucide="wine"></i></div>
-                <div class="rest-info">
-                  <div class="rest-name">1865 Selected Vineyards</div>
-                  <div class="rest-meta">레드 · 카베르네 소비뇽 · 기록 1개</div>
-                </div>
-                <div class="rest-score" style="color:var(--wine)">80</div>
-              </div>
+              </a>
             </div>
+
+            <div style="height:16px"></div>
           </div>
 
-          <!-- ===== OVERLAP TAB ===== -->
-          <div id="dcontent-overlap" style="display:none">
-            <div class="overlap-header-note">
-              <i data-lucide="info"></i>
-              나와 버블 멤버들이 함께 방문한 곳의 점수 비교
-            </div>
-
-            <!-- Mini quadrant (promoted from stats) -->
-            <div class="mini-quad-section">
-              <div class="mini-quad-title">
-                <i data-lucide="scatter-chart"></i> 버블 취향 지도
-              </div>
-              <div class="mini-quad">
-                <div class="mini-quad-axis-h"></div>
-                <div class="mini-quad-axis-v"></div>
-                <div class="mini-quad-dot" style="background:#C17B5E;top:22%;left:28%">김</div>
-                <div class="mini-quad-dot" style="background:#8B7396;top:32%;left:70%">박</div>
-                <div class="mini-quad-dot" style="background:#7A9BAE;top:40%;left:55%">이</div>
-                <div class="mini-quad-dot" style="background:#7EAE8B;top:25%;left:42%">최</div>
-                <div class="mini-quad-dot" style="background:#C17B5E;top:55%;left:38%">정</div>
-                <div class="mini-quad-dot" style="background:#C9A96E;top:60%;left:75%">윤</div>
-                <div class="mini-quad-dot" style="background:#ec4899;top:20%;left:68%">강</div>
-                <div class="mini-quad-dot me" style="background:#14b8a6;top:35%;left:20%">나</div>
-                <div class="mini-quad-label" style="top:4px;left:6px">만족↑</div>
-                <div class="mini-quad-label" style="bottom:4px;left:6px">만족↓</div>
-                <div class="mini-quad-label" style="top:50%;left:6px;transform:translateY(-50%)">캐주얼</div>
-                <div class="mini-quad-label" style="top:50%;right:6px;transform:translateY(-50%)">격식</div>
-              </div>
-            </div>
-
-            <div class="overlap-section-label">식당</div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="soup"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">미진</div>
-                <div class="rest-meta">한식 · 을지로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-badge overlap-score-my">91</div>
-                <div class="overlap-vs">vs</div>
-                <div class="overlap-score-badge overlap-score-bubble">89</div>
-              </div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="fish"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">스시코우지</div>
-                <div class="rest-meta">일식 · 을지로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-badge overlap-score-my">88</div>
-                <div class="overlap-vs">vs</div>
-                <div class="overlap-score-badge overlap-score-bubble">85</div>
-              </div>
-            </div>
-            <div class="overlap-item">
-              <div class="rest-icon"><i data-lucide="beef"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">도쿄등심</div>
-                <div class="rest-meta">일식 · 광화문</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-badge overlap-score-my">84</div>
-                <div class="overlap-vs">vs</div>
-                <div class="overlap-score-badge overlap-score-bubble">82</div>
-              </div>
-            </div>
-
-            <div class="overlap-section-label">와인</div>
-            <div class="overlap-item">
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Ch. Margaux 2018</div>
-                <div class="rest-meta">레드 · 카베르네 소비뇽</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-badge overlap-score-my">92</div>
-                <div class="overlap-vs">vs</div>
-                <div class="overlap-score-badge overlap-score-bubble">94</div>
-              </div>
-            </div>
-            <div class="overlap-item" style="border-bottom:none">
-              <div class="rest-icon" style="background:var(--wine-light);color:var(--wine)"><i data-lucide="wine"></i></div>
-              <div class="rest-info">
-                <div class="rest-name">Barolo Brunate 2017</div>
-                <div class="rest-meta">레드 · 네비올로</div>
-              </div>
-              <div class="overlap-scores">
-                <div class="overlap-score-badge overlap-score-my">87</div>
-                <div class="overlap-vs">vs</div>
-                <div class="overlap-score-badge overlap-score-bubble">89</div>
-              </div>
-            </div>
-
-            <div class="overlap-summary">총 5곳 겹침 · 평균 차이 2.4점</div>
-          </div>
-
-          <!-- ===== MEMBERS TAB ===== -->
+          <!-- ── MEMBERS TAB ── -->
           <div id="dcontent-members" style="display:none">
-            <div class="sort-bar">
-              <button class="sort-btn active" onclick="setSortActive(this)">기록수순</button>
-              <button class="sort-btn" onclick="setSortActive(this)">평균점수순</button>
-              <button class="sort-btn" onclick="setSortActive(this)">최근활동순</button>
-            </div>
-
-            <!-- 나 -->
-            <div class="member-row me">
-              <div class="member-row-avatar" style="background:#14b8a6">나</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">나 (정지훈)</span>
-                  <span class="member-level-badge">Lv.6 탐식가</span>
-                </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">한식</span>
-                  <span class="taste-tag">와인</span>
-                  <span class="taste-tag">오마카세</span>
-                </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 38개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 88점</span>
-                </div>
+            <div class="members-header">
+              <div>
+                <div class="members-header-label">8명의 버블러</div>
+                <div class="members-header-sub">취향 일치도 기준 정렬</div>
               </div>
             </div>
 
-            <!-- 김영수 — explorer badge -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#C17B5E">김</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">김영수</span>
-                  <span class="member-level-badge lv-high">Lv.9 미식가</span>
-                  <span class="member-explorer-badge"><i data-lucide="compass"></i> 탐험왕</span>
-                </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">한식</span>
-                  <span class="taste-tag">국수</span>
-                  <span class="taste-tag">을지로</span>
-                </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 72개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 91점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 8곳 겹침</span>
-                </div>
-              </div>
-              <button class="member-follow-btn following" onclick="toggleFollow(this)">팔로잉</button>
-            </div>
+            <div class="members-grid">
 
-            <!-- 박소연 -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#8B7396">박</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">박소연</span>
-                  <span class="member-level-badge lv-high">Lv.8 소믈리에</span>
+              <!-- 나 -->
+              <div class="member-card is-me" onclick="location.href='03_profile.html'">
+                <div class="member-card-avatar" style="background:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,0.3)">나</div>
+                <div class="member-card-name">나 (정지훈)</div>
+                <div class="member-card-level">Lv.6 탐식가</div>
+                <div class="member-card-match">
+                  <div class="match-label"><span class="match-label-text">취향 기준</span></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag wine-tag">레드와인</span>
-                  <span class="taste-tag wine-tag">보르도</span>
-                  <span class="taste-tag">페어링</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>38</strong>개</div>
+                  <div class="mcs"><i data-lucide="star"></i> <strong>88</strong>점</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 61개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 93점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 5곳 겹침</span>
-                </div>
+                <button class="member-card-follow is-me-btn" disabled>나예요 👋</button>
               </div>
-              <button class="member-follow-btn" onclick="toggleFollow(this)">팔로우</button>
-            </div>
 
-            <!-- 이준호 -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#7A9BAE">이</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">이준호</span>
-                  <span class="member-level-badge">Lv.5 식도락가</span>
+              <!-- 김영수 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-badge"><i data-lucide="compass"></i> 탐험왕</div>
+                <div class="member-card-avatar" style="background:#C17B5E">김</div>
+                <div class="member-card-name">김영수</div>
+                <div class="member-card-level lv-high">Lv.9 미식가</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-high">91%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-high" style="width:91%"></div></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">일식</span>
-                  <span class="taste-tag">스테이크</span>
-                  <span class="taste-tag">광화문</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>72</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>8</strong>곳</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 29개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 86점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 3곳 겹침</span>
-                </div>
+                <button class="member-card-follow following" onclick="event.stopPropagation();toggleFollowCard(this)">팔로잉</button>
               </div>
-              <button class="member-follow-btn following" onclick="toggleFollow(this)">팔로잉</button>
-            </div>
 
-            <!-- 최유진 -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#7EAE8B">최</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">최유진</span>
-                  <span class="member-level-badge lv-mid">Lv.7 미식가</span>
+              <!-- 박소연 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#8B7396">박</div>
+                <div class="member-card-name">박소연</div>
+                <div class="member-card-level lv-high">Lv.8 소믈리에</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-high">78%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-high" style="width:78%"></div></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">오마카세</span>
-                  <span class="taste-tag">일식</span>
-                  <span class="taste-tag">을지로</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>61</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>5</strong>곳</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 44개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 90점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 6곳 겹침</span>
-                </div>
+                <button class="member-card-follow" onclick="event.stopPropagation();toggleFollowCard(this)">팔로우</button>
               </div>
-              <button class="member-follow-btn" onclick="toggleFollow(this)">팔로우</button>
-            </div>
 
-            <!-- 윤서희 -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#C9A96E">윤</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">윤서희</span>
-                  <span class="member-level-badge">Lv.5 식도락가</span>
+              <!-- 최유진 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#7EAE8B">최</div>
+                <div class="member-card-name">최유진</div>
+                <div class="member-card-level lv-mid">Lv.7 미식가</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-mid">72%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-mid" style="width:72%"></div></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">캐주얼</span>
-                  <span class="taste-tag">브런치</span>
-                  <span class="taste-tag wine-tag">스파클링</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>44</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>6</strong>곳</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 21개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 85점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 2곳 겹침</span>
-                </div>
+                <button class="member-card-follow" onclick="event.stopPropagation();toggleFollowCard(this)">팔로우</button>
               </div>
-              <button class="member-follow-btn" onclick="toggleFollow(this)">팔로우</button>
-            </div>
 
-            <!-- 강하늘 -->
-            <div class="member-row">
-              <div class="member-row-avatar" style="background:#ec4899">강</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">강하늘</span>
-                  <span class="member-level-badge lv-mid">Lv.6 탐식가</span>
+              <!-- 강하늘 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#ec4899">강</div>
+                <div class="member-card-name">강하늘</div>
+                <div class="member-card-level lv-mid">Lv.6 탐식가</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-mid">69%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-mid" style="width:69%"></div></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">양식</span>
-                  <span class="taste-tag">파인다이닝</span>
-                  <span class="taste-tag wine-tag">내추럴와인</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>33</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>4</strong>곳</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 33개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 87점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 4곳 겹침</span>
-                </div>
+                <button class="member-card-follow following" onclick="event.stopPropagation();toggleFollowCard(this)">팔로잉</button>
               </div>
-              <button class="member-follow-btn following" onclick="toggleFollow(this)">팔로잉</button>
-            </div>
 
-            <!-- 한승민 -->
-            <div class="member-row" style="border-bottom:none">
-              <div class="member-row-avatar" style="background:#C9A96E">한</div>
-              <div class="member-row-info">
-                <div class="member-row-name-line">
-                  <span class="member-row-name">한승민</span>
-                  <span class="member-level-badge">Lv.4 초보 미식가</span>
+              <!-- 이준호 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#7A9BAE">이</div>
+                <div class="member-card-name">이준호</div>
+                <div class="member-card-level">Lv.5 식도락가</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-mid">65%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-mid" style="width:65%"></div></div>
                 </div>
-                <div class="member-taste-tags">
-                  <span class="taste-tag">이탈리안</span>
-                  <span class="taste-tag">파스타</span>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>29</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>3</strong>곳</div>
                 </div>
-                <div class="member-row-stats">
-                  <span><i data-lucide="pencil-line" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px;"></i>기록 14개</span>
-                  <span class="member-stat-dot">·</span>
-                  <span>평균 84점</span>
-                  <span class="member-stat-dot">·</span>
-                  <span class="member-overlap-count"><i data-lucide="map-pin" style="width:10px;height:10px;vertical-align:-1px;"></i> 나와 1곳 겹침</span>
-                </div>
+                <button class="member-card-follow following" onclick="event.stopPropagation();toggleFollowCard(this)">팔로잉</button>
               </div>
-              <button class="member-follow-btn" onclick="toggleFollow(this)">팔로우</button>
+
+              <!-- 윤서희 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#C9A96E">윤</div>
+                <div class="member-card-name">윤서희</div>
+                <div class="member-card-level">Lv.5 식도락가</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-low">58%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-low" style="width:58%"></div></div>
+                </div>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>21</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>2</strong>곳</div>
+                </div>
+                <button class="member-card-follow" onclick="event.stopPropagation();toggleFollowCard(this)">팔로우</button>
+              </div>
+
+              <!-- 한승민 -->
+              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+                <div class="member-card-avatar" style="background:#C9A96E">한</div>
+                <div class="member-card-name">한승민</div>
+                <div class="member-card-level">Lv.4 초보</div>
+                <div class="member-card-match">
+                  <div class="match-label">
+                    <span class="match-label-text">일치도</span>
+                    <span class="match-pct match-low">52%</span>
+                  </div>
+                  <div class="match-track"><div class="match-fill fill-low" style="width:52%"></div></div>
+                </div>
+                <div class="member-card-stats">
+                  <div class="mcs"><i data-lucide="pencil-line"></i> <strong>14</strong>개</div>
+                  <div class="mcs"><i data-lucide="map-pin"></i> <strong>1</strong>곳</div>
+                </div>
+                <button class="member-card-follow" onclick="event.stopPropagation();toggleFollowCard(this)">팔로우</button>
+              </div>
+
             </div>
+            <div style="height:16px"></div>
           </div>
 
-          <div style="height:16px"></div>
-        </div>
+        </div><!-- /scroll-area -->
 
         <button class="fab-back" onclick="location.href='04_bubbles.html'">
           <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
         </button>
       </div>
 
-      <!-- ============ SCREEN: BUBBLE SETTINGS (Owner) ============ -->
+      <!-- ════════════════════════════════════
+           SCREEN: BUBBLE SETTINGS (Owner)
+      ════════════════════════════════════ -->
       <div class="screen hidden" id="screen-bubble-settings">
         <div class="top-fixed">
           <div class="status-bar">
             <span class="status-time">9:41</span>
             <div class="status-icons">
-              <i data-lucide="signal"></i>
-              <i data-lucide="wifi"></i>
-              <i data-lucide="battery-full"></i>
+              <i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i>
             </div>
           </div>
           <div class="app-header">
             <button class="inner-back-btn" onclick="showScreen('screen-bubble-detail')">
-              <i data-lucide="chevron-left"></i>
-              <span>직장 맛집</span>
+              <i data-lucide="chevron-left"></i><span>직장 맛집</span>
             </button>
             <div class="header-right">
               <button class="bubbles-link" onclick="location.href='04_bubbles.html'">bubbles</button>
               <div class="notif-wrap">
-                <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
-                  <i data-lucide="bell" style="width:20px;height:20px;"></i>
-                </button>
+                <button class="icon-btn"><i data-lucide="bell" style="width:20px;height:20px;"></i></button>
                 <div class="notif-badge"></div>
               </div>
               <div class="header-avatar">J</div>
             </div>
           </div>
         </div>
-
         <div class="scroll-area">
-          <!-- Basic Info -->
           <div class="settings-group">
             <div class="settings-group-title"><i data-lucide="info"></i> 기본 정보</div>
-            <div class="settings-row">
-              <div class="settings-row-left"><div class="settings-row-label">버블 이름</div></div>
-              <div class="settings-row-value">직장 맛집 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left"><div class="settings-row-label">설명</div></div>
-              <div class="settings-row-value">직장 동료들과... <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left"><div class="settings-row-label">유형</div></div>
-              <div class="settings-row-value">양방향 <i data-lucide="chevron-right"></i></div>
-            </div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">버블 이름</div></div><div class="settings-row-value">직장 맛집 <i data-lucide="chevron-right"></i></div></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">설명</div></div><div class="settings-row-value">직장 동료들과... <i data-lucide="chevron-right"></i></div></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">유형</div></div><div class="settings-row-value">양방향 <i data-lucide="chevron-right"></i></div></div>
           </div>
-
-          <!-- Join Conditions -->
           <div class="settings-group">
             <div class="settings-group-title"><i data-lucide="shield-check"></i> 가입 조건</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">가입 승인 필요</div>
-                <div class="settings-row-desc">새 멤버 가입 시 관리자 승인</div>
-              </div>
-              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최소 기록 수</div>
-                <div class="settings-row-desc">가입 신청자의 최소 기록 보유량</div>
-              </div>
-              <div class="settings-row-value">5개 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최소 레벨</div>
-                <div class="settings-row-desc">가입 가능한 최소 사용자 레벨</div>
-              </div>
-              <div class="settings-row-value">Lv.3 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">최대 인원</div>
-                <div class="settings-row-desc">버블 최대 멤버 수 제한</div>
-              </div>
-              <div class="settings-row-value">20명 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left"><div class="settings-row-label">초대 링크 만료</div></div>
-              <div class="settings-row-value">30일 <i data-lucide="chevron-right"></i></div>
-            </div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">가입 승인 필요</div><div class="settings-row-desc">새 멤버 가입 시 관리자 승인</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">최소 기록 수</div><div class="settings-row-desc">가입 신청자의 최소 기록 보유량</div></div><div class="settings-row-value">5개 <i data-lucide="chevron-right"></i></div></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">최소 레벨</div><div class="settings-row-desc">가입 가능한 최소 사용자 레벨</div></div><div class="settings-row-value">Lv.3 <i data-lucide="chevron-right"></i></div></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">최대 인원</div><div class="settings-row-desc">버블 최대 멤버 수 제한</div></div><div class="settings-row-value">20명 <i data-lucide="chevron-right"></i></div></div>
           </div>
-
-          <!-- Search & Visibility -->
           <div class="settings-group">
             <div class="settings-group-title"><i data-lucide="eye"></i> 검색 노출</div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">탐색에 노출</div>
-                <div class="settings-row-desc">다른 사용자가 버블 탐색에서 발견 가능</div>
-              </div>
-              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">검색 키워드</div>
-                <div class="settings-row-desc">탐색 시 추가 키워드</div>
-              </div>
-              <div class="settings-row-value">3개 설정됨 <i data-lucide="chevron-right"></i></div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label">프로필 공개 범위</div>
-                <div class="settings-row-desc">비멤버에게 보이는 정보 수준</div>
-              </div>
-              <div class="settings-row-value">기본 <i data-lucide="chevron-right"></i></div>
-            </div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">탐색에 노출</div><div class="settings-row-desc">다른 사용자가 버블 탐색에서 발견 가능</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="settings-row"><div class="settings-row-left"><div class="settings-row-label">검색 키워드</div></div><div class="settings-row-value">3개 설정됨 <i data-lucide="chevron-right"></i></div></div>
           </div>
-
-          <!-- Member Management -->
           <div class="settings-group">
-            <div class="settings-group-title">
-              <i data-lucide="users"></i> 멤버 관리
-              <span class="settings-group-action">전체보기</span>
-            </div>
-            <div class="pending-label">
-              <i data-lucide="clock" style="width:12px;height:12px;"></i> 대기 중 (2)
-            </div>
+            <div class="settings-group-title"><i data-lucide="users"></i> 멤버 관리 <span class="settings-group-action">전체보기</span></div>
+            <div class="pending-label"><i data-lucide="clock" style="width:12px;height:12px;"></i> 대기 중 (2)</div>
             <div class="member-manage-item">
               <div class="member-manage-avatar" style="background:#f97316">한</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">한지민</div>
-                <div class="member-manage-role">Lv.5 · 기록 23개 · 취향 78% 일치</div>
-              </div>
+              <div class="member-manage-info"><div class="member-manage-name">한지민</div><div class="member-manage-role">Lv.5 · 기록 23개 · 취향 78% 일치</div></div>
               <div class="member-manage-actions">
-                <button class="member-action-btn approve" title="승인"><i data-lucide="check"></i></button>
-                <button class="member-action-btn danger" title="거절"><i data-lucide="x"></i></button>
+                <button class="member-action-btn approve"><i data-lucide="check"></i></button>
+                <button class="member-action-btn danger"><i data-lucide="x"></i></button>
               </div>
             </div>
             <div class="member-manage-item">
               <div class="member-manage-avatar" style="background:#06b6d4">송</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">송태양</div>
-                <div class="member-manage-role">Lv.3 · 기록 8개 · 취향 65% 일치</div>
-              </div>
+              <div class="member-manage-info"><div class="member-manage-name">송태양</div><div class="member-manage-role">Lv.3 · 기록 8개 · 취향 65% 일치</div></div>
               <div class="member-manage-actions">
-                <button class="member-action-btn approve" title="승인"><i data-lucide="check"></i></button>
-                <button class="member-action-btn danger" title="거절"><i data-lucide="x"></i></button>
-              </div>
-            </div>
-            <div class="member-count-label">
-              <i data-lucide="users" style="width:12px;height:12px;"></i> 멤버 (8)
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#14b8a6">나</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">나 <span class="owner-badge">오너</span></div>
-                <div class="member-manage-role">Lv.7 · 기록 31개</div>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#C17B5E">김</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">김영수</div>
-                <div class="member-manage-role">Lv.6 · 기록 14개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#8B7396">박</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">박소연</div>
-                <div class="member-manage-role">Lv.5 · 기록 11개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
-              </div>
-            </div>
-            <div class="member-manage-item">
-              <div class="member-manage-avatar" style="background:#7A9BAE">이</div>
-              <div class="member-manage-info">
-                <div class="member-manage-name">이준호</div>
-                <div class="member-manage-role">Lv.4 · 기록 8개</div>
-              </div>
-              <div class="member-manage-actions">
-                <button class="member-action-btn" title="역할 변경"><i data-lucide="crown"></i></button>
-                <button class="member-action-btn danger" title="내보내기"><i data-lucide="user-minus"></i></button>
+                <button class="member-action-btn approve"><i data-lucide="check"></i></button>
+                <button class="member-action-btn danger"><i data-lucide="x"></i></button>
               </div>
             </div>
           </div>
-
-          <!-- Stats Overview (owner) -->
           <div class="settings-group">
             <div class="settings-group-title"><i data-lucide="bar-chart-3"></i> 버블 통계</div>
             <div class="stat-grid">
-              <div class="stat-card">
-                <div class="stat-card-value">47</div>
-                <div class="stat-card-label">총 기록</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-card-value">8</div>
-                <div class="stat-card-label">멤버 수</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-card-value" style="color:var(--positive)">+12%</div>
-                <div class="stat-card-label">주간 활성도</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-card-value">87</div>
-                <div class="stat-card-label">평균 만족도</div>
-              </div>
+              <div class="stat-card"><div class="stat-card-value">47</div><div class="stat-card-label">총 기록</div></div>
+              <div class="stat-card"><div class="stat-card-value">8</div><div class="stat-card-label">멤버 수</div></div>
+              <div class="stat-card"><div class="stat-card-value" style="color:var(--positive)">+12%</div><div class="stat-card-label">주간 활성도</div></div>
+              <div class="stat-card"><div class="stat-card-value">87</div><div class="stat-card-label">평균 만족도</div></div>
             </div>
             <div style="margin-top:12px">
               <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">주간 기록 추이</div>
               <div class="weekly-chart">
-                <div class="weekly-bar" style="height:30%"></div>
-                <div class="weekly-bar" style="height:45%"></div>
-                <div class="weekly-bar" style="height:60%"></div>
-                <div class="weekly-bar" style="height:40%"></div>
-                <div class="weekly-bar" style="height:80%"></div>
-                <div class="weekly-bar" style="height:70%"></div>
+                <div class="weekly-bar" style="height:30%"></div><div class="weekly-bar" style="height:45%"></div>
+                <div class="weekly-bar" style="height:60%"></div><div class="weekly-bar" style="height:40%"></div>
+                <div class="weekly-bar" style="height:80%"></div><div class="weekly-bar" style="height:70%"></div>
                 <div class="weekly-bar current" style="height:100%"></div>
               </div>
-              <div class="weekly-labels">
-                <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
-              </div>
+              <div class="weekly-labels"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
             </div>
           </div>
-
-          <!-- Danger Zone -->
           <div class="settings-group" style="border-bottom:none">
             <div class="settings-group-title" style="color:var(--negative)"><i data-lucide="alert-triangle"></i> 위험 영역</div>
             <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-label" style="color:var(--negative)">버블 삭제</div>
-                <div class="settings-row-desc">모든 데이터가 영구 삭제됩니다</div>
-              </div>
+              <div class="settings-row-left"><div class="settings-row-label" style="color:var(--negative)">버블 삭제</div><div class="settings-row-desc">모든 데이터가 영구 삭제됩니다</div></div>
               <div class="settings-row-value" style="color:var(--negative)"><i data-lucide="trash-2"></i></div>
             </div>
           </div>
-
           <div style="height:40px"></div>
         </div>
-
         <button class="fab-back" onclick="showScreen('screen-bubble-detail')">
           <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
         </button>
@@ -1843,7 +1546,7 @@
 </div>
 
 <script>
-  // Screen navigation
+  // ── Screen navigation (fixed backward animation) ──
   let currentScreen = 'screen-bubble-detail';
   const screenStack = ['screen-bubble-detail'];
 
@@ -1851,54 +1554,43 @@
     const prev = document.getElementById(currentScreen);
     const next = document.getElementById(id);
     if (!next || id === currentScreen) return;
-
     const isForward = (id !== screenStack[screenStack.length - 2]);
-
     if (isForward) {
       screenStack.push(id);
       next.classList.remove('hidden', 'slide-out');
       next.style.transform = 'translateX(100%)';
       requestAnimationFrame(() => {
-        next.style.transform = '';
-        next.classList.add('active');
-        prev.classList.add('slide-out');
-        prev.classList.remove('active');
+        next.style.transform = ''; next.classList.add('active');
+        prev.classList.add('slide-out'); prev.classList.remove('active');
       });
     } else {
       screenStack.pop();
-      prev.style.transform = '';
-      next.classList.remove('slide-out');
-      next.classList.add('active');
+      next.classList.remove('slide-out', 'hidden');
+      next.style.transform = 'translateX(-100%)';
       requestAnimationFrame(() => {
-        prev.classList.remove('active');
-        prev.style.transform = 'translateX(100%)';
+        next.style.transform = ''; next.classList.add('active');
+        prev.classList.remove('active'); prev.style.transform = 'translateX(100%)';
       });
     }
-
     setTimeout(() => {
       prev.classList.remove('slide-out');
-      if (!prev.classList.contains('active')) {
-        prev.classList.add('hidden');
-        prev.style.transform = '';
-      }
+      if (!prev.classList.contains('active')) { prev.classList.add('hidden'); prev.style.transform = ''; }
       lucide.createIcons();
     }, 350);
-
     currentScreen = id;
   }
 
-  // Detail tab switching (4 tabs)
+  // ── Tabs (3) ──
   function switchDetailTab(tab) {
-    const tabs = ['feed', 'rankings', 'overlap', 'members'];
-    tabs.forEach(t => {
-      const tabBtn = document.getElementById('dtab-' + t);
-      if (tabBtn) tabBtn.classList.toggle('active', t === tab);
+    ['feed','rankings','members'].forEach(t => {
+      const btn = document.getElementById('dtab-' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
       const content = document.getElementById('dcontent-' + t);
-      if (content) content.style.display = (t === tab) ? '' : 'none';
+      if (content) content.style.display = t === tab ? '' : 'none';
     });
   }
 
-  // Rankings sub-toggle (food/wine)
+  // ── Rankings sub-toggle ──
   function switchRankingSub(sub) {
     document.getElementById('rank-sub-food').classList.toggle('active', sub === 'food');
     document.getElementById('rank-sub-wine').classList.toggle('active', sub === 'wine');
@@ -1906,63 +1598,68 @@
     document.getElementById('ranking-wine').style.display = sub === 'wine' ? '' : 'none';
   }
 
-  // Toggle follow
-  function toggleFollow(btn) {
-    btn.classList.toggle('following');
-    btn.textContent = btn.classList.contains('following') ? '팔로잉' : '팔로우';
-  }
-
-  // Sort active
+  // ── Sort ──
   function setSortActive(el) {
     el.parentElement.querySelectorAll('.sort-btn').forEach(s => s.classList.remove('active'));
     el.classList.add('active');
   }
 
-  // Close avatar menu on outside click
-  document.addEventListener('click', function(e) {
-    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
-      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
-    });
-  });
+  // ── Follow (member cards) ──
+  function toggleFollowCard(btn) {
+    btn.classList.toggle('following');
+    btn.textContent = btn.classList.contains('following') ? '팔로잉' : '팔로우';
+  }
 
-  // Notification dropdown
+  // ── Bubble info collapse ──
+  function toggleBubbleInfo() {
+    document.getElementById('bubbleInfo').classList.toggle('open');
+    lucide.createIcons();
+  }
+
+  // ── Feed reactions ──
+  function toggleReact(btn, type) {
+    const cls = { want:'reacted-want', check:'reacted-check', fire:'reacted-fire' }[type];
+    const active = btn.classList.contains(cls);
+    const num = parseInt(btn.textContent.trim().match(/\d+/) || [0]) || 0;
+    btn.classList.toggle(cls, !active);
+    const icon = { want:'bookmark-plus', check:'check-circle-2', fire:'flame' }[type];
+    const label = { want:'가고싶다', check:'나도가봤어', fire:'맛있어보인다' }[type];
+    btn.innerHTML = '';
+    const i = document.createElement('i');
+    i.setAttribute('data-lucide', icon);
+    btn.appendChild(i);
+    btn.appendChild(document.createTextNode(' ' + label + ' ' + (active ? num - 1 : num + 1)));
+    lucide.createIcons();
+  }
+
+  // ── Notif ──
   function toggleNotifDropdown(e) {
     e.stopPropagation();
-    var dd = document.getElementById('notifDropdown');
-    var ov = document.getElementById('notifOverlay');
-    dd.classList.toggle('open');
-    ov.classList.toggle('open');
+    document.getElementById('notifDropdown').classList.toggle('open');
+    document.getElementById('notifOverlay').classList.toggle('open');
   }
   function closeNotifDropdown() {
     document.getElementById('notifDropdown').classList.remove('open');
     document.getElementById('notifOverlay').classList.remove('open');
   }
-  function readNotifItem(item) {
-    item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
-    if (dot) dot.remove();
-    closeNotifDropdown();
-  }
   function markAllNotifRead() {
-    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
-      item.classList.remove('unread');
-      var dot = item.querySelector('.notif-item-dot');
-      if (dot) dot.remove();
-    });
+    document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+    document.querySelector('.notif-badge').style.display = 'none';
   }
+  function readNotifItem(el) { el.classList.remove('unread'); }
   function handleNotifAction(btn, action) {
-    var item = btn.closest('.notif-item');
-    var actions = item.querySelector('.notif-item-actions');
-    actions.innerHTML = action === 'accept'
-      ? '<span style="font-size:11px;font-weight:600;color:var(--positive)">수락 완료</span>'
-      : '<span style="font-size:11px;color:var(--text-hint)">거절됨</span>';
-    item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
-    if (dot) dot.remove();
+    btn.closest('.notif-item').style.opacity = '0.5';
+    btn.closest('.notif-item-actions').innerHTML = action === 'accept' ? '<span style="color:var(--positive);font-size:11px;font-weight:600;">✓ 수락됨</span>' : '<span style="color:var(--text-hint);font-size:11px;">거절됨</span>';
   }
+
+  // ── Avatar menu close ──
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-menu.open').forEach(m => {
+      if (!m.parentElement.contains(e.target)) m.classList.remove('open');
+    });
+  });
 
   lucide.createIcons();
 </script>
-
 </body>
 </html>

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam Prototype — 버블러 프로필</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  button { font-family: inherit; }
+
+  :root {
+    --bg: #F8F6F3;
+    --bg-card: #FEFCFA;
+    --bg-page: #EFECE7;
+    --bg-section: #F0EDE8;
+    --text: #3D3833;
+    --text-sub: #8C8580;
+    --text-hint: #B5AFA8;
+    --primary: #C17B5E;
+    --primary-light: #F5EDE8;
+    --wine: #8B7396;
+    --wine-light: #F0ECF3;
+    --border: #E8E4DF;
+    --border-bold: #D4CFC8;
+    --positive: #7EAE8B;
+    --caution: #C9A96E;
+    --negative: #B87272;
+    --accent-social: #7A9BAE;
+    --accent-social-light: #EDF2F5;
+    --brand: #FF6038;
+  }
+
+  body {
+    background: var(--bg-page);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+
+  .device {
+    width: 390px; height: 844px; background: #2A2725;
+    border-radius: 52px; padding: 12px;
+    box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
+    position: relative; flex-shrink: 0;
+  }
+  .device-inner {
+    width: 100%; height: 100%; background: var(--bg);
+    border-radius: 42px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .dynamic-island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 36px; background: #1A1A1A;
+    border-radius: 20px; z-index: 100;
+  }
+  .dynamic-island::after {
+    content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #080C10;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px; display: flex; align-items: flex-end;
+    justify-content: space-between; padding: 0 24px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    position: relative; z-index: 50; flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+
+  /* Top fixed header */
+  .top-fixed {
+    flex-shrink: 0;
+    background: rgba(248,246,243,0.88);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--border);
+    z-index: 60;
+  }
+  .app-header {
+    padding: 2px 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .inner-back-btn {
+    display: flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; color: var(--text);
+  }
+  .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
+  .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
+  .inner-back-btn:active { opacity: 0.6; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: transparent; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text);
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  /* Scroll area */
+  .scroll-area {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding-bottom: 40px;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ===== PROFILE HEADER ===== */
+  .profile-hero {
+    padding: 20px 20px 0;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .profile-avatar-wrap { position: relative; flex-shrink: 0; }
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #C17B5E;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; color: #fff;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .profile-level-badge {
+    position: absolute; bottom: -2px; right: -4px;
+    font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 10px;
+    background: var(--primary); color: #fff;
+    border: 2px solid var(--bg);
+    white-space: nowrap;
+  }
+  .profile-meta { flex: 1; min-width: 0; }
+  .profile-name {
+    font-size: 18px; font-weight: 800; color: var(--text);
+    margin-bottom: 2px; line-height: 1.2;
+  }
+  .profile-handle { font-size: 12px; color: var(--text-hint); margin-bottom: 8px; }
+  .profile-stats-row {
+    display: flex; gap: 14px;
+  }
+  .profile-stat { text-align: center; }
+  .profile-stat-val { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1; }
+  .profile-stat-lbl { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+  .profile-taste-tags {
+    display: flex; gap: 5px; flex-wrap: wrap;
+    padding: 12px 20px 0;
+  }
+  .taste-pill {
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    background: var(--bg-section); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px;
+  }
+  .taste-pill.highlight {
+    background: var(--primary-light); color: var(--primary); border-color: transparent;
+  }
+  .profile-actions {
+    display: flex; gap: 8px; padding: 12px 20px 0;
+  }
+  .btn-follow {
+    flex: 1; padding: 9px 0; border-radius: 10px;
+    font-size: 13px; font-weight: 700;
+    background: var(--accent-social); color: #fff;
+    border: none; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-follow.following {
+    background: var(--bg-section); color: var(--text-sub);
+    border: 1px solid var(--border);
+  }
+  .btn-follow:active { opacity: 0.75; }
+  .btn-compare {
+    padding: 9px 14px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    background: var(--bg-section); color: var(--text);
+    border: 1px solid var(--border); cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: background 0.15s;
+  }
+  .btn-compare svg { width: 14px; height: 14px; }
+  .btn-compare:active { background: var(--border); }
+
+  /* ===== BUBBLE CONTEXT CARD ===== */
+  .section-divider { height: 8px; background: var(--bg-section); margin: 16px 0 0; }
+  .bubble-context {
+    padding: 16px 20px;
+  }
+  .bc-header {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+  }
+  .bc-bubble-icon {
+    width: 20px; height: 20px; border-radius: 6px;
+    background: var(--accent-social-light); color: var(--accent-social);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .bc-bubble-icon svg { width: 11px; height: 11px; }
+  .bc-title { font-size: 12px; font-weight: 700; color: var(--text-sub); flex: 1; }
+  .bc-bubble-name {
+    font-size: 12px; font-weight: 700; color: var(--accent-social);
+    text-decoration: none;
+  }
+  .bc-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .bc-card {
+    background: var(--bg-section); border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .bc-card-label {
+    font-size: 10px; color: var(--text-hint); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .bc-card-label svg { width: 10px; height: 10px; }
+  .bc-card-val {
+    font-size: 20px; font-weight: 800; color: var(--text); line-height: 1;
+  }
+  .bc-card-val span { font-size: 11px; font-weight: 500; color: var(--text-sub); }
+  .bc-card.rank1 { background: linear-gradient(135deg, rgba(201,169,110,0.15) 0%, rgba(201,169,110,0.05) 100%); }
+  .bc-card.rank1 .bc-card-val { color: var(--caution); }
+  .bc-card.match .bc-card-val { color: var(--accent-social); }
+  .bc-match-bar {
+    height: 4px; border-radius: 2px;
+    background: var(--border); margin-top: 6px; overflow: hidden;
+  }
+  .bc-match-fill {
+    height: 100%; background: var(--accent-social); border-radius: 2px;
+    width: 78%;
+  }
+
+  /* ===== TASTE PROFILE ===== */
+  .taste-profile {
+    padding: 16px 20px;
+  }
+  .section-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .section-title svg { width: 14px; height: 14px; color: var(--text-sub); }
+  .taste-category-rows { display: flex; flex-direction: column; gap: 8px; }
+  .taste-cat-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .taste-cat-name { font-size: 12px; font-weight: 600; color: var(--text); width: 52px; flex-shrink: 0; }
+  .taste-cat-bar {
+    flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .taste-cat-fill { height: 100%; border-radius: 3px; }
+  .taste-cat-pct { font-size: 11px; font-weight: 600; color: var(--text-sub); width: 28px; text-align: right; flex-shrink: 0; }
+  .taste-scale {
+    margin-top: 14px; background: var(--bg-section); border-radius: 12px;
+    padding: 10px 14px;
+  }
+  .taste-scale-label {
+    font-size: 10px; color: var(--text-hint); margin-bottom: 6px;
+  }
+  .taste-scale-track {
+    position: relative; height: 6px; background: var(--border); border-radius: 3px;
+    margin-bottom: 4px;
+  }
+  .taste-scale-fill {
+    position: absolute; left: 0; top: 0; height: 100%;
+    background: linear-gradient(90deg, var(--positive), var(--caution));
+    border-radius: 3px; width: 65%;
+  }
+  .taste-scale-dot {
+    position: absolute; top: 50%; left: 65%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--caution); border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .taste-scale-ends {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--text-hint);
+  }
+  .taste-region {
+    margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;
+  }
+  .taste-region-pill {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px;
+    background: var(--bg-section); color: var(--text-sub);
+    border: 1px solid var(--border);
+  }
+  .taste-region-pill.top { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+
+  /* ===== PICKS (Letterboxd favorites) ===== */
+  .picks {
+    padding: 16px 20px;
+  }
+  .picks-grid {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .picks-grid::-webkit-scrollbar { display: none; }
+  .pick-card {
+    flex-shrink: 0; width: 82px; cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s;
+  }
+  .pick-card:active { transform: scale(0.96); }
+  .pick-thumb {
+    width: 82px; height: 82px; border-radius: 12px;
+    background: var(--bg-section) center/cover no-repeat;
+    position: relative; overflow: hidden; margin-bottom: 5px;
+  }
+  .pick-thumb-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+  }
+  .pick-score {
+    position: absolute; bottom: 5px; right: 5px;
+    font-size: 11px; font-weight: 800; color: #fff;
+  }
+  .pick-name {
+    font-size: 11px; font-weight: 600; color: var(--text);
+    line-height: 1.3; white-space: normal; word-break: keep-all;
+  }
+  .pick-meta { font-size: 10px; color: var(--text-hint); }
+
+  /* ===== RECENT RECORDS ===== */
+  .recent-records { }
+  .recent-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 8px;
+  }
+  .recent-more {
+    font-size: 12px; color: var(--accent-social); font-weight: 600;
+    background: none; border: none; cursor: pointer;
+  }
+  .record-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; border-top: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s; text-decoration: none;
+  }
+  .record-row:active { background: var(--bg-card); }
+  .record-thumb {
+    width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0;
+    background: var(--bg-section) center/cover no-repeat;
+  }
+  .record-info { flex: 1; min-width: 0; }
+  .record-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .record-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+  .record-comment {
+    font-size: 11px; color: var(--text-hint); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .record-score {
+    font-size: 15px; font-weight: 800; color: var(--primary);
+    flex-shrink: 0;
+  }
+  .record-score.wine { color: var(--wine); }
+
+  /* ===== ACTIVITY HEATMAP ===== */
+  .activity {
+    padding: 16px 20px;
+  }
+  .activity-stats {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .activity-stat {
+    flex: 1; background: var(--bg-section); border-radius: 10px;
+    padding: 8px 10px; text-align: center;
+  }
+  .activity-stat-val { font-size: 16px; font-weight: 800; color: var(--text); }
+  .activity-stat-lbl { font-size: 9px; color: var(--text-sub); margin-top: 1px; }
+  .activity-stat-val.streak { color: var(--caution); }
+  .heatmap {
+    display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px;
+  }
+  .hm-cell {
+    aspect-ratio: 1; border-radius: 2px;
+    background: var(--border);
+  }
+  .hm-cell.l1 { background: rgba(122,155,174,0.25); }
+  .hm-cell.l2 { background: rgba(122,155,174,0.5); }
+  .hm-cell.l3 { background: rgba(122,155,174,0.8); }
+  .hm-cell.l4 { background: var(--accent-social); }
+  .hm-months {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--text-hint); margin-top: 4px;
+  }
+  .streak-banner {
+    margin-top: 10px; padding: 8px 12px;
+    background: linear-gradient(90deg, rgba(201,169,110,0.12) 0%, transparent 100%);
+    border-radius: 10px; border-left: 3px solid var(--caution);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .streak-banner svg { width: 14px; height: 14px; color: var(--caution); flex-shrink: 0; }
+  .streak-banner-text {
+    font-size: 12px; color: var(--text);
+  }
+  .streak-banner-text strong { color: var(--caution); }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="device-inner">
+    <div class="dynamic-island"></div>
+
+    <!-- Header -->
+    <div class="top-fixed">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i>
+        </div>
+      </div>
+      <div class="app-header">
+        <button class="inner-back-btn" onclick="history.back()">
+          <i data-lucide="chevron-left"></i>
+          <span>직장 맛집</span>
+        </button>
+        <button class="icon-btn"><i data-lucide="ellipsis"></i></button>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+
+      <!-- ===== PROFILE HERO ===== -->
+      <div class="profile-hero">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">김</div>
+          <div class="profile-level-badge">Lv.9 미식가</div>
+        </div>
+        <div class="profile-meta">
+          <div class="profile-name">김영수</div>
+          <div class="profile-handle">@youngsoo_eats</div>
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <div class="profile-stat-val">72</div>
+              <div class="profile-stat-lbl">기록</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val">38</div>
+              <div class="profile-stat-lbl">팔로워</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val">21</div>
+              <div class="profile-stat-lbl">팔로잉</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-taste-tags">
+        <span class="taste-pill highlight">한식</span>
+        <span class="taste-pill highlight">국수</span>
+        <span class="taste-pill">을지로</span>
+        <span class="taste-pill">혼밥</span>
+        <span class="taste-pill">가성비</span>
+      </div>
+
+      <div class="profile-actions">
+        <button class="btn-follow following" onclick="this.classList.toggle('following');this.textContent=this.classList.contains('following')?'팔로잉':'팔로우'">팔로잉</button>
+        <button class="btn-compare">
+          <i data-lucide="bar-chart-2"></i> 취향 비교
+        </button>
+      </div>
+
+      <!-- ===== BUBBLE CONTEXT CARD ===== -->
+      <div class="section-divider"></div>
+      <div class="bubble-context">
+        <div class="bc-header">
+          <div class="bc-bubble-icon"><i data-lucide="circle-dot"></i></div>
+          <div class="bc-title">직장 맛집 안에서</div>
+          <a href="04_bubbles_detail.html" class="bc-bubble-name">직장 맛집 →</a>
+        </div>
+        <div class="bc-grid">
+          <div class="bc-card rank1">
+            <div class="bc-card-label"><i data-lucide="trophy"></i> 이번 주 순위</div>
+            <div class="bc-card-val">1위 <span>/ 8명</span></div>
+          </div>
+          <div class="bc-card">
+            <div class="bc-card-label"><i data-lucide="calendar"></i> 멤버십 기간</div>
+            <div class="bc-card-val">8 <span>개월</span></div>
+          </div>
+          <div class="bc-card match">
+            <div class="bc-card-label"><i data-lucide="heart"></i> 나와 취향 일치도</div>
+            <div class="bc-card-val">78<span>%</span></div>
+            <div class="bc-match-bar"><div class="bc-match-fill"></div></div>
+          </div>
+          <div class="bc-card">
+            <div class="bc-card-label"><i data-lucide="map-pin"></i> 같이 가본 곳</div>
+            <div class="bc-card-val">8 <span>곳</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TASTE PROFILE ===== -->
+      <div class="section-divider"></div>
+      <div class="taste-profile">
+        <div class="section-title">
+          <i data-lucide="pie-chart"></i> 취향 프로필
+        </div>
+
+        <div class="taste-category-rows">
+          <div class="taste-cat-row">
+            <div class="taste-cat-name">한식</div>
+            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:48%;background:var(--primary)"></div></div>
+            <div class="taste-cat-pct">48%</div>
+          </div>
+          <div class="taste-cat-row">
+            <div class="taste-cat-name">일식</div>
+            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:32%;background:var(--accent-social)"></div></div>
+            <div class="taste-cat-pct">32%</div>
+          </div>
+          <div class="taste-cat-row">
+            <div class="taste-cat-name">양식</div>
+            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:12%;background:var(--positive)"></div></div>
+            <div class="taste-cat-pct">12%</div>
+          </div>
+          <div class="taste-cat-row">
+            <div class="taste-cat-name">기타</div>
+            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:8%;background:var(--border-bold)"></div></div>
+            <div class="taste-cat-pct">8%</div>
+          </div>
+        </div>
+
+        <!-- 점수 성향 -->
+        <div class="taste-scale">
+          <div class="taste-scale-label">평균 평점 성향 — 91점 (조금 후한 편)</div>
+          <div class="taste-scale-track">
+            <div class="taste-scale-fill"></div>
+            <div class="taste-scale-dot"></div>
+          </div>
+          <div class="taste-scale-ends">
+            <span>까다로운 편</span>
+            <span>후한 편</span>
+          </div>
+        </div>
+
+        <!-- 주요 지역 -->
+        <div class="taste-region">
+          <span class="taste-region-pill top">을지로</span>
+          <span class="taste-region-pill top">광화문</span>
+          <span class="taste-region-pill">성수동</span>
+          <span class="taste-region-pill">종로</span>
+        </div>
+      </div>
+
+      <!-- ===== PICKS (강력 추천 Top 5) ===== -->
+      <div class="section-divider"></div>
+      <div class="picks">
+        <div class="section-title">
+          <i data-lucide="star"></i> 김영수의 강력 추천
+        </div>
+        <div class="picks-grid">
+          <a class="pick-card" href="02_detail_restaurant.html">
+            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&h=300&fit=crop')">
+              <div class="pick-thumb-overlay"></div>
+              <div class="pick-score">96</div>
+            </div>
+            <div class="pick-name">미진</div>
+            <div class="pick-meta">한식 · 을지로</div>
+          </a>
+          <a class="pick-card" href="02_detail_restaurant.html">
+            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop')">
+              <div class="pick-thumb-overlay"></div>
+              <div class="pick-score">94</div>
+            </div>
+            <div class="pick-name">을지면옥</div>
+            <div class="pick-meta">한식 · 을지로</div>
+          </a>
+          <a class="pick-card" href="02_detail_restaurant.html">
+            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&h=300&fit=crop')">
+              <div class="pick-thumb-overlay"></div>
+              <div class="pick-score">93</div>
+            </div>
+            <div class="pick-name">스시코우지</div>
+            <div class="pick-meta">일식 · 을지로</div>
+          </a>
+          <a class="pick-card" href="02_detail_restaurant.html">
+            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=300&h=300&fit=crop')">
+              <div class="pick-thumb-overlay"></div>
+              <div class="pick-score">91</div>
+            </div>
+            <div class="pick-name">이코이</div>
+            <div class="pick-meta">일식 · 을지로</div>
+          </a>
+          <a class="pick-card" href="02_detail_restaurant.html">
+            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=300&h=300&fit=crop')">
+              <div class="pick-thumb-overlay"></div>
+              <div class="pick-score">89</div>
+            </div>
+            <div class="pick-name">광화문국밥</div>
+            <div class="pick-meta">한식 · 광화문</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- ===== RECENT RECORDS ===== -->
+      <div class="section-divider"></div>
+      <div class="recent-records">
+        <div class="recent-header">
+          <div class="section-title" style="margin-bottom:0">
+            <i data-lucide="clock"></i> 최근 기록
+          </div>
+          <button class="recent-more">전체보기</button>
+        </div>
+        <a class="record-row" href="02_detail_restaurant.html">
+          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"></div>
+          <div class="record-info">
+            <div class="record-name">미진</div>
+            <div class="record-meta">한식 · 을지로 · 3시간 전</div>
+            <div class="record-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
+          </div>
+          <div class="record-score">93</div>
+        </a>
+        <a class="record-row" href="02_detail_restaurant.html">
+          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop')"></div>
+          <div class="record-info">
+            <div class="record-name">도쿄등심</div>
+            <div class="record-meta">일식 · 광화문 · 3일 전</div>
+            <div class="record-comment">"와규 채끝은 무조건 미디엄레어"</div>
+          </div>
+          <div class="record-score">88</div>
+        </a>
+        <a class="record-row" href="02_detail_wine.html">
+          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"></div>
+          <div class="record-info">
+            <div class="record-name">Ch. Margaux 2018</div>
+            <div class="record-meta">레드와인 · 5일 전</div>
+            <div class="record-comment">"보르도 중에 이게 제일 좋다"</div>
+          </div>
+          <div class="record-score wine">91</div>
+        </a>
+        <a class="record-row" href="02_detail_restaurant.html">
+          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&h=200&fit=crop')"></div>
+          <div class="record-info">
+            <div class="record-name">을지면옥</div>
+            <div class="record-meta">한식 · 을지로 · 1주 전</div>
+            <div class="record-comment">"평양냉면 맛집. 국물이 진짜임"</div>
+          </div>
+          <div class="record-score">94</div>
+        </a>
+      </div>
+
+      <!-- ===== ACTIVITY HEATMAP ===== -->
+      <div class="section-divider"></div>
+      <div class="activity">
+        <div class="section-title">
+          <i data-lucide="activity"></i> 활동
+        </div>
+        <div class="activity-stats">
+          <div class="activity-stat">
+            <div class="activity-stat-val">72</div>
+            <div class="activity-stat-lbl">총 기록</div>
+          </div>
+          <div class="activity-stat">
+            <div class="activity-stat-val streak">8주</div>
+            <div class="activity-stat-lbl">연속 기록</div>
+          </div>
+          <div class="activity-stat">
+            <div class="activity-stat-val">11개월</div>
+            <div class="activity-stat-lbl">활동 기간</div>
+          </div>
+        </div>
+
+        <!-- 13주 × 7일 heatmap -->
+        <div class="heatmap" id="heatmap"></div>
+        <div class="hm-months">
+          <span>1월</span><span>2월</span><span>3월</span>
+        </div>
+
+        <div class="streak-banner">
+          <i data-lucide="flame"></i>
+          <div class="streak-banner-text"><strong>8주 연속</strong> 기록 중 — 이번 주도 화이팅!</div>
+        </div>
+      </div>
+
+    </div><!-- /scroll-area -->
+  </div>
+</div>
+
+<script>
+  // Generate heatmap (13 cols × 7 rows = 91 cells)
+  const hm = document.getElementById('heatmap');
+  const pattern = [0,0,1,0,2,1,0, 0,1,2,1,3,2,1, 0,0,1,2,1,0,0, 1,2,3,2,1,2,1, 0,1,2,1,0,1,2, 1,3,2,3,2,1,0, 0,1,0,2,1,2,3, 2,1,2,3,4,3,2, 1,0,1,2,3,2,1, 0,2,3,2,1,0,1, 1,2,3,4,3,2,1, 0,1,2,3,2,1,0, 1,2,3,4,4,3,2];
+  // Rearrange to column-major (heatmap flows left→right per column)
+  for (let col = 0; col < 13; col++) {
+    for (let row = 0; row < 7; row++) {
+      const val = pattern[col * 7 + row] || 0;
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell' + (val > 0 ? ' l' + Math.min(val, 4) : '');
+      hm.appendChild(cell);
+    }
+  }
+
+  lucide.createIcons();
+</script>
+</body>
+</html>

@@ -253,12 +253,11 @@
   }
 
   /* =====================
-     FLOATING BACK BUTTON — bottom-left
+     FLOATING ACTION BUTTONS
      ===================== */
-  .fab-back {
+  .fab {
     position: absolute;
     bottom: 28px;
-    left: 16px;
     z-index: 85;
     width: 44px;
     height: 44px;
@@ -275,10 +274,12 @@
     color: var(--text);
     transition: transform 0.15s, box-shadow 0.15s;
   }
-  .fab-back:active {
+  .fab:active {
     transform: scale(0.9);
     box-shadow: 0 1px 6px rgba(0,0,0,0.1);
   }
+  .fab-back { left: 16px; }
+  .fab-add { right: 16px; }
 
   /* Screen system */
   .screen {
@@ -1120,7 +1121,7 @@
             <div class="app-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
             <div class="avatar-menu" onclick="event.stopPropagation()">
               <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
-              <a href="07_statistics.html" class="avatar-menu-item"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i> 통계</a>
+
               <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
             </div>
           </div>
