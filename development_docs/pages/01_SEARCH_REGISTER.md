@@ -1,6 +1,8 @@
 # SEARCH_REGISTER — 검색 & 등록
 
 > depends_on: DATA_MODEL, RATING_ENGINE, DESIGN_SYSTEM
+> affects: RECORD_FLOW
+> prototype: `prototype/01_home.html` (screen-add-restaurant, screen-add-restaurant-search, screen-add-wine, screen-add-wine-search, screen-add-wine-confirm)
 
 ---
 

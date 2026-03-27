@@ -2,20 +2,83 @@
 
 > depends_on: AUTH, DATA_MODEL, DESIGN_SYSTEM, BUBBLE
 > route: /settings
-> prototype: 05_settings.html
-> entry: 프로필 헤더 ⚙ 아이콘
-> header: 내부 페이지 헤더 (← 프로필 + bubbles/알림/아바타)
+> prototype: `prototype/05_settings.html`
+> entry: 프로필 헤더 ⚙ 아이콘 / 아바타 드롭다운 "설정"
+> header: 내부 페이지 헤더 (← 설정 + bubbles/알림/아바타)
+
+---
+
+## 0. 페이지 구조 & 컴포넌트
+
+### 레이아웃
+
+```
+┌─────────────────────────────┐
+│ StatusBar                   │
+│ AppHeader (← 설정 | bubbles bell avatar) │
+├─────────────────────────────┤
+│ ScrollArea                  │
+│  ├─ 계정 섹션               │
+│  ├─ 프라이버시 섹션          │
+│  │   ├─ 기본 공개 대상 (Segment) │
+│  │   ├─ 기록 범위 (Segment)     │
+│  │   ├─ 상태 요약 텍스트         │
+│  │   ├─ [전체 공개 토글 레이어]  │
+│  │   ├─ [버블 기본 토글 레이어]  │
+│  │   ├─ [버블별 설정 레이어]     │
+│  │   └─ 프라이버시 안내 노트     │
+│  ├─ 알림 섹션               │
+│  ├─ 화면 디폴트 섹션         │
+│  ├─ 기능 디폴트 섹션         │
+│  ├─ 데이터 섹션             │
+│  ├─ 정보 섹션               │
+│  └─ 계정 관리 섹션           │
+├─────────────────────────────┤
+│ [Overlay + BottomSheet]     │
+│  ├─ 버블별 프라이버시 시트   │
+│  └─ 계정 삭제 시트           │
+└─────────────────────────────┘
+```
+
+### 컴포넌트 계층
+
+| 컴포넌트 | 위치 | 역할 |
+|----------|------|------|
+| `SettingsPage` | Container | 전체 페이지 상태 관리 |
+| `InnerPageHeader` | 공용 | ← 타이틀 + bubbles/bell/avatar |
+| `SettingsSection` | Component | 섹션 타이틀 + SettingsCard 래퍼 |
+| `SettingsCard` | Component | 둥근 카드 (border-radius: 12px) |
+| `SettingsItem` | Component | 아이콘 + 라벨 + (값/토글/셀렉트/chevron) |
+| `Toggle` | Component | 44×26px ON/OFF 토글 스위치 |
+| `NyamSelect` | Component | 인라인 드롭다운 (셀렉트 → 드롭다운 패널) |
+| `SegmentControl` | Component | 3단/2단 세그먼트 (프라이버시용) |
+| `PrivacyLayer` | Component | 조건부 표시 레이어 (애니메이션 show/hide) |
+| `BubblePrivacySheet` | Component | 바텀 시트 — 버블별 기본값/커스텀 선택 |
+| `DeleteAccountSheet` | Component | 바텀 시트 — 계정 삭제 플로우 |
+| `NotifDropdown` | 공용 | 알림 드롭다운 (헤더 bell 클릭) |
+
+### 인터랙션 패턴
+
+| UI 요소 | 동작 |
+|---------|------|
+| `SettingsItem` + chevron | 하위 화면 이동 또는 바텀 시트 |
+| `Toggle` | 즉시 토글, 서버 동기화 (optimistic update) |
+| `NyamSelect` | 클릭 → 드롭다운 열림, 항목 선택 → 닫힘 + 값 반영 |
+| `SegmentControl` | 탭 선택 → 하위 레이어 show/hide 애니메이션 |
+| `PrivacyLayer` | max-height + opacity transition (0.35s / 0.25s) |
+| 바텀 시트 | overlay(0.35 opacity) + translateY 슬라이드, max-height 75% |
 
 ---
 
 ## 1. 설정 항목 요약
 
 ### 계정
-- 닉네임 변경
-- 한줄 소개 변경
-- 아바타 변경 (갤러리/카메라)
-- 로그아웃
-- 계정 삭제 (확인 모달 필수)
+
+| 항목 | 아이콘 | UI 타입 | 비고 |
+|------|--------|---------|------|
+| 닉네임 변경 | pencil | SettingsItem + 현재값 + chevron | 현재 닉네임 표시 |
+| 한줄 소개 변경 | message-square | SettingsItem + chevron | |
+| 아바타 변경 | image | SettingsItem + chevron | 갤러리/카메라 |
 
 ### 프라이버시 — 계층형 공개 설정
 → 상세: §2~§6 참조
@@ -27,88 +90,144 @@
 | 기본 공개 대상 | 전체 공개 / 버블만 / 비공개 | 버블만 | `users.privacy_profile` |
 | 기록 공개 범위 | 공유한 기록만 / 모든 기록 | 공유한 기록만 | `users.privacy_records` |
 
+> UI 라벨: "기록은 어디까지?" (`.prv-section-sub`)
 > 비공개 선택 시 기록 범위 셀렉터 숨김, 버블 공유 불가
+> `privacy_records = 'private'`는 UI에서 직접 설정 불가 — `privacy_profile = 'private'` 선택 시 서버에서 자동 적용
+
+**상태 요약 텍스트** (SegmentControl 아래 `.prv-summary` 박스):
+
+| 조합 | 요약 텍스트 |
+|------|------------|
+| 전체 + 공유만 | "모든 사용자가 프로필을 볼 수 있습니다. 버블에 공유한 기록만 해당 버블에서 보입니다." |
+| 전체 + 모든 기록 | "모든 사용자가 프로필을 볼 수 있습니다. 내 모든 기록이 공개됩니다." |
+| 버블만 + 공유만 | "같은 버블 멤버만 프로필을 볼 수 있고, 내가 공유한 기록만 해당 버블에서 보입니다." |
+| 버블만 + 모든 기록 | "같은 버블 멤버만 프로필을 볼 수 있고, 내 모든 기록을 볼 수 있습니다." |
+| 비공개 | "프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다. 추천 알고리즘에는 여전히 반영됩니다." |
 
 #### Step 2: 전체에게 보이는 항목 (전체 공개 시에만 노출)
 
-| 항목 | 기본값 | DB 필드 |
-|------|--------|---------|
-| 점수 | ON | `users.visibility_public.score` |
-| 한줄평 | ON | `users.visibility_public.comment` |
-| 사진 | ON | `users.visibility_public.photos` |
-| 레벨 뱃지 | ON | `users.visibility_public.level` |
-| 사분면 | ON | `users.visibility_public.quadrant` |
-| 소속 버블 | OFF | `users.visibility_public.bubbles` |
-| 가격 정보 | — (항상 비공개, 버블에서만) | `users.visibility_public.price` (기본 false, 변경 불가) |
+> UI: `PrivacyLayer` — `privacy_profile = 'public'`일 때만 visible
+> 레이어 헤더: 초록 dot + "전체에게 보이는 항목"
+> 하단 노트: "프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위"
+
+| 항목 | 아이콘 | 기본값 | DB 필드 |
+|------|--------|--------|---------|
+| 점수 | star | ON | `users.visibility_public.score` |
+| 한줄평 | message-circle | ON | `users.visibility_public.comment` |
+| 사진 | image | ON | `users.visibility_public.photos` |
+| 레벨 뱃지 | award | ON | `users.visibility_public.level` |
+| 사분면 | scatter-chart | ON | `users.visibility_public.quadrant` |
+| 소속 버블 | circle-dot | OFF | `users.visibility_public.bubbles` |
+| 가격 정보 | wallet | — | `users.visibility_public.price` (항상 false, 토글 없음, "버블에서만" 힌트, opacity 0.5) |
 
 > DB: `users.visibility_public` JSONB — 7개 키 모두 포함
 
 #### Step 3: 버블 멤버 기본 공개 (전체/버블만 시 노출)
 
-| 항목 | 기본값 | DB 필드 |
-|------|--------|---------|
-| 점수 | ON | `users.visibility_bubble.score` |
-| 한줄평 | ON | `users.visibility_bubble.comment` |
-| 사진 | ON | `users.visibility_bubble.photos` |
-| 레벨 뱃지 | ON | `users.visibility_bubble.level` |
-| 사분면 | ON | `users.visibility_bubble.quadrant` |
-| 소속 버블 | ON | `users.visibility_bubble.bubbles` |
-| 가격 정보 | ON | `users.visibility_bubble.price` |
+> UI: `PrivacyLayer` — `privacy_profile != 'private'`일 때 visible
+> 레이어 헤더: 파랑 dot (accent-social) + "버블 멤버 기본 공개"
+> 하단 노트: "모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다."
+
+| 항목 | 아이콘 | 기본값 | DB 필드 |
+|------|--------|--------|---------|
+| 점수 | star | ON | `users.visibility_bubble.score` |
+| 한줄평 | message-circle | ON | `users.visibility_bubble.comment` |
+| 사진 | image | ON | `users.visibility_bubble.photos` |
+| 레벨 뱃지 | award | ON | `users.visibility_bubble.level` |
+| 사분면 | scatter-chart | ON | `users.visibility_bubble.quadrant` |
+| 소속 버블 | circle-dot | ON | `users.visibility_bubble.bubbles` |
+| 가격 정보 | wallet | ON | `users.visibility_bubble.price` |
 
 > DB: `users.visibility_bubble` JSONB — 모든 버블의 기본값. 버블별로 오버라이드 가능
 
 #### Step 4: 버블별 커스텀 설정
 
-- 가입한 버블 목록 표시, 각각 "기본값 사용" / "커스텀 설정" 선택
-- 커스텀 선택 시 Step 3과 동일한 항목별 토글 노출
+> UI: `PrivacyLayer` — `privacy_profile != 'private'`일 때 visible
+> 레이어 헤더: 노랑 dot (caution) + "버블별 설정"
+
+- 가입한 버블 목록 표시 (아바타 + 이름 + 기본값/커스텀 뱃지 + chevron)
+- 클릭 → `BubblePrivacySheet` 바텀 시트 열림
+- 시트 내부: 라디오 선택 (기본값 사용 / 커스텀 설정)
+- 커스텀 선택 시 Step 3과 동일한 7개 항목별 토글 노출
 - DB: `bubble_members.visibility_override` JSONB (NULL이면 기본값 사용, JSONB면 커스텀)
 - 버블 owner의 공개수위가 더 제한적이면 버블 설정 우선
 
+**프라이버시 안내 노트** (항상 표시):
+- 동반자 정보는 항상 비공개입니다 (나만 열람)
+- OFF로 설정해도 나에게는 항상 표시됩니다
+- 버블 owner의 공개수위가 더 제한적이면 버블 설정 우선
+- 추천 알고리즘에는 설정과 무관하게 항상 반영됩니다
+
 #### 동반자 정보
-- `records.companions` (이름 목록): ⚠️ **무조건 비공개** — 나만 열람, 설정 토글 없음, API/버블/프로필 등 외부 노출 절대 금지
+- `records.companions` (이름 목록): **무조건 비공개** — 나만 열람, 설정 토글 없음, API/버블/프로필 등 외부 노출 절대 금지
 - `records.companion_count` (인원수): 별개 필드 — 필터/통계용으로 활용 가능 (비공개 아님)
 
 ### 알림
-| 항목 | 옵션 | 기본값 | 설명 |
-|------|------|--------|------|
-| 푸시 알림 | ON / OFF | ON | 전체 푸시 알림 마스터 스위치 |
-| 레벨업 알림 | ON / OFF | ON | 영역별 레벨 달성 시 알림 |
-| 버블 가입 알림 | ON / OFF | ON | 가입신청/승인 알림 |
-| 팔로우 알림 | ON / OFF | ON | 팔로우 요청/수락 알림 |
-| 방해 금지 | 시간 설정 | 23:00~08:00 | 설정 시간 내 푸시 차단 (인앱은 누적) |
+
+| 항목 | 아이콘 | UI 타입 | 기본값 | 설명 |
+|------|--------|---------|--------|------|
+| 푸시 알림 | bell | Toggle | ON | 전체 푸시 알림 마스터 스위치 |
+| 레벨업 알림 | trophy | Toggle | ON | 영역별 레벨 달성 시 알림 |
+| 버블 가입 알림 | circle-dot | Toggle | ON | 가입신청/승인 알림 |
+| 팔로우 알림 | user-plus | Toggle | ON | 팔로우 요청/수락 알림 |
+| 방해 금지 | moon | SettingsItem + 현재값 + chevron | 23:00–08:00 | 설정 시간 내 푸시 차단 (인앱은 누적) |
 
 ### 화면 디폴트
 
-| 항목 | 옵션 | 기본값 | DB 필드 |
-|------|------|--------|---------|
-| 랜딩 화면 | 마지막 사용 / 홈 / 버블 / 프로필 | 마지막 사용 | `users.pref_landing` |
-| 홈 시작 탭 | 마지막 사용 / 식당 / 와인 | 마지막 사용 | `users.pref_home_tab` |
-| 식당 서브탭 | 마지막 사용 / 방문 / 찜 / 추천 / 팔로잉 | 마지막 사용 | `users.pref_restaurant_sub` |
-| 와인 서브탭 | 마지막 사용 / 시음 / 찜 / 셀러 | 마지막 사용 | `users.pref_wine_sub` |
-| 버블 시작 탭 | 마지막 사용 / 버블 / 버블러 | 마지막 사용 | `users.pref_bubble_tab` |
-| 홈 보기 모드 | 마지막 사용 / 상세 / 간단 | 마지막 사용 | `users.pref_view_mode` |
+| 항목 | 아이콘 | 옵션 | 기본값 | DB 필드 |
+|------|--------|------|--------|---------|
+| 랜딩 화면 | home | 마지막 사용 / 홈 / 버블 / 프로필 | 마지막 사용 | `users.pref_landing` |
+| 홈 시작 탭 | utensils | 마지막 사용 / 식당 / 와인 | 마지막 사용 | `users.pref_home_tab` |
+| 식당 서브탭 | map-pin | 마지막 사용 / 방문 / 찜 / 추천 / 팔로잉 | 마지막 사용 | `users.pref_restaurant_sub` |
+| 와인 서브탭 | wine | 마지막 사용 / 시음 / 찜 / 셀러 | 마지막 사용 | `users.pref_wine_sub` |
+| 버블 시작 탭 | circle-dot | 마지막 사용 / 버블 / 버블러 | 마지막 사용 | `users.pref_bubble_tab` |
+| 홈 보기 모드 | layout-grid | 마지막 사용 / 상세 / 간단 | 마지막 사용 | `users.pref_view_mode` |
+
+> UI: 모든 항목은 `NyamSelect` 인라인 드롭다운 사용
+> 각 항목에 `settings-item-hint` 서브텍스트 표시:
+
+| 항목 | hint 텍스트 |
+|------|------------|
+| 랜딩 화면 | 앱 실행 시 첫 화면 |
+| 홈 시작 탭 | 홈 진입 시 식당/와인 |
+| 식당 서브탭 | 식당 탭 진입 시 기본 필터 |
+| 와인 서브탭 | 와인 탭 진입 시 기본 필터 |
+| 버블 시작 탭 | 버블 페이지 진입 시 탭 |
+| 홈 보기 모드 | 리스트 간단/상세 |
 
 ### 기능 디폴트
 
-| 항목 | 옵션 | 기본값 | DB 필드 |
-|------|------|--------|---------|
-| 기본 정렬 | 최신순 / 점수 높은순 / 점수 낮은순 / 이름순 / 방문 많은순 | 최신순 | `users.pref_default_sort` |
-| 기록 시 카메라 | 카메라 우선 / 검색 우선 | 카메라 우선 | `users.pref_record_input` |
-| 기록 후 버블 공유 | 매번 물어보기 / 자동 공유 / 공유 안 함 | 매번 물어보기 | `users.pref_bubble_share` |
-| 와인 온도 단위 | °C / °F | °C | `users.pref_temp_unit` |
+| 항목 | 아이콘 | 옵션 | 기본값 | DB 필드 |
+|------|--------|------|--------|---------|
+| 기본 정렬 | arrow-up-down | 최신순 / 점수 높은순 / 점수 낮은순 / 이름순 / 방문 많은순 | 최신순 | `users.pref_default_sort` |
+| 기록 시 카메라 | camera | 카메라 우선 / 검색 우선 | 카메라 우선 | `users.pref_record_input` |
+| 기록 후 버블 공유 | share-2 | 매번 물어보기 / 자동 공유 / 공유 안 함 | 매번 물어보기 | `users.pref_bubble_share` |
+| 와인 온도 단위 | thermometer | °C / °F | °C | `users.pref_temp_unit` |
+
+> UI: 모든 항목은 `NyamSelect` 인라인 드롭다운 사용
 
 ### 데이터
-- 데이터 내보내기 (JSON/CSV)
-- 데이터 가져오기 (JSON/CSV)
-- 캐시 삭제
-- 위치 권한 관리 (OS 설정으로 이동)
-- 갤러리 접근 권한 관리
+
+| 항목 | 아이콘 | UI 타입 | 비고 |
+|------|--------|---------|------|
+| 데이터 내보내기 | upload | SettingsItem + "JSON / CSV" 힌트 + chevron | |
+| 데이터 가져오기 | download | SettingsItem + "JSON / CSV" 힌트 + chevron | |
+| 캐시 삭제 | eraser | SettingsItem + 용량 표시 + chevron | 현재 캐시 크기 표시 (예: "12.3 MB") |
 
 ### 정보
-- 이용약관
-- 개인정보처리방침
-- 오픈소스 라이선스
-- 앱 버전
+
+| 항목 | 아이콘 | UI 타입 |
+|------|--------|---------|
+| 이용약관 | scroll-text | SettingsItem + chevron |
+| 개인정보처리방침 | shield | SettingsItem + chevron |
+| 버전 | info | SettingsItem + 버전 텍스트 (chevron 없음) |
+
+### 계정 관리
+
+| 항목 | 아이콘 | UI 타입 | 비고 |
+|------|--------|---------|------|
+| 로그아웃 | log-out | SettingsItem + chevron | 확인 후 로그아웃 |
+| 계정 삭제 | trash-2 | SettingsItem (danger 스타일) + chevron | 빨간색 텍스트, 서브텍스트 "30일 유예 후 영구 삭제", 클릭 → DeleteAccountSheet |
 
 ---
 
@@ -175,15 +294,15 @@
 
 | 항목 | 전체 공개 토글 | 버블 기본 토글 | 버블별 커스텀 | 비고 |
 |------|--------------|-------------|-------------|------|
-| 사분면 점수 | `visibility_public.quadrant` | `visibility_bubble.quadrant` | 오버라이드 가능 | — |
-| 만족도 | 항상 표시 | 항상 표시 | — | 기록의 핵심 |
+| 점수 (만족도) | `visibility_public.score` | `visibility_bubble.score` | 오버라이드 가능 | 숫자 점수 숨김 시 "평가함" 표시만 남김 |
+| 사분면 | `visibility_public.quadrant` | `visibility_bubble.quadrant` | 오버라이드 가능 | 사분면 좌표/차트 숨김 |
 | 상황 태그 | 항상 표시 | 항상 표시 | — | — |
 | 한줄평 | `visibility_public.comment` | `visibility_bubble.comment` | 오버라이드 가능 | §4 참조 |
 | 사진 | `visibility_public.photos` | `visibility_bubble.photos` | 오버라이드 가능 | — |
 | 메뉴 태그 / 팁 | 항상 표시 | 항상 표시 | — | — |
 | 방문 날짜 | 항상 표시 | 항상 표시 | — | — |
 | 가격 | 항상 X | `visibility_bubble.price` | 오버라이드 가능 | 버블 내에서만 |
-| 동반자 이름 | X | X | X | ⚠️ 무조건 비공개 (나만 열람) |
+| 동반자 이름 | X | X | X | **무조건 비공개** (나만 열람) |
 | 동반자 수 | 표시 가능 | 표시 가능 | — | 필터/통계용, 비공개 아님 |
 
 ---
@@ -418,13 +537,28 @@ SELECT:
 | `users.delete_mode` | `'anonymize'` (기록 익명화) / `'hard_delete'` (기록 완전 삭제) |
 | `users.delete_scheduled_at` | 영구 삭제 예정 시점 (`deleted_at + 30일`) |
 
-### 플로우
+### 바텀 시트 UI
+
 ```
-[계정 삭제] 탭 → 바텀 시트
-→ 기록 처리 방식 선택:
-  ○ 기록 익명화 (닉네임 → "탈퇴한 사용자", 아바타 삭제, 기록은 익명 집계에 유지)
-  ○ 기록 완전 삭제 (모든 기록, 사진, 버블 공유, 댓글 삭제. 복구 불가)
-→ [계정 삭제 요청] 버튼
+[계정 삭제] 항목 클릭 → DeleteAccountSheet 바텀 시트
+├─ 타이틀: "계정 삭제"
+├─ 설명: "삭제를 요청하면 30일간 복구 가능합니다. 이후 영구 삭제됩니다."
+├─ 기록 처리 방식 (라디오 카드 선택):
+│   ○ 기록 익명화 (기본 선택)
+│       "닉네임 → '탈퇴한 사용자', 아바타 삭제. 기록은 익명으로 집계에 유지됩니다."
+│   ○ 기록 완전 삭제
+│       "모든 기록, 사진, 버블 공유, 댓글이 삭제됩니다. 복구 불가."
+├─ 삭제 시 처리 안내 (info box):
+│   · 소속 버블에서 자동 탈퇴
+│   · 내가 owner인 버블 → 다음 admin에게 이전 (없으면 삭제)
+│   · 팔로우 관계 삭제
+│   · 소셜 로그인 연결 해제
+└─ [계정 삭제 요청] 버튼 (btn-danger, 빨간색)
+```
+
+### 삭제 처리 플로우
+```
+→ [계정 삭제 요청] 버튼 클릭
 → 삭제 처리:
   - users.deleted_at = NOW(), users.delete_scheduled_at = NOW() + 30일
   - users.delete_mode에 따라 records 완전 삭제 or 익명화
@@ -437,3 +571,49 @@ SELECT:
   - 소셜 로그인 연결 해제
   - 30일 유예 기간 (복구 가능) → 30일 후 hard delete (Cron)
 ```
+
+---
+
+## 11. 상태 관리
+
+### 페이지 로컬 상태
+
+| 상태 | 타입 | 초기값 | 용도 |
+|------|------|--------|------|
+| `privacyBase` | `'public' \| 'bubble_only' \| 'private'` | DB에서 로드 | 기본 공개 대상 세그먼트 |
+| `recordScope` | `'shared_only' \| 'all'` | DB에서 로드 | 기록 범위 세그먼트 |
+| `visibilityPublic` | `VisibilityConfig` | DB에서 로드 | 전체 공개 토글 7개 |
+| `visibilityBubble` | `VisibilityConfig` | DB에서 로드 | 버블 기본 토글 7개 |
+| `activeBubbleSheet` | `string \| null` | `null` | 현재 열린 버블별 시트 |
+| `deleteSheetOpen` | `boolean` | `false` | 계정 삭제 시트 |
+| `deleteMode` | `'anonymize' \| 'hard_delete'` | `'anonymize'` | 삭제 모드 선택 |
+
+### VisibilityConfig 타입
+
+```typescript
+interface VisibilityConfig {
+  score: boolean;
+  comment: boolean;
+  photos: boolean;
+  level: boolean;
+  quadrant: boolean;
+  bubbles: boolean;
+  price: boolean;
+}
+```
+
+### 프라이버시 레이어 표시 조건
+
+| 레이어 | 표시 조건 |
+|--------|----------|
+| 기록 범위 셀렉터 | `privacyBase !== 'private'` |
+| 전체 공개 토글 | `privacyBase === 'public'` |
+| 버블 기본 토글 | `privacyBase !== 'private'` |
+| 버블별 설정 | `privacyBase !== 'private'` |
+| 프라이버시 안내 노트 | 항상 표시 |
+
+### 서버 동기화
+
+- 토글/셀렉트 변경 → optimistic update + debounce(500ms) 후 서버 반영
+- 세그먼트 변경 → 즉시 서버 반영 (프라이버시 핵심 설정)
+- 실패 시 → 이전 값으로 롤백 + 에러 토스트

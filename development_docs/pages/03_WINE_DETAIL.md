@@ -2,6 +2,7 @@
 
 > depends_on: DATA_MODEL, RATING_ENGINE, DESIGN_SYSTEM, RECOMMENDATION
 > route: /wines/[id]
+> prototype: `prototype/02_detail_wine.html`
 
 ---
 
@@ -21,7 +22,7 @@
 | 좋아요/공유 | 히어로 사진 우하단 (공통) | 히어로 사진 우하단 (공통) |
 | 점수 카드 | 3슬롯 (공통) | 3슬롯 (공통) |
 | 뱃지 | 미슐랭/블루리본/TV | Grand Cru/Vivino/WS |
-| FAB | `--primary` (공통) | `--wine` 계열 (공통 위치) |
+| FAB | glassmorphism 중립 (공통) | glassmorphism 중립 (공통 위치·스타일) |
 
 ---
 
@@ -103,12 +104,37 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 4. 섹션별 상세
+## 4. 공통 레이아웃 규칙
+
+### 두 가지 컨테이너 패딩
+
+| 컨테이너 | 대상 레이어 | 패딩 |
+|----------|-----------|------|
+| `detail-info` | Layer 2~4 (정보, 점수, 뱃지) | `0 20px` (좌우만, 내부 요소가 자체 수직 패딩) |
+| `section` | Layer 5~9 (사분면, 기록, 팩트 등) | `16px 20px`, margin-top 8px |
+
+### 섹션 헤더 (section 내부)
+- flex between, margin-bottom: 14px
+- 섹션 제목: 15px, weight 700, `var(--text)`
+- 섹션 메타: 12px, `var(--text-sub)`
+
+### 디바이더
+- 주요 섹션(Layer 6~9) 사이에 8px 높이 구분선 (`#F0EDE8`)
+- Layer 5 → 5b 사이는 디바이더 없이 연속 (5b의 padding-top: 0)
+
+### 스크롤 영역
+- 상단 padding-top: 80px (top-fixed 헤더 높이만큼 밀어냄)
+- 하단 80px spacer (FAB 가림 방지)
+
+---
+
+## 5. 섹션별 상세
 
 ### Layer 1: 히어로 (사진 캐러셀 + 라벨 썸네일)
 
 - **높이**: 224px (`h-56`)
-- **캐러셀**: 좌우 스와이프 (터치 + 마우스 드래그), dot indicator, 4초 자동 전환
+- **캐러셀**: 좌우 스와이프 (터치 + 마우스 드래그), 4초 자동 전환, 트랙 전환 `transform 0.4s ease`
+- **dot indicator**: 일반 6×6px 원 (`rgba(255,255,255,0.5)`), 활성 16×6px 필 (border-radius 3px, `#fff`), 하단 중앙 배치
 - **사진 없을 때**: 기본 이미지 또는 `bg-neutral-100` + 와인 아이콘
 - **좋아요/공유 버튼**: 사진 우하단, 배경 없는 흰색 아이콘 (`rgba(255,255,255,0.85)`)
   - 좋아요 토글: 활성 시 `#FF6038`
@@ -128,12 +154,12 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 - **이름**: 21px, weight 800, `color: var(--wine)` (와인은 보라색 이름)
 - **서브**: 생산자명 · 빈티지 (11px, `var(--text-sub)`)
 - **메타 행**: 와인타입칩 · 산지 · 품종 (12px, 한 줄)
-  - 와인 타입 칩: 인라인 pill, 각 타입별 색상 (위 토큰 참조)
-  - 구분자: `·` (8px, `var(--border-bold)`)
+  - 와인 타입 칩: 소형 태그 (padding 1px 7px, border-radius **4px**, font-size 10px, weight 600) — pill이 아닌 각진 형태
+  - 구분자: `·` (8px, `var(--border-bold)`, margin 0 5px)
 
 ### Layer 3: 점수 카드 (3슬롯 고정)
 
-**3가지 모드 공통: 항상 3칸 가로 배치, 데이터 없으면 `—` 표시.**
+**항상 3칸 가로 배치 (flex, gap 8px). 데이터 없으면 `—` 표시.**
 
 | 슬롯 | 라벨 | 값 | 서브 |
 |------|------|-----|------|
@@ -141,8 +167,11 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 | nyam | "nyam" | 점수 | "Vivino+WS" |
 | 버블 | "버블" | 평균 점수 | "평균 · N명" |
 
-- **카드 스타일**: `bg-card`, border 1px `var(--border)`, border-radius 10px, padding 8px 10px
-- **점수 색상**: `var(--wine)` (모든 슬롯 공통)
+- **카드 스타일**: `var(--bg-card)`, border 1px `var(--border)`, border-radius 10px, padding 8px 10px, min-height 56px, text-align center
+- **라벨**: 9px, weight 600, `var(--text-hint)`, letter-spacing 0.02em
+- **점수 숫자**: 24px, weight 800, `var(--wine)`
+- **빈 값**: 18px, `var(--border-bold)` — `—` 표시
+- **서브텍스트**: 9px, `var(--text-hint)`
 - **버블 카드**:
   - 탭 가능 (cursor: pointer)
   - 우상단 뱃지: 참여 버블 수 (원형, 16px, `var(--accent-social)` 배경)
@@ -169,7 +198,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ### Layer 5: 내 와인 지도 (사분면)
 
-- **표시 조건**: 기록 2개 이상
+- **표시 조건**: 사용자의 와인 리뷰 2건 이상 (현재 와인 포함, 비교 대상 1개+ 필요)
 - **섹션 헤더**: "내 와인 지도" + "리뷰한 와인 중 위치"
 - **차트 영역**: `bg-elevated`, border-radius 8px, padding-bottom 80% (반응형 정사각형)
 - **축**:
@@ -178,8 +207,8 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
   - 십자선: 중앙 50% 위치, `var(--wine-border)` 색상
   - 축 라벨: 9px, `var(--wine)` 색상
 - **점 (dot)**:
-  - **현재 와인 (hero dot)**: 38×38px, `var(--wine)` 배경, border 3px `#DDD6E3`, 점수 표시 (11px bold)
-  - **참고 와인 (ref dot)**: 28×28px, `var(--border-bold)` 배경, 불투명도 35%, hover 시 70% + scale 1.15
+  - **현재 와인 (hero dot)**: 38×38px, `var(--wine)` 배경, border 3px `#DDD6E3`, box-shadow `0 2px 10px rgba(139,115,150,0.4)`, 점수 표시 (11px, weight 800, 흰색), z-index 10
+  - **참고 와인 (ref dot)**: 28×28px, `var(--border-bold)` 배경, border 2px `var(--border)`, 불투명도 35%, 점수 표시 (8px, weight 600, `var(--text)`), hover 시 70% + scale 1.15, z-index 5
   - 각 dot 아래 와인명 라벨 (9px, `var(--text-hint)`)
   - 현재 와인 라벨: 10px bold, `var(--wine)` 색상
 - **캡션**: info 아이콘 + "내가 리뷰한 와인과의 상대적 위치"
@@ -200,10 +229,11 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 - **타임라인 라인**: 왼쪽 세로선, `var(--wine) → #C0B3CA → transparent` 그라디언트
 - **각 기록**:
-  - 도트 (12px 원, 색상=상황태그 또는 `var(--wine)`)
-  - 날짜 (11px) + 상황 태그 칩 (pill, 10px, 흰색 텍스트, 상황별 배경색)
-  - 점수 (13px bold, 상황색상) + 한줄평 (12px, `var(--text-sub)`)
-  - **식당 연결** (와인 전용): `map-pin` 아이콘 + 식당명 (탭→식당 상세)
+  - 도트 (12px 원, 이중 링 구조: `border: 2px solid var(--bg)` 흰 테 + `box-shadow: 0 0 0 2px [색상]` 외곽 링)
+    - 색상: 상황태그 색 또는 `var(--wine)` — 점수 텍스트와 동일 색상 사용
+  - 날짜 (11px) + 상황 태그 칩 (pill, padding 2px 8px, border-radius 20px, 10px weight 600, 흰색 텍스트, 상황별 배경색)
+  - 점수 (13px, weight 700, 도트와 동일 색상) + 한줄평 (12px, `var(--text-sub)`)
+  - **식당 연결** (와인 전용): `map-pin` 아이콘 (12px) + 식당명 (11px, `var(--text-sub)`, 탭→식당 상세)
 - 탭 → 기록 상세 (`/records/[id]`)
 
 **상황 태그 칩 색상**:
@@ -216,7 +246,11 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 | 시음 | `var(--scene-drinks)` #B87272 |
 | 디캔팅 | #A0896C |
 
-**기록 없음**: "아직 기록이 없어요" + "우하단 + 버튼으로 첫 기록을 남겨보세요" + search 아이콘 (28px)
+**기록 없음**:
+- 아이콘: `search` (28px, `var(--text-hint)`)
+- 제목: "아직 기록이 없어요" (14px, weight 600, `var(--text-sub)`)
+- 설명: "우하단 + 버튼으로 첫 기록을 남겨보세요" (12px, `var(--text-hint)`)
+- 패딩: 40px 20px, text-align center
 
 ### Layer 7: 와인 정보 (팩트 테이블)
 
@@ -263,7 +297,11 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
   - 하단: 메타(태그 · 시간) + 리액션(좋아요 + 댓글, lucide 아이콘 12px)
   - 좋아요 활성: `var(--wine)` 색상
   - 탭 시 살짝 축소 (scale 0.98)
-- **빈 상태**: "아직 버블 기록이 없어요" + "버블에서 이 와인에 대한 이야기를 나눠보세요"
+- **빈 상태**:
+  - 아이콘: `message-circle` (28px, `var(--text-hint)`)
+  - 제목: "아직 버블 기록이 없어요" (14px, weight 600, `var(--text-sub)`)
+  - 설명: "버블에서 이 와인에 대한 이야기를 나눠보세요" (12px, `var(--text-hint)`)
+  - 패딩: 40px 20px, text-align center
 
 ### FAB (+)
 
@@ -284,7 +322,32 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 5. 네비게이션 & 헤더
+## 5. 페이지 상태별 섹션 구성
+
+데이터 조건에 따라 섹션 표시/숨김이 달라진다.
+
+| 섹션 | 내 기록 있음 | 내 기록 없음 |
+|------|:----------:|:----------:|
+| Layer 1: 히어로 | ● 표시 | ● 표시 |
+| Layer 2: 정보 (이름/메타) | ● 표시 | ● 표시 |
+| Layer 3: 점수 카드 | 내 점수 = 실제 값 | 내 점수 = `—` / "미시음" |
+| Layer 3: nyam 점수 | ● 표시 (DB) | ● 표시 (DB) |
+| Layer 3: 버블 점수 | 데이터 따라 | 데이터 따라 |
+| Layer 4: 뱃지 행 | ● 표시 (DB) | ● 표시 (DB) |
+| Layer 5: 사분면 | ● 와인 리뷰 2건+ | ✕ 숨김 |
+| Layer 5b: 음식 페어링 | ● 표시 (DB) | ● 표시 (DB) |
+| Layer 6: 나의 기록 | ● 타임라인 | ○ 빈 상태 |
+| Layer 7: 와인 정보 | ● 표시 (DB) | ● 표시 (DB) |
+| Layer 8: 함께한 레스토랑 | ● 연결 있을 때만 | ✕ 숨김 |
+| Layer 9: 버블 기록 | 버블 데이터 따라 | 버블 데이터 따라 |
+
+> ● 표시, ○ 빈 상태 UI, ✕ 섹션 자체 숨김
+> nyam/뱃지/페어링/와인정보는 DB 기반이므로 내 기록 유무와 무관하게 항상 표시.
+> 버블 점수(Layer 3)와 버블 기록(Layer 9)은 내 기록과 독립적으로 버블 멤버 데이터 유무에 따라 결정.
+
+---
+
+## 6. 네비게이션 & 헤더
 
 ### App Header (top-fixed, glassmorphism)
 
@@ -300,7 +363,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 6. 빈 상태
+## 7. 빈 상태
 
 **점수 카드 3슬롯은 항상 표시, 데이터 없으면 `—`** (레이아웃 불변).
 
@@ -308,7 +371,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 |------|---------|------|
 | 점수 카드 | 3슬롯 유지, 내 점수만 `—` + "미시음" | nyam/버블은 DB 데이터 |
 | 기록 | "아직 기록이 없어요" + CTA 안내 | FAB로 기록 추가 |
-| 사분면 | 섹션 숨김 | 기록 2개+ 시 표시 |
+| 사분면 | 섹션 숨김 | 와인 리뷰 2건+ 시 표시 |
 | 페어링 | DB 데이터이므로 기록 없어도 표시 | 즉시 유용 |
 | 와인 정보 | DB 데이터이므로 기록 없어도 표시 | 즉시 유용 |
 | 식당 연결 | 섹션 숨김 | 기록에 식당 연결 있을 때만 |
@@ -316,7 +379,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 7. 데이터 소스
+## 8. 데이터 소스
 
 | UI 요소 | 소스 | 갱신 |
 |---------|------|------|
@@ -338,7 +401,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 8. 인터랙션
+## 9. 인터랙션
 
 | 요소 | 인터랙션 | 세부 |
 |------|---------|------|
@@ -357,7 +420,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 ---
 
-## 9. 컴포넌트 트리 (구현 가이드)
+## 10. 컴포넌트 트리 (구현 가이드)
 
 ```
 WineDetailPage (Container)

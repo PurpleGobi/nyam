@@ -117,6 +117,7 @@
 | 스와이프 | 좌우 터치/마우스 드래그 |
 | 자동 전환 | 4초 간격 |
 | dot indicator | 하단 중앙, 활성 dot 16px 너비 |
+| 하단 그라디언트 오버레이 | 80px, `linear-gradient(transparent, rgba(0,0,0,0.4))` — dot/액션 버튼 가독성 확보 |
 
 #### 히어로 썸네일 (hero-thumb)
 - **위치**: 캐러셀 좌하단 (`bottom: 14px; left: 16px`)
@@ -132,6 +133,12 @@
 - **좋아요 토글**: 활성 시 `#FF6038` (brand 색상)
 - **아이콘**: `heart` (20px), `share-2` (20px)
 
+### `.detail-info` 컨테이너 (Layer 2 + 3 + 뱃지 통합)
+
+Layer 2 (정보), Layer 3 (점수 카드), 버블 확장 패널, 뱃지 행은 하나의 `.detail-info` 컨테이너 안에 포함된다. `.section`이 아닌 별도 컨테이너이며, padding `0 20px`.
+
+> Layer 5 이후의 섹션들은 `.section` (padding `16px 20px`)을 사용하지만, 이 영역은 다른 구조.
+
 ### Layer 2: 정보 (일관된 레이아웃)
 
 **기록 유무에 관계없이 항상 동일한 구조.**
@@ -140,13 +147,20 @@
 |------|--------|
 | 이름 | 21px, weight 800, `--text` |
 | 메타 | `장르 · 지역 · 가격대` (12px, `--text-sub`, 한 줄) |
-| 가격대 | weight 700, `--text` (강조) |
-| 구분자 | `·` (8px, `--border-bold`) |
+| 가격대 | 12px, weight 700, `--text` (강조) |
+| 구분자 | `·` (8px, `--border-bold`), margin `0 5px` |
 | 패딩 | `14px 0 8px` |
 
 ### Layer 3: 점수 카드 (항상 3슬롯)
 
 **모든 상태에서 3개 카드를 나란히 표시. 값만 상태에 따라 변경.**
+
+#### 점수 카드 컨테이너
+```
+display: flex
+gap: 8px
+padding: 0 0 10px
+```
 
 #### 카드 공통 스타일
 ```
@@ -171,16 +185,22 @@ text-align: center
 | 상태 | 내 점수 카드 | nyam 카드 | 버블 카드 |
 |------|------------|----------|----------|
 | **내 기록 있음** | 평균 점수 (크게) / "N회 방문" | nyam 점수 / "웹+명성" | 버블 평균 / "평균 · N개" + 카운트 뱃지 |
-| **미방문 + 버블 없음** | "—" / "미방문" | nyam 점수 (크게) / "웹+명성" | "—" / 빈 상태 |
+| **미방문 + 버블 없음** | "—" / "미방문" | nyam 점수 / "웹+명성" | "—" / 빈 상태 (카운트 뱃지 없음) |
 | **미방문 + 버블 있음** | "—" / "미방문" | nyam 점수 / "웹+명성" | 버블 평균 / "N개 버블" + 카운트 뱃지 |
 
 #### 버블 카드 상세
-- **카운트 뱃지**: 우상단 `-4px` 오프셋, 16px 원형, `--accent-social` 배경, 흰색 숫자 (9px)
+- **카운트 뱃지**: 우상단 `top: -4px; right: -4px`, 16px 원형, `--accent-social` 배경, 흰색 숫자 (9px weight 700), `1.5px solid --bg` 테두리
 - **탭 동작**: 확장 패널 토글 (다른 확장 패널은 자동 닫힘)
 - **active 시**: `border-color: --accent-social`
 
 #### 버블 확장 패널
 점수 카드 아래에 위치. `max-height` 트랜지션으로 열고 닫힘 (0.25s ease).
+
+```
+컨테이너: padding 0 0 10px, flex column, gap 6px
+열림: max-height 200px
+닫힘: max-height 0, overflow hidden
+```
 
 각 버블 점수 행:
 ```
@@ -189,11 +209,11 @@ text-align: center
 
 | 요소 | 스타일 |
 |------|--------|
-| 아이콘 배경 | 버블 테마색 light (예: `#F5EDE8`, `#F0ECF3`, `#E8F0EB`) |
+| 아이콘 | 24px 정사각, radius 6px, 버블 테마색 light 배경, 아이콘 12px |
 | 버블명 | 12px, weight 500, `--text` |
 | 평가 수 | 10px, `--text-hint` |
 | 점수 | 16px, weight 800, `--primary` |
-| 행 스타일 | `bg-card`, border, radius 8px, padding 6px 10px |
+| 행 스타일 | flex, align-center, gap 8px, `bg-card`, border, radius 8px, padding 6px 10px |
 
 #### nyam 점수 산출 로직 (식당)
 
@@ -244,26 +264,32 @@ text-align: center
 | 요소 | 스타일 |
 |------|--------|
 | 세로선 | `left: 6px`, width 2px, `linear-gradient(to bottom, --primary, #D4A089, transparent)` |
-| 타임라인 dot | 12px 원, 해당 기록 색상, 2px `--bg` 보더 + 2px 외부 링 |
-| 날짜 | 11px, `--text-sub` |
+| 타임라인 dot | 12px 원, 2px `--bg` 보더 + `box-shadow: 0 0 0 2px` 외부 링 |
+| 날짜 | 11px, `--text-sub`, flex row with gap 6px |
 | 상황 칩 | padding `2px 8px`, radius 20px, 10px weight 600, 흰색 텍스트, 상황별 배경색 |
-| 점수 | 13px, weight 700, 기록별 색상 |
+| 점수 | 13px, weight 700 |
 | 한줄평 | 12px, `--text-sub`, inline |
 | 사진 썸네일 | 44×44px, radius 6px, gap 6px |
-| 아이템 간격 | `margin-bottom: 18px` |
+| 아이템 간격 | `margin-bottom: 18px` (마지막 아이템 0) |
 | 탭 동작 | 기록 상세 화면으로 이동 |
 
-#### 상황 태그 색상 (CSS 변수)
-```css
---scene-solo:     #7A9BAE;  /* 혼밥 */
---scene-romantic: #B8879B;  /* 데이트 */
---scene-friends:  #7EAE8B;  /* 친구 */
---scene-family:   #C9A96E;  /* 가족 */
---scene-business: #8B7396;  /* 회식 */
---scene-drinks:   #B87272;  /* 술자리 */
-```
+#### 타임라인 dot·점수 색상 규칙
 
-타임라인 dot 색상도 상황 태그 색상에 연동 (box-shadow 링 포함).
+각 타임라인 아이템의 **dot 색상과 점수 색상은 항상 동일** (일관된 색상 페어링).
+
+- **CSS 기본값**: `--primary` (#C17B5E) — dot background + box-shadow + 점수 color 모두 적용
+- **상황별 오버라이드**: 아이템별로 inline style로 dot과 점수 색상을 상황 태그 색상으로 변경 가능
+
+| 상황 태그 | CSS 변수 | 색상 | dot/점수 오버라이드 |
+|----------|---------|------|------------------|
+| 혼밥/혼술 | `--scene-solo` | `#7A9BAE` | `var(--accent-social)` |
+| 데이트 | `--scene-romantic` | `#B8879B` | `var(--scene-romantic)` |
+| 친구/모임 | `--scene-friends` | `#7EAE8B` | `var(--positive)` |
+| 가족 | `--scene-family` | `#C9A96E` | `var(--caution)` |
+| 회식/접대 | `--scene-business` | `#8B7396` | `var(--wine)` |
+| 술자리 | `--scene-drinks` | `#B87272` | `var(--negative)` |
+
+> 목업에서는 최근 기록이 기본 `--primary`를 사용하고, 이전 기록들이 상황 태그 색상으로 오버라이드됨. 구현 시 모든 기록에 상황 태그 기반 색상을 적용하는 것을 권장.
 
 #### 기록 없음
 ```
@@ -274,7 +300,7 @@ text-align: center
 
 ### Layer 6: 내 식당 지도 (포지션 맵)
 
-**기록 2개 이상일 때만 표시.**
+**내가 리뷰한 식당이 2곳 이상일 때만 표시.** (이 식당의 방문 횟수가 아니라, 유저가 기록한 서로 다른 식당 수 기준)
 
 - **섹션 제목**: "내 식당 지도"
 - **부제**: "리뷰한 식당 중 위치"
@@ -300,8 +326,8 @@ text-align: center
 
 | 종류 | 크기 | 스타일 | z-index |
 |------|------|--------|---------|
-| **현재 식당** (current) | 38px | `--primary` 배경, 3px `--primary-light` 보더, weight 800, 11px | 10 |
-| **참조 식당** (ref) | 28px | `--border-bold` 배경, 2px `--border` 보더, opacity 0.35, weight 600, 8px | 5 |
+| **현재 식당** (current) | 38px | `--primary` 배경, 3px `--primary-light` 보더, `#fff` 텍스트, weight 800, 11px | 10 |
+| **참조 식당** (ref) | 28px | `--border-bold` 배경, 2px `--border` 보더, `--text` 텍스트, opacity 0.35, weight 600, 8px | 5 |
 
 - 현재 식당 dot: `box-shadow: 0 2px 10px rgba(193,123,94,0.4)`
 - 참조 dot hover: opacity 0.7, scale 1.15
@@ -322,7 +348,19 @@ text-align: center
 | 주소 | `map-pin` | 주소 텍스트 + 미니 지도 iframe | 탭 → 외부 지도 앱 |
 | 영업 | `clock` | `영업 중` (`--positive`, weight 600) · 시간 | — |
 | 전화 | `phone` | 전화번호 | "전화하기" (`--primary`, weight 600) |
-| 메뉴 | — | 접이식 버튼 | 토글 |
+| 메뉴 | — | 접이식 버튼 (내 기록 모드에서만 표시) | 토글 |
+
+> **미방문 상태 (추천/버블 리뷰 모드)에서는 메뉴 접이식 버튼이 표시되지 않음.**
+> 주소+지도, 영업시간, 전화번호는 모든 모드에서 동일하게 표시.
+
+#### 정보 행 공통 스타일
+```
+display: flex, align-items: flex-start, gap: 10px
+padding: 8px 0
+border-bottom: 1px solid #F0EDE8 (마지막 행 제외)
+font-size: 13px
+아이콘: 16px, --text-sub, flex-shrink 0
+```
 
 #### 미니 지도
 - 높이: 120px, radius 8px
@@ -364,8 +402,8 @@ padding: 10px
 
 #### 필터 칩
 - pill 형태: padding `5px 12px`, radius 20px, 11px weight 500
-- 비활성: `--bg` 배경, `--border` 보더, `--text-sub`
-- 활성: `--primary-light` 배경, `--primary` 보더+텍스트
+- 비활성: `--bg` 배경, `1.5px solid --border`, `--text-sub`
+- 활성: `--primary-light` 배경, `1.5px solid --primary`, `--primary` 텍스트
 - 단일 선택 (전체 / 버블명별)
 
 #### 버블 카드
@@ -380,7 +418,7 @@ padding: 10px
 
 | 요소 | 스타일 |
 |------|--------|
-| 카드 | `--bg-card`, radius 12px, border, padding 12px, gap 8px |
+| 카드 | `--bg-card`, radius 12px, border, padding 12px, margin-bottom 8px |
 | 아바타 | 32px 원형, 그라디언트 배경 (유저별), 이니셜 (14px weight 700 흰색) |
 | 유저명 | 12px, weight 600, `--text` |
 | 버블명 | 10px, `--text-sub` |
@@ -442,7 +480,7 @@ z-index: 85
 | 뱃지 행 | ✅ | ✅ | ✅ |
 | Layer 5 나의 기록 | 타임라인 | 빈 상태 | 빈 상태 |
 | Layer 6 사분면 | ✅ (기록 2+) | 숨김 | 숨김 |
-| Layer 7 정보 | ✅ | ✅ | ✅ |
+| Layer 7 정보 | ✅ (메뉴 접이식 포함) | ✅ (메뉴 접이식 없음) | ✅ (메뉴 접이식 없음) |
 | Layer 8 와인 연결 | ✅ (있을 때) | 숨김 | 숨김 |
 | Layer 9 버블 기록 | 버블 데이터 | 빈 상태 | 버블 데이터 |
 
@@ -463,11 +501,30 @@ z-index: 85
 
 ## 7. 레이아웃 & 구조
 
+### 전체 레이아웃 흐름
+```
+scroll-content (padding-top: 80px)
+├─ hero-wrap           ← Layer 1 (히어로 캐러셀)
+├─ .detail-info        ← Layer 2+3+뱃지 (padding 0 20px, NOT .section)
+├─ .section            ← Layer 5 (나의 기록)
+├─ .divider            ← 8px
+├─ .section            ← Layer 6 (내 식당 지도) — 기록 2+ 시만
+├─ .divider            ← 8px
+├─ .section            ← Layer 7 (정보)
+├─ .divider            ← 8px
+├─ .section            ← Layer 8 (연결된 와인) — 있을 때만
+├─ .divider            ← 8px
+├─ .section            ← Layer 9 (버블 기록)
+└─ .bottom-spacer      ← 80px (FAB 클리어런스)
+```
+
+> `.detail-info`와 Layer 5 `.section` 사이에는 divider가 없음. 첫 divider는 Layer 5와 Layer 6 사이.
+
 ### 섹션 구분
-- 섹션 간 divider: `height: 8px; background: #F0EDE8`
-- 섹션 padding: `16px 20px`
-- 섹션 margin-top: `8px`
-- 섹션 배경: `--bg`
+- `.section` padding: `16px 20px`
+- `.section` margin-top: `8px`
+- `.section` 배경: `--bg`
+- divider: `height: 8px; background: #F0EDE8`
 
 ### 섹션 헤더
 ```
@@ -504,12 +561,12 @@ margin-bottom: 14px
 
 | UI 요소 | 소스 | 갱신 |
 |---------|------|------|
-| 식당 기본정보 | 외부 API 캐시 (restaurants 테이블) | 2주 |
-| 외부 평점 | 각 플랫폼 API | 2주 |
-| nyam 점수 | 외부 평점 + 명성 보너스 계산 | 2주 |
-| 내 점수 (평균) | records (target_type='restaurant') 집계 | 실시간 |
-| 내 기록 타임라인 | records + record_photos | 실시간 |
-| 버블 점수 | bubble_shares → records 집계 | 실시간 |
-| 포지션 맵 좌표 | records.axis_x/y (동일 유저의 식당 기록들) | 실시간 |
-| 와인 연결 | records (같은 식당 + target_type='wine') | 실시간 |
-| 뱃지 | restaurants.badges (JSON) | 2주 |
+| 식당 기본정보 | restaurants 테이블 (외부 API 캐시) | 2주 |
+| 외부 평점 | restaurants.naver_rating / kakao_rating / google_rating | 2주 |
+| nyam 점수 | restaurants.nyam_score (외부 평점 + 명성 보너스 계산, 캐시) | 2주 |
+| 내 점수 (평균) | records.satisfaction 평균 (user_id + target_id + target_type='restaurant') | 실시간 |
+| 내 기록 타임라인 | records + record_photos (user_id + target_id) | 실시간 |
+| 버블 점수 | bubble_shares → records.satisfaction 집계 | 실시간 |
+| 포지션 맵 | 해당 유저의 모든 식당 records의 axis_x/y + satisfaction | 실시간 |
+| 와인 연결 | records (linked_restaurant_id = 현재 식당, target_type='wine') | 실시간 |
+| 뱃지 | restaurants.michelin_stars, has_blue_ribbon, media_appearances | 2주 |

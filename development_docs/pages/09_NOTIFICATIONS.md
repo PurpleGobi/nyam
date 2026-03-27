@@ -4,6 +4,7 @@
 > affects: HOME, SETTINGS
 > UI: 홈 헤더 🔔 아이콘 → 드롭다운 팝업 (별도 페이지 없음)
 > header: 앱 헤더 내 벨 아이콘
+> prototype: `prototype/06_notifications.html`
 
 ---
 
@@ -105,7 +106,7 @@ duration: 0.16s ease
 - **미읽음**: 제목 `font-weight: 600` + 우측 `●` 도트 (`bg-brand`, 6px)
 - **읽음**: 제목 `font-weight: 500`, 도트 없음
 - **패딩**: `px-3.5 py-2.75`
-- **탭 동작**: 관련 페이지로 이동 + 자동 읽음 처리 + 드롭다운 닫기
+- **탭 동작**: 관련 페이지로 이동 + 자동 읽음 처리 + 드롭다운 닫기 (액션 pending 아이템은 예외 — §5 참조)
 - **아이템 사이 구분**: 1px `border-bottom` (마지막 아이템은 구분선 없음)
 
 ### 하단 링크
@@ -127,11 +128,15 @@ duration: 0.16s ease
 
 | 유형 | 아이콘 | 아이콘 색상 | 제목 | 본문 | 탭 이동 | 인라인 액션 |
 |------|--------|------------|------|------|---------|------------|
-| 레벨업 | `trophy` | `caution` | {area} 레벨 {level} 달성! | 기록이 쌓이고 있어요 | 프로필 | — |
+| 레벨업 | `trophy` | `caution` | {축 이름} 레벨 {level} 달성! | 기록이 쌓이고 있어요 | 프로필 | — |
 | 버블 가입신청 | `circle-dot` | `primary` | {nickname}님이 '{bubble_name}' 가입을 신청했어요 | — | 버블 상세 | [수락] [거절] |
 | 팔로우 요청 | `user-plus` | `accent-social` | {nickname}님이 팔로우를 요청했어요 | — | 상대 프로필 | [수락] [거절] |
 | 버블 가입승인 | `circle-check` | `positive` | '{bubble_name}' 가입이 승인되었어요 | — | 버블 상세 | — |
 | 팔로우 수락 | `user-check` | `accent-social` | {nickname}님이 팔로우를 수락했어요 | — | 상대 프로필 | — |
+
+> **레벨업 {축 이름}**: 카테고리(와인/식당) 또는 세부 축(을지로/일식/보르도 등) 모두 가능.
+> DB `metadata.axis_value`에서 추출. 예: "을지로 레벨 4 달성!", "와인 레벨 7 달성!", "일식 레벨 6 달성!"
+> (XP_SYSTEM.md §3 카테고리 레벨 참조)
 
 ### 아이콘 색상 매핑
 ```
@@ -165,11 +170,11 @@ type-success → var(--positive)      #7EAE8B
 ## 5. 인터랙션
 
 - 최대 20개 표시 (최신순, `created_at DESC`)
-- **아이템 탭**: 관련 페이지 이동 + `is_read = true` UPDATE + 드롭다운 닫기
-- **버블 가입신청 / 팔로우 요청**: 인라인 [수락] [거절] 버튼 (탭 이동 없이 즉시 처리)
-- **"모두 읽음" 탭**: 전체 `is_read = true` UPDATE + 모든 dot 제거
+- **아이템 탭 (액션 없는 유형)**: 관련 페이지 이동 + `is_read = true` UPDATE + 드롭다운 닫기
+- **아이템 탭 (액션 pending 유형)**: 아이템 영역 탭은 비활성. 인라인 버튼만 동작
+- **인라인 [수락] [거절]**: 즉시 처리 → 버튼이 결과 텍스트로 치환 + 읽음 처리 (드롭다운 유지)
+- **"모두 읽음" 탭**: 전체 `is_read = true` UPDATE + 모든 dot 제거 (드롭다운 유지, 액션 버튼 영향 없음)
 - **드롭다운 닫기**: 오버레이 탭, ESC 키, 벨 아이콘 재탭
-- **인라인 액션 처리 후**: 버튼 → 결과 텍스트 치환 + 해당 아이템 읽음 처리
 
 ---
 
@@ -226,23 +231,27 @@ unreadCount: number                // 미읽음 수 (뱃지 표시용)
 
 // 낙관적 업데이트
 markAsRead(id): void               // 개별 읽음 처리
-markAllAsRead(): void              // 전체 읽음 처리
-handleAction(id, action): void     // 수락/거절 처리
+markAllAsRead(): void              // 전체 읽음 처리 (액션 상태 변경 없음)
+handleAction(id, action): void     // 수락/거절 처리 + 읽음 처리
 ```
 
 ### 알림 엔티티 (domain)
 ```typescript
+// DB 스키마: DATA_MODEL.md notifications 테이블 참조
+// title, body는 DB metadata JSONB에서 렌더링 (infrastructure 레이어에서 변환)
+//   예: metadata = {"axis_value":"을지로","level":4} → title = "을지로 레벨 4 달성!"
+
 interface Notification {
   id: string;
   user_id: string;
   type: 'level_up' | 'bubble_join_request' | 'bubble_join_approved' | 'follow_request' | 'follow_accepted';
-  title: string;
-  body: string | null;
+  title: string;                       // metadata에서 렌더링된 표시 텍스트
+  body: string | null;                 // 부가 설명 (레벨업: "기록이 쌓이고 있어요")
   is_read: boolean;
-  action_status: 'pending' | 'accepted' | 'declined' | null;
-  // 연결 참조
-  target_user_id: string | null;     // 팔로우 관련
-  target_bubble_id: string | null;   // 버블 관련
+  action_status: 'pending' | 'accepted' | 'rejected' | null;
+  // 연결 참조 (내비게이션용)
+  actor_id: string | null;            // 행위자 (가입 신청자, 팔로우 요청자, 팔로우 수락자)
+  bubble_id: string | null;           // 관련 버블 (가입신청/승인)
   // 메타
   created_at: string;
 }

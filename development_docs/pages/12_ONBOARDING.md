@@ -3,7 +3,8 @@
 > depends_on: AUTH, DATA_MODEL, DESIGN_SYSTEM, XP_SYSTEM, BUBBLE
 > affects: HOME, RECORD_FLOW, PROFILE
 > 목표: 30초 안에 완료, 텅 빈 앱 방지, 첫 버블 생성 유도
-> 목업: `prototype/00_onboarding.html`
+> route: /onboarding
+> prototype: `prototype/00_onboarding.html`
 >
 > **⚠️ IA.md 동기화 필요**: 00_IA.md의 온보딩 항목이 "가입→동네선택→가본곳체크"로 되어 있으나,
 > 실제 플로우는 "로그인→인트로→기록→버블생성→버블탐색→홈". S9 산출물 설명도 갱신 필요.
