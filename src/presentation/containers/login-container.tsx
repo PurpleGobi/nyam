@@ -12,16 +12,44 @@ export function LoginContainer() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-6">
-      <h1 className="logo-gradient mb-2 text-[42px] tracking-[-1px]">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background" style={{ padding: '60px 32px 40px' }}>
+      <div style={{ height: '44px' }} />
+
+      <h1
+        className="logo-gradient"
+        style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px', marginBottom: '10px' }}
+      >
         nyam
       </h1>
 
-      <p className="mb-12 text-sub text-text-sub">
-        나만의 맛 기록을 시작하세요
+      <p
+        style={{
+          fontSize: '14px',
+          color: 'var(--text-sub)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          marginBottom: '48px',
+          minHeight: '2.4em',
+        }}
+      >
+        낯선 별점 천 개보다, 믿을만한 한 명의 기록.
       </p>
 
-      <LoginButtons onLogin={handleLogin} />
+      <div style={{ width: '100%', marginBottom: '32px' }}>
+        <LoginButtons onLogin={handleLogin} />
+      </div>
+
+      <p style={{ fontSize: '11px', color: 'var(--text-hint)', textAlign: 'center', lineHeight: 1.6 }}>
+        가입 시{' '}
+        <a href="#" style={{ color: 'var(--text-sub)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+          이용약관
+        </a>
+        {' '}및{' '}
+        <a href="#" style={{ color: 'var(--text-sub)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+          개인정보처리방침
+        </a>
+        에 동의합니다
+      </p>
     </div>
   )
 }

@@ -6,35 +6,59 @@ interface OnboardingIntroProps {
 
 export function OnboardingIntro({ onNext }: OnboardingIntroProps) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-8">
-      <h1
-        style={{
-          fontFamily: 'var(--font-logo)',
-          fontSize: '36px',
-          fontWeight: 800,
-          background: 'linear-gradient(135deg, #FF6038, #8B7396)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-1px',
-        }}
-      >
-        nyam
-      </h1>
-      <p className="mt-4 text-center" style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)' }}>
-        나만의 맛집 기록을 시작하세요
-      </p>
-      <p className="mt-2 text-center" style={{ fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
-        사진 한 장으로 AI가 자동 인식하고,{'\n'}
-        사분면 평가로 3초 만에 기록합니다
-      </p>
-      <button
-        type="button"
-        onClick={onNext}
-        className="mt-10 w-full max-w-[280px] rounded-xl py-3.5 text-[15px] font-semibold text-white"
-        style={{ backgroundColor: 'var(--accent-food)' }}
-      >
-        시작하기
-      </button>
+    <div className="flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+      {/* 콘텐츠: 세로 중앙 정렬 */}
+      <div className="flex flex-1 flex-col items-center justify-center" style={{ padding: '0 36px' }}>
+        <div
+          style={{
+            fontSize: '26px',
+            fontWeight: 700,
+            lineHeight: 1.5,
+            letterSpacing: '-0.4px',
+            textAlign: 'center',
+            color: 'var(--text)',
+          }}
+        >
+          낯선 별점 천 개보다,
+          <br />
+          믿을만한 한 명의 기록.
+        </div>
+
+        <div
+          style={{
+            fontSize: '14px',
+            color: 'var(--text-sub)',
+            lineHeight: 1.8,
+            textAlign: 'center',
+            marginTop: '16px',
+          }}
+        >
+          기록은 쌓이고, 취향은 선명해지고,
+          <br />
+          가까운 사람들과 나눌 수 있어요.
+        </div>
+      </div>
+
+      {/* CTA: 텍스트 버튼 */}
+      <div style={{ padding: '0 24px 56px', flexShrink: 0, textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={onNext}
+          className="transition-opacity active:opacity-50"
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '15px',
+            fontWeight: 600,
+            color: 'var(--accent-food)',
+            padding: '12px 24px',
+            letterSpacing: '-0.1px',
+            cursor: 'pointer',
+          }}
+        >
+          시작하기 →
+        </button>
+      </div>
     </div>
   )
 }
