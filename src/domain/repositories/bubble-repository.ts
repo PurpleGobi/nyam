@@ -12,7 +12,50 @@ export interface CreateBubbleInput {
   minRecords?: number
   minLevel?: number
   maxMembers?: number
+  icon?: string
+  iconBgColor?: string
   createdBy: string
+}
+
+export interface BubbleFeedItem {
+  id: string
+  recordId: string
+  bubbleId: string
+  bubbleName?: string
+  bubbleIcon?: string
+  sharedBy: string
+  authorNickname?: string
+  authorAvatar?: string | null
+  authorAvatarColor?: string | null
+  targetName?: string
+  targetType?: 'restaurant' | 'wine'
+  satisfaction?: number | null
+  comment?: string | null
+  visitDate?: string | null
+  sharedAt: string
+}
+
+export interface BubbleShareForTarget extends BubbleFeedItem {}
+
+export interface UserBubbleMembership {
+  bubbleId: string
+  bubbleName?: string
+  bubbleIcon?: string | null
+  bubbleIconBgColor?: string | null
+  status: string
+}
+
+export interface MutualRecordItem {
+  recordId: string
+  targetName?: string
+  targetType?: 'restaurant' | 'wine'
+  satisfaction?: number | null
+  comment?: string | null
+  visitDate?: string | null
+  authorNickname?: string
+  authorAvatar?: string | null
+  authorAvatarColor?: string | null
+  createdAt: string
 }
 
 export interface BubbleRepository {
@@ -34,4 +77,13 @@ export interface BubbleRepository {
 
   findByInviteCode(code: string): Promise<Bubble | null>
   generateInviteCode(bubbleId: string): Promise<string>
+
+  // S8 추가 메서드
+  getSharesForTarget(targetId: string, targetType: string, bubbleIds: string[]): Promise<BubbleShareForTarget[]>
+  getFeedFromBubbles(userId: string): Promise<BubbleFeedItem[]>
+  getRecentRecordsByUsers(userIds: string[]): Promise<MutualRecordItem[]>
+  getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
+  getRecordShares(recordId: string): Promise<BubbleShare[]>
+  shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare>
+  unshareRecord(recordId: string, bubbleId: string): Promise<void>
 }

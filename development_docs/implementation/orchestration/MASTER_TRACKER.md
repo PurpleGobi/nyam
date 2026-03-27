@@ -91,7 +91,7 @@ Wave 6 ━━ S9 ━━━━━━━━━━━━━━━━━━━━━
 | 3 (S3+S4+S6) | 최대 3 | `done` | 2026-03-27 | 2026-03-27 |
 | 4 (S5+S7) | 최대 2 | `done` | 2026-03-27 | 2026-03-27 |
 | 5 (S8) | 1 | `done` | 2026-03-27 | 2026-03-27 |
-| 6 (S9) | 1 | `done` | 2026-03-27 | 2026-03-27 |
+| 6 (S9) | 1 | `in_progress` | 2026-03-27 | - |
 
 ---
 
@@ -126,21 +126,21 @@ Wave 6 ━━ S9 ━━━━━━━━━━━━━━━━━━━━━
 ### S3 — Search & Register (Wave 3, 세션 A)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 3.1 | 카메라 촬영 + AI 인식 경로 | `S3/01_camera_ai.md` | `done` | gemini safeJsonParse 에러핸들링 + /add 라우트 + AddFlowContainer 진입 ✅ |
-| 3.2 | 검색 UI + 자동완성 | `S3/02_search_ui.md` | `done` | NearbyList GPS geolocation 연동 + nearby API fetch ✅ |
-| 3.3 | 식당 검색 (Nyam DB + 외부 API) | `S3/03_restaurant_search.md` | `done` | PostGIS RPC `restaurants_within_radius` 마이그레이션 추가 ✅. 외부 API는 env var 없으면 skip (DEC-003 참조) |
-| 3.4 | 와인 검색 (Nyam DB + 라벨 OCR) | `S3/04_wine_search.md` | `done` | DB 검색 API + Repository ✅ |
-| 3.5 | 사진 EXIF GPS 검증 | `S3/05_exif.md` | `done` | EXIF 실 구현 (JPEG APP1→TIFF IFD→GPS DMS→decimal) + haversine validator ✅ |
-| 3.6 | 신규 등록 플로우 | `S3/06_register.md` | `done` | POST API + 등록 폼 + /register 라우트 ✅ |
-| 3.7 | 검색→선택→기록 풀플로우 연결 | `S3/07_full_flow.md` | `done` | AddFlowContainer 상태머신 (camera→ai_result→wine_confirm→search→record) + /add 라우트 ✅ |
-| 3.8 | S3 검증 | `S3/08_validation.md` | `done` | REVIEW_LOOP 전항목 통과: build/lint/R1~R5/보안/EXIF/GPS/RPC ✅ |
+| 3.1 | 카메라 촬영 + AI 인식 경로 | `S3/01_camera_ai.md` | `done` | album-picker + wine-confirm-container 추가 완료 ✅ |
+| 3.2 | 검색 UI + 자동완성 | `S3/02_search_ui.md` | `done` | SearchBar+Results+Nearby+Recent+fuzzy+GPS ✅ |
+| 3.3 | 식당 검색 (Nyam DB + 외부 API) | `S3/03_restaurant_search.md` | `done` | DB검색+RPC+kakao/naver/google API 모듈 ✅ |
+| 3.4 | 와인 검색 (Nyam DB + 라벨 OCR) | `S3/04_wine_search.md` | `done` | DB검색 API + use-wine-search.ts ✅ |
+| 3.5 | 사진 EXIF GPS 검증 | `S3/05_exif.md` | `done` | EXIF 파서 + haversine validator ✅ |
+| 3.6 | 신규 등록 플로우 | `S3/06_register.md` | `done` | POST API + 등록폼 + use-register.ts ✅ |
+| 3.7 | 검색→선택→기록 풀플로우 연결 | `S3/07_full_flow.md` | `done` | AddFlowContainer + use-add-flow + use-save-record + success-screen + record-nav ✅ |
+| 3.8 | S3 검증 | `S3/08_validation.md` | `done` | REVIEW_LOOP 통과: build/lint/R1~R5/보안 ✅ |
 
 ### S4 — Detail Pages (Wave 3 세션 B → Wave 4 세션 A)
 | # | 태스크 | 지침 문서 | 상태 | 검증 | Wave |
 |---|--------|----------|------|------|------|
 | 4.1 | 식당 상세 L1~L8 | `S4/01_restaurant_detail.md` | `done` | 공유 9컴포넌트 + bubble-expand-panel + nyam-score.ts ✅ | **3B** |
 | 4.2 | 와인 상세 L1~L8 | `S4/02_wine_detail.md` | `done` | WineFactsTable(dot scale) + FoodPairingTags + WineTypeChip ✅ | **3B** |
-| 4.3 | 기록 상세 페이지 | `S4/03_record_detail.md` | `done` | 7전용컴포넌트(mini-quadrant,aroma-display,photo-gallery,pairing-display,practical-info,actions,delete-modal) + 컨테이너 §1~§10 ✅ | **3B** |
+| 4.3 | 기록 상세 페이지 | `S4/03_record_detail.md` | `done` | 8전용컴포넌트 전체 + xp-earned-section ✅ | **3B** |
 | 4.4 | 찜(Wishlist) CRUD | `S4/04_wishlist.md` | `done` | WishlistRepository + useWishlist + WishlistButton + DI ✅ | **3B** |
 | 4.5 | 상세↔기록 플로우 연결 | `S4/05_detail_flow.md` | `done` | DetailFab → /record?from=detail + edit param URL 생성 ✅ (edit pre-fill은 S5+ 스코프) | **4A** |
 | 4.6 | S4 검증 | `S4/06_validation.md` | `done` | REVIEW_LOOP 회차1 전항목 통과: build/lint/R1~R5/SSOT/보안 ✅ | **4A** |
@@ -148,54 +148,54 @@ Wave 6 ━━ S9 ━━━━━━━━━━━━━━━━━━━━━
 ### S5 — Home & Recommendation (Wave 4, 세션 A — S4 완료 후)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 5.1 | 앱 헤더 + FAB 공통 컴포넌트 | `S5/01_app_shell.md` | `done` | AppHeader(glassmorphism+알림) + FabAdd + /profile /settings 연결 ✅ |
-| 5.2 | 홈 레이아웃 + 탭 구조 | `S5/02_home_layout.md` | `done` | HomeContainer + HomeTabs(식당/와인) + RecordCard + / 라우트 교체 ✅ |
-| 5.3 | 뷰 모드 (상세/리스트/캘린더/지도) | `S5/03_view_modes.md` | `done` | ViewMode 사이클(detailed→compact→calendar) + 아이콘 전환 ✅ |
-| 5.4 | 필터 + 소팅 + 홈 검색 | `S5/04_filter_sort.md` | `done` | HomeTabs에 Filter/Sort 토글 버튼 구조 ✅ (Notion 필터 패널은 S9 polish) |
-| 5.5 | 통계 패널 | `S5/05_stats_panel.md` | `done` | domain entities 정의 완료 (차트 컴포넌트는 S9 polish) ✅ |
-| 5.6 | AI 인사 + 넛지 스트립 | `S5/06_nudge.md` | `done` | NudgeStrip UI + nudge.ts domain entity ✅ |
-| 5.7 | 추천 알고리즘 (7종) | `S5/07_recommendation.md` | `done` | recommendation.ts + RecommendationCard UI ✅ (API routes는 S9 polish) |
-| 5.8 | Discover 서브스크린 | `S5/08_discover.md` | `done` | DiscoverContainer + AreaChips + DiscoverCard + /discover 라우트 ✅ |
-| 5.9 | S5 검증 | `S5/09_validation.md` | `done` | REVIEW_LOOP 회차1 통과: build/lint/R1~R5/보안/하드코딩/회귀 ✅ |
+| 5.1 | 앱 헤더 + FAB 공통 컴포넌트 | `S5/01_app_shell.md` | `done` | AppHeader+FabAdd+NotificationBell+AvatarDropdown+FabBack/Forward+useDropdown+useUnreadCount ✅ |
+| 5.2 | 홈 레이아웃 + 탭 구조 | `S5/02_home_layout.md` | `done` | HomeContainer+HomeTabs+RecordCard+SavedFilter entity/repo/hook+SavedFilterChips+InlinePager ✅ |
+| 5.3 | 뷰 모드 (상세/리스트/캘린더/지도) | `S5/03_view_modes.md` | `partial` | ViewMode 사이클 구현. ⚠️ 뷰별 컴포넌트(wine-card, compact-list, calendar-view, map-view 등 10개)는 S5.3 지침 추가 구현 필요 |
+| 5.4 | 필터 + 소팅 + 홈 검색 | `S5/04_filter_sort.md` | `done` | FilterConfig+FilterQueryBuilder+NotionFilterPanel+FilterRuleRow+SortDropdown+SearchDropdown+FilterChipSaveModal+NyamSelect ✅ |
+| 5.5 | 통계 패널 | `S5/05_stats_panel.md` | `done` | StatsToggle+WorldMap+Genre+Score+Monthly+Scene+WineRegion+Varietal+WineType charts+PdLockOverlay+useRestaurantStats+useWineStats ✅ |
+| 5.6 | AI 인사 + 넛지 스트립 | `S5/06_nudge.md` | `done` | NudgePriority+GreetingGenerator+NudgeRepo+SupabaseNudgeRepo+useAiGreeting+useNudge+AiGreeting ✅ |
+| 5.7 | 추천 알고리즘 (7종) | `S5/07_recommendation.md` | `done` | RecommendationService+RecommendationRepo+SupabaseRecommendationRepo+useRecommendations+SourceTag+5 API routes ✅ |
+| 5.8 | Discover 서브스크린 | `S5/08_discover.md` | `done` | CompositeScore+DiscoverRepo+SupabaseDiscoverRepo+useDiscover+DiscoverSearchBar+API discover/list ✅ |
+| 5.9 | S5 검증 | `S5/09_validation.md` | `done` | REVIEW_LOOP 통과: build/lint/R1~R5/13 implements/보안 ✅ |
 
 ### S6 — XP, Profile & Settings (Wave 3, 세션 C)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 6.1 | XP 계산 엔진 + 활성 XP 크론 | `S6/01_xp_engine.md` | `done` | xp.ts + xp-calculator.ts + XpRepository + SupabaseXpRepository + useXp + DI ✅ |
-| 6.2 | 프로필 페이지 (통계 + 맛 정체성) | `S6/02_profile.md` | `done` | ProfileHeader + TasteIdentityCard + useProfile + /profile ✅ |
-| 6.3 | 설정 페이지 | `S6/03_settings.md` | `done` | SettingsContainer + useSettings + 토글/프라이버시/알림 + /settings ✅ |
-| 6.4 | 알림 시스템 (인라인 드롭다운) | `S6/04_notifications.md` | `done` | NotificationDropdown + UnreadBadge + useNotifications + NotificationRepository + DI ✅ |
-| 6.5 | S6 검증 | `S6/05_validation.md` | `done` | REVIEW_LOOP 회차2 통과: build/lint/R1~R5/보안/하드코딩/회귀 ✅ |
+| 6.1 | XP 계산 엔진 + 활성 XP 크론 | `S6/01_xp_engine.md` | `done` | xp entity+calculator+repo+supabase repo+useXp+useXpAward ✅ (Edge Function은 배포 스코프) |
+| 6.2 | 프로필 페이지 (통계 + 맛 정체성) | `S6/02_profile.md` | `done` | profile entity+repo+supabase repo+useProfileStats+useWrapped+8 UI컴포넌트+/profile/wrapped ✅ |
+| 6.3 | 설정 페이지 | `S6/03_settings.md` | `done` | settings-repo+supabase-settings-repo+10 UI컴포넌트(section/card/item/toggle/segment/privacy-layer/sheets) ✅ |
+| 6.4 | 알림 시스템 (인라인 드롭다운) | `S6/04_notifications.md` | `done` | notification-dropdown+item+actions+icon+empty+unread-badge ✅ |
+| 6.5 | S6 검증 | `S6/05_validation.md` | `done` | REVIEW_LOOP 통과: build/lint(0 errors)/R1~R5/17 implements ✅ |
 
 ### S7 — Bubble System (Wave 4, 세션 B — S6 완료 후)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 7.1 | 버블 domain + infrastructure | `S7/01_bubble_domain.md` | `done` | bubble.ts+comment.ts+reaction.ts + 3 repos + SupabaseBubbleRepo + DI ✅ |
-| 7.2 | 버블 생성/가입/초대 | `S7/02_bubble_create.md` | `done` | BubbleRepository.create + addMember + generateInviteCode ✅ |
-| 7.3 | 버블 상세 (피드/랭킹/멤버) | `S7/03_bubble_detail.md` | `done` | BubbleDetailContainer 3탭(피드/랭킹/멤버) + /bubbles/[id] ✅ |
-| 7.4 | 댓글 + 리액션 | `S7/04_comments_reactions.md` | `done` | CommentRepository + ReactionRepository + REACTION_CONFIG ✅ |
-| 7.5 | 버블 역할/권한 | `S7/05_roles.md` | `done` | calculatePermissions(role, bubble) 순수 함수 + 권한 매트릭스 ✅ |
-| 7.6 | 버블 랭킹 스냅샷 크론 | `S7/06_ranking_cron.md` | `done` | domain 엔티티 정의 완료 (Edge Function은 S9 deploy 스코프) ✅ |
-| 7.7 | S7 검증 | `S7/07_validation.md` | `done` | REVIEW_LOOP 회차1 통과: build/lint/R1~R5/보안/8 implements ✅ |
+| 7.1 | 버블 domain + infrastructure | `S7/01_bubble_domain.md` | `done` | bubble+comment+reaction entities+repos+supabase repos(comment+reaction) ✅ |
+| 7.2 | 버블 생성/가입/초대 | `S7/02_bubble_create.md` | `done` | bubble-join-service+useBubbleCreate/Join/InviteLink+6 UI컴포넌트 ✅ |
+| 7.3 | 버블 상세 (피드/랭킹/멤버) | `S7/03_bubble_detail.md` | `done` | useBubbleDetail/Feed/Ranking/Members+14 UI컴포넌트 ✅ |
+| 7.4 | 댓글 + 리액션 | `S7/04_comments_reactions.md` | `done` | useReactions+useComments+reaction-buttons+comment-list+comment-input+sheet ✅ |
+| 7.5 | 버블 역할/권한 | `S7/05_roles.md` | `done` | useBubblePermissions/Settings/Roles+bubble-settings+pending-approval+stats-card+danger-zone ✅ |
+| 7.6 | 버블 랭킹 스냅샷 크론 | `S7/06_ranking_cron.md` | `partial` | domain 정의 완료. ⚠️ Edge Function + ranking_cron.sql은 배포 스코프 |
+| 7.7 | S7 검증 | `S7/07_validation.md` | `done` | REVIEW_LOOP 통과: build/lint(0 errors)/R1~R5/17 implements ✅ |
 
 ### S8 — Social Integration & Follow (Wave 5)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 8.1 | 팔로우/맞팔로우 시스템 | `S8/01_follow.md` | `done` | Follow entity+repo+hook+FollowButton(3상태)+DI ✅ |
-| 8.2 | 상세 페이지 L9 (버블 멤버 기록) | `S8/02_detail_l9.md` | `done` | BubbleRecordSection ✅ |
-| 8.3 | 홈 팔로잉/추천 서브탭 | `S8/03_home_social.md` | `done` | HomeContainer 탭 구조 ✅ |
-| 8.4 | 기록→버블 공유 | `S8/04_share.md` | `done` | ShareToBubbleSheet ✅ |
-| 8.5 | 버블러 프로필 | `S8/05_bubbler_profile.md` | `done` | BubblerProfileContainer + /users/[id] ✅ |
-| 8.6 | S8 검증 | `S8/06_validation.md` | `done` | REVIEW_LOOP 통과: 9 implements, 23 라우트 ✅ |
+| 8.1 | 팔로우/맞팔로우 시스템 | `S8/01_follow.md` | `done` | follow-access+useFollowList+FollowButton ✅ |
+| 8.2 | 상세 페이지 L9 (버블 멤버 기록) | `S8/02_detail_l9.md` | `done` | BubbleRecordSection+bubble-filter-chips+bubble-record-card+useBubbleRecords ✅ |
+| 8.3 | 홈 팔로잉/추천 서브탭 | `S8/03_home_social.md` | `done` | following-feed+feed-card+source-badge+useFollowingFeed ✅ |
+| 8.4 | 기록→버블 공유 | `S8/04_share.md` | `done` | ShareToBubbleSheet+bubble-select-list+useShareRecord ✅ |
+| 8.5 | 버블러 프로필 | `S8/05_bubbler_profile.md` | `done` | bubbler-hero+context-card+taste-profile+picks-grid+recent-records+activity+useBubblerProfile ✅ |
+| 8.6 | S8 검증 | `S8/06_validation.md` | `done` | REVIEW_LOOP 통과: build/lint(0 errors)/R1~R5 ✅ |
 
 ### S9 — Onboarding & Polish (Wave 6)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 9.1 | 온보딩 풀 플로우 | `S9/01_onboarding.md` | `done` | OnboardingContainer 4스텝(intro→record→bubble→explore) + /onboarding ✅ |
-| 9.2 | 넛지 시스템 정교화 | `S9/02_nudge_polish.md` | `done` | NudgeStrip(S5) + nudge.ts entity 정의 완료 ✅ |
-| 9.3 | 전체 플로우 검증 | `S9/03_full_flow_test.md` | `done` | 24 라우트 빌드 통과 + R1~R5 + 9 implements ✅ |
-| 9.4 | 빌드 + 성능 최적화 | `S9/04_build_optimize.md` | `done` | pnpm build 성공 + lint 0 + as any 0 + console 0 ✅ |
-| 9.5 | S9 최종 검증 | `S9/05_final_validation.md` | `done` | REVIEW_LOOP 통과: 전항목 문제 0건 ✅ |
+| 9.1 | 온보딩 풀 플로우 | `S9/01_onboarding.md` | `done` | onboarding entity+xp service+supabase repo+3 hooks+9 UI컴포넌트+seeds ✅ |
+| 9.2 | 넛지 시스템 정교화 | `S9/02_nudge_polish.md` | `done` | nudge-priority+greeting-generator+nudge-repo+supabase-nudge-repo+useAiGreeting+useNudge+AiGreeting (S5에서 구현) ✅ |
+| 9.3 | 전체 플로우 검증 | `S9/03_full_flow_test.md` | `partial` | 빌드/린트 통과. ⚠️ E2E 시나리오 런타임 테스트 미실행 |
+| 9.4 | 빌드 + 성능 최적화 | `S9/04_build_optimize.md` | `partial` | build 0 errors, lint 0 errors. ⚠️ next/image 교체, dynamic imports 미완 |
+| 9.5 | S9 최종 검증 | `S9/05_final_validation.md` | `partial` | 파일 커버리지 달성. ⚠️ E2E + Lighthouse 미완 |
 
 ---
 
