@@ -143,7 +143,6 @@
   .pill-blue { background: var(--accent-social-light); color: var(--accent-social); }
   .pill-green { background: rgba(126,174,139,0.15); color: var(--positive); }
   .pill-orange { background: var(--primary-light); color: var(--primary); }
-  .pill-xs { font-size: 10px; padding: 2px 7px; }
   .pill-sm { font-size: 10px; }
 
   /* ── Notif dropdown ── */
@@ -228,7 +227,8 @@
     font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.2;
     display: flex; align-items: center; gap: 6px;
   }
-  .detail-hero-name .icon-btn { width: 28px; height: 28px; color: var(--text-hint); margin-left: auto; }
+  .detail-hero-name .icon-btn { width: 28px; height: 28px; color: var(--text-hint); }
+  .detail-hero-name .hero-name-actions { display: flex; gap: 2px; margin-left: auto; }
   .detail-hero-name .icon-btn svg { width: 16px; height: 16px; }
   .detail-hero-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
   .hero-badges { display: flex; gap: 5px; margin-top: 6px; align-items: center; }
@@ -246,90 +246,29 @@
   .hero-stat-lbl { font-size: 10px; color: var(--text-sub); margin-top: 3px; }
 
   /* ══════════════════════════════════════
-     WEEKLY LEADERBOARD
+     BUBBLE INFO BOTTOM SHEET
   ══════════════════════════════════════ */
-  .weekly-leaderboard {
-    margin: 14px 20px 0;
-    background: linear-gradient(135deg, #FFF8F0 0%, #FFF3E8 100%);
-    border: 1px solid rgba(201,169,110,0.3); border-radius: 16px; overflow: hidden;
+  .info-sheet-overlay {
+    display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 80; border-radius: 42px;
   }
-  .wl-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 11px 14px 0;
+  .info-sheet-overlay.open { display: block; }
+  .info-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 85;
+    background: var(--bg-card); border-radius: 24px 24px 0 0;
+    padding: 10px 18px 32px;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
   }
-  .wl-title {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 12px; font-weight: 800; color: var(--text);
-    text-transform: uppercase; letter-spacing: 0.4px;
+  .info-sheet.open { transform: translateY(0); }
+  .info-sheet-handle {
+    width: 36px; height: 4px; background: var(--border-bold); border-radius: 2px;
+    margin: 0 auto 12px;
   }
-  .wl-title svg { width: 13px; height: 13px; color: var(--caution); }
-  .wl-reset { font-size: 10px; color: var(--text-hint); }
-  .wl-rows { padding: 8px 0 4px; }
-  .wl-row {
-    display: flex; align-items: center; gap: 8px; padding: 6px 14px;
-    cursor: default; transition: background 0.1s;
+  .info-sheet-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
   }
-  .wl-row.wl-me {
-    background: rgba(201,169,110,0.12); margin: 2px 6px;
-    border-radius: 10px; padding: 6px 8px;
-  }
-  .wl-medal { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
-  .wl-rank-num {
-    font-size: 13px; font-weight: 800; color: var(--text-hint);
-    width: 20px; text-align: center; flex-shrink: 0;
-  }
-  .wl-avatar {
-    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #fff;
-  }
-  .wl-info { flex: 1; min-width: 0; }
-  .wl-name { font-size: 12px; font-weight: 700; color: var(--text); }
-  .wl-bars { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
-  .wl-bar-track {
-    flex: 1; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden;
-  }
-  .wl-bar-fill { height: 100%; background: var(--caution); border-radius: 2px; }
-  .wl-count { font-size: 10px; color: var(--text-hint); white-space: nowrap; }
-  .wl-change { font-size: 11px; font-weight: 700; flex-shrink: 0; }
-  .wl-change.up { color: var(--positive); }
-  .wl-change.down { color: var(--negative); }
-  .wl-change.same { color: var(--text-hint); }
-  .wl-me-cta {
-    font-size: 10px; color: var(--caution); font-weight: 600;
-    background: none; border: 1px solid rgba(201,169,110,0.4);
-    border-radius: 8px; padding: 3px 8px; cursor: pointer; white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  /* ══════════════════════════════════════
-     BUBBLE INFO collapse
-  ══════════════════════════════════════ */
-  .bubble-info {
-    margin: 10px 20px 0; background: var(--bg-card);
-    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-  }
-  .bubble-info-trigger {
-    width: 100%; display: flex; align-items: center; gap: 8px;
-    padding: 11px 14px; background: none; border: none; cursor: pointer;
-    text-align: left; color: var(--text);
-  }
-  .bubble-info-trigger-icon {
-    width: 26px; height: 26px; border-radius: 8px;
-    background: var(--primary-light); color: var(--primary);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .bubble-info-trigger-icon svg { width: 13px; height: 13px; }
-  .bubble-info-trigger-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
-  .bubble-info-trigger-sub { font-size: 11px; color: var(--text-hint); }
-  .bubble-info-chevron {
-    width: 16px; height: 16px; color: var(--text-hint); transition: transform 0.25s; flex-shrink: 0;
-  }
-  .bubble-info.open .bubble-info-chevron { transform: rotate(180deg); }
-  .bubble-info-body { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border); }
-  .bubble-info.open .bubble-info-body { display: block; }
-  .bubble-info-section { padding-top: 11px; }
-  .bubble-info-section + .bubble-info-section { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+  .info-sheet-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .bubble-info-section { padding-top: 0; }
   .bubble-info-section-title {
     display: flex; align-items: center; gap: 5px;
     font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -355,154 +294,389 @@
   }
 
   /* ══════════════════════════════════════
-     TABS (3)
+     TABS + CONTROLS (sticky wrapper)
+     — home.html 동일 컴포넌트 이식
   ══════════════════════════════════════ */
+  .detail-tabs-wrapper {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg); margin-top: 10px;
+  }
+
+  /* Tab underline row */
   .detail-tabs {
-    display: flex; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 50; background: var(--bg);
-    margin-top: 10px;
+    display: flex; align-items: center;
+    background: var(--bg); border-bottom: 1.5px solid var(--border);
+    padding: 0 16px;
   }
   .detail-tab {
-    flex: 1; padding: 11px 0; text-align: center;
-    font-size: 13px; font-weight: 500; color: var(--text-sub); cursor: pointer;
-    border: none; border-bottom: 2px solid transparent; background: none; transition: all 0.15s;
+    padding: 12px 16px; font-size: 14px; font-weight: 500;
+    color: var(--text-hint); cursor: pointer; border: none; background: none;
+    position: relative; transition: color 0.2s; flex-shrink: 0;
   }
-  .detail-tab.active {
-    color: var(--primary); border-bottom-color: var(--primary); font-weight: 700;
+  .detail-tab::after {
+    content: ''; position: absolute; bottom: -1.5px; left: 8px; right: 8px;
+    height: 2.5px; border-radius: 2px; background: transparent; transition: background 0.2s;
+  }
+  .detail-tab.active { color: var(--text); font-weight: 700; }
+  .detail-tab.active::after { background: var(--primary); }
+  .detail-tab-spacer { flex: 1; }
+
+  /* Tab button group (per-tab icon buttons inside tab row) */
+  .tab-btn-group { display: flex; align-items: center; }
+
+  /* View cycle button — home.html 동일 */
+  .view-cycle-btn {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .view-cycle-btn:active { background: var(--bg-page); }
+  .view-cycle-btn svg { width: 18px; height: 18px; }
+
+  /* Tab icon button — home.html 동일 */
+  .tab-icon-btn {
+    background: none; border: none;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); cursor: pointer;
+    flex-shrink: 0; padding: 0; transition: color 0.15s;
+  }
+  .tab-icon-btn:active { color: var(--text); }
+  .tab-icon-btn.has-filter { color: var(--primary); }
+
+  /* Controls context label */
+  .detail-ctrl-label {
+    font-size: 11px; color: var(--text-hint); flex: 1; min-width: 0;
+    padding-left: 2px;
   }
 
   /* ══════════════════════════════════════
-     FEED TAB — redesigned
+     FILTER ENGINE — 04_bubbles.html 동일 패턴
   ══════════════════════════════════════ */
-  .feed-spotlight {
-    margin: 12px 16px; background: linear-gradient(135deg, #FFF8F0, #FFF3E8);
-    border: 1px solid rgba(201,169,110,0.3); border-radius: 14px; padding: 11px 13px;
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
+  .filter-drawer { display: none; background: var(--bg); }
+  .filter-drawer.open { display: block; }
+  .nf-panel { padding: 10px 16px; }
+  .nf-rules { display: flex; flex-direction: column; gap: 6px; }
+  .nf-rule {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
   }
-  .feed-spotlight-icon {
-    width: 32px; height: 32px; border-radius: 10px;
-    background: var(--caution); color: #fff;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  .nf-conj {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    width: 40px; flex-shrink: 0;
   }
-  .feed-spotlight-icon svg { width: 15px; height: 15px; }
-  .feed-spotlight-text { flex: 1; }
-  .feed-spotlight-label { font-size: 11px; font-weight: 700; color: var(--caution); text-transform: uppercase; letter-spacing: 0.4px; }
-  .feed-spotlight-title { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 1px; }
-  .feed-spotlight-sub { font-size: 11px; color: var(--text-hint); margin-top: 1px; }
-  .feed-spotlight-badge {
-    font-size: 10px; font-weight: 700; color: var(--caution);
-    background: rgba(201,169,110,0.15); border-radius: 8px; padding: 3px 7px;
-    flex-shrink: 0;
+  .nf-conj.clickable { cursor: pointer; }
+  .nf-conj.clickable:active { color: var(--accent-social); }
+  .nf-rule .nyam-select-wrap { display: inline-block; position: relative; }
+  .nf-rule .nyam-select {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px; font-size: 12px; min-width: 60px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg-card); cursor: pointer;
+    font-family: inherit; font-weight: 500; color: var(--text);
+    user-select: none; transition: all 0.15s;
+  }
+  .nf-rule .nyam-select.open { border-color: var(--accent-social); }
+  .nf-rule .nyam-select-value { flex: 1; }
+  .nf-rule .nyam-select-arrow {
+    width: 12px; height: 12px; color: var(--text-hint);
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .nf-rule .nyam-select.open .nyam-select-arrow { transform: rotate(180deg); }
+  .nf-rule .nyam-dropdown {
+    display: none; position: absolute;
+    top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px; z-index: 100; min-width: 120px; overflow: hidden;
+  }
+  .nf-rule .nyam-select.open + .nyam-dropdown { display: block; }
+  .nf-rule .nyam-dropdown-item {
+    display: block; width: 100%; padding: 7px 10px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none; border: none;
+    cursor: pointer; font-family: inherit; transition: background 0.1s;
+  }
+  .nf-rule .nyam-dropdown-item:active { background: var(--bg-section); }
+  .nf-rule .nyam-dropdown-item.selected { color: var(--accent-social); font-weight: 600; }
+  .nf-rule .nyam-select-wrap[data-role="op"] .nyam-select { min-width: 40px; }
+  .nf-rule .nyam-select-wrap[data-role="op"] .nyam-dropdown { min-width: 140px; }
+  .nf-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text-hint); padding: 2px 4px; margin-left: auto;
+  }
+  .nf-remove:active { color: var(--negative); }
+  .nf-add-row { position: relative; margin-top: 4px; }
+  .nf-add-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--text-hint);
+    padding: 6px 8px; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px; border-radius: 6px;
+  }
+  .nf-add-btn:active { background: var(--bg-section); color: var(--text); }
+  .nf-add-btn svg { width: 12px; height: 12px; opacity: 0.5; }
+  .nf-add-dd {
+    display: none; position: absolute; left: 0; top: 100%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    padding: 4px; z-index: 90; min-width: 180px;
+  }
+  .nf-add-dd.open { display: block; }
+  .nf-add-dd-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 8px 12px; text-align: left;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: var(--text); background: none; border: none;
+    cursor: pointer; font-family: inherit;
+  }
+  .nf-add-dd-item:active { background: var(--bg-section); }
+  .nf-add-dd-item svg { width: 14px; height: 14px; color: var(--text-hint); flex-shrink: 0; }
+
+  /* Sort dropdown */
+  .sort-dropdown {
+    display: none; position: absolute; right: 16px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    padding: 4px; z-index: 80; min-width: 148px;
+  }
+  .sort-dropdown.open { display: block; }
+  .nyam-dropdown-item {
+    display: block; width: 100%;
+    padding: 9px 12px; text-align: left;
+    font-size: 13px; color: var(--text); border: none; border-radius: 8px;
+    cursor: pointer; background: none; font-family: inherit; transition: background 0.1s;
+  }
+  .nyam-dropdown-item:active { background: var(--border); }
+  .nyam-dropdown-item.active, .nyam-dropdown-item.selected {
+    color: var(--accent-social); font-weight: 600;
   }
 
-  .feed-group-banner {
-    display: flex; align-items: center; gap: 6px; padding: 8px 16px;
-    background: var(--accent-social-light); font-size: 12px; color: var(--accent-social);
-    font-weight: 700; border-bottom: 1px solid rgba(122,155,174,0.15);
-    border-top: 1px solid rgba(122,155,174,0.15);
+  /* Chips + Pager */
+  .chips-pager-wrap { position: relative; display: flex; align-items: center; }
+  .chips-pager-wrap .saved-chips-row { flex: 1; min-width: 0; }
+  .chips-pager-wrap.has-pager .saved-chips-row::after { content: ''; flex-shrink: 0; width: 80px; }
+  /* Right-edge fade when chips overflow */
+  .chips-pager-wrap::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 32px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none; z-index: 1;
   }
-  .feed-group-banner svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .chips-pager-wrap.has-pager::after { display: none; }
+  .inline-pager {
+    display: none; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  .inline-pager.visible { display: flex; }
+  .inline-pager-info {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    min-width: 28px; text-align: center;
+  }
+  .inline-pager button {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: var(--bg-card);
+    color: var(--text-sub); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: all 0.15s;
+    flex-shrink: 0; padding: 0;
+  }
+  .inline-pager button:active { transform: scale(0.9); }
+  .inline-pager button:disabled { opacity: 0.2; pointer-events: none; }
+  .chips-pager-wrap .inline-pager {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    padding-right: 16px; z-index: 2; background: var(--bg);
+  }
+  .chips-pager-wrap .inline-pager.visible::before {
+    content: ''; position: absolute;
+    left: -24px; top: 0; bottom: 0; width: 24px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+  }
 
+  /* Saved chips */
+  .saved-chips-row {
+    display: flex; gap: 6px; padding: 8px 16px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .saved-chips-row::-webkit-scrollbar { display: none; }
+  .saved-chips-row:empty { display: none; }
+  .saved-chip {
+    position: relative; padding: 4px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--bg);
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer; white-space: nowrap; min-height: 26px;
+    display: flex; align-items: center; transition: all 0.15s;
+    flex-shrink: 0; font-family: inherit;
+  }
+  .saved-chip.active { background: var(--accent-social); border-color: var(--accent-social); color: #fff; }
+  .saved-chip:active { transform: scale(0.95); }
+  .saved-chip .chip-delete {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--negative); color: #fff;
+    border: 1.5px solid var(--bg-card); font-size: 8px;
+    line-height: 1; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .saved-chip.manage-mode .chip-delete { display: flex; }
+
+  /* Filter chip save bar */
+  .filter-chip-bar {
+    display: none; padding: 8px 16px 10px;
+    border-top: 1px solid var(--border); gap: 8px; align-items: center;
+  }
+  .filter-chip-bar.show { display: flex; }
+  .chip-name-input {
+    flex: 1; padding: 6px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); font-size: 12px;
+    font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; min-width: 0;
+  }
+  .chip-name-input:focus { border-color: var(--accent-social); }
+  .chip-name-input::placeholder { color: var(--text-hint); }
+  .chip-save-btn {
+    padding: 6px 14px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    background: var(--accent-social); color: #fff;
+  }
+  .chip-save-btn:active { transform: scale(0.95); opacity: 0.85; }
+  .chip-save-btn.edit-mode { background: var(--text); color: var(--bg); }
+  .chip-cancel-btn {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; background: var(--bg); color: var(--text-sub); display: none;
+  }
+  .chip-cancel-btn.show { display: inline-block; }
+
+  /* 탭 패널 min-height — 전환 시 스크롤 컨테이너 높이 유지 */
+  #dcontent-feed, #dcontent-rankings, #dcontent-members { min-height: 600px; }
+
+  /* ══════════════════════════════════════
+     FEED TAB — 카드뷰 + 리스트뷰
+  ══════════════════════════════════════ */
+
+  /* ── Card view (default) ── */
   .feed-card {
-    padding: 14px 16px 10px; border-bottom: 6px solid var(--bg-section);
+    padding: 0; border-bottom: 6px solid var(--bg-section);
     cursor: default;
   }
+  /* Photo hero */
+  .feed-photos {
+    display: flex; gap: 2px; position: relative;
+  }
+  .feed-photo {
+    flex: 1; aspect-ratio: 4/3; max-height: 160px;
+    background: var(--bg-section) center/cover no-repeat;
+  }
+  .feed-photo:only-child { aspect-ratio: 16/9; max-height: 180px; }
+  /* Score overlay on photo */
+  .feed-score-overlay {
+    position: absolute; bottom: 8px; left: 10px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
+    border-radius: 10px; padding: 4px 10px 4px 5px;
+  }
+  .feed-score-num {
+    font-size: 20px; font-weight: 900; color: #fff; line-height: 1;
+  }
+  .feed-score-type {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.7);
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  /* Body area */
+  .feed-body { padding: 10px 14px 10px; }
+  /* User row — compact single line */
   .feed-header {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
   }
   .feed-avatar {
-    width: 34px; height: 34px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0;
     cursor: pointer;
   }
-  .feed-user-info { flex: 1; cursor: pointer; }
-  .feed-user-name-row { display: flex; align-items: center; gap: 5px; }
-  .feed-user-name { font-size: 14px; font-weight: 700; color: var(--text); }
-  .feed-user-level { font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-light); border-radius: 6px; padding: 1px 5px; }
-  .feed-time { font-size: 11px; color: var(--text-hint); margin-top: 1px; }
-
-  /* Score + place block */
+  .feed-user-name {
+    font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer;
+  }
+  .feed-user-level {
+    font-size: 9px; font-weight: 600; color: var(--primary);
+    background: var(--primary-light); border-radius: 4px; padding: 1px 4px;
+  }
+  .feed-time {
+    font-size: 10px; color: var(--text-hint); margin-left: auto; flex-shrink: 0;
+  }
+  /* Place info */
   .feed-place-block {
-    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; cursor: pointer;
-    text-decoration: none;
+    display: flex; align-items: baseline; gap: 6px;
+    margin-bottom: 4px; cursor: pointer; text-decoration: none;
   }
-  .feed-score-badge {
-    width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: var(--primary); color: #fff;
-  }
-  .feed-score-badge.wine-badge { background: var(--wine); }
-  .feed-score-num { font-size: 18px; font-weight: 900; line-height: 1; }
-  .feed-score-label { font-size: 8px; font-weight: 600; opacity: 0.75; margin-top: 1px; }
-  .feed-place-info { flex: 1; min-width: 0; }
   .feed-place-name { font-size: 15px; font-weight: 800; color: var(--text); }
-  .feed-place-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-  .feed-place-hot {
-    display: inline-flex; align-items: center; gap: 2px;
-    font-size: 10px; font-weight: 700; color: #E55A35;
-    background: #FFF0EC; border-radius: 6px; padding: 1px 6px; margin-top: 3px;
-  }
-  .feed-place-hot svg { width: 9px; height: 9px; }
-
-  /* Photos */
-  .feed-photos { display: flex; gap: 4px; margin-bottom: 8px; }
-  .feed-photo {
-    flex: 1; aspect-ratio: 1; border-radius: 10px;
-    background: var(--bg-section) center/cover no-repeat; max-height: 110px;
-  }
-  .feed-photo-more {
-    flex: 1; aspect-ratio: 1; border-radius: 10px; max-height: 110px;
-    background: rgba(0,0,0,0.45) center/cover no-repeat; position: relative; overflow: hidden;
-  }
-  .feed-photo-more-overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800; color: #fff; border-radius: 10px;
-  }
-
+  .feed-place-meta { font-size: 11px; color: var(--text-sub); }
   /* Comment */
   .feed-comment {
-    font-size: 13px; color: var(--text); font-style: italic;
-    line-height: 1.45; margin-bottom: 10px;
-    padding-left: 8px; border-left: 2px solid var(--border-bold);
+    font-size: 12px; color: var(--text-sub); line-height: 1.4;
+    margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-
-  /* Reactions */
-  .feed-reactions {
-    display: flex; gap: 5px; margin-bottom: 8px;
+  /* Action row — reactions + like/comment unified */
+  .feed-actions {
+    display: flex; align-items: center; gap: 0;
+    border-top: 1px solid var(--border); margin: 0 -14px; padding: 0 14px;
   }
   .react-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 3px;
-    padding: 6px 0; font-size: 11px; font-weight: 600; color: var(--text-hint);
-    background: var(--bg-section); border: 1px solid var(--border);
-    border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text-hint);
+    background: none; border: none; cursor: pointer; transition: color 0.15s;
   }
-  .react-btn svg { width: 12px; height: 12px; }
-  .react-btn.reacted-want { background: var(--primary-light); color: var(--primary); border-color: transparent; }
-  .react-btn.reacted-check { background: rgba(126,174,139,0.15); color: var(--positive); border-color: transparent; }
-  .react-btn.reacted-fire { background: #FFF0EC; color: #E55A35; border-color: transparent; }
-
-  /* Seen by */
-  .feed-footer {
-    display: flex; align-items: center; gap: 6px;
-  }
-  .feed-seen-avatars { display: flex; }
-  .feed-seen-dot {
-    width: 18px; height: 18px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 7px; font-weight: 700; color: #fff;
-    margin-left: -5px; border: 2px solid var(--bg);
-  }
-  .feed-seen-dot:first-child { margin-left: 0; }
-  .feed-seen-text { font-size: 11px; color: var(--text-hint); }
-  .feed-action-btns { margin-left: auto; display: flex; gap: 12px; }
+  .react-btn svg { width: 14px; height: 14px; }
+  .react-btn.reacted-want { color: var(--primary); }
+  .react-btn.reacted-check { color: var(--positive); }
+  .react-btn.reacted-fire { color: #E55A35; }
+  .feed-actions-spacer { flex: 1; }
   .feed-action-btn {
-    background: none; border: none; cursor: pointer; font-size: 13px; color: var(--text-sub);
-    display: flex; align-items: center; gap: 4px; padding: 0;
+    display: flex; align-items: center; gap: 3px;
+    padding: 8px 8px; font-size: 11px; font-weight: 600; color: var(--text-hint);
+    background: none; border: none; cursor: pointer;
   }
-  .feed-action-btn svg { width: 16px; height: 16px; }
+  .feed-action-btn svg { width: 14px; height: 14px; }
   .feed-action-btn.liked { color: var(--negative); }
+
+  /* ══════════════════════════════════════
+     FEED — 리스트뷰 (compact)
+  ══════════════════════════════════════ */
+  #dcontent-feed.view-compact .feed-card {
+    border-bottom-width: 1px; border-bottom-color: var(--border);
+  }
+  #dcontent-feed.view-compact .feed-photos { display: none; }
+  #dcontent-feed.view-compact .feed-comment { display: none; }
+  #dcontent-feed.view-compact .feed-actions { display: none; }
+  #dcontent-feed.view-compact .feed-body {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  }
+  /* Score badge inline */
+  #dcontent-feed.view-compact .feed-score-overlay {
+    position: static; background: var(--primary); backdrop-filter: none;
+    border-radius: 10px; padding: 6px 0; width: 42px; min-width: 42px;
+    flex-direction: column; justify-content: center;
+  }
+  #dcontent-feed.view-compact .feed-score-overlay.wine { background: var(--wine); }
+  #dcontent-feed.view-compact .feed-score-num { font-size: 16px; }
+  #dcontent-feed.view-compact .feed-score-type { font-size: 7px; }
+  /* Place + meta stacked */
+  #dcontent-feed.view-compact .feed-place-block {
+    flex: 1; flex-direction: column; gap: 1px; margin-bottom: 0; min-width: 0;
+  }
+  #dcontent-feed.view-compact .feed-place-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dcontent-feed.view-compact .feed-place-meta { font-size: 10px; }
+  /* User column right */
+  #dcontent-feed.view-compact .feed-header {
+    flex-direction: column; gap: 2px; margin-bottom: 0;
+    align-items: flex-end; flex-shrink: 0;
+  }
+  #dcontent-feed.view-compact .feed-avatar { width: 20px; height: 20px; font-size: 8px; }
+  #dcontent-feed.view-compact .feed-user-name { font-size: 10px; }
+  #dcontent-feed.view-compact .feed-user-level { display: none; }
+  #dcontent-feed.view-compact .feed-time { margin-left: 0; font-size: 9px; }
 
   /* ══════════════════════════════════════
      RANKINGS TAB — redesigned
@@ -512,10 +686,12 @@
     background: var(--bg-section); border-radius: 10px; padding: 3px;
   }
   .ranking-sub-btn {
-    flex: 1; padding: 7px 0; text-align: center;
+    flex: 1; padding: 7px 0;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
     font-size: 12px; font-weight: 600; color: var(--text-hint);
     cursor: pointer; border: none; background: none; border-radius: 8px; transition: all 0.2s;
   }
+  .ranking-sub-btn svg { width: 13px; height: 13px; }
   .ranking-sub-btn.active {
     background: var(--bg-card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
@@ -733,6 +909,48 @@
   .toggle.on::after { left: 20px; }
 
   .hidden { display: none !important; }
+
+  /* ══════════════════════════════════════
+     VIEW TOGGLE — compact modes
+  ══════════════════════════════════════ */
+
+  /* (compact view is now defined inline with the card view CSS above) */
+
+  /* ── Rankings compact view (list only, no podium) ── */
+  #dcontent-rankings.view-compact .rank-podium { display: none; }
+  #dcontent-rankings.view-compact .rank-list-header { border-top: none; }
+  #dcontent-rankings.view-compact .rank-list-header-label { display: none; }
+  /* Show top 3 as list items */
+  .rank-compact-top { display: none; }
+  #dcontent-rankings.view-compact .rank-compact-top { display: block; }
+  #dcontent-rankings.view-compact .ranking-sub-toggle { margin-bottom: 0; }
+
+  /* ── Members list view ── */
+  #dcontent-members.view-list .members-grid {
+    display: flex; flex-direction: column; gap: 0; padding: 0;
+  }
+  #dcontent-members.view-list .member-card {
+    flex-direction: row; border-radius: 0; border: none;
+    border-bottom: 1px solid var(--border); padding: 10px 16px; gap: 10px;
+    align-items: center;
+  }
+  #dcontent-members.view-list .member-card.is-me {
+    background: rgba(20,184,166,0.04); border-left: none; border-right: none;
+  }
+  #dcontent-members.view-list .member-card-avatar { width: 36px; height: 36px; font-size: 14px; }
+  #dcontent-members.view-list .member-card-name { font-size: 13px; text-align: left; margin-top: 0; }
+  #dcontent-members.view-list .member-card-level { font-size: 10px; margin-top: 0; }
+  #dcontent-members.view-list .member-card-match { display: none; }
+  #dcontent-members.view-list .member-card-stats { margin-top: 0; gap: 6px; }
+  #dcontent-members.view-list .member-card-badge { position: static; margin-left: auto; }
+  #dcontent-members.view-list .member-card-follow { display: none; }
+  #dcontent-members.view-list .member-card-info-col {
+    flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  #dcontent-members.view-list .member-card-match-inline {
+    display: flex; align-items: center; gap: 4px; font-size: 10px;
+  }
+  #dcontent-members.view-list .members-header-sub { display: none; }
 </style>
 </head>
 <body>
@@ -826,9 +1044,14 @@
             <div class="detail-hero-text">
               <div class="detail-hero-name">
                 직장 맛집
-                <button class="icon-btn" onclick="showScreen('screen-bubble-settings')">
-                  <i data-lucide="settings"></i>
-                </button>
+                <div class="hero-name-actions">
+                  <button class="icon-btn" onclick="toggleBubbleInfo()">
+                    <i data-lucide="info"></i>
+                  </button>
+                  <button class="icon-btn" onclick="showScreen('screen-bubble-settings')">
+                    <i data-lucide="settings"></i>
+                  </button>
+                </div>
               </div>
               <div class="detail-hero-desc">직장 동료들과 점심 맛집 공유</div>
               <div class="hero-badges">
@@ -861,160 +1084,175 @@
             </div>
           </div>
 
-          <!-- WEEKLY LEADERBOARD -->
-          <div class="weekly-leaderboard">
-            <div class="wl-header">
-              <div class="wl-title"><i data-lucide="trophy"></i> 이번 주 랭킹</div>
-              <div class="wl-reset">월요일 리셋 · 3일 남음</div>
-            </div>
-            <div class="wl-rows">
-              <div class="wl-row">
-                <div class="wl-medal">🥇</div>
-                <div class="wl-avatar" style="background:#C17B5E">김</div>
-                <div class="wl-info">
-                  <div class="wl-name">김영수</div>
-                  <div class="wl-bars">
-                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:100%"></div></div>
-                    <div class="wl-count">6기록</div>
-                  </div>
-                </div>
-                <div class="wl-change up">↑1</div>
-              </div>
-              <div class="wl-row">
-                <div class="wl-medal">🥈</div>
-                <div class="wl-avatar" style="background:#8B7396">박</div>
-                <div class="wl-info">
-                  <div class="wl-name">박소연</div>
-                  <div class="wl-bars">
-                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:67%"></div></div>
-                    <div class="wl-count">4기록</div>
-                  </div>
-                </div>
-                <div class="wl-change down">↓1</div>
-              </div>
-              <div class="wl-row">
-                <div class="wl-medal">🥉</div>
-                <div class="wl-avatar" style="background:#7EAE8B">최</div>
-                <div class="wl-info">
-                  <div class="wl-name">최유진</div>
-                  <div class="wl-bars">
-                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:50%"></div></div>
-                    <div class="wl-count">3기록</div>
-                  </div>
-                </div>
-                <div class="wl-change same">—</div>
-              </div>
-              <div class="wl-row wl-me">
-                <div class="wl-rank-num">4</div>
-                <div class="wl-avatar" style="background:#14b8a6">나</div>
-                <div class="wl-info">
-                  <div class="wl-name" style="color:var(--caution);font-weight:800">나 (정지훈)</div>
-                  <div class="wl-bars">
-                    <div class="wl-bar-track"><div class="wl-bar-fill" style="width:33%"></div></div>
-                    <div class="wl-count">2기록</div>
-                  </div>
-                </div>
-                <button class="wl-me-cta">+1하면 3위</button>
-              </div>
-            </div>
-          </div>
+          <!-- TABS + CONTROLS -->
+          <div class="detail-tabs-wrapper">
 
-          <!-- BUBBLE INFO collapse -->
-          <div class="bubble-info" id="bubbleInfo">
-            <button class="bubble-info-trigger" onclick="toggleBubbleInfo()">
-              <div class="bubble-info-trigger-icon"><i data-lucide="info"></i></div>
-              <span class="bubble-info-trigger-label">버블 정보</span>
-              <span class="bubble-info-trigger-sub">가입조건 · 규칙</span>
-              <i data-lucide="chevron-down" class="bubble-info-chevron"></i>
-            </button>
-            <div class="bubble-info-body">
-              <div class="bubble-info-section">
-                <div class="bubble-info-section-title"><i data-lucide="shield-check"></i> 가입 조건</div>
-                <div class="bubble-info-chips">
-                  <span class="bubble-info-chip highlight"><i data-lucide="file-check"></i> 승인 필요</span>
-                  <span class="bubble-info-chip"><i data-lucide="pencil-line"></i> 기록 5개 이상</span>
-                  <span class="bubble-info-chip"><i data-lucide="star"></i> Lv.3 이상</span>
-                  <span class="bubble-info-chip"><i data-lucide="users"></i> 최대 20명</span>
-                </div>
+            <!-- Tab row — home.html content-tabs 패턴 -->
+            <div class="detail-tabs">
+              <button class="detail-tab active" id="dtab-feed" onclick="switchDetailTab('feed')">피드</button>
+              <button class="detail-tab" id="dtab-rankings" onclick="switchDetailTab('rankings')">랭킹</button>
+              <button class="detail-tab" id="dtab-members" onclick="switchDetailTab('members')">멤버</button>
+              <div class="detail-tab-spacer"></div>
+              <!-- 피드 탭 아이콘 버튼 -->
+              <div class="tab-btn-group" id="tbg-feed">
+                <button class="view-cycle-btn" id="bd-feed-view-btn" onclick="bdCycleFeedView()" title="보기 전환"><i data-lucide="layout-grid"></i></button>
+                <button class="tab-icon-btn" id="bd-feed-filter-btn" onclick="bdToggleFilter('feed')" title="필터"><i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i></button>
+                <button class="tab-icon-btn" id="bd-feed-sort-btn" onclick="bdToggleSort('feed')" title="정렬"><i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i></button>
               </div>
-              <div class="bubble-info-section">
-                <div class="bubble-info-section-title"><i data-lucide="scroll-text"></i> 버블 규칙</div>
-                <ul class="bubble-info-rules">
-                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>직장 주변(을지로·광화문) 식당 위주로 기록해주세요</span></li>
-                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>점수는 솔직하게 — 광고성 기록은 삭제됩니다</span></li>
-                  <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>월 1회 이상 기록이 없으면 자동 비활성화될 수 있어요</span></li>
-                </ul>
+              <!-- 랭킹 탭 아이콘 버튼 -->
+              <div class="tab-btn-group" id="tbg-rankings" style="display:none">
+                <button class="view-cycle-btn" id="bd-rank-view-btn" onclick="bdCycleRankView()" title="보기 전환"><i data-lucide="layout-grid"></i></button>
+                <button class="tab-icon-btn" id="bd-rank-filter-btn" onclick="bdToggleFilter('rankings')" title="필터"><i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i></button>
+                <button class="tab-icon-btn" id="bd-rank-sort-btn" onclick="bdToggleSort('rankings')" title="정렬"><i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i></button>
+              </div>
+              <!-- 멤버 탭 아이콘 버튼 -->
+              <div class="tab-btn-group" id="tbg-members" style="display:none">
+                <button class="view-cycle-btn" id="bd-member-view-btn" onclick="bdCycleMemberView()" title="보기 전환"><i data-lucide="layout-grid"></i></button>
+                <button class="tab-icon-btn" id="bd-member-filter-btn" onclick="bdToggleFilter('members')" title="필터"><i data-lucide="sliders-horizontal" style="width:18px;height:18px;"></i></button>
+                <button class="tab-icon-btn" id="bd-member-sort-btn" onclick="bdToggleSort('members')" title="정렬"><i data-lucide="arrow-up-down" style="width:18px;height:18px;"></i></button>
               </div>
             </div>
-          </div>
 
-          <!-- TABS -->
-          <div class="detail-tabs">
-            <button class="detail-tab active" id="dtab-feed" onclick="switchDetailTab('feed')">피드</button>
-            <button class="detail-tab" id="dtab-rankings" onclick="switchDetailTab('rankings')">랭킹</button>
-            <button class="detail-tab" id="dtab-members" onclick="switchDetailTab('members')">멤버</button>
-          </div>
+            <!-- 피드: Notion-style filter drawer -->
+            <!-- ── 피드: filter drawer ── -->
+            <div class="filter-drawer" id="bd-filter-feed">
+              <div class="nf-panel">
+                <div class="nf-rules" id="bd-rules-feed">
+                  <div class="nf-rule">
+                    <span class="nf-conj">Where</span>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">유형</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">유형</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">멤버</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">시기</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">점수</button></div></div>
+                    <div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">is</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">is</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">is not</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">contains</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">&ge;</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">&lt;</button></div></div>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">전체</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">전체</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">식당</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">와인</button></div></div>
+                    <button class="nf-remove" onclick="bdRemoveRule(this,'feed')">✕</button>
+                  </div>
+                </div>
+                <div class="nf-add-row">
+                  <button class="nf-add-btn" onclick="bdToggleAddDD(this)">+ 필터 추가 <i data-lucide="chevron-down"></i></button>
+                  <div class="nf-add-dd"><button class="nf-add-dd-item" onclick="bdAddRule('feed')"><i data-lucide="plus"></i> 필터 추가</button></div>
+                </div>
+                <div class="filter-chip-bar" id="bd-chip-bar-feed">
+                  <input class="chip-name-input" id="bd-chip-name-feed" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+                  <button class="chip-cancel-btn" id="bd-chip-cancel-feed" onclick="bdCancelChipEdit('feed')">취소</button>
+                  <button class="chip-save-btn" id="bd-chip-save-feed" onclick="bdSaveChip('feed')">필터칩 추가</button>
+                </div>
+              </div>
+            </div>
+            <!-- 피드: saved chips + pager -->
+            <div class="chips-pager-wrap" id="bd-chips-feed">
+              <div class="saved-chips-row" id="bd-saved-chips-feed"></div>
+              <div class="inline-pager" id="bd-pager-feed"></div>
+            </div>
+            <!-- 피드: sort dropdown -->
+            <div class="sort-dropdown" id="bd-sort-feed">
+              <button class="nyam-dropdown-item active" onclick="bdSelectSort(this,'feed')">최신순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'feed')">반응 많은순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'feed')">점수 높은순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'feed')">멤버별</button>
+            </div>
+
+            <!-- ── 랭킹: filter drawer ── -->
+            <div class="filter-drawer" id="bd-filter-rankings">
+              <div class="nf-panel">
+                <div class="nf-rules" id="bd-rules-rankings">
+                  <div class="nf-rule">
+                    <span class="nf-conj">Where</span>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">기간</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">기간</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">유형</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">멤버</button></div></div>
+                    <div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">is</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">is</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">is not</button></div></div>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">전체 기간</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">전체 기간</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">이번 주</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">이번 달</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">3개월</button></div></div>
+                    <button class="nf-remove" onclick="bdRemoveRule(this,'rankings')">✕</button>
+                  </div>
+                </div>
+                <div class="nf-add-row">
+                  <button class="nf-add-btn" onclick="bdToggleAddDD(this)">+ 필터 추가 <i data-lucide="chevron-down"></i></button>
+                  <div class="nf-add-dd"><button class="nf-add-dd-item" onclick="bdAddRule('rankings')"><i data-lucide="plus"></i> 필터 추가</button></div>
+                </div>
+                <div class="filter-chip-bar" id="bd-chip-bar-rankings">
+                  <input class="chip-name-input" id="bd-chip-name-rankings" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+                  <button class="chip-cancel-btn" id="bd-chip-cancel-rankings" onclick="bdCancelChipEdit('rankings')">취소</button>
+                  <button class="chip-save-btn" id="bd-chip-save-rankings" onclick="bdSaveChip('rankings')">필터칩 추가</button>
+                </div>
+              </div>
+            </div>
+            <!-- 랭킹: saved chips + pager -->
+            <div class="chips-pager-wrap" id="bd-chips-rankings" style="display:none">
+              <div class="saved-chips-row" id="bd-saved-chips-rankings"></div>
+              <div class="inline-pager" id="bd-pager-rankings"></div>
+            </div>
+            <!-- 랭킹: sort dropdown -->
+            <div class="sort-dropdown" id="bd-sort-rankings">
+              <button class="nyam-dropdown-item active" onclick="bdSelectSort(this,'rankings')">점수순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'rankings')">기록 많은순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'rankings')">최근 기록순</button>
+            </div>
+
+            <!-- ── 멤버: filter drawer ── -->
+            <div class="filter-drawer" id="bd-filter-members">
+              <div class="nf-panel">
+                <div class="nf-rules" id="bd-rules-members">
+                  <div class="nf-rule">
+                    <span class="nf-conj">Where</span>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">역할</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">역할</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">일치도</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">레벨</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">팔로우</button></div></div>
+                    <div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">is</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">is</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">is not</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">&ge;</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">&lt;</button></div></div>
+                    <div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">전체</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bdSelectDD(this)">전체</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">관리자</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">멤버</button><button class="nyam-dropdown-item" onclick="bdSelectDD(this)">팔로잉</button></div></div>
+                    <button class="nf-remove" onclick="bdRemoveRule(this,'members')">✕</button>
+                  </div>
+                </div>
+                <div class="nf-add-row">
+                  <button class="nf-add-btn" onclick="bdToggleAddDD(this)">+ 필터 추가 <i data-lucide="chevron-down"></i></button>
+                  <div class="nf-add-dd"><button class="nf-add-dd-item" onclick="bdAddRule('members')"><i data-lucide="plus"></i> 필터 추가</button></div>
+                </div>
+                <div class="filter-chip-bar" id="bd-chip-bar-members">
+                  <input class="chip-name-input" id="bd-chip-name-members" type="text" placeholder="필터칩 이름 입력..." maxlength="20">
+                  <button class="chip-cancel-btn" id="bd-chip-cancel-members" onclick="bdCancelChipEdit('members')">취소</button>
+                  <button class="chip-save-btn" id="bd-chip-save-members" onclick="bdSaveChip('members')">필터칩 추가</button>
+                </div>
+              </div>
+            </div>
+            <!-- 멤버: saved chips + pager -->
+            <div class="chips-pager-wrap" id="bd-chips-members" style="display:none">
+              <div class="saved-chips-row" id="bd-saved-chips-members"></div>
+              <div class="inline-pager" id="bd-pager-members"></div>
+            </div>
+            <!-- 멤버: sort dropdown -->
+            <div class="sort-dropdown" id="bd-sort-members">
+              <button class="nyam-dropdown-item active" onclick="bdSelectSort(this,'members')">일치도순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'members')">기록 많은순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'members')">레벨 높은순</button>
+              <button class="nyam-dropdown-item" onclick="bdSelectSort(this,'members')">최근 활동순</button>
+            </div>
+
+          </div><!-- /detail-tabs-wrapper -->
 
           <!-- ── FEED TAB ── -->
           <div id="dcontent-feed">
 
-            <!-- 우리만의 성지 spotlight -->
-            <div class="feed-spotlight" onclick="location.href='02_detail_restaurant.html?from=bubble'">
-              <div class="feed-spotlight-icon"><i data-lucide="crown"></i></div>
-              <div class="feed-spotlight-text">
-                <div class="feed-spotlight-label">버블 성지</div>
-                <div class="feed-spotlight-title">미진 — 이번 주 3명 방문</div>
-                <div class="feed-spotlight-sub">을지로 한식 · 버블 평균 89점</div>
-              </div>
-              <div class="feed-spotlight-badge">8명 중 6명</div>
-            </div>
-
-            <!-- Group banner -->
-            <div class="feed-group-banner">
-              <i data-lucide="map-pin"></i> 미진 — 이번 주 3명이 방문했어요
-            </div>
-
             <!-- Feed card 1 -->
-            <div class="feed-card">
-              <div class="feed-header">
-                <div class="feed-avatar" style="background:#C17B5E" onclick="location.href='04_bubbler_profile.html'">김</div>
-                <div class="feed-user-info" onclick="location.href='04_bubbler_profile.html'">
-                  <div class="feed-user-name-row">
-                    <div class="feed-user-name">김영수</div>
-                    <span class="feed-user-level">Lv.9</span>
-                  </div>
+            <div class="feed-card" data-type="food" data-member="김영수">
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=600&h=400&fit=crop')"></div>
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop')"></div>
+                <div class="feed-score-overlay">
+                  <div class="feed-score-num">93</div>
+                  <div class="feed-score-type">score</div>
+                </div>
+              </div>
+              <div class="feed-body">
+                <div class="feed-header">
+                  <div class="feed-avatar" style="background:#C17B5E">김</div>
+                  <div class="feed-user-name">김영수</div>
+                  <span class="feed-user-level">Lv.9</span>
                   <div class="feed-time">3시간 전</div>
                 </div>
-              </div>
-              <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
-                <div class="feed-score-badge">
-                  <div class="feed-score-num">93</div>
-                  <div class="feed-score-label">SCORE</div>
-                </div>
-                <div class="feed-place-info">
+                <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
                   <div class="feed-place-name">미진</div>
                   <div class="feed-place-meta">한식 · 을지로 · 혼밥</div>
-                  <div class="feed-place-hot"><i data-lucide="flame"></i> 이번 주 핫</div>
-                </div>
-              </a>
-              <div class="feed-photos">
-                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop')"></div>
-                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=400&fit=crop')"></div>
-              </div>
-              <div class="feed-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
-              <div class="feed-reactions">
-                <button class="react-btn reacted-want" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 3</button>
-                <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 5</button>
-                <button class="react-btn" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 2</button>
-              </div>
-              <div class="feed-footer">
-                <div class="feed-seen-avatars">
-                  <div class="feed-seen-dot" style="background:#8B7396">박</div>
-                  <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
-                  <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
-                </div>
-                <div class="feed-seen-text">외 4명이 봤어요</div>
-                <div class="feed-action-btns">
+                </a>
+                <div class="feed-comment">메밀국수 진짜 맛있다. 면발이 살아있음</div>
+                <div class="feed-actions">
+                  <button class="react-btn reacted-want" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 3</button>
+                  <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 5</button>
+                  <button class="react-btn" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 2</button>
+                  <div class="feed-actions-spacer"></div>
                   <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 4</button>
                   <button class="feed-action-btn"><i data-lucide="message-circle"></i> 2</button>
                 </div>
@@ -1022,43 +1260,31 @@
             </div>
 
             <!-- Feed card 2 -->
-            <div class="feed-card">
-              <div class="feed-header">
-                <div class="feed-avatar" style="background:#8B7396" onclick="location.href='04_bubbler_profile.html'">박</div>
-                <div class="feed-user-info" onclick="location.href='04_bubbler_profile.html'">
-                  <div class="feed-user-name-row">
-                    <div class="feed-user-name">박소연</div>
-                    <span class="feed-user-level">Lv.8</span>
-                  </div>
+            <div class="feed-card" data-type="wine" data-member="박소연">
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=400&fit=crop')"></div>
+                <div class="feed-score-overlay wine">
+                  <div class="feed-score-num">94</div>
+                  <div class="feed-score-type">score</div>
+                </div>
+              </div>
+              <div class="feed-body">
+                <div class="feed-header">
+                  <div class="feed-avatar" style="background:#8B7396">박</div>
+                  <div class="feed-user-name">박소연</div>
+                  <span class="feed-user-level">Lv.8</span>
                   <div class="feed-time">1일 전</div>
                 </div>
-              </div>
-              <a class="feed-place-block" href="02_detail_wine.html?from=bubble">
-                <div class="feed-score-badge wine-badge">
-                  <div class="feed-score-num">94</div>
-                  <div class="feed-score-label">SCORE</div>
-                </div>
-                <div class="feed-place-info">
+                <a class="feed-place-block" href="02_detail_wine.html?from=bubble">
                   <div class="feed-place-name">Ch. Margaux 2018</div>
                   <div class="feed-place-meta">와인 · 카베르네 소비뇽 · 페어링</div>
-                </div>
-              </a>
-              <div class="feed-photos">
-                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop')"></div>
-              </div>
-              <div class="feed-comment">"스테이크 페어링 감동적이었음. 탄닌이 완벽하게 순해진 느낌"</div>
-              <div class="feed-reactions">
-                <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 6</button>
-                <button class="react-btn" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 2</button>
-                <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 7</button>
-              </div>
-              <div class="feed-footer">
-                <div class="feed-seen-avatars">
-                  <div class="feed-seen-dot" style="background:#C17B5E">김</div>
-                  <div class="feed-seen-dot" style="background:#7EAE8B">최</div>
-                </div>
-                <div class="feed-seen-text">외 5명이 봤어요</div>
-                <div class="feed-action-btns">
+                </a>
+                <div class="feed-comment">스테이크 페어링 감동적이었음. 탄닌이 완벽하게 순해진 느낌</div>
+                <div class="feed-actions">
+                  <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 6</button>
+                  <button class="react-btn" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 2</button>
+                  <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 7</button>
+                  <div class="feed-actions-spacer"></div>
                   <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 8</button>
                   <button class="feed-action-btn"><i data-lucide="message-circle"></i> 5</button>
                 </div>
@@ -1066,44 +1292,32 @@
             </div>
 
             <!-- Feed card 3 -->
-            <div class="feed-card">
-              <div class="feed-header">
-                <div class="feed-avatar" style="background:#7EAE8B">최</div>
-                <div class="feed-user-info">
-                  <div class="feed-user-name-row">
-                    <div class="feed-user-name">최유진</div>
-                    <span class="feed-user-level">Lv.7</span>
-                  </div>
+            <div class="feed-card" data-type="food" data-member="최유진">
+              <div class="feed-photos">
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&h=400&fit=crop')"></div>
+                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=600&h=400&fit=crop')"></div>
+                <div class="feed-score-overlay">
+                  <div class="feed-score-num">88</div>
+                  <div class="feed-score-type">score</div>
+                </div>
+              </div>
+              <div class="feed-body">
+                <div class="feed-header">
+                  <div class="feed-avatar" style="background:#7EAE8B">최</div>
+                  <div class="feed-user-name">최유진</div>
+                  <span class="feed-user-level">Lv.7</span>
                   <div class="feed-time">4일 전</div>
                 </div>
-              </div>
-              <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
-                <div class="feed-score-badge">
-                  <div class="feed-score-num">88</div>
-                  <div class="feed-score-label">SCORE</div>
-                </div>
-                <div class="feed-place-info">
+                <a class="feed-place-block" href="02_detail_restaurant.html?from=bubble">
                   <div class="feed-place-name">스시코우지</div>
                   <div class="feed-place-meta">일식 · 을지로 · 점심</div>
-                </div>
-              </a>
-              <div class="feed-photos">
-                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=400&fit=crop')"></div>
-                <div class="feed-photo" style="background-image:url('https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&h=400&fit=crop')"></div>
-              </div>
-              <div class="feed-comment">"오마카세 가성비 甲. 점심 런치 세트 강추"</div>
-              <div class="feed-reactions">
-                <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 가고싶다 8</button>
-                <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 나도가봤어 3</button>
-                <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 맛있어보인다 9</button>
-              </div>
-              <div class="feed-footer">
-                <div class="feed-seen-avatars">
-                  <div class="feed-seen-dot" style="background:#8B7396">박</div>
-                  <div class="feed-seen-dot" style="background:#7A9BAE">이</div>
-                </div>
-                <div class="feed-seen-text">외 6명이 봤어요</div>
-                <div class="feed-action-btns">
+                </a>
+                <div class="feed-comment">오마카세 가성비 甲. 점심 런치 세트 강추</div>
+                <div class="feed-actions">
+                  <button class="react-btn" onclick="toggleReact(this,'want')"><i data-lucide="bookmark-plus"></i> 8</button>
+                  <button class="react-btn reacted-check" onclick="toggleReact(this,'check')"><i data-lucide="check-circle-2"></i> 3</button>
+                  <button class="react-btn reacted-fire" onclick="toggleReact(this,'fire')"><i data-lucide="flame"></i> 9</button>
+                  <div class="feed-actions-spacer"></div>
                   <button class="feed-action-btn liked"><i data-lucide="heart" style="fill:currentColor;"></i> 6</button>
                   <button class="feed-action-btn"><i data-lucide="message-circle"></i> 3</button>
                 </div>
@@ -1116,8 +1330,8 @@
           <!-- ── RANKINGS TAB ── -->
           <div id="dcontent-rankings" style="display:none">
             <div class="ranking-sub-toggle">
-              <button class="ranking-sub-btn active" id="rank-sub-food" onclick="switchRankingSub('food')">🍽 식당</button>
-              <button class="ranking-sub-btn" id="rank-sub-wine" onclick="switchRankingSub('wine')">🍷 와인</button>
+              <button class="ranking-sub-btn active" id="rank-sub-food" onclick="switchRankingSub('food')"><i data-lucide="utensils"></i> 식당</button>
+              <button class="ranking-sub-btn" id="rank-sub-wine" onclick="switchRankingSub('wine')"><i data-lucide="wine"></i> 와인</button>
             </div>
 
             <!-- FOOD -->
@@ -1136,7 +1350,7 @@
                 <!-- 1위 -->
                 <a class="rank-podium-item rank-1" href="02_detail_restaurant.html?from=bubble">
                   <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&h=300&fit=crop')">
-                    <div class="rank-podium-badge badge-gold">👑</div>
+                    <div class="rank-podium-badge badge-gold"><i data-lucide="crown" style="width:11px;height:11px;color:#fff;"></i></div>
                     <div class="rank-podium-score">89</div>
                   </div>
                   <div class="rank-podium-name">미진</div>
@@ -1150,6 +1364,28 @@
                   </div>
                   <div class="rank-podium-name">도쿄등심</div>
                   <div class="rank-podium-meta">기록 3개</div>
+                </a>
+              </div>
+
+              <!-- Top 3 as list (compact view) -->
+              <div class="rank-compact-top">
+                <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-num" style="color:var(--caution);font-weight:900;">1</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">미진</div><div class="rank-meta">한식 · 을지로 · 기록 5개</div></div>
+                  <div class="rank-score-col"><div class="rank-score">89</div></div>
+                </a>
+                <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-num">2</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">스시코우지</div><div class="rank-meta">일식 · 을지로 · 기록 4개</div></div>
+                  <div class="rank-score-col"><div class="rank-score">85</div></div>
+                </a>
+                <a class="rank-item" href="02_detail_restaurant.html?from=bubble">
+                  <div class="rank-num">3</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">도쿄등심</div><div class="rank-meta">양식 · 을지로 · 기록 3개</div></div>
+                  <div class="rank-score-col"><div class="rank-score">82</div></div>
                 </a>
               </div>
 
@@ -1223,7 +1459,7 @@
                 </a>
                 <a class="rank-podium-item rank-1" href="02_detail_wine.html?from=bubble">
                   <div class="rank-podium-photo" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=300&h=300&fit=crop')">
-                    <div class="rank-podium-badge badge-gold">👑</div>
+                    <div class="rank-podium-badge badge-gold"><i data-lucide="crown" style="width:11px;height:11px;color:#fff;"></i></div>
                     <div class="rank-podium-score">94</div>
                   </div>
                   <div class="rank-podium-name">Ch. Margaux 2018</div>
@@ -1238,6 +1474,29 @@
                   <div class="rank-podium-meta">기록 2개</div>
                 </a>
               </div>
+
+              <!-- Top 3 as list (compact view) -->
+              <div class="rank-compact-top">
+                <a class="rank-item" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-num" style="color:var(--caution);font-weight:900;">1</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">Ch. Margaux 2018</div><div class="rank-meta">레드 · 카베르네 소비뇽 · 기록 4개</div></div>
+                  <div class="rank-score-col"><div class="rank-score wine">94</div></div>
+                </a>
+                <a class="rank-item" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-num">2</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">Barolo Brunate 2017</div><div class="rank-meta">레드 · 네비올로 · 기록 3개</div></div>
+                  <div class="rank-score-col"><div class="rank-score wine">91</div></div>
+                </a>
+                <a class="rank-item" href="02_detail_wine.html?from=bubble">
+                  <div class="rank-num">3</div>
+                  <div class="rank-thumb" style="background-image:url('https://images.unsplash.com/photo-1574870111867-089730e5a72b?w=200&h=200&fit=crop')"></div>
+                  <div class="rank-info"><div class="rank-name">Opus One 2019</div><div class="rank-meta">레드 · 블렌드 · 기록 2개</div></div>
+                  <div class="rank-score-col"><div class="rank-score wine">90</div></div>
+                </a>
+              </div>
+
               <div class="rank-list-header">
                 <div class="rank-list-header-label">4위 이하</div>
                 <div class="sort-btns">
@@ -1285,7 +1544,7 @@
             <div class="members-grid">
 
               <!-- 나 -->
-              <div class="member-card is-me" onclick="location.href='03_profile.html'">
+              <div class="member-card is-me" data-level="6" data-follow="me" data-role="member" onclick="location.href='03_profile.html'">
                 <div class="member-card-avatar" style="background:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,0.3)">나</div>
                 <div class="member-card-name">나 (정지훈)</div>
                 <div class="member-card-level">Lv.6 탐식가</div>
@@ -1300,7 +1559,7 @@
               </div>
 
               <!-- 김영수 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="9" data-follow="following" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-badge"><i data-lucide="compass"></i> 탐험왕</div>
                 <div class="member-card-avatar" style="background:#C17B5E">김</div>
                 <div class="member-card-name">김영수</div>
@@ -1320,7 +1579,7 @@
               </div>
 
               <!-- 박소연 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="8" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#8B7396">박</div>
                 <div class="member-card-name">박소연</div>
                 <div class="member-card-level lv-high">Lv.8 소믈리에</div>
@@ -1339,7 +1598,7 @@
               </div>
 
               <!-- 최유진 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="7" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#7EAE8B">최</div>
                 <div class="member-card-name">최유진</div>
                 <div class="member-card-level lv-mid">Lv.7 미식가</div>
@@ -1358,7 +1617,7 @@
               </div>
 
               <!-- 강하늘 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="6" data-follow="following" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#ec4899">강</div>
                 <div class="member-card-name">강하늘</div>
                 <div class="member-card-level lv-mid">Lv.6 탐식가</div>
@@ -1377,7 +1636,7 @@
               </div>
 
               <!-- 이준호 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="5" data-follow="following" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#7A9BAE">이</div>
                 <div class="member-card-name">이준호</div>
                 <div class="member-card-level">Lv.5 식도락가</div>
@@ -1396,7 +1655,7 @@
               </div>
 
               <!-- 윤서희 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="5" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#C9A96E">윤</div>
                 <div class="member-card-name">윤서희</div>
                 <div class="member-card-level">Lv.5 식도락가</div>
@@ -1415,7 +1674,7 @@
               </div>
 
               <!-- 한승민 -->
-              <div class="member-card" onclick="location.href='04_bubbler_profile.html'">
+              <div class="member-card" data-level="4" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#C9A96E">한</div>
                 <div class="member-card-name">한승민</div>
                 <div class="member-card-level">Lv.4 초보</div>
@@ -1542,6 +1801,34 @@
       </div>
 
     </div><!-- /screens-wrapper -->
+
+    <!-- BUBBLE INFO BOTTOM SHEET -->
+    <div class="info-sheet-overlay" id="infoSheetOverlay" onclick="toggleBubbleInfo()"></div>
+    <div class="info-sheet" id="infoSheet">
+      <div class="info-sheet-handle"></div>
+      <div class="info-sheet-header">
+        <span class="info-sheet-title">버블 정보</span>
+        <button class="icon-btn" onclick="toggleBubbleInfo()" style="color:var(--text-hint)"><i data-lucide="x"></i></button>
+      </div>
+      <div class="bubble-info-section">
+        <div class="bubble-info-section-title"><i data-lucide="shield-check"></i> 가입 조건</div>
+        <div class="bubble-info-chips">
+          <span class="bubble-info-chip highlight"><i data-lucide="file-check"></i> 승인 필요</span>
+          <span class="bubble-info-chip"><i data-lucide="pencil-line"></i> 기록 5개 이상</span>
+          <span class="bubble-info-chip"><i data-lucide="star"></i> Lv.3 이상</span>
+          <span class="bubble-info-chip"><i data-lucide="users"></i> 최대 20명</span>
+        </div>
+      </div>
+      <div class="bubble-info-section" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div class="bubble-info-section-title"><i data-lucide="scroll-text"></i> 버블 규칙</div>
+        <ul class="bubble-info-rules">
+          <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>직장 주변(을지로·광화문) 식당 위주로 기록해주세요</span></li>
+          <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>점수는 솔직하게 — 광고성 기록은 삭제됩니다</span></li>
+          <li class="bubble-info-rule"><div class="bubble-info-rule-dot"></div><span>월 1회 이상 기록이 없으면 자동 비활성화될 수 있어요</span></li>
+        </ul>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1559,18 +1846,18 @@
       screenStack.push(id);
       next.classList.remove('hidden', 'slide-out');
       next.style.transform = 'translateX(100%)';
-      requestAnimationFrame(() => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
         next.style.transform = ''; next.classList.add('active');
         prev.classList.add('slide-out'); prev.classList.remove('active');
-      });
+      }));
     } else {
       screenStack.pop();
       next.classList.remove('slide-out', 'hidden');
       next.style.transform = 'translateX(-100%)';
-      requestAnimationFrame(() => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
         next.style.transform = ''; next.classList.add('active');
         prev.classList.remove('active'); prev.style.transform = 'translateX(100%)';
-      });
+      }));
     }
     setTimeout(() => {
       prev.classList.remove('slide-out');
@@ -1580,14 +1867,405 @@
     currentScreen = id;
   }
 
-  // ── Tabs (3) ──
+  // ── Tabs ──
   function switchDetailTab(tab) {
     ['feed','rankings','members'].forEach(t => {
-      const btn = document.getElementById('dtab-' + t);
-      if (btn) btn.classList.toggle('active', t === tab);
-      const content = document.getElementById('dcontent-' + t);
-      if (content) content.style.display = t === tab ? '' : 'none';
+      const isActive = t === tab;
+      document.getElementById('dtab-' + t)?.classList.toggle('active', isActive);
+      const c = document.getElementById('dcontent-' + t);
+      if (c) c.style.display = isActive ? '' : 'none';
+      const tbg = document.getElementById('tbg-' + t);
+      if (tbg) tbg.style.display = isActive ? '' : 'none';
+      // Hide chips/filter/sort for inactive tabs
+      const chips = document.getElementById('bd-chips-' + t);
+      if (chips) chips.style.display = isActive ? '' : 'none';
+      const filter = document.getElementById('bd-filter-' + t);
+      if (filter && !isActive) filter.classList.remove('open');
+      const sort = document.getElementById('bd-sort-' + t);
+      if (sort && !isActive) sort.classList.remove('open');
     });
+    bdCloseAll();
+    ['feed','rankings','members'].forEach(t => bdRenderPager(t));
+  }
+
+  // ── Close all tab controls ──
+  function bdCloseAll() {
+    document.querySelectorAll('.sort-dropdown.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.filter-drawer.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.tab-icon-btn.has-filter').forEach(el => el.classList.remove('has-filter'));
+    document.querySelectorAll('.nf-add-dd.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.filter-chip-bar.show').forEach(el => el.classList.remove('show'));
+  }
+
+  // ══════════════════════════════════════
+  // FILTER ENGINE — 04_bubbles.html 동일 패턴
+  // ══════════════════════════════════════
+
+  // Button ID helper
+  function bdBtnPrefix(tab) { return tab === 'rankings' ? 'rank' : tab === 'members' ? 'member' : 'feed'; }
+
+  // ── Filter toggle (per tab) ──
+  function bdToggleFilter(tab) {
+    const drawer = document.getElementById('bd-filter-' + tab);
+    if (!drawer) return;
+    // Close sort
+    document.getElementById('bd-sort-' + tab)?.classList.remove('open');
+    document.getElementById('bd-' + bdBtnPrefix(tab) + '-sort-btn')?.classList.remove('has-filter');
+    // Toggle drawer
+    drawer.classList.toggle('open');
+    const isOpen = drawer.classList.contains('open');
+    document.getElementById('bd-' + bdBtnPrefix(tab) + '-filter-btn')?.classList.toggle('has-filter', isOpen);
+    // Load active chip rules into drawer on open
+    if (isOpen) {
+      const activeChip = bdChipStore.find(c => c.id === bdActiveChips[tab]);
+      if (activeChip && activeChip.rules.length > 0) {
+        bdLoadRulesToDrawer(tab, activeChip.rules);
+      } else {
+        const rules = document.getElementById('bd-rules-' + tab);
+        if (rules && rules.querySelectorAll(':scope > .nf-rule').length === 0) bdAddRule(tab);
+      }
+      lucide.createIcons({ nodes: [drawer] });
+    }
+    // Chip bar follows drawer
+    const bar = document.getElementById('bd-chip-bar-' + tab);
+    if (bar) bar.classList.toggle('show', isOpen);
+    if (!isOpen) bdCancelChipEdit(tab);
+    bdRenderChips(tab);
+  }
+
+  // ── Sort toggle (per tab) ──
+  function bdToggleSort(tab) {
+    const dd = document.getElementById('bd-sort-' + tab);
+    if (!dd) return;
+    // Close filter
+    document.getElementById('bd-filter-' + tab)?.classList.remove('open');
+    document.getElementById('bd-' + bdBtnPrefix(tab) + '-filter-btn')?.classList.remove('has-filter');
+    dd.classList.toggle('open');
+    document.getElementById('bd-' + bdBtnPrefix(tab) + '-sort-btn')?.classList.toggle('has-filter', dd.classList.contains('open'));
+  }
+
+  // ── Sort select ──
+  function bdSelectSort(el, tab) {
+    el.closest('.sort-dropdown').querySelectorAll('.nyam-dropdown-item').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('bd-sort-' + tab)?.classList.remove('open');
+    document.getElementById('bd-' + bdBtnPrefix(tab) + '-sort-btn')?.classList.remove('has-filter');
+  }
+
+  // ── Unified dropdown select ──
+  function bdSelectDD(item) {
+    const wrap = item.closest('.nyam-select-wrap');
+    const select = wrap.querySelector('.nyam-select');
+    wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    select.querySelector('.nyam-select-value').textContent = item.textContent;
+    select.classList.remove('open');
+  }
+
+  // ── Remove filter rule (collapse drawer on last) ──
+  function bdRemoveRule(el, tab) {
+    const rule = el.closest('.nf-rule');
+    const rules = document.getElementById('bd-rules-' + tab);
+    if (rules && rules.querySelectorAll(':scope > .nf-rule').length > 1) {
+      rule.remove();
+    } else {
+      rule.remove();
+      document.getElementById('bd-filter-' + tab)?.classList.remove('open');
+      document.getElementById('bd-' + bdBtnPrefix(tab) + '-filter-btn')?.classList.remove('has-filter');
+      const bar = document.getElementById('bd-chip-bar-' + tab);
+      if (bar) bar.classList.remove('show');
+    }
+  }
+
+  // ── Add filter rule ──
+  function bdAddRule(tab) {
+    const rules = document.getElementById('bd-rules-' + tab);
+    if (!rules) return;
+    const rule = document.createElement('div');
+    rule.className = 'nf-rule';
+    // Clone attr/op/val options from first existing rule, or use generic defaults
+    const existing = rules.querySelector('.nf-rule');
+    const attrOpts = existing ? Array.from(existing.querySelectorAll('.nyam-select-wrap:first-of-type .nyam-dropdown-item')).map(i => i.textContent) : ['유형'];
+    const opOpts = existing ? Array.from(existing.querySelectorAll('[data-role="op"] .nyam-dropdown-item')).map(i => i.textContent) : ['is','is not'];
+    const valOpts = existing ? Array.from(existing.querySelectorAll('.nyam-select-wrap:last-of-type .nyam-dropdown-item')).map(i => i.textContent) : ['전체'];
+    const mkOpts = (arr) => arr.map((v,i) => '<button class="nyam-dropdown-item' + (i===0?' selected':'') + '" onclick="bdSelectDD(this)">' + v + '</button>').join('');
+    rule.innerHTML =
+      '<span class="nf-conj clickable" onclick="this.textContent=this.textContent===\'And\'?\'Or\':\'And\'">And</span>' +
+      '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + attrOpts[0] + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(attrOpts) + '</div></div>' +
+      '<div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + opOpts[0] + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(opOpts) + '</div></div>' +
+      '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + valOpts[0] + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(valOpts) + '</div></div>' +
+      '<button class="nf-remove" onclick="bdRemoveRule(this,\'' + tab + '\')">✕</button>';
+    rules.appendChild(rule);
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
+    lucide.createIcons({ nodes: [rule] });
+  }
+
+  // ── Add-rule dropdown toggle ──
+  function bdToggleAddDD(btn) {
+    const dd = btn.parentElement.querySelector('.nf-add-dd');
+    document.querySelectorAll('.nf-add-dd.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+    dd.classList.toggle('open');
+  }
+
+  // ══════════════════════════════════════
+  // CHIP MANAGEMENT — 04_bubbles.html 동일 패턴
+  // ══════════════════════════════════════
+  let bdChipStore = [];
+  let bdEditingChipId = null;
+  let bdChipIdCounter = 0;
+  const bdActiveChips = { feed: null, rankings: null, members: null };
+
+  const BD_DEFAULT_CHIPS = {
+    feed: [
+      { name: '전체', rules: [
+        {attr:'유형',op:'is',val:'전체'},{attr:'시기',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+      { name: '식당만', rules: [
+        {attr:'유형',op:'is',val:'식당'},{attr:'시기',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+      { name: '와인만', rules: [
+        {attr:'유형',op:'is',val:'와인'},{attr:'시기',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+    ],
+    rankings: [
+      { name: '전체', rules: [
+        {attr:'기간',op:'is',val:'전체 기간'},{attr:'유형',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+      { name: '이번 주', rules: [
+        {attr:'기간',op:'is',val:'이번 주'},{attr:'유형',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+      { name: '이번 달', rules: [
+        {attr:'기간',op:'is',val:'이번 달'},{attr:'유형',op:'is',val:'전체'},{attr:'멤버',op:'is',val:'전체'}
+      ]},
+    ],
+    members: [
+      { name: '전체', rules: [
+        {attr:'역할',op:'is',val:'전체'},{attr:'일치도',op:'is',val:'전체'},{attr:'레벨',op:'is',val:'전체'}
+      ]},
+      { name: '팔로잉만', rules: [
+        {attr:'팔로우',op:'is',val:'팔로잉'},{attr:'일치도',op:'is',val:'전체'},{attr:'레벨',op:'is',val:'전체'}
+      ]},
+      { name: '고레벨', rules: [
+        {attr:'레벨',op:'≥',val:'Lv.7'},{attr:'역할',op:'is',val:'전체'},{attr:'일치도',op:'is',val:'전체'}
+      ]},
+    ]
+  };
+
+  function bdInitDefaultChips() {
+    ['feed','rankings','members'].forEach(tab => {
+      (BD_DEFAULT_CHIPS[tab] || []).forEach(c => {
+        bdChipStore.push({ id: ++bdChipIdCounter, name: c.name, rules: c.rules, tab });
+      });
+      bdActiveChips[tab] = bdChipStore.find(c => c.tab === tab)?.id || null;
+    });
+    ['feed','rankings','members'].forEach(tab => bdRenderChips(tab));
+  }
+
+  function bdRenderChips(tab) {
+    const row = document.getElementById('bd-saved-chips-' + tab);
+    if (!row) return;
+    const isManaging = document.getElementById('bd-filter-' + tab)?.classList.contains('open');
+    const chips = bdChipStore.filter(c => c.tab === tab);
+    row.innerHTML = chips.map(c => {
+      const isActive = isManaging ? (c.id === bdEditingChipId) : (c.id === bdActiveChips[tab]);
+      return '<button class="saved-chip' + (isManaging ? ' manage-mode' : '') + (isActive ? ' active' : '') + '" data-chip-id="' + c.id + '" onclick="bdClickChip(' + c.id + ')">' +
+        c.name +
+        '<span class="chip-delete" onclick="event.stopPropagation();bdDeleteChip(' + c.id + ')">✕</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  // Load chip rules into the filter drawer
+  function bdLoadRulesToDrawer(tab, rules) {
+    const container = document.getElementById('bd-rules-' + tab);
+    if (!container) return;
+    container.innerHTML = '';
+    if (!rules || rules.length === 0) { bdAddRule(tab); return; }
+    // Get attr/op/val option lists from the HTML template (first rule of the tab's drawer)
+    const tabAttrOpts = { feed: ['유형','멤버','시기','점수'], rankings: ['기간','유형','멤버'], members: ['역할','일치도','레벨','팔로우'] };
+    const tabOpOpts = { feed: ['is','is not','contains','≥','<'], rankings: ['is','is not'], members: ['is','is not','≥','<'] };
+    const tabValOpts = {
+      feed: { '유형':['전체','식당','와인'], '멤버':['전체','김영수','박소연','최유진'], '시기':['전체','이번 주','이번 달','3개월'], '점수':['전체','90+','80+','70+'] },
+      rankings: { '기간':['전체 기간','이번 주','이번 달','3개월'], '유형':['전체','식당','와인'], '멤버':['전체','김영수','박소연','최유진'] },
+      members: { '역할':['전체','관리자','멤버'], '일치도':['전체','80%+','60%+'], '레벨':['전체','Lv.7','Lv.5','Lv.3'], '팔로우':['전체','팔로잉','팔로워'] }
+    };
+    const mkOpts = (arr, selected) => arr.map(v => '<button class="nyam-dropdown-item' + (v===selected?' selected':'') + '" onclick="bdSelectDD(this)">' + v + '</button>').join('');
+    rules.forEach((r, i) => {
+      const rule = document.createElement('div');
+      rule.className = 'nf-rule';
+      const conj = i === 0
+        ? '<span class="nf-conj">Where</span>'
+        : '<span class="nf-conj clickable" onclick="this.textContent=this.textContent===\'And\'?\'Or\':\'And\'">And</span>';
+      const attrs = tabAttrOpts[tab] || ['전체'];
+      const ops = tabOpOpts[tab] || ['is'];
+      const vals = (tabValOpts[tab] || {})[r.attr] || ['전체'];
+      rule.innerHTML = conj +
+        '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + r.attr + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(attrs, r.attr) + '</div></div>' +
+        '<div class="nyam-select-wrap" data-role="op"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + r.op + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(ops, r.op) + '</div></div>' +
+        '<div class="nyam-select-wrap"><div class="nyam-select" onclick="this.classList.toggle(\'open\')"><span class="nyam-select-value">' + r.val + '</span><i data-lucide="chevron-down" class="nyam-select-arrow"></i></div><div class="nyam-dropdown">' + mkOpts(vals, r.val) + '</div></div>' +
+        '<button class="nf-remove" onclick="bdRemoveRule(this,\'' + tab + '\')">✕</button>';
+      container.appendChild(rule);
+    });
+    lucide.createIcons({ nodes: [container] });
+  }
+
+  // Serialize current drawer rules
+  function bdSerializeRules(tab) {
+    const container = document.getElementById('bd-rules-' + tab);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('.nf-rule')).map(rule => {
+      const wraps = rule.querySelectorAll('.nyam-select-wrap');
+      return {
+        attr: wraps[0]?.querySelector('.nyam-select-value')?.textContent || '',
+        op: rule.querySelector('[data-role="op"] .nyam-select-value')?.textContent || 'is',
+        val: wraps[wraps.length - 1]?.querySelector('.nyam-select-value')?.textContent || '전체',
+      };
+    });
+  }
+
+  function bdClickChip(id) {
+    const chip = bdChipStore.find(c => c.id === id);
+    if (!chip) return;
+    const tab = chip.tab;
+    const drawer = document.getElementById('bd-filter-' + tab);
+    if (drawer?.classList.contains('open')) {
+      // Edit mode — load rules into drawer
+      bdEditingChipId = id;
+      bdLoadRulesToDrawer(tab, chip.rules);
+      document.getElementById('bd-chip-name-' + tab).value = chip.name;
+      const saveBtn = document.getElementById('bd-chip-save-' + tab);
+      saveBtn.textContent = '수정 저장';
+      saveBtn.classList.add('edit-mode');
+      document.getElementById('bd-chip-cancel-' + tab).classList.add('show');
+      bdRenderChips(tab);
+    } else {
+      bdActiveChips[tab] = id;
+      bdRenderChips(tab);
+      bdApplyFilter(tab, chip.rules);
+    }
+  }
+
+  // ── Apply filter rules to tab content ──
+  function bdApplyFilter(tab, rules) {
+    if (tab === 'feed') {
+      const typeRule = rules.find(r => r.attr === '유형');
+      const typeVal = typeRule ? typeRule.val : '전체';
+      const cards = document.querySelectorAll('#dcontent-feed .feed-card');
+      cards.forEach(card => {
+        const dt = card.getAttribute('data-type');
+        let show = true;
+        if (typeVal === '식당') show = dt === 'food';
+        else if (typeVal === '와인') show = dt === 'wine';
+        card.setAttribute('data-filtered', show ? '' : 'hidden');
+        card.style.display = '';  // Reset; pager will handle pagination display
+      });
+      bdInitPager('feed');
+    }
+
+    if (tab === 'members') {
+      const followRule = rules.find(r => r.attr === '팔로우');
+      const levelRule = rules.find(r => r.attr === '레벨');
+      const followVal = followRule ? followRule.val : '전체';
+      const levelOp = levelRule ? levelRule.op : 'is';
+      const levelVal = levelRule ? levelRule.val : '전체';
+      const minLevel = levelVal !== '전체' ? parseInt(levelVal.replace(/[^0-9]/g,'')) || 0 : 0;
+      const cards = document.querySelectorAll('#dcontent-members .member-card');
+      cards.forEach(card => {
+        const dl = parseInt(card.getAttribute('data-level')) || 0;
+        const df = card.getAttribute('data-follow');
+        let show = true;
+        if (followVal === '팔로잉') show = (df === 'following' || df === 'me');
+        if (show && minLevel > 0) show = dl >= minLevel;
+        card.setAttribute('data-filtered', show ? '' : 'hidden');
+        card.style.display = '';
+      });
+      bdInitPager('members');
+    }
+
+    if (tab === 'rankings') {
+      bdInitPager('rankings');
+    }
+  }
+
+  function bdSaveChip(tab) {
+    const nameInput = document.getElementById('bd-chip-name-' + tab);
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--negative)'; setTimeout(() => nameInput.style.borderColor = '', 1000); return; }
+    const rules = bdSerializeRules(tab);
+    if (bdEditingChipId) {
+      const chip = bdChipStore.find(c => c.id === bdEditingChipId);
+      if (chip) { chip.name = name; chip.rules = rules; }
+      bdCancelChipEdit(tab);
+    } else {
+      bdChipStore.push({ id: ++bdChipIdCounter, name, rules, tab });
+      nameInput.value = '';
+    }
+    bdRenderChips(tab);
+  }
+
+  function bdCancelChipEdit(tab) {
+    bdEditingChipId = null;
+    const nameInput = document.getElementById('bd-chip-name-' + tab);
+    if (nameInput) nameInput.value = '';
+    const saveBtn = document.getElementById('bd-chip-save-' + tab);
+    if (saveBtn) { saveBtn.textContent = '필터칩 추가'; saveBtn.classList.remove('edit-mode'); }
+    document.getElementById('bd-chip-cancel-' + tab)?.classList.remove('show');
+    bdRenderChips(tab);
+  }
+
+  function bdDeleteChip(id) {
+    const chip = bdChipStore.find(c => c.id === id);
+    bdChipStore = bdChipStore.filter(c => c.id !== id);
+    if (bdEditingChipId === id && chip) bdCancelChipEdit(chip.tab);
+    if (chip) bdRenderChips(chip.tab);
+  }
+
+  // ── Feed view cycle — home.html cycleViewMode 패턴 ──
+  const BD_FEED_VIEWS = ['detail', 'compact'];
+  const BD_FEED_ICONS = { detail: 'layout-grid', compact: 'layout-list' };
+  let bdFeedViewIdx = 0;
+  function bdCycleFeedView() {
+    bdFeedViewIdx = (bdFeedViewIdx + 1) % BD_FEED_VIEWS.length;
+    const btn = document.getElementById('bd-feed-view-btn');
+    if (btn) { btn.innerHTML = '<i data-lucide="' + BD_FEED_ICONS[BD_FEED_VIEWS[bdFeedViewIdx]] + '"></i>'; lucide.createIcons({ nodes: [btn] }); }
+    bdApplyFeedView();
+  }
+  function bdApplyFeedView() {
+    const el = document.getElementById('dcontent-feed');
+    if (!el) return;
+    el.classList.toggle('view-compact', BD_FEED_VIEWS[bdFeedViewIdx] === 'compact');
+  }
+
+  // ── Rankings view cycle ──
+  const BD_RANK_VIEWS = ['podium', 'compact'];
+  const BD_RANK_ICONS = { podium: 'layout-grid', compact: 'layout-list' };
+  let bdRankViewIdx = 0;
+  function bdCycleRankView() {
+    bdRankViewIdx = (bdRankViewIdx + 1) % BD_RANK_VIEWS.length;
+    const btn = document.getElementById('bd-rank-view-btn');
+    if (btn) { btn.innerHTML = '<i data-lucide="' + BD_RANK_ICONS[BD_RANK_VIEWS[bdRankViewIdx]] + '"></i>'; lucide.createIcons({ nodes: [btn] }); }
+    bdApplyRankView();
+  }
+  function bdApplyRankView() {
+    const el = document.getElementById('dcontent-rankings');
+    if (!el) return;
+    el.classList.toggle('view-compact', BD_RANK_VIEWS[bdRankViewIdx] === 'compact');
+  }
+
+  // ── Member view cycle ──
+  const BD_MEMBER_VIEWS = ['grid', 'list'];
+  const BD_MEMBER_ICONS = { grid: 'layout-grid', list: 'layout-list' };
+  let bdMemberViewIdx = 0;
+  function bdCycleMemberView() {
+    bdMemberViewIdx = (bdMemberViewIdx + 1) % BD_MEMBER_VIEWS.length;
+    const btn = document.getElementById('bd-member-view-btn');
+    if (btn) { btn.innerHTML = '<i data-lucide="' + BD_MEMBER_ICONS[BD_MEMBER_VIEWS[bdMemberViewIdx]] + '"></i>'; lucide.createIcons({ nodes: [btn] }); }
+    bdApplyMemberView();
+  }
+  function bdApplyMemberView() {
+    const el = document.getElementById('dcontent-members');
+    if (!el) return;
+    el.classList.toggle('view-list', BD_MEMBER_VIEWS[bdMemberViewIdx] === 'list');
   }
 
   // ── Rankings sub-toggle ──
@@ -1610,10 +2288,10 @@
     btn.textContent = btn.classList.contains('following') ? '팔로잉' : '팔로우';
   }
 
-  // ── Bubble info collapse ──
+  // ── Bubble info sheet ──
   function toggleBubbleInfo() {
-    document.getElementById('bubbleInfo').classList.toggle('open');
-    lucide.createIcons();
+    document.getElementById('infoSheet').classList.toggle('open');
+    document.getElementById('infoSheetOverlay').classList.toggle('open');
   }
 
   // ── Feed reactions ──
@@ -1623,12 +2301,7 @@
     const num = parseInt(btn.textContent.trim().match(/\d+/) || [0]) || 0;
     btn.classList.toggle(cls, !active);
     const icon = { want:'bookmark-plus', check:'check-circle-2', fire:'flame' }[type];
-    const label = { want:'가고싶다', check:'나도가봤어', fire:'맛있어보인다' }[type];
-    btn.innerHTML = '';
-    const i = document.createElement('i');
-    i.setAttribute('data-lucide', icon);
-    btn.appendChild(i);
-    btn.appendChild(document.createTextNode(' ' + label + ' ' + (active ? num - 1 : num + 1)));
+    btn.innerHTML = '<i data-lucide="' + icon + '"></i> ' + (active ? num - 1 : num + 1);
     lucide.createIcons();
   }
 
@@ -1652,12 +2325,199 @@
     btn.closest('.notif-item-actions').innerHTML = action === 'accept' ? '<span style="color:var(--positive);font-size:11px;font-weight:600;">✓ 수락됨</span>' : '<span style="color:var(--text-hint);font-size:11px;">거절됨</span>';
   }
 
-  // ── Avatar menu close ──
+  // ── Close dropdowns on outside click ──
   document.addEventListener('click', function(e) {
+    // avatar menu
     document.querySelectorAll('.avatar-menu.open').forEach(m => {
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
+    // sort dropdowns
+    if (!e.target.closest('.tab-icon-btn') && !e.target.closest('.sort-dropdown')) {
+      document.querySelectorAll('.sort-dropdown.open').forEach(dd => {
+        dd.classList.remove('open');
+      });
+      document.querySelectorAll('.tab-icon-btn.has-filter').forEach(btn => {
+        if (!btn.id.includes('filter')) btn.classList.remove('has-filter');
+      });
+    }
+    // nyam-select dropdowns (close when clicking outside)
+    if (!e.target.closest('.nyam-select-wrap')) {
+      document.querySelectorAll('.nyam-select.open').forEach(s => s.classList.remove('open'));
+    }
+    // nf-add-dd
+    if (!e.target.closest('.nf-add-row')) {
+      document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
+    }
   });
+
+  // ══════════════════════════════════════
+  // PAGINATION SYSTEM — 04_bubbles.html 패턴
+  // ══════════════════════════════════════
+  const bdPagerState = {};
+
+  // Per-page limits by tab + view
+  const BD_PER_PAGE = {
+    'feed-detail': 2,             // 3 cards → 2 pages
+    'feed-compact': 2,            // 3 cards → 2 pages
+    'rankings-podium-food': 2,    // 4 list items → 2 pages
+    'rankings-podium-wine': 2,    // 2 list items → 1 page
+    'rankings-compact-food': 4,   // 7 all items → 2 pages
+    'rankings-compact-wine': 4,   // 5 all items → 2 pages
+    'members-grid': 4,            // 8 cards → 2 pages
+    'members-list': 4             // 8 rows → 2 pages
+  };
+
+  function bdGetPagerKey(tab) {
+    if (tab === 'feed') return 'feed-' + BD_FEED_VIEWS[bdFeedViewIdx];
+    if (tab === 'rankings') {
+      const view = BD_RANK_VIEWS[bdRankViewIdx];
+      const sub = document.getElementById('rank-sub-food').classList.contains('active') ? 'food' : 'wine';
+      return 'rankings-' + view + '-' + sub;
+    }
+    if (tab === 'members') return 'members-' + BD_MEMBER_VIEWS[bdMemberViewIdx];
+    return tab;
+  }
+
+  function bdGetPagerItems(tab) {
+    let items = [];
+    if (tab === 'feed') {
+      items = Array.from(document.querySelectorAll('#dcontent-feed .feed-card'));
+    } else if (tab === 'rankings') {
+      const view = BD_RANK_VIEWS[bdRankViewIdx];
+      const sub = document.getElementById('rank-sub-food').classList.contains('active') ? 'food' : 'wine';
+      const container = document.getElementById('ranking-' + sub);
+      if (!container) return [];
+      if (view === 'podium') {
+        items = Array.from(container.querySelectorAll(':scope > .rank-item'));
+      } else {
+        items = Array.from(container.querySelectorAll('.rank-compact-top .rank-item, :scope > .rank-item'));
+      }
+    } else if (tab === 'members') {
+      items = Array.from(document.querySelectorAll('#dcontent-members .members-grid .member-card'));
+    }
+    // Only include items not hidden by chip filter
+    return items.filter(el => el.getAttribute('data-filtered') !== 'hidden');
+  }
+
+  function bdInitPager(tab) {
+    const key = bdGetPagerKey(tab);
+    const perPage = BD_PER_PAGE[key] || 10;
+    const items = bdGetPagerItems(tab); // only filter-passing items
+    const total = items.length;
+    const totalPages = Math.ceil(total / perPage);
+
+    // Hide all filtered-out items
+    bdHideFilteredItems(tab);
+
+    if (totalPages <= 1) {
+      items.forEach(item => { item.style.display = ''; });
+      delete bdPagerState[tab];
+      bdRenderPager(tab);
+      return;
+    }
+
+    bdPagerState[tab] = { page: 0, totalPages, perPage, items };
+    items.forEach((item, i) => { item.style.display = i < perPage ? '' : 'none'; });
+    bdRenderPager(tab);
+  }
+
+  function bdHideFilteredItems(tab) {
+    let selector = '';
+    if (tab === 'feed') selector = '#dcontent-feed .feed-card';
+    else if (tab === 'members') selector = '#dcontent-members .member-card';
+    else return;
+    document.querySelectorAll(selector).forEach(el => {
+      if (el.getAttribute('data-filtered') === 'hidden') el.style.display = 'none';
+    });
+  }
+
+  function bdApplyPage(tab) {
+    const s = bdPagerState[tab];
+    if (!s) return;
+    const { page, perPage, items } = s;
+    items.forEach((item, i) => {
+      item.style.display = (i >= page * perPage && i < (page + 1) * perPage) ? '' : 'none';
+    });
+    bdHideFilteredItems(tab);
+  }
+
+  function bdGetActiveTab() {
+    if (document.getElementById('dtab-feed')?.classList.contains('active')) return 'feed';
+    if (document.getElementById('dtab-rankings')?.classList.contains('active')) return 'rankings';
+    if (document.getElementById('dtab-members')?.classList.contains('active')) return 'members';
+    return 'feed';
+  }
+
+  function bdRenderPager(tab) {
+    const pagerEl = document.getElementById('bd-pager-' + tab);
+    if (!pagerEl) return;
+    const s = bdPagerState[tab];
+    const isActiveTab = (tab === bdGetActiveTab());
+    if (!s || s.totalPages <= 1 || !isActiveTab) {
+      pagerEl.classList.remove('visible');
+      pagerEl.innerHTML = '';
+      const wrap = pagerEl.closest('.chips-pager-wrap');
+      if (wrap) wrap.classList.remove('has-pager');
+      return;
+    }
+    const { page, totalPages } = s;
+    pagerEl.classList.add('visible');
+    pagerEl.innerHTML =
+      '<button onclick="bdPagePrev(\'' + tab + '\')" ' + (page === 0 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-left" style="width:14px;height:14px;"></i></button>' +
+      '<span class="inline-pager-info">' + (page + 1) + '/' + totalPages + '</span>' +
+      '<button onclick="bdPageNext(\'' + tab + '\')" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>' +
+        '<i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>';
+    const wrap = pagerEl.closest('.chips-pager-wrap');
+    if (wrap) wrap.classList.add('has-pager');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function bdPagePrev(tab) {
+    const s = bdPagerState[tab];
+    if (!s || s.page <= 0) return;
+    s.page--;
+    bdApplyPage(tab);
+    bdRenderPager(tab);
+    // Scroll to top of tab content
+    document.querySelector('.scroll-area')?.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+
+  function bdPageNext(tab) {
+    const s = bdPagerState[tab];
+    if (!s || s.page >= s.totalPages - 1) return;
+    s.page++;
+    bdApplyPage(tab);
+    bdRenderPager(tab);
+    document.querySelector('.scroll-area')?.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+
+  // Init all pagers
+  function bdInitAllPagers() {
+    bdInitPager('feed');
+    bdInitPager('rankings');
+    bdInitPager('members');
+  }
+
+  // ── Hook pagination into view cycle and tab switches ──
+
+  // Wrap existing view apply functions to re-init pagers
+  const _origApplyFeedView = bdApplyFeedView;
+  bdApplyFeedView = function() { _origApplyFeedView(); bdInitPager('feed'); };
+
+  const _origApplyRankView = bdApplyRankView;
+  bdApplyRankView = function() { _origApplyRankView(); bdInitPager('rankings'); };
+
+  const _origApplyMemberView = bdApplyMemberView;
+  bdApplyMemberView = function() { _origApplyMemberView(); bdInitPager('members'); };
+
+  // Wrap switchRankingSub to re-init rankings pager
+  const _origSwitchRankingSub = switchRankingSub;
+  switchRankingSub = function(sub) { _origSwitchRankingSub(sub); bdInitPager('rankings'); };
+
+  // Init on load
+  bdInitDefaultChips();
+  bdInitAllPagers();
 
   lucide.createIcons();
 </script>

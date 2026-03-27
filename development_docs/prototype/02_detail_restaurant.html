@@ -31,7 +31,10 @@
     /* Scene Tags */
     --scene-solo: #7A9BAE;
     --scene-romantic: #B8879B;
+    --scene-friends: #7EAE8B;
+    --scene-family: #C9A96E;
     --scene-business: #8B7396;
+    --scene-drinks: #B87272;
   }
 
   body {
@@ -536,25 +539,6 @@
   .badge-michelin { background: #FDF6EC; color: #B8860B; border: 1px solid #E8DDCA; }
   .badge-blueribbon { background: #EDF2FB; color: #4A6FA5; border: 1px solid #D0DCF0; }
   .badge-tv { background: #FFF3F0; color: var(--brand); border: 1px solid #F0D8D0; }
-  /* FAB Add — glassmorphism (matches fab-back) */
-  .fab-add {
-    position: absolute;
-    bottom: 28px; right: 16px;
-    z-index: 85;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: rgba(248,246,243,0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    color: var(--text);
-    transition: transform 0.15s;
-  }
-  .fab-add:active { transform: scale(0.9); }
-
   /* =====================
      SECTIONS
      ===================== */
@@ -627,7 +611,10 @@
   }
   .chip-solo { background: var(--scene-solo); }
   .chip-romantic { background: var(--scene-romantic); }
+  .chip-friends { background: var(--scene-friends); }
+  .chip-family { background: var(--scene-family); }
   .chip-business { background: var(--scene-business); }
+  .chip-drinks { background: var(--scene-drinks); }
 
   .timeline-score {
     font-size: 13px;
@@ -1207,7 +1194,7 @@
     <!-- SCREEN 1: RESTAURANT DETAIL                                  -->
     <!-- ============================================================ -->
     <div class="screen active" id="screen-restaurant">
-      <button class="fab-back" onclick="history.back()">
+      <button class="fab fab-back" onclick="history.back()">
         <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
       </button>
       <div class="scroll-content" id="rest-scroll">
@@ -1502,7 +1489,7 @@
             </div>
             <div class="bubble-comment">"음식은 좋은데 가격이 좀 부담... 특별한 날에만"</div>
             <div class="bubble-footer">
-              <span class="bubble-meta">모임 · 1주 전</span>
+              <span class="bubble-meta">친구 · 1주 전</span>
               <div class="bubble-reactions">
                 <span class="reaction"><i data-lucide="heart" style="width:12px;height:12px;"></i> 1</span>
                 <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 0</span>
@@ -1513,7 +1500,7 @@
 
         <div class="bottom-spacer"></div>
       </div>
-      <button class="fab-add" onclick="handleDetailFab()">
+      <button class="fab fab-add" onclick="handleDetailFab()">
         <i data-lucide="plus" style="width:22px;height:22px;"></i>
       </button>
     </div>
@@ -1522,7 +1509,7 @@
     <!-- SCREEN 1-EMPTY: RESTAURANT DETAIL (Empty State)              -->
     <!-- ============================================================ -->
     <div class="screen" id="screen-restaurant-empty">
-      <button class="fab-back" onclick="history.back()">
+      <button class="fab fab-back" onclick="history.back()">
         <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
       </button>
       <div class="scroll-content">
@@ -1686,7 +1673,7 @@
 
         <div class="bottom-spacer"></div>
       </div>
-      <button class="fab-add" onclick="handleDetailFab()">
+      <button class="fab fab-add" onclick="handleDetailFab()">
         <i data-lucide="plus" style="width:22px;height:22px;"></i>
       </button>
     </div>
@@ -1723,7 +1710,7 @@
   let dragCarousel = null;
 
   document.querySelectorAll('.hero-carousel').forEach(carousel => {
-    carousel.addEventListener('touchstart', e => { dragStartX = e.touches[0].clientX; dragCarousel = carousel; }, { passive: true });
+    carousel.addEventListener('touchstart', e => { dragStartX = e.touches[0].clientX; }, { passive: true });
     carousel.addEventListener('touchend', e => {
       if (dragStartX === null) return;
       handleSwipe(carousel, dragStartX - e.changedTouches[0].clientX, 40);
@@ -1853,21 +1840,6 @@
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
   });
-
-  // Referrer-based back header (from bubble detail)
-  (function() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('from') === 'bubble') {
-      const logo = document.querySelector('.app-logo');
-      if (logo) {
-        const backBtn = document.createElement('button');
-        backBtn.className = 'inner-back-btn';
-        backBtn.onclick = () => { location.href = '04_bubbles_detail.html'; };
-        backBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>버블</span>';
-        logo.replaceWith(backBtn);
-      }
-    }
-  })();
 
   // ============================================================
   // SUB-PAGE HEADER — referrer-based back label

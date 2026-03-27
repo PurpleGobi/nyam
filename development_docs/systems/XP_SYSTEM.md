@@ -43,26 +43,50 @@
 
 ---
 
-## 3. XP 축 (4개 카테고리)
+## 3. XP 축 — 3단계 계층
 
-### 종합 XP vs 카테고리 XP
+### 레벨 계층 구조
 
-| | 종합 XP | 카테고리 XP |
-|---|---------|-----------|
-| 산출 | 기록 XP + 소셜 XP + 보너스 XP | 카테고리 전용 (+5/기록) |
-| 용도 | 종합 레벨, 버블 진입 기준 | 카테고리별 레벨 표시 |
-| 교차 | **카테고리 XP는 종합에 미포함** | 독립 |
+```
+전체 레벨 (Lv.15)                    ← users.total_xp 기반
+├── 식당 레벨 (Lv.12)               ← category 중간 계층 (area + genre XP 합산)
+│   ├── 지역: 을지로 Lv.7, 강남 Lv.3   ← 세부 축
+│   └── 장르: 일식 Lv.6, 한식 Lv.5     ← 세부 축
+└── 와인 레벨 (Lv.7)                ← category 중간 계층 (wine_variety + wine_region XP 합산)
+    ├── 산지: 보르도 Lv.6, 부르고뉴 Lv.4  ← 세부 축
+    └── 품종: 카소 Lv.5, 피노 누아 Lv.3   ← 세부 축
+```
 
-### 식당 (두 축 병렬)
+### 종합 XP vs 카테고리 XP vs 세부 XP
+
+| | 종합 XP | 카테고리 XP | 세부 XP |
+|---|---------|-----------|---------|
+| 산출 | 기록 XP + 소셜 XP + 보너스 XP | 해당 도메인 세부 축 XP 합산 | 축 전용 (+5/기록) |
+| 용도 | 전체 레벨, 버블 진입 기준 | 식당 레벨 / 와인 레벨 표시 | 축별 레벨 표시 |
+| 저장 | `users.total_xp` | `user_experiences` axis_type=`'category'` | `user_experiences` axis_type=`'area'`/`'genre'`/... |
+| 교차 | **카테고리/세부 XP는 종합에 미포함** | 독립 | 독립 |
+
+### 카테고리 레벨 (중간 계층)
+
+| 카테고리 | axis_value | 세부 축 합산 대상 | 용도 |
+|---------|-----------|-----------------|------|
+| **식당 레벨** | `'restaurant'` | area + genre XP 합산 | 프로필 탭 헤더, 알림 ("식당 레벨 12 달성!"), Wrapped |
+| **와인 레벨** | `'wine'` | wine_variety + wine_region XP 합산 | 프로필 탭 헤더, 알림 ("와인 레벨 7 달성!"), Wrapped |
+
+- DB: `user_experiences` 테이블에 `axis_type='category'`, `axis_value='restaurant'|'wine'`으로 저장
+- 갱신: 세부 축 XP 변동 시 해당 카테고리 XP도 함께 갱신 (트리거 또는 application layer)
+- 레벨 산출: `level_thresholds` 테이블 공용 (전체/카테고리/세부 모두 같은 커브)
+
+### 식당 세부 축 (두 축 병렬)
 - **지역별**: 기록한 식당의 위치 기반 (을지로 Lv.7, 강남 Lv.3)
 - **장르별**: 일식 Lv.6, 한식 Lv.5 등
 
-### 와인 (두 축 병렬)
+### 와인 세부 축 (두 축 병렬)
 - **산지별**: 보르도 Lv.6, 부르고뉴 Lv.4 등
 - **품종별**: 카베르네 소비뇽 Lv.5, 피노 누아 Lv.3 등
 
-> 하나의 기록 → 종합 XP + 해당 카테고리 2개에 동시 적립
-> 예: 을지로 일식당 풀 기록 → 종합 +18, 을지로 +5, 일식 +5
+> 하나의 기록 → 종합 XP + 카테고리 XP(합산 갱신) + 해당 세부 축 2개에 동시 적립
+> 예: 을지로 일식당 풀 기록 → 종합 +18, 을지로 +5, 일식 +5, 식당 카테고리 XP 갱신
 
 ---
 
@@ -80,14 +104,18 @@
 > 한 기록당 위 중 최고 1개만 적용 (중복 아님)
 > 같은 식당 점수: **6개월에 1회만** (리뷰/사진 추가는 자유)
 
-### 4-2. 카테고리 XP (카테고리 전용 — 종합 XP에 미포함)
+### 4-2. 세부 축 XP (종합 XP에 미포함)
 
-| 카테고리 | XP | 조건 |
+| 세부 축 | XP | 조건 |
 |---------|-----|------|
 | 지역 | +5 | 식당/와인 기록당 자동 |
 | 음식장르 | +5 | 식당 기록당 자동 |
 | 와인산지 | +5 | 와인 기록당 자동 |
 | 와인품종 | +5 | 와인 기록당 자동 |
+
+> 세부 축 XP 적립 시 해당 **카테고리 레벨** (식당/와인)의 XP도 동시 갱신.
+> 카테고리 XP = 소속 세부 축 XP 합산. 예: 식당 카테고리 XP = Σ(지역 XP) + Σ(장르 XP)
+> DB: `user_experiences` axis_type=`'category'`, axis_value=`'restaurant'`|`'wine'`에 저장
 
 ### 4-3. 소셜 XP (종합 XP에 적립)
 
@@ -280,7 +308,7 @@ for lv in range(2, 100):
 사진 업로드 시:
 1. EXIF 메타데이터 추출 (GPS 좌표, 촬영 시간)
 2. GPS 좌표 ↔ 식당/와인바 위치 비교
-3. 반경 200m 이내 → exif_verified: true
+3. 반경 200m 이내 → is_exif_verified: true
 4. GPS 없거나 불일치 → 사진 XP는 부여, "검증됨" 배지 없음
 5. 검증됨 배지 수 = 프로필의 핵심 신뢰 지표
 ```
@@ -324,19 +352,17 @@ ALTER TABLE users
 -- records 테이블 추가 필드
 ALTER TABLE records
   ADD COLUMN has_exif_gps BOOLEAN DEFAULT false,
-  ADD COLUMN exif_verified BOOLEAN DEFAULT false,
+  ADD COLUMN is_exif_verified BOOLEAN DEFAULT false,
   ADD COLUMN record_quality_xp INT DEFAULT 0,
   ADD COLUMN score_updated_at TIMESTAMPTZ;
     -- 같은 식당 점수 6개월 제한 기준
 
--- 카테고리 XP 테이블
-CREATE TABLE user_category_xp (
-  user_id UUID REFERENCES users(id),
-  category_type VARCHAR(20) NOT NULL,  -- 'region' | 'food_genre' | 'wine_region' | 'wine_grape'
-  category_value VARCHAR(50) NOT NULL, -- '을지로', '일식', '보르도', '피노누아' 등
-  xp INT DEFAULT 0,
-  PRIMARY KEY(user_id, category_type, category_value)
-);
+-- 축별 경험치 테이블 (DATA_MODEL.md의 user_experiences와 동일 — SSOT는 DATA_MODEL.md)
+-- user_experiences 테이블 참조:
+--   axis_type: 'category' | 'area' | 'genre' | 'wine_variety' | 'wine_region'
+--   axis_value: 'restaurant'|'wine' (category) / '을지로' (area) / '일식' (genre) 등
+--   total_xp, level 포함
+--   UNIQUE(user_id, axis_type, axis_value)
 
 -- 활성 XP 갱신 (Cron / Edge Function, 매일)
 UPDATE users SET
@@ -347,7 +373,7 @@ UPDATE users SET
   ),
   active_verified = (
     SELECT COUNT(*) FROM records WHERE user_id = users.id
-      AND exif_verified = true
+      AND is_exif_verified = true
       AND created_at > NOW() - INTERVAL '6 months'
   );
 ```
@@ -361,7 +387,7 @@ UPDATE users SET
 1. 기록 품질 판정 → XP 결정 (이름=0, 점수=3, 사진=8, 풀=18)
 2. 같은 식당 점수 6개월 제한 체크
 3. 종합 XP 적립 (total_xp += record_xp)
-4. 카테고리 XP 적립 (user_category_xp에 +5, 종합 미포함)
+4. 카테고리 XP 적립 (user_experiences에 +5, 종합 미포함)
 5. 소셜 이벤트 시 → 일 상한 10 체크 후 적립
 6. 레벨 체크 → 레벨업이면 알림
 7. EXIF 검증 → 검증됨 배지 부여

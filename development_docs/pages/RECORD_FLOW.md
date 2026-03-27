@@ -468,7 +468,7 @@ Phase 1(추가만)의 경우:
 // Phase 2: 풍성화 (이후 언제든)
 3. records UPDATE (status='rated', score, axis_x, axis_y, ...)
 4. record_photos INSERT (사진 있으면)
-5. XP 적립 (user_experience UPDATE)
+5. XP 적립 (user_experiences UPDATE)
 6. 레벨 체크 → 레벨업 알림 (있으면)
 ```
 

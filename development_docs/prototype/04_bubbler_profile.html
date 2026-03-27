@@ -390,6 +390,37 @@
     font-size: 12px; color: var(--text);
   }
   .streak-banner-text strong { color: var(--caution); }
+
+  /* ===== STICKY TABS ===== */
+  .sticky-tab-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 65;
+    background: rgba(248,246,243,0.92);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+  .content-tabs {
+    display: flex; align-items: center;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0 16px;
+  }
+  .content-tab {
+    padding: 12px 20px;
+    font-size: 15px; font-weight: 500; color: var(--text-hint);
+    border: none; background: none; cursor: pointer;
+    position: relative; transition: color 0.2s; font-family: inherit;
+  }
+  .content-tab::after {
+    content: ''; position: absolute;
+    bottom: -1.5px; left: 12px; right: 12px;
+    height: 2.5px; border-radius: 2px;
+    background: transparent; transition: background 0.2s;
+  }
+  .content-tab.active { color: var(--text); font-weight: 700; }
+  .content-tab.active::after { background: var(--primary); }
+  .content-tab.wine-active { color: var(--wine); font-weight: 700; }
+  .content-tab.wine-active::after { background: var(--wine); }
 </style>
 </head>
 <body>
@@ -487,154 +518,287 @@
         </div>
       </div>
 
-      <!-- ===== TASTE PROFILE ===== -->
-      <div class="section-divider"></div>
-      <div class="taste-profile">
-        <div class="section-title">
-          <i data-lucide="pie-chart"></i> 취향 프로필
-        </div>
-
-        <div class="taste-category-rows">
-          <div class="taste-cat-row">
-            <div class="taste-cat-name">한식</div>
-            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:48%;background:var(--primary)"></div></div>
-            <div class="taste-cat-pct">48%</div>
-          </div>
-          <div class="taste-cat-row">
-            <div class="taste-cat-name">일식</div>
-            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:32%;background:var(--accent-social)"></div></div>
-            <div class="taste-cat-pct">32%</div>
-          </div>
-          <div class="taste-cat-row">
-            <div class="taste-cat-name">양식</div>
-            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:12%;background:var(--positive)"></div></div>
-            <div class="taste-cat-pct">12%</div>
-          </div>
-          <div class="taste-cat-row">
-            <div class="taste-cat-name">기타</div>
-            <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:8%;background:var(--border-bold)"></div></div>
-            <div class="taste-cat-pct">8%</div>
-          </div>
-        </div>
-
-        <!-- 점수 성향 -->
-        <div class="taste-scale">
-          <div class="taste-scale-label">평균 평점 성향 — 91점 (조금 후한 편)</div>
-          <div class="taste-scale-track">
-            <div class="taste-scale-fill"></div>
-            <div class="taste-scale-dot"></div>
-          </div>
-          <div class="taste-scale-ends">
-            <span>까다로운 편</span>
-            <span>후한 편</span>
-          </div>
-        </div>
-
-        <!-- 주요 지역 -->
-        <div class="taste-region">
-          <span class="taste-region-pill top">을지로</span>
-          <span class="taste-region-pill top">광화문</span>
-          <span class="taste-region-pill">성수동</span>
-          <span class="taste-region-pill">종로</span>
+      <!-- ===== STICKY TABS ===== -->
+      <div class="sticky-tab-wrap">
+        <div class="content-tabs">
+          <button class="content-tab active" id="tabFood" onclick="switchBubblerTab('food')">식당</button>
+          <button class="content-tab" id="tabWine" onclick="switchBubblerTab('wine')">와인</button>
         </div>
       </div>
 
-      <!-- ===== PICKS (강력 추천 Top 5) ===== -->
-      <div class="section-divider"></div>
-      <div class="picks">
-        <div class="section-title">
-          <i data-lucide="star"></i> 김영수의 강력 추천
-        </div>
-        <div class="picks-grid">
-          <a class="pick-card" href="02_detail_restaurant.html">
-            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&h=300&fit=crop')">
-              <div class="pick-thumb-overlay"></div>
-              <div class="pick-score">96</div>
-            </div>
-            <div class="pick-name">미진</div>
-            <div class="pick-meta">한식 · 을지로</div>
-          </a>
-          <a class="pick-card" href="02_detail_restaurant.html">
-            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop')">
-              <div class="pick-thumb-overlay"></div>
-              <div class="pick-score">94</div>
-            </div>
-            <div class="pick-name">을지면옥</div>
-            <div class="pick-meta">한식 · 을지로</div>
-          </a>
-          <a class="pick-card" href="02_detail_restaurant.html">
-            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&h=300&fit=crop')">
-              <div class="pick-thumb-overlay"></div>
-              <div class="pick-score">93</div>
-            </div>
-            <div class="pick-name">스시코우지</div>
-            <div class="pick-meta">일식 · 을지로</div>
-          </a>
-          <a class="pick-card" href="02_detail_restaurant.html">
-            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=300&h=300&fit=crop')">
-              <div class="pick-thumb-overlay"></div>
-              <div class="pick-score">91</div>
-            </div>
-            <div class="pick-name">이코이</div>
-            <div class="pick-meta">일식 · 을지로</div>
-          </a>
-          <a class="pick-card" href="02_detail_restaurant.html">
-            <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=300&h=300&fit=crop')">
-              <div class="pick-thumb-overlay"></div>
-              <div class="pick-score">89</div>
-            </div>
-            <div class="pick-name">광화문국밥</div>
-            <div class="pick-meta">한식 · 광화문</div>
-          </a>
-        </div>
-      </div>
+      <!-- ═══ 식당 패널 ═══ -->
+      <div id="panelFood">
 
-      <!-- ===== RECENT RECORDS ===== -->
-      <div class="section-divider"></div>
-      <div class="recent-records">
-        <div class="recent-header">
-          <div class="section-title" style="margin-bottom:0">
-            <i data-lucide="clock"></i> 최근 기록
+        <!-- 취향 프로필 -->
+        <div class="taste-profile">
+          <div class="section-title">
+            <i data-lucide="pie-chart"></i> 취향 프로필
           </div>
-          <button class="recent-more">전체보기</button>
+          <div class="taste-category-rows">
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">한식</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:48%;background:var(--primary)"></div></div>
+              <div class="taste-cat-pct">48%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">일식</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:32%;background:var(--accent-social)"></div></div>
+              <div class="taste-cat-pct">32%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">양식</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:12%;background:var(--positive)"></div></div>
+              <div class="taste-cat-pct">12%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">기타</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:8%;background:var(--border-bold)"></div></div>
+              <div class="taste-cat-pct">8%</div>
+            </div>
+          </div>
+
+          <div class="taste-scale">
+            <div class="taste-scale-label">평균 평점 성향 — 91점 (조금 후한 편)</div>
+            <div class="taste-scale-track">
+              <div class="taste-scale-fill"></div>
+              <div class="taste-scale-dot"></div>
+            </div>
+            <div class="taste-scale-ends">
+              <span>까다로운 편</span>
+              <span>후한 편</span>
+            </div>
+          </div>
+
+          <div class="taste-region">
+            <span class="taste-region-pill top">을지로</span>
+            <span class="taste-region-pill top">광화문</span>
+            <span class="taste-region-pill">성수동</span>
+            <span class="taste-region-pill">종로</span>
+          </div>
         </div>
-        <a class="record-row" href="02_detail_restaurant.html">
-          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"></div>
-          <div class="record-info">
-            <div class="record-name">미진</div>
-            <div class="record-meta">한식 · 을지로 · 3시간 전</div>
-            <div class="record-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
+
+        <!-- 강력 추천 -->
+        <div class="section-divider"></div>
+        <div class="picks">
+          <div class="section-title">
+            <i data-lucide="star"></i> 김영수의 강력 추천
           </div>
-          <div class="record-score">93</div>
-        </a>
-        <a class="record-row" href="02_detail_restaurant.html">
-          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop')"></div>
-          <div class="record-info">
-            <div class="record-name">도쿄등심</div>
-            <div class="record-meta">일식 · 광화문 · 3일 전</div>
-            <div class="record-comment">"와규 채끝은 무조건 미디엄레어"</div>
+          <div class="picks-grid">
+            <a class="pick-card" href="02_detail_restaurant.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score">96</div>
+              </div>
+              <div class="pick-name">미진</div>
+              <div class="pick-meta">한식 · 을지로</div>
+            </a>
+            <a class="pick-card" href="02_detail_restaurant.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score">94</div>
+              </div>
+              <div class="pick-name">을지면옥</div>
+              <div class="pick-meta">한식 · 을지로</div>
+            </a>
+            <a class="pick-card" href="02_detail_restaurant.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score">93</div>
+              </div>
+              <div class="pick-name">스시코우지</div>
+              <div class="pick-meta">일식 · 을지로</div>
+            </a>
+            <a class="pick-card" href="02_detail_restaurant.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score">91</div>
+              </div>
+              <div class="pick-name">이코이</div>
+              <div class="pick-meta">일식 · 을지로</div>
+            </a>
+            <a class="pick-card" href="02_detail_restaurant.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score">89</div>
+              </div>
+              <div class="pick-name">광화문국밥</div>
+              <div class="pick-meta">한식 · 광화문</div>
+            </a>
           </div>
-          <div class="record-score">88</div>
-        </a>
-        <a class="record-row" href="02_detail_wine.html">
-          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"></div>
-          <div class="record-info">
-            <div class="record-name">Ch. Margaux 2018</div>
-            <div class="record-meta">레드와인 · 5일 전</div>
-            <div class="record-comment">"보르도 중에 이게 제일 좋다"</div>
+        </div>
+
+        <!-- 최근 기록 -->
+        <div class="section-divider"></div>
+        <div class="recent-records">
+          <div class="recent-header">
+            <div class="section-title" style="margin-bottom:0">
+              <i data-lucide="clock"></i> 최근 기록
+            </div>
+            <button class="recent-more">전체보기</button>
           </div>
-          <div class="record-score wine">91</div>
-        </a>
-        <a class="record-row" href="02_detail_restaurant.html">
-          <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&h=200&fit=crop')"></div>
-          <div class="record-info">
-            <div class="record-name">을지면옥</div>
-            <div class="record-meta">한식 · 을지로 · 1주 전</div>
-            <div class="record-comment">"평양냉면 맛집. 국물이 진짜임"</div>
+          <a class="record-row" href="02_detail_restaurant.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">미진</div>
+              <div class="record-meta">한식 · 을지로 · 3시간 전</div>
+              <div class="record-comment">"메밀국수 진짜 맛있다. 면발이 살아있음"</div>
+            </div>
+            <div class="record-score">93</div>
+          </a>
+          <a class="record-row" href="02_detail_restaurant.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">도쿄등심</div>
+              <div class="record-meta">일식 · 광화문 · 3일 전</div>
+              <div class="record-comment">"와규 채끝은 무조건 미디엄레어"</div>
+            </div>
+            <div class="record-score">88</div>
+          </a>
+          <a class="record-row" href="02_detail_restaurant.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">을지면옥</div>
+              <div class="record-meta">한식 · 을지로 · 1주 전</div>
+              <div class="record-comment">"평양냉면 맛집. 국물이 진짜임"</div>
+            </div>
+            <div class="record-score">94</div>
+          </a>
+        </div>
+
+      </div><!-- /panelFood -->
+
+      <!-- ═══ 와인 패널 ═══ -->
+      <div id="panelWine" style="display:none;">
+
+        <!-- 취향 프로필 -->
+        <div class="taste-profile">
+          <div class="section-title">
+            <i data-lucide="pie-chart"></i> 취향 프로필
           </div>
-          <div class="record-score">94</div>
-        </a>
-      </div>
+          <div class="taste-category-rows">
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">레드</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:55%;background:var(--wine)"></div></div>
+              <div class="taste-cat-pct">55%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">화이트</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:28%;background:var(--caution)"></div></div>
+              <div class="taste-cat-pct">28%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">스파클링</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:12%;background:var(--positive)"></div></div>
+              <div class="taste-cat-pct">12%</div>
+            </div>
+            <div class="taste-cat-row">
+              <div class="taste-cat-name">기타</div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:5%;background:var(--border-bold)"></div></div>
+              <div class="taste-cat-pct">5%</div>
+            </div>
+          </div>
+
+          <div class="taste-scale">
+            <div class="taste-scale-label">평균 평점 성향 — 87점 (균형잡힌 편)</div>
+            <div class="taste-scale-track">
+              <div class="taste-scale-fill" style="width:52%"></div>
+              <div class="taste-scale-dot" style="left:52%"></div>
+            </div>
+            <div class="taste-scale-ends">
+              <span>까다로운 편</span>
+              <span>후한 편</span>
+            </div>
+          </div>
+
+          <div class="taste-region">
+            <span class="taste-region-pill" style="background:var(--wine-light);color:var(--wine);border-color:transparent;">보르도</span>
+            <span class="taste-region-pill" style="background:var(--wine-light);color:var(--wine);border-color:transparent;">부르고뉴</span>
+            <span class="taste-region-pill">토스카나</span>
+            <span class="taste-region-pill">나파밸리</span>
+          </div>
+        </div>
+
+        <!-- 강력 추천 -->
+        <div class="section-divider"></div>
+        <div class="picks">
+          <div class="section-title">
+            <i data-lucide="star"></i> 김영수의 강력 추천
+          </div>
+          <div class="picks-grid">
+            <a class="pick-card" href="02_detail_wine.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score" style="color:#fff">94</div>
+              </div>
+              <div class="pick-name">Ch. Margaux 2018</div>
+              <div class="pick-meta">레드 · 보르도</div>
+            </a>
+            <a class="pick-card" href="02_detail_wine.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score" style="color:#fff">92</div>
+              </div>
+              <div class="pick-name">Opus One 2019</div>
+              <div class="pick-meta">레드 · 나파밸리</div>
+            </a>
+            <a class="pick-card" href="02_detail_wine.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score" style="color:#fff">90</div>
+              </div>
+              <div class="pick-name">Cloudy Bay SB</div>
+              <div class="pick-meta">화이트 · 말보로</div>
+            </a>
+            <a class="pick-card" href="02_detail_wine.html">
+              <div class="pick-thumb" style="background-image:url('https://images.unsplash.com/photo-1567696911980-2eed69a46042?w=300&h=300&fit=crop')">
+                <div class="pick-thumb-overlay"></div>
+                <div class="pick-score" style="color:#fff">89</div>
+              </div>
+              <div class="pick-name">Sassicaia 2017</div>
+              <div class="pick-meta">레드 · 토스카나</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 최근 기록 -->
+        <div class="section-divider"></div>
+        <div class="recent-records">
+          <div class="recent-header">
+            <div class="section-title" style="margin-bottom:0">
+              <i data-lucide="clock"></i> 최근 기록
+            </div>
+            <button class="recent-more">전체보기</button>
+          </div>
+          <a class="record-row" href="02_detail_wine.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">Ch. Margaux 2018</div>
+              <div class="record-meta">레드와인 · 5일 전</div>
+              <div class="record-comment">"보르도 중에 이게 제일 좋다"</div>
+            </div>
+            <div class="record-score wine">91</div>
+          </a>
+          <a class="record-row" href="02_detail_wine.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">Opus One 2019</div>
+              <div class="record-meta">레드와인 · 2주 전</div>
+              <div class="record-comment">"나파 블렌드의 정석. 밸런스가 좋음"</div>
+            </div>
+            <div class="record-score wine">92</div>
+          </a>
+          <a class="record-row" href="02_detail_wine.html">
+            <div class="record-thumb" style="background-image:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=200&h=200&fit=crop')"></div>
+            <div class="record-info">
+              <div class="record-name">Cloudy Bay SB 2022</div>
+              <div class="record-meta">화이트와인 · 3주 전</div>
+              <div class="record-comment">"여름에 마시면 진짜 좋을 듯"</div>
+            </div>
+            <div class="record-score wine">88</div>
+          </a>
+        </div>
+
+      </div><!-- /panelWine -->
 
       <!-- ===== ACTIVITY HEATMAP ===== -->
       <div class="section-divider"></div>
@@ -663,10 +827,6 @@
           <span>1월</span><span>2월</span><span>3월</span>
         </div>
 
-        <div class="streak-banner">
-          <i data-lucide="flame"></i>
-          <div class="streak-banner-text"><strong>8주 연속</strong> 기록 중 — 이번 주도 화이팅!</div>
-        </div>
       </div>
 
     </div><!-- /scroll-area -->
@@ -685,6 +845,15 @@
       cell.className = 'hm-cell' + (val > 0 ? ' l' + Math.min(val, 4) : '');
       hm.appendChild(cell);
     }
+  }
+
+  // Tab switching
+  function switchBubblerTab(tab) {
+    const isWine = tab === 'wine';
+    document.getElementById('tabFood').className = 'content-tab' + (isWine ? '' : ' active');
+    document.getElementById('tabWine').className = 'content-tab' + (isWine ? ' wine-active' : '');
+    document.getElementById('panelFood').style.display = isWine ? 'none' : 'block';
+    document.getElementById('panelWine').style.display = isWine ? 'block' : 'none';
   }
 
   lucide.createIcons();

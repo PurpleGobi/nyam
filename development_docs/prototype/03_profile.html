@@ -328,22 +328,6 @@
   }
   .taste-share-btn-sm:active { opacity: 0.8; }
 
-  /* Compact stats row */
-  .stats-row-compact {
-    display: flex; align-items: center; justify-content: center;
-    gap: 16px; margin-top: 12px;
-    padding-top: 12px; border-top: 1px solid var(--border);
-  }
-  .stat-inline {
-    display: flex; align-items: baseline; gap: 3px;
-  }
-  .stat-inline-num { font-size: 15px; font-weight: 700; color: var(--text); }
-  .stat-inline-label { font-size: 11px; color: var(--text-sub); }
-  .stat-inline-sep {
-    width: 3px; height: 3px; border-radius: 50%;
-    background: var(--border-bold);
-  }
-
   .section-block {
     padding: 16px 20px;
     border-bottom: 8px solid #F0EDE8;
@@ -356,33 +340,6 @@
     letter-spacing: 0.5px;
   }
   /* Level card with progress */
-  .level-card {
-    background: var(--bg-card); border-radius: 12px;
-    border: 1px solid var(--border); padding: 12px 14px;
-    margin-bottom: 8px; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .level-card:active { background: var(--bg); }
-  .level-card-top {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  .level-card-left {
-    display: flex; align-items: center; gap: 8px;
-  }
-  .level-card-icon {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
-  }
-  .level-card-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .level-card-lv {
-    font-size: 12px; font-weight: 700;
-    padding: 2px 8px; border-radius: 10px;
-  }
-  .level-card-xp {
-    font-size: 11px; color: var(--text-hint); margin-top: 1px;
-  }
   .level-progress {
     height: 6px; background: #F0EDE8; border-radius: 3px;
     overflow: hidden;
@@ -391,27 +348,6 @@
     height: 100%; border-radius: 3px;
     transition: width 0.3s ease;
   }
-  .level-card-meta {
-    display: flex; justify-content: space-between;
-    margin-top: 4px;
-  }
-  .level-card-meta span {
-    font-size: 10px; color: var(--text-hint);
-  }
-
-  /* Level color helpers */
-  .lv-green .level-card-lv { background: #E8F0EB; color: #7EAE8B; }
-  .lv-green .level-progress-fill { background: #7EAE8B; }
-  .lv-green .level-card-icon { background: #7EAE8B; }
-  .lv-blue .level-card-lv { background: #EDF2F5; color: #7A9BAE; }
-  .lv-blue .level-progress-fill { background: #7A9BAE; }
-  .lv-blue .level-card-icon { background: #7A9BAE; }
-  .lv-purple .level-card-lv { background: #F0ECF3; color: #8B7396; }
-  .lv-purple .level-progress-fill { background: #8B7396; }
-  .lv-purple .level-card-icon { background: #8B7396; }
-  .lv-orange .level-card-lv { background: #F5EDE8; color: #C17B5E; }
-  .lv-orange .level-progress-fill { background: #C17B5E; }
-  .lv-orange .level-card-icon { background: #C17B5E; }
   /* Recent XP */
   .xp-recent-item {
     display: flex; align-items: center; gap: 10px;
@@ -690,13 +626,10 @@
 
 
   /* ========== SCREEN: NOTIFICATIONS ========== */
-  .notif-item {
-    padding: 14px 20px; display: flex;
-    align-items: flex-start; gap: 12px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer; position: relative;
+  #screen-notifications .notif-item {
+    padding: 14px 20px; gap: 12px;
   }
-  .notif-item:active { background: var(--bg-card); }
+  #screen-notifications .notif-item:active { background: var(--bg-card); }
   .notif-unread-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #7A9BAE; flex-shrink: 0; margin-top: 6px;
@@ -713,8 +646,8 @@
   .notif-text strong { font-weight: 600; }
   .notif-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
   .notif-time { font-size: 11px; color: var(--text-sub); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
-  .notif-item.unread { background: #EDF2F5; }
-  .notif-item.unread:active { background: #E3EBF0; }
+  #screen-notifications .notif-item.unread { background: #EDF2F5; }
+  #screen-notifications .notif-item.unread:active { background: #E3EBF0; }
 
   /* Overlay */
   .overlay {
@@ -726,95 +659,6 @@
 
   .hidden { display: none !important; }
 
-  /* ========== XP LEVEL FILTER ENGINE ========== */
-  .lv-tab-row {
-    display: flex; align-items: center;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
-  .lv-tab {
-    flex-shrink: 0; padding: 10px 14px;
-    font-size: 14px; font-weight: 500; white-space: nowrap;
-    border: none; background: none; color: var(--text-hint);
-    cursor: pointer; position: relative; font-family: inherit;
-  }
-  .lv-tab::after {
-    content: ''; position: absolute; bottom: -1px; left: 6px; right: 6px;
-    height: 2px; border-radius: 1px; background: transparent;
-  }
-  .lv-tab.active-food { color: var(--primary); font-weight: 700; }
-  .lv-tab.active-food::after { background: var(--primary); }
-  .lv-tab.active-wine { color: var(--wine); font-weight: 700; }
-  .lv-tab.active-wine::after { background: var(--wine); }
-  .lv-tab-spacer { flex: 1; }
-  .lv-icon-btn {
-    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-    background: none; border: none; cursor: pointer; color: var(--text-sub);
-    border-radius: 8px; transition: color 0.15s; flex-shrink: 0;
-  }
-  .lv-icon-btn:active { color: var(--text); }
-  .lv-icon-btn.has-filter { color: var(--primary); }
-  .lv-filter-drawer {
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.3s ease;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-  }
-  .lv-filter-drawer.open { max-height: 80px; }
-  .lv-filter-inner { padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .lv-filter-label { font-size: 11px; color: var(--text-hint); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-  .lv-filter-chip {
-    padding: 5px 12px; border-radius: 100px;
-    border: 1.5px solid var(--border);
-    background: var(--bg); font-size: 12px; font-weight: 500;
-    color: var(--text-sub); cursor: pointer; font-family: inherit;
-    transition: all 0.15s; flex-shrink: 0;
-  }
-  .lv-filter-chip.active-food { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
-  .lv-filter-chip.active-wine { border-color: var(--wine); background: var(--wine-light); color: var(--wine); }
-  .lv-sort-dropdown {
-    display: none; position: absolute; right: 6px; top: calc(100% + 4px);
-    background: var(--bg-elevated); border: 1px solid var(--border);
-    border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
-    padding: 4px; z-index: 80; min-width: 140px;
-  }
-  .lv-sort-dropdown.open { display: block; }
-  .lv-sort-item {
-    display: block; width: 100%; padding: 9px 12px; text-align: left;
-    border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text);
-    cursor: pointer; border: none; background: none; font-family: inherit;
-    transition: background 0.1s;
-  }
-  .lv-sort-item:hover { background: var(--bg); }
-  .lv-sort-item.active { color: var(--primary); font-weight: 600; }
-  .lv-category-label {
-    font-size: 11px; font-weight: 700; color: var(--text-hint);
-    text-transform: uppercase; letter-spacing: 0.4px;
-    padding: 12px 0 6px;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .lv-category-label svg { width: 12px; height: 12px; }
-  .lv-content-area { padding: 0 16px 16px; }
-  /* Two-column layout */
-  .lv-two-col {
-    display: flex; gap: 10px; height: 320px;
-  }
-  .lv-col {
-    flex: 1; min-width: 0;
-    overflow-y: auto; overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-right: 2px;
-  }
-  .lv-col::-webkit-scrollbar { width: 3px; }
-  .lv-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  .lv-content-area .level-card { margin-bottom: 8px; }
-  .lv-two-col .level-card { font-size: 12px; }
-  .lv-two-col .level-card-name { font-size: 13px; }
-  .lv-two-col .level-card-xp { font-size: 10px; }
-  .lv-two-col .level-card-icon { width: 28px; height: 28px; border-radius: 7px; }
-  .lv-two-col .level-card-meta span { font-size: 9px; }
-  .lv-two-col .level-card { padding: 10px 12px; }
-  .lv-two-col .level-card-lv { font-size: 11px; padding: 2px 6px; }
   /* Avatar dropdown menu */
   .avatar-menu {
     display: none;
@@ -846,27 +690,7 @@
   .avatar-menu-item:last-child { border-bottom: none; }
   .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
 
-  /* ========== STATISTICS (merged from 07_statistics) ========== */
-  /* Tabs */
-  .stat-tabs {
-    display: flex; padding: 0; gap: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .stat-tab {
-    flex: 1; padding: 12px 0; text-align: center;
-    font-size: 14px; font-weight: 600; color: var(--text-hint);
-    background: none; border: none; cursor: pointer;
-    font-family: inherit; position: relative;
-    transition: color 0.15s;
-  }
-  .stat-tab.active { color: var(--text); }
-  .stat-tab.active::after {
-    content: ''; position: absolute; bottom: -1px; left: 20%; right: 20%;
-    height: 2.5px; border-radius: 2px;
-  }
-  .stat-tab.food-active::after { background: var(--primary); }
-  .stat-tab.wine-active::after { background: var(--wine); }
-
+  /* ========== STATISTICS ========== */
   /* Stat summary cards */
   .stat-summary {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -886,10 +710,10 @@
 
   /* Section */
   .stat-divider {
-    height: 1px; background: var(--border); margin: 16px 0;
+    height: 1px; background: var(--border); margin: 16px 20px;
   }
   .stat-section {
-    padding: 0;
+    padding: 0 20px;
   }
   .stat-section-label {
     font-size: 13px; font-weight: 700; color: var(--text);
@@ -991,44 +815,6 @@
     margin: 16px 0 0;
   }
 
-  /* Wine section label */
-  .wine-section-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .wine-section-label small {
-    font-size: 10px;
-    font-weight: 400;
-    color: var(--text-hint);
-  }
-
-  /* XP level bar */
-  .xp-bar-wrap {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px; margin: 12px 0 8px;
-  }
-  .xp-bar-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  .xp-level {
-    font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 4px;
-  }
-  .xp-next { font-size: 10px; color: var(--text-hint); }
-  .xp-track {
-    height: 6px; background: var(--bg-page); border-radius: 3px; overflow: hidden;
-  }
-  .xp-fill { height: 100%; border-radius: 3px; }
-  .xp-labels {
-    display: flex; justify-content: space-between; margin-top: 4px;
-    font-size: 9px; color: var(--text-hint);
-  }
-
   /* Mini tabs for level sub-categories */
   .mini-tab-row {
     display: flex; gap: 0; margin-bottom: 10px;
@@ -1115,6 +901,45 @@
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .lv-list-scroll::-webkit-scrollbar { display: none; }
+
+  /* ===== ACTIVITY HEATMAP ===== */
+  .activity-section {
+    margin-bottom: 16px;
+  }
+  .activity-stats {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .activity-stat {
+    flex: 1; background: var(--bg-section); border-radius: 10px;
+    padding: 8px 10px; text-align: center;
+  }
+  .activity-stat-val { font-size: 16px; font-weight: 800; color: var(--text); }
+  .activity-stat-lbl { font-size: 9px; color: var(--text-sub); margin-top: 1px; }
+  .activity-stat-val.streak { color: var(--caution); }
+  .heatmap {
+    display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px;
+  }
+  .hm-cell {
+    aspect-ratio: 1; border-radius: 2px;
+    background: var(--border);
+  }
+  .hm-cell.l1 { background: rgba(122,155,174,0.25); }
+  .hm-cell.l2 { background: rgba(122,155,174,0.5); }
+  .hm-cell.l3 { background: rgba(122,155,174,0.8); }
+  .hm-cell.l4 { background: var(--accent-social); }
+  .hm-months {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--text-hint); margin-top: 4px;
+  }
+  .streak-banner {
+    margin-top: 10px; padding: 8px 12px;
+    background: linear-gradient(90deg, rgba(201,169,110,0.12) 0%, transparent 100%);
+    border-radius: 10px; border-left: 3px solid var(--caution);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .streak-banner svg { width: 14px; height: 14px; color: var(--caution); flex-shrink: 0; }
+  .streak-banner-text { font-size: 12px; color: var(--text); }
+  .streak-banner-text strong { color: var(--caution); }
 </style>
 </head>
 <body>
@@ -1245,6 +1070,31 @@
               </div>
             </div>
 
+            <!-- 활동 기록 (히트맵) -->
+            <div class="activity-section">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                <i data-lucide="activity" style="width:14px;height:14px;"></i> 활동 기록
+              </div>
+              <div class="activity-stats">
+                <div class="activity-stat">
+                  <div class="activity-stat-val">31</div>
+                  <div class="activity-stat-lbl">총 기록</div>
+                </div>
+                <div class="activity-stat">
+                  <div class="activity-stat-val streak">34일</div>
+                  <div class="activity-stat-lbl">연속 기록</div>
+                </div>
+                <div class="activity-stat">
+                  <div class="activity-stat-val">4개월</div>
+                  <div class="activity-stat-lbl">활동 기간</div>
+                </div>
+              </div>
+              <div class="heatmap" id="profileHeatmap"></div>
+              <div class="hm-months">
+                <span>1월</span><span>2월</span><span>3월</span>
+              </div>
+            </div>
+
             <!-- 최근 경험치 -->
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">최근 경험치</div>
             <div class="xp-recent-item">
@@ -1356,10 +1206,10 @@
                 <div class="lv-list-item" style="opacity:0.55;"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">베트남 <span class="lv-list-count">1곳</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:5%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">5<span>/40</span></div></div>
               </div>
             </div>
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 가본 식당 지도 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>가본 식당 지도</span><small>5개국 12곳</small></div>
               <div class="stat-map">
                 <svg viewBox="0 0 320 160" style="width:100%;height:auto;">
@@ -1383,10 +1233,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 장르 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>장르</span></div>
               <div class="variety-chart">
                 <div class="variety-row">
@@ -1417,10 +1267,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 점수 분포 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>점수 분포</span></div>
               <div class="bar-chart">
                 <div class="bar-col"><div class="bar-fill" style="height:0%;background:var(--primary);opacity:0.4;min-height:2px"></div><span class="bar-label">~49</span></div>
@@ -1432,10 +1282,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 월별 소비 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>월별 소비</span><small>총 186만</small></div>
               <div class="bar-chart">
                 <div class="bar-col">
@@ -1471,10 +1321,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 상황별 방문 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>상황별 방문</span></div>
               <div class="variety-chart">
                 <div class="variety-row">
@@ -1568,10 +1418,10 @@
                 <div class="lv-list-item" style="opacity:0.55;"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">그르나슈 <span class="lv-list-count">1병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:5%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">5<span>/40</span></div></div>
               </div>
             </div>
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 산지 지도 — 드릴다운: 세계 → 국가 → 산지 -->
-            <div style="padding:0 20px;">
+            <div class="stat-section">
               <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;">
                 <button id="mapBackBtn" onclick="mapBack()" style="display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--text-sub);cursor:pointer;">← 뒤로</button>
                 <div class="stat-section-label" style="flex:1;margin:0;" id="mapTitle">산지</div>
@@ -1736,14 +1586,14 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 품종 — 껍질 얇음→두꺼움 순, 토글로 미시음 숨김 -->
-            <div style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label">품종</div>
             </div>
 
-            <div class="variety-chart" id="varietyChart" style="padding:0 20px;">
+            <div class="variety-chart stat-section" id="varietyChart">
               <div class="variety-header">
                 <div></div>
                 <div class="variety-toggle" onclick="toggleEmptyVarieties()">
@@ -1775,10 +1625,10 @@
               <div class="variety-row empty" onclick="filterByVariety('프티 베르도')"><div class="variety-name" style="color:var(--wine)">프티 베르도</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 점수 분포 -->
-            <div class="wine-filter-section" style="padding:0 20px;">
+            <div class="wine-filter-section stat-section">
               <div class="stat-section-label">점수 분포</div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:120px;">
                 <!-- ~49: 0병 -->
@@ -1821,10 +1671,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 월별 소비 -->
-            <div class="wine-filter-section" style="padding:0 20px;">
+            <div class="wine-filter-section stat-section">
               <div class="stat-section-label">월별 소비 <small style="font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:120px;">
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('10월')">
@@ -1864,10 +1714,10 @@
               </div>
             </div>
 
-            <div class="stat-divider" style="margin:16px 20px;"></div>
+            <div class="stat-divider"></div>
 
             <!-- 타입별 분포 -->
-            <div class="stat-section" style="padding:0 20px;">
+            <div class="stat-section">
               <div class="stat-section-label"><span>타입별</span></div>
               <div class="variety-chart">
                 <div class="variety-row">
@@ -1921,7 +1771,7 @@
                 <div class="notif-badge"></div>
               </div>
               <div style="position:relative;">
-                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">김</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
 
@@ -2244,7 +2094,7 @@
                 <div class="notif-badge"></div>
               </div>
               <div style="position:relative;">
-                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
+                <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">김</div>
                 <div class="avatar-menu" onclick="event.stopPropagation()">
                   <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
 
@@ -2482,11 +2332,6 @@
     currentScreen = id;
   }
 
-  // Level filter engine
-  let lvCurrentTab = 'food';
-  let lvCurrentFilter = 'all';
-  let lvCurrentSort = 'lv';
-
   // Mini tab switching for level sub-categories
   function switchFoodMini(sub) {
     document.getElementById('foodMiniTab-region').classList.toggle('active', sub === 'region');
@@ -2507,61 +2352,6 @@
     document.getElementById('tabStatWine').className = 'content-tab' + (isWine ? ' wine-active' : '');
     document.getElementById('statPanelFood').style.display = isWine ? 'none' : 'block';
     document.getElementById('statPanelWine').style.display = isWine ? 'block' : 'none';
-  }
-
-  function toggleLvFilter() {
-    const drawer = document.getElementById('lvFilterDrawer');
-    const sortDD = document.getElementById('lvSortDropdown');
-    sortDD.classList.remove('open');
-    document.getElementById('lvSortBtn').classList.remove('has-filter');
-    drawer.classList.toggle('open');
-    document.getElementById('lvFilterBtn').classList.toggle('has-filter', drawer.classList.contains('open'));
-  }
-
-  function toggleLvSort() {
-    const dd = document.getElementById('lvSortDropdown');
-    const filterDrawer = document.getElementById('lvFilterDrawer');
-    filterDrawer.classList.remove('open');
-    document.getElementById('lvFilterBtn').classList.remove('has-filter');
-    dd.classList.toggle('open');
-    document.getElementById('lvSortBtn').classList.toggle('has-filter', dd.classList.contains('open'));
-  }
-
-  function selectLvSort(el, sort) {
-    lvCurrentSort = sort;
-    document.querySelectorAll('.lv-sort-item').forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('lvSortDropdown').classList.remove('open');
-    document.getElementById('lvSortBtn').classList.remove('has-filter');
-  }
-
-  function setLvFilter(el, filter) {
-    lvCurrentFilter = filter;
-    const isWine = lvCurrentTab === 'wine';
-    document.querySelectorAll('.lv-filter-chip').forEach(c => c.classList.remove('active-food','active-wine'));
-    el.classList.add(isWine ? 'active-wine' : 'active-food');
-
-    // Column visibility logic
-    if (lvCurrentTab === 'food') {
-      const showRegion = filter === 'all' || filter === 'region';
-      const showGenre  = filter === 'all' || filter === 'genre';
-      const regionCol = document.getElementById('lvcol-food-region');
-      const genreCol  = document.getElementById('lvcol-food-genre');
-      if (regionCol) regionCol.style.display = showRegion ? '' : 'none';
-      if (genreCol)  genreCol.style.display  = showGenre  ? '' : 'none';
-      // If only one column visible, let it take full width
-      if (regionCol) regionCol.style.flex = (!showGenre && showRegion) ? '1 1 100%' : '';
-      if (genreCol)  genreCol.style.flex  = (!showRegion && showGenre) ? '1 1 100%' : '';
-    } else {
-      const showOrigin = filter === 'all' || filter === 'region';
-      const showGrape  = filter === 'all' || filter === 'genre';
-      const originCol = document.getElementById('lvcol-wine-origin');
-      const grapeCol  = document.getElementById('lvcol-wine-grape');
-      if (originCol) originCol.style.display = showOrigin ? '' : 'none';
-      if (grapeCol)  grapeCol.style.display  = showGrape  ? '' : 'none';
-      if (originCol) originCol.style.flex = (!showGrape && showOrigin) ? '1 1 100%' : '';
-      if (grapeCol)  grapeCol.style.flex  = (!showOrigin && showGrape) ? '1 1 100%' : '';
-    }
   }
 
   // Level detail bottom sheet
@@ -2650,8 +2440,8 @@
   // Notification Dropdown
   function toggleNotifDropdown(e) {
     e.stopPropagation();
-    var dd = document.getElementById('notifDropdown');
-    var ov = document.getElementById('notifOverlay');
+    const dd = document.getElementById('notifDropdown');
+    const ov = document.getElementById('notifOverlay');
     dd.classList.toggle('open');
     ov.classList.toggle('open');
   }
@@ -2661,27 +2451,25 @@
   }
   function readNotifItem(item) {
     item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
+    const dot = item.querySelector('.notif-item-dot');
     if (dot) dot.remove();
     closeNotifDropdown();
   }
   function markAllNotifRead() {
-    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+    document.querySelectorAll('.notif-item.unread').forEach(item => {
       item.classList.remove('unread');
-      var dot = item.querySelector('.notif-item-dot');
+      const dot = item.querySelector('.notif-item-dot');
       if (dot) dot.remove();
     });
   }
   function handleNotifAction(btn, action) {
-    var item = btn.closest('.notif-item');
-    var actions = item.querySelector('.notif-item-actions');
-    if (action === 'accept') {
-      actions.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--positive)">수락 완료</span>';
-    } else {
-      actions.innerHTML = '<span style="font-size:11px;color:var(--text-hint)">거절됨</span>';
-    }
+    const item = btn.closest('.notif-item');
+    const actions = item.querySelector('.notif-item-actions');
+    actions.innerHTML = action === 'accept'
+      ? '<span style="font-size:11px;font-weight:600;color:var(--positive)">수락 완료</span>'
+      : '<span style="font-size:11px;color:var(--text-hint)">거절됨</span>';
     item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
+    const dot = item.querySelector('.notif-item-dot');
     if (dot) dot.remove();
   }
 
@@ -2767,6 +2555,21 @@
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
   });
+
+  // Generate profile heatmap (13 cols × 7 rows = 91 cells)
+  (function() {
+    const hm = document.getElementById('profileHeatmap');
+    if (!hm) return;
+    const pattern = [0,0,0,0,0,0,0, 0,0,0,0,0,0,0, 0,0,0,0,1,0,0, 0,0,1,0,0,1,0, 0,1,0,1,0,0,1, 0,0,1,2,1,0,0, 1,0,1,0,2,1,0, 0,1,2,1,0,1,1, 1,2,1,2,1,0,0, 0,1,2,1,2,1,0, 1,2,1,3,2,1,1, 0,1,2,3,2,1,0, 2,1,3,2,3,2,1];
+    for (let col = 0; col < 13; col++) {
+      for (let row = 0; row < 7; row++) {
+        const val = pattern[col * 7 + row] || 0;
+        const cell = document.createElement('div');
+        cell.className = 'hm-cell' + (val > 0 ? ' l' + Math.min(val, 4) : '');
+        hm.appendChild(cell);
+      }
+    }
+  })();
 
   lucide.createIcons();
 </script>

@@ -125,7 +125,7 @@
 - 모두 없으면 방문일만 표시
 
 ### Section 8: 경험치
-- 이 기록으로 적립된 XP (xp_history에서 record_id로 조회)
+- 이 기록으로 적립된 XP (xp_histories에서 record_id로 조회)
 - 각 축별 표시: `{axis_value} +{xp_amount} XP (Lv.{level})`
 - 레벨 색상: level_thresholds.color 적용
 
@@ -136,7 +136,7 @@
 - **[삭제하기]**: Destructive 버튼 (text-red-500)
   - 탭 → 확인 모달: "이 기록을 삭제하시겠습니까? 경험치가 차감됩니다."
   - 확인 시: soft delete (status → 'deleted' 또는 deleted_at 설정)
-  - XP 재계산: xp_history에서 해당 record_id 관련 XP 차감
+  - XP 재계산: xp_histories에서 해당 record_id 관련 XP 차감
   - 삭제 후 → 이전 페이지로 이동
 - **[버블에 공유]**: Phase 2. Phase 1에서는 숨김
 
@@ -152,7 +152,7 @@
 | 사진 | record_photos 0개 | 섹션 숨김 |
 | 메뉴/팁 | menu_tags + tips 모두 NULL | 섹션 숨김 |
 | 실용 정보 | price + companions NULL | 방문일만 표시 |
-| 경험치 | xp_history 0건 | 섹션 숨김 |
+| 경험치 | xp_histories 0건 | 섹션 숨김 |
 
 ---
 
@@ -176,7 +176,7 @@
 | 식당/와인 정보 | restaurants / wines | 캐시 (2주) |
 | 사분면 좌표 | records.axis_x/y + 동일 target records | 실시간 |
 | 향 팔레트 | records.aroma_regions/labels | 실시간 |
-| 경험치 | xp_history + user_experience | 실시간 |
+| 경험치 | xp_histories + user_experiences | 실시간 |
 
 ---
 

@@ -446,12 +446,6 @@
   .inline-pager button:active { transform: scale(0.9); }
   .inline-pager button:disabled { opacity: 0.2; pointer-events: none; }
 
-  .chips-pager-wrap .saved-chips-row { flex: 1; min-width: 0; }
-  .chips-pager-wrap.has-pager .saved-chips-row::after {
-    content: '';
-    flex-shrink: 0;
-    width: 80px;
-  }
   .chips-pager-wrap .inline-pager {
     position: absolute;
     right: 0; top: 0; bottom: 0;
@@ -1448,7 +1442,7 @@
           <!-- 검색 드롭다운 -->
           <div class="search-dropdown" id="bSearchDropdown">
             <div class="search-input-wrap">
-              <i data-lucide="search" style="width:16px;height:16px;color:var(--text-tertiary);flex-shrink:0;"></i>
+              <i data-lucide="search" style="width:16px;height:16px;color:var(--text-hint);flex-shrink:0;"></i>
               <textarea id="bSearchInput" class="search-input" rows="1" placeholder="버블·버블러 이름으로 검색"></textarea>
               <button class="search-clear-btn" id="bSearchClearBtn" onclick="clearBubbleSearch()" style="display:none;">
                 <i data-lucide="x" style="width:14px;height:14px;"></i>
@@ -2726,8 +2720,8 @@
       '<div class="nyam-dropdown"><button class="nyam-dropdown-item selected" onclick="bSelectDD(this)">전체</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">을지로</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">광화문</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">강남</button><button class="nyam-dropdown-item" onclick="bSelectDD(this)">성수</button></div></div>' +
       '<button class="nf-remove" onclick="bRemoveRule(this)">✕</button>';
     const addRow = rules.parentElement.querySelector('.nf-add-row');
-    if (addRow) rules.parentElement.insertBefore(rule, addRow); // wrong — should insert into rules
-    rules.appendChild(rule);
+    if (addRow) rules.parentElement.insertBefore(rule, addRow);
+    else rules.appendChild(rule);
     lucide.createIcons({ nodes: [rule] });
     document.querySelectorAll('.nf-add-dd.open').forEach(d => d.classList.remove('open'));
   }
@@ -2934,14 +2928,6 @@
     });
   }
 
-  // Legacy stubs (old filter functions — replaced by new filter drawer)
-  function cycleBfVal() {}
-  function cycleBfAttr() {}
-  function removeBfRule() {}
-  function addBfRule_old() {}
-  function toggleBfConj() {}
-  function updateBfCount() {}
-  function toggleBubbleFilter() { toggleBubbleFilterDrawer(); }
 
   // =====================
   // Filter Chip Management (Bubbles)

@@ -146,8 +146,7 @@
   }
   .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
   .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
-  .inner-back-btn:active { opacity: 0.6;
-  }
+  .inner-back-btn:active { opacity: 0.6; }
   .app-header-actions {
     display: flex;
     align-items: center;
@@ -426,6 +425,9 @@
   .dm-chip.white { background: #FAFAF0; color: #9A8B30; border: 1px solid #E8E4C8; }
   .dm-chip.rose { background: #FDF5F8; color: #B8879B; border: 1px solid #EDD8E0; }
   .dm-chip.sparkling { background: #F0F5FA; color: var(--accent-social); border: 1px solid #D6E0E8; }
+  .dm-chip.orange { background: #FDF5F0; color: #C17B5E; border: 1px solid #EDDBD0; }
+  .dm-chip.fortified { background: #F5F0F0; color: #8B6B5E; border: 1px solid #DDD0C8; }
+  .dm-chip.dessert { background: #FDF8F0; color: #C9A96E; border: 1px solid #E8E0C8; }
 
   /* ── Row 2: Score Cards (always 3 slots) ── */
   .score-cards {
@@ -637,6 +639,10 @@
   .chip-business { background: var(--scene-business); }
   .chip-drinks { background: var(--scene-drinks); }
   .chip-pairing { background: var(--caution); }
+  .chip-gathering { background: var(--scene-friends); }
+  .chip-gift { background: var(--scene-business); }
+  .chip-tasting { background: var(--scene-drinks); }
+  .chip-decanting { background: #A0896C; }
 
   .timeline-score {
     font-size: 13px;
@@ -827,11 +833,6 @@
     cursor: pointer;
     color: var(--text-sub);
     transition: all 0.2s;
-  }
-  .filter-chip.active {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    color: var(--primary);
   }
   .filter-chip.wine-active {
     background: var(--wine-light);
@@ -1384,8 +1385,13 @@ MARGAUX</span>
             <tr><td>품종</td><td>Cabernet Sauvignon 75%, Merlot 20%, Petit Verdot 5%</td></tr>
             <tr><td>산지</td><td>프랑스 보르도 메독</td></tr>
             <tr><td>알코올</td><td>14.5%</td></tr>
+            <tr><td>바디</td><td>●●●●○ Full</td></tr>
+            <tr><td>산미</td><td>●●○ 중간</td></tr>
+            <tr><td>당도</td><td>●○○ 드라이</td></tr>
             <tr><td>적정 온도</td><td>16–18°C</td></tr>
             <tr><td>디캔팅</td><td>2시간 권장</td></tr>
+            <tr><td>참고 시세</td><td>≈ 80만원</td></tr>
+            <tr><td>음용 적기</td><td>2025–2045</td></tr>
           </table>
         </div>
 
@@ -1618,8 +1624,13 @@ MARGAUX</span>
             <tr><td>품종</td><td>Cabernet Sauvignon 75%, Merlot 20%, Petit Verdot 5%</td></tr>
             <tr><td>산지</td><td>프랑스 보르도 메독</td></tr>
             <tr><td>알코올</td><td>14.5%</td></tr>
+            <tr><td>바디</td><td>●●●●○ Full</td></tr>
+            <tr><td>산미</td><td>●●○ 중간</td></tr>
+            <tr><td>당도</td><td>●○○ 드라이</td></tr>
             <tr><td>적정 온도</td><td>16–18°C</td></tr>
             <tr><td>디캔팅</td><td>2시간 권장</td></tr>
+            <tr><td>참고 시세</td><td>≈ 80만원</td></tr>
+            <tr><td>음용 적기</td><td>2025–2045</td></tr>
           </table>
         </div>
 
@@ -1739,7 +1750,7 @@ MARGAUX</span>
     const activeScreen = document.querySelector('.screen.active');
     if (!activeScreen) return;
     const carousel = activeScreen.querySelector('.carousel-track');
-    if (!carousel) return;
+    if (!carousel || !carousel.id) return;
     const dotsEl = activeScreen.querySelector('.carousel-dots');
     if (!dotsEl) return;
     const id = carousel.id;

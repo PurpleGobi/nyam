@@ -26,6 +26,7 @@
     --caution: #C9A96E;
     --negative: #B87272;
     --accent-social: #7A9BAE;
+    --accent-social-light: #EBF0F3;
     --brand: #FF6038;
   }
 
@@ -126,15 +127,6 @@
   .fab-back:active { transform:scale(0.9); }
   .fab-back svg { width:22px; height:22px; }
 
-  /* Skip link */
-  .ob-skip {
-    position:absolute; top:52px; right:20px; z-index:85;
-    background:none; border:none;
-    font-size:13px; font-weight:600; color:var(--text-hint);
-    cursor:pointer; padding:8px 4px;
-  }
-  .ob-skip:active { color:var(--text-sub); }
-
   /* Floating Forward Button */
   .fab-forward {
     position:absolute; bottom:28px; right:16px; z-index:85;
@@ -145,9 +137,6 @@
     cursor:pointer; color:#fff; transition:transform 0.15s;
   }
   .fab-forward:active { transform:scale(0.9); }
-  .fab-forward.wine-style {
-    background:var(--wine); box-shadow:0 3px 16px rgba(139,115,150,0.4);
-  }
   .fab-forward svg { width:22px; height:22px; }
 
   /* Scrollable content */
@@ -192,10 +181,7 @@
     text-align: center;
     line-height: 1.6;
     min-height: 2.4em;
-    transition: opacity 0.4s ease;
   }
-  .login-tagline.fade-out { opacity: 0; }
-  .login-tagline.fade-in { opacity: 1; }
 
   .social-btns {
     width: 100%;
@@ -242,261 +228,8 @@
   .login-footer a { color: var(--text-sub); text-decoration: underline; text-underline-offset: 2px; }
 
   /* =====================
-     SCREEN 2: AREA SELECTION
+     ONBOARDING CARDS (SCREEN 2–4)
      ===================== */
-  .onboarding-screen {
-    padding: 44px 24px 40px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .location-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--primary-light);
-    color: var(--primary);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 100px;
-    margin-bottom: 28px;
-  }
-
-  /* Area Map */
-  .area-map-container {
-    flex:1; min-height:360px; position:relative;
-    background: #f0f4f8; border-radius:20px; overflow:hidden;
-    border:1px solid var(--border);
-  }
-  .map-layer {
-    position:absolute; top:0; left:0; width:100%; height:100%;
-    transition: opacity 0.35s, transform 0.35s;
-  }
-  .map-layer.hidden-layer {
-    opacity:0; pointer-events:none; transform:scale(1.1);
-  }
-  .map-layer.zoom-out {
-    opacity:0; pointer-events:none; transform:scale(0.8);
-  }
-
-  /* City bubbles on national map */
-  .city-bubble {
-    position:absolute; transform:translate(-50%,-50%);
-    width:52px; height:52px; border-radius:50%;
-    background:rgba(255,96,56,0.12); border:2px solid rgba(255,96,56,0.3);
-    display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:600; color:var(--text);
-    cursor:pointer; transition: all 0.2s;
-    -webkit-user-select:none; user-select:none;
-  }
-  .city-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
-  .city-bubble.pulse {
-    background:rgba(255,96,56,0.2); border-color:var(--primary);
-  }
-
-  /* Area bubbles on city map */
-  .area-bubble {
-    position:absolute; transform:translate(-50%,-50%);
-    min-width:48px; height:48px; border-radius:50%;
-    background:rgba(255,96,56,0.08); border:1.5px solid rgba(255,96,56,0.25);
-    display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:500; color:var(--text-sub);
-    cursor:pointer; transition: all 0.2s;
-    padding:0 6px;
-    -webkit-user-select:none; user-select:none;
-  }
-  .area-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
-  .area-bubble.selected {
-    background:rgba(255,96,56,0.25); border-color:var(--primary);
-    color:var(--primary); font-weight:700;
-    box-shadow:0 0 12px rgba(255,96,56,0.3);
-  }
-
-  .map-back-btn {
-    position:absolute; top:12px; left:12px; z-index:10;
-    padding:6px 14px; border-radius:20px;
-    background:rgba(255,255,255,0.9); border:1px solid var(--border);
-    font-size:13px; color:var(--text); cursor:pointer;
-    backdrop-filter:blur(8px); display:flex; align-items:center; gap:4px;
-  }
-
-  .selected-chip {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:4px 12px; border-radius:100px;
-    background:var(--primary-light); border:1px solid var(--primary);
-    color:var(--primary); font-size:12px; font-weight:600;
-  }
-  .selected-chip .remove {
-    cursor:pointer; font-size:14px; line-height:1; opacity:0.6;
-  }
-  .selected-chip .remove:hover { opacity:1; }
-
-  /* =====================
-     SCREEN 3: RESTAURANT ONBOARDING
-     ===================== */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    background: #FEF3C7;
-    color: #D97706;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 100px;
-  }
-  .badge.blue { background: #EFF6FF; color: #3B82F6; }
-
-  /* Onboarding restaurant/wine cards */
-  .ob-card {
-    background: var(--bg-card); border-radius:16px; border:1px solid var(--border);
-    padding:14px 16px; transition:all 0.2s;
-  }
-  .ob-card.visited { border-color: var(--primary); background: var(--primary-light); }
-  .ob-card.wishlisted { border-color: #f59e0b; background: #fffbeb; }
-  .ob-card.wine-visited { border-color: var(--wine); background: var(--wine-light); }
-  .ob-card.wine-wishlisted { border-color: #f59e0b; background: #fffbeb; }
-
-  .ob-card-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-  .ob-card-photo {
-    width:48px; height:48px; border-radius:12px; background:var(--bg-page);
-    display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
-  }
-  .ob-card-info { flex:1; }
-  .ob-card-name { font-size:15px; font-weight:600; color:var(--text); }
-  .ob-card-meta { font-size:12px; color:var(--text-sub); display:flex; align-items:center; gap:6px; margin-top:2px; }
-  .ob-card-score { font-size:11px; color:var(--text-hint); margin-top:2px; }
-
-  /* Filter tabs */
-  .ob-filter-tabs {
-    display:flex; gap:0; overflow-x:auto;
-    border-bottom:1.5px solid var(--border);
-    -webkit-overflow-scrolling:touch;
-  }
-  .ob-filter-tabs::-webkit-scrollbar { display:none; }
-  .ob-filter-tab {
-    flex-shrink:0; padding:10px 16px;
-    font-size:14px; font-weight:500; white-space:nowrap;
-    border:none; background:none; color:var(--text-hint);
-    cursor:pointer; transition:all 0.2s;
-    position:relative;
-    display:flex; align-items:center; gap:4px;
-  }
-  .ob-filter-tab::after {
-    content:''; position:absolute; bottom:-1.5px; left:8px; right:8px;
-    height:2.5px; border-radius:2px; background:transparent; transition:background 0.2s;
-  }
-  .ob-filter-tab.active {
-    color:var(--primary); font-weight:700;
-  }
-  .ob-filter-tab.active::after {
-    background:var(--primary);
-  }
-
-  .ob-card-actions { display:flex; gap:8px; }
-  .ob-btn {
-    flex:1; padding:10px 0; border-radius:10px; border:1.5px solid var(--border);
-    background:white; font-size:13px; font-weight:600; cursor:pointer;
-    transition:all 0.15s; text-align:center;
-  }
-  .ob-btn:active { transform:scale(0.96); }
-  .ob-btn.visited-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
-  .ob-btn.wish-btn.active { background:#f59e0b; color:white; border-color:#f59e0b; }
-  .ob-btn.wine-visited-btn.active { background:var(--wine); color:white; border-color:var(--wine); }
-
-  .ob-card-gauge {
-    animation:fadeSlideIn 0.25s ease;
-  }
-  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-
-  /* Circle rating inside card */
-  .ob-circle-area {
-    display:flex; align-items:center; justify-content:center;
-    height:90px; cursor:ns-resize; user-select:none; -webkit-user-select:none;
-    touch-action:none; position:relative;
-  }
-  .ob-rating-circle {
-    border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-weight:800; color:#fff;
-    transition:width 0.08s, height 0.08s, background 0.15s, box-shadow 0.15s;
-    pointer-events:none;
-  }
-  .circle-hint {
-    position:absolute; bottom:4px; left:0; right:0;
-    text-align:center; font-size:10px; color:var(--text-hint);
-    pointer-events:none;
-    transition:opacity 0.3s;
-    animation:hintPulse 2s ease-in-out infinite;
-  }
-  .circle-hint.hidden { opacity:0; }
-  @keyframes hintPulse {
-    0%,100% { opacity:0.5; }
-    50% { opacity:1; }
-  }
-
-  /* Wine onboarding animations */
-  @keyframes sheetSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-
-  /* Home indicator */
-  .home-indicator {
-    height: 4px;
-    width: 134px;
-    background: var(--text);
-    border-radius: 100px;
-    margin: 6px auto 2px;
-    opacity: 0.2;
-  }
-
-  /* =====================
-     NEW ONBOARDING STYLES
-     ===================== */
-
-
-  /* XP Pop animation */
-  .xp-pop {
-    position:fixed;
-    font-size:13px; font-weight:800; color:var(--brand);
-    animation:xpPopUp 0.9s ease forwards;
-    pointer-events:none; z-index:999;
-  }
-  @keyframes xpPopUp {
-    0% { opacity:1; transform:translateY(0) scale(1); }
-    40% { opacity:1; transform:translateY(-18px) scale(1.2); }
-    100% { opacity:0; transform:translateY(-40px) scale(0.7); }
-  }
-
-  /* Import buttons */
-  .import-btn {
-    flex:1; padding:16px 12px; border-radius:14px;
-    border:1.5px solid var(--border); background:var(--bg-card);
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    cursor:pointer; transition:all 0.15s;
-    font-size:13px; font-weight:600; color:var(--text);
-  }
-  .import-btn:active { transform:scale(0.96); }
-  .import-btn .import-icon {
-    width:40px; height:40px; border-radius:12px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:18px; font-weight:700; color:#fff;
-  }
-
-  /* Area quick-pick tabs */
-  .area-tabs {
-    display:flex; gap:8px; overflow-x:auto; padding:2px 0;
-    -webkit-overflow-scrolling:touch;
-  }
-  .area-tabs::-webkit-scrollbar { display:none; }
-  .area-tab {
-    flex-shrink:0; padding:7px 16px; border-radius:100px;
-    border:1.5px solid var(--border); background:var(--bg-card);
-    font-size:13px; font-weight:500; color:var(--text-sub);
-    cursor:pointer; transition:all 0.15s; white-space:nowrap;
-  }
-  .area-tab.active {
-    background:var(--primary); color:#fff; border-color:var(--primary);
-  }
 
   /* Register button in card */
   .ob-register-btn {
@@ -508,15 +241,6 @@
   .ob-register-btn:active { opacity:0.5; }
   .ob-register-btn.registered {
     color:var(--text-hint); pointer-events:none;
-  }
-
-  /* Divider */
-  .ob-divider {
-    display:flex; align-items:center; gap:12px;
-    margin:16px 0; color:var(--text-hint); font-size:12px; font-weight:500;
-  }
-  .ob-divider::before, .ob-divider::after {
-    content:''; flex:1; height:1px; background:var(--border);
   }
 
   /* Bubble template card */
@@ -540,34 +264,6 @@
   .bubble-template .bt-name { font-size:15px; font-weight:700; color:var(--text); }
   .bubble-template .bt-desc { font-size:12px; color:var(--text-sub); margin-top:2px; }
 
-  /* Bubble invite section */
-  .bubble-invite-section {
-    display:none; animation:fadeSlideIn 0.3s ease;
-  }
-  .bubble-invite-section.visible { display:block; }
-
-  .invite-btn {
-    padding:12px 16px; border-radius:12px; border:1.5px solid var(--border);
-    background:var(--bg-card); font-size:13px; font-weight:600; color:var(--text);
-    cursor:pointer; transition:all 0.15s;
-    display:flex; align-items:center; gap:8px; width:100%;
-  }
-  .invite-btn:active { transform:scale(0.97); }
-
-  /* Sparkle animation for XP bonus */
-  @keyframes sparkle {
-    0% { opacity:0; transform:scale(0.5); }
-    50% { opacity:1; transform:scale(1.1); }
-    100% { opacity:0; transform:scale(0.5); }
-  }
-  .xp-bonus {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:6px 14px; border-radius:100px;
-    background:linear-gradient(135deg, #FEF3C7, #FDE68A);
-    color:#D97706; font-size:13px; font-weight:700;
-    animation:sparkle 1.5s ease infinite;
-  }
-
   /* Explore card */
   .explore-card {
     background:var(--bg-card); border-radius:16px; border:1px solid var(--border);
@@ -582,31 +278,6 @@
   .explore-card .ec-info { flex:1; }
   .explore-card .ec-name { font-size:15px; font-weight:700; color:var(--text); }
   .explore-card .ec-meta { font-size:12px; color:var(--text-sub); margin-top:2px; }
-  .explore-card .ec-join {
-    padding:8px 14px; border-radius:10px; border:none;
-    font-size:12px; font-weight:700; cursor:pointer;
-    transition:all 0.15s; white-space:nowrap;
-  }
-  .explore-card .ec-join.enabled {
-    background:var(--accent-social); color:#fff;
-  }
-  .explore-card .ec-join.enabled:active { transform:scale(0.95); }
-  .explore-card .ec-join.joined {
-    background:var(--positive); color:#fff; pointer-events:none;
-  }
-  .explore-card .xp-lock {
-    background:var(--bg-page); color:var(--text-hint);
-    padding:8px 12px; border-radius:10px; border:none;
-    font-size:11px; font-weight:600; cursor:default;
-  }
-
-  /* Motivation banner */
-  .motivation-banner {
-    background:linear-gradient(135deg, #FEF3C7, #FFEDD5);
-    border-radius:14px; padding:14px 18px;
-    text-align:center; font-size:13px; font-weight:600;
-    color:#92400E;
-  }
 
   /* Search bar */
   .ob-search {
@@ -624,7 +295,7 @@
     color:var(--text-hint); pointer-events:none;
   }
 
-  /* nyam-select (from design system) */
+  /* nyam-select */
   .nyam-select-wrap { position:relative; display:inline-block; }
   .nyam-select {
     display:flex; align-items:center; gap:6px;
@@ -660,7 +331,7 @@
   .nyam-dropdown-item:hover { background:var(--bg); }
   .nyam-dropdown-item.selected { color:var(--primary); font-weight:600; }
 
-  /* Bubble detail popup (from 04_bubbles) */
+  /* Bubble detail popup */
   .popup-overlay {
     position:absolute; top:0; left:0; right:0; bottom:0;
     background:rgba(0,0,0,0.45); z-index:90;
@@ -749,14 +420,28 @@
     background:var(--primary); opacity:0.45;
   }
 
-  /* CTA full-width button */
-  .ob-cta {
-    width:100%; padding:16px; border-radius:14px; border:none;
-    background:var(--primary); color:#fff;
-    font-size:15px; font-weight:700; cursor:pointer;
-    transition:all 0.15s; text-align:center;
+  /* XP Pop animation */
+  .xp-pop {
+    position:fixed;
+    font-size:13px; font-weight:800; color:var(--brand);
+    animation:xpPopUp 0.9s ease forwards;
+    pointer-events:none; z-index:999;
   }
-  .ob-cta:active { transform:scale(0.97); opacity:0.9; }
+  @keyframes xpPopUp {
+    0% { opacity:1; transform:translateY(0) scale(1); }
+    40% { opacity:1; transform:translateY(-18px) scale(1.2); }
+    100% { opacity:0; transform:translateY(-40px) scale(0.7); }
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    height: 4px;
+    width: 134px;
+    background: var(--text);
+    border-radius: 100px;
+    margin: 6px auto 2px;
+    opacity: 0.2;
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
@@ -775,7 +460,7 @@
         <div style="height:44px;"></div>
         <div class="login-screen scroll-content" style="flex:1;">
           <div class="login-logo">nyam</div>
-          <div class="login-tagline" id="loginTagline"></div>
+          <div class="login-tagline">낯선 별점 천 개보다, 믿을만한 한 명의 기록.</div>
           <div class="social-btns">
             <button class="social-btn btn-kakao" onclick="goToScreen('screen-intro')">
               <span class="social-btn-icon">💬</span>
@@ -1068,14 +753,6 @@
 
 <script>
   // =====================
-  // Login Tagline (static)
-  // =====================
-  (function initTagline() {
-    const el = document.getElementById('loginTagline');
-    el.textContent = '낯선 별점 천 개보다, 믿을만한 한 명의 기록.';
-  })();
-
-  // =====================
   // Screen Navigation
   // =====================
   let currentScreen = 'screen-login';
@@ -1105,7 +782,6 @@
 
     currentScreen = targetId;
 
-    // Init screens on enter
     if (targetId === 'screen-record') {
       selectRecordArea('을지로');
       lucide.createIcons();
@@ -1125,7 +801,6 @@
     const prev = document.getElementById(prevId);
 
     current.classList.remove('active');
-    current.classList.add('slide-out');
     current.style.animation = 'slideOutRight 0.3s forwards';
 
     prev.classList.remove('hidden');
@@ -1133,7 +808,6 @@
     prev.style.animation = 'slideInLeft 0.3s forwards';
 
     setTimeout(() => {
-      current.classList.remove('slide-out');
       current.classList.add('hidden');
       current.style.animation = '';
       prev.style.animation = '';
@@ -1150,28 +824,7 @@
 
   function addXP(amount, anchorEl) {
     obXP += amount;
-    updateXPBar();
     showXPPop(amount, anchorEl);
-  }
-
-  function updateXPBar() {
-    const display = document.getElementById('xpDisplay');
-    const fill = document.getElementById('xpFillBar');
-    const level = document.getElementById('xpLevel');
-    if (display) display.textContent = obXP + ' XP';
-    // Each level = 50 XP, bar shows progress within current level
-    const currentLevel = Math.floor(obXP / 50) + 1;
-    const progressInLevel = (obXP % 50) / 50 * 100;
-    if (fill) fill.style.width = progressInLevel + '%';
-
-    const levelNames = {
-      1: 'Lv.1 맛 초보',
-      2: 'Lv.2 맛 탐험가',
-      3: 'Lv.3 맛 감별사',
-      4: 'Lv.4 맛 마스터',
-      5: 'Lv.5 미식가',
-    };
-    if (level) level.textContent = levelNames[Math.min(currentLevel, 5)] || levelNames[5];
   }
 
   function showXPPop(amount, anchorEl) {
@@ -1229,18 +882,13 @@
   ];
 
   function pickArea(area, itemEl) {
-    // Update selected state
     document.querySelectorAll('#areaDropdown .nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
     itemEl.classList.add('selected');
-    // Update display value
     document.getElementById('areaSelectValue').textContent = area;
-    // Close dropdown
     document.getElementById('areaSelectBtn').classList.remove('open');
-    // Render list
     selectRecordArea(area);
   }
 
-  // Close dropdown on outside click
   document.addEventListener('click', function(e) {
     document.querySelectorAll('.nyam-select.open').forEach(function(s) {
       if (!s.parentElement.contains(e.target)) s.classList.remove('open');
@@ -1275,7 +923,6 @@
     addXP(10, btnEl);
   }
 
-  // Search bar
   function showSearchResults() {
     const query = document.getElementById('recordSearchInput').value.trim();
     const dropdown = document.getElementById('searchResultsDropdown');
@@ -1284,8 +931,6 @@
     const results = searchMockResults.filter(r =>
       r.name.includes(query) || r.genre.includes(query)
     );
-
-    // Always show at least the mock results for any query
     const toShow = results.length > 0 ? results : searchMockResults;
 
     dropdown.innerHTML = '';
@@ -1376,10 +1021,7 @@
     const b = exploreBubbles[idx];
     const popup = document.getElementById('bubblePopup');
 
-    // Icon
     document.getElementById('popupIcon').innerHTML = `<i data-lucide="${b.icon}" style="width:24px;height:24px;color:var(--text-sub);"></i>`;
-
-    // Header
     document.getElementById('popupName').textContent = b.name;
     document.getElementById('popupDesc').textContent = b.desc;
     document.getElementById('popupPills').innerHTML = `
@@ -1387,7 +1029,6 @@
       <span class="pill pill-blue">${b.type}</span>
     `;
 
-    // Stats
     const remaining = b.maxMembers - b.members;
     document.getElementById('popupStats').innerHTML = `
       <div class="popup-stat-card">
@@ -1410,7 +1051,6 @@
       </div>
     `;
 
-    // Join conditions
     const j = b.join;
     document.getElementById('popupJoin').innerHTML = `
       <div class="popup-info-list">
@@ -1440,20 +1080,6 @@
   function closeBubblePopup(e) {
     if (e && e.target !== e.currentTarget) return;
     document.getElementById('bubblePopup').classList.remove('show');
-  }
-
-  // Toast
-  function showToast(msg) {
-    let toast = document.getElementById('obToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'obToast';
-      toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.3s;white-space:nowrap;';
-      document.body.appendChild(toast);
-    }
-    toast.textContent = msg;
-    toast.style.opacity = '1';
-    setTimeout(() => { toast.style.opacity = '0'; }, 2000);
   }
 
   // Init lucide icons

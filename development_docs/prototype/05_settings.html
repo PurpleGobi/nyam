@@ -45,13 +45,11 @@
     box-shadow: 0 0 0 1px #3A3632, 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px #4A4540;
     position: relative; flex-shrink: 0;
   }
-    .dynamic-island {
+  .dynamic-island {
     position: absolute;
-    top: 11px;
-    left: 50%;
+    top: 11px; left: 50%;
     transform: translateX(-50%);
-    width: 126px;
-    height: 36px;
+    width: 126px; height: 36px;
     background: #1A1A1A;
     border-radius: 20px;
     z-index: 100;
@@ -59,11 +57,9 @@
   .dynamic-island::after {
     content: '';
     position: absolute;
-    right: 14px;
-    top: 50%;
+    right: 14px; top: 50%;
     transform: translateY(-50%);
-    width: 12px;
-    height: 12px;
+    width: 12px; height: 12px;
     border-radius: 50%;
     background: #080C10;
     box-shadow: inset 0 0 2px rgba(30,60,90,0.6);
@@ -99,7 +95,6 @@
     justify-content: space-between;
   }
 
-  /* Inner page back */
   .inner-back-btn {
     display: flex; align-items: center; gap: 2px;
     background: none; border: none; cursor: pointer;
@@ -108,6 +103,7 @@
   .inner-back-btn svg { width: 22px; height: 22px; color: var(--text-sub); }
   .inner-back-btn span { font-size: 16px; font-weight: 600; line-height: 1; }
   .inner-back-btn:active { opacity: 0.6; }
+
   .header-brand {
     font-family: 'Comfortaa', cursive;
     font-size: 22px; font-weight: 700;
@@ -120,6 +116,8 @@
   }
 
   .header-right { display: flex; gap: 6px; align-items: center; }
+  .header-icon-wrap { position: relative; }
+
   .icon-btn {
     width: 34px; height: 34px; border-radius: 50%;
     background: transparent; border: none; cursor: pointer;
@@ -142,7 +140,8 @@
   }
 
   .scroll-area {
-    flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px;
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding-bottom: 40px;
     -webkit-overflow-scrolling: touch;
   }
   .scroll-area::-webkit-scrollbar { display: none; }
@@ -173,19 +172,20 @@
   }
   .settings-item-icon svg { width: 18px; height: 18px; }
   .settings-item-label { flex: 1; font-size: 15px; color: var(--text); }
-  .settings-item-sub {
-    font-size: 12px; color: var(--text-hint); margin-top: 2px; line-height: 1.3;
-  }
+  .settings-item-label--sm { font-size: 14px; }
+  .settings-item-hint { font-size: 10px; color: var(--text-hint); margin-top: 1px; }
+  .settings-item-sub { font-size: 12px; color: var(--text-hint); margin-top: 2px; line-height: 1.3; }
   .settings-item-value { font-size: 13px; color: var(--text-sub); }
-  .settings-item-chevron { color: #D4CFC8; display: flex; align-items: center; }
+  .settings-item-value--sm { font-size: 11px; }
+  .settings-item-chevron { color: var(--border-bold); display: flex; align-items: center; }
   .settings-item-chevron svg { width: 16px; height: 16px; }
-  .settings-item.danger .settings-item-label { color: #B87272; }
-  .settings-item.danger .settings-item-icon { color: #B87272; }
+  .settings-item.danger .settings-item-label,
+  .settings-item.danger .settings-item-icon { color: var(--negative); }
 
   /* Toggle */
   .toggle {
     width: 44px; height: 26px;
-    background: #D4CFC8; border-radius: 13px;
+    background: var(--border-bold); border-radius: 13px;
     position: relative; cursor: pointer;
     transition: background 0.2s;
     flex-shrink: 0; border: none;
@@ -265,6 +265,9 @@
     max-height: 800px; opacity: 1;
     pointer-events: auto;
   }
+  /* prv-layer always sits under a preceding section, no top padding needed */
+  .settings-section.prv-layer { padding-top: 0; }
+
   .prv-layer-header {
     display: flex; align-items: center; gap: 8px;
     padding: 10px 16px 6px;
@@ -312,6 +315,12 @@
     margin-top: 12px; padding: 10px 12px;
     background: var(--bg); border-radius: 8px;
     font-size: 12px; color: var(--text-sub); line-height: 1.5;
+  }
+
+  /* Layer footer note */
+  .prv-layer-note {
+    padding: 6px 4px 0; font-size: 11px;
+    color: var(--text-hint); line-height: 1.5;
   }
 
   /* Bottom sheet overlay */
@@ -362,9 +371,7 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; margin-top: 1px;
   }
-  .option-card.selected .option-card-radio {
-    border-color: var(--primary);
-  }
+  .option-card.selected .option-card-radio { border-color: var(--primary); }
   .option-card.selected .option-card-radio::after {
     content: ''; width: 10px; height: 10px;
     border-radius: 50%; background: var(--primary);
@@ -376,52 +383,30 @@
   /* Avatar dropdown menu */
   .avatar-menu {
     display: none;
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    background: var(--bg-elevated, #FFFFFF);
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    z-index: 200;
-    min-width: 120px;
-    overflow: hidden;
+    z-index: 200; min-width: 120px; overflow: hidden;
   }
   .avatar-menu.open { display: block; }
   .avatar-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex; align-items: center; gap: 8px;
     padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    text-decoration: none;
-    cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    text-decoration: none; cursor: pointer;
     border-bottom: 1px solid var(--border);
     transition: background 0.1s;
   }
   .avatar-menu-item:last-child { border-bottom: none; }
-  .avatar-menu-item:active { background: var(--bg-page, #EFECE7); }
+  .avatar-menu-item:active { background: var(--bg-page); }
 
   /* Header bubbles link */
   .header-bubbles {
     background: none; border: none; cursor: pointer;
     font-family: 'Comfortaa', cursive; font-size: 13px;
     font-weight: 700; color: var(--brand); padding: 4px 0;
-  }
-
-  /* Privacy toggle item label size override */
-  .settings-item-label--sm { font-size: 14px; }
-
-  /* Section subtitle (inline) */
-  .prv-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
-  .prv-section-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
-
-  /* Layer footer note */
-  .prv-layer-note {
-    padding: 6px 4px 0; font-size: 11px;
-    color: var(--text-hint); line-height: 1.5;
   }
 
   /* Delete sheet info box */
@@ -434,9 +419,7 @@
     display: flex; align-items: flex-start; gap: 5px; margin-bottom: 2px;
   }
   .delete-info-item:last-child { margin-bottom: 0; }
-  .delete-info-item::before {
-    content: '·'; color: var(--text-hint); flex-shrink: 0;
-  }
+  .delete-info-item::before { content: '·'; color: var(--text-hint); flex-shrink: 0; }
 
   /* CTA danger button */
   .btn-danger {
@@ -446,13 +429,11 @@
     cursor: pointer; font-family: inherit;
   }
 
-  /* Settings item value small */
-  .settings-item-value--sm { font-size: 11px; }
-
   /* Notification Dropdown */
   .notif-dropdown-overlay {
-    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 190; border-radius: 42px;
   }
   .notif-dropdown-overlay.open { display: block; }
@@ -460,56 +441,65 @@
     display: none; position: absolute;
     top: 90px; right: 16px;
     width: 300px; max-height: 400px;
-    background: var(--bg-elevated, #FFFFFF); border: 1px solid var(--border, #E8E4DF);
+    background: var(--bg-elevated); border: 1px solid var(--border);
     border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
     z-index: 200; overflow: hidden; flex-direction: column;
   }
   .notif-dropdown.open { display: flex; }
   .notif-dropdown-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px 10px; border-bottom: 1px solid var(--border, #E8E4DF); flex-shrink: 0;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text, #3D3833); }
+  .notif-dropdown-title { font-size: 14px; font-weight: 700; color: var(--text); }
   .notif-dropdown-mark-read {
     background: none; border: none; cursor: pointer;
-    font-size: 11px; font-weight: 500; color: var(--text-hint, #B5AFA8); font-family: inherit;
+    font-size: 11px; font-weight: 500; color: var(--text-hint); font-family: inherit;
   }
   .notif-dropdown-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
   .notif-dropdown-list::-webkit-scrollbar { display: none; }
   .notif-item {
     display: flex; align-items: flex-start; gap: 10px;
     padding: 11px 14px; cursor: pointer;
-    border-bottom: 1px solid var(--border, #E8E4DF); position: relative;
+    border-bottom: 1px solid var(--border); position: relative;
   }
   .notif-item:last-child { border-bottom: none; }
   .notif-item:active { opacity: 0.7; }
   .notif-item-icon {
     width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 1px; color: var(--text-sub, #8C8580);
+    flex-shrink: 0; margin-top: 1px; color: var(--text-sub);
   }
   .notif-item-icon svg { width: 16px; height: 16px; }
   .notif-item-content { flex: 1; min-width: 0; padding-right: 16px; }
-  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text, #3D3833); line-height: 1.4; }
-  .notif-item-body { font-size: 12px; color: var(--text-sub, #8C8580); margin-top: 1px; }
-  .notif-item-time { font-size: 11px; color: var(--text-hint, #B5AFA8); margin-top: 2px; }
+  .notif-item-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .notif-item-body { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+  .notif-item-time { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
   .notif-item.unread .notif-item-title { font-weight: 600; }
   .notif-item-dot {
     position: absolute; top: 15px; right: 12px;
-    width: 6px; height: 6px; border-radius: 50%; background: var(--brand, #FF6038);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
   }
   .notif-item-actions { display: flex; gap: 6px; margin-top: 6px; }
   .notif-action-btn {
     padding: 3px 10px; border-radius: 6px;
     font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
   }
-  .notif-action-accept { background: var(--text, #3D3833); color: #fff; border: none; }
-  .notif-action-decline { background: transparent; color: var(--text-hint, #B5AFA8); border: 1px solid var(--border, #E8E4DF); }
+  .notif-action-accept { background: var(--text); color: #fff; border: none; }
+  .notif-action-decline { background: transparent; color: var(--text-hint); border: 1px solid var(--border); }
   .notif-dropdown-footer {
     padding: 9px 14px; text-align: center;
-    border-top: 1px solid var(--border, #E8E4DF); flex-shrink: 0;
+    border-top: 1px solid var(--border); flex-shrink: 0;
   }
   .notif-dropdown-footer a {
-    font-size: 12px; font-weight: 500; color: var(--text-hint, #B5AFA8); text-decoration: none;
+    font-size: 12px; font-weight: 500; color: var(--text-hint); text-decoration: none;
+  }
+
+  /* Privacy subsections */
+  .prv-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .prv-section-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+
+  /* Privacy note */
+  .prv-note {
+    padding: 0 4px; font-size: 11px; color: var(--text-hint); line-height: 1.6;
   }
 </style>
 </head>
@@ -536,17 +526,16 @@
         </button>
         <div class="header-right">
           <button class="header-bubbles" onclick="location.href='04_bubbles.html'">bubbles</button>
-          <div style="position:relative;">
+          <div class="header-icon-wrap">
             <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)">
-              <i data-lucide="bell" style="width:20px;height:20px;"></i>
+              <i data-lucide="bell"></i>
             </button>
             <div class="notif-badge"></div>
           </div>
-          <div style="position:relative;">
+          <div class="header-icon-wrap">
             <div class="header-avatar" onclick="this.parentElement.querySelector('.avatar-menu').classList.toggle('open')">J</div>
             <div class="avatar-menu" onclick="event.stopPropagation()">
-              <a href="03_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
-
+              <a href="04_bubbler_profile.html" class="avatar-menu-item"><i data-lucide="user" style="width:16px;height:16px;"></i> 프로필</a>
               <a href="05_settings.html" class="avatar-menu-item"><i data-lucide="settings" style="width:16px;height:16px;"></i> 설정</a>
             </div>
           </div>
@@ -675,7 +664,7 @@
       </div>
 
       <!-- 전체에게 보이는 항목 (전체 공개일 때만) -->
-      <div class="settings-section prv-layer" id="layer-public" style="padding-top:0">
+      <div class="settings-section prv-layer" id="layer-public">
         <div class="prv-layer-header">
           <div class="prv-layer-dot" style="background:var(--positive)"></div>
           <div class="prv-layer-title">전체에게 보이는 항목</div>
@@ -717,13 +706,11 @@
             <span style="font-size:11px;color:var(--text-hint)">버블에서만</span>
           </div>
         </div>
-        <div class="prv-layer-note">
-          프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위
-        </div>
+        <div class="prv-layer-note">프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위</div>
       </div>
 
       <!-- 버블 멤버 기본 공개 (전체/버블만일 때) -->
-      <div class="settings-section prv-layer visible" id="layer-bubble" style="padding-top:0">
+      <div class="settings-section prv-layer visible" id="layer-bubble">
         <div class="prv-layer-header">
           <div class="prv-layer-dot" style="background:var(--accent-social)"></div>
           <div class="prv-layer-title">버블 멤버 기본 공개</div>
@@ -765,13 +752,11 @@
             <button class="toggle on" onclick="this.classList.toggle('on')"></button>
           </div>
         </div>
-        <div class="prv-layer-note">
-          모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다.
-        </div>
+        <div class="prv-layer-note">모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다.</div>
       </div>
 
       <!-- 버블별 설정 -->
-      <div class="settings-section prv-layer visible" id="layer-per-bubble" style="padding-top:0">
+      <div class="settings-section prv-layer visible" id="layer-per-bubble">
         <div class="prv-layer-header">
           <div class="prv-layer-dot" style="background:var(--caution)"></div>
           <div class="prv-layer-title">버블별 설정</div>
@@ -799,8 +784,8 @@
       </div>
 
       <!-- 프라이버시 안내 -->
-      <div class="settings-section prv-layer visible" id="layer-note" style="padding-top:0">
-        <div style="padding:0 4px;font-size:11px;color:var(--text-hint);line-height:1.6">
+      <div class="settings-section prv-layer visible" id="layer-note">
+        <div class="prv-note">
           · 동반자 정보는 항상 비공개입니다 (나만 열람)<br>
           · OFF로 설정해도 나에게는 항상 표시됩니다<br>
           · 버블 owner의 공개수위가 더 제한적이면 버블 설정 우선<br>
@@ -841,7 +826,7 @@
         </div>
       </div>
 
-      <!-- 디폴트 설정 — 화면 -->
+      <!-- 화면 디폴트 -->
       <div class="settings-section">
         <div class="settings-section-title">화면 디폴트</div>
         <div class="settings-card">
@@ -849,7 +834,7 @@
             <span class="settings-item-icon"><i data-lucide="home"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">랜딩 화면</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">앱 실행 시 첫 화면</div>
+              <div class="settings-item-hint">앱 실행 시 첫 화면</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -865,7 +850,7 @@
             <span class="settings-item-icon"><i data-lucide="utensils"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">홈 시작 탭</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">홈 진입 시 식당/와인</div>
+              <div class="settings-item-hint">홈 진입 시 식당/와인</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -880,7 +865,7 @@
             <span class="settings-item-icon"><i data-lucide="map-pin"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">식당 서브탭</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">식당 탭 진입 시 기본 필터</div>
+              <div class="settings-item-hint">식당 탭 진입 시 기본 필터</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -897,7 +882,7 @@
             <span class="settings-item-icon"><i data-lucide="wine"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">와인 서브탭</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">와인 탭 진입 시 기본 필터</div>
+              <div class="settings-item-hint">와인 탭 진입 시 기본 필터</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -913,7 +898,7 @@
             <span class="settings-item-icon"><i data-lucide="circle-dot"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">버블 시작 탭</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">버블 페이지 진입 시 탭</div>
+              <div class="settings-item-hint">버블 페이지 진입 시 탭</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -928,7 +913,7 @@
             <span class="settings-item-icon"><i data-lucide="layout-grid"></i></span>
             <div style="flex:1">
               <div class="settings-item-label">홈 보기 모드</div>
-              <div class="settings-item-value--sm" style="font-size:10px;color:var(--text-hint);margin-top:1px;">리스트 간단/상세</div>
+              <div class="settings-item-hint">리스트 간단/상세</div>
             </div>
             <div class="nyam-select-wrap">
               <div class="nyam-select" onclick="this.classList.toggle('open')"><span class="nyam-select-value">마지막 사용</span><i data-lucide="chevron-down" style="width:14px;height:14px;" class="nyam-select-arrow"></i></div>
@@ -942,7 +927,7 @@
         </div>
       </div>
 
-      <!-- 디폴트 설정 — 기능 -->
+      <!-- 기능 디폴트 -->
       <div class="settings-section">
         <div class="settings-section-title">기능 디폴트</div>
         <div class="settings-card">
@@ -1056,15 +1041,13 @@
           <div class="settings-item danger" onclick="openSheet('delete')">
             <span class="settings-item-icon"><i data-lucide="trash-2"></i></span>
             <div style="flex:1">
-              <div class="settings-item-label" style="font-size:15px;color:var(--negative)">계정 삭제</div>
+              <div class="settings-item-label">계정 삭제</div>
               <div class="settings-item-sub">30일 유예 후 영구 삭제</div>
             </div>
             <span class="settings-item-chevron"><i data-lucide="chevron-right"></i></span>
           </div>
         </div>
       </div>
-
-      <div style="height:20px"></div>
     </div>
 
     <!-- ========== Overlay ========== -->
@@ -1174,13 +1157,11 @@
 <script>
   lucide.createIcons();
 
-  // Notification dropdown
+  // ── Notification dropdown ──────────────────────────────────────────────────
   function toggleNotifDropdown(e) {
     e.stopPropagation();
-    var dd = document.getElementById('notifDropdown');
-    var ov = document.getElementById('notifOverlay');
-    dd.classList.toggle('open');
-    ov.classList.toggle('open');
+    document.getElementById('notifDropdown').classList.toggle('open');
+    document.getElementById('notifOverlay').classList.toggle('open');
   }
   function closeNotifDropdown() {
     document.getElementById('notifDropdown').classList.remove('open');
@@ -1188,128 +1169,114 @@
   }
   function readNotifItem(item) {
     item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
-    if (dot) dot.remove();
+    item.querySelector('.notif-item-dot')?.remove();
     closeNotifDropdown();
   }
   function markAllNotifRead() {
-    document.querySelectorAll('.notif-item.unread').forEach(function(item) {
+    document.querySelectorAll('.notif-item.unread').forEach(item => {
       item.classList.remove('unread');
-      var dot = item.querySelector('.notif-item-dot');
-      if (dot) dot.remove();
+      item.querySelector('.notif-item-dot')?.remove();
     });
   }
   function handleNotifAction(btn, action) {
-    var item = btn.closest('.notif-item');
-    var actions = item.querySelector('.notif-item-actions');
-    actions.innerHTML = action === 'accept'
+    const item = btn.closest('.notif-item');
+    item.querySelector('.notif-item-actions').innerHTML = action === 'accept'
       ? '<span style="font-size:11px;font-weight:600;color:#7EAE8B">수락 완료</span>'
       : '<span style="font-size:11px;color:#B5AFA8">거절됨</span>';
     item.classList.remove('unread');
-    var dot = item.querySelector('.notif-item-dot');
-    if (dot) dot.remove();
+    item.querySelector('.notif-item-dot')?.remove();
   }
 
   // Close menus on outside click
-  document.addEventListener('click', function(e) {
-    document.querySelectorAll('.avatar-menu.open').forEach(function(m) {
+  document.addEventListener('click', e => {
+    document.querySelectorAll('.avatar-menu.open').forEach(m => {
       if (!m.parentElement.contains(e.target)) m.classList.remove('open');
     });
-    document.querySelectorAll('.nyam-select.open').forEach(function(s) {
+    document.querySelectorAll('.nyam-select.open').forEach(s => {
       if (!s.parentElement.contains(e.target)) s.classList.remove('open');
     });
   });
 
-  // ===== Privacy base level =====
+  // ── Privacy ────────────────────────────────────────────────────────────────
   let currentPrivacyBase = 'bubble';
   let currentRecordScope = 'shared';
+
+  const SUMMARIES = {
+    public: {
+      shared: '모든 사용자가 프로필을 볼 수 있습니다. 버블에 공유한 기록만 해당 버블에서 보입니다.',
+      all:    '모든 사용자가 프로필을 볼 수 있습니다. 내 모든 기록이 공개됩니다.',
+    },
+    bubble: {
+      shared: '같은 버블 멤버만 프로필을 볼 수 있고, 내가 공유한 기록만 해당 버블에서 보입니다.',
+      all:    '같은 버블 멤버만 프로필을 볼 수 있고, 내 모든 기록을 볼 수 있습니다.',
+    },
+    private: {
+      shared: '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다.<br>추천 알고리즘에는 여전히 반영됩니다.',
+      all:    '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다.<br>추천 알고리즘에는 여전히 반영됩니다.',
+    },
+  };
+
+  function updatePrivacyUI() {
+    const layerPublic    = document.getElementById('layer-public');
+    const layerBubble    = document.getElementById('layer-bubble');
+    const layerPerBubble = document.getElementById('layer-per-bubble');
+    const layerNote      = document.getElementById('layer-note');
+    const recordsWrap    = document.getElementById('prv-records-wrap');
+    const summary        = document.getElementById('prv-summary');
+
+    const isPrivate = currentPrivacyBase === 'private';
+    layerPublic.classList.toggle('visible', currentPrivacyBase === 'public');
+    layerBubble.classList.toggle('visible', !isPrivate);
+    layerPerBubble.classList.toggle('visible', !isPrivate);
+    layerNote.classList.add('visible');
+    recordsWrap.style.display = isPrivate ? 'none' : '';
+    summary.innerHTML = SUMMARIES[currentPrivacyBase][currentRecordScope];
+  }
 
   function setPrivacyBase(level, btn) {
     currentPrivacyBase = level;
     btn.closest('.prv-segment').querySelectorAll('.prv-segment-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
-    const layerPublic = document.getElementById('layer-public');
-    const layerBubble = document.getElementById('layer-bubble');
-    const layerPerBubble = document.getElementById('layer-per-bubble');
-    const layerNote = document.getElementById('layer-note');
-    const recordsWrap = document.getElementById('prv-records-wrap');
-    const summary = document.getElementById('prv-summary');
-
-    if (level === 'public') {
-      layerPublic.classList.add('visible');
-      layerBubble.classList.add('visible');
-      layerPerBubble.classList.add('visible');
-      layerNote.classList.add('visible');
-      recordsWrap.style.display = '';
-      summary.innerHTML = '모든 사용자가 프로필을 볼 수 있습니다. ' +
-        (currentRecordScope === 'all' ? '내 모든 기록이 공개됩니다.' : '버블에 공유한 기록만 해당 버블에서 보입니다.');
-    } else if (level === 'bubble') {
-      layerPublic.classList.remove('visible');
-      layerBubble.classList.add('visible');
-      layerPerBubble.classList.add('visible');
-      layerNote.classList.add('visible');
-      recordsWrap.style.display = '';
-      summary.innerHTML = '같은 버블 멤버만 프로필을 볼 수 있고, ' +
-        (currentRecordScope === 'all' ? '내 모든 기록을 볼 수 있습니다.' : '내가 공유한 기록만 해당 버블에서 보입니다.');
-    } else {
-      layerPublic.classList.remove('visible');
-      layerBubble.classList.remove('visible');
-      layerPerBubble.classList.remove('visible');
-      layerNote.classList.add('visible');
-      recordsWrap.style.display = 'none';
-      summary.innerHTML = '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다.<br>추천 알고리즘에는 여전히 반영됩니다.';
-    }
+    updatePrivacyUI();
   }
 
   function setRecordScope(scope, btn) {
     currentRecordScope = scope;
     btn.closest('.prv-segment').querySelectorAll('.prv-segment-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    // Re-run to update summary text
-    setPrivacyBase(currentPrivacyBase, document.querySelector('#prv-base .prv-segment-btn.active'));
+    updatePrivacyUI();
   }
 
-  // ===== Bubble per-bubble sheet =====
+  // ── Bubble per-bubble sheet ────────────────────────────────────────────────
   function openBubbleSheet(name, emoji, mode) {
     document.getElementById('bubble-sheet-title').textContent = name;
     const sheet = document.getElementById('sheet-bubble-custom');
     const cards = sheet.querySelectorAll('.option-card');
     const customItems = document.getElementById('bubble-custom-items');
-
-    if (mode === 'custom') {
-      cards[0].classList.remove('selected');
-      cards[1].classList.add('selected');
-      customItems.style.display = '';
-    } else {
-      cards[0].classList.add('selected');
-      cards[1].classList.remove('selected');
-      customItems.style.display = 'none';
-    }
-
+    const isCustom = mode === 'custom';
+    cards[0].classList.toggle('selected', !isCustom);
+    cards[1].classList.toggle('selected', isCustom);
+    customItems.style.display = isCustom ? '' : 'none';
     openSheet('bubble-custom');
   }
 
   function selectBubbleMode(el, mode) {
-    const sheet = el.closest('.option-sheet');
-    sheet.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    el.closest('.option-sheet').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
-    const customItems = document.getElementById('bubble-custom-items');
-    customItems.style.display = mode === 'custom' ? '' : 'none';
+    document.getElementById('bubble-custom-items').style.display = mode === 'custom' ? '' : 'none';
   }
 
-  // ===== nyam-select dropdown =====
+  // ── nyam-select dropdown ───────────────────────────────────────────────────
   function selectNyam(item) {
     const wrap = item.closest('.nyam-select-wrap');
     const select = wrap.querySelector('.nyam-select');
-    const valueEl = select.querySelector('.nyam-select-value');
     wrap.querySelectorAll('.nyam-dropdown-item').forEach(i => i.classList.remove('selected'));
     item.classList.add('selected');
-    valueEl.textContent = item.textContent.trim();
+    select.querySelector('.nyam-select-value').textContent = item.textContent.trim();
     select.classList.remove('open');
   }
 
-  // ===== Sheet open/close =====
+  // ── Sheet open/close ───────────────────────────────────────────────────────
   function openSheet(type) {
     document.getElementById('overlay').classList.add('show');
     document.getElementById('sheet-' + type).classList.add('show');
@@ -1319,10 +1286,8 @@
     document.querySelectorAll('.option-sheet').forEach(s => s.classList.remove('show'));
   }
 
-  // Delete option selection
   function selectDeleteOption(el) {
-    const sheet = el.closest('.option-sheet');
-    sheet.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    el.closest('.option-sheet').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
   }
 </script>
