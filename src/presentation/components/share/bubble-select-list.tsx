@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, Lock } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleSelectItem {
   id: string
@@ -38,10 +39,10 @@ export function BubbleSelectList({ bubbles, onToggle }: BubbleSelectListProps) {
           style={{ backgroundColor: b.isShared ? 'var(--accent-social-light)' : 'transparent' }}
         >
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[18px]"
-            style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)' }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
-            {b.icon ?? '🫧'}
+            <BubbleIcon icon={b.icon} size={18} />
           </div>
 
           <div className="min-w-0 flex-1 text-left">

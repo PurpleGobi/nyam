@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Plus, ArrowRight } from 'lucide-react'
+import { Check, Plus, ArrowRight, UtensilsCrossed } from 'lucide-react'
 import { AreaSelect } from './area-select'
 import { OnboardingSearch } from './onboarding-search'
 import type { OnboardingSeedRestaurant, OnboardingArea } from '@/domain/entities/onboarding'
@@ -84,7 +84,7 @@ export function RestaurantRegisterStep({
                     {r.thumbnailUrl ? (
                       <img src={r.thumbnailUrl} alt="" className="h-full w-full rounded-lg object-cover" />
                     ) : (
-                      <span className="text-[20px]">🍽️</span>
+                      <UtensilsCrossed size={20} style={{ color: 'var(--text-hint)' }} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-left">

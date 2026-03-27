@@ -1,7 +1,8 @@
 'use client'
 
-import { X, Users, Utensils } from 'lucide-react'
+import { X, Users, Utensils, SmilePlus } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubblePreviewPopupProps {
   isOpen: boolean
@@ -28,9 +29,9 @@ export function BubblePreviewPopup({ isOpen, onClose, bubble, onJoin, isLoading 
         <div className="flex flex-col items-center gap-2 px-5 pb-4">
           <div
             className="flex h-16 w-16 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', fontSize: '32px' }}
+            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
-            {bubble.icon ?? '🫧'}
+            <BubbleIcon icon={bubble.icon} size={32} />
           </div>
           <span className="text-[17px] font-bold text-[var(--text)]">{bubble.name}</span>
           {bubble.description && (
@@ -51,7 +52,7 @@ export function BubblePreviewPopup({ isOpen, onClose, bubble, onJoin, isLoading 
             <span className="text-[10px] text-[var(--text-hint)]">기록</span>
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[16px]">😋</span>
+            <SmilePlus size={16} style={{ color: 'var(--accent-food)' }} />
             <span className="text-[14px] font-bold text-[var(--text)]">
               {bubble.avgSatisfaction?.toFixed(1) ?? '-'}
             </span>

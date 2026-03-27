@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleScore {
   bubbleId: string
@@ -61,10 +62,10 @@ export function BubbleExpandPanel({ bubbleScores, variant }: BubbleExpandPanelPr
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
                 style={{
                   backgroundColor: b.iconBgColor ?? 'var(--bg)',
-                  fontSize: '12px',
+                  color: '#FFFFFF',
                 }}
               >
-                {b.icon ?? '🫧'}
+                <BubbleIcon icon={b.icon} size={12} />
               </div>
               <div className="min-w-0 flex-1">
                 <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text)' }}>

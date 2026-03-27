@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Settings } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import type { Bubble, BubbleMember } from '@/domain/entities/bubble'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { bubbleRepo } from '@/shared/di/container'
@@ -62,9 +63,9 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <div className="flex items-center gap-3">
           <div
             className="flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', fontSize: '28px' }}
+            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
-            {bubble.icon ?? '🫧'}
+            <BubbleIcon icon={bubble.icon} size={28} />
           </div>
           <div>
             <p className="text-[13px] text-[var(--text-sub)]">{bubble.description}</p>

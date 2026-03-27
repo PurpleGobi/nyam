@@ -1,5 +1,7 @@
 'use client'
 
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+
 interface FollowingSourceBadgeProps {
   sourceType: 'bubble' | 'user'
   sourceName: string
@@ -21,7 +23,7 @@ export function FollowingSourceBadge({
       style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
     >
       {sourceType === 'bubble' ? (
-        <span className="text-[10px]">{sourceIcon ?? '🫧'}</span>
+        <BubbleIcon icon={sourceIcon} size={10} />
       ) : (
         <div
           className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"

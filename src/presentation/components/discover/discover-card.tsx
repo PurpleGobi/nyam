@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Star, Award } from 'lucide-react'
+import { Star, Award, UtensilsCrossed } from 'lucide-react'
 import type { DiscoverCard as CardType } from '@/domain/entities/discover'
 
 interface DiscoverCardProps {
@@ -24,7 +24,7 @@ export function DiscoverCard({ card }: DiscoverCardProps) {
           <img src={card.photoUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span style={{ fontSize: '32px', color: 'var(--text-hint)' }}>🍴</span>
+            <UtensilsCrossed size={32} style={{ color: 'var(--text-hint)' }} />
           </div>
         )}
       </div>

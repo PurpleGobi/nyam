@@ -1,7 +1,20 @@
 'use client'
 
+import { Beef, Drumstick, Fish, Milk, Leaf, Flame, Candy, Nut } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { PairingCategory } from '@/domain/entities/record'
 import { PAIRING_CATEGORIES } from '@/domain/entities/pairing'
+
+const PAIRING_ICON_MAP: Record<string, LucideIcon> = {
+  beef: Beef,
+  drumstick: Drumstick,
+  fish: Fish,
+  milk: Milk,
+  leaf: Leaf,
+  flame: Flame,
+  candy: Candy,
+  nut: Nut,
+}
 
 interface PairingDisplayProps {
   categories: PairingCategory[]
@@ -17,7 +30,7 @@ export function PairingDisplay({ categories }: PairingDisplayProps) {
         return (
           <span
             key={cat}
-            className="rounded-full px-3 py-1.5"
+            className="inline-flex items-center gap-1 rounded-full px-3 py-1.5"
             style={{
               fontSize: '12px',
               fontWeight: 500,
@@ -26,7 +39,15 @@ export function PairingDisplay({ categories }: PairingDisplayProps) {
               color: 'var(--accent-wine)',
             }}
           >
-            {meta ? `${meta.icon} ${meta.label}` : cat}
+            {meta ? (
+              <>
+                {(() => {
+                  const Icon = PAIRING_ICON_MAP[meta.icon]
+                  return Icon ? <Icon size={12} /> : null
+                })()}
+                {meta.label}
+              </>
+            ) : cat}
           </span>
         )
       })}

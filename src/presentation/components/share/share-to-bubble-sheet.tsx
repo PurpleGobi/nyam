@@ -1,6 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleSelectItem {
   id: string
@@ -42,9 +43,9 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShare }: ShareT
             >
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', fontSize: '18px' }}
+                style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
               >
-                {b.icon ?? '🫧'}
+                <BubbleIcon icon={b.icon} size={18} />
               </div>
               <span className="flex-1 text-left text-[14px] font-semibold text-[var(--text)]">{b.name}</span>
               {b.isAlreadyShared && (

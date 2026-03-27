@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, TrendingUp, Sparkles, Clock } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleDiscoverSheetProps {
   isOpen: boolean
@@ -84,9 +85,9 @@ export function BubbleDiscoverSheet({
                 >
                   <div
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', fontSize: '20px' }}
+                    style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
                   >
-                    {b.icon ?? '🫧'}
+                    <BubbleIcon icon={b.icon} size={20} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-[var(--text)]">{b.name}</p>

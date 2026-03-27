@@ -2,6 +2,7 @@
 
 import { Users } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleCardProps {
   bubble: Bubble
@@ -18,9 +19,9 @@ export function BubbleCard({ bubble, onClick }: BubbleCardProps) {
     >
       <div
         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', fontSize: '22px' }}
+        style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
       >
-        {bubble.icon ?? '🫧'}
+        <BubbleIcon icon={bubble.icon} size={22} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold text-[var(--text)]">{bubble.name}</p>

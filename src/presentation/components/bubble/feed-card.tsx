@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock } from 'lucide-react'
+import { Clock, SmilePlus } from 'lucide-react'
 
 interface FeedCardProps {
   recordId: string
@@ -58,7 +58,7 @@ export function FeedCard({
 
       {satisfaction !== undefined && (
         <div className="flex items-center gap-1">
-          <span className="text-[12px]">😋</span>
+          <SmilePlus size={12} style={{ color: 'var(--accent-food)' }} />
           <span className="text-[13px] font-semibold text-[var(--text)]">{satisfaction.toFixed(1)}</span>
         </div>
       )}

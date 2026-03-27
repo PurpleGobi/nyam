@@ -2,6 +2,7 @@
 
 import { X, Users, BookOpen, Lock, Globe, Calendar } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleInfoSheetProps {
   isOpen: boolean
@@ -37,9 +38,9 @@ export function BubbleInfoSheet({ isOpen, onClose, bubble }: BubbleInfoSheetProp
           <div className="flex flex-col items-center gap-2 pb-4">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', fontSize: '28px' }}
+              style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
             >
-              {bubble.icon ?? '🫧'}
+              <BubbleIcon icon={bubble.icon} size={28} />
             </div>
             <span className="text-[17px] font-bold text-[var(--text)]">{bubble.name}</span>
             {bubble.description && (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { UtensilsCrossed, Wine } from 'lucide-react'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface RecordCardProps {
@@ -32,9 +33,11 @@ export function RecordCard({ id, targetId, targetType, name, meta, photoUrl, sat
           <img src={photoUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
-            <span style={{ fontSize: '24px', color: 'var(--text-hint)' }}>
-              {targetType === 'restaurant' ? '🍴' : '🍷'}
-            </span>
+            {targetType === 'restaurant' ? (
+              <UtensilsCrossed size={24} style={{ color: 'var(--text-hint)' }} />
+            ) : (
+              <Wine size={24} style={{ color: 'var(--text-hint)' }} />
+            )}
           </div>
         )}
       </div>

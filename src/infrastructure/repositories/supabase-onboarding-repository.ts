@@ -72,7 +72,7 @@ export class SupabaseOnboardingRepository {
       id: b.id,
       name: b.name,
       description: b.description ?? '',
-      icon: b.icon ?? '🫧',
+      icon: b.icon ?? 'users',
       iconBgColor: b.icon_bg_color ?? '#7EAE8B',
       memberCount: b.member_count ?? 0,
       minLevel: b.min_level ?? 0,

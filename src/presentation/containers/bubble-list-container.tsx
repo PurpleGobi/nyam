@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -22,7 +23,7 @@ export function BubbleListContainer() {
           </div>
         ) : bubbles.length === 0 ? (
           <div className="flex flex-col items-center py-16">
-            <span style={{ fontSize: '48px' }}>🫧</span>
+            <Users size={48} style={{ color: 'var(--text-hint)' }} />
             <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">아직 버블이 없어요</p>
             <p className="mt-1 text-[13px] text-[var(--text-hint)]">버블을 만들어 맛집을 공유해보세요</p>
           </div>
@@ -37,9 +38,9 @@ export function BubbleListContainer() {
             >
               <div
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', fontSize: '20px' }}
+                style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
               >
-                {b.icon ?? '🫧'}
+                <BubbleIcon icon={b.icon} size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-[var(--text)]">{b.name}</p>

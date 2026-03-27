@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, UtensilsCrossed, Wine } from 'lucide-react'
 import type { RecommendationCard as CardType } from '@/domain/entities/recommendation'
 
 interface RecommendationCardProps {
@@ -25,7 +25,11 @@ export function RecommendationCard({ card }: RecommendationCardProps) {
           <img src={card.photoUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span style={{ fontSize: '24px' }}>{card.targetType === 'restaurant' ? '🍴' : '🍷'}</span>
+            {card.targetType === 'restaurant' ? (
+              <UtensilsCrossed size={24} style={{ color: 'var(--text-hint)' }} />
+            ) : (
+              <Wine size={24} style={{ color: 'var(--text-hint)' }} />
+            )}
           </div>
         )}
         <span

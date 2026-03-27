@@ -2,6 +2,7 @@
 
 import { X, Users } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface JoinFlowProps {
   isOpen: boolean
@@ -37,9 +38,9 @@ export function JoinFlow({ isOpen, onClose, bubble, onJoin, isLoading, eligibili
         <div className="flex flex-col items-center gap-3 px-4 py-6">
           <div
             className="flex h-16 w-16 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', fontSize: '32px' }}
+            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
-            {bubble.icon ?? '🫧'}
+            <BubbleIcon icon={bubble.icon} size={32} />
           </div>
           <span className="text-[17px] font-bold text-[var(--text)]">{bubble.name}</span>
           {bubble.description && (

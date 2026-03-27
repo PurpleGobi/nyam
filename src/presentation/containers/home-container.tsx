@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { HomeTab, ViewMode } from '@/domain/entities/home-state'
 import { VIEW_MODE_CYCLE } from '@/domain/entities/home-state'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -41,7 +42,11 @@ export function HomeContainer() {
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2">
         {records.length === 0 ? (
           <div className="flex flex-col items-center py-16">
-            <span style={{ fontSize: '48px' }}>{activeTab === 'restaurant' ? '🍴' : '🍷'}</span>
+            {activeTab === 'restaurant' ? (
+              <UtensilsCrossed size={48} style={{ color: 'var(--text-hint)' }} />
+            ) : (
+              <Wine size={48} style={{ color: 'var(--text-hint)' }} />
+            )}
             <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
               {activeTab === 'restaurant' ? '첫 식당을 기록해보세요' : '첫 와인을 기록해보세요'}
             </p>

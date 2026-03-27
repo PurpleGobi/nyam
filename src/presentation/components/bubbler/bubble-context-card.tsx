@@ -1,6 +1,7 @@
 'use client'
 
 import { Trophy, Clock, Heart } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleContextCardProps {
   bubbleName: string
@@ -23,7 +24,7 @@ export function BubbleContextCard({
       style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-[16px]">{bubbleIcon ?? '🫧'}</span>
+        <BubbleIcon icon={bubbleIcon} size={16} />
         <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{bubbleName}</span>
       </div>
 

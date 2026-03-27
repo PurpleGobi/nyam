@@ -1,8 +1,21 @@
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
+import { Beef, Drumstick, Fish, Milk, Leaf, Flame, Candy, Nut } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { PairingCategory } from '@/domain/entities/record'
 import { PAIRING_CATEGORIES } from '@/domain/entities/pairing'
+
+const PAIRING_ICON_MAP: Record<string, LucideIcon> = {
+  beef: Beef,
+  drumstick: Drumstick,
+  fish: Fish,
+  milk: Milk,
+  leaf: Leaf,
+  flame: Flame,
+  candy: Candy,
+  nut: Nut,
+}
 
 interface PairingGridProps {
   value: PairingCategory[]
@@ -73,7 +86,10 @@ export function PairingGrid({
                   AI
                 </span>
               )}
-              <span style={{ fontSize: '22px', marginBottom: '2px' }}>{cat.icon}</span>
+              {(() => {
+                const Icon = PAIRING_ICON_MAP[cat.icon]
+                return Icon ? <Icon size={22} style={{ marginBottom: '2px', color: isSelected ? 'var(--accent-wine)' : 'var(--text-sub)' }} /> : null
+              })()}
               <span
                 style={{
                   fontSize: '12px',

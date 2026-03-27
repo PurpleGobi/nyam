@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleChipItem {
   id: string
@@ -46,7 +47,7 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect }: BubbleFilte
               border: isActive ? 'none' : '1px solid var(--border)',
             }}
           >
-            <span className="text-[11px]">{b.icon ?? '🫧'}</span>
+            <BubbleIcon icon={b.icon} size={11} />
             {b.name}
             {isActive && <Check size={12} />}
           </button>
