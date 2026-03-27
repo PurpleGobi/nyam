@@ -191,7 +191,7 @@ Wave 6 ━━ S9 ━━━━━━━━━━━━━━━━━━━━━
 ### S9 — Onboarding & Polish (Wave 6)
 | # | 태스크 | 지침 문서 | 상태 | 검증 |
 |---|--------|----------|------|------|
-| 9.1 | 온보딩 풀 플로우 | `S9/01_onboarding.md` | `done` | onboarding entity+xp service+supabase repo+3 hooks+9 UI컴포넌트+seeds ✅ |
+| 9.1 | 온보딩 풀 플로우 | `S9/01_onboarding.md` | `done` | 17개 파일 + 목업 1:1 매칭 완료 (로그인/인트로/맛집등록/버블생성/버블탐색 5화면 Playwright 검증) ✅ |
 | 9.2 | 넛지 시스템 정교화 | `S9/02_nudge_polish.md` | `done` | nudge-priority+greeting-generator+nudge-repo+supabase-nudge-repo+useAiGreeting+useNudge+AiGreeting (S5에서 구현) ✅ |
 | 9.3 | 전체 플로우 검증 | `S9/03_full_flow_test.md` | `partial` | 빌드/린트 통과. ⚠️ E2E 시나리오 런타임 테스트 미실행 |
 | 9.4 | 빌드 + 성능 최적화 | `S9/04_build_optimize.md` | `partial` | build 0 errors, lint 0 errors. ⚠️ next/image 교체, dynamic imports 미완 |
