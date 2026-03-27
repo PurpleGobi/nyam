@@ -88,6 +88,9 @@ interface RecordFlowState {
   targetMeta: string         // "일식 · 을지로" 또는 "Red · Bordeaux · 2018"
   savedRecordId: string | null
 }
+
+// 사진 업로드 실패 시 표시할 에러 (별도 useState, DEC-007)
+const [photoError, setPhotoError] = useState<string | null>(null)
 ```
 
 - `step: 'form'` → 통합 기록 화면 렌더링
@@ -276,6 +279,7 @@ interface RecordSuccessProps {
   variant: 'food' | 'wine'
   targetName: string               // "몽탄"
   targetMeta: string               // "한식 · 을지로"
+  photoError?: string | null       // 사진 업로드 실패 메시지 (DEC-007)
   onAddMore: () => void            // "내용 추가하기" → 상세페이지 이동
   onAddAnother: () => void         // "한 곳 더 추가" → restartAdd()
   onGoHome: () => void             // "홈으로" → exitRecord()
@@ -300,60 +304,43 @@ interface RecordSuccessProps {
 - 버튼 간격: 12px gap
 - 전체 화면 centered layout (flex column, items-center, justify-center)
 
-### 8. 저장 시퀀스 (application hook에서 실행)
+### 8. 저장 시퀀스 (container 오케스트레이션, DEC-007)
+
+> 저장 시퀀스는 container가 오케스트레이션한다. record 저장(hook)과 사진 업로드(별도 hook + PhotoRepository)를 분리하여 관심사를 분리하고, 사진 업로드 실패 시에도 record를 유지하는 graceful degradation을 제공한다.
 
 ```typescript
-// application/hooks/use-create-record.ts에서 호출하는 순서
+// presentation/containers/record-flow-container.tsx의 handleSave
 
-async function saveRecord(input: CreateRecordInput): Promise<DiningRecord> {
-  // 1. records INSERT
-  const record = await recordRepository.create({
-    userId: currentUser.id,
-    targetId: input.targetId,
-    targetType: input.targetType,
-    status: 'rated',
-    axisX: input.axisX,
-    axisY: input.axisY,
-    satisfaction: input.satisfaction,
-    scene: input.scene,                        // 식당만
-    aromaRegions: input.aromaRegions,          // 와인만
-    aromaLabels: input.aromaLabels,            // 와인만
-    aromaColor: input.aromaColor,              // 와인만
-    complexity: input.complexity,              // 와인만, 선택
-    finish: input.finish,                      // 와인만, 선택
-    balance: input.balance,                    // 와인만, 선택
-    autoScore: input.autoScore,               // 와인만, 선택
-    pairingCategories: input.pairingCategories, // 와인만
-    comment: input.comment,                    // 선택
-    companions: input.companions,              // 식당만, 선택
-    companionCount: input.companionCount,      // 식당만, 선택
-    totalPrice: input.totalPrice,              // 식당만, 선택
-    purchasePrice: input.purchasePrice,        // 와인만, 선택
-    linkedWineId: input.linkedWineId,          // 식당만, 선택
-    linkedRestaurantId: input.linkedRestaurantId, // 와인만, 선택
-    visitDate: input.visitDate ?? new Date(),
-    wineStatus: input.targetType === 'wine' ? 'tasted' : undefined,
-    recordQualityXp: 0,                        // S6에서 계산 로직 추가
-  })
+async function handleSave(formData) {
+  // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
+  const record = await createRecord(input)
 
-  // 2. record_photos INSERT (사진이 있으면)
-  if (input.photoUrls && input.photoUrls.length > 0) {
-    await recordRepository.addPhotos(record.id, input.photoUrls)
+  // 2. record_photos INSERT (사진이 있으면 — 실패해도 record는 유지)
+  if (photos.length > 0) {
+    try {
+      const uploadedPhotos = await uploadAll(user.id, record.id)  // usePhotoUpload hook
+      if (uploadedPhotos.length > 0) {
+        await photoRepo.savePhotos(record.id, uploadedPhotos)     // PhotoRepository
+      }
+    } catch {
+      setPhotoError('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
+    }
   }
 
-  // 3. wishlists UPDATE (찜이 있었으면 is_visited = true)
-  await recordRepository.markWishlistVisited(
-    currentUser.id,
-    input.targetId,
-    input.targetType
-  )
-
-  // 4. xp_histories INSERT — S6에서 완성. 여기서는 stub
-  // await xpService.awardRecordXp(record)
-
-  return record
+  // 3. 성공 화면으로 전환 (사진 실패 시 photoError 메시지 표시)
+  setState({ step: 'success', savedRecordId: record.id })
 }
 ```
+
+**책임 분리:**
+
+| 단계 | 담당 | 실패 시 |
+|------|------|---------|
+| records INSERT + wishlists | `useCreateRecord` hook | throw → 전체 실패 |
+| 사진 리사이즈 + Storage 업로드 | `usePhotoUpload` hook | catch → photoError 표시, record 유지 |
+| record_photos INSERT | `PhotoRepository.savePhotos()` | catch → photoError 표시, record 유지 |
+
+**사진 실패 복구:** 성공 화면에서 "내용 추가하기" 버튼으로 상세 페이지 이동 → 수정 화면에서 사진 재업로드 가능.
 
 ### 9. 식당/와인 폼 데이터 타입
 
@@ -431,16 +418,34 @@ export function RecordFlowContainer() {
     savedRecordId: null,
   })
 
-  const { createRecord, isLoading, error } = useCreateRecord()
+  const { createRecord, isLoading: isRecordLoading, error } = useCreateRecord()
+  const { photos, addFiles, removePhoto, uploadAll, isUploading } = usePhotoUpload()
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const isLoading = isRecordLoading || isUploading
 
-  // 저장 핸들러
-  async function handleSave(data: CreateRecordInput) {
-    const record = await createRecord(data)
-    setState(prev => ({
-      ...prev,
-      step: 'success',
-      savedRecordId: record.id,
-    }))
+  // 저장 핸들러 (Container 오케스트레이션, DEC-007)
+  async function handleSave(formData) {
+    setPhotoError(null)
+    try {
+      // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
+      const record = await createRecord(input)
+
+      // 2. record_photos INSERT (사진이 있으면 — 실패해도 record 유지)
+      if (photos.length > 0) {
+        try {
+          const uploaded = await uploadAll(user.id, record.id)
+          if (uploaded.length > 0) {
+            await photoRepo.savePhotos(record.id, uploaded)
+          }
+        } catch {
+          setPhotoError('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
+        }
+      }
+
+      setState(prev => ({ ...prev, step: 'success', savedRecordId: record.id }))
+    } catch {
+      // useCreateRecord 내부에서 error state 처리
+    }
   }
 
   // 네비게이션
@@ -451,7 +456,7 @@ export function RecordFlowContainer() {
 
   // 렌더링
   if (state.step === 'success') {
-    return <RecordSuccess variant={...} targetName={...} ... />
+    return <RecordSuccess variant={...} targetName={...} photoError={photoError} ... />
   }
 
   return (
@@ -511,9 +516,12 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
     ├── URL params → targetType, targetId, name, meta
     │
     ├── useCreateRecord() hook
-    │     ├── recordRepository.create() → INSERT records
-    │     ├── recordRepository.addPhotos() → INSERT record_photos
-    │     └── recordRepository.markWishlistVisited() → UPDATE wishlists
+    │     ├── recordRepo.create() → INSERT records
+    │     └── recordRepo.markWishlistVisited() → UPDATE wishlists
+    │
+    ├── usePhotoUpload() hook + photoRepo (container 오케스트레이션, DEC-007)
+    │     ├── uploadAll() → 리사이즈 + Storage 업로드
+    │     └── photoRepo.savePhotos() → INSERT record_photos
     │
     ├── step: 'form'
     │     ├── targetType === 'restaurant'
@@ -567,7 +575,8 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
 
 - [ ] records INSERT: 모든 필수 필드 (user_id, target_id, target_type, status, axis_x, axis_y, satisfaction) 저장
 - [ ] records INSERT: 선택 필드 (comment, companions, total_price 등) NULL 허용
-- [ ] record_photos INSERT: 사진 있으면 record_id FK + url + order_index 저장
+- [ ] record_photos INSERT: 사진 있으면 photoRepo.savePhotos()로 record_id FK + url + order_index 저장
+- [ ] 사진 업로드 실패 시 record는 유지되고 성공 화면에 photoError 메시지 표시 (DEC-007)
 - [ ] wishlists UPDATE: 동일 target의 기존 찜이 있으면 `is_visited = true`
 - [ ] status = `'rated'` 저장 확인
 - [ ] 와인: wine_status = `'tasted'` 저장 확인

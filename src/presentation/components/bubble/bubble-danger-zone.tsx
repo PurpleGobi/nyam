@@ -58,8 +58,8 @@ export function BubbleDangerZone({ bubbleName, onConfirm, onCancel, isLoading }:
               type="button"
               onClick={onConfirm}
               disabled={!isMatch || isLoading}
-              className="flex-1 rounded-xl py-3 text-center text-[13px] font-bold text-white transition-opacity disabled:opacity-40"
-              style={{ backgroundColor: 'var(--negative)' }}
+              className="flex-1 rounded-xl py-3 text-center text-[13px] font-bold transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
             >
               {isLoading ? '삭제 중...' : '삭제'}
             </button>

@@ -5,7 +5,7 @@ import { Wine, Sparkles } from 'lucide-react'
 import type { AromaSelection, AromaRing } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import type { PairingCategory } from '@/domain/entities/record'
-import type { QuadrantPoint } from '@/domain/entities/quadrant'
+import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
@@ -45,7 +45,7 @@ interface CreateWineRecordInput {
 
 interface WineRecordFormProps {
   target: WineTarget
-  referenceRecords?: QuadrantPoint[]
+  referenceRecords?: QuadrantReferencePoint[]
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
 }
@@ -62,6 +62,7 @@ function countActiveRings(regions: AromaSelection['regions']): number {
 
 export function WineRecordForm({
   target,
+  referenceRecords,
   onSave,
   isLoading,
 }: WineRecordFormProps) {
@@ -153,7 +154,7 @@ export function WineRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 와인이었나요?
         </h3>
-        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} />
+        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} />
       </section>
 
       {/* 아로마 팔레트 */}

@@ -80,8 +80,8 @@ export function JoinFlow({ isOpen, onClose, bubble, onJoin, isLoading, eligibili
             type="button"
             onClick={onJoin}
             disabled={isLoading || !!eligibilityError}
-            className="w-full rounded-xl py-3.5 text-center text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent-social)' }}
+            className="w-full rounded-xl py-3.5 text-center text-[15px] font-bold transition-opacity disabled:opacity-50"
+            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
           >
             {isLoading ? '가입 중...' : bubble.joinPolicy === 'manual_approve' ? '가입 신청' : '가입하기'}
           </button>

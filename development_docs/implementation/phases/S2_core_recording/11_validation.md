@@ -246,8 +246,13 @@ grep -r "from '@supabase\|from '.*infrastructure" src/presentation/
     │
     ├── 입력값 유효성 검증 (validateRecordInput)
     ├── repository.create(input) ──→ INSERT records
-    ├── repository.addPhotos(id, urls) ──→ INSERT record_photos
     └── repository.markWishlistVisited() ──→ UPDATE wishlists
+    │
+    ▼
+[presentation/containers/record-flow-container.tsx] (DEC-007)
+    │
+    ├── usePhotoUpload.uploadAll() ──→ Supabase Storage upload
+    └── photoRepo.savePhotos() ──→ INSERT record_photos (실패 시 record 유지)
     │
     ▼
 [infrastructure/repositories/supabase-record-repository.ts]

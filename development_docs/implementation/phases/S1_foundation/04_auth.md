@@ -543,20 +543,20 @@ interface SocialButtonConfig {
 
 const SOCIAL_BUTTONS: SocialButtonConfig[] = [
   {
-    provider: 'kakao',
-    label: '카카오로 시작하기',
-    bgColor: '#FEE500',
-    textColor: '#3C1E1E',
-    borderColor: null,
-    iconSvg: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3C5.58 3 2 5.79 2 9.21c0 2.17 1.45 4.07 3.63 5.17l-.93 3.39c-.08.28.25.51.49.35l4.05-2.68c.25.02.5.04.76.04 4.42 0 8-2.79 8-6.23S14.42 3 10 3z" fill="#3C1E1E"/></svg>`,
-  },
-  {
     provider: 'google',
     label: 'Google로 시작하기',
     bgColor: 'var(--bg-elevated)',
     textColor: 'var(--text)',
     borderColor: 'var(--border)',
     iconSvg: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M19.6 10.23c0-.68-.06-1.36-.17-2.01H10v3.8h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.89-1.74 2.98-4.3 2.98-7.31z" fill="#4285F4"/><path d="M10 20c2.7 0 4.96-.9 6.62-2.42l-3.24-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.76-5.59-4.12H1.07v2.58A9.99 9.99 0 0 0 10 20z" fill="#34A853"/><path d="M4.41 12.01A6.01 6.01 0 0 1 4.1 10c0-.7.12-1.37.31-2.01V5.41H1.07A9.99 9.99 0 0 0 0 10c0 1.61.39 3.14 1.07 4.49l3.34-2.48z" fill="#FBBC05"/><path d="M10 3.96c1.47 0 2.78.5 3.82 1.5l2.86-2.86C14.96.99 12.7 0 10 0A9.99 9.99 0 0 0 1.07 5.41l3.34 2.58C5.2 5.72 7.4 3.96 10 3.96z" fill="#EA4335"/></svg>`,
+  },
+  {
+    provider: 'kakao',
+    label: '카카오로 시작하기',
+    bgColor: '#FEE500',
+    textColor: '#3C1E1E',
+    borderColor: null,
+    iconSvg: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3C5.58 3 2 5.79 2 9.21c0 2.17 1.45 4.07 3.63 5.17l-.93 3.39c-.08.28.25.51.49.35l4.05-2.68c.25.02.5.04.76.04 4.42 0 8-2.79 8-6.23S14.42 3 10 3z" fill="#3C1E1E"/></svg>`,
   },
   {
     provider: 'naver',

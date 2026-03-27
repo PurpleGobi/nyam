@@ -693,13 +693,7 @@ export interface RecordRepository {
 
   // ─── 사진 ───
 
-  /**
-   * 기록에 사진 추가 (복수)
-   * @param recordId 기록 ID
-   * @param photoUrls 업로드 완료된 사진 URL 배열 (Storage URL)
-   * @returns 생성된 RecordPhoto 배열
-   */
-  addPhotos(recordId: string, photoUrls: string[]): Promise<RecordPhoto[]>
+  // 사진 저장(INSERT)은 PhotoRepository.savePhotos() 책임 (DEC-007)
 
   /**
    * 기록의 사진 목록 조회
@@ -739,8 +733,8 @@ Supabase INSERT INTO records → 반환된 Row → DiningRecord 엔티티로 변
   ↓
 application hook → presentation으로 DiningRecord 반환
 
-사진 추가:
-RecordRepository.addPhotos() → Supabase Storage upload + record_photos INSERT
+사진 추가 (container 오케스트레이션, DEC-007):
+usePhotoUpload.uploadAll() → Supabase Storage upload → PhotoRepository.savePhotos() → record_photos INSERT
 
 사분면 참조 점 조회:
 RecordRepository.findByUserId() → DiningRecord[] → QuadrantReferencePoint[] 변환 (application layer)
@@ -767,7 +761,7 @@ RecordRepository.findByUserId() → DiningRecord[] → QuadrantReferencePoint[] 
 □ getCircleRatingSize 공식: 28 + (score/100) × 92
 □ getRefDotSize: 14/20/26/36/48px 5단계
 □ getGaugeLevel: 1~5 단계
-□ RecordRepository: 10개 메서드 (create, findById, findByUserId, findByUserAndTarget, update, delete, addPhotos, findPhotosByRecordId, deletePhoto, markWishlistVisited)
+□ RecordRepository: 9개 메서드 (create, findById, findByUserId, findByUserAndTarget, update, delete, findPhotosByRecordId, deletePhoto, markWishlistVisited) — 사진 저장은 PhotoRepository 책임 (DEC-007)
 □ companions 필드 JSDoc에 비공개 경고 명시
 □ pnpm build 에러 없음
 □ pnpm lint 경고 0개

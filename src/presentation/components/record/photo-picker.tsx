@@ -85,7 +85,7 @@ export function PhotoPicker({
             disabled={isUploading}
           >
             <ImageIcon size={24} style={{ color: `var(${accentVar})` }} />
-            <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>갤러리</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>앨범</span>
           </button>
         )}
 
@@ -155,7 +155,7 @@ export function PhotoPicker({
         type="file"
         accept="image/*"
         capture="environment"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = '' }}
         className="hidden"
       />
       <input
@@ -163,7 +163,7 @@ export function PhotoPicker({
         type="file"
         accept={PHOTO_CONSTANTS.ACCEPTED_TYPES.join(',')}
         multiple
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = '' }}
         className="hidden"
       />
     </div>

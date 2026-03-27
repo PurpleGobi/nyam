@@ -84,6 +84,7 @@ function mapRecordToDb(input: CreateRecordInput): RecordInsert {
     linked_wine_id: input.linkedWineId ?? null,
     has_exif_gps: input.hasExifGps ?? false,
     is_exif_verified: input.isExifVerified ?? false,
+    ocr_data: null,
     record_quality_xp: 0,
     score_updated_at: null,
   }
@@ -112,7 +113,11 @@ export class SupabaseRecordRepository implements RecordRepository {
       .select()
       .single()
 
-    if (error) throw new Error(`Record 생성 실패: ${error.message}`)
+    if (error) {
+      if (error.code === '42501') throw new Error('권한이 없습니다')
+      if (error.code === '23505') throw new Error('이미 존재하는 기록입니다')
+      throw new Error(`Record 생성 실패: ${error.message}`)
+    }
     return mapDbToRecord(data)
   }
 
@@ -166,6 +171,25 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (data.scene !== undefined) updateData.scene = data.scene
     if (data.comment !== undefined) updateData.comment = data.comment
     if (data.status !== undefined) updateData.status = data.status
+    if (data.companions !== undefined) updateData.companions = data.companions
+    if (data.companionCount !== undefined) updateData.companion_count = data.companionCount
+    if (data.totalPrice !== undefined) updateData.total_price = data.totalPrice
+    if (data.purchasePrice !== undefined) updateData.purchase_price = data.purchasePrice
+    if (data.aromaRegions !== undefined) updateData.aroma_regions = data.aromaRegions
+    if (data.aromaLabels !== undefined) updateData.aroma_labels = data.aromaLabels
+    if (data.aromaColor !== undefined) updateData.aroma_color = data.aromaColor
+    if (data.complexity !== undefined) updateData.complexity = data.complexity
+    if (data.finish !== undefined) updateData.finish = data.finish
+    if (data.balance !== undefined) updateData.balance = data.balance
+    if (data.autoScore !== undefined) updateData.auto_score = data.autoScore
+    if (data.pairingCategories !== undefined) updateData.pairing_categories = data.pairingCategories
+    if (data.menuTags !== undefined) updateData.menu_tags = data.menuTags
+    if (data.tips !== undefined) updateData.tips = data.tips
+    if (data.linkedWineId !== undefined) updateData.linked_wine_id = data.linkedWineId
+    if (data.linkedRestaurantId !== undefined) updateData.linked_restaurant_id = data.linkedRestaurantId
+    if (data.mealTime !== undefined) updateData.meal_time = data.mealTime
+    if (data.visitDate !== undefined) updateData.visit_date = data.visitDate
+    if (data.wineStatus !== undefined) updateData.wine_status = data.wineStatus
     updateData.updated_at = new Date().toISOString()
 
     const { data: updated, error } = await this.supabase
@@ -186,22 +210,6 @@ export class SupabaseRecordRepository implements RecordRepository {
       .eq('id', id)
 
     if (error) throw new Error(`Record 삭제 실패: ${error.message}`)
-  }
-
-  async addPhotos(recordId: string, photoUrls: string[]): Promise<RecordPhoto[]> {
-    const rows = photoUrls.map((url, index) => ({
-      record_id: recordId,
-      url,
-      order_index: index,
-    }))
-
-    const { data, error } = await this.supabase
-      .from('record_photos')
-      .insert(rows)
-      .select()
-
-    if (error) throw new Error(`사진 저장 실패: ${error.message}`)
-    return data.map(mapDbToPhoto)
   }
 
   async findPhotosByRecordId(recordId: string): Promise<RecordPhoto[]> {

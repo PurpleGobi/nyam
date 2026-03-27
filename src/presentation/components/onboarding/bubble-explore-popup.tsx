@@ -77,8 +77,8 @@ export function BubbleExplorePopup({ bubble, userLevel, isOpen, onClose, onJoin 
             <button
               type="button"
               onClick={() => onJoin(bubble.id)}
-              className="w-full rounded-xl py-3 text-[15px] font-semibold text-white"
-              style={{ backgroundColor: 'var(--accent-social)' }}
+              className="w-full rounded-xl py-3 text-[15px] font-semibold"
+              style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
             >
               가입하기
             </button>

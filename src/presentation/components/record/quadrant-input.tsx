@@ -230,8 +230,9 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [] }: Q
       {/* 수치 칩 */}
       <div className="mt-3 flex gap-2">
         <div
-          className="rounded-sm px-2.5 py-1"
+          className="px-2.5 py-1"
           style={{
+            borderRadius: 'var(--r-sm)',
             backgroundColor: 'var(--bg)',
             border: '1px solid var(--border)',
             fontSize: '13px',
@@ -242,8 +243,9 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [] }: Q
           X: {value.x}%
         </div>
         <div
-          className="rounded-sm px-2.5 py-1"
+          className="px-2.5 py-1"
           style={{
+            borderRadius: 'var(--r-sm)',
             backgroundColor: 'var(--bg)',
             border: '1px solid var(--border)',
             fontSize: '13px',
@@ -254,8 +256,9 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [] }: Q
           Y: {value.y}%
         </div>
         <div
-          className="rounded-sm px-2.5 py-1"
+          className="px-2.5 py-1"
           style={{
+            borderRadius: 'var(--r-sm)',
             backgroundColor: `${gaugeColor}26`,
             border: '1px solid var(--border)',
             fontSize: '13px',

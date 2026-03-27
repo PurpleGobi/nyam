@@ -28,8 +28,8 @@ export function SuccessScreen({
 
       <div className="mt-8 flex w-full max-w-[280px] flex-col gap-3">
         <button type="button" onClick={onAddDetail}
-          className="w-full rounded-xl py-3.5 text-[15px] font-semibold text-white"
-          style={{ backgroundColor: accentColor }}>
+          className="w-full rounded-xl py-3.5 text-[15px] font-semibold"
+          style={{ backgroundColor: accentColor, color: '#FFFFFF' }}>
           내용 추가하기
         </button>
         <button type="button" onClick={onAddAnother}

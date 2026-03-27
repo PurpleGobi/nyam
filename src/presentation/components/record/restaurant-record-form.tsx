@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { Utensils, Sparkles } from 'lucide-react'
-import type { QuadrantPoint } from '@/domain/entities/quadrant'
-import type { SceneTag } from '@/domain/entities/scene'
+import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
+import type { RestaurantScene } from '@/domain/entities/scene'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { SceneTagSelector } from '@/presentation/components/record/scene-tag-selector'
 import { CompanionInput } from '@/presentation/components/record/companion-input'
@@ -36,18 +36,19 @@ interface CreateRestaurantRecordInput {
 
 interface RestaurantRecordFormProps {
   target: RestaurantTarget
-  referenceRecords?: QuadrantPoint[]
+  referenceRecords?: QuadrantReferencePoint[]
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
 }
 
 export function RestaurantRecordForm({
   target,
+  referenceRecords,
   onSave,
   isLoading,
 }: RestaurantRecordFormProps) {
   const [quadrant, setQuadrant] = useState({ x: 50, y: 50, satisfaction: 50 })
-  const [scene, setScene] = useState<SceneTag | null>(null)
+  const [scene, setScene] = useState<RestaurantScene | null>(null)
   const [comment, setComment] = useState('')
   const [companions, setCompanions] = useState<string[]>([])
   const [totalPrice, setTotalPrice] = useState('')
@@ -109,7 +110,7 @@ export function RestaurantRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 곳이었나요?
         </h3>
-        <QuadrantInput type="restaurant" value={quadrant} onChange={setQuadrant} />
+        <QuadrantInput type="restaurant" value={quadrant} onChange={setQuadrant} referencePoints={referenceRecords} />
       </section>
 
       {/* 상황 태그 */}

@@ -1,18 +1,26 @@
 'use client'
 
-import { useCallback } from 'react'
-import type { SceneTag } from '@/domain/entities/scene'
+import { useCallback, useEffect } from 'react'
+import type { RestaurantScene } from '@/domain/entities/scene'
 import { SCENE_TAGS } from '@/domain/entities/scene'
 
 interface SceneTagSelectorProps {
-  value: SceneTag | null
-  onChange: (value: SceneTag | null) => void
-  aiSuggestion?: SceneTag
+  value: RestaurantScene | null
+  onChange: (value: RestaurantScene | null) => void
+  aiSuggestion?: RestaurantScene
 }
 
 export function SceneTagSelector({ value, onChange, aiSuggestion }: SceneTagSelectorProps) {
+  // AI 추천 자동 pre-select (마운트 시 1회)
+  useEffect(() => {
+    if (aiSuggestion && value === null) {
+      onChange(aiSuggestion)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleSelect = useCallback(
-    (tag: SceneTag) => {
+    (tag: RestaurantScene) => {
       onChange(value === tag ? null : tag)
     },
     [value, onChange],

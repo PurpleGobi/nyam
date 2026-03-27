@@ -142,7 +142,8 @@ export function WineRegisterForm({
         type="button"
         onClick={handleSubmit}
         disabled={!name.trim() || !wineType || isLoading}
-        className="mt-2 w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
+        className="mt-2 w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold disabled:opacity-50"
+        style={{ color: '#FFFFFF' }}
       >
         {isLoading ? '등록 중...' : '등록하기'}
       </button>

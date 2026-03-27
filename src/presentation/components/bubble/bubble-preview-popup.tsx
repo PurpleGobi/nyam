@@ -79,8 +79,8 @@ export function BubblePreviewPopup({ isOpen, onClose, bubble, onJoin, isLoading 
             type="button"
             onClick={onJoin}
             disabled={isLoading}
-            className="w-full rounded-xl py-3 text-center text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent-social)' }}
+            className="w-full rounded-xl py-3 text-center text-[15px] font-bold transition-opacity disabled:opacity-50"
+            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
           >
             {isLoading ? '처리 중...' : '가입하기'}
           </button>

@@ -90,8 +90,8 @@ export function BubbleCreateForm({ onSubmit, isLoading }: BubbleCreateFormProps)
         type="button"
         onClick={handleSubmit}
         disabled={!name.trim() || isLoading}
-        className="mt-2 rounded-xl py-3.5 text-center text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: 'var(--accent-social)' }}
+        className="mt-2 rounded-xl py-3.5 text-center text-[15px] font-bold transition-opacity disabled:opacity-50"
+        style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
       >
         {isLoading ? '생성 중...' : '버블 만들기'}
       </button>

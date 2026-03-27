@@ -73,7 +73,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
             className="max-h-[80vh] max-w-[90vw] object-contain"
           />
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[14px] text-white">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[14px]" style={{ color: '#FFFFFF' }}>
             {fullscreenIndex + 1} / {photos.length}
           </div>
         </div>

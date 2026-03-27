@@ -13,7 +13,7 @@ export async function signInWithProvider(provider: AuthProvider, redirectTo: str
   }
 
   return client.auth.signInWithOAuth({
-    provider: provider as 'google', // infrastructure 레이어에서만 허용 — Supabase SDK에 'naver' 타입 없음
+    provider: provider as never, // infrastructure 레이어에서만 허용 — Supabase SDK에 'naver'/'kakao' 타입 없음
     options,
   })
 }

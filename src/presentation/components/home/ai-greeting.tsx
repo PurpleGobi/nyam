@@ -1,65 +1,64 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface AiGreetingProps {
-  message: string
+  title: string
+  description: string
   onDismiss: () => void
+  onClick?: () => void
 }
 
-export function AiGreeting({ message, onDismiss }: AiGreetingProps) {
-  const [opacity, setOpacity] = useState(1)
+export function AiGreeting({ title, description, onDismiss, onClick }: AiGreetingProps) {
+  const [collapsed, setCollapsed] = useState(false)
   const [shouldRender, setShouldRender] = useState(true)
 
-  useEffect(() => {
-    const fadeTimer = setTimeout(() => {
-      setOpacity(0)
-    }, 4400)
-
-    const removeTimer = setTimeout(() => {
+  const collapse = useCallback(() => {
+    setCollapsed(true)
+    setTimeout(() => {
       setShouldRender(false)
       onDismiss()
-    }, 5000)
-
-    return () => {
-      clearTimeout(fadeTimer)
-      clearTimeout(removeTimer)
-    }
+    }, 600)
   }, [onDismiss])
+
+  useEffect(() => {
+    const timer = setTimeout(collapse, 5000)
+    return () => clearTimeout(timer)
+  }, [collapse])
 
   if (!shouldRender) return null
 
   return (
-    <div
-      className="mx-4 flex items-center justify-between rounded-xl px-4 py-3"
+    <button
+      type="button"
+      onClick={onClick}
+      className="mx-4 rounded-xl px-4 py-3 text-left"
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        opacity,
-        transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        opacity: collapsed ? 0 : 1,
+        maxHeight: collapsed ? '0px' : '80px',
+        overflow: 'hidden',
+        transition: 'opacity 0.5s ease, max-height 0.5s ease',
       }}
     >
-      <p
-        className="min-w-0 flex-1 truncate text-[14px] font-medium"
-        style={{ color: 'var(--text)' }}
-      >
-        {message}
+      <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.5 }}>
+        <strong>{title}</strong>
+        <br />
+        {description}
       </p>
-      <button
-        type="button"
-        onClick={() => {
-          setOpacity(0)
-          setTimeout(() => {
-            setShouldRender(false)
-            onDismiss()
-          }, 600)
-        }}
-        className="ml-2 shrink-0"
-        style={{ color: 'var(--text-hint)' }}
-      >
-        <X size={14} />
-      </button>
-    </div>
+      <div className="mt-1 flex items-center gap-1">
+        <span
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--accent-food), var(--accent-wine))',
+            display: 'inline-block',
+          }}
+        />
+        <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>nyam AI · 나의 기록 기반</span>
+      </div>
+    </button>
   )
 }

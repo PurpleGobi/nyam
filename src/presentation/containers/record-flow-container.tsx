@@ -42,14 +42,16 @@ function RecordFlowInner() {
     savedRecordId: null,
   })
 
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const isLoading = isRecordLoading || isUploading
 
   const handleSave = useCallback(
     async (formData: { targetId: string; targetType: RecordTargetType; [key: string]: unknown }) => {
       if (!user) return
+      setPhotoError(null)
 
       try {
-        // 1. records INSERT
+        // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
         const input: CreateRecordInput = {
           userId: user.id,
           targetId: formData.targetId,
@@ -79,11 +81,15 @@ function RecordFlowInner() {
         }
         const record = await createRecord(input)
 
-        // 2. record_photos INSERT (사진이 있으면)
+        // 2. record_photos INSERT (사진이 있으면 — 실패해도 record는 유지)
         if (photos.length > 0) {
-          const uploadedPhotos = await uploadAll(user.id, record.id)
-          if (uploadedPhotos.length > 0) {
-            await photoRepo.savePhotos(record.id, uploadedPhotos)
+          try {
+            const uploadedPhotos = await uploadAll(user.id, record.id)
+            if (uploadedPhotos.length > 0) {
+              await photoRepo.savePhotos(record.id, uploadedPhotos)
+            }
+          } catch {
+            setPhotoError('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
           }
         }
 
@@ -115,6 +121,7 @@ function RecordFlowInner() {
         variant={state.targetType === 'wine' ? 'wine' : 'food'}
         targetName={state.targetName}
         targetMeta={state.targetMeta}
+        photoError={photoError}
         onAddMore={handleAddMore}
         onAddAnother={handleAddAnother}
         onGoHome={handleClose}

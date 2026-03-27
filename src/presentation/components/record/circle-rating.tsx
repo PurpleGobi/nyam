@@ -94,6 +94,7 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <span
         style={{

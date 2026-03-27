@@ -13,13 +13,13 @@ interface WineConfirmCardProps {
 }
 
 const WINE_TYPE_MAP: globalThis.Record<string, { label: string; className: string }> = {
-  red: { label: '레드', className: 'bg-red-100 text-red-700' },
-  white: { label: '화이트', className: 'bg-yellow-100 text-yellow-700' },
-  rose: { label: '로제', className: 'bg-pink-100 text-pink-700' },
-  sparkling: { label: '스파클링', className: 'bg-blue-100 text-blue-700' },
-  orange: { label: '오렌지', className: 'bg-orange-100 text-orange-700' },
-  fortified: { label: '주정강화', className: 'bg-amber-100 text-amber-700' },
-  dessert: { label: '디저트', className: 'bg-purple-100 text-purple-700' },
+  red: { label: '레드', className: 'bg-accent-wine-light text-accent-wine' },
+  white: { label: '화이트', className: 'bg-accent-food-light text-accent-food' },
+  rose: { label: '로제', className: 'bg-[var(--scene-romantic)]/10 text-[var(--scene-romantic)]' },
+  sparkling: { label: '스파클링', className: 'bg-accent-social-light text-accent-social' },
+  orange: { label: '오렌지', className: 'bg-[var(--caution)]/10 text-caution' },
+  fortified: { label: '주정강화', className: 'bg-accent-food-dim text-accent-food' },
+  dessert: { label: '디저트', className: 'bg-accent-wine-light text-accent-wine' },
 }
 
 export function WineConfirmCard({
@@ -68,7 +68,8 @@ export function WineConfirmCard({
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold text-white"
+          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold"
+          style={{ color: '#FFFFFF' }}
         >
           맞아요
         </button>

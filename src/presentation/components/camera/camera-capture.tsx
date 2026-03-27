@@ -80,7 +80,7 @@ export function CameraCapture({
           {isRecognizing ? (
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
           ) : (
-            <Camera size={28} className="text-white" />
+            <Camera size={28} color="#FFFFFF" />
           )}
         </button>
       </div>

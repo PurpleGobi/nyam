@@ -20,16 +20,18 @@ export function AromaSector({
   onPointerEnter,
 }: AromaSectorProps) {
   return (
-    <g>
+    <g
+      onPointerDown={onPointerDown}
+      onPointerEnter={onPointerEnter}
+      style={{ cursor: 'pointer' }}
+    >
       <path
         d={pathData}
         fill={sector.hex}
         stroke="var(--bg-card)"
         strokeWidth={1}
         opacity={isActive ? 1.0 : 0.25}
-        style={{ transition: 'opacity 0.15s ease-out', cursor: 'pointer' }}
-        onPointerDown={onPointerDown}
-        onPointerEnter={onPointerEnter}
+        style={{ transition: 'opacity 0.15s ease-out' }}
       />
       <text
         x={labelPosition.x}

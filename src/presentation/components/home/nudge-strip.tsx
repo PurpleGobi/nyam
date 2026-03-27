@@ -1,6 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { Camera, X } from 'lucide-react'
 import type { NudgeDisplay } from '@/domain/entities/nudge'
 
 interface NudgeStripProps {
@@ -14,23 +14,28 @@ export function NudgeStrip({ nudge, onAction, onDismiss }: NudgeStripProps) {
 
   return (
     <div
-      className="mx-4 flex items-center gap-3 rounded-xl px-4 py-3"
-      style={{ backgroundColor: 'var(--accent-food-light)', border: '1px solid var(--accent-food-dim)' }}
+      className="mx-4 flex items-center gap-2 rounded-xl px-3 py-2"
+      style={{ backgroundColor: 'var(--accent-food-light)', border: '1px solid var(--border)' }}
     >
-      <span style={{ fontSize: '20px' }}>{nudge.icon}</span>
-      <div className="min-w-0 flex-1">
-        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{nudge.title}</p>
-        <p style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{nudge.subtitle}</p>
+      <div
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: 'var(--accent-food)' }}
+      >
+        <Camera size={14} color="#fff" />
       </div>
+      <p className="min-w-0 flex-1 truncate text-[12px]" style={{ color: 'var(--text)' }}>
+        <strong>{nudge.title}</strong>
+        <span style={{ color: 'var(--text-hint)' }}> · {nudge.subtitle}</span>
+      </p>
       <button
         type="button"
         onClick={onAction}
-        className="shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-white"
-        style={{ backgroundColor: 'var(--accent-food)' }}
+        className="shrink-0 text-[12px] font-bold"
+        style={{ color: 'var(--accent-food)' }}
       >
         {nudge.actionLabel}
       </button>
-      <button type="button" onClick={onDismiss} className="shrink-0" style={{ color: 'var(--text-hint)' }}>
+      <button type="button" onClick={onDismiss} className="shrink-0 text-[12px]" style={{ color: 'var(--text-hint)' }}>
         <X size={14} />
       </button>
     </div>

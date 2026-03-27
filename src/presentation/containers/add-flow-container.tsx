@@ -203,8 +203,8 @@ function AddFlowInner() {
           <button
             type="button"
             onClick={handleSearchFallback}
-            className="mt-2 w-full max-w-[280px] rounded-xl py-3 text-center text-[14px] font-semibold text-white"
-            style={{ backgroundColor: targetType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)' }}
+            className="mt-2 w-full max-w-[280px] rounded-xl py-3 text-center text-[14px] font-semibold"
+            style={{ backgroundColor: targetType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)', color: '#FFFFFF' }}
           >
             이름으로 검색
           </button>

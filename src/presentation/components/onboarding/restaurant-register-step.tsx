@@ -113,8 +113,8 @@ export function RestaurantRegisterStep({
         <button
           type="button"
           onClick={onNext}
-          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-semibold text-white"
-          style={{ backgroundColor: 'var(--accent-food)' }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-semibold"
+          style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
         >
           {registeredIds.size > 0 ? `${registeredIds.size}개 등록 완료` : '건너뛰기'}
           <ArrowRight size={16} />

@@ -50,8 +50,8 @@ export function InviteLinkGenerator({ inviteCode, onGenerate, isLoading }: Invit
           type="button"
           onClick={onGenerate}
           disabled={isLoading}
-          className="rounded-xl py-2.5 text-center text-[13px] font-semibold text-white disabled:opacity-50"
-          style={{ backgroundColor: 'var(--accent-social)' }}
+          className="rounded-xl py-2.5 text-center text-[13px] font-semibold disabled:opacity-50"
+          style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
         >
           {isLoading ? '생성 중...' : '초대 링크 생성'}
         </button>

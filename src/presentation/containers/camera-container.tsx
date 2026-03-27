@@ -168,7 +168,8 @@ export function CameraContainer({ targetType }: CameraContainerProps) {
           <button
             type="button"
             onClick={handleSearchFallback}
-            className="mt-2 w-full max-w-[280px] rounded-xl bg-[var(--accent-wine)] py-3 text-center text-[14px] font-semibold text-white"
+            className="mt-2 w-full max-w-[280px] rounded-xl bg-[var(--accent-wine)] py-3 text-center text-[14px] font-semibold"
+            style={{ color: '#FFFFFF' }}
           >
             이름으로 검색
           </button>

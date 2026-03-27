@@ -79,8 +79,7 @@ export class SupabaseRecordRepository implements RecordRepository {
   async findByUserAndTarget(userId: string, targetId: string): Promise<DiningRecord[]> { ... }
   async update(id: string, data: Partial<DiningRecord>): Promise<DiningRecord> { ... }
   async delete(id: string): Promise<void> { ... }
-  // 사진
-  async addPhotos(recordId: string, photoUrls: string[]): Promise<RecordPhoto[]> { ... }
+  // 사진 (읽기/삭제만 — 사진 저장은 PhotoRepository 책임, DEC-007)
   async findPhotosByRecordId(recordId: string): Promise<RecordPhoto[]> { ... }
   async deletePhoto(id: string): Promise<void> { ... }
   // 찜 연동
@@ -232,26 +231,6 @@ async create(input: CreateRecordInput): Promise<DiningRecord> {
 
   if (error) throw new Error(`Record 생성 실패: ${error.message}`)
   return mapDbToRecord(data)
-}
-```
-
-**addPhotos:**
-
-```typescript
-async addPhotos(recordId: string, photoUrls: string[]): Promise<RecordPhoto[]> {
-  const rows = photoUrls.map((url, index) => ({
-    record_id: recordId,
-    url,
-    order_index: index,
-  }))
-
-  const { data, error } = await this.supabase
-    .from('record_photos')
-    .insert(rows)
-    .select()
-
-  if (error) throw new Error(`사진 저장 실패: ${error.message}`)
-  return data.map(mapDbToPhoto)
 }
 ```
 
@@ -432,14 +411,17 @@ export const recordRepository: RecordRepository = new SupabaseRecordRepository()
 
 ### 5. application/hooks/use-create-record.ts
 
+> **DI 패턴**: hook이 `shared/di/container`에서 repository를 직접 import한다 (Service Locator).
+> 프로젝트 전체 hook이 이 패턴으로 통일되어 있다 (DEC-006 참조).
+
 ```typescript
 'use client'
 
 import { useState, useCallback } from 'react'
 import type { DiningRecord, CreateRecordInput } from '@/domain/entities/record'
-import type { RecordRepository } from '@/domain/repositories/record-repository'
+import { recordRepo } from '@/shared/di/container'
 
-export function useCreateRecord(repository: RecordRepository) {
+export function useCreateRecord() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -449,21 +431,16 @@ export function useCreateRecord(repository: RecordRepository) {
 
     try {
       // 1. records INSERT
-      const record = await repository.create(input)
+      const record = await recordRepo.create(input)
 
-      // 2. record_photos INSERT
-      if ('photoUrls' in input && input.photoUrls && input.photoUrls.length > 0) {
-        await repository.addPhotos(record.id, input.photoUrls)
-      }
-
-      // 3. wishlists UPDATE
-      await repository.markWishlistVisited(
+      // 2. wishlists UPDATE
+      await recordRepo.markWishlistVisited(
         input.userId,
         input.targetId,
         input.targetType
       )
 
-      // 4. XP 적립 — S6에서 구현
+      // 3. XP 적립 — S6에서 구현
       // stub: record.recordQualityXp는 이미 0으로 저장됨
 
       return record
@@ -474,7 +451,7 @@ export function useCreateRecord(repository: RecordRepository) {
     } finally {
       setIsLoading(false)
     }
-  }, [repository])
+  }, [])
 
   return { createRecord, isLoading, error }
 }
@@ -483,38 +460,27 @@ export function useCreateRecord(repository: RecordRepository) {
 **호출 패턴 (container에서):**
 
 ```typescript
-import { recordRepository } from '@/shared/di/container'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 
 // container 내부
-const { createRecord, isLoading, error } = useCreateRecord(recordRepository)
+const { createRecord, isLoading, error } = useCreateRecord()
 ```
 
-- `useCreateRecord`는 `RecordRepository` 인터페이스에만 의존 → R3 준수
-- container가 `shared/di`에서 구현체를 주입 → R4 준수
+- hook이 `shared/di/container`에서 직접 import → R3 준수 (`shared/di`는 infrastructure가 아님)
+- container는 hook만 import → R4 준수
 
 ### 6. application/hooks/use-records.ts
+
+> **DI 패턴**: `shared/di/container`에서 직접 import (DEC-006).
 
 ```typescript
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { DiningRecord } from '@/domain/entities/record'
-import type { RecordRepository, RecordTargetType } from '@/domain/repositories/record-repository'
+import type { DiningRecord, RecordTargetType } from '@/domain/entities/record'
+import { recordRepo } from '@/shared/di/container'
 
-interface UseRecordsOptions {
-  limit?: number
-  offset?: number
-  orderBy?: 'visit_date' | 'created_at'
-  order?: 'asc' | 'desc'
-}
-
-export function useRecords(
-  repository: RecordRepository,
-  userId: string,
-  targetType?: RecordTargetType,
-  options?: UseRecordsOptions
-) {
+export function useRecords(userId: string | null, targetType?: RecordTargetType) {
   const [records, setRecords] = useState<DiningRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -526,7 +492,7 @@ export function useRecords(
     setError(null)
 
     try {
-      const data = await repository.findByUserId(userId, targetType)
+      const data = await recordRepo.findByUserId(userId, targetType)
       setRecords(data)
     } catch (e) {
       const message = e instanceof Error ? e.message : '기록 조회에 실패했습니다'
@@ -534,7 +500,7 @@ export function useRecords(
     } finally {
       setIsLoading(false)
     }
-  }, [repository, userId, targetType, options?.limit, options?.offset, options?.orderBy, options?.order])
+  }, [userId, targetType])
 
   useEffect(() => {
     fetch()
@@ -551,16 +517,10 @@ export function useRecords(
 **호출 패턴 (container에서):**
 
 ```typescript
-import { recordRepository } from '@/shared/di/container'
 import { useRecords } from '@/application/hooks/use-records'
 
 // container 내부
-const { records, isLoading, error, refetch } = useRecords(
-  recordRepository,
-  currentUser.id,
-  'restaurant',
-  { limit: 20, orderBy: 'visit_date', order: 'desc' }
-)
+const { records, isLoading, error, refetch } = useRecords(currentUser.id, 'restaurant')
 ```
 
 ### 7. 에러 처리 규칙
@@ -605,7 +565,7 @@ data layer 기준으로 아래 화면들이 이 infrastructure에 의존한다:
 
 | 화면 | 사용하는 hook | 사용하는 repository 메서드 |
 |------|-------------|--------------------------|
-| 기록 저장 플로우 (2.9) | `useCreateRecord` | `create`, `addPhotos`, `markWishlistVisited` |
+| 기록 저장 플로우 (2.9) | `useCreateRecord` + `usePhotoUpload` + `photoRepo` | `create`, `markWishlistVisited` + `photoRepo.savePhotos()` (DEC-007) |
 | 홈 기록 목록 (S5) | `useRecords` | `findByUserId` |
 | 기록 상세 (S4) | `useRecords` | `findById`, `findPhotosByRecordId` |
 | 상세 페이지 사분면 참조점 (S4) | `useRecords` | `findByUserId`, `findByUserAndTarget` |
@@ -618,22 +578,21 @@ data layer 기준으로 아래 화면들이 이 infrastructure에 의존한다:
 ```
 [presentation/containers]
     │
-    ├── import { recordRepository } from '@/shared/di/container'    ← 타입: RecordRepository (domain)
     ├── import { useCreateRecord } from '@/application/hooks/...'
     ├── import { useRecords } from '@/application/hooks/...'
     │
-    ├── useCreateRecord(recordRepository)
+    ├── useCreateRecord()     ← hook 내부에서 shared/di/container 직접 import
     │     │
-    │     └── recordRepository.create(input)
+    │     └── recordRepo.create(input)
     │           │
     │           └── [SupabaseRecordRepository]
     │                 ├── mapRecordToDb(input)         ← camelCase → snake_case
     │                 ├── supabase.from('records').insert().select().single()
     │                 └── mapDbToRecord(data)           ← snake_case → camelCase
     │
-    └── useRecords(recordRepository, userId, targetType)
+    └── useRecords(userId, targetType)     ← hook 내부에서 shared/di/container 직접 import
           │
-          └── recordRepository.findByUserId(userId, targetType)
+          └── recordRepo.findByUserId(userId, targetType)
                 │
                 └── [SupabaseRecordRepository]
                       ├── supabase.from('records').select().eq(...).order(...)
@@ -641,8 +600,8 @@ data layer 기준으로 아래 화면들이 이 infrastructure에 의존한다:
 
 [의존성 방향]
   app → presentation → application → domain ← infrastructure
-                                       ↑
-                               shared/di (조합 루트)
+                              ↑         ↑
+                       shared/di (조합 루트)
 ```
 
 ---
@@ -656,12 +615,12 @@ data layer 기준으로 아래 화면들이 이 infrastructure에 의존한다:
 - [ ] R3: `grep -r "from '.*infrastructure" src/application/` → 결과 없음
 - [ ] R4: `grep -r "from '@supabase\|from '.*infrastructure" src/presentation/` → 결과 없음
 - [ ] `shared/di/container.ts`에서만 `SupabaseRecordRepository` import
-- [ ] `useCreateRecord`, `useRecords`는 `RecordRepository` 인터페이스만 파라미터로 받음
+- [ ] `useCreateRecord`, `useRecords`는 `shared/di/container`에서 repository를 직접 import (DEC-006 Service Locator 패턴)
 
 ### 기능 검증
 
 - [ ] `recordRepository.create()` → records 테이블에 INSERT 성공, 반환값 camelCase 확인
-- [ ] `recordRepository.addPhotos()` → record_photos에 INSERT, order_index 올바른 순서
+- [ ] `photoRepo.savePhotos()` → record_photos에 INSERT, order_index 올바른 순서 (DEC-007: PhotoRepository 책임)
 - [ ] `recordRepository.findById()` → 존재: Record 반환, 미존재: null 반환
 - [ ] `recordRepository.findByUserId()` → userId + targetType 필터, 정렬 + 페이지네이션 동작
 - [ ] `recordRepository.findByUserAndTarget()` → userId + targetId 필터, visit_date DESC

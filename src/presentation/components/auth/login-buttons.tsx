@@ -18,7 +18,7 @@ interface SocialButtonConfig {
 const SOCIAL_BUTTONS: SocialButtonConfig[] = [
   {
     provider: 'google',
-    label: 'Google로 시작',
+    label: 'Google로 시작하기',
     bgColor: 'var(--bg-elevated)',
     textColor: 'var(--text)',
     borderColor: 'var(--border)',
@@ -26,7 +26,7 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
   },
   {
     provider: 'kakao',
-    label: '카카오로 시작',
+    label: '카카오로 시작하기',
     bgColor: '#FEE500',
     textColor: '#3C1E1E',
     borderColor: null,
@@ -34,7 +34,7 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
   },
   {
     provider: 'naver',
-    label: '네이버로 시작',
+    label: '네이버로 시작하기',
     bgColor: '#03C75A',
     textColor: '#FFFFFF',
     borderColor: null,
@@ -42,7 +42,7 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
   },
   {
     provider: 'apple',
-    label: 'Apple로 시작',
+    label: 'Apple로 시작하기',
     bgColor: '#1D1D1F',
     textColor: '#FFFFFF',
     borderColor: null,

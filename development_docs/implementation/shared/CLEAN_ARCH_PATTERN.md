@@ -43,13 +43,16 @@ import { supabase } from '@/infrastructure/supabase/client'
 export class SupabaseRestaurantRepository implements RestaurantRepository { ... }
 ```
 
-### application/ (domain 인터페이스에만 의존)
+### application/ (domain 인터페이스에만 의존, shared/di 허용)
 
 ```typescript
-// ✅ 허용
-import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
+// ✅ 허용 — shared/di/container에서 repository 직접 import (Service Locator 패턴, DEC-006)
+import { restaurantRepo } from '@/shared/di/container'
 
-export function useRestaurant(repo: RestaurantRepository, id: string) { ... }
+export function useRestaurant(id: string) {
+  // restaurantRepo는 타입이 RestaurantRepository(domain 인터페이스)로 좁혀져 있음
+  const data = await restaurantRepo.findById(id)
+}
 
 // ❌ 금지
 import { SupabaseRestaurantRepository } from '@/infrastructure/...'  // R3 위반
@@ -96,25 +99,43 @@ const data = await supabase.from('restaurants')...  // R5 위반
 
 > DI container는 `shared/di/`에 둔다. `infrastructure/`에 두면 presentation→infrastructure import가 발생하여 R4 위반.
 
+### 조합 루트 (Composition Root)
+
 ```typescript
-// shared/di/container.ts — 조합 루트 (composition root)
+// shared/di/container.ts — 유일하게 infrastructure를 import하는 조합 루트
 import { SupabaseRestaurantRepository } from '@/infrastructure/repositories/supabase-restaurant-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
 
 export const restaurantRepo: RestaurantRepository = new SupabaseRestaurantRepository()
+```
 
-// presentation/containers/에서 사용
+### Service Locator 패턴 (DEC-006)
+
+> 프로젝트 전체 hook이 이 패턴으로 통일되어 있다.
+> application hook이 `shared/di/container`에서 repository를 직접 import한다.
+> `shared/di`는 infrastructure가 아니므로 R3 위반이 아니다.
+
+```typescript
+// application/hooks/use-restaurant.ts — hook이 container에서 직접 import
 import { restaurantRepo } from '@/shared/di/container'
+
+export function useRestaurant(id: string) {
+  // restaurantRepo 타입은 RestaurantRepository (domain 인터페이스)
+  const data = await restaurantRepo.findById(id)
+  ...
+}
+
+// presentation/containers/ — hook만 import
 import { useRestaurant } from '@/application/hooks/use-restaurant'
 
 export function RestaurantDetailContainer({ id }: Props) {
-  const { data } = useRestaurant(restaurantRepo, id)
+  const { data } = useRestaurant(id)
   ...
 }
 ```
 
 > `shared/di/container.ts`는 유일하게 infrastructure를 import할 수 있는 조합 루트.
-> presentation은 `@/shared/di/`에서 이미 타입이 domain 인터페이스로 좁혀진 인스턴스를 받으므로 R4를 준수한다.
+> container.ts에서 export되는 인스턴스는 타입이 domain 인터페이스로 좁혀져 있으므로, 이를 import하는 application/presentation 레이어는 R3/R4를 준수한다.
 
 ---
 

@@ -35,8 +35,8 @@ export function DeleteConfirmModal({ isOpen, isDeleting, onConfirm, onCancel }: 
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 rounded-xl py-3 text-[14px] font-semibold text-white disabled:opacity-50"
-            style={{ backgroundColor: 'var(--negative)' }}
+            className="flex-1 rounded-xl py-3 text-[14px] font-semibold disabled:opacity-50"
+            style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
           >
             {isDeleting ? '삭제 중...' : '삭제'}
           </button>

@@ -59,6 +59,23 @@ export function AppHeader({ variant = 'main', title, backHref }: AppHeaderProps)
 
         {/* 우측 */}
         <div className="flex items-center gap-2">
+          {variant === 'main' && (
+            <button
+              type="button"
+              onClick={() => router.push('/bubbles')}
+              style={{
+                fontFamily: 'var(--font-logo)',
+                fontSize: '13px',
+                fontWeight: 700,
+                color: 'var(--brand)',
+                background: 'none',
+                border: 'none',
+                padding: '4px 0',
+              }}
+            >
+              bubbles
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setNotifOpen(!notifOpen)}

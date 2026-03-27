@@ -65,20 +65,20 @@ cd nyam
   "private": true,
   "scripts": {
     "dev": "next dev -p 7911",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start -p 7911",
-    "lint": "next lint"
+    "lint": "eslint"
   },
   "dependencies": {
     "next": "^15",
     "react": "^19",
     "react-dom": "^19",
     "@supabase/supabase-js": "^2",
-    "@supabase/ssr": "^0.5",
+    "@supabase/ssr": "^0.9",
     "lucide-react": "^0.468",
     "class-variance-authority": "^0.7",
     "clsx": "^2",
-    "tailwind-merge": "^2"
+    "tailwind-merge": "^3"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -116,7 +116,7 @@ pnpm install
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -385,25 +385,22 @@ supabase init
 `eslint.config.mjs`:
 
 ```javascript
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { FlatCompat } from '@eslint/eslintrc'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
+import nextConfig from 'eslint-config-next'
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
-  {
-    rules: {
-      'no-console': 'error',
-      '@typescript-eslint/no-explicit-any': 'error',
-    },
-  },
+  ...nextConfig.map((config) => {
+    if (config.plugins?.['@typescript-eslint']) {
+      return {
+        ...config,
+        rules: {
+          ...config.rules,
+          'no-console': 'error',
+          '@typescript-eslint/no-explicit-any': 'error',
+        },
+      }
+    }
+    return config
+  }),
 ]
 
 export default eslintConfig

@@ -1,4 +1,4 @@
-import type { AromaSectorMeta } from '@/domain/entities/aroma'
+import type { AromaSectorMeta, AromaSectorId, AromaRing } from '@/domain/entities/aroma'
 
 /**
  * 15개 아로마 섹터 메타데이터
@@ -15,12 +15,28 @@ export const AROMA_SECTORS: readonly AromaSectorMeta[] = [
   { id: 'floral', ring: 1, position: '6시', nameKo: '꽃', nameEn: 'Floral', hex: '#f472b6' },
   { id: 'white_floral', ring: 1, position: '7시', nameKo: '흰꽃', nameEn: 'White Floral', hex: '#fef3c7' },
   // Ring 2 — 2차향 (발효/숙성), 4 sectors, 90° each
-  { id: 'butter', ring: 2, position: '8시', nameKo: '버터/브리오슈', nameEn: 'Butter', hex: '#fde68a' },
-  { id: 'vanilla', ring: 2, position: '9시', nameKo: '바닐라/토스트', nameEn: 'Vanilla', hex: '#d97706' },
+  { id: 'butter', ring: 2, position: '8시', nameKo: '버터', nameEn: 'Butter/Brioche', hex: '#fde68a' },
+  { id: 'vanilla', ring: 2, position: '9시', nameKo: '바닐라', nameEn: 'Vanilla/Toast', hex: '#d97706' },
   { id: 'spice', ring: 2, position: '10시', nameKo: '향신료', nameEn: 'Spice', hex: '#991b1b' },
   { id: 'herb', ring: 2, position: '11시', nameKo: '허브', nameEn: 'Herb', hex: '#4ade80' },
   // Ring 3 — 3차향 (숙성), 3 sectors, 120° each
-  { id: 'leather', ring: 3, position: '중앙-좌', nameKo: '가죽/담배', nameEn: 'Leather', hex: '#78350f' },
-  { id: 'earth', ring: 3, position: '중앙-우', nameKo: '흙/미네랄', nameEn: 'Earth', hex: '#78716c' },
-  { id: 'nut', ring: 3, position: '중앙-하', nameKo: '견과/초콜릿', nameEn: 'Nut', hex: '#92400e' },
+  { id: 'leather', ring: 3, position: '중앙-좌', nameKo: '가죽', nameEn: 'Leather/Tobacco', hex: '#78350f' },
+  { id: 'earth', ring: 3, position: '중앙-우', nameKo: '흙', nameEn: 'Earth/Mineral', hex: '#78716c' },
+  { id: 'nut', ring: 3, position: '중앙-하', nameKo: '견과', nameEn: 'Nut/Chocolate', hex: '#92400e' },
 ] as const
+
+/** 링별 섹터 개수 */
+export const RING_SECTOR_COUNTS: Record<AromaRing, number> = { 1: 8, 2: 4, 3: 3 }
+
+/** 링별 라벨 */
+export const RING_LABELS: Record<AromaRing, string> = { 1: '1차향', 2: '2차향', 3: '3차향' }
+
+/** ID로 섹터 조회 */
+export function getAromaSectorById(id: AromaSectorId): AromaSectorMeta | undefined {
+  return AROMA_SECTORS.find((s) => s.id === id)
+}
+
+/** 링 번호로 섹터 필터 */
+export function getAromaSectorsByRing(ring: AromaRing): AromaSectorMeta[] {
+  return AROMA_SECTORS.filter((s) => s.ring === ring)
+}

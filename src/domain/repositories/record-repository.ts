@@ -37,9 +37,7 @@ export interface RecordRepository {
    */
   delete(id: string): Promise<void>
 
-  // ─── 사진 ───
-
-  addPhotos(recordId: string, photoUrls: string[]): Promise<RecordPhoto[]>
+  // ─── 사진 (읽기/삭제만 — 사진 저장은 PhotoRepository 책임, DEC-007) ───
 
   findPhotosByRecordId(recordId: string): Promise<RecordPhoto[]>
 

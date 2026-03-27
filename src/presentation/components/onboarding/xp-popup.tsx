@@ -32,7 +32,7 @@ export function XpPopup({ amount, isVisible, onDismiss }: XpPopupProps) {
         }}
       >
         <Sparkles size={20} color="#FFFFFF" />
-        <span className="text-[20px] font-extrabold text-white">+{amount} XP</span>
+        <span className="text-[20px] font-extrabold" style={{ color: '#FFFFFF' }}>+{amount} XP</span>
       </div>
     </div>
   )

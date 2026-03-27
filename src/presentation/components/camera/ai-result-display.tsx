@@ -23,7 +23,8 @@ export function AIResultDisplay({
         <button
           type="button"
           onClick={onSearchFallback}
-          className="mt-4 rounded-xl bg-[var(--accent-food)] px-6 py-3 text-[14px] font-semibold text-white"
+          className="mt-4 rounded-xl bg-[var(--accent-food)] px-6 py-3 text-[14px] font-semibold"
+          style={{ color: '#FFFFFF' }}
         >
           직접 검색하기
         </button>

@@ -6,6 +6,7 @@ interface RecordSuccessProps {
   variant: 'food' | 'wine'
   targetName: string
   targetMeta: string
+  photoError?: string | null
   onAddMore: () => void
   onAddAnother: () => void
   onGoHome: () => void
@@ -15,6 +16,7 @@ export function RecordSuccess({
   variant,
   targetName,
   targetMeta,
+  photoError,
   onAddMore,
   onAddAnother,
   onGoHome,
@@ -38,6 +40,15 @@ export function RecordSuccess({
       >
         {targetName} · {targetMeta}
       </p>
+
+      {photoError && (
+        <p
+          className="mt-3 text-center"
+          style={{ fontSize: '12px', color: 'var(--destructive)', lineHeight: 1.4 }}
+        >
+          {photoError}
+        </p>
+      )}
 
       <div className="mt-8 flex w-full max-w-[280px] flex-col gap-3">
         <button

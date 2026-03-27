@@ -91,8 +91,8 @@ export function BubbleSettings({ bubble, onSave, onDelete, isLoading }: BubbleSe
         type="button"
         onClick={handleSave}
         disabled={isLoading || !name.trim()}
-        className="rounded-xl py-3.5 text-center text-[15px] font-bold text-white transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: 'var(--accent-social)' }}
+        className="rounded-xl py-3.5 text-center text-[15px] font-bold transition-opacity disabled:opacity-50"
+        style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
       >
         {isLoading ? '저장 중...' : '설정 저장'}
       </button>

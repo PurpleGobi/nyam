@@ -107,8 +107,8 @@ export function NotificationDropdown({
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onAction(n.id, 'accepted') }}
-                        className="rounded-lg px-3 py-1 text-[12px] font-semibold text-white"
-                        style={{ backgroundColor: 'var(--accent-food)' }}
+                        className="rounded-lg px-3 py-1 text-[12px] font-semibold"
+                        style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
                       >
                         수락
                       </button>
