@@ -1,0 +1,273 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-family-comfortaa: 'Comfortaa', cursive;
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--bg-card);
+  --color-elevated: var(--bg-elevated);
+  --color-page: var(--bg-page);
+  --color-text-sub: var(--text-sub);
+  --color-text-hint: var(--text-hint);
+  --color-border: var(--border);
+  --color-border-bold: var(--border-bold);
+  --color-brand: var(--brand);
+  --color-accent-food: var(--accent-food);
+  --color-accent-food-light: var(--accent-food-light);
+  --color-accent-food-dim: var(--accent-food-dim);
+  --color-accent-wine: var(--accent-wine);
+  --color-accent-wine-light: var(--accent-wine-light);
+  --color-accent-wine-dim: var(--accent-wine-dim);
+  --color-accent-social: var(--accent-social);
+  --color-accent-social-light: var(--accent-social-light);
+  --color-positive: var(--positive);
+  --color-caution: var(--caution);
+  --color-negative: var(--negative);
+  --color-gauge-1: var(--gauge-1);
+  --color-gauge-2: var(--gauge-2);
+  --color-gauge-3: var(--gauge-3);
+  --color-gauge-4: var(--gauge-4);
+  --color-gauge-5: var(--gauge-5);
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-full: var(--r-full);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-sheet: var(--shadow-sheet);
+}
+
+/* ============================================================
+   DESIGN TOKENS — LIGHT MODE (기본)
+   SSOT: systems/DESIGN_SYSTEM.md
+   ============================================================ */
+
+:root {
+  /* ── §0 Brand ── */
+  --brand: #FF6038;
+
+  /* ── §1 Surface ── */
+  --bg: #F8F6F3;
+  --bg-card: #FEFCFA;
+  --bg-elevated: #FFFFFF;
+  --bg-page: #EFECE7;
+
+  /* ── §1 Text ── */
+  --text: #3D3833;
+  --text-sub: #8C8580;
+  --text-hint: #B5AFA8;
+
+  /* ── §1 Border ── */
+  --border: #E8E4DF;
+  --border-bold: #D4CFC8;
+
+  /* ── §1 Accent — Restaurant (테라코타) ── */
+  --accent-food: #C17B5E;
+  --accent-food-light: #F5EDE8;
+  --accent-food-dim: #E8D5CB;
+
+  /* ── §1 Accent — Wine (모브) ── */
+  --accent-wine: #8B7396;
+  --accent-wine-light: #F0ECF3;
+  --accent-wine-dim: #DDD5E3;
+
+  /* ── §1 Accent — Social/Bubble (슬레이트) ── */
+  --accent-social: #7A9BAE;
+  --accent-social-light: #EDF2F5;
+
+  /* ── §1 Semantic ── */
+  --positive: #7EAE8B;
+  --caution: #C9A96E;
+  --negative: #B87272;
+
+  /* ── §1 만족도 게이지 (5단계) ── */
+  --gauge-worst: #C4B5A8;
+  --gauge-best: #7A9BAE;
+  --gauge-1: #C4B5A8;
+  --gauge-2: #B0ADA4;
+  --gauge-3: #9FA5A3;
+  --gauge-4: #889DAB;
+  --gauge-5: #7A9BAE;
+
+  /* ── §1 상황 태그 색상 ── */
+  --scene-solo: #7A9BAE;
+  --scene-romantic: #B8879B;
+  --scene-friends: #7EAE8B;
+  --scene-family: #C9A96E;
+  --scene-business: #8B7396;
+  --scene-drinks: #B87272;
+
+  /* ── §2 Typography ── */
+  --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-logo: 'Comfortaa', cursive;
+
+  /* ── §4 Border Radius ── */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 50px;
+
+  /* ── §5 Shadow ── */
+  --shadow-sm: 0 1px 2px rgba(61, 56, 51, 0.04);
+  --shadow-md: 0 2px 8px rgba(61, 56, 51, 0.06);
+  --shadow-lg: 0 4px 20px rgba(61, 56, 51, 0.08);
+  --shadow-sheet: 0 -4px 24px rgba(61, 56, 51, 0.1);
+
+  /* ── §6 Spacing ── */
+  --s-2: 2px;
+  --s-4: 4px;
+  --s-6: 6px;
+  --s-8: 8px;
+  --s-10: 10px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-20: 20px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-40: 40px;
+  --s-48: 48px;
+
+  /* ── shadcn/ui 호환 (Tailwind 기본 매핑) ── */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--bg-card);
+  --card-foreground: var(--text);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text);
+  --primary: var(--accent-food);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--accent-wine);
+  --secondary-foreground: #FFFFFF;
+  --muted: var(--bg-page);
+  --muted-foreground: var(--text-sub);
+  --accent: var(--accent-food-light);
+  --accent-foreground: var(--accent-food);
+  --destructive: var(--negative);
+  --destructive-foreground: #FFFFFF;
+  --border-color: var(--border);
+  --input: var(--border);
+  --ring: var(--accent-food);
+  --radius: var(--r-md);
+}
+
+/* ============================================================
+   DARK MODE — §10
+   ============================================================ */
+
+[data-theme="dark"] {
+  --bg: #1E1C1A;
+  --bg-card: #2A2725;
+  --bg-elevated: #333029;
+  --bg-page: #141210;
+
+  --text: #E0DDD9;
+  --text-sub: #9C9690;
+  --text-hint: #6B6560;
+
+  --border: #3A3632;
+  --border-bold: #4A4640;
+
+  --accent-food-light: #3A2A22;
+  --accent-wine-light: #2E2533;
+  --accent-social-light: #1E2A30;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font);
+    color: var(--text);
+    background-color: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+}
+
+/* ============================================================
+   TYPOGRAPHY UTILITY CLASSES (§2)
+   ============================================================ */
+
+@layer utilities {
+  .text-display {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+
+  .text-h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+  }
+
+  .text-h2 {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .text-body {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .text-sub {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .text-caption {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+}
+
+/* ============================================================
+   LOGO GRADIENT (§0)
+   ============================================================ */
+
+.logo-gradient {
+  font-family: var(--font-logo);
+  font-weight: 700;
+  background: linear-gradient(135deg, #FF6038, #8B7396);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="dark"] .logo-gradient {
+  background: linear-gradient(135deg, #FF8060, #B8A0C8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

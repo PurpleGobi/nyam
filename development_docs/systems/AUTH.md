@@ -122,136 +122,190 @@
 
 ## 4. RLS 정책
 
-### users
-```sql
--- 자기 자신: 항상 전체
-CREATE POLICY users_own ON users
-  FOR ALL USING (id = auth.uid());
+> 전체 25개 테이블에 RLS 활성화. **총 48개 정책**.
+> 구현: `supabase/migrations/012_rls.sql`
 
--- 타인 프로필: privacy_profile에 따라
-CREATE POLICY users_public ON users
-  FOR SELECT USING (
-    privacy_profile = 'public'
-  );
+### 4-1. users (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `users_own` | ALL | `id = auth.uid()` |
+| `users_public` | SELECT | `privacy_profile = 'public'` |
+| `users_bubble` | SELECT | `privacy_profile = 'bubble_only'` + 같은 버블 active 멤버 |
 
-CREATE POLICY users_bubble ON users
-  FOR SELECT USING (
-    privacy_profile = 'bubble_only'
-    AND id IN (
-      SELECT bm2.user_id FROM bubble_members bm1
-      JOIN bubble_members bm2 ON bm1.bubble_id = bm2.bubble_id
-      WHERE bm1.user_id = auth.uid()
-        AND bm1.status = 'active' AND bm2.status = 'active'
-    )
-  );
-```
+### 4-2. restaurants (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `restaurants_select` | SELECT | 인증된 사용자 |
+| `restaurants_insert` | INSERT | 인증된 사용자 |
+| `restaurants_update` | UPDATE | 인증된 사용자 |
+> 공개 데이터 — 인증만 되면 읽기/쓰기 가능.
 
-### records
-```sql
--- 자기 기록: 항상 전체
-CREATE POLICY records_own ON records
-  FOR ALL USING (user_id = auth.uid());
+### 4-3. wines (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `wines_select` | SELECT | 인증된 사용자 |
+| `wines_insert` | INSERT | 인증된 사용자 |
+| `wines_update` | UPDATE | 인증된 사용자 |
 
--- 타인 기록 (all): privacy 통과 시 전체
-CREATE POLICY records_public ON records
-  FOR SELECT USING (
-    user_id IN (SELECT id FROM users WHERE privacy_records = 'all' AND privacy_profile = 'public')
-  );
+### 4-4. grape_variety_profiles (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `gvp_select` | SELECT | 인증된 사용자 (읽기 전용 참조) |
 
--- 타인 기록 (all + bubble_only): 같은 버블 멤버가 모든 기록 열람
-CREATE POLICY records_bubble_all ON records
-  FOR SELECT USING (
-    user_id IN (SELECT id FROM users WHERE privacy_records = 'all' AND privacy_profile != 'private')
-    AND user_id IN (
-      SELECT bm2.user_id FROM bubble_members bm1
-      JOIN bubble_members bm2 ON bm1.bubble_id = bm2.bubble_id
-      WHERE bm1.user_id = auth.uid()
-        AND bm1.status = 'active' AND bm2.status = 'active'
-    )
-  );
+### 4-5. records (4 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `records_own` | ALL | `user_id = auth.uid()` |
+| `records_public` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile='public'` |
+| `records_bubble_all` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile!='private'` + 같은 버블 |
+| `records_bubble_shared` | SELECT | 작성자 `privacy_profile!='private'` + `bubble_shares` 경유 공유된 기록 |
 
--- 타인 기록 (shared_only): 같은 버블 + 공유된 기록만
-CREATE POLICY records_bubble_shared ON records
-  FOR SELECT USING (
-    user_id NOT IN (SELECT id FROM users WHERE privacy_profile = 'private')
-    AND id IN (
-      SELECT bs.record_id FROM bubble_shares bs
-      JOIN bubble_members bm ON bs.bubble_id = bm.bubble_id
-      WHERE bm.user_id = auth.uid() AND bm.status = 'active'
-    )
-  );
-```
+> `companions` 필드는 `records_own` 정책에 의해 **본인만 열람 가능** (무조건 비공개).
 
-### bubbles
-```sql
--- public 버블: 누구나 기본 정보 읽기
-CREATE POLICY bubble_public ON bubbles
-  FOR SELECT USING (visibility = 'public');
+### 4-6. record_photos (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `record_photos_own` | ALL | 소유 record의 사진 |
+| `record_photos_read` | SELECT | records RLS 통과한 기록의 사진 |
 
--- private 버블: 멤버만
-CREATE POLICY bubble_private ON bubbles
-  FOR SELECT USING (
-    visibility = 'private'
-    AND id IN (SELECT bubble_id FROM bubble_members WHERE user_id = auth.uid() AND status = 'active')
-  );
-```
+### 4-7. bubbles (5 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `bubble_public` | SELECT | `visibility = 'public'` |
+| `bubble_private` | SELECT | `visibility = 'private'` + active 멤버 |
+| `bubble_insert` | INSERT | 인증 + `created_by = auth.uid()` |
+| `bubble_update` | UPDATE | owner만 |
+| `bubble_delete` | DELETE | owner만 |
 
-### bubble_shares
-```sql
--- 버블 멤버만 공유 기록 읽기
-CREATE POLICY bubble_share_read ON bubble_shares
-  FOR SELECT USING (
-    bubble_id IN (
-      SELECT bubble_id FROM bubble_members WHERE user_id = auth.uid() AND status = 'active'
-    )
-  );
+### 4-8. bubble_members (7 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `bm_read_member` | SELECT | 같은 버블 active 멤버 |
+| `bm_read_public` | SELECT | public 버블의 멤버 목록 |
+| `bm_insert_self` | INSERT | 본인 가입 |
+| `bm_update_self` | UPDATE | 본인 상태 변경 |
+| `bm_update_admin` | UPDATE | owner/admin이 멤버 관리 |
+| `bm_delete_self` | DELETE | 본인 탈퇴 |
+| `bm_delete_admin` | DELETE | owner/admin이 멤버 제거 |
 
--- 자기 기록만 공유 가능 + 해당 버블 멤버 + privacy_profile='private'면 차단
-CREATE POLICY bubble_share_insert ON bubble_shares
-  FOR INSERT WITH CHECK (
-    shared_by = auth.uid()
-    AND record_id IN (SELECT id FROM records WHERE user_id = auth.uid())
-    AND bubble_id IN (
-      SELECT bubble_id FROM bubble_members
-      WHERE user_id = auth.uid() AND status = 'active'
-        AND role IN ('owner', 'admin', 'member')  -- follower는 공유 불가
-    )
-    AND (SELECT privacy_profile FROM users WHERE id = auth.uid()) != 'private'
-  );
+### 4-9. bubble_shares (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `bubble_share_read` | SELECT | active 멤버 |
+| `bubble_share_insert` | INSERT | 본인 기록 + active 멤버(owner/admin/member) + `privacy_profile != 'private'` |
+| `bubble_share_delete` | DELETE | 공유자 본인만 |
 
--- 비멤버 (public 버블): content_visibility에 따라 제한된 읽기
--- → application layer에서 visibility 필드 필터링
-```
+### 4-10. comments (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `comments_bubble` | ALL | active 멤버 (owner/admin/member) |
 
-### comments
-```sql
--- 버블 멤버만 댓글 (comments.bubble_id 기준)
-CREATE POLICY comments_bubble ON comments
-  FOR ALL USING (
-    bubble_id IN (
-      SELECT bm.bubble_id FROM bubble_members bm
-      WHERE bm.user_id = auth.uid() AND bm.status = 'active'
-        AND bm.role IN ('owner', 'admin', 'member')
-    )
-  );
-```
+### 4-11. reactions (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `reactions_own` | ALL | `user_id = auth.uid()` |
+| `reactions_read` | SELECT | 인증된 사용자 (카운트 표시용) |
+> INSERT 시 버블 멤버십 검증은 application layer에서 처리.
 
-### reactions
-```sql
--- 리액션은 bubble_id 없음 — target_type + target_id로 간접 참조
--- target_type='record': records → bubble_shares → bubble_members 경유
--- target_type='comment': comments.bubble_id → bubble_members 경유
--- → application layer에서 버블 멤버십 검증 후 INSERT
-CREATE POLICY reactions_own ON reactions
-  FOR ALL USING (user_id = auth.uid());
-```
+### 4-12. bubble_share_reads (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `bsr_own` | ALL | 본인 읽음 기록 |
+| `bsr_read_member` | SELECT | 같은 버블 active 멤버 |
 
-### notifications
-```sql
--- 자기 알림만
-CREATE POLICY notif_own ON notifications
-  FOR ALL USING (user_id = auth.uid());
-```
+### 4-13. bubble_ranking_snapshots (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `brs_read_member` | SELECT | active 멤버 |
+| `brs_read_public` | SELECT | public 버블 |
+
+### 4-14. follows (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `follows_follower` | ALL | `follower_id = auth.uid()` (팔로우/취소) |
+| `follows_following_read` | SELECT | `following_id = auth.uid()` (내게 온 팔로우 확인) |
+| `follows_following_update` | UPDATE | `following_id = auth.uid()` (승인/거절) |
+
+### 4-15. user_experiences (3 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `ue_own` | ALL | 본인 |
+| `ue_read_public` | SELECT | public 프로필 사용자의 XP |
+| `ue_read_bubble` | SELECT | 같은 버블 멤버의 XP |
+
+### 4-16. xp_histories (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `xp_own` | ALL | 본인만 |
+
+### 4-17. 읽기 전용 참조 테이블 (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `lt_select` | SELECT (level_thresholds) | 인증된 사용자 |
+| `milestones_select` | SELECT (milestones) | 인증된 사용자 |
+
+### 4-18. user_milestones (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `um_own` | ALL | 본인 |
+| `um_read_public` | SELECT | public 프로필 사용자 |
+
+### 4-19. notifications (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `notif_own` | ALL | 본인만 |
+
+### 4-20. nudge (2 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `nudge_history_own` | ALL (nudge_history) | 본인만 |
+| `nudge_fatigue_own` | ALL (nudge_fatigue) | 본인만 |
+
+### 4-21. wishlists (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `wishlists_own` | ALL | 본인만 |
+
+### 4-22. saved_filters (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `saved_filters_own` | ALL | 본인만 |
+
+### 4-23. ai_recommendations (1 정책)
+| 정책 | 동작 | 조건 |
+|------|------|------|
+| `ai_rec_own` | ALL | 본인만 |
+
+### RLS 정책 요약
+
+| 테이블 | 정책 수 | 핵심 규칙 |
+|--------|---------|----------|
+| users | 3 | 본인 전체, public/bubble_only SELECT |
+| restaurants | 3 | 인증된 사용자 읽기/쓰기 |
+| wines | 3 | 인증된 사용자 읽기/쓰기 |
+| grape_variety_profiles | 1 | 읽기 전용 참조 |
+| records | 4 | 본인 전체, privacy 기반 타인 열람 |
+| record_photos | 2 | 본인 전체, records RLS 경유 |
+| bubbles | 5 | public/private SELECT, owner 수정/삭제 |
+| bubble_members | 7 | 멤버/public 읽기, 본인 가입/탈퇴, admin 관리 |
+| bubble_shares | 3 | 멤버 읽기, 본인 공유/삭제 |
+| comments | 1 | 버블 멤버(owner/admin/member) |
+| reactions | 2 | 본인 전체, 인증 사용자 읽기 |
+| bubble_share_reads | 2 | 본인 전체, 멤버 읽기 |
+| bubble_ranking_snapshots | 2 | 멤버/public 읽기 |
+| follows | 3 | 팔로워 전체, 팔로잉 읽기/승인 |
+| user_experiences | 3 | 본인 전체, public/bubble 읽기 |
+| xp_histories | 1 | 본인만 |
+| level_thresholds | 1 | 읽기 전용 |
+| milestones | 1 | 읽기 전용 |
+| user_milestones | 2 | 본인 전체, public 읽기 |
+| notifications | 1 | 본인만 |
+| nudge_history | 1 | 본인만 |
+| nudge_fatigue | 1 | 본인만 |
+| wishlists | 1 | 본인만 |
+| saved_filters | 1 | 본인만 |
+| ai_recommendations | 1 | 본인만 |
+| **합계** | **48** | |
 
 ---
 

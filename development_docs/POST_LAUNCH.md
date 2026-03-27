@@ -274,3 +274,74 @@ docs/
 | SYSTEM_RULES | 횡단 규칙 (affects 태그) | docs/SYSTEM_RULES.md |
 | PAGE_SPECS | 페이지별 규칙 (depends_on 태그) | docs/PAGE_SPECS.md |
 ```
+
+---
+
+## 7. Apple 로그인 — 로컬 개발 환경 설정
+
+> 프로덕션 도메인: `nyam.ai` / Apple OAuth는 등록된 도메인으로만 콜백 가능
+
+### 방법 A — Supabase 콜백 경유 (권장)
+
+Apple Developer 설정은 프로덕션 도메인만 등록하고, 코드에서 `redirectTo`로 로컬 리다이렉트:
+
+```
+Apple Developer Console 설정:
+  Domains:     nyam.ai, <project-ref>.supabase.co
+  Return URLs: https://<project-ref>.supabase.co/auth/v1/callback
+```
+
+```typescript
+// 로컬 개발 시
+await supabase.auth.signInWithOAuth({
+  provider: 'apple',
+  options: {
+    redirectTo: 'http://localhost:7911/auth/callback',
+  },
+});
+
+// 프로덕션
+await supabase.auth.signInWithOAuth({
+  provider: 'apple',
+  options: {
+    redirectTo: 'https://nyam.ai/auth/callback',
+  },
+});
+```
+
+흐름: 브라우저 → Apple 로그인 → Supabase 콜백 → `redirectTo`(localhost)로 리다이렉트
+
+### 방법 B — Service ID에 localhost 추가
+
+Apple Developer → Service ID → Configure에서 localhost를 직접 등록:
+
+```
+Domains:     nyam.ai, localhost
+Return URLs: https://nyam.ai/auth/callback, http://localhost:7911/auth/callback
+```
+
+- Apple이 localhost를 허용하는 경우도 있지만 **거부될 수 있음**
+- 프로덕션 배포 전 localhost 항목 제거 필요
+
+### 방법 C — ngrok / Cloudflare Tunnel
+
+로컬 서버를 HTTPS 터널로 노출:
+
+```bash
+ngrok http 7911
+# 또는
+cloudflared tunnel --url http://localhost:7911
+```
+
+발급된 URL(예: `https://xxxx.ngrok-free.app`)을 Apple Developer Return URL에 등록.
+
+- 매번 URL이 바뀌므로 Apple Developer 설정도 갱신 필요 (유료 ngrok은 고정 도메인 가능)
+- 팀원 공유 시 각자 터널 필요
+
+### 권장 순서
+
+```
+1순위: 방법 A (Supabase 경유) — 설정 변경 없이 로컬 동작
+2순위: 방법 C (ngrok) — A가 안 될 경우 확실한 대안
+3순위: 방법 B (localhost 직접) — Apple 정책에 따라 불안정
+```

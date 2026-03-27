@@ -1,0 +1,134 @@
+'use client'
+
+import { useRef, useCallback } from 'react'
+import { Camera, ImagePlus, List, Wine, UtensilsCrossed } from 'lucide-react'
+
+interface CameraCaptureProps {
+  targetType: 'restaurant' | 'wine'
+  onCapture: (imageBase64: string) => void
+  onAlbumSelect: () => void
+  onSearchFallback: () => void
+  onShelfMode?: () => void
+  onReceiptMode?: () => void
+  isRecognizing: boolean
+}
+
+export function CameraCapture({
+  targetType,
+  onCapture,
+  onAlbumSelect,
+  onSearchFallback,
+  onShelfMode,
+  onReceiptMode,
+  isRecognizing,
+}: CameraCaptureProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleCameraCapture = useCallback(() => {
+    if (inputRef.current) {
+      inputRef.current.setAttribute('capture', 'environment')
+      inputRef.current.click()
+    }
+  }, [])
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1]
+        onCapture(base64)
+      }
+      reader.readAsDataURL(file)
+      e.target.value = ''
+    },
+    [onCapture],
+  )
+
+  const isRestaurant = targetType === 'restaurant'
+  const IconComponent = isRestaurant ? UtensilsCrossed : Wine
+
+  return (
+    <div className="flex flex-col items-center px-6 py-8">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      <div className="mb-4 flex aspect-square w-full max-w-[280px] flex-col items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
+        <IconComponent
+          size={48}
+          className={isRestaurant ? 'text-[var(--accent-food)]' : 'text-[var(--accent-wine)]'}
+        />
+        <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
+          {isRestaurant ? '음식 사진을 촬영하세요' : '라벨을 맞춰주세요'}
+        </p>
+
+        <button
+          type="button"
+          onClick={handleCameraCapture}
+          disabled={isRecognizing}
+          className={`mt-6 flex h-16 w-16 items-center justify-center rounded-full disabled:opacity-50 ${
+            isRestaurant ? 'bg-[var(--accent-food)]' : 'bg-[var(--accent-wine)]'
+          }`}
+        >
+          {isRecognizing ? (
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          ) : (
+            <Camera size={28} className="text-white" />
+          )}
+        </button>
+      </div>
+
+      <p className="mb-6 text-center text-[13px] text-[var(--text-sub)]">
+        {isRestaurant
+          ? '음식 또는 식당 사진을 촬영하면 자동으로 인식합니다'
+          : '와인 라벨을 촬영하면 자동으로 인식합니다'}
+      </p>
+
+      <div className={`flex w-full gap-3 ${targetType === 'wine' ? 'flex-wrap justify-center' : ''}`}>
+        <button
+          type="button"
+          onClick={onAlbumSelect}
+          className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text)]"
+        >
+          <ImagePlus size={18} />
+          앨범에서 추가
+        </button>
+
+        <button
+          type="button"
+          onClick={onSearchFallback}
+          className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text)]"
+        >
+          <List size={18} />
+          {isRestaurant ? '목록에서 추가' : '이름으로 검색'}
+        </button>
+
+        {targetType === 'wine' && onShelfMode && (
+          <button
+            type="button"
+            onClick={onShelfMode}
+            className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text)]"
+          >
+            진열장
+          </button>
+        )}
+        {targetType === 'wine' && onReceiptMode && (
+          <button
+            type="button"
+            onClick={onReceiptMode}
+            className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text)]"
+          >
+            영수증
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}

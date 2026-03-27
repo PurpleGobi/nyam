@@ -1,0 +1,92 @@
+'use client'
+
+import { CheckCircle } from 'lucide-react'
+
+interface RecordSuccessProps {
+  variant: 'food' | 'wine'
+  targetName: string
+  targetMeta: string
+  onAddMore: () => void
+  onAddAnother: () => void
+  onGoHome: () => void
+}
+
+export function RecordSuccess({
+  variant,
+  targetName,
+  targetMeta,
+  onAddMore,
+  onAddAnother,
+  onGoHome,
+}: RecordSuccessProps) {
+  const accentColor = variant === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
+
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6">
+      <CheckCircle size={48} style={{ color: accentColor }} />
+
+      <h2
+        className="mt-4"
+        style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}
+      >
+        추가되었습니다!
+      </h2>
+
+      <p
+        className="mt-1"
+        style={{ fontSize: '14px', color: 'var(--text-sub)' }}
+      >
+        {targetName} · {targetMeta}
+      </p>
+
+      <div className="mt-8 flex w-full max-w-[280px] flex-col gap-3">
+        <button
+          type="button"
+          onClick={onAddMore}
+          className="flex w-full items-center justify-center transition-opacity active:opacity-80"
+          style={{
+            height: '48px',
+            borderRadius: 'var(--r-md)',
+            backgroundColor: accentColor,
+            color: '#FFFFFF',
+            fontSize: '15px',
+            fontWeight: 700,
+          }}
+        >
+          내용 추가하기
+        </button>
+
+        <button
+          type="button"
+          onClick={onAddAnother}
+          className="flex w-full items-center justify-center transition-opacity active:opacity-80"
+          style={{
+            height: '48px',
+            borderRadius: 'var(--r-md)',
+            backgroundColor: 'transparent',
+            border: `1.5px solid ${accentColor}`,
+            color: accentColor,
+            fontSize: '15px',
+            fontWeight: 700,
+          }}
+        >
+          한 곳 더 추가
+        </button>
+
+        <button
+          type="button"
+          onClick={onGoHome}
+          className="flex w-full items-center justify-center transition-opacity active:opacity-80"
+          style={{
+            height: '44px',
+            color: 'var(--text-sub)',
+            fontSize: '14px',
+            fontWeight: 500,
+          }}
+        >
+          홈으로
+        </button>
+      </div>
+    </div>
+  )
+}
