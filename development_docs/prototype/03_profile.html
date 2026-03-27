@@ -17,10 +17,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --positive: #7EAE8B;
@@ -169,7 +169,7 @@
   }
   .header-avatar {
     width: 30px; height: 30px; border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-food);
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 700; color: #fff;
     cursor: pointer; flex-shrink: 0;
@@ -321,7 +321,7 @@
   .taste-share-btn-sm {
     display: flex; align-items: center; gap: 3px;
     padding: 4px 10px; border-radius: 14px;
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     border: none; cursor: pointer;
     font-size: 11px; font-weight: 600;
     font-family: inherit; transition: opacity 0.15s;
@@ -415,14 +415,14 @@
     font-size: 14px; line-height: 1.6;
     color: var(--text); font-style: italic;
   }
-  .taste-identity-text strong { font-style: normal; color: var(--primary); }
+  .taste-identity-text strong { font-style: normal; color: var(--accent-food); }
   .taste-identity-tags {
     display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
   }
   .taste-tag {
     padding: 4px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
-    background: rgba(193,123,94,0.1); color: var(--primary);
+    background: rgba(193,123,94,0.1); color: var(--accent-food);
   }
   .taste-identity-footer {
     display: flex; align-items: center; gap: 4px;
@@ -442,12 +442,12 @@
     font-family: inherit; transition: all 0.15s;
   }
   .wrapped-cat.active {
-    background: var(--primary); color: #fff;
-    border-color: var(--primary);
+    background: var(--accent-food); color: #fff;
+    border-color: var(--accent-food);
   }
   .wrapped-cat.active-wine {
-    background: var(--wine); color: #fff;
-    border-color: var(--wine);
+    background: var(--accent-wine); color: #fff;
+    border-color: var(--accent-wine);
   }
 
   .gauge-section {
@@ -472,7 +472,7 @@
   .gauge-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--primary); cursor: pointer;
+    background: var(--accent-food); cursor: pointer;
     border: 3px solid #fff;
     box-shadow: 0 1px 6px rgba(0,0,0,0.2);
   }
@@ -608,7 +608,7 @@
 
   /* Primary button */
   .btn-primary {
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     border: none; border-radius: 12px;
     padding: 14px 24px; font-size: 16px;
     font-weight: 600; cursor: pointer;
@@ -617,8 +617,8 @@
   .btn-primary:active { opacity: 0.9; }
   .btn-outline {
     background: var(--bg-elevated);
-    color: var(--primary);
-    border: 1.5px solid var(--primary);
+    color: var(--accent-food);
+    border: 1.5px solid var(--accent-food);
     border-radius: 12px; padding: 8px 14px;
     font-size: 13px; font-weight: 600;
     cursor: pointer; font-family: inherit;
@@ -791,7 +791,7 @@
     position: relative;
     transition: background 0.2s;
   }
-  .variety-toggle-switch.on { background: var(--wine); }
+  .variety-toggle-switch.on { background: var(--accent-wine); }
   .variety-toggle-switch::after {
     content: '';
     position: absolute;
@@ -827,10 +827,10 @@
     cursor: pointer; font-family: inherit; transition: all 0.15s;
   }
   .mini-tab.active {
-    background: var(--bg-elevated); color: var(--primary);
+    background: var(--bg-elevated); color: var(--accent-food);
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  .mini-tab-row.wine .mini-tab.active { color: var(--wine); }
+  .mini-tab-row.wine .mini-tab.active { color: var(--accent-wine); }
 
   /* Compact level list */
   .lv-list-item {
@@ -891,9 +891,9 @@
     background: transparent; transition: background 0.2s;
   }
   .content-tab.active { color: var(--text); font-weight: 700; }
-  .content-tab.active::after { background: var(--primary); }
-  .content-tab.wine-active { color: var(--wine); font-weight: 700; }
-  .content-tab.wine-active::after { background: var(--wine); }
+  .content-tab.active::after { background: var(--accent-food); }
+  .content-tab.wine-active { color: var(--accent-wine); font-weight: 700; }
+  .content-tab.wine-active::after { background: var(--accent-wine); }
 
   /* Scrollable level list container */
   .lv-list-scroll {
@@ -1029,10 +1029,10 @@
             <div class="section-title">활동 요약</div>
 
             <!-- Total XP card -->
-            <div style="background:linear-gradient(135deg, var(--bg-card), var(--primary-light)); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;">
+            <div style="background:linear-gradient(135deg, var(--bg-card), var(--accent-food-light)); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px;">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <div style="width:36px;height:36px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;">
+                  <div style="width:36px;height:36px;border-radius:10px;background:var(--accent-food);display:flex;align-items:center;justify-content:center;">
                     <i data-lucide="award" style="width:18px;height:18px;color:#fff"></i>
                   </div>
                   <div>
@@ -1042,19 +1042,19 @@
                 </div>
               </div>
               <div class="level-progress" style="height:6px;">
-                <div class="level-progress-fill" style="width:74%;background:var(--primary);"></div>
+                <div class="level-progress-fill" style="width:74%;background:var(--accent-food);"></div>
               </div>
             </div>
 
             <!-- Overview grid: 2x2 -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--primary)">19</div>
+                <div class="stat-summary-value" style="color:var(--accent-food)">19</div>
                 <div class="stat-summary-label">식당 방문</div>
                 <div class="stat-summary-trend trend-up">+3 이번 달</div>
               </div>
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--wine)">12</div>
+                <div class="stat-summary-value" style="color:var(--accent-wine)">12</div>
                 <div class="stat-summary-label">와인 시음</div>
                 <div class="stat-summary-trend trend-up">+2 이번 달</div>
               </div>
@@ -1098,7 +1098,7 @@
             <!-- 최근 경험치 -->
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">최근 경험치</div>
             <div class="xp-recent-item">
-              <div class="xp-recent-icon" style="background:var(--primary-light);color:var(--primary)">
+              <div class="xp-recent-icon" style="background:var(--accent-food-light);color:var(--accent-food)">
                 <i data-lucide="sparkles"></i>
               </div>
               <div class="xp-recent-info">
@@ -1108,7 +1108,7 @@
               <div class="xp-recent-amount">+21</div>
             </div>
             <div class="xp-recent-item">
-              <div class="xp-recent-icon" style="background:var(--wine-light);color:var(--wine)">
+              <div class="xp-recent-icon" style="background:var(--accent-wine-light);color:var(--accent-wine)">
                 <i data-lucide="wine"></i>
               </div>
               <div class="xp-recent-info">
@@ -1155,17 +1155,17 @@
             <!-- Summary cards -->
             <div class="stat-summary" style="padding:16px 20px 8px;">
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--primary)">19</div>
+                <div class="stat-summary-value" style="color:var(--accent-food)">19</div>
                 <div class="stat-summary-label">총 방문</div>
                 <div class="stat-summary-trend trend-up">+3 이번 달</div>
               </div>
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--primary)">88.4</div>
+                <div class="stat-summary-value" style="color:var(--accent-food)">88.4</div>
                 <div class="stat-summary-label">평균 점수</div>
                 <div class="stat-summary-trend trend-flat">-</div>
               </div>
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--primary)">5</div>
+                <div class="stat-summary-value" style="color:var(--accent-food)">5</div>
                 <div class="stat-summary-label">방문 지역</div>
                 <div class="stat-summary-trend trend-up">+1 신규</div>
               </div>
@@ -1218,17 +1218,17 @@
                   <path d="M145,85 L165,80 L175,90 L170,110 L155,120 L140,110 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
                   <path d="M190,25 L230,20 L260,30 L280,35 L290,50 L275,65 L260,70 L240,60 L220,55 L200,45 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
                   <path d="M245,80 L270,75 L285,90 L275,110 L255,115 L240,100 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
-                  <circle cx="75" cy="45" r="4" fill="var(--primary)" opacity="0.8"><title>뉴욕 2곳</title></circle>
-                  <circle cx="140" cy="35" r="6" fill="var(--primary)" opacity="0.9"><title>파리 4곳</title></circle>
-                  <circle cx="155" cy="40" r="3" fill="var(--primary)" opacity="0.7"><title>밀라노 1곳</title></circle>
-                  <circle cx="230" cy="38" r="8" fill="var(--primary)"><title>서울 8곳</title></circle>
+                  <circle cx="75" cy="45" r="4" fill="var(--accent-food)" opacity="0.8"><title>뉴욕 2곳</title></circle>
+                  <circle cx="140" cy="35" r="6" fill="var(--accent-food)" opacity="0.9"><title>파리 4곳</title></circle>
+                  <circle cx="155" cy="40" r="3" fill="var(--accent-food)" opacity="0.7"><title>밀라노 1곳</title></circle>
+                  <circle cx="230" cy="38" r="8" fill="var(--accent-food)"><title>서울 8곳</title></circle>
                   <text x="230" y="41" fill="#fff" font-size="7" font-weight="800" text-anchor="middle">8</text>
-                  <circle cx="240" cy="48" r="4" fill="var(--primary)" opacity="0.8"><title>도쿄 3곳</title></circle>
+                  <circle cx="240" cy="48" r="4" fill="var(--accent-food)" opacity="0.8"><title>도쿄 3곳</title></circle>
                 </svg>
                 <div class="stat-map-legend">
-                  <span><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:0.7;display:inline-block"></span> 1~2곳</span>
-                  <span><span style="width:8px;height:8px;border-radius:50%;background:var(--primary);opacity:0.85;display:inline-block"></span> 3~5곳</span>
-                  <span><span style="width:10px;height:10px;border-radius:50%;background:var(--primary);display:inline-block"></span> 6곳+</span>
+                  <span><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-food);opacity:0.7;display:inline-block"></span> 1~2곳</span>
+                  <span><span style="width:8px;height:8px;border-radius:50%;background:var(--accent-food);opacity:0.85;display:inline-block"></span> 3~5곳</span>
+                  <span><span style="width:10px;height:10px;border-radius:50%;background:var(--accent-food);display:inline-block"></span> 6곳+</span>
                 </div>
               </div>
             </div>
@@ -1240,29 +1240,29 @@
               <div class="stat-section-label"><span>장르</span></div>
               <div class="variety-chart">
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary)">한식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:80%;background:var(--primary)"></div></div>
-                  <div class="variety-count" style="color:var(--primary)">8</div>
+                  <div class="variety-name" style="color:var(--accent-food)">한식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:80%;background:var(--accent-food)"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food)">8</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary)">일식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--primary);opacity:0.8"></div></div>
-                  <div class="variety-count" style="color:var(--primary)">5</div>
+                  <div class="variety-name" style="color:var(--accent-food)">일식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--accent-food);opacity:0.8"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food)">5</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary)">프렌치</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:30%;background:var(--primary);opacity:0.7"></div></div>
-                  <div class="variety-count" style="color:var(--primary)">3</div>
+                  <div class="variety-name" style="color:var(--accent-food)">프렌치</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:30%;background:var(--accent-food);opacity:0.7"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food)">3</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary)">이탈리안</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:20%;background:var(--primary);opacity:0.6"></div></div>
-                  <div class="variety-count" style="color:var(--primary)">2</div>
+                  <div class="variety-name" style="color:var(--accent-food)">이탈리안</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:20%;background:var(--accent-food);opacity:0.6"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food)">2</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary)">중식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:10%;background:var(--primary);opacity:0.5"></div></div>
-                  <div class="variety-count" style="color:var(--primary)">1</div>
+                  <div class="variety-name" style="color:var(--accent-food)">중식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:10%;background:var(--accent-food);opacity:0.5"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food)">1</div>
                 </div>
               </div>
             </div>
@@ -1273,12 +1273,12 @@
             <div class="stat-section">
               <div class="stat-section-label"><span>점수 분포</span></div>
               <div class="bar-chart">
-                <div class="bar-col"><div class="bar-fill" style="height:0%;background:var(--primary);opacity:0.4;min-height:2px"></div><span class="bar-label">~49</span></div>
-                <div class="bar-col"><div class="bar-fill" style="height:0%;background:var(--primary);opacity:0.5;min-height:2px"></div><span class="bar-label">50s</span></div>
-                <div class="bar-col"><div class="bar-fill" style="height:10%;background:var(--primary);opacity:0.6;min-height:4px"></div><span class="bar-label">60s</span></div>
-                <div class="bar-col"><div class="bar-fill" style="height:25%;background:var(--primary);opacity:0.7"><span>2</span></div><span class="bar-label">70s</span></div>
-                <div class="bar-col"><div class="bar-fill" style="height:75%;background:var(--primary);opacity:0.85"><span>6</span></div><span class="bar-label">80s</span></div>
-                <div class="bar-col"><div class="bar-fill" style="height:100%;background:var(--primary)"><span>8</span></div><span class="bar-label">90s</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:0%;background:var(--accent-food);opacity:0.4;min-height:2px"></div><span class="bar-label">~49</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:0%;background:var(--accent-food);opacity:0.5;min-height:2px"></div><span class="bar-label">50s</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:10%;background:var(--accent-food);opacity:0.6;min-height:4px"></div><span class="bar-label">60s</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:25%;background:var(--accent-food);opacity:0.7"><span>2</span></div><span class="bar-label">70s</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:75%;background:var(--accent-food);opacity:0.85"><span>6</span></div><span class="bar-label">80s</span></div>
+                <div class="bar-col"><div class="bar-fill" style="height:100%;background:var(--accent-food)"><span>8</span></div><span class="bar-label">90s</span></div>
               </div>
             </div>
 
@@ -1289,34 +1289,34 @@
               <div class="stat-section-label"><span>월별 소비</span><small>총 186만</small></div>
               <div class="bar-chart">
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:30%;background:var(--primary);opacity:0.6"></div>
+                  <div class="bar-fill" style="height:30%;background:var(--accent-food);opacity:0.6"></div>
                   <span class="bar-label">10월</span>
                   <span class="bar-sub" style="background:var(--bg-page);color:var(--text-hint)">12만</span>
                 </div>
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:55%;background:var(--primary);opacity:0.7"></div>
+                  <div class="bar-fill" style="height:55%;background:var(--accent-food);opacity:0.7"></div>
                   <span class="bar-label">11월</span>
                   <span class="bar-sub" style="background:var(--bg-page);color:var(--text-hint)">28만</span>
                 </div>
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:40%;background:var(--primary);opacity:0.65"></div>
+                  <div class="bar-fill" style="height:40%;background:var(--accent-food);opacity:0.65"></div>
                   <span class="bar-label">12월</span>
                   <span class="bar-sub" style="background:var(--bg-page);color:var(--text-hint)">18만</span>
                 </div>
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:80%;background:var(--primary);opacity:0.85"></div>
+                  <div class="bar-fill" style="height:80%;background:var(--accent-food);opacity:0.85"></div>
                   <span class="bar-label">1월</span>
-                  <span class="bar-sub" style="background:var(--primary-light);color:var(--primary);font-weight:600">42만</span>
+                  <span class="bar-sub" style="background:var(--accent-food-light);color:var(--accent-food);font-weight:600">42만</span>
                 </div>
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:45%;background:var(--primary);opacity:0.7"></div>
+                  <div class="bar-fill" style="height:45%;background:var(--accent-food);opacity:0.7"></div>
                   <span class="bar-label">2월</span>
                   <span class="bar-sub" style="background:var(--bg-page);color:var(--text-hint)">22만</span>
                 </div>
                 <div class="bar-col">
-                  <div class="bar-fill" style="height:100%;background:var(--primary)"></div>
+                  <div class="bar-fill" style="height:100%;background:var(--accent-food)"></div>
                   <span class="bar-label">3월</span>
-                  <span class="bar-sub" style="background:var(--primary-light);color:var(--primary);font-weight:600">64만</span>
+                  <span class="bar-sub" style="background:var(--accent-food-light);color:var(--accent-food);font-weight:600">64만</span>
                 </div>
               </div>
             </div>
@@ -1367,17 +1367,17 @@
             <!-- Summary cards -->
             <div class="stat-summary" style="padding:16px 20px 8px;">
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--wine)">12</div>
+                <div class="stat-summary-value" style="color:var(--accent-wine)">12</div>
                 <div class="stat-summary-label">시음 수</div>
                 <div class="stat-summary-trend trend-up">+2 이번 달</div>
               </div>
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--wine)">89.2</div>
+                <div class="stat-summary-value" style="color:var(--accent-wine)">89.2</div>
                 <div class="stat-summary-label">평균 점수</div>
                 <div class="stat-summary-trend trend-flat">-</div>
               </div>
               <div class="stat-summary-card">
-                <div class="stat-summary-value" style="color:var(--wine)">5</div>
+                <div class="stat-summary-value" style="color:var(--accent-wine)">5</div>
                 <div class="stat-summary-label">셀러 보유</div>
                 <div class="stat-summary-trend trend-up">+1 신규</div>
               </div>
@@ -1393,10 +1393,10 @@
               </div>
               <!-- 산지 리스트 -->
               <div id="wineMiniPanel-origin" class="lv-list-scroll">
-                <div class="lv-list-item" onclick="openLevelDetail('bordeaux')"><div class="lv-list-lv" style="background:#8B7396;">6</div><div class="lv-list-info"><div class="lv-list-name">보르도 <span class="lv-list-count">18병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:84%;background:var(--wine);"></div></div></div><div class="lv-list-xp">380<span>/450</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7A9BAE;">4</div><div class="lv-list-info"><div class="lv-list-name">부르고뉴 <span class="lv-list-count">12병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:60%;background:var(--wine);"></div></div></div><div class="lv-list-xp">210<span>/350</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">나파 밸리 <span class="lv-list-count">5병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:38%;background:var(--wine);"></div></div></div><div class="lv-list-xp">75<span>/200</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">론 밸리 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:35%;background:var(--wine);"></div></div></div><div class="lv-list-xp">68<span>/200</span></div></div>
+                <div class="lv-list-item" onclick="openLevelDetail('bordeaux')"><div class="lv-list-lv" style="background:#8B7396;">6</div><div class="lv-list-info"><div class="lv-list-name">보르도 <span class="lv-list-count">18병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:84%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">380<span>/450</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7A9BAE;">4</div><div class="lv-list-info"><div class="lv-list-name">부르고뉴 <span class="lv-list-count">12병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:60%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">210<span>/350</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">나파 밸리 <span class="lv-list-count">5병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:38%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">75<span>/200</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">론 밸리 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:35%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">68<span>/200</span></div></div>
                 <div class="lv-list-item"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">토스카나 <span class="lv-list-count">2병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:20%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">20<span>/40</span></div></div>
                 <div class="lv-list-item" style="opacity:0.55;"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">바로사 밸리 <span class="lv-list-count">2병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:18%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">18<span>/40</span></div></div>
                 <div class="lv-list-item" style="opacity:0.55;"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">리오하 <span class="lv-list-count">1병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:12%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">12<span>/40</span></div></div>
@@ -1406,11 +1406,11 @@
               </div>
               <!-- 품종 리스트 -->
               <div id="wineMiniPanel-grape" class="lv-list-scroll" style="display:none;">
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7A9BAE;">5</div><div class="lv-list-info"><div class="lv-list-name">카베르네 소비뇽 <span class="lv-list-count">15병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:83%;background:var(--wine);"></div></div></div><div class="lv-list-xp">290<span>/350</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">3</div><div class="lv-list-info"><div class="lv-list-name">피노 누아 <span class="lv-list-count">8병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:60%;background:var(--wine);"></div></div></div><div class="lv-list-xp">120<span>/200</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">샤르도네 <span class="lv-list-count">5병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:38%;background:var(--wine);"></div></div></div><div class="lv-list-xp">65<span>/100</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">메를로 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:35%;background:var(--wine);"></div></div></div><div class="lv-list-xp">58<span>/100</span></div></div>
-                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">쉬라즈 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:32%;background:var(--wine);"></div></div></div><div class="lv-list-xp">52<span>/100</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7A9BAE;">5</div><div class="lv-list-info"><div class="lv-list-name">카베르네 소비뇽 <span class="lv-list-count">15병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:83%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">290<span>/350</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">3</div><div class="lv-list-info"><div class="lv-list-name">피노 누아 <span class="lv-list-count">8병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:60%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">120<span>/200</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">샤르도네 <span class="lv-list-count">5병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:38%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">65<span>/100</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">메를로 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:35%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">58<span>/100</span></div></div>
+                <div class="lv-list-item"><div class="lv-list-lv" style="background:#7EAE8B;">2</div><div class="lv-list-info"><div class="lv-list-name">쉬라즈 <span class="lv-list-count">4병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:32%;background:var(--accent-wine);"></div></div></div><div class="lv-list-xp">52<span>/100</span></div></div>
                 <div class="lv-list-item"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">소비뇽 블랑 <span class="lv-list-count">3병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:22%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">28<span>/40</span></div></div>
                 <div class="lv-list-item"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">네비올로 <span class="lv-list-count">2병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:18%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">18<span>/40</span></div></div>
                 <div class="lv-list-item" style="opacity:0.55;"><div class="lv-list-lv" style="background:#D4CFC8;">1</div><div class="lv-list-info"><div class="lv-list-name">리슬링 <span class="lv-list-count">1병</span></div><div class="lv-list-bar"><div class="lv-list-bar-fill" style="width:12%;background:#D4CFC8;"></div></div></div><div class="lv-list-xp">12<span>/40</span></div></div>
@@ -1442,11 +1442,11 @@
                   <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="#2a2030" stroke="#3a3040" stroke-width="0.4"/>
 
                   <!-- 하이라이트 국가 -->
-                  <path d="M200,34 L210,30 L220,34 L222,44 L216,52 L208,54 L200,48 L196,40Z" fill="rgba(139,115,150,0.5)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('france')"/>
-                  <path d="M84,142 L90,135 L92,148 L90,168 L86,180 L82,176 L80,160 L82,148Z" fill="rgba(139,115,150,0.45)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('chile')"/>
-                  <path d="M332,124 L356,118 L382,122 L394,132 L396,146 L388,158 L370,162 L350,155 L336,148 L330,136Z" fill="rgba(139,115,150,0.35)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('australia')"/>
-                  <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="rgba(139,115,150,0.35)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('nz')"/>
-                  <path d="M42,46 L50,43 L53,50 L50,58 L44,62 L40,55Z" fill="rgba(139,115,150,0.3)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('usa')"/>
+                  <path d="M200,34 L210,30 L220,34 L222,44 L216,52 L208,54 L200,48 L196,40Z" fill="rgba(139,115,150,0.5)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('france')"/>
+                  <path d="M84,142 L90,135 L92,148 L90,168 L86,180 L82,176 L80,160 L82,148Z" fill="rgba(139,115,150,0.45)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('chile')"/>
+                  <path d="M332,124 L356,118 L382,122 L394,132 L396,146 L388,158 L370,162 L350,155 L336,148 L330,136Z" fill="rgba(139,115,150,0.35)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('australia')"/>
+                  <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="rgba(139,115,150,0.35)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('nz')"/>
+                  <path d="M42,46 L50,43 L53,50 L50,58 L44,62 L40,55Z" fill="rgba(139,115,150,0.3)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('usa')"/>
 
                   <!-- 미탐험 -->
                   <circle cx="224" cy="52" r="5" fill="none" stroke="#3a3040" stroke-width="0.8" stroke-dasharray="2,1.5"/><text x="224" y="55" text-anchor="middle" font-size="5" fill="#4a4050">IT</text>
@@ -1455,28 +1455,28 @@
                   <circle cx="224" cy="154" r="5" fill="none" stroke="#3a3040" stroke-width="0.8" stroke-dasharray="2,1.5"/><text x="224" y="157" text-anchor="middle" font-size="5" fill="#4a4050">ZA</text>
 
                   <!-- 국가 마커 + 와인 점 -->
-                  <circle cx="210" cy="42" r="12" fill="var(--wine)" opacity="0.9" cursor="pointer" onclick="drillMap('france')"/>
+                  <circle cx="210" cy="42" r="12" fill="var(--accent-wine)" opacity="0.9" cursor="pointer" onclick="drillMap('france')"/>
                   <text x="210" y="40" text-anchor="middle" font-size="9" font-weight="800" fill="white">4</text>
                   <text x="210" y="49" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.7)">FR</text>
                   <circle cx="203" cy="33" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="218" cy="36" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
                   <circle cx="205" cy="50" r="2.5" fill="#C8D8A0" stroke="#1a1520" stroke-width="0.8"/><circle cx="218" cy="48" r="2.5" fill="#E8A0B0" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="86" cy="158" r="10" fill="var(--wine)" opacity="0.85" cursor="pointer" onclick="drillMap('chile')"/>
+                  <circle cx="86" cy="158" r="10" fill="var(--accent-wine)" opacity="0.85" cursor="pointer" onclick="drillMap('chile')"/>
                   <text x="86" y="156" text-anchor="middle" font-size="8" font-weight="800" fill="white">3</text>
                   <text x="86" y="164" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">CL</text>
                   <circle cx="80" cy="148" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="90" cy="152" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="84" cy="168" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="364" cy="140" r="10" fill="var(--wine)" opacity="0.8" cursor="pointer" onclick="drillMap('australia')"/>
+                  <circle cx="364" cy="140" r="10" fill="var(--accent-wine)" opacity="0.8" cursor="pointer" onclick="drillMap('australia')"/>
                   <text x="364" y="138" text-anchor="middle" font-size="8" font-weight="800" fill="white">2</text>
                   <text x="364" y="146" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">AU</text>
                   <circle cx="356" cy="132" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="372" cy="148" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="408" cy="160" r="8" fill="var(--wine)" opacity="0.8" cursor="pointer" onclick="drillMap('nz')"/>
+                  <circle cx="408" cy="160" r="8" fill="var(--accent-wine)" opacity="0.8" cursor="pointer" onclick="drillMap('nz')"/>
                   <text x="408" y="158" text-anchor="middle" font-size="8" font-weight="800" fill="white">2</text>
                   <text x="408" y="165" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">NZ</text>
                   <circle cx="404" cy="154" r="2.5" fill="#D4C98A" stroke="#1a1520" stroke-width="0.8"/><circle cx="412" cy="166" r="2.5" fill="#D4C98A" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="46" cy="52" r="8" fill="var(--wine)" opacity="0.75" cursor="pointer" onclick="drillMap('usa')"/>
+                  <circle cx="46" cy="52" r="8" fill="var(--accent-wine)" opacity="0.75" cursor="pointer" onclick="drillMap('usa')"/>
                   <text x="46" y="50" text-anchor="middle" font-size="8" font-weight="800" fill="white">1</text>
                   <text x="46" y="57" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">US</text>
                   <circle cx="44" cy="48" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
@@ -1509,7 +1509,7 @@
                   <circle cx="225" cy="118" r="3" fill="#722F37" stroke="#1a1520" stroke-width="1"><title>루이 라투르 피노 누아</title></circle>
 
                   <!-- 보르도 (남서) — 클릭 가능 -->
-                  <path d="M80,200 L110,190 L125,210 L120,240 L105,260 L85,255 L75,235 L75,215Z" fill="rgba(139,115,150,0.4)" stroke="var(--wine)" stroke-width="1.5" cursor="pointer" onclick="drillMap('bordeaux')"/>
+                  <path d="M80,200 L110,190 L125,210 L120,240 L105,260 L85,255 L75,235 L75,215Z" fill="rgba(139,115,150,0.4)" stroke="var(--accent-wine)" stroke-width="1.5" cursor="pointer" onclick="drillMap('bordeaux')"/>
                   <text x="100" y="230" text-anchor="middle" font-size="10" font-weight="700" fill="rgba(255,255,255,0.9)">Bordeaux</text>
                   <text x="100" y="242" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.5)">탭하여 확대 →</text>
 
@@ -1537,7 +1537,7 @@
                   <!-- 범례 -->
                   <text x="12" y="365" font-size="8" fill="#5a5060">● 마신 와인</text>
                   <text x="80" y="365" font-size="8" fill="#3a3545">--- 미탐험</text>
-                  <text x="140" y="365" font-size="8" fill="var(--wine)">█ 확대 가능</text>
+                  <text x="140" y="365" font-size="8" fill="var(--accent-wine)">█ 확대 가능</text>
                 </svg>
 
                 <!-- LEVEL 2: 보르도 -->
@@ -1577,8 +1577,8 @@
                   <text x="160" y="208" text-anchor="middle" font-size="7" fill="#4a4050">Deux-Mers</text>
 
                   <!-- CTA -->
-                  <rect x="70" y="310" width="200" height="40" rx="12" fill="rgba(139,115,150,0.15)" stroke="var(--wine)" stroke-width="1" stroke-dasharray="4,3" cursor="pointer" onclick="alert('보르도 와인 검색/등록')"/>
-                  <text x="170" y="334" text-anchor="middle" font-size="11" font-weight="600" fill="var(--wine)">보르도 와인 기록하기 →</text>
+                  <rect x="70" y="310" width="200" height="40" rx="12" fill="rgba(139,115,150,0.15)" stroke="var(--accent-wine)" stroke-width="1" stroke-dasharray="4,3" cursor="pointer" onclick="alert('보르도 와인 검색/등록')"/>
+                  <text x="170" y="334" text-anchor="middle" font-size="11" font-weight="600" fill="var(--accent-wine)">보르도 와인 기록하기 →</text>
 
                   <text x="170" y="370" text-anchor="middle" font-size="9" fill="#4a4050">지역을 탭하면 해당 산지 와인을 볼 수 있어요</text>
                 </svg>
@@ -1603,26 +1603,26 @@
               </div>
 
               <!-- 얇음 → 두꺼움 순 (레드+화이트 통합) -->
-              <div class="variety-row empty" onclick="filterByVariety('뮈스카')"><div class="variety-name" style="color:var(--wine)">뮈스카</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('리슬링')"><div class="variety-name" style="color:var(--wine)">리슬링</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('소비뇽 블랑')"><div class="variety-name" style="color:var(--wine)">소비뇽 블랑</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--wine);opacity:0.7"></div></div><div class="variety-count" style="color:var(--wine)">2</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('피노 그리')"><div class="variety-name" style="color:var(--wine)">피노 그리</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('피노 누아')"><div class="variety-name" style="color:var(--wine)">피노 누아</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:75%;background:var(--wine);opacity:0.8"></div></div><div class="variety-count" style="color:var(--wine)">3</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('가메')"><div class="variety-name" style="color:var(--wine)">가메</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('바르베라')"><div class="variety-name" style="color:var(--wine)">바르베라</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('샤르도네')"><div class="variety-name" style="color:var(--wine)">샤르도네</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:25%;background:var(--wine);opacity:0.6"></div></div><div class="variety-count" style="color:var(--wine)">1</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('그르나슈')"><div class="variety-name" style="color:var(--wine)">그르나슈</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('메를로')"><div class="variety-name" style="color:var(--wine)">메를로</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:25%;background:var(--wine);opacity:0.6"></div></div><div class="variety-count" style="color:var(--wine)">1</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('산지오베제')"><div class="variety-name" style="color:var(--wine)">산지오베제</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('비오니에')"><div class="variety-name" style="color:var(--wine)">비오니에</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('템프라니요')"><div class="variety-name" style="color:var(--wine)">템프라니요</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('쉬라즈')"><div class="variety-name" style="color:var(--wine)">쉬라즈</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--wine);opacity:0.7"></div></div><div class="variety-count" style="color:var(--wine)">2</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('네비올로')"><div class="variety-name" style="color:var(--wine)">네비올로</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('말벡')"><div class="variety-name" style="color:var(--wine)">말벡</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row" onclick="filterByVariety('카베르네 소비뇽')"><div class="variety-name" style="color:var(--wine)">카베르네 S.</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:100%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">4</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('무르베드르')"><div class="variety-name" style="color:var(--wine)">무르베드르</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('타나')"><div class="variety-name" style="color:var(--wine)">타나</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
-              <div class="variety-row empty" onclick="filterByVariety('프티 베르도')"><div class="variety-name" style="color:var(--wine)">프티 베르도</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--wine)"></div></div><div class="variety-count" style="color:var(--wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('뮈스카')"><div class="variety-name" style="color:var(--accent-wine)">뮈스카</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('리슬링')"><div class="variety-name" style="color:var(--accent-wine)">리슬링</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('소비뇽 블랑')"><div class="variety-name" style="color:var(--accent-wine)">소비뇽 블랑</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--accent-wine);opacity:0.7"></div></div><div class="variety-count" style="color:var(--accent-wine)">2</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('피노 그리')"><div class="variety-name" style="color:var(--accent-wine)">피노 그리</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('피노 누아')"><div class="variety-name" style="color:var(--accent-wine)">피노 누아</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:75%;background:var(--accent-wine);opacity:0.8"></div></div><div class="variety-count" style="color:var(--accent-wine)">3</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('가메')"><div class="variety-name" style="color:var(--accent-wine)">가메</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('바르베라')"><div class="variety-name" style="color:var(--accent-wine)">바르베라</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('샤르도네')"><div class="variety-name" style="color:var(--accent-wine)">샤르도네</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:25%;background:var(--accent-wine);opacity:0.6"></div></div><div class="variety-count" style="color:var(--accent-wine)">1</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('그르나슈')"><div class="variety-name" style="color:var(--accent-wine)">그르나슈</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('메를로')"><div class="variety-name" style="color:var(--accent-wine)">메를로</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:25%;background:var(--accent-wine);opacity:0.6"></div></div><div class="variety-count" style="color:var(--accent-wine)">1</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('산지오베제')"><div class="variety-name" style="color:var(--accent-wine)">산지오베제</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('비오니에')"><div class="variety-name" style="color:var(--accent-wine)">비오니에</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('템프라니요')"><div class="variety-name" style="color:var(--accent-wine)">템프라니요</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('쉬라즈')"><div class="variety-name" style="color:var(--accent-wine)">쉬라즈</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--accent-wine);opacity:0.7"></div></div><div class="variety-count" style="color:var(--accent-wine)">2</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('네비올로')"><div class="variety-name" style="color:var(--accent-wine)">네비올로</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('말벡')"><div class="variety-name" style="color:var(--accent-wine)">말벡</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row" onclick="filterByVariety('카베르네 소비뇽')"><div class="variety-name" style="color:var(--accent-wine)">카베르네 S.</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:100%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">4</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('무르베드르')"><div class="variety-name" style="color:var(--accent-wine)">무르베드르</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('타나')"><div class="variety-name" style="color:var(--accent-wine)">타나</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
+              <div class="variety-row empty" onclick="filterByVariety('프티 베르도')"><div class="variety-name" style="color:var(--accent-wine)">프티 베르도</div><div class="variety-hbar-track"><div class="variety-hbar" style="width:0%;background:var(--accent-wine)"></div></div><div class="variety-count" style="color:var(--accent-wine)">—</div></div>
             </div>
 
             <div class="stat-divider"></div>
@@ -1645,18 +1645,18 @@
                 </div>
                 <!-- 70s: 1병=17% -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'70-79')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:17%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.5;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:17%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.5;"></div>
                 </div>
                 <!-- 80s: 5병=83% -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'80-89')">
-                  <div style="width:100%;height:83%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:83%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">5</span>
                   </div>
                 </div>
                 <!-- 90s: 6병=100% -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'90-100')">
-                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--accent-wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">6</span>
                   </div>
                 </div>
@@ -1675,31 +1675,31 @@
 
             <!-- 월별 소비 -->
             <div class="wine-filter-section stat-section">
-              <div class="stat-section-label">월별 소비 <small style="font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
+              <div class="stat-section-label">월별 소비 <small style="font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:120px;">
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('10월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('11월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">2</div>
-                  <div style="width:100%;height:50%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.55;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">2</div>
+                  <div style="width:100%;height:50%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.55;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('12월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('1월')">
-                  <div style="width:100%;height:75%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:75%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">3</span>
                   </div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('2월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('3월')">
-                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--accent-wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">4</span>
                   </div>
                 </div>
@@ -1708,9 +1708,9 @@
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">10월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">8만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">11월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">22만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">12월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">12만</div></div>
-                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">1월</div><div style="font-size:8px;font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">32만</div></div>
+                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">1월</div><div style="font-size:8px;font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">32만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">2월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">14만</div></div>
-                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">3월</div><div style="font-size:8px;font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">36만</div></div>
+                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">3월</div><div style="font-size:8px;font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">36만</div></div>
               </div>
             </div>
 
@@ -1882,7 +1882,7 @@
                     <div class="wrapped-place-name">Ch. Margaux 2018</div>
                     <div class="wrapped-place-meta">레드 · 카베르네 소비뇽</div>
                   </div>
-                  <div class="wrapped-place-score" style="color:var(--wine)">94</div>
+                  <div class="wrapped-place-score" style="color:var(--accent-wine)">94</div>
                 </div>
               </div>
               <div class="wrapped-bubbles" id="w-bubbles">
@@ -2087,7 +2087,7 @@
               <span>프로필</span>
             </button>
             <div class="header-right">
-              <button style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;font-weight:500" onclick="markAllRead()">모두 읽음</button>
+              <button style="background:none;border:none;font-size:12px;color:var(--accent-food);cursor:pointer;font-weight:500" onclick="markAllRead()">모두 읽음</button>
               <button onclick="location.href='04_bubbles.html'" style="background:none;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-size:13px;font-weight:700;color:#FF6038;padding:4px 0;">bubbles</button>
               <div style="position:relative;">
                 <button class="icon-btn" title="알림" onclick="toggleNotifDropdown(event)"><i data-lucide="bell" style="width:20px;height:20px;"></i></button>
@@ -2107,7 +2107,7 @@
         <div class="scroll-area">
           <div class="notif-item unread" id="notif-1" onclick="toggleNotifRead(this)">
             <div class="notif-unread-dot" id="dot-1"></div>
-            <div class="notif-icon" style="background:#F5EDE8;color:var(--primary)"><i data-lucide="utensils-crossed"></i></div>
+            <div class="notif-icon" style="background:#F5EDE8;color:var(--accent-food)"><i data-lucide="utensils-crossed"></i></div>
             <div class="notif-content">
               <div class="notif-text"><strong>김영수</strong>님이 직장 맛집에 새 기록을 남겼습니다</div>
               <div class="notif-sub">미진 · 93점</div>
@@ -2137,7 +2137,7 @@
 
           <div class="notif-item" id="notif-4" onclick="toggleNotifRead(this)">
             <div class="notif-unread-dot read" id="dot-4"></div>
-            <div class="notif-icon" style="background:var(--primary-light);color:var(--primary)"><i data-lucide="user-plus"></i></div>
+            <div class="notif-icon" style="background:var(--accent-food-light);color:var(--accent-food)"><i data-lucide="user-plus"></i></div>
             <div class="notif-content">
               <div class="notif-text"><strong>김영수</strong>님이 직장 맛집 버블에 초대했습니다</div>
               <div class="notif-sub">
@@ -2150,7 +2150,7 @@
 
           <div class="notif-item" id="notif-5" onclick="toggleNotifRead(this)">
             <div class="notif-unread-dot read" id="dot-5"></div>
-            <div class="notif-icon" style="background:#F0ECF3;color:var(--wine)"><i data-lucide="trophy"></i></div>
+            <div class="notif-icon" style="background:#F0ECF3;color:var(--accent-wine)"><i data-lucide="trophy"></i></div>
             <div class="notif-content">
               <div class="notif-text">을지로 <span class="pill pill-purple" style="font-size:11px;padding:1px 7px">Lv.5</span> 달성!</div>
               <div class="notif-sub">계속 을지로를 탐험하세요</div>
@@ -2195,32 +2195,27 @@
         </div>
       </div>
 
-      <!-- XP Breakdown -->
+      <!-- XP Breakdown (XP_SYSTEM §4 기준: 기록/재방문/마일스톤/소셜, 합계=100%) -->
       <div style="font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:8px">XP 구성</div>
       <div class="xp-breakdown-item">
         <span class="xp-breakdown-label">새 장소 기록</span>
-        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:65%;background:#8B7396"></div></div>
-        <span class="xp-breakdown-val">312</span>
+        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:54%;background:#8B7396"></div></div>
+        <span class="xp-breakdown-val">420</span>
       </div>
       <div class="xp-breakdown-item">
         <span class="xp-breakdown-label">재방문</span>
-        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:30%;background:#8B7396"></div></div>
-        <span class="xp-breakdown-val">142</span>
-      </div>
-      <div class="xp-breakdown-item">
-        <span class="xp-breakdown-label">품질 보너스</span>
-        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:45%;background:#8B7396"></div></div>
-        <span class="xp-breakdown-val">216</span>
+        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:22%;background:#8B7396"></div></div>
+        <span class="xp-breakdown-val">170</span>
       </div>
       <div class="xp-breakdown-item">
         <span class="xp-breakdown-label">마일스톤</span>
-        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:20%;background:#8B7396"></div></div>
-        <span class="xp-breakdown-val">95</span>
+        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:15%;background:#8B7396"></div></div>
+        <span class="xp-breakdown-val">120</span>
       </div>
       <div class="xp-breakdown-item">
         <span class="xp-breakdown-label">소셜</span>
-        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:5%;background:#8B7396"></div></div>
-        <span class="xp-breakdown-val">15</span>
+        <div class="xp-breakdown-bar"><div class="xp-breakdown-fill" style="width:9%;background:#8B7396"></div></div>
+        <span class="xp-breakdown-val">70</span>
       </div>
 
       <!-- Level milestones -->

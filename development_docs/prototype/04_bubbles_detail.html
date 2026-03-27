@@ -18,10 +18,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --positive: #7EAE8B;
@@ -112,7 +112,7 @@
     width: 7px; height: 7px; border-radius: 50%; background: var(--brand); border: 1.5px solid var(--bg);
   }
   .header-avatar {
-    width: 30px; height: 30px; border-radius: 50%; background: var(--primary);
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent-food);
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; flex-shrink: 0;
   }
@@ -142,7 +142,7 @@
   }
   .pill-blue { background: var(--accent-social-light); color: var(--accent-social); }
   .pill-green { background: rgba(126,174,139,0.15); color: var(--positive); }
-  .pill-orange { background: var(--primary-light); color: var(--primary); }
+  .pill-orange { background: var(--accent-food-light); color: var(--accent-food); }
   .pill-sm { font-size: 10px; }
 
   /* ── Notif dropdown ── */
@@ -282,7 +282,7 @@
     color: var(--text-sub); border: 1px solid var(--border);
   }
   .bubble-info-chip svg { width: 11px; height: 11px; }
-  .bubble-info-chip.highlight { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .bubble-info-chip.highlight { background: var(--accent-food-light); color: var(--accent-food); border-color: transparent; }
   .bubble-info-rules { list-style: none; display: flex; flex-direction: column; gap: 5px; }
   .bubble-info-rule {
     display: flex; align-items: flex-start; gap: 7px;
@@ -290,7 +290,7 @@
   }
   .bubble-info-rule-dot {
     width: 5px; height: 5px; border-radius: 50%;
-    background: var(--primary); margin-top: 5px; flex-shrink: 0;
+    background: var(--accent-food); margin-top: 5px; flex-shrink: 0;
   }
 
   /* ══════════════════════════════════════
@@ -318,7 +318,7 @@
     height: 2.5px; border-radius: 2px; background: transparent; transition: background 0.2s;
   }
   .detail-tab.active { color: var(--text); font-weight: 700; }
-  .detail-tab.active::after { background: var(--primary); }
+  .detail-tab.active::after { background: var(--accent-food); }
   .detail-tab-spacer { flex: 1; }
 
   /* Tab button group (per-tab icon buttons inside tab row) */
@@ -344,7 +344,7 @@
     flex-shrink: 0; padding: 0; transition: color 0.15s;
   }
   .tab-icon-btn:active { color: var(--text); }
-  .tab-icon-btn.has-filter { color: var(--primary); }
+  .tab-icon-btn.has-filter { color: var(--accent-food); }
 
   /* Controls context label */
   .detail-ctrl-label {
@@ -599,8 +599,8 @@
     font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer;
   }
   .feed-user-level {
-    font-size: 9px; font-weight: 600; color: var(--primary);
-    background: var(--primary-light); border-radius: 4px; padding: 1px 4px;
+    font-size: 9px; font-weight: 600; color: var(--accent-food);
+    background: var(--accent-food-light); border-radius: 4px; padding: 1px 4px;
   }
   .feed-time {
     font-size: 10px; color: var(--text-hint); margin-left: auto; flex-shrink: 0;
@@ -629,7 +629,7 @@
     background: none; border: none; cursor: pointer; transition: color 0.15s;
   }
   .react-btn svg { width: 14px; height: 14px; }
-  .react-btn.reacted-want { color: var(--primary); }
+  .react-btn.reacted-want { color: var(--accent-food); }
   .react-btn.reacted-check { color: var(--positive); }
   .react-btn.reacted-fire { color: #E55A35; }
   .feed-actions-spacer { flex: 1; }
@@ -655,11 +655,11 @@
   }
   /* Score badge inline */
   #dcontent-feed.view-compact .feed-score-overlay {
-    position: static; background: var(--primary); backdrop-filter: none;
+    position: static; background: var(--accent-food); backdrop-filter: none;
     border-radius: 10px; padding: 6px 0; width: 42px; min-width: 42px;
     flex-direction: column; justify-content: center;
   }
-  #dcontent-feed.view-compact .feed-score-overlay.wine { background: var(--wine); }
+  #dcontent-feed.view-compact .feed-score-overlay.wine { background: var(--accent-wine); }
   #dcontent-feed.view-compact .feed-score-num { font-size: 16px; }
   #dcontent-feed.view-compact .feed-score-type { font-size: 7px; }
   /* Place + meta stacked */
@@ -746,7 +746,7 @@
     padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 500;
     background: none; border: 1px solid var(--border); color: var(--text-sub); cursor: pointer;
   }
-  .sort-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .sort-btn.active { background: var(--accent-food); color: #fff; border-color: var(--accent-food); }
   .rank-item {
     display: flex; align-items: center; gap: 10px; padding: 11px 16px;
     border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s;
@@ -758,14 +758,14 @@
   }
   .rank-thumb {
     width: 44px; height: 44px; border-radius: 10px;
-    background: var(--primary-light) center/cover no-repeat; flex-shrink: 0; overflow: hidden;
+    background: var(--accent-food-light) center/cover no-repeat; flex-shrink: 0; overflow: hidden;
   }
   .rank-info { flex: 1; min-width: 0; }
   .rank-name { font-size: 13px; font-weight: 700; color: var(--text); }
   .rank-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
   .rank-score-col { flex-shrink: 0; text-align: right; }
-  .rank-score { font-size: 16px; font-weight: 800; color: var(--primary); }
-  .rank-score.wine { color: var(--wine); }
+  .rank-score { font-size: 16px; font-weight: 800; color: var(--accent-food); }
+  .rank-score.wine { color: var(--accent-wine); }
   .rank-delta { font-size: 10px; color: var(--positive); font-weight: 600; }
   .rank-delta.down { color: var(--negative); }
 
@@ -811,8 +811,9 @@
     background: var(--bg-section); border-radius: 6px; padding: 2px 7px;
     border: 1px solid var(--border);
   }
-  .member-card-level.lv-high { background: var(--primary-light); color: var(--primary); border-color: transparent; }
-  .member-card-level.lv-mid { background: var(--accent-social-light); color: var(--accent-social); border-color: transparent; }
+  .member-card-level.lv-high { background: var(--accent-food-light); color: var(--accent-food); border-color: transparent; }  /* Lv.8-9 미식가 #C17B5E */
+  .member-card-level.lv-purple { background: #F0ECF3; color: #8B7396; border-color: transparent; }  /* Lv.6-7 탐식가 #8B7396 */
+  .member-card-level.lv-mid { background: var(--accent-social-light); color: var(--accent-social); border-color: transparent; }  /* Lv.4-5 초보 미식가 #7A9BAE */
   /* Match bar */
   .member-card-match {
     width: 100%; margin-top: 3px;
@@ -1038,7 +1039,7 @@
 
           <!-- HERO -->
           <div class="detail-hero">
-            <div class="detail-hero-icon" style="background:#F5EDE8;color:var(--primary)">
+            <div class="detail-hero-icon" style="background:#F5EDE8;color:var(--accent-food)">
               <i data-lucide="utensils-crossed"></i>
             </div>
             <div class="detail-hero-text">
@@ -1547,7 +1548,7 @@
               <div class="member-card is-me" data-level="6" data-follow="me" data-role="member" onclick="location.href='03_profile.html'">
                 <div class="member-card-avatar" style="background:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,0.3)">나</div>
                 <div class="member-card-name">나 (정지훈)</div>
-                <div class="member-card-level">Lv.6 탐식가</div>
+                <div class="member-card-level lv-purple">Lv.6 탐식가</div>
                 <div class="member-card-match">
                   <div class="match-label"><span class="match-label-text">취향 기준</span></div>
                 </div>
@@ -1582,7 +1583,7 @@
               <div class="member-card" data-level="8" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#8B7396">박</div>
                 <div class="member-card-name">박소연</div>
-                <div class="member-card-level lv-high">Lv.8 소믈리에</div>
+                <div class="member-card-level lv-high">Lv.8 미식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>
@@ -1601,7 +1602,7 @@
               <div class="member-card" data-level="7" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#7EAE8B">최</div>
                 <div class="member-card-name">최유진</div>
-                <div class="member-card-level lv-mid">Lv.7 미식가</div>
+                <div class="member-card-level lv-purple">Lv.7 탐식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>
@@ -1620,7 +1621,7 @@
               <div class="member-card" data-level="6" data-follow="following" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#ec4899">강</div>
                 <div class="member-card-name">강하늘</div>
-                <div class="member-card-level lv-mid">Lv.6 탐식가</div>
+                <div class="member-card-level lv-purple">Lv.6 탐식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>
@@ -1639,7 +1640,7 @@
               <div class="member-card" data-level="5" data-follow="following" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#7A9BAE">이</div>
                 <div class="member-card-name">이준호</div>
-                <div class="member-card-level">Lv.5 식도락가</div>
+                <div class="member-card-level lv-mid">Lv.5 초보 미식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>
@@ -1658,7 +1659,7 @@
               <div class="member-card" data-level="5" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#C9A96E">윤</div>
                 <div class="member-card-name">윤서희</div>
-                <div class="member-card-level">Lv.5 식도락가</div>
+                <div class="member-card-level lv-mid">Lv.5 초보 미식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>
@@ -1677,7 +1678,7 @@
               <div class="member-card" data-level="4" data-follow="none" data-role="member" onclick="location.href='04_bubbler_profile.html'">
                 <div class="member-card-avatar" style="background:#C9A96E">한</div>
                 <div class="member-card-name">한승민</div>
-                <div class="member-card-level">Lv.4 초보</div>
+                <div class="member-card-level lv-mid">Lv.4 초보 미식가</div>
                 <div class="member-card-match">
                   <div class="match-label">
                     <span class="match-label-text">일치도</span>

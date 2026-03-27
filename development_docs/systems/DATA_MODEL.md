@@ -60,7 +60,8 @@ CREATE TABLE users (
   taste_updated_at TIMESTAMPTZ,      -- 취향 분석 마지막 갱신 시점 (기록 N개 이상 변경 시 재생성)
   preferred_areas TEXT[],           -- 온보딩에서 선택한 동네
   privacy_profile VARCHAR(20) DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private' → 05_settings: 프라이버시 > 기본 공개 대상
-  privacy_records VARCHAR(20) DEFAULT 'shared_only',  -- 'all' | 'shared_only' | 'private' → 05_settings: 프라이버시 > 기록 범위
+  privacy_records VARCHAR(20) DEFAULT 'shared_only',  -- 'all' | 'shared_only' → 05_settings: 프라이버시 > 기록 범위
+                                                      -- (profile이 'private'이면 어차피 전체 비공개이므로 records에 'private' 불필요)
   -- 프라이버시: 공개 범위별 가시성 토글 (05_settings 프라이버시 섹션)
   -- 각 키: score(점수), comment(한줄평), photos(사진), level(레벨 뱃지), quadrant(사분면), bubbles(소속 버블), price(가격 정보)
   visibility_public JSONB DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}',
@@ -102,7 +103,7 @@ CREATE TABLE users (
   total_xp INT DEFAULT 0,               -- 누적 XP (절대 안 줄어듦)
   active_xp INT DEFAULT 0,              -- 최근 6개월 XP (자동 갱신)
   active_verified INT DEFAULT 0,         -- 최근 6개월 검증 기록 수
-  auth_provider VARCHAR(20) NOT NULL,    -- 'kakao' | 'google' | 'apple'
+  auth_provider VARCHAR(20) NOT NULL,    -- 'kakao' | 'google' | 'apple' | 'naver'
   auth_provider_id VARCHAR(100) NOT NULL UNIQUE,  -- 소셜 계정 1:1 매핑 (중복 가입 차단)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -119,7 +120,8 @@ CREATE TABLE restaurants (
   city VARCHAR(50) DEFAULT '서울',     -- 도시 (서울, 파리, 도쿄 등) — 세계지도 도시별 그룹핑
   area VARCHAR(50),                -- 생활권 동네명 (광화문, 을지로 등) — 국내 식당 전용
   district VARCHAR(50),            -- 구 (종로구, 강남구 등) — 국내 식당 전용
-  genre VARCHAR(30),               -- CHECK: 한식/일식/양식/중식/이탈리안/프렌치/동남아/멕시칸/파인다이닝/비스트로/카페/베이커리/바
+  genre VARCHAR(30),               -- CHECK: 한식/일식/양식/중식/이탈리안/프렌치/동남아/태국/베트남/인도/스페인/멕시칸/아시안/파인다이닝/비스트로/카페/베이커리/바/주점
+                                  -- 03_profile 장르별 XP 레벨 목록 + 00_onboarding 시드 데이터 기준
   price_range INT,                 -- 1~4 (₩~₩₩₩₩)
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
@@ -313,7 +315,7 @@ CREATE TABLE wishlists (
                                         -- bubble: 버블 멤버 기록 보고 찜 (reactions.bookmark 트리거)
                                         -- ai: AI 추천에서 찜
                                         -- web: 외부 평점/정보 보고 찜
-  source_record_id UUID REFERENCES records(id),  -- source='bubble'일 때 원본 기록 ID
+  source_record_id UUID REFERENCES records(id) ON DELETE SET NULL,  -- source='bubble'일 때 원본 기록 ID
                                                   -- 찜 카드에서 "김영수 93 · 을지로 최고 바베큐" 표시용
                                                   -- source='ai'일 때 ai_recommendations.id 참조도 가능 (target_id로)
   is_visited BOOLEAN DEFAULT false,
@@ -352,7 +354,7 @@ CREATE INDEX idx_user_experiences_axis ON user_experiences(axis_type, axis_value
 CREATE TABLE xp_histories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
-  record_id UUID REFERENCES records(id),
+  record_id UUID REFERENCES records(id) ON DELETE SET NULL,  -- 기록 삭제 시 XP 이력은 유지, 참조만 해제
   axis_type VARCHAR(20),
   axis_value VARCHAR(50),
   xp_amount INT,
@@ -370,8 +372,8 @@ CREATE INDEX idx_xp_histories_axis ON xp_histories(user_id, axis_type, axis_valu
 CREATE TABLE level_thresholds (
   level INT PRIMARY KEY,
   required_xp INT NOT NULL,
-  title VARCHAR(20),              -- 레벨 칭호 ("입문자", "초보", "탐식가", "식도락가", "미식가", "소믈리에" 등)
-                                  -- 04_bubbler_profile: "Lv.9 미식가", 04_bubbles_detail 멤버 카드: "Lv.7 미식가"
+  title VARCHAR(20),              -- 레벨 칭호: "입문자"(1-3), "초보 미식가"(4-5), "탐식가"(6-7), "미식가"(8-9), "식도락 마스터"(10+)
+                                  -- SSOT: XP_SYSTEM.md §5 레벨 칭호 테이블
   color VARCHAR(10)
 );
 
@@ -505,7 +507,7 @@ CREATE INDEX idx_bubble_members_user ON bubble_members(user_id, bubble_id) WHERE
 
 CREATE TABLE bubble_shares (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  record_id UUID NOT NULL REFERENCES records(id),
+  record_id UUID NOT NULL REFERENCES records(id) ON DELETE CASCADE,  -- 기록 삭제 시 공유도 제거
   bubble_id UUID NOT NULL REFERENCES bubbles(id) ON DELETE CASCADE,
   shared_by UUID NOT NULL REFERENCES users(id),
   shared_at TIMESTAMPTZ DEFAULT NOW(),
@@ -889,7 +891,8 @@ WHERE r.target_id = :wine_id
 -- 와인 전용 필드가 식당 기록에 저장되는 것을 방지
 ALTER TABLE records ADD CONSTRAINT chk_wine_fields
   CHECK (target_type = 'wine' OR (
-    aroma_regions IS NULL AND wine_status IS NULL AND camera_mode IS NULL
+    aroma_regions IS NULL AND aroma_labels IS NULL AND aroma_color IS NULL
+    AND wine_status IS NULL AND camera_mode IS NULL
     AND ocr_data IS NULL AND complexity IS NULL AND finish IS NULL
     AND balance IS NULL AND auto_score IS NULL AND pairing_categories IS NULL
     AND purchase_price IS NULL
@@ -955,27 +958,43 @@ CREATE TRIGGER after_follow_counts
   AFTER INSERT OR UPDATE OR DELETE ON follows
   FOR EACH ROW EXECUTE FUNCTION trg_update_follow_counts();
 
--- bubbles.member_count: bubble_members INSERT/UPDATE/DELETE 시 (active member만)
+-- bubbles.member_count + follower_count: bubble_members INSERT/UPDATE/DELETE 시
+-- member_count: role in ('owner','admin','member') AND status='active'
+-- follower_count: role='follower' AND status='active'
 CREATE OR REPLACE FUNCTION trg_update_bubble_member_count()
 RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' AND NEW.status = 'active' AND NEW.role IN ('owner','admin','member') THEN
-    UPDATE bubbles SET member_count = member_count + 1 WHERE id = NEW.bubble_id;
-  ELSIF TG_OP = 'DELETE' AND OLD.status = 'active' AND OLD.role IN ('owner','admin','member') THEN
-    UPDATE bubbles SET member_count = member_count - 1 WHERE id = OLD.bubble_id;
-  ELSIF TG_OP = 'UPDATE' THEN
-    -- active member가 되었을 때
-    IF (OLD.status != 'active' OR OLD.role NOT IN ('owner','admin','member'))
-       AND (NEW.status = 'active' AND NEW.role IN ('owner','admin','member')) THEN
-      UPDATE bubbles SET member_count = member_count + 1 WHERE id = NEW.bubble_id;
-    -- active member가 아니게 되었을 때
-    ELSIF (OLD.status = 'active' AND OLD.role IN ('owner','admin','member'))
-       AND (NEW.status != 'active' OR NEW.role NOT IN ('owner','admin','member')) THEN
-      UPDATE bubbles SET member_count = member_count - 1 WHERE id = NEW.bubble_id;
+  -- 헬퍼: 역할이 멤버급인지 팔로워인지 판별
+  DECLARE
+    v_old_is_member BOOLEAN := false;
+    v_new_is_member BOOLEAN := false;
+    v_old_is_follower BOOLEAN := false;
+    v_new_is_follower BOOLEAN := false;
+  BEGIN
+    IF TG_OP IN ('UPDATE','DELETE') THEN
+      v_old_is_member   := OLD.status = 'active' AND OLD.role IN ('owner','admin','member');
+      v_old_is_follower := OLD.status = 'active' AND OLD.role = 'follower';
     END IF;
-  END IF;
-  RETURN NULL;
-END;
+    IF TG_OP IN ('INSERT','UPDATE') THEN
+      v_new_is_member   := NEW.status = 'active' AND NEW.role IN ('owner','admin','member');
+      v_new_is_follower := NEW.status = 'active' AND NEW.role = 'follower';
+    END IF;
+
+    -- member_count 증감
+    IF NOT v_old_is_member AND v_new_is_member THEN
+      UPDATE bubbles SET member_count = member_count + 1 WHERE id = NEW.bubble_id;
+    ELSIF v_old_is_member AND NOT v_new_is_member THEN
+      UPDATE bubbles SET member_count = member_count - 1 WHERE id = COALESCE(NEW.bubble_id, OLD.bubble_id);
+    END IF;
+
+    -- follower_count 증감
+    IF NOT v_old_is_follower AND v_new_is_follower THEN
+      UPDATE bubbles SET follower_count = follower_count + 1 WHERE id = NEW.bubble_id;
+    ELSIF v_old_is_follower AND NOT v_new_is_follower THEN
+      UPDATE bubbles SET follower_count = follower_count - 1 WHERE id = COALESCE(NEW.bubble_id, OLD.bubble_id);
+    END IF;
+
+    RETURN NULL;
+  END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER after_bubble_member_count
@@ -1089,7 +1108,8 @@ ON CONFLICT (bubble_id, target_id, target_type, period_start) DO UPDATE SET
 ### get_bubble_feed — 버블 피드 (N+1 방지)
 
 ```sql
--- 버블 피드: 기록 + 리액션 카운트 + 댓글 카운트 + 읽음 수를 한 번에 조회
+-- 버블 피드: 기록 + 대상 정보 + 작성자 정보 + 사진 + 리액션/댓글/읽음을 한 번에 조회
+-- 04_bubbles_detail 피드 카드 렌더링에 필요한 모든 데이터를 단일 쿼리로 반환
 -- SECURITY INVOKER — RLS 정책 따름, SECURITY DEFINER 사용 금지
 CREATE OR REPLACE FUNCTION get_bubble_feed(
   p_bubble_id UUID,
@@ -1109,10 +1129,18 @@ RETURNS TABLE (
   comment VARCHAR,
   visit_date DATE,
   scene VARCHAR,
-  -- author
+  -- target info (식당명/와인명 + 메타) — 04_bubbles_detail: "미진" "한식 · 을지로"
+  target_name VARCHAR,            -- restaurants.name 또는 wines.name
+  target_meta JSONB,              -- 식당: {"genre":"한식","area":"을지로"}
+                                  -- 와인: {"wine_type":"red","variety":"카베르네 소비뇽"}
+  -- photos — 04_bubbles_detail: feed-photos 영역 (최대 3장)
+  photo_urls TEXT[],              -- record_photos에서 order_index 순 집계
+  -- author — 04_bubbles_detail: feed-avatar + feed-user-name + feed-user-level
   author_nickname VARCHAR,
   author_avatar TEXT,
+  author_avatar_color VARCHAR,    -- 아바타 이미지 없을 때 이니셜+색상 렌더용
   author_handle VARCHAR,
+  author_level INT,               -- user_experiences(category, target_type과 동일 카테고리) 기준 레벨
   -- aggregates
   reaction_counts JSONB,    -- {"like":3,"want":1,"check":2,"fire":0}
   user_reactions JSONB,     -- {"like":true,"want":false,...} 현재 유저의 리액션
@@ -1127,7 +1155,21 @@ AS $$
     bs.shared_at,
     bs.shared_by,
     r.target_id, r.target_type, r.satisfaction, r.comment, r.visit_date, r.scene,
-    u.nickname AS author_nickname, u.avatar_url AS author_avatar, u.handle AS author_handle,
+    -- target info: 식당/와인 이름 + 메타
+    CASE r.target_type
+      WHEN 'restaurant' THEN rst.name
+      WHEN 'wine' THEN w.name
+    END AS target_name,
+    CASE r.target_type
+      WHEN 'restaurant' THEN jsonb_build_object('genre', rst.genre, 'area', rst.area)
+      WHEN 'wine' THEN jsonb_build_object('wine_type', w.wine_type, 'variety', w.variety)
+    END AS target_meta,
+    -- photos (배열 집계)
+    COALESCE(ph.urls, '{}'::TEXT[]) AS photo_urls,
+    -- author
+    u.nickname AS author_nickname, u.avatar_url AS author_avatar,
+    u.avatar_color AS author_avatar_color, u.handle AS author_handle,
+    COALESCE(ue.level, 1) AS author_level,
     -- 리액션 카운트 (lateral subquery)
     COALESCE(rc.counts, '{}'::JSONB) AS reaction_counts,
     COALESCE(ur.user_reacts, '{}'::JSONB) AS user_reactions,
@@ -1136,6 +1178,17 @@ AS $$
   FROM bubble_shares bs
     JOIN records r ON r.id = bs.record_id
     JOIN users u ON u.id = bs.shared_by
+    LEFT JOIN restaurants rst ON r.target_type = 'restaurant' AND rst.id = r.target_id
+    LEFT JOIN wines w ON r.target_type = 'wine' AND w.id = r.target_id
+    LEFT JOIN LATERAL (
+      SELECT array_agg(url ORDER BY order_index) AS urls
+      FROM record_photos WHERE record_id = r.id
+    ) ph ON true
+    LEFT JOIN LATERAL (
+      SELECT level FROM user_experiences
+      WHERE user_id = bs.shared_by AND axis_type = 'category'
+        AND axis_value = r.target_type
+    ) ue ON true
     LEFT JOIN LATERAL (
       SELECT jsonb_object_agg(reaction_type, cnt) AS counts
       FROM (SELECT reaction_type, COUNT(*) AS cnt FROM reactions
@@ -1165,7 +1218,8 @@ $$;
 
 ```sql
 -- 뷰어가 대상 유저의 어떤 필드를 볼 수 있는지 해석
--- 우선순위: bubble visibility_override > visibility_bubble > visibility_public
+-- 05_settings 프라이버시 3단계: privacy_profile → visibility 레이어 → 버블별 override
+-- 우선순위: privacy_profile 접근 차단 > bubble visibility_override > visibility_bubble > visibility_public
 CREATE OR REPLACE FUNCTION get_visible_fields(
   p_viewer_id UUID,
   p_target_user_id UUID,
@@ -1175,13 +1229,23 @@ RETURNS JSONB
 LANGUAGE plpgsql STABLE SECURITY INVOKER
 AS $$
 DECLARE
+  v_privacy VARCHAR;
   v_result JSONB;
   v_is_co_member BOOLEAN := false;
   v_override JSONB;
+  v_all_false CONSTANT JSONB := '{"score":false,"comment":false,"photos":false,"level":false,"quadrant":false,"bubbles":false,"price":false}'::JSONB;
 BEGIN
   -- 본인이면 전체 공개
   IF p_viewer_id = p_target_user_id THEN
     RETURN '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":true,"price":true}'::JSONB;
+  END IF;
+
+  -- privacy_profile 확인 (05_settings: 기본 공개 대상)
+  SELECT u.privacy_profile INTO v_privacy FROM users u WHERE u.id = p_target_user_id;
+
+  -- 'private': 나에게만 보임 (05_settings: "프로필과 기록이 나에게만 보입니다. 버블 공유도 불가")
+  IF v_privacy = 'private' THEN
+    RETURN v_all_false;
   END IF;
 
   -- 버블 컨텍스트에서 co-member 확인
@@ -1191,7 +1255,6 @@ BEGIN
     WHERE bm.bubble_id = p_bubble_id AND bm.user_id = p_target_user_id AND bm.status = 'active';
 
     IF FOUND THEN
-      -- co-member 확인 (뷰어도 같은 버블 멤버인지)
       SELECT EXISTS(
         SELECT 1 FROM bubble_members
         WHERE bubble_id = p_bubble_id AND user_id = p_viewer_id AND status = 'active'
@@ -1209,7 +1272,13 @@ BEGIN
     END IF;
   END IF;
 
-  -- 버블 컨텍스트 아닌 경우: visibility_public 반환
+  -- 'bubble_only': 버블 co-member가 아닌 외부 뷰어 → 비공개
+  -- (위 co-member 블록에서 이미 RETURN했으므로, 여기 도달 = co-member 아님)
+  IF v_privacy = 'bubble_only' THEN
+    RETURN v_all_false;
+  END IF;
+
+  -- 'public': 외부 뷰어에게 visibility_public 반환
   SELECT u.visibility_public INTO v_result FROM users u WHERE u.id = p_target_user_id;
   RETURN COALESCE(v_result, '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}'::JSONB);
 END;

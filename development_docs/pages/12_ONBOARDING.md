@@ -6,8 +6,9 @@
 > route: /onboarding
 > prototype: `prototype/00_onboarding.html`
 >
-> **⚠️ IA.md 동기화 필요**: 00_IA.md의 온보딩 항목이 "가입→동네선택→가본곳체크"로 되어 있으나,
-> 실제 플로우는 "로그인→인트로→기록→버블생성→버블탐색→홈". S9 산출물 설명도 갱신 필요.
+> **⚠️ IA.md 동기화 필요**: 00_IA.md의 온보딩 Step 3이 "경험치 설명"으로 되어 있으나,
+> 실제 플로우(프로토타입+본 문서)는 "로그인→인트로→**맛집 등록(지역선택+식당체크)**→버블생성→버블탐색→홈".
+> 00_IA.md의 온보딩 항목과 S9 산출물 설명을 본 문서에 맞춰 갱신 필요.
 
 ---
 
@@ -43,8 +44,8 @@
 
 | 상태 | 스타일 |
 |------|--------|
-| **active** | `background:var(--primary)` |
-| **done** | `background:var(--primary)`, `opacity:0.45` |
+| **active** | `background:var(--accent-food)` |
+| **done** | `background:var(--accent-food)`, `opacity:0.45` |
 | **pending** | `background:var(--border)` |
 
 ### FAB 네비게이션
@@ -54,7 +55,7 @@ Step 1~3에만 존재. 로그인/인트로 화면에는 FAB 없음.
 | 요소 | 위치 | 크기 | 스타일 |
 |------|------|------|--------|
 | **fab-back** | `left:16px`, `bottom:28px` | 44×44px 원형 | `background:rgba(248,246,243,0.88)`, `backdrop-filter:blur(12px)`, `border:1px solid var(--border)`, `box-shadow:0 2px 12px rgba(0,0,0,0.12)` |
-| **fab-forward** | `right:16px`, `bottom:28px` | 44×44px 원형 | `background:var(--primary)`, `color:#fff`, `box-shadow:0 3px 16px rgba(193,123,94,0.4)`, 보더 없음 |
+| **fab-forward** | `right:16px`, `bottom:28px` | 44×44px 원형 | `background:var(--accent-food)`, `color:#fff`, `box-shadow:0 3px 16px rgba(193,123,94,0.4)`, 보더 없음 |
 
 - 공통: `position:absolute`, `z-index:85`, `border-radius:50%`
 - 아이콘: chevron-left / chevron-right (SVG inline, `22×22px`)
@@ -99,7 +100,7 @@ Step 1~3에만 존재. 로그인/인트로 화면에는 FAB 없음.
 
 ```
 screen-login   로그인
-  소셜 로그인 (카카오/구글/애플) → 닉네임 자동 설정
+  소셜 로그인 (카카오/구글/네이버/애플) → 닉네임 자동 설정
        ↓
 screen-intro   인트로
   앱 가치 헤드라인 → "시작하기 →" 텍스트 버튼
@@ -148,10 +149,13 @@ screen-explore Step 3/3 — 버블 탐색
 │  믿을만한 한 명의 기록.        │
 │                              │
 │  ┌──────────────────────────┐│
+│  │ G  Google로 시작          ││  ← bg-card, border:1px solid border
+│  └──────────────────────────┘│
+│  ┌──────────────────────────┐│
 │  │ 💬 카카오로 시작           ││  ← #FEE500, color:#3C1E1E
 │  └──────────────────────────┘│
 │  ┌──────────────────────────┐│
-│  │ G  Google로 시작          ││  ← bg-card, border:1px solid border
+│  │ N  네이버로 시작           ││  ← #03C75A, color:#fff
 │  └──────────────────────────┘│
 │  ┌──────────────────────────┐│
 │  │   Apple로 시작           ││  ← #1D1D1F, color:#fff
@@ -200,7 +204,7 @@ screen-explore Step 3/3 — 버블 탐색
 │   가까운 사람들과 나눌 수 있어요.│
 │                              │
 │                              │
-│         시작하기 →            │  ← 15px, 600, primary, 텍스트 버튼
+│         시작하기 →            │  ← 15px, 600, accent-food, 텍스트 버튼
 │                              │
 └──────────────────────────────┘
 ```
@@ -213,7 +217,7 @@ screen-explore Step 3/3 — 버블 탐색
 | 헤드라인 | `26px`, `font-weight:700`, `line-height:1.5`, `letter-spacing:-0.4px`, `text-align:center`, `color:var(--text)` |
 | 서브텍스트 | `14px`, `color:var(--text-sub)`, `line-height:1.8`, `margin-top:16px`, `text-align:center` |
 | CTA 컨테이너 | `padding:0 24px 56px`, `flex-shrink:0`, `text-align:center` |
-| CTA 버튼 | `background:none`, `border:none`, `15px`, `font-weight:600`, `color:var(--primary)`, `padding:12px 24px`, `letter-spacing:-0.1px` |
+| CTA 버튼 | `background:none`, `border:none`, `15px`, `font-weight:600`, `color:var(--accent-food)`, `padding:12px 24px`, `letter-spacing:-0.1px` |
 | CTA press | `opacity:0.5` (mousedown/touchstart), `opacity:1` (mouseup/touchend) |
 
 ### 규칙
@@ -288,7 +292,7 @@ screen-explore Step 3/3 — 버블 탐색
 | 텍스트 | `font-size:13px`, `font-weight:500`, `color:var(--text)`, `flex:1` |
 | 화살표 | lucide `chevron-down` (`16×16px`), `color:var(--text-hint)` |
 | hover | `border-color:var(--border-bold)` |
-| open 상태 | `border-color:var(--primary)`, 화살표 `rotate(180deg)` |
+| open 상태 | `border-color:var(--accent-food)`, 화살표 `rotate(180deg)` |
 
 **드롭다운 메뉴**:
 
@@ -298,7 +302,7 @@ screen-explore Step 3/3 — 버블 탐색
 | 배경 | `background:var(--bg-elevated)`, `border:1px solid var(--border)`, `border-radius:12px`, `box-shadow:0 8px 28px rgba(0,0,0,0.12)`, `padding:4px`, `z-index:100` |
 | 항목 | `padding:9px 12px`, `border-radius:8px`, `font-size:13px`, `font-weight:500`, `width:100%`, `text-align:left` |
 | 항목 hover | `background:var(--bg)` |
-| 선택됨 | `color:var(--primary)`, `font-weight:600` |
+| 선택됨 | `color:var(--accent-food)`, `font-weight:600` |
 | 닫기 | 외부 클릭 시 자동 닫힘 (document click listener) |
 
 **지역 목록** (온보딩 시드 6개):
@@ -316,7 +320,7 @@ screen-explore Step 3/3 — 버블 탐색
 |------|--------|
 | 컨테이너 | `position:relative`, `flex:1` |
 | 인풋 | `width:100%`, `padding:9px 12px 9px 34px`, `border-radius:12px`, `border:1.5px solid var(--border)`, `background:var(--bg-card)`, `font-size:13px`, `color:var(--text)` |
-| 포커스 | `border-color:var(--primary)` |
+| 포커스 | `border-color:var(--accent-food)` |
 | 아이콘 | lucide `search` (`14×14px`), `color:var(--text-hint)`, `position:absolute`, `left:14px`, `top:50%`, `transform:translateY(-50%)` |
 | placeholder | "직접 검색" |
 
@@ -338,7 +342,7 @@ screen-explore Step 3/3 — 버블 탐색
 | 컨테이너 | `display:flex`, `flex-direction:column` (동적 렌더) |
 | 행 | `display:flex`, `align-items:center`, `padding:11px 0`, `border-bottom:1px solid var(--border)`, `gap:10px` |
 | 식당 이름 | `flex:1`, `font-size:14px`, `font-weight:500`, `color:var(--text)` |
-| 등록 버튼 | `color:var(--primary)`, `font-size:13px`, `font-weight:600`, `background:none`, `border:none`, `padding:4px 0`, `white-space:nowrap` |
+| 등록 버튼 | `color:var(--accent-food)`, `font-size:13px`, `font-weight:600`, `background:none`, `border:none`, `padding:4px 0`, `white-space:nowrap` |
 | 등록 완료 | 텍스트 "완료", `color:var(--text-hint)`, `pointer-events:none` |
 | `:active` (버튼) | `opacity:0.5` |
 
@@ -367,30 +371,9 @@ screen-explore Step 3/3 — 버블 탐색
 | 지역 전환 | 드롭다운 변경 → 리스트 리렌더. 등록 완료 상태는 전역 Set으로 유지 |
 | 검색 등록 | 검색 결과 행의 등록 버튼도 동일한 전역 Set에 추가 |
 | 0개 등록 | fab-forward 진행 가능 (강제 아님) |
-| XP 팝업 | 등록 시 "+10 XP" 팝업 표시 (Section 4-6 참조) |
+| XP | 식당 등록 시 XP 팝업 없음. 이름만 등록 = 종합 XP 0 (XP_SYSTEM § 4-1) |
 
-### 4-6. XP 팝업
-
-목업은 등록당 "+10 XP" 팝업을 보여준다. 단, 실제 XP 적립은 XP_SYSTEM.md를 따른다.
-
-**XP_SYSTEM.md와의 정합** (Section 7-3에 전체 정리):
-- `records.status = 'checked'` (이름만 등록) → **종합 XP 0** (XP_SYSTEM § 4-1)
-- 온보딩 완료 → **+10** (§ 4-4 보너스: "온보딩 완료")
-- 첫 버블 생성 → **+5** (§ 4-4 보너스: "첫 버블 생성") — Step 2에서 트리거
-- 본 기록 플로우에서 사분면 보충 → `status = 'rated'`로 갱신 시 기록 XP 적립 시작
-
-**결론**: 목업의 "+10 XP" 팝업 (식당 등록당)은 실제 종합 XP와 불일치. 개별 등록당 종합 XP는 0. 프론트 구현 시 팝업 표시 정책은 디자인 판단에 맡기되, XP_SYSTEM 원칙 변경이 아님을 명확히 한다.
-
-| 항목 | 스타일 |
-|------|--------|
-| 요소 | `position:fixed`, `z-index:999`, `pointer-events:none` |
-| 텍스트 | "+N XP", `font-size:13px`, `font-weight:800`, `color:var(--brand)` (#FF6038) |
-| 위치 | 등록 버튼의 `getBoundingClientRect()` 기준 상단 |
-| 애니메이션 | `0→40%`: `translateY(0→-18px)`, `scale(1→1.2)`, `opacity:1` |
-| | `40→100%`: `translateY(-18→-40px)`, `scale(1.2→0.7)`, `opacity:1→0` |
-| | duration: `0.9s ease`, 종료 후 DOM 제거 |
-
-### 4-7. 데이터 저장
+### 4-6. 데이터 저장
 
 ```sql
 -- 식당 등록 (이름만, 평가 없음)
@@ -402,7 +385,7 @@ VALUES (:user_id, :restaurant_id, 'restaurant', 'checked');
 
 > `status = 'checked'` 사용 (DATA_MODEL.md 정의: `'checked' | 'rated' | 'draft'`). 본 기록 플로우(RECORD_FLOW)에서 사분면/상황태그 보충 시 `'rated'`로 변경.
 
-### 4-8. 하단 고정 안내
+### 4-7. 하단 고정 안내
 
 ```
 지금은 등록만 하고,
@@ -477,7 +460,7 @@ VALUES (:user_id, :restaurant_id, 'restaurant', 'checked');
 
 | 이름 | lucide 아이콘 | 아이콘 색상 | 설명 |
 |------|-------------|-----------|------|
-| 가족 | `home` | `var(--primary)` (#C17B5E) | 우리 가족만의 맛집 지도 |
+| 가족 | `home` | `var(--accent-food)` (#C17B5E) | 우리 가족만의 맛집 지도 |
 | 친구 | `users` | `var(--accent-social)` (#7A9BAE) | 친구들과 찐맛집 공유 |
 | 직장동료 | `briefcase` | `var(--caution)` (#C9A96E) | 점심 맛집 같이 모으기 |
 
@@ -497,11 +480,21 @@ VALUES (:user_id, :restaurant_id, 'restaurant', 'checked');
 
 | 항목 | 규칙 |
 |------|------|
-| 추가 | 탭 → "완료"로 변경, `.registered` 클래스 추가, XP 팝업 (목업: +20). 실제 XP: 첫 버블만 +5 (§ 4-4 보너스), 이후 0 |
+| 추가 | 탭 → "완료"로 변경, `.registered` 클래스 추가, "+5 XP" 팝업 표시 (첫 버블 생성 보너스 § 4-4). 2개째부터는 실제 XP 0이지만 팝업 동일 표시 |
 | 중복 | 전역 `Set<string>` (버블 이름 기준), 이미 생성된 템플릿은 `pointer-events:none` |
 | 0개 생성 | fab-forward 진행 가능 |
 | 커스텀 이름 | 온보딩에서는 불가. 홈 진입 후 버블 설정에서 이름/설명 변경 |
 | `.selected` 상태 | CSS에 정의되어 있으나 목업 JS에서 미사용. 향후 선택 피드백으로 활용 가능 |
+
+**XP 팝업 애니메이션** (버블 추가 시):
+
+| 항목 | 스타일 |
+|------|--------|
+| 요소 | `position:fixed`, `z-index:999`, `pointer-events:none` |
+| 텍스트 | "+5 XP", `font-size:13px`, `font-weight:800`, `color:var(--brand)` (#FF6038) |
+| 위치 | 버튼의 `getBoundingClientRect()` 기준 상단 |
+| 애니메이션 | `0→40%`: `translateY(0→-18px)`, `scale(1→1.2)`, `opacity:1` → `40→100%`: `translateY(-40px)`, `scale(0.7)`, `opacity:0` |
+| duration | `0.9s ease`, 종료 후 DOM 제거 |
 
 ### 5-5. 데이터 저장
 
@@ -826,9 +819,8 @@ VALUES (:bubble_id, :user_id, 'owner', 'active');
 
 **온보딩 완료 시 최대 종합 XP**: 10 (온보딩 완료) + 5 (첫 버블 생성) = **15 XP**
 
-> - 목업의 "+10 XP" (식당 등록) / "+20 XP" (버블 추가) 팝업은 **시각적 인센티브 피드백**. 실제 종합 XP 적립과 불일치.
-> - 프론트 구현 시: (A) 실제 XP만 표시하거나, (B) 시각적 팝업을 유지하되 별도 "onboarding credit" 라벨로 구분. 디자인 결정 필요.
-> - 버블 생성 자체는 반복 XP 이벤트가 아님. 첫 번째만 +5 보너스.
+> - 목업은 XP_SYSTEM과 정합: 식당 등록 시 XP 팝업 없음 (0 XP), 버블 생성 시 "+5 XP" 팝업 표시.
+> - 버블 생성 XP 팝업은 모든 추가에 동일하게 표시되나, 실제 종합 XP는 첫 번째만 +5 보너스 적립.
 
 ### 7-4. users 테이블 업데이트
 

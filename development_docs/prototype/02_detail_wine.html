@@ -16,10 +16,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --caution: #C9A96E;
@@ -243,7 +243,7 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-food);
     color: #fff;
     font-size: 12px;
     font-weight: 700;
@@ -396,7 +396,7 @@
     color: var(--text);
     line-height: 1.2;
   }
-  .detail-name.wine-color { color: var(--wine); }
+  .detail-name.wine-color { color: var(--accent-wine); }
   .detail-sub {
     font-size: 11px;
     color: var(--text-sub);
@@ -458,9 +458,9 @@
     font-size: 24px;
     font-weight: 800;
     line-height: 1;
-    color: var(--primary);
+    color: var(--accent-food);
   }
-  .score-card-num.wine-color { color: var(--wine); }
+  .score-card-num.wine-color { color: var(--accent-wine); }
   .score-card-num.empty { color: var(--border-bold); font-size: 18px; }
   .score-card-sub {
     font-size: 9px;
@@ -531,9 +531,9 @@
   .bubble-score-val {
     font-size: 16px;
     font-weight: 800;
-    color: var(--primary);
+    color: var(--accent-food);
   }
-  .bubble-score-val.wine-color { color: var(--wine); }
+  .bubble-score-val.wine-color { color: var(--accent-wine); }
 
   /* ── Row 3: Badges ── */
   .badge-row {
@@ -555,7 +555,7 @@
     font-weight: 600;
     line-height: 1.2;
   }
-  .badge-wine-class { background: var(--wine-light); color: var(--wine); border: 1px solid #DDD6E3; }
+  .badge-wine-class { background: var(--accent-wine-light); color: var(--accent-wine); border: 1px solid #DDD6E3; }
   .badge-vivino { background: #FBF0F0; color: #9B2335; border: 1px solid #E8D0D0; }
   .badge-ws { background: #F5F0E8; color: #8B7355; border: 1px solid #E0D8C8; }
 
@@ -595,11 +595,11 @@
     position: absolute;
     left: 6px; top: 8px; bottom: 8px;
     width: 2px;
-    background: linear-gradient(to bottom, var(--primary), #D4A089, transparent);
+    background: linear-gradient(to bottom, var(--accent-food), #D4A089, transparent);
     border-radius: 2px;
   }
   .timeline.wine-timeline::before {
-    background: linear-gradient(to bottom, var(--wine), #C0B3CA, transparent);
+    background: linear-gradient(to bottom, var(--accent-wine), #C0B3CA, transparent);
   }
   .timeline-item {
     position: relative;
@@ -612,9 +612,9 @@
     left: -17px; top: 4px;
     width: 12px; height: 12px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-food);
     border: 2px solid var(--bg);
-    box-shadow: 0 0 0 2px var(--primary);
+    box-shadow: 0 0 0 2px var(--accent-food);
   }
   .timeline-date {
     font-size: 11px;
@@ -647,7 +647,7 @@
   .timeline-score {
     font-size: 13px;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--accent-food);
     display: inline;
     margin-right: 6px;
   }
@@ -731,7 +731,7 @@
     font-size: 11px;
     font-weight: 800;
     z-index: 10;
-    background: var(--wine);
+    background: var(--accent-wine);
     border: 3px solid #DDD6E3;
     box-shadow: 0 2px 10px rgba(139,115,150,0.4);
   }
@@ -813,7 +813,7 @@
   }
   .rest-card-h .r-name { font-size: 11px; font-weight: 600; color: var(--text); }
   .rest-card-h .r-score { font-size: 11px; color: var(--text-sub); }
-  .rest-card-h .r-score b { color: var(--primary); }
+  .rest-card-h .r-score b { color: var(--accent-food); }
 
   /* =====================
      BUBBLE RECORDS
@@ -835,9 +835,9 @@
     transition: all 0.2s;
   }
   .filter-chip.wine-active {
-    background: var(--wine-light);
-    border-color: var(--wine);
-    color: var(--wine);
+    background: var(--accent-wine-light);
+    border-color: var(--accent-wine);
+    color: var(--accent-wine);
   }
   .bubble-card {
     background: var(--bg-card);
@@ -864,8 +864,8 @@
     font-weight: 700;
     color: #fff;
   }
-  .av1 { background: linear-gradient(135deg, var(--primary), #D4A089); }
-  .av2 { background: linear-gradient(135deg, var(--wine), #A08DAB); }
+  .av1 { background: linear-gradient(135deg, var(--accent-food), #D4A089); }
+  .av2 { background: linear-gradient(135deg, var(--accent-wine), #A08DAB); }
   .av3 { background: linear-gradient(135deg, var(--accent-social), #9BB5C4); }
   .bubble-user { flex: 1; }
   .bubble-name { font-size: 12px; font-weight: 600; color: var(--text); }
@@ -873,9 +873,9 @@
   .bubble-score {
     font-size: 14px;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--accent-food);
   }
-  .bubble-score.wine { color: var(--wine); }
+  .bubble-score.wine { color: var(--accent-wine); }
   .bubble-comment {
     font-size: 12px;
     color: var(--text-sub);
@@ -900,7 +900,7 @@
     gap: 3px;
     cursor: pointer;
   }
-  .reaction:hover { color: var(--wine); }
+  .reaction:hover { color: var(--accent-wine); }
 
   /* =====================
      WINE FACT TABLE
@@ -932,12 +932,12 @@
   }
   .pairing-tag {
     padding: 5px 12px;
-    background: var(--wine-light);
+    background: var(--accent-wine-light);
     border: 1px solid #DDD6E3;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
-    color: var(--wine);
+    color: var(--accent-wine);
   }
 
   /* Wine — vertical (portrait) thumbnail */
@@ -1250,7 +1250,7 @@ MARGAUX</span>
           <div class="bubble-expand" id="wine-bubbles">
             <div class="bubble-expand-inner">
               <div class="bubble-score-row">
-                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--accent-wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
                 <div>
                   <div class="bubble-score-name">와인 동호회</div>
                   <div class="bubble-score-meta">3명 평가</div>
@@ -1258,7 +1258,7 @@ MARGAUX</span>
                 <div class="bubble-score-val wine-color">96</div>
               </div>
               <div class="bubble-score-row">
-                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--accent-food);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
                 <div>
                   <div class="bubble-score-name">직장 맛집</div>
                   <div class="bubble-score-meta">2명 평가</div>
@@ -1288,15 +1288,15 @@ MARGAUX</span>
             <span class="section-title">내 와인 지도</span>
             <span class="section-meta">리뷰한 와인 중 위치</span>
           </div>
-          <div class="quadrant-wrap" style="background: var(--wine-light); border-color: #DDD6E3;">
+          <div class="quadrant-wrap" style="background: var(--accent-wine-light); border-color: #DDD6E3;">
             <div class="quadrant-chart" style="border-color: #DDD6E3;">
               <div class="quadrant-inner">
                 <div class="crosshair-h" style="background: #DDD6E3;"></div>
                 <div class="crosshair-v" style="background: #DDD6E3;"></div>
-                <span class="axis-label ax-left" style="color: var(--wine);">산미 낮음</span>
-                <span class="axis-label ax-right" style="color: var(--wine);">산미 높음</span>
-                <span class="axis-label ax-top" style="color: var(--wine);">Full Body</span>
-                <span class="axis-label ax-bottom" style="color: var(--wine);">Light Body</span>
+                <span class="axis-label ax-left" style="color: var(--accent-wine);">산미 낮음</span>
+                <span class="axis-label ax-right" style="color: var(--accent-wine);">산미 높음</span>
+                <span class="axis-label ax-top" style="color: var(--accent-wine);">Full Body</span>
+                <span class="axis-label ax-bottom" style="color: var(--accent-wine);">Light Body</span>
 
                 <!-- Reference dots: other reviewed wines (semi-transparent) -->
                 <div class="q-dot ref" style="left: 35%; top: 62%;" title="Cloudy Bay SB · 85점">85</div>
@@ -1313,7 +1313,7 @@ MARGAUX</span>
 
                 <!-- Current wine: prominent -->
                 <div class="q-dot current" style="left: 58%; top: 26%;" title="Chateau Margaux · 91점">91</div>
-                <span class="q-dot-label current-label" style="left: 58%; top: calc(26% + 24px); color: var(--wine);">Ch. Margaux</span>
+                <span class="q-dot-label current-label" style="left: 58%; top: calc(26% + 24px); color: var(--accent-wine);">Ch. Margaux</span>
               </div>
             </div>
             <div class="quadrant-caption">
@@ -1347,13 +1347,13 @@ MARGAUX</span>
           </div>
           <div class="timeline wine-timeline">
             <div class="timeline-item">
-              <div class="timeline-dot" style="background: var(--wine); box-shadow: 0 0 0 2px var(--wine);"></div>
+              <div class="timeline-dot" style="background: var(--accent-wine); box-shadow: 0 0 0 2px var(--accent-wine);"></div>
               <div class="timeline-date">
                 2026.03.10
                 <span class="tag-chip chip-pairing">페어링</span>
               </div>
               <div>
-                <span class="timeline-score" style="color: var(--wine);">94점</span>
+                <span class="timeline-score" style="color: var(--accent-wine);">94점</span>
                 <span class="timeline-comment">"스테이크와 환상 궁합"</span>
               </div>
               <div class="timeline-place">
@@ -1439,7 +1439,7 @@ MARGAUX</span>
             <div class="bubble-top">
               <div class="avatar av2">이</div>
               <div class="bubble-user">
-                <div class="bubble-name">이민준</div>
+                <div class="bubble-name">이민준 <span style="font-size:11px;font-weight:500;color:#8B7396;background:#F0ECF3;padding:1px 6px;border-radius:4px;margin-left:4px">보르도 Lv.6</span></div>
                 <div class="bubble-bubble-name">와인 모임 버블</div>
               </div>
               <div class="bubble-score wine">95점</div>
@@ -1448,7 +1448,7 @@ MARGAUX</span>
             <div class="bubble-footer">
               <span class="bubble-meta">디캔팅 · 2일 전</span>
               <div class="bubble-reactions">
-                <span class="reaction" style="color: var(--wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 12</span>
+                <span class="reaction" style="color: var(--accent-wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 12</span>
                 <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 5</span>
               </div>
             </div>
@@ -1457,7 +1457,7 @@ MARGAUX</span>
             <div class="bubble-top">
               <div class="avatar av3">최</div>
               <div class="bubble-user">
-                <div class="bubble-name">최지현</div>
+                <div class="bubble-name">최지현 <span style="font-size:11px;font-weight:500;color:#7A9BAE;background:#EDF2F5;padding:1px 6px;border-radius:4px;margin-left:4px">보르도 Lv.4</span></div>
                 <div class="bubble-bubble-name">소믈리에 버블</div>
               </div>
               <div class="bubble-score wine">89점</div>
@@ -1466,7 +1466,7 @@ MARGAUX</span>
             <div class="bubble-footer">
               <span class="bubble-meta">페어링 · 5일 전</span>
               <div class="bubble-reactions">
-                <span class="reaction" style="color: var(--wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 7</span>
+                <span class="reaction" style="color: var(--accent-wine);"><i data-lucide="heart" style="width:12px;height:12px;"></i> 7</span>
                 <span class="reaction"><i data-lucide="message-circle" style="width:12px;height:12px;"></i> 3</span>
               </div>
             </div>
@@ -1551,7 +1551,7 @@ MARGAUX</span>
           <div class="bubble-expand" id="wine-empty-bubbles">
             <div class="bubble-expand-inner">
               <div class="bubble-score-row">
-                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
+                <div class="bubble-score-icon" style="background:#F0ECF3;color:var(--accent-wine);"><i data-lucide="wine" style="width:12px;height:12px;"></i></div>
                 <div>
                   <div class="bubble-score-name">와인 동호회</div>
                   <div class="bubble-score-meta">3명 평가</div>
@@ -1559,7 +1559,7 @@ MARGAUX</span>
                 <div class="bubble-score-val wine-color">96</div>
               </div>
               <div class="bubble-score-row">
-                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--primary);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
+                <div class="bubble-score-icon" style="background:#F5EDE8;color:var(--accent-food);"><i data-lucide="utensils-crossed" style="width:12px;height:12px;"></i></div>
                 <div>
                   <div class="bubble-score-name">직장 맛집</div>
                   <div class="bubble-score-meta">2명 평가</div>
@@ -1658,14 +1658,14 @@ MARGAUX</span>
               <button class="filter-chip wine-active" onclick="toggleFilterWine(this)">전체</button>
               <button class="filter-chip" onclick="toggleFilterWine(this)">와인 동호회</button>
             </div>
-            <div class="bubble-card" style="border-color:var(--wine);">
+            <div class="bubble-card" style="border-color:var(--accent-wine);">
               <div class="bubble-top">
                 <div class="avatar av2">박</div>
                 <div class="bubble-user">
                   <div class="bubble-name">박소연</div>
                   <div class="bubble-bubble-name">와인 동호회</div>
                 </div>
-                <div class="bubble-score" style="color:var(--wine);">96점</div>
+                <div class="bubble-score" style="color:var(--accent-wine);">96점</div>
               </div>
               <div class="bubble-comment">"보르도 클래식의 정수. 2018 빈티지 최고"</div>
               <div class="bubble-footer">

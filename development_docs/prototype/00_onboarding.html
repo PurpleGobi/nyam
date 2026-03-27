@@ -15,10 +15,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --radius: 16px;
@@ -131,7 +131,7 @@
   .fab-forward {
     position:absolute; bottom:28px; right:16px; z-index:85;
     width:44px; height:44px; border-radius:50%;
-    background:var(--primary); border:none;
+    background:var(--accent-food); border:none;
     box-shadow:0 3px 16px rgba(193,123,94,0.4);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; color:#fff; transition:transform 0.15s;
@@ -235,7 +235,7 @@
   /* Register button in card */
   .ob-register-btn {
     padding:4px 0; border:none; background:none;
-    color:var(--primary); font-size:13px; font-weight:600;
+    color:var(--accent-food); font-size:13px; font-weight:600;
     cursor:pointer; transition:opacity 0.15s;
     white-space:nowrap; font-family:inherit;
   }
@@ -287,7 +287,7 @@
     font-size:14px; color:var(--text); outline:none;
     box-sizing:border-box; transition:border-color 0.2s;
   }
-  .ob-search:focus { border-color:var(--primary); }
+  .ob-search:focus { border-color:var(--accent-food); }
   .ob-search-wrap {
     position:relative;
   }
@@ -307,7 +307,7 @@
     transition:all 0.15s; user-select:none; min-width:100px;
   }
   .nyam-select:hover { border-color:var(--border-bold); }
-  .nyam-select.open { border-color:var(--primary); }
+  .nyam-select.open { border-color:var(--accent-food); }
   .nyam-select-value { flex:1; }
   .nyam-select-arrow {
     color:var(--text-hint); transition:transform 0.2s; flex-shrink:0;
@@ -330,7 +330,7 @@
     text-align:left; font-family:inherit;
   }
   .nyam-dropdown-item:hover { background:var(--bg); }
-  .nyam-dropdown-item.selected { color:var(--primary); font-weight:600; }
+  .nyam-dropdown-item.selected { color:var(--accent-food); font-weight:600; }
 
   /* Bubble detail popup */
   .popup-overlay {
@@ -415,10 +415,10 @@
     transition:background 0.3s;
   }
   .ob-steps .step-bar.active {
-    background:var(--primary);
+    background:var(--accent-food);
   }
   .ob-steps .step-bar.done {
-    background:var(--primary); opacity:0.45;
+    background:var(--accent-food); opacity:0.45;
   }
 
   /* XP Pop animation */
@@ -516,7 +516,7 @@
         <div style="padding:0 24px 56px;flex-shrink:0;text-align:center;">
           <button onclick="startOnboarding()" style="
             background:none;border:none;cursor:pointer;
-            font-size:15px;font-weight:600;color:var(--primary);
+            font-size:15px;font-weight:600;color:var(--accent-food);
             font-family:inherit;letter-spacing:-0.1px;
             padding:12px 24px;
             transition:opacity 0.15s;
@@ -639,7 +639,7 @@
           <!-- Bubble templates -->
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
             <div class="bubble-template">
-              <div class="bt-icon"><i data-lucide="home" style="width:22px;height:22px;color:var(--primary);"></i></div>
+              <div class="bt-icon"><i data-lucide="home" style="width:22px;height:22px;color:var(--accent-food);"></i></div>
               <div class="bt-info">
                 <div class="bt-name">가족</div>
                 <div class="bt-desc">우리 가족만의 맛집 지도</div>
@@ -929,7 +929,7 @@
     registeredRestaurants.add(name);
     btnEl.classList.add('registered');
     btnEl.textContent = '완료';
-    addXP(10, btnEl);
+    // 이름만 등록 = XP 0 (XP_SYSTEM §4-1). 첫 기록 보너스(+5)는 점수 기록 시 발생
   }
 
   function showSearchResults() {
@@ -970,7 +970,7 @@
     createdBubbles.add(name);
     btnEl.classList.add('registered');
     btnEl.textContent = '완료';
-    addXP(20, btnEl);
+    addXP(5, btnEl); // 첫 버블 생성 보너스 +5 (XP_SYSTEM §4-4)
   }
 
   // =====================

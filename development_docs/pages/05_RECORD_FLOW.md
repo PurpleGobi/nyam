@@ -1,6 +1,7 @@
 # RECORD_FLOW — 기록 플로우
 
 > depends_on: RATING_ENGINE, SEARCH_REGISTER, DATA_MODEL, DESIGN_SYSTEM, XP_SYSTEM
+> affects: HOME, RESTAURANT_DETAIL, WINE_DETAIL, RECORD_DETAIL
 > prototype: `prototype/01_home.html` (screen-add-restaurant, screen-add-wine, screen-rest-record, screen-wine-record, screen-add-success)
 
 ---
@@ -22,25 +23,20 @@
 
 ## 2. 진입점
 
-### 홈 FAB (+) → 바텀시트
+### 홈 FAB (+) → 현재 탭 기반 직접 진입
 
 ```
 홈 [+] 탭
     ↓
-┌──────────────────────────────┐
-│ ─── (핸들)                    │  바텀시트 (--bg-elevated)
-│       무엇을 기록할까요?       │  17px weight 700
-│                              │
-│  🍽  식당 기록                │  → screen-add-restaurant
-│  🍷  와인 기록                │  → screen-add-wine
-└──────────────────────────────┘
+현재 탭 판별 (currentHomeTab)
+    ↓
+┌─ 식당 탭 ──→ screen-add-restaurant (카메라 촬영)
+│
+└─ 와인 탭 ──→ screen-add-wine (라벨 촬영)
 ```
 
-| 속성 | 값 |
-|------|-----|
-| 오버레이 | `rgba(61,56,51,0.3)` + blur(4px) |
-| 바텀시트 | `--bg-elevated`, radius `20px 20px 0 0`, padding `16px 20px 36px` |
-| 트랜지션 | translateY(100%) → translateY(0), 0.3s cubic-bezier |
+- 바텀시트 없이 현재 활성 탭에 따라 바로 해당 기록 플로우 진입
+- FAB 스펙: 44×44px, glassmorphism `rgba(248,246,243,0.88)` + blur(12px), z-index 85 (DESIGN_SYSTEM 참조)
 
 ### 상세 페이지 FAB (+)
 
@@ -468,7 +464,7 @@ DB에서 사용자 기록 조회
   satisfaction: number,        // 1~100 (사분면 점 크기 = 만족도)
   axis_x: number,              // DECIMAL(5,2) 0~100. 가격%(식당) / 산미%(와인)
   axis_y: number,              // DECIMAL(5,2) 0~100. 분위기%(식당) / 바디%(와인)
-  scene?: string,              // VARCHAR(20) 단일 값. 식당: solo|romantic|friends|family|business|drinks
+  scene?: string,              // VARCHAR(20) 단일 값. 식당: solo|romantic|friends|family|business|drinks / 와인: solo|gathering|pairing|gift|tasting|decanting (와인은 기록 플로우에서 미수집 — 풍성화 시 추가)
   comment?: string,            // VARCHAR(200) 한줄 코멘트
   companions?: string[],       // TEXT[] 동반자 이름 (⚠️ 비공개 — 본인만 열람)
   companion_count?: number,    // INT 1|2|3|4|5+ (필터/통계용, companions와 별도)

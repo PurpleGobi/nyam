@@ -92,7 +92,7 @@
 
 > UI 라벨: "기록은 어디까지?" (`.prv-section-sub`)
 > 비공개 선택 시 기록 범위 셀렉터 숨김, 버블 공유 불가
-> `privacy_records = 'private'`는 UI에서 직접 설정 불가 — `privacy_profile = 'private'` 선택 시 서버에서 자동 적용
+> `privacy_records`는 `'all'` / `'shared_only'` 2가지만 존재 — "완전 비공개"는 `privacy_profile = 'private'`로 제어 (records 값과 무관하게 모든 기록 비공개)
 
 **상태 요약 텍스트** (SegmentControl 아래 `.prv-summary` 박스):
 
@@ -268,14 +268,15 @@
 |------|------|
 | `all` | 프로필 방문자에게 내 기록 목록 전체 공개 |
 | `shared_only` | 버블에 공유한 기록만 해당 버블 멤버에게 노출. 미공유 기록은 나만 열람 |
-| `private` | 모든 기록이 나만 열람. 버블 공유 자체 불가 |
+
+> `privacy_records`에 `'private'` 값은 없음. 완전 비공개는 `privacy_profile = 'private'`로 달성 — 프로필 자체가 비공개이므로 기록도 자동으로 비공개, 버블 공유 불가
 
 ### 3-2. 기록 노출 매트릭스
 
 > 행: 열람자 유형 / 열: 기록 공개 설정
 
-| 열람자 | `all` | `shared_only` | `private` |
-|--------|-------|---------------|-----------|
+| 열람자 | `all` | `shared_only` | `privacy_profile = 'private'` |
+|--------|-------|---------------|-------------------------------|
 | **나 자신** | 전체 | 전체 | 전체 |
 | **같은 버블 멤버** (공유된 기록) | O | O | — (공유 불가) |
 | **같은 버블 멤버** (미공유 기록) | O (프로필 열람 시) | X | X |
@@ -319,27 +320,27 @@
 | `public` | `auto_approve` | O | 자유 열람 | 기준 충족 시 자동 가입 (min_records, min_level) |
 | `public` | `open` | O | 자유 열람 | 누구나 즉시 가입 |
 
-### 4-2. 버블 내 기록 노출 (`bubbles.exposure_level`)
+### 4-2. 버블 내 기록 노출 (`bubbles.content_visibility`)
 
 **버블에 공유된 기록이 비멤버에게 어떻게 보이는가:**
 
-| exposure_level | 버블 멤버 | 비멤버 (상세 페이지 L9) |
-|----------------|----------|----------------------|
+| content_visibility | 버블 멤버 | 비멤버 (상세 페이지 L9) |
+|--------------------|----------|----------------------|
 | `rating_only` | 점수 + 한줄평 + 사진 + 메뉴 전체 | 점수만 (아바타 + Lv + 만족도 숫자) |
 | `rating_and_comment` | 점수 + 한줄평 + 사진 + 메뉴 전체 | 점수 + 한줄평 |
 
-> `exposure_level`은 식당/와인 상세 페이지의 **L9 소셜 레이어**에서 비멤버에게 보이는 범위를 제어
+> `content_visibility`는 식당/와인 상세 페이지의 **L9 소셜 레이어**에서 비멤버에게 보이는 범위를 제어
 > 멤버에게는 항상 전체 공개 (공유한 시점에 동의한 것으로 간주)
 
 ### 4-3. 버블 가시성 × 기록 공개의 조합
 
-| 버블 visibility | 기록 공개 = `all` | 기록 공개 = `shared_only` | 기록 공개 = `private` |
-|-----------------|-------------------|--------------------------|----------------------|
+| 버블 visibility | 기록 공개 = `all` | 기록 공개 = `shared_only` | `privacy_profile = 'private'` |
+|-----------------|-------------------|--------------------------|-------------------------------|
 | `private` | 공유 가능, 멤버만 열람 | 공유 가능, 멤버만 열람 | 공유 불가 |
 | `public` (closed) | 공유 가능, 멤버만 열람 | 공유 가능, 멤버만 열람 | 공유 불가 |
-| `public` (open/approve) | 공유 가능, 멤버 열람 + 비멤버는 exposure_level에 따름 | 공유 가능, 동일 | 공유 불가 |
+| `public` (open/approve) | 공유 가능, 멤버 열람 + 비멤버는 content_visibility에 따름 | 공유 가능, 동일 | 공유 불가 |
 
-**핵심**: `privacy_records = 'private'`이면 어떤 버블이든 **공유 자체 차단** (공유 버튼 비활성)
+**핵심**: `privacy_profile = 'private'`이면 어떤 버블이든 **공유 자체 차단** (공유 버튼 비활성)
 
 ### 4-4. 버블 간 기록 격리
 
@@ -352,7 +353,7 @@
 ### 4-5. 한줄평 vs 버블 공유 메모
 
 - `records.comment`: **나의 한줄평** — 기록의 일부, 항상 나에게 표시
-- 버블 공유 시 이 한줄평이 `exposure_level`에 따라 멤버/비멤버에게 노출
+- 버블 공유 시 이 한줄평이 `content_visibility`에 따라 멤버/비멤버에게 노출
 - 별도의 "버블 전용 코멘트" 필드는 없음 — 한줄평이 곧 공유 텍스트
 - 한줄평 없이 공유하면 점수만 표시
 
@@ -397,7 +398,7 @@
 ```
 
 - 버블별 커스텀이 설정되면 → 버블 기본 토글 무시
-- 버블 owner의 `exposure_level`이 더 제한적이면 → 개인 설정보다 우선
+- 버블 owner의 `content_visibility`가 더 제한적이면 → 개인 설정보다 우선
 - 토글 OFF는 **외부 노출만 차단**. 나 자신은 항상 전체 열람 가능
 
 ---
@@ -514,7 +515,7 @@ SELECT:
   - 자기 자신: 항상 전체
   - privacy_records = 'all' AND privacy_profile 통과: 전체 기록
   - privacy_records = 'shared_only': bubble_shares에 존재하는 기록만 (해당 버블 멤버에게)
-  - privacy_records = 'private': 자기 자신만
+  - privacy_profile = 'private': 자기 자신만 (privacy_records 값과 무관)
   - 익명 집계 (AVG, COUNT 등): 항상 허용 (개인 식별 컬럼 제외)
 ```
 
@@ -522,7 +523,7 @@ SELECT:
 ```
 SELECT:
   - 해당 bubble_id의 멤버: 항상
-  - 비멤버 (public 버블): exposure_level에 따라 필드 제한
+  - 비멤버 (public 버블): content_visibility에 따라 필드 제한
   - 비멤버 (private/members 버블): 차단
 ```
 

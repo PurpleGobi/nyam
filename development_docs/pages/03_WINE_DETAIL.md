@@ -11,8 +11,8 @@
 | 요소 | 식당 | 와인 |
 |------|------|------|
 | 히어로 | 사진 캐러셀 (전폭, 가로) | 사진 캐러셀 + 라벨 세로 썸네일 (좌하단) |
-| 컬러 | `--primary` #C17B5E | `--wine` #8B7396 |
-| 이름 색상 | `var(--text)` (기본 텍스트) | `var(--wine)` (와인 보라) |
+| 컬러 | `--accent-food` #C17B5E | `--accent-wine` #8B7396 |
+| 이름 색상 | `var(--text)` (기본 텍스트) | `var(--accent-wine)` (와인 보라) |
 | nyam 점수 소스 | 웹+명성 (N/K/G + 미슐랭/블루리본) | Vivino+WS+명성 |
 | 사분면 축 | 가격×분위기, 색=만족도 | 산미×바디, 점=내 리뷰 와인 비교 |
 | 사분면 점 | 기록별 점, 색=만족도 | **현재 와인 hero dot + 다른 리뷰 와인 ref dots** |
@@ -41,7 +41,7 @@
 │ │ └─────────┘                     │ │
 │ └──────────────────────────────────┘ │
 │                                      │
-│ Chateau Margaux (--wine 색상)        │  Layer 2: 정보 (일관된 레이아웃)
+│ Chateau Margaux (--accent-wine 색상)        │  Layer 2: 정보 (일관된 레이아웃)
 │ Chateau Margaux · 2018               │  생산자 · 빈티지 (detail-sub)
 │ [레드] · 보르도, 프랑스 · Cab.Sauv.  │  타입칩 + 산지 + 품종 (meta-row)
 │                                      │
@@ -72,10 +72,10 @@
 ## 3. 와인 전용 디자인 토큰
 
 ```css
-/* 핵심 와인 토큰 (목업 기준) */
---wine: #8B7396;              /* 와인 프라이머리 */
---wine-light: #F0ECF3;        /* 와인 연한 배경 */
---wine-border: #DDD6E3;       /* 와인 보더 */
+/* 핵심 와인 토큰 (DESIGN_SYSTEM + 목업 기준) */
+--accent-wine:       #8B7396;  /* 와인 액센트 */
+--accent-wine-light: #F0ECF3;  /* 와인 연한 배경 */
+--accent-wine-dim:   #DDD6E3;  /* 와인 보더/태그 배경 (목업 기준값) */
 
 /* 와인 타입 칩 색상 */
 /* 레드 */     bg: #FAF0F0; color: var(--negative, #B87272); border: #EDDBDB
@@ -87,18 +87,18 @@
 /* 디저트 */   bg: #FDF8F0; color: #C9A96E; border: #E8E0C8
 
 /* 뱃지 색상 */
-badge-wine-class: bg: var(--wine-light); color: var(--wine); border: #DDD6E3
+badge-wine-class: bg: var(--accent-wine-light); color: var(--accent-wine); border: #DDD6E3
 badge-vivino: bg: #FBF0F0; color: #9B2335; border: #E8D0D0
 badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 ```
 
 ### 점수 카드 색상 규칙
-- 내 점수, nyam 점수, 버블 점수: 모두 `var(--wine)` 색상
+- 내 점수, nyam 점수, 버블 점수: 모두 `var(--accent-wine)` 색상
 - 빈 상태: `var(--border-bold, #D4CFC8)`, font-size 18px
 
 ### 사분면 관련
 - **와인 사분면은 식당과 다름**: 개별 기록이 아닌 **다른 리뷰 와인과의 상대 위치** 표시
-- 현재 와인 = hero dot (38px, `var(--wine)`, 불투명, border 3px `#DDD6E3`)
+- 현재 와인 = hero dot (38px, `var(--accent-wine)`, 불투명, border 3px `#DDD6E3`)
 - 참고 와인 = ref dot (28px, `var(--border-bold)`, 불투명도 35%, hover 시 70%)
 - 각 dot 아래 와인명 라벨 표시
 
@@ -119,8 +119,8 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 - 섹션 메타: 12px, `var(--text-sub)`
 
 ### 디바이더
-- 주요 섹션(Layer 6~9) 사이에 8px 높이 구분선 (`#F0EDE8`)
-- Layer 5 → 5b 사이는 디바이더 없이 연속 (5b의 padding-top: 0)
+- Layer 5b 이후 모든 섹션 사이에 8px 높이 구분선 (`#F0EDE8`): 5b↔6, 6↔7, 7↔8, 8↔9
+- Layer 5 → 5b 사이만 디바이더 없이 연속 (5b의 padding-top: 0)
 
 ### 스크롤 영역
 - 상단 padding-top: 80px (top-fixed 헤더 높이만큼 밀어냄)
@@ -151,7 +151,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 **기록 유무에 관계없이 항상 동일한 구조.**
 
-- **이름**: 21px, weight 800, `color: var(--wine)` (와인은 보라색 이름)
+- **이름**: 21px, weight 800, `color: var(--accent-wine)` (와인은 보라색 이름)
 - **서브**: 생산자명 · 빈티지 (11px, `var(--text-sub)`)
 - **메타 행**: 와인타입칩 · 산지 · 품종 (12px, 한 줄)
   - 와인 타입 칩: 소형 태그 (padding 1px 7px, border-radius **4px**, font-size 10px, weight 600) — pill이 아닌 각진 형태
@@ -169,7 +169,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 - **카드 스타일**: `var(--bg-card)`, border 1px `var(--border)`, border-radius 10px, padding 8px 10px, min-height 56px, text-align center
 - **라벨**: 9px, weight 600, `var(--text-hint)`, letter-spacing 0.02em
-- **점수 숫자**: 24px, weight 800, `var(--wine)`
+- **점수 숫자**: 24px, weight 800, `var(--accent-wine)`
 - **빈 값**: 18px, `var(--border-bold)` — `—` 표시
 - **서브텍스트**: 9px, `var(--text-hint)`
 - **버블 카드**:
@@ -184,7 +184,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 - 각 행:
   - 아이콘 (24×24px 컬러 박스, lucide 아이콘)
   - 버블명 + "N명 평가" 서브텍스트
-  - 버블별 평균 점수 (16px, weight 800, `var(--wine)`)
+  - 버블별 평균 점수 (16px, weight 800, `var(--accent-wine)`)
 
 ### Layer 4: 뱃지 행
 
@@ -204,22 +204,22 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 - **축**:
   - X축: 산미 낮음 ↔ 산미 높음
   - Y축: Light Body ↔ Full Body
-  - 십자선: 중앙 50% 위치, `var(--wine-border)` 색상
-  - 축 라벨: 9px, `var(--wine)` 색상
+  - 십자선: 중앙 50% 위치, `var(--accent-wine-dim)` 색상
+  - 축 라벨: 9px, `var(--accent-wine)` 색상
 - **점 (dot)**:
-  - **현재 와인 (hero dot)**: 38×38px, `var(--wine)` 배경, border 3px `#DDD6E3`, box-shadow `0 2px 10px rgba(139,115,150,0.4)`, 점수 표시 (11px, weight 800, 흰색), z-index 10
+  - **현재 와인 (hero dot)**: 38×38px, `var(--accent-wine)` 배경, border 3px `#DDD6E3`, box-shadow `0 2px 10px rgba(139,115,150,0.4)`, 점수 표시 (11px, weight 800, 흰색), z-index 10
   - **참고 와인 (ref dot)**: 28×28px, `var(--border-bold)` 배경, border 2px `var(--border)`, 불투명도 35%, 점수 표시 (8px, weight 600, `var(--text)`), hover 시 70% + scale 1.15, z-index 5
   - 각 dot 아래 와인명 라벨 (9px, `var(--text-hint)`)
-  - 현재 와인 라벨: 10px bold, `var(--wine)` 색상
+  - 현재 와인 라벨: 10px bold, `var(--accent-wine)` 색상
 - **캡션**: info 아이콘 + "내가 리뷰한 와인과의 상대적 위치"
-- **배경**: `var(--wine-light)`, border `var(--wine-border)`
+- **배경**: `var(--accent-wine-light)`, border `var(--accent-wine-dim)`
 
 ### Layer 5b: 음식 페어링
 
 - **표시 조건**: DB 데이터이므로 기록 없어도 항상 표시
 - **섹션 헤더**: "음식 페어링"
 - **태그**: pill 형태 (padding 5px 12px, border-radius 20px)
-  - 배경: `var(--wine-light)`, border: `#DDD6E3`, 색상: `var(--wine)`
+  - 배경: `var(--accent-wine-light)`, border: `#DDD6E3`, 색상: `var(--accent-wine)`
   - font: 11px, weight 500
 - flex-wrap으로 여러 줄 가능
 
@@ -227,10 +227,10 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 
 **기록 있음**: "N회 · 최근 날짜" → 타임라인 (최신순)
 
-- **타임라인 라인**: 왼쪽 세로선, `var(--wine) → #C0B3CA → transparent` 그라디언트
+- **타임라인 라인**: 왼쪽 세로선, `var(--accent-wine) → #C0B3CA → transparent` 그라디언트
 - **각 기록**:
   - 도트 (12px 원, 이중 링 구조: `border: 2px solid var(--bg)` 흰 테 + `box-shadow: 0 0 0 2px [색상]` 외곽 링)
-    - 색상: 상황태그 색 또는 `var(--wine)` — 점수 텍스트와 동일 색상 사용
+    - 색상: 상황태그 색 또는 `var(--accent-wine)` — 점수 텍스트와 동일 색상 사용
   - 날짜 (11px) + 상황 태그 칩 (pill, padding 2px 8px, border-radius 20px, 10px weight 600, 흰색 텍스트, 상황별 배경색)
   - 점수 (13px, weight 700, 도트와 동일 색상) + 한줄평 (12px, `var(--text-sub)`)
   - **식당 연결** (와인 전용): `map-pin` 아이콘 (12px) + 식당명 (11px, `var(--text-sub)`, 탭→식당 상세)
@@ -240,6 +240,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 | 태그 | 색상 |
 |------|------|
 | 혼술 | `var(--scene-solo)` #7A9BAE |
+| 데이트 | `var(--scene-romantic)` #B8879B |
 | 페어링 | `var(--caution)` #C9A96E |
 | 모임 | `var(--scene-friends)` #7EAE8B |
 | 선물 | `var(--scene-business)` #8B7396 |
@@ -281,21 +282,22 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 - **가로 스크롤 카드** (hscroll-wrap):
   - 카드 너비: 130px, border-radius 12px
   - 사진: 60px 높이 (상단)
-  - 정보: 식당명 (11px bold) + 점수·장르 (11px)
+  - 정보: 식당명 (11px bold) + 점수·장르 (11px, 점수 bold `var(--accent-food)`)
   - 탭 → 식당 상세 (`/restaurants/[id]`)
 
 ### Layer 9: 버블 기록 (Phase 2)
 
 - **섹션 헤더**: "버블 기록" + "Phase 2"
 - **필터 칩**: 가로 배열 (전체, 와인 모임, 소믈리에 등)
-  - 활성: `bg: var(--wine-light)`, border: `var(--wine)`, color: `var(--wine)`
+  - 활성: `bg: var(--accent-wine-light)`, border: `var(--accent-wine)`, color: `var(--accent-wine)`
   - 비활성: `bg: var(--bg)`, border: `var(--border)`
 - **버블 카드**:
-  - border: `var(--wine-border)`, border-radius 12px, padding 12px
-  - 상단: 아바타 (32px 원, 그라디언트) + 유저명 + 버블명 + 점수 (14px bold, `var(--wine)`)
+  - border: `var(--accent-wine-dim)`, border-radius 12px, padding 12px
+  - 상단: 아바타 (32px 원, 그라디언트) + 유저명 + **레벨 뱃지** + 버블명 + 점수 (14px bold, `var(--accent-wine)`)
+    - 레벨 뱃지: 유저명 우측 인라인 (11px, weight 500, padding 1px 6px, border-radius 4px). 형식: `[지역] Lv.[N]`. 색상은 사용자 도메인에 따라 `--accent-wine`/`--accent-social` 등 변동
   - 본문: 한줄평 (12px, `var(--text-sub)`, line-height 1.5)
   - 하단: 메타(태그 · 시간) + 리액션(좋아요 + 댓글, lucide 아이콘 12px)
-  - 좋아요 활성: `var(--wine)` 색상
+  - 좋아요 활성: `var(--accent-wine)` 색상
   - 탭 시 살짝 축소 (scale 0.98)
 - **빈 상태**:
   - 아이콘: `message-circle` (28px, `var(--text-hint)`)

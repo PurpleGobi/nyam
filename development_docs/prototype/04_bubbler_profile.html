@@ -18,10 +18,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-food: #C17B5E;
+    --accent-food-light: #F5EDE8;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --positive: #7EAE8B;
@@ -121,13 +121,13 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 26px; font-weight: 700; color: #fff;
     border: 3px solid var(--bg);
-    box-shadow: 0 0 0 2px var(--primary);
+    box-shadow: 0 0 0 2px var(--accent-food);
   }
   .profile-level-badge {
     position: absolute; bottom: -2px; right: -4px;
     font-size: 9px; font-weight: 700;
     padding: 2px 6px; border-radius: 10px;
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     border: 2px solid var(--bg);
     white-space: nowrap;
   }
@@ -153,7 +153,7 @@
     border-radius: 20px; padding: 3px 10px;
   }
   .taste-pill.highlight {
-    background: var(--primary-light); color: var(--primary); border-color: transparent;
+    background: var(--accent-food-light); color: var(--accent-food); border-color: transparent;
   }
   .profile-actions {
     display: flex; gap: 8px; padding: 12px 20px 0;
@@ -281,7 +281,7 @@
     background: var(--bg-section); color: var(--text-sub);
     border: 1px solid var(--border);
   }
-  .taste-region-pill.top { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .taste-region-pill.top { background: var(--accent-food-light); color: var(--accent-food); border-color: transparent; }
 
   /* ===== PICKS (Letterboxd favorites) ===== */
   .picks {
@@ -345,10 +345,10 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .record-score {
-    font-size: 15px; font-weight: 800; color: var(--primary);
+    font-size: 15px; font-weight: 800; color: var(--accent-food);
     flex-shrink: 0;
   }
-  .record-score.wine { color: var(--wine); }
+  .record-score.wine { color: var(--accent-wine); }
 
   /* ===== ACTIVITY HEATMAP ===== */
   .activity {
@@ -418,9 +418,9 @@
     background: transparent; transition: background 0.2s;
   }
   .content-tab.active { color: var(--text); font-weight: 700; }
-  .content-tab.active::after { background: var(--primary); }
-  .content-tab.wine-active { color: var(--wine); font-weight: 700; }
-  .content-tab.wine-active::after { background: var(--wine); }
+  .content-tab.active::after { background: var(--accent-food); }
+  .content-tab.wine-active { color: var(--accent-wine); font-weight: 700; }
+  .content-tab.wine-active::after { background: var(--accent-wine); }
 </style>
 </head>
 <body>
@@ -537,7 +537,7 @@
           <div class="taste-category-rows">
             <div class="taste-cat-row">
               <div class="taste-cat-name">한식</div>
-              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:48%;background:var(--primary)"></div></div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:48%;background:var(--accent-food)"></div></div>
               <div class="taste-cat-pct">48%</div>
             </div>
             <div class="taste-cat-row">
@@ -678,7 +678,7 @@
           <div class="taste-category-rows">
             <div class="taste-cat-row">
               <div class="taste-cat-name">레드</div>
-              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:55%;background:var(--wine)"></div></div>
+              <div class="taste-cat-bar"><div class="taste-cat-fill" style="width:55%;background:var(--accent-wine)"></div></div>
               <div class="taste-cat-pct">55%</div>
             </div>
             <div class="taste-cat-row">
@@ -711,8 +711,8 @@
           </div>
 
           <div class="taste-region">
-            <span class="taste-region-pill" style="background:var(--wine-light);color:var(--wine);border-color:transparent;">보르도</span>
-            <span class="taste-region-pill" style="background:var(--wine-light);color:var(--wine);border-color:transparent;">부르고뉴</span>
+            <span class="taste-region-pill" style="background:var(--accent-wine-light);color:var(--accent-wine);border-color:transparent;">보르도</span>
+            <span class="taste-region-pill" style="background:var(--accent-wine-light);color:var(--accent-wine);border-color:transparent;">부르고뉴</span>
             <span class="taste-region-pill">토스카나</span>
             <span class="taste-region-pill">나파밸리</span>
           </div>

@@ -1,0 +1,428 @@
+# 1.1: 프로젝트 초기화
+
+> Next.js App Router + TypeScript strict + Tailwind v4 + shadcn/ui + Supabase 프로젝트 생성
+
+---
+
+## SSOT 출처
+
+| 문서 | 참조 섹션 |
+|------|----------|
+| `00_PRD.md` | 7 기술 스택 |
+| `systems/DESIGN_SYSTEM.md` | 0 Brand & 로고, 1 컬러 토큰, 2 타이포그래피 |
+| `CLAUDE.md` | 기술 스택, Clean Architecture |
+
+## 선행 조건
+
+- [ ] Node.js 20+ 설치 확인 (`node -v`)
+- [ ] pnpm 설치 확인 (`pnpm -v`)
+- [ ] Supabase 프로젝트 생성 완료 (대시보드에서 Project URL + anon key + service_role key 확보)
+- [ ] Supabase CLI 설치 (`brew install supabase/tap/supabase` 또는 `npm i -g supabase`)
+
+## 구현 범위
+
+### 생성할 파일 목록
+
+| 파일 경로 | 역할 |
+|----------|------|
+| `package.json` | 의존성 + 스크립트 정의 |
+| `tsconfig.json` | TypeScript strict 설정 |
+| `next.config.ts` | Next.js App Router 설정 (port 7911) |
+| `postcss.config.mjs` | PostCSS (Tailwind v4) |
+| `.env.local` | Supabase 환경변수 (gitignore 대상) |
+| `.gitignore` | Git 무시 파일 |
+| `src/app/layout.tsx` | 루트 레이아웃 (Pretendard Variable + Comfortaa 폰트) |
+| `src/app/globals.css` | Tailwind directives + 폰트 import + CSS 변수 초기화 |
+| `src/app/page.tsx` | 루트 페이지 (임시 헬스 체크용) |
+| `src/shared/utils/cn.ts` | clsx + tailwind-merge 유틸 |
+| `components.json` | shadcn/ui 설정 |
+
+### 생성하지 않는 것
+
+- DB 스키마 (1.2에서)
+- RLS 정책 (1.3에서)
+- Supabase Auth 설정 (1.4에서)
+- 디자인 토큰 CSS 변수 전체 (1.5에서)
+- Clean Architecture 폴더 구조 (1.6에서)
+
+---
+
+## 상세 구현 지침
+
+### 1. 프로젝트 생성
+
+```bash
+pnpm create next-app@latest nyam --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-pnpm
+cd nyam
+```
+
+### 2. package.json 핵심 의존성
+
+```json
+{
+  "name": "nyam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 7911",
+    "build": "next build",
+    "start": "next start -p 7911",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19",
+    "@supabase/supabase-js": "^2",
+    "@supabase/ssr": "^0.5",
+    "lucide-react": "^0.468",
+    "class-variance-authority": "^0.7",
+    "clsx": "^2",
+    "tailwind-merge": "^2"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/node": "^22",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "@eslint/eslintrc": "^3",
+    "supabase": "^2"
+  }
+}
+```
+
+실행:
+```bash
+pnpm install
+```
+
+### 3. tsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+규칙:
+- `strict: true` 필수
+- `any` 타입 사용 금지 (컨벤션)
+- `@/*` 절대 경로 사용
+
+### 4. next.config.ts
+
+```typescript
+import type { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
+}
+
+export default nextConfig
+```
+
+### 5. postcss.config.mjs
+
+```javascript
+/** @type {import('postcss-load-config').Config} */
+const config = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+
+export default config
+```
+
+### 6. .env.local
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
+
+주의사항:
+- `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용. 클라이언트 코드에서 절대 import 금지
+- `NEXT_PUBLIC_` 접두사가 있는 키만 클라이언트에 노출
+- `.env.local`은 `.gitignore`에 반드시 포함
+
+### 7. .gitignore
+
+```gitignore
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# supabase
+supabase/.temp/
+```
+
+### 8. 폰트 설정
+
+#### src/app/globals.css
+
+```css
+/* Pretendard Variable — 본문 전체 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+/* Comfortaa — 로고 전용 */
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap');
+
+@import "tailwindcss";
+
+/* 폰트 CSS 변수 */
+:root {
+  --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-logo: 'Comfortaa', cursive;
+}
+
+/* 기본 폰트 적용 */
+html {
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+```
+
+#### src/app/layout.tsx
+
+```tsx
+import type { Metadata, Viewport } from 'next'
+import './globals.css'
+
+export const metadata: Metadata = {
+  title: 'nyam',
+  description: '나만의 맛 컬렉션',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="ko">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+### 9. 루트 페이지 (임시)
+
+#### src/app/page.tsx
+
+```tsx
+export default function HomePage() {
+  return (
+    <main
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        fontFamily: 'var(--font)',
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: 'var(--font-logo)',
+          fontWeight: 700,
+          fontSize: '42px',
+          letterSpacing: '-1px',
+          background: 'linear-gradient(135deg, #FF6038, #8B7396)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        nyam
+      </h1>
+      <p style={{ marginTop: '8px', color: '#8C8580', fontSize: '15px' }}>
+        프로젝트 초기화 완료
+      </p>
+    </main>
+  )
+}
+```
+
+### 10. cn 유틸리티
+
+#### src/shared/utils/cn.ts
+
+```typescript
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+```
+
+### 11. shadcn/ui 초기화
+
+```bash
+pnpm dlx shadcn@latest init
+```
+
+초기화 시 선택:
+- Style: New York
+- Base color: Neutral
+- CSS variables: Yes
+- `components.json` 자동 생성
+
+생성 후 `components.json`의 `aliases.utils` 값을 확인하고, `@/shared/utils/cn`으로 변경:
+
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@/presentation/components/ui",
+    "utils": "@/shared/utils/cn",
+    "ui": "@/presentation/components/ui",
+    "lib": "@/shared/utils",
+    "hooks": "@/presentation/hooks"
+  },
+  "iconLibrary": "lucide"
+}
+```
+
+### 12. Supabase 로컬 초기화
+
+```bash
+supabase init
+```
+
+이 명령은 `supabase/` 디렉토리와 `supabase/config.toml`을 생성한다.
+
+### 13. ESLint 설정
+
+`eslint.config.mjs`:
+
+```javascript
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { FlatCompat } from '@eslint/eslintrc'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+})
+
+const eslintConfig = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
+    rules: {
+      'no-console': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+]
+
+export default eslintConfig
+```
+
+---
+
+## 검증 체크리스트
+
+- [ ] `pnpm install` 성공 (에러 없음)
+- [ ] `pnpm dev` 실행 후 http://localhost:7911 접속 가능
+- [ ] 브라우저에서 "nyam" 로고가 Comfortaa 폰트로 표시됨 (그라데이션 적용)
+- [ ] 브라우저에서 "프로젝트 초기화 완료" 텍스트가 Pretendard 폰트로 표시됨
+- [ ] `pnpm build` 에러 없음
+- [ ] `pnpm lint` 경고 0개
+- [ ] `tsconfig.json`에 `"strict": true` 확인
+- [ ] `.env.local`이 `.gitignore`에 포함 확인
+- [ ] `supabase/` 디렉토리 생성 확인
+- [ ] `components.json` 생성 확인
+- [ ] `src/shared/utils/cn.ts` 존재 확인
+- [ ] `no-console` ESLint 규칙 error 레벨 확인
+- [ ] `@typescript-eslint/no-explicit-any` ESLint 규칙 error 레벨 확인

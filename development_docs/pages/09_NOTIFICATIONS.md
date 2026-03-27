@@ -20,7 +20,7 @@
 │              │ 기록이 쌓이고 있어요 │   │
 │              │          3시간 전  │   │
 │              │───────────────────│   │
-│              │ 🫧 김영수님 가입신청 ●│   │  버블 가입신청 (primary)
+│              │ 🫧 김영수님 가입신청 ●│   │  버블 가입신청 (accent-food)
 │              │ '을지로 맛탐정 클럽' │   │
 │              │ [수락] [거절] 1일 전│   │
 │              │───────────────────│   │
@@ -129,7 +129,7 @@ duration: 0.16s ease
 | 유형 | 아이콘 | 아이콘 색상 | 제목 | 본문 | 탭 이동 | 인라인 액션 |
 |------|--------|------------|------|------|---------|------------|
 | 레벨업 | `trophy` | `caution` | {축 이름} 레벨 {level} 달성! | 기록이 쌓이고 있어요 | 프로필 | — |
-| 버블 가입신청 | `circle-dot` | `primary` | {nickname}님이 '{bubble_name}' 가입을 신청했어요 | — | 버블 상세 | [수락] [거절] |
+| 버블 가입신청 | `circle-dot` | `accent-food` | {nickname}님이 '{bubble_name}' 가입을 신청했어요 | — | 버블 상세 | [수락] [거절] |
 | 팔로우 요청 | `user-plus` | `accent-social` | {nickname}님이 팔로우를 요청했어요 | — | 상대 프로필 | [수락] [거절] |
 | 버블 가입승인 | `circle-check` | `positive` | '{bubble_name}' 가입이 승인되었어요 | — | 버블 상세 | — |
 | 팔로우 수락 | `user-check` | `accent-social` | {nickname}님이 팔로우를 수락했어요 | — | 상대 프로필 | — |
@@ -141,7 +141,7 @@ duration: 0.16s ease
 ### 아이콘 색상 매핑
 ```
 type-level   → var(--caution)       #C9A96E
-type-bubble  → var(--primary)       #C17B5E
+type-bubble  → var(--accent-food)    #C17B5E
 type-social  → var(--accent-social) #7A9BAE
 type-success → var(--positive)      #7EAE8B
 ```

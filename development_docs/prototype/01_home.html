@@ -15,12 +15,10 @@
     --text: #3D3833;
     --text-sub: #8C8580;
     --text-hint: #B5AFA8;
-    --primary: #C17B5E;
-    --primary-light: #F5EDE8;
     --accent-food: #C17B5E;
     --accent-food-light: #F5EDE8;
-    --wine: #8B7396;
-    --wine-light: #F0ECF3;
+    --accent-wine: #8B7396;
+    --accent-wine-light: #F0ECF3;
     --border: #E8E4DF;
     --border-bold: #D4CFC8;
     --radius: 16px;
@@ -159,14 +157,14 @@
   .fab-forward {
     position:absolute; bottom:28px; right:16px; z-index:85;
     width:44px; height:44px; border-radius:50%;
-    background:var(--primary); border:none;
+    background:var(--accent-food); border:none;
     box-shadow:0 3px 16px rgba(193,123,94,0.4);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; color:#fff; transition:transform 0.15s;
   }
   .fab-forward:active { transform:scale(0.9); }
   .fab-forward.wine-style {
-    background:var(--wine); box-shadow:0 3px 16px rgba(139,115,150,0.4);
+    background:var(--accent-wine); box-shadow:0 3px 16px rgba(139,115,150,0.4);
   }
   .fab-forward svg { width:22px; height:22px; }
 
@@ -276,7 +274,7 @@
     border-radius: 50%;
     background: var(--border);
   }
-  .step-dot.active { background: var(--primary); width: 20px; border-radius: 3px; }
+  .step-dot.active { background: var(--accent-food); width: 20px; border-radius: 3px; }
 
   .onboarding-title {
     font-size: 24px;
@@ -296,8 +294,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: var(--primary-light);
-    color: var(--primary);
+    background: var(--accent-food-light);
+    color: var(--accent-food);
     font-size: 13px;
     font-weight: 600;
     padding: 8px 14px;
@@ -329,9 +327,9 @@
   }
   .chip:active { transform: scale(0.95); }
   .chip.selected {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    color: var(--primary);
+    background: var(--accent-food-light);
+    border-color: var(--accent-food);
+    color: var(--accent-food);
     font-weight: 600;
   }
 
@@ -364,7 +362,7 @@
   }
   .city-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
   .city-bubble.pulse {
-    background:rgba(255,96,56,0.2); border-color:var(--primary);
+    background:rgba(255,96,56,0.2); border-color:var(--accent-food);
   }
 
   /* Area bubbles on city map */
@@ -380,8 +378,8 @@
   }
   .area-bubble:active { transform:translate(-50%,-50%) scale(0.92); }
   .area-bubble.selected {
-    background:rgba(255,96,56,0.25); border-color:var(--primary);
-    color:var(--primary); font-weight:700;
+    background:rgba(255,96,56,0.25); border-color:var(--accent-food);
+    color:var(--accent-food); font-weight:700;
     box-shadow:0 0 12px rgba(255,96,56,0.3);
   }
 
@@ -396,8 +394,8 @@
   .selected-chip {
     display:inline-flex; align-items:center; gap:4px;
     padding:4px 12px; border-radius:100px;
-    background:var(--primary-light); border:1px solid var(--primary);
-    color:var(--primary); font-size:12px; font-weight:600;
+    background:var(--accent-food-light); border:1px solid var(--accent-food);
+    color:var(--accent-food); font-size:12px; font-weight:600;
   }
   .selected-chip .remove {
     cursor:pointer; font-size:14px; line-height:1; opacity:0.6;
@@ -406,7 +404,7 @@
 
   .btn-primary {
     height: 54px;
-    background: var(--primary);
+    background: var(--accent-food);
     color: #fff;
     border: none;
     border-radius: 14px;
@@ -456,8 +454,8 @@
     transition: all 0.15s;
   }
   .custom-checkbox.checked {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--accent-food);
+    border-color: var(--accent-food);
   }
   .custom-checkbox.checked::after {
     content: '';
@@ -489,7 +487,7 @@
 
   .count-badge {
     font-size: 13px;
-    color: var(--primary);
+    color: var(--accent-food);
     font-weight: 600;
     margin-bottom: 20px;
   }
@@ -597,7 +595,7 @@
     transition: transform 0.1s;
   }
   .nudge-btn:active { transform: scale(0.95); }
-  .nudge-btn.confirm { background: var(--primary); color: #fff; }
+  .nudge-btn.confirm { background: var(--accent-food); color: #fff; }
   .nudge-btn.dismiss { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
 
   .nudge-close {
@@ -628,7 +626,7 @@
 
   .section-more {
     font-size: 13px;
-    color: var(--primary);
+    color: var(--accent-food);
     font-weight: 600;
     cursor: pointer;
   }
@@ -662,9 +660,9 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-food);
     border: 3px solid var(--bg);
-    box-shadow: 0 0 0 2px var(--primary);
+    box-shadow: 0 0 0 2px var(--accent-food);
     flex-shrink: 0;
     margin-top: 14px;
     z-index: 1;
@@ -697,20 +695,6 @@
     font-weight: 500;
   }
 
-  .scene-chip {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 100px;
-    color: #fff;
-  }
-
-  .scene-solo { background: #3b82f6; }
-  .scene-romantic { background: #ec4899; }
-  .scene-friends { background: #22c55e; }
-  .scene-family { background: #f59e0b; }
-  .scene-business { background: #8b5cf6; }
-  .scene-drinks { background: #ef4444; }
 
   .timeline-restaurant {
     font-size: 15px;
@@ -783,8 +767,8 @@
     gap: 4px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--primary);
-    background: var(--primary-light);
+    color: var(--accent-food);
+    background: var(--accent-food-light);
     padding: 6px 12px;
     border-radius: 8px;
     border: none;
@@ -864,8 +848,8 @@
     flex-shrink: 0;
   }
   .filter-chip.active {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--accent-food);
+    border-color: var(--accent-food);
     color: #fff;
   }
   .filter-chip:active { transform: scale(0.95); }
@@ -998,7 +982,7 @@
   .recommend-score {
     font-size: 15px;
     font-weight: 800;
-    color: var(--primary);
+    color: var(--accent-food);
     align-self: center;
   }
 
@@ -1019,7 +1003,7 @@
     outline: none;
     font-family: inherit;
   }
-  .wine-input:focus { border-color: var(--wine); }
+  .wine-input:focus { border-color: var(--accent-wine); }
 
   .wine-card {
     display: flex;
@@ -1051,13 +1035,13 @@
   .wine-tags { display: flex; gap: 4px; flex-wrap: wrap; }
   .wine-tag {
     font-size: 10px;
-    background: var(--wine-light);
-    color: var(--wine);
+    background: var(--accent-wine-light);
+    color: var(--accent-wine);
     padding: 2px 7px;
     border-radius: 100px;
     font-weight: 600;
   }
-  .wine-score { font-size: 14px; font-weight: 800; color: var(--wine); align-self: center; }
+  .wine-score { font-size: 14px; font-weight: 800; color: var(--accent-wine); align-self: center; }
 
   /* Bubble feed */
   .bubble-section { padding: 0 16px 16px; }
@@ -1155,8 +1139,8 @@
     transition: all 0.15s;
   }
   .area-chip.active {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--accent-food);
+    border-color: var(--accent-food);
     color: #fff;
   }
   .area-chip:active { transform: scale(0.95); }
@@ -1227,7 +1211,7 @@
   .discover-card-score {
     font-size: 16px;
     font-weight: 800;
-    color: var(--primary);
+    color: var(--accent-food);
   }
 
   .discover-card-meta {
@@ -1320,14 +1304,14 @@
   }
   .add-sheet-card:active { transform: scale(0.96); }
   .add-sheet-card:hover { border-color: var(--border-bold); }
-  .add-sheet-card.food-card:hover, .add-sheet-card.food-card.selected { border-color: var(--primary); background: var(--primary-light); }
-  .add-sheet-card.wine-card:hover, .add-sheet-card.wine-card.selected { border-color: var(--wine); background: var(--wine-light); }
+  .add-sheet-card.food-card:hover, .add-sheet-card.food-card.selected { border-color: var(--accent-food); background: var(--accent-food-light); }
+  .add-sheet-card.wine-card:hover, .add-sheet-card.wine-card.selected { border-color: var(--accent-wine); background: var(--accent-wine-light); }
   .add-sheet-icon {
     width: 48px; height: 48px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
   }
-  .add-sheet-icon.food-icon { background: var(--primary-light); color: var(--primary); }
-  .add-sheet-icon.wine-icon { background: var(--wine-light); color: var(--wine); }
+  .add-sheet-icon.food-icon { background: var(--accent-food-light); color: var(--accent-food); }
+  .add-sheet-icon.wine-icon { background: var(--accent-wine-light); color: var(--accent-wine); }
   .add-sheet-label { font-size: 15px; font-weight: 700; color: var(--text); }
 
   /* =====================
@@ -1347,8 +1331,8 @@
   .nearby-item:active { opacity: 0.6; }
   .nearby-icon {
     width: 40px; height: 40px; border-radius: 10px;
-    background: var(--primary-light); display: flex; align-items: center;
-    justify-content: center; color: var(--primary); flex-shrink: 0;
+    background: var(--accent-food-light); display: flex; align-items: center;
+    justify-content: center; color: var(--accent-food); flex-shrink: 0;
   }
   .nearby-info { flex: 1; }
   .nearby-name { font-size: 14px; font-weight: 700; color: var(--text); }
@@ -1362,14 +1346,14 @@
     color: var(--text-sub); font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
   }
-  .nearby-register:hover { border-color: var(--primary); color: var(--primary); }
+  .nearby-register:hover { border-color: var(--accent-food); color: var(--accent-food); }
 
   /* =====================
      Restaurant Record (AI-assisted single screen)
      ===================== */
   .rest-record-header {
     display: flex; align-items: center; gap: 12px;
-    padding: 16px; background: var(--primary-light); margin: 0 16px;
+    padding: 16px; background: var(--accent-food-light); margin: 0 16px;
     border-radius: 12px;
   }
   .rest-record-photo {
@@ -1384,7 +1368,7 @@
   .rest-record-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
   .rest-record-ai-badge {
     display: inline-flex; align-items: center; gap: 4px;
-    font-size: 10px; color: var(--primary); font-weight: 600;
+    font-size: 10px; color: var(--accent-food); font-weight: 600;
     background: white; padding: 2px 8px; border-radius: 20px; margin-top: 4px;
   }
   .rest-record-section {
@@ -1396,7 +1380,7 @@
     display: flex; align-items: center; gap: 6px;
   }
   .ai-tag {
-    font-size: 9px; color: white; background: var(--primary);
+    font-size: 9px; color: white; background: var(--accent-food);
     padding: 1px 6px; border-radius: 10px; font-weight: 700;
   }
   .rest-rec-quad-mini {
@@ -1419,7 +1403,7 @@
   .rest-rec-quad-mini .crosshair-v { height: 100%; width: 1px; left: 50%; }
   .rest-rec-dot, .wine-rec-dot {
     position: absolute; border-radius: 50%;
-    background: var(--primary); opacity: 0.9;
+    background: var(--accent-food); opacity: 0.9;
     transform: translate(-50%, -50%); cursor: grab;
     display: flex; align-items: center; justify-content: center;
     color: white; font-weight: 800;
@@ -1463,7 +1447,7 @@
     font-size: 12px; color: var(--text-sub); font-weight: 500;
   }
   .rest-rec-quad-chip .val {
-    font-weight: 800; color: var(--primary);
+    font-weight: 800; color: var(--accent-food);
   }
   .rest-rec-quad-hint {
     text-align: center; font-size: 11px; color: var(--text-hint);
@@ -1480,8 +1464,8 @@
     cursor: pointer; transition: all 0.15s;
   }
   .rest-rec-scene-chip.selected {
-    border-color: var(--primary); background: var(--primary-light);
-    color: var(--primary);
+    border-color: var(--accent-food); background: var(--accent-food-light);
+    color: var(--accent-food);
   }
   .rest-rec-field {
     margin-bottom: 16px;
@@ -1495,14 +1479,14 @@
     border-radius: 10px; background: var(--bg-card); font-size: 14px;
     color: var(--text); outline: none;
   }
-  .rest-rec-input:focus { border-color: var(--primary); }
+  .rest-rec-input:focus { border-color: var(--accent-food); }
   .rest-rec-input::placeholder { color: var(--text-hint); }
   .rest-rec-textarea {
     width: 100%; padding: 10px 12px; border: 1px solid var(--border);
     border-radius: 10px; background: var(--bg-card); font-size: 14px;
     color: var(--text); outline: none; resize: none; font-family: inherit;
   }
-  .rest-rec-textarea:focus { border-color: var(--primary); }
+  .rest-rec-textarea:focus { border-color: var(--accent-food); }
   .rest-rec-companion {
     display: flex; align-items: center; gap: 8px; padding: 8px 12px;
     border: 1px solid var(--border); border-radius: 10px;
@@ -1533,7 +1517,7 @@
   }
   .pairing-cell:active { transform: scale(0.97); }
   .pairing-cell.selected {
-    border-color: var(--wine); background: var(--wine-light);
+    border-color: var(--accent-wine); background: var(--accent-wine-light);
   }
   .pairing-cell-icon {
     font-size: 22px; margin-bottom: 2px;
@@ -1541,12 +1525,12 @@
   .pairing-cell-name {
     font-size: 12px; font-weight: 700; color: var(--text);
   }
-  .pairing-cell.selected .pairing-cell-name { color: var(--wine); }
+  .pairing-cell.selected .pairing-cell-name { color: var(--accent-wine); }
   .pairing-cell-examples {
     font-size: 9px; color: var(--text-hint); margin-top: 3px;
     line-height: 1.3;
   }
-  .pairing-cell.selected .pairing-cell-examples { color: var(--wine); opacity: 0.7; }
+  .pairing-cell.selected .pairing-cell-examples { color: var(--accent-wine); opacity: 0.7; }
 
   /* Wine link in restaurant record */
   .rest-rec-wine-linked {
@@ -1562,12 +1546,12 @@
   .rest-rec-wine-name { font-size: 13px; font-weight: 700; color: var(--text); }
   .rest-rec-wine-meta { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
   .rest-rec-wine-badge {
-    font-size: 10px; color: var(--wine); font-weight: 600;
-    background: var(--wine-light); padding: 2px 8px; border-radius: 20px;
+    font-size: 10px; color: var(--accent-wine); font-weight: 600;
+    background: var(--accent-wine-light); padding: 2px 8px; border-radius: 20px;
   }
   .rest-rec-wine-add {
     display: flex; align-items: center; gap: 6px;
-    color: var(--wine); font-size: 13px; font-weight: 600;
+    color: var(--accent-wine); font-size: 13px; font-weight: 600;
     cursor: pointer; padding: 8px 0;
   }
   .rest-rec-wine-search {
@@ -1586,7 +1570,7 @@
   }
   .rest-rec-save-btn {
     width: 100%; padding: 14px; border: none; border-radius: 50px;
-    background: var(--primary); color: white; font-size: 15px;
+    background: var(--accent-food); color: white; font-size: 15px;
     font-weight: 700; cursor: pointer; transition: transform 0.1s;
   }
   .rest-rec-save-btn:active { transform: scale(0.97); }
@@ -1596,12 +1580,12 @@
      ===================== */
   .wine-rec-header {
     display: flex; align-items: center; gap: 12px;
-    padding: 16px; background: var(--wine-light); margin: 0 16px;
+    padding: 16px; background: var(--accent-wine-light); margin: 0 16px;
     border-radius: 12px;
   }
   .wine-rec-dot {
     position: absolute; border-radius: 50%;
-    background: var(--wine); opacity: 0.9;
+    background: var(--accent-wine); opacity: 0.9;
     transform: translate(-50%, -50%); cursor: grab;
     display: flex; align-items: center; justify-content: center;
     color: white; font-weight: 800;
@@ -1611,11 +1595,11 @@
     z-index: 10;
   }
   .wine-rec-scene-chip.selected {
-    border-color: var(--wine); background: var(--wine-light); color: var(--wine);
+    border-color: var(--accent-wine); background: var(--accent-wine-light); color: var(--accent-wine);
   }
   .wine-rec-save-btn {
     width: 100%; padding: 14px; border: none; border-radius: 50px;
-    background: var(--wine); color: white; font-size: 15px;
+    background: var(--accent-wine); color: white; font-size: 15px;
     font-weight: 700; cursor: pointer; transition: transform 0.1s;
   }
   .wine-rec-save-btn:active { transform: scale(0.97); }
@@ -1642,14 +1626,14 @@
     display: flex; justify-content: space-between; align-items: center;
     font-size: 13px; color: var(--text-sub); font-weight: 600; margin-bottom: 6px;
   }
-  .wine-slider-val { font-weight: 800; color: var(--wine); }
+  .wine-slider-val { font-weight: 800; color: var(--accent-wine); }
   .wine-slider {
     -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
     background: var(--border); outline: none;
   }
   .wine-slider::-webkit-slider-thumb {
     -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--wine); cursor: pointer; border: 3px solid white;
+    background: var(--accent-wine); cursor: pointer; border: 3px solid white;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
 
@@ -1662,16 +1646,16 @@
     cursor: pointer; transition: all 0.15s;
   }
   .complexity-chip.active {
-    border-color: var(--wine); background: var(--wine-light); color: var(--wine);
+    border-color: var(--accent-wine); background: var(--accent-wine-light); color: var(--accent-wine);
   }
   .complexity-chip .chip-label { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
-  .complexity-chip.active .chip-label { color: var(--wine); opacity: 0.7; }
+  .complexity-chip.active .chip-label { color: var(--accent-wine); opacity: 0.7; }
 
   /* Wine record quad value chips */
-  .wine-rec-quad-chip .val { font-weight: 800; color: var(--wine); }
+  .wine-rec-quad-chip .val { font-weight: 800; color: var(--accent-wine); }
 
   /* Wine AI tag */
-  .ai-tag.wine { background: var(--wine); }
+  .ai-tag.wine { background: var(--accent-wine); }
 
   /* =====================
      Wine Camera Screen
@@ -1702,8 +1686,8 @@
     cursor: pointer; margin-top: 20px; transition: transform 0.15s;
     display: flex; align-items: center; justify-content: center; color: white;
   }
-  .camera-btn.food-btn { background: var(--primary); }
-  .camera-btn.wine-btn { background: var(--wine); }
+  .camera-btn.food-btn { background: var(--accent-food); }
+  .camera-btn.wine-btn { background: var(--accent-wine); }
   .camera-btn:active { transform: scale(0.9); }
   .camera-alt {
     display: flex; gap: 8px; margin-top: 16px;
@@ -1742,8 +1726,8 @@
     font-family: inherit;
   }
   .photo-album-btn.active {
-    background: var(--primary); color: #fff;
-    border-color: var(--primary);
+    background: var(--accent-food); color: #fff;
+    border-color: var(--accent-food);
   }
   .photo-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -1766,7 +1750,7 @@
   }
   .photo-grid-item.selected::after {
     content: ''; position: absolute;
-    inset: 0; border: 3px solid var(--primary);
+    inset: 0; border: 3px solid var(--accent-food);
     border-radius: 2px;
   }
   .photo-grid-item.selected .photo-check {
@@ -1775,7 +1759,7 @@
   .photo-check {
     display: none; position: absolute; top: 6px; right: 6px;
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     align-items: center; justify-content: center;
     font-size: 12px; font-weight: 700;
   }
@@ -1795,7 +1779,7 @@
     flex: 1; padding: 14px; border-radius: 12px;
     font-size: 15px; font-weight: 600; border: none;
     cursor: pointer; font-family: inherit;
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     transition: opacity 0.15s;
   }
   .photo-picker-footer .btn-next:disabled {
@@ -1807,7 +1791,7 @@
   /* Wine confirm */
   .wine-confirm-card {
     margin: 20px 16px; padding: 20px; background: var(--bg-card);
-    border: 2px solid var(--wine); border-radius: 16px;
+    border: 2px solid var(--accent-wine); border-radius: 16px;
     display: flex; gap: 14px; align-items: flex-start;
   }
   .wine-confirm-label {
@@ -1817,15 +1801,15 @@
     color: rgba(255,255,255,0.7);
   }
   .wine-confirm-info { flex: 1; }
-  .wine-confirm-name { font-size: 16px; font-weight: 700; color: var(--wine); margin-bottom: 2px; }
+  .wine-confirm-name { font-size: 16px; font-weight: 700; color: var(--accent-wine); margin-bottom: 2px; }
   .wine-confirm-meta { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
-  .wine-confirm-vintage { font-size: 14px; font-weight: 700; color: var(--wine); }
+  .wine-confirm-vintage { font-size: 14px; font-weight: 700; color: var(--accent-wine); }
   .wine-confirm-btns {
     display: flex; gap: 8px; margin: 0 16px;
   }
   .wine-confirm-yes {
     flex: 1; padding: 14px; border-radius: 50px; border: none;
-    background: var(--wine); color: white; font-size: 15px; font-weight: 700;
+    background: var(--accent-wine); color: white; font-size: 15px; font-weight: 700;
     cursor: pointer; transition: transform 0.15s;
   }
   .wine-confirm-yes:active { transform: scale(0.97); }
@@ -1850,8 +1834,8 @@
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 16px; color: white;
   }
-  .add-success-check.food { background: var(--primary); }
-  .add-success-check.wine { background: var(--wine); }
+  .add-success-check.food { background: var(--accent-food); }
+  .add-success-check.wine { background: var(--accent-wine); }
   .add-success-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
   .add-success-sub { font-size: 14px; color: var(--text-sub); margin-bottom: 32px; }
   .add-success-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
@@ -1860,8 +1844,8 @@
     cursor: pointer; transition: transform 0.15s; border: none; width: 100%;
   }
   .add-success-btn:active { transform: scale(0.97); }
-  .add-success-btn.primary-food { background: var(--primary); color: white; }
-  .add-success-btn.primary-wine { background: var(--wine); color: white; }
+  .add-success-btn.primary-food { background: var(--accent-food); color: white; }
+  .add-success-btn.primary-wine { background: var(--accent-wine); color: white; }
   .add-success-btn.ghost {
     background: var(--bg); border: 1.5px solid var(--border);
     color: var(--text-sub); font-weight: 600;
@@ -1907,7 +1891,7 @@
 
   .record-btn {
     width: 100%; height: 54px;
-    background: var(--primary); color: white; border: none;
+    background: var(--accent-food); color: white; border: none;
     border-radius: 14px; font-size: 16px; font-weight: 700;
     cursor: pointer; font-family: inherit;
     display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1915,7 +1899,7 @@
   }
   .record-btn:active { transform: scale(0.97); opacity: 0.9; }
   .record-btn:disabled { background: var(--border-bold); cursor: not-allowed; transform: none; }
-  .record-btn.wine-style { background: var(--wine); }
+  .record-btn.wine-style { background: var(--accent-wine); }
 
   .record-btn-ghost {
     flex: 1; height: 54px;
@@ -1935,8 +1919,8 @@
     padding: 0 16px 0 42px; font-size: 15px; color: var(--text);
     outline: none; background: var(--bg-card); font-family: inherit;
   }
-  .rec-search-input:focus { border-color: var(--primary); }
-  .rec-search-input.wine-focus:focus { border-color: var(--wine); }
+  .rec-search-input:focus { border-color: var(--accent-food); }
+  .rec-search-input.wine-focus:focus { border-color: var(--accent-wine); }
   .rec-search-icon {
     position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
     color: var(--text-hint);
@@ -1951,7 +1935,7 @@
   .rec-search-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
   .rec-search-register {
     display: flex; align-items: center; gap: 8px; padding: 16px 0;
-    cursor: pointer; color: var(--primary); font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--accent-food); font-size: 14px; font-weight: 600;
   }
   .rec-search-register:active { opacity: 0.6; }
 
@@ -1960,7 +1944,7 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-food);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2012,8 +1996,8 @@
   .compact-unrated {
     font-size: 12px;
     font-weight: 600;
-    color: var(--primary);
-    background: var(--primary-light);
+    color: var(--accent-food);
+    background: var(--accent-food-light);
     padding: 3px 10px;
     border-radius: 100px;
     white-space: nowrap;
@@ -2032,12 +2016,12 @@
     width: calc(100% - 32px);
     padding: 12px 16px;
     margin: 8px 16px;
-    background: var(--wine-light);
+    background: var(--accent-wine-light);
     border: 1px solid rgba(139,115,150,0.2);
     border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--wine);
+    color: var(--accent-wine);
     cursor: pointer;
     transition: all 0.15s;
   }
@@ -2177,7 +2161,7 @@
     gap: 6px;
     font-size: 15px;
     font-weight: 700;
-    color: var(--wine);
+    color: var(--accent-wine);
   }
 
   /* =====================
@@ -2302,7 +2286,7 @@
     align-items: center;
     gap: 10px;
     padding: 10px 16px;
-    background: var(--primary-light);
+    background: var(--accent-food-light);
     border-bottom: 1px solid rgba(193,123,94,0.15);
     animation: slideDown 0.3s ease;
     max-height: 60px;
@@ -2322,7 +2306,7 @@
   }
   .nudge-strip-icon {
     width: 28px; height: 28px; border-radius: 8px;
-    background: var(--primary);
+    background: var(--accent-food);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
@@ -2332,7 +2316,7 @@
   }
   .nudge-strip-text strong { font-weight: 700; }
   .nudge-strip-action {
-    font-size: 12px; font-weight: 700; color: var(--primary);
+    font-size: 12px; font-weight: 700; color: var(--accent-food);
     background: none; border: none; cursor: pointer;
     padding: 6px 12px; border-radius: 8px;
     background: rgba(193,123,94,0.12);
@@ -2383,14 +2367,14 @@
     font-weight: 700;
   }
   .content-tab.active::after {
-    background: var(--primary);
+    background: var(--accent-food);
   }
   .content-tab.wine-active {
-    color: var(--wine);
+    color: var(--accent-wine);
     font-weight: 700;
   }
   .content-tab.wine-active::after {
-    background: var(--wine);
+    background: var(--accent-wine);
   }
   .content-tab-spacer { flex: 1; }
 
@@ -2434,9 +2418,9 @@
   .calendar-day.empty:active { transform: none; }
   .calendar-day.today {
     font-weight: 700; color: var(--text);
-    box-shadow: 0 0 0 2px var(--primary);
+    box-shadow: 0 0 0 2px var(--accent-food);
   }
-  .calendar-day.today.wine-cal { box-shadow: 0 0 0 2px var(--wine); }
+  .calendar-day.today.wine-cal { box-shadow: 0 0 0 2px var(--accent-wine); }
   .calendar-day.selected {
     box-shadow: 0 0 0 2px var(--accent-social);
   }
@@ -2465,11 +2449,11 @@
   .calendar-day .cal-count {
     position: absolute; top: 2px; right: 3px;
     width: 14px; height: 14px; border-radius: 50%;
-    background: var(--primary); color: #fff;
+    background: var(--accent-food); color: #fff;
     font-size: 8px; font-weight: 700; z-index: 1;
     display: flex; align-items: center; justify-content: center;
   }
-  .calendar-day .cal-count.wine-count { background: var(--wine); }
+  .calendar-day .cal-count.wine-count { background: var(--accent-wine); }
   /* Selected day detail */
   .calendar-day-detail {
     margin-top: 4px; padding: 12px 4px;
@@ -2501,7 +2485,7 @@
     text-align: center;
     flex-shrink: 0;
   }
-  .compact-rank.top3 { color: var(--primary); }
+  .compact-rank.top3 { color: var(--accent-food); }
   .compact-thumb {
     width: 40px; height: 40px;
     border-radius: 10px;
@@ -2540,8 +2524,8 @@
     min-width: 32px;
     text-align: right;
   }
-  .compact-score.food-score { color: var(--primary); }
-  .compact-score.wine-score { color: var(--wine); }
+  .compact-score.food-score { color: var(--accent-food); }
+  .compact-score.wine-score { color: var(--accent-wine); }
   .compact-score.not-mine { color: var(--text-hint); }
   .compact-score.no-score { font-size: 14px; color: var(--text-hint); font-weight: 600; }
 
@@ -2624,7 +2608,7 @@
     font-size: 11px; font-weight: 600; color: var(--text-hint);
     width: 40px; flex-shrink: 0; cursor: pointer;
   }
-  .notion-conjunction.clickable:active { color: var(--primary); }
+  .notion-conjunction.clickable:active { color: var(--accent-food); }
 
   /* nyam-select base styles for filter dropdowns */
   .nyam-select-wrap { position: relative; display: inline-block; }
@@ -2732,7 +2716,7 @@
   .nyam-dropdown-item:active { background: var(--border); }
   .nyam-dropdown-item.active,
   .nyam-dropdown-item.selected {
-    color: var(--primary); font-weight: 600;
+    color: var(--accent-food); font-weight: 600;
   }
 
   /* =====================
@@ -2857,7 +2841,7 @@
   .place-total-score {
     font-size: 32px;
     font-weight: 800;
-    color: var(--primary);
+    color: var(--accent-food);
     line-height: 1;
   }
 
@@ -2885,7 +2869,7 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
-  .source-tag.me { background: var(--primary-light); color: var(--primary); }
+  .source-tag.me { background: var(--accent-food-light); color: var(--accent-food); }
   .source-tag.bubble { background: rgba(122,155,174,0.15); color: var(--accent-social); }
   .source-tag.web { background: var(--bg-page); color: var(--text-hint); }
   .source-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3029,8 +3013,8 @@
   }
   .filter-pill:active { transform: scale(0.95); }
   .filter-pill.active {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--accent-food);
+    border-color: var(--accent-food);
     color: #fff;
   }
 
@@ -3251,7 +3235,7 @@
   .wine-stat-value {
     font-size: 22px;
     font-weight: 800;
-    color: var(--wine);
+    color: var(--accent-wine);
     line-height: 1;
     margin-bottom: 4px;
   }
@@ -3329,7 +3313,7 @@
     position: relative;
     transition: background 0.2s;
   }
-  .variety-toggle-switch.on { background: var(--wine); }
+  .variety-toggle-switch.on { background: var(--accent-wine); }
   .variety-toggle-switch::after {
     content: '';
     position: absolute;
@@ -3377,7 +3361,7 @@
   .variety-hbar {
     height: 100%;
     border-radius: 3px;
-    background: linear-gradient(90deg, rgba(139,115,150,0.5), var(--wine));
+    background: linear-gradient(90deg, rgba(139,115,150,0.5), var(--accent-wine));
     transition: width 0.3s ease;
   }
 
@@ -3385,7 +3369,7 @@
     width: 20px;
     font-size: 11px;
     font-weight: 800;
-    color: var(--wine);
+    color: var(--accent-wine);
     text-align: right;
     flex-shrink: 0;
   }
@@ -3402,11 +3386,11 @@
   .wine-mini-bar {
     flex: 1;
     border-radius: 3px 3px 0 0;
-    background: var(--wine-light);
+    background: var(--accent-wine-light);
     min-height: 4px;
     position: relative;
   }
-  .wine-mini-bar.highlight { background: var(--wine); }
+  .wine-mini-bar.highlight { background: var(--accent-wine); }
 
   /* Recent wines section — matches .place-card layout */
   .wine-recent-card {
@@ -3504,7 +3488,7 @@
     border-radius: 50%;
     background: var(--border);
   }
-  .swiper-dot.active { background: var(--wine); width: 14px; border-radius: 3px; }
+  .swiper-dot.active { background: var(--accent-wine); width: 14px; border-radius: 3px; }
 
   /* =====================
      Wine stat pills (tappable filters)
@@ -3534,15 +3518,15 @@
   }
   .wine-filter-pill:active { transform: scale(0.95); }
   .wine-filter-pill.active {
-    background: var(--wine-light);
-    border-color: var(--wine);
-    color: var(--wine);
+    background: var(--accent-wine-light);
+    border-color: var(--accent-wine);
+    color: var(--accent-wine);
   }
   .wine-filter-pill .pill-count {
     font-weight: 800;
     color: var(--text);
   }
-  .wine-filter-pill.active .pill-count { color: var(--wine); }
+  .wine-filter-pill.active .pill-count { color: var(--accent-wine); }
 
   /* Score histogram */
   .score-histogram {
@@ -3565,11 +3549,11 @@
   .score-bar {
     width: 100%;
     border-radius: 4px 4px 0 0;
-    background: var(--wine-light);
+    background: var(--accent-wine-light);
     transition: all 0.15s;
     min-height: 2px;
   }
-  .score-bar.active { background: var(--wine); }
+  .score-bar.active { background: var(--accent-wine); }
   .score-bar-label {
     font-size: 9px;
     color: var(--text-hint);
@@ -3578,7 +3562,7 @@
   .score-bar-count {
     font-size: 9px;
     font-weight: 700;
-    color: var(--wine);
+    color: var(--accent-wine);
     display: none;
   }
   .score-bar.active + .score-bar-label { display: none; }
@@ -3631,7 +3615,7 @@
   .wine-summary-value {
     font-size: 20px;
     font-weight: 800;
-    color: var(--wine);
+    color: var(--accent-wine);
     line-height: 1.1;
   }
   .wine-summary-label {
@@ -4008,27 +3992,27 @@
                 <div style="position:absolute;top:80px;right:40px;font-size:11px;color:var(--text-hint);font-weight:500">성수</div>
                 <!-- Pin markers -->
                 <div style="position:absolute;top:50px;left:100px;cursor:pointer" onclick="alert('스시코우지 92')">
-                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--accent-food);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
                     <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">92</span>
                   </div>
                 </div>
                 <div style="position:absolute;top:55px;left:160px;cursor:pointer" onclick="alert('미진 88')">
-                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--accent-food);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
                     <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">88</span>
                   </div>
                 </div>
                 <div style="position:absolute;top:130px;left:180px;cursor:pointer" onclick="alert('을지로 골뱅이 85')">
-                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--accent-food);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
                     <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">85</span>
                   </div>
                 </div>
                 <div style="position:absolute;top:210px;right:70px;cursor:pointer" onclick="alert('도쿄등심 90')">
-                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--accent-food);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
                     <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">90</span>
                   </div>
                 </div>
                 <div style="position:absolute;top:100px;right:50px;cursor:pointer" onclick="alert('그린 키친 85')">
-                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
+                  <div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:var(--accent-food);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.2)">
                     <span style="transform:rotate(45deg);font-size:10px;font-weight:700;color:#fff">85</span>
                   </div>
                 </div>
@@ -4206,7 +4190,7 @@
                 <div class="place-meta">한식 · 광화문 · 냉면</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:35%;top:55%;width:14px;height:14px;background:var(--primary);"></div>
+                    <div class="qd" style="left:35%;top:55%;width:14px;height:14px;background:var(--accent-food);"></div>
                   </div>
                   <div class="place-total-score">88</div>
                 </div>
@@ -4243,7 +4227,7 @@
                 <div class="place-meta">일식 · 광화문 · 오마카세</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:70%;top:30%;width:16px;height:16px;background:var(--primary);"></div>
+                    <div class="qd" style="left:70%;top:30%;width:16px;height:16px;background:var(--accent-food);"></div>
                   </div>
                   <div class="place-total-score">92</div>
                 </div>
@@ -4300,7 +4284,7 @@
                 <div class="place-meta">한식 · 을지로 · 골뱅이</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--primary);"></div>
+                    <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--accent-food);"></div>
                   </div>
                   <div class="place-total-score">85</div>
                 </div>
@@ -4330,7 +4314,7 @@
                 <div class="place-meta">이탈리안 · 강남</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:50%;top:35%;width:15px;height:15px;background:var(--primary);"></div>
+                    <div class="qd" style="left:50%;top:35%;width:15px;height:15px;background:var(--accent-food);"></div>
                   </div>
                   <div class="place-total-score">83</div>
                 </div>
@@ -4360,7 +4344,7 @@
                 <div class="place-meta">일식 · 을지로</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:60%;top:40%;width:14px;height:14px;background:var(--primary);"></div>
+                    <div class="qd" style="left:60%;top:40%;width:14px;height:14px;background:var(--accent-food);"></div>
                   </div>
                   <div class="place-total-score">80</div>
                 </div>
@@ -4404,22 +4388,22 @@
                   <path d="M190,25 L230,20 L260,30 L280,35 L290,50 L275,65 L260,70 L240,60 L220,55 L200,45 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
                   <path d="M245,80 L270,75 L285,90 L275,110 L255,115 L240,100 Z" fill="var(--bg-page)" stroke="var(--border)" stroke-width="0.5"/>
                   <!-- Dots: visited restaurants -->
-                  <circle cx="75" cy="45" r="4" fill="var(--primary)" opacity="0.8"><title>뉴욕 · 2곳</title></circle>
-                  <circle cx="140" cy="35" r="6" fill="var(--primary)" opacity="0.9"><title>파리 · 4곳</title></circle>
-                  <circle cx="155" cy="40" r="3" fill="var(--primary)" opacity="0.7"><title>밀라노 · 1곳</title></circle>
-                  <circle cx="230" cy="38" r="8" fill="var(--primary)"><title>서울 · 8곳</title></circle>
+                  <circle cx="75" cy="45" r="4" fill="var(--accent-food)" opacity="0.8"><title>뉴욕 · 2곳</title></circle>
+                  <circle cx="140" cy="35" r="6" fill="var(--accent-food)" opacity="0.9"><title>파리 · 4곳</title></circle>
+                  <circle cx="155" cy="40" r="3" fill="var(--accent-food)" opacity="0.7"><title>밀라노 · 1곳</title></circle>
+                  <circle cx="230" cy="38" r="8" fill="var(--accent-food)"><title>서울 · 8곳</title></circle>
                   <text x="230" y="41" fill="#fff" font-size="7" font-weight="800" text-anchor="middle">8</text>
-                  <circle cx="240" cy="48" r="4" fill="var(--primary)" opacity="0.8"><title>도쿄 · 3곳</title></circle>
+                  <circle cx="240" cy="48" r="4" fill="var(--accent-food)" opacity="0.8"><title>도쿄 · 3곳</title></circle>
                 </svg>
                 <div style="display:flex;justify-content:center;gap:12px;margin-top:8px;">
                   <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
-                    <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);opacity:0.7;"></span> 1~2곳
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-food);opacity:0.7;"></span> 1~2곳
                   </span>
                   <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
-                    <span style="width:8px;height:8px;border-radius:50%;background:var(--primary);opacity:0.85;"></span> 3~5곳
+                    <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-food);opacity:0.85;"></span> 3~5곳
                   </span>
                   <span style="font-size:9px;color:var(--text-hint);display:flex;align-items:center;gap:3px;">
-                    <span style="width:10px;height:10px;border-radius:50%;background:var(--primary);"></span> 6곳+
+                    <span style="width:10px;height:10px;border-radius:50%;background:var(--accent-food);"></span> 6곳+
                   </span>
                 </div>
               </div>
@@ -4432,29 +4416,29 @@
               <div class="wine-section-label"><span>장르</span></div>
               <div class="variety-chart">
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary);">한식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:80%;background:var(--primary);"></div></div>
-                  <div class="variety-count" style="color:var(--primary);">8</div>
+                  <div class="variety-name" style="color:var(--accent-food);">한식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:80%;background:var(--accent-food);"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food);">8</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary);">일식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--primary);opacity:0.8;"></div></div>
-                  <div class="variety-count" style="color:var(--primary);">5</div>
+                  <div class="variety-name" style="color:var(--accent-food);">일식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:50%;background:var(--accent-food);opacity:0.8;"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food);">5</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary);">프렌치</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:30%;background:var(--primary);opacity:0.7;"></div></div>
-                  <div class="variety-count" style="color:var(--primary);">3</div>
+                  <div class="variety-name" style="color:var(--accent-food);">프렌치</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:30%;background:var(--accent-food);opacity:0.7;"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food);">3</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary);">이탈리안</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:20%;background:var(--primary);opacity:0.6;"></div></div>
-                  <div class="variety-count" style="color:var(--primary);">2</div>
+                  <div class="variety-name" style="color:var(--accent-food);">이탈리안</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:20%;background:var(--accent-food);opacity:0.6;"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food);">2</div>
                 </div>
                 <div class="variety-row">
-                  <div class="variety-name" style="color:var(--primary);">중식</div>
-                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:10%;background:var(--primary);opacity:0.5;"></div></div>
-                  <div class="variety-count" style="color:var(--primary);">1</div>
+                  <div class="variety-name" style="color:var(--accent-food);">중식</div>
+                  <div class="variety-hbar-track"><div class="variety-hbar" style="width:10%;background:var(--accent-food);opacity:0.5;"></div></div>
+                  <div class="variety-count" style="color:var(--accent-food);">1</div>
                 </div>
               </div>
             </div>
@@ -4466,31 +4450,31 @@
               <div class="wine-section-label"><span>점수 분포</span></div>
               <div style="display:flex;gap:6px;height:80px;align-items:flex-end;">
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:0%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.4;min-height:2px;"></div>
+                  <div style="width:100%;height:0%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.4;min-height:2px;"></div>
                   <span style="font-size:9px;color:var(--text-hint);">~49</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:0%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.5;min-height:2px;"></div>
+                  <div style="width:100%;height:0%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.5;min-height:2px;"></div>
                   <span style="font-size:9px;color:var(--text-hint);">50s</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:10%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.6;min-height:4px;"></div>
+                  <div style="width:100%;height:10%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.6;min-height:4px;"></div>
                   <span style="font-size:9px;color:var(--text-hint);">60s</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:25%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;position:relative;">
+                  <div style="width:100%;height:25%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.7;position:relative;">
                     <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">2</span>
                   </div>
                   <span style="font-size:9px;color:var(--text-hint);">70s</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:75%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.85;position:relative;">
+                  <div style="width:100%;height:75%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.85;position:relative;">
                     <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">6</span>
                   </div>
                   <span style="font-size:9px;color:var(--text-hint);">80s</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:100%;background:var(--primary);border-radius:4px 4px 0 0;position:relative;">
+                  <div style="width:100%;height:100%;background:var(--accent-food);border-radius:4px 4px 0 0;position:relative;">
                     <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#fff;">8</span>
                   </div>
                   <span style="font-size:9px;color:var(--text-hint);">90s</span>
@@ -4508,34 +4492,34 @@
               </div>
               <div style="display:flex;gap:6px;height:80px;align-items:flex-end;">
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:30%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.6;"></div>
+                  <div style="width:100%;height:30%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.6;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">10월</span>
                   <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">12만</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:55%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;"></div>
+                  <div style="width:100%;height:55%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.7;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">11월</span>
                   <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">28만</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:40%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.65;"></div>
+                  <div style="width:100%;height:40%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.65;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">12월</span>
                   <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">18만</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:80%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.85;"></div>
+                  <div style="width:100%;height:80%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.85;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">1월</span>
-                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--primary-light);color:var(--primary);font-weight:600;">42만</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--accent-food-light);color:var(--accent-food);font-weight:600;">42만</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:45%;background:var(--primary);border-radius:4px 4px 0 0;opacity:0.7;"></div>
+                  <div style="width:100%;height:45%;background:var(--accent-food);border-radius:4px 4px 0 0;opacity:0.7;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">2월</span>
                   <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--bg-page);color:var(--text-hint);">22만</span>
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-                  <div style="width:100%;height:100%;background:var(--primary);border-radius:4px 4px 0 0;"></div>
+                  <div style="width:100%;height:100%;background:var(--accent-food);border-radius:4px 4px 0 0;"></div>
                   <span style="font-size:8px;color:var(--text-hint);">3월</span>
-                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--primary-light);color:var(--primary);font-weight:600;">64만</span>
+                  <span style="font-size:8px;padding:1px 4px;border-radius:4px;background:var(--accent-food-light);color:var(--accent-food);font-weight:600;">64만</span>
                 </div>
               </div>
             </div>
@@ -4611,7 +4595,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">3/15 저장</span>
+                      <span style="font-size:10px;color:var(--accent-food);font-weight:600;background:var(--accent-food-light);padding:2px 8px;border-radius:6px;">3/15 저장</span>
                     </div>
                   </div>
                 </div>
@@ -4636,7 +4620,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">3/10 저장</span>
+                      <span style="font-size:10px;color:var(--accent-food);font-weight:600;background:var(--accent-food-light);padding:2px 8px;border-radius:6px;">3/10 저장</span>
                     </div>
                   </div>
                 </div>
@@ -4665,7 +4649,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:6px;">2/28 저장</span>
+                      <span style="font-size:10px;color:var(--accent-food);font-weight:600;background:var(--accent-food-light);padding:2px 8px;border-radius:6px;">2/28 저장</span>
                     </div>
                   </div>
                 </div>
@@ -4941,7 +4925,7 @@
                     <div class="place-meta">일식 · 을지로</div>
                     <div class="place-score-row">
                       <div class="mini-quad">
-                        <div class="qd" style="left:65%;top:25%;width:16px;height:16px;background:var(--primary);"></div>
+                        <div class="qd" style="left:65%;top:25%;width:16px;height:16px;background:var(--accent-food);"></div>
                       </div>
                       <div class="place-total-score">94</div>
                     </div>
@@ -4961,7 +4945,7 @@
                     <div class="place-meta">일식 · 광화문</div>
                     <div class="place-score-row">
                       <div class="mini-quad">
-                        <div class="qd" style="left:55%;top:30%;width:14px;height:14px;background:var(--primary);"></div>
+                        <div class="qd" style="left:55%;top:30%;width:14px;height:14px;background:var(--accent-food);"></div>
                       </div>
                       <div class="place-total-score">91</div>
                     </div>
@@ -4981,7 +4965,7 @@
                     <div class="place-meta">이탈리안 · 한남</div>
                     <div class="place-score-row">
                       <div class="mini-quad">
-                        <div class="qd" style="left:50%;top:35%;width:14px;height:14px;background:var(--primary);"></div>
+                        <div class="qd" style="left:50%;top:35%;width:14px;height:14px;background:var(--accent-food);"></div>
                       </div>
                       <div class="place-total-score">89</div>
                     </div>
@@ -5001,7 +4985,7 @@
                     <div class="place-meta">중식 · 을지로</div>
                     <div class="place-score-row">
                       <div class="mini-quad">
-                        <div class="qd" style="left:45%;top:40%;width:14px;height:14px;background:var(--primary);"></div>
+                        <div class="qd" style="left:45%;top:40%;width:14px;height:14px;background:var(--accent-food);"></div>
                       </div>
                       <div class="place-total-score">87</div>
                     </div>
@@ -5021,7 +5005,7 @@
                     <div class="place-meta">양식 · 성수</div>
                     <div class="place-score-row">
                       <div class="mini-quad">
-                        <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--primary);"></div>
+                        <div class="qd" style="left:40%;top:45%;width:14px;height:14px;background:var(--accent-food);"></div>
                       </div>
                       <div class="place-total-score">85</div>
                     </div>
@@ -5127,7 +5111,7 @@
             <div id="wineCompact" style="display:none;">
               <div class="compact-list">
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                  <div class="compact-rank top3" style="color:var(--wine)">1</div>
+                  <div class="compact-rank top3" style="color:var(--accent-wine)">1</div>
                   <div class="compact-thumb wine-thumb">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
@@ -5138,7 +5122,7 @@
                   <div class="compact-score wine-score">96</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                  <div class="compact-rank top3" style="color:var(--wine)">2</div>
+                  <div class="compact-rank top3" style="color:var(--accent-wine)">2</div>
                   <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
@@ -5149,7 +5133,7 @@
                   <div class="compact-score wine-score">94</div>
                 </div>
                 <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                  <div class="compact-rank top3" style="color:var(--wine)">3</div>
+                  <div class="compact-rank top3" style="color:var(--accent-wine)">3</div>
                   <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=400&h=400&fit=crop') center/cover no-repeat;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                   </div>
@@ -5273,9 +5257,9 @@
                 <div class="place-meta">레드 · 쉬라즈 · 호주</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:55%;top:20%;width:16px;height:16px;background:var(--wine);"></div>
+                    <div class="qd" style="left:55%;top:20%;width:16px;height:16px;background:var(--accent-wine);"></div>
                   </div>
-                  <div class="place-total-score" style="color:var(--wine);">96</div>
+                  <div class="place-total-score" style="color:var(--accent-wine);">96</div>
                 </div>
                 <div class="wine-bubble-row">
                   <div class="wine-bubble-avatars">
@@ -5297,9 +5281,9 @@
                 <div class="place-meta">레드 · 카베르네 · 미국</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:65%;top:28%;width:15px;height:15px;background:var(--wine);"></div>
+                    <div class="qd" style="left:65%;top:28%;width:15px;height:15px;background:var(--accent-wine);"></div>
                   </div>
-                  <div class="place-total-score" style="color:var(--wine);">94</div>
+                  <div class="place-total-score" style="color:var(--accent-wine);">94</div>
                 </div>
                 <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/15</div>
               </div>
@@ -5334,9 +5318,9 @@
                 <div class="place-meta">레드 · 네비올로 · 이탈리아</div>
                 <div class="place-score-row">
                   <div class="mini-quad">
-                    <div class="qd" style="left:45%;top:30%;width:15px;height:15px;background:var(--wine);"></div>
+                    <div class="qd" style="left:45%;top:30%;width:15px;height:15px;background:var(--accent-wine);"></div>
                   </div>
-                  <div class="place-total-score" style="color:var(--wine);">89</div>
+                  <div class="place-total-score" style="color:var(--accent-wine);">89</div>
                 </div>
                 <div style="font-size:11px;color:var(--text-hint);margin-top:auto;">3/10</div>
               </div>
@@ -5410,11 +5394,11 @@
                   <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="#2a2030" stroke="#3a3040" stroke-width="0.4"/>
 
                   <!-- 하이라이트 국가 -->
-                  <path d="M200,34 L210,30 L220,34 L222,44 L216,52 L208,54 L200,48 L196,40Z" fill="rgba(139,115,150,0.5)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('france')"/>
-                  <path d="M84,142 L90,135 L92,148 L90,168 L86,180 L82,176 L80,160 L82,148Z" fill="rgba(139,115,150,0.45)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('chile')"/>
-                  <path d="M332,124 L356,118 L382,122 L394,132 L396,146 L388,158 L370,162 L350,155 L336,148 L330,136Z" fill="rgba(139,115,150,0.35)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('australia')"/>
-                  <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="rgba(139,115,150,0.35)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('nz')"/>
-                  <path d="M42,46 L50,43 L53,50 L50,58 L44,62 L40,55Z" fill="rgba(139,115,150,0.3)" stroke="var(--wine)" stroke-width="1" cursor="pointer" onclick="drillMap('usa')"/>
+                  <path d="M200,34 L210,30 L220,34 L222,44 L216,52 L208,54 L200,48 L196,40Z" fill="rgba(139,115,150,0.5)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('france')"/>
+                  <path d="M84,142 L90,135 L92,148 L90,168 L86,180 L82,176 L80,160 L82,148Z" fill="rgba(139,115,150,0.45)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('chile')"/>
+                  <path d="M332,124 L356,118 L382,122 L394,132 L396,146 L388,158 L370,162 L350,155 L336,148 L330,136Z" fill="rgba(139,115,150,0.35)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('australia')"/>
+                  <path d="M402,152 L408,148 L412,154 L414,164 L410,170 L406,168 L402,162Z" fill="rgba(139,115,150,0.35)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('nz')"/>
+                  <path d="M42,46 L50,43 L53,50 L50,58 L44,62 L40,55Z" fill="rgba(139,115,150,0.3)" stroke="var(--accent-wine)" stroke-width="1" cursor="pointer" onclick="drillMap('usa')"/>
 
                   <!-- 미탐험 -->
                   <circle cx="224" cy="52" r="5" fill="none" stroke="#3a3040" stroke-width="0.8" stroke-dasharray="2,1.5"/><text x="224" y="55" text-anchor="middle" font-size="5" fill="#4a4050">🇮🇹</text>
@@ -5423,28 +5407,28 @@
                   <circle cx="224" cy="154" r="5" fill="none" stroke="#3a3040" stroke-width="0.8" stroke-dasharray="2,1.5"/><text x="224" y="157" text-anchor="middle" font-size="5" fill="#4a4050">🇿🇦</text>
 
                   <!-- 국가 마커 + 와인 점 -->
-                  <circle cx="210" cy="42" r="12" fill="var(--wine)" opacity="0.9" cursor="pointer" onclick="drillMap('france')"/>
+                  <circle cx="210" cy="42" r="12" fill="var(--accent-wine)" opacity="0.9" cursor="pointer" onclick="drillMap('france')"/>
                   <text x="210" y="40" text-anchor="middle" font-size="9" font-weight="800" fill="white">4</text>
                   <text x="210" y="49" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.7)">🇫🇷</text>
                   <circle cx="203" cy="33" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="218" cy="36" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
                   <circle cx="205" cy="50" r="2.5" fill="#C8D8A0" stroke="#1a1520" stroke-width="0.8"/><circle cx="218" cy="48" r="2.5" fill="#E8A0B0" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="86" cy="158" r="10" fill="var(--wine)" opacity="0.85" cursor="pointer" onclick="drillMap('chile')"/>
+                  <circle cx="86" cy="158" r="10" fill="var(--accent-wine)" opacity="0.85" cursor="pointer" onclick="drillMap('chile')"/>
                   <text x="86" y="156" text-anchor="middle" font-size="8" font-weight="800" fill="white">3</text>
                   <text x="86" y="164" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">🇨🇱</text>
                   <circle cx="80" cy="148" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="90" cy="152" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="84" cy="168" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="364" cy="140" r="10" fill="var(--wine)" opacity="0.8" cursor="pointer" onclick="drillMap('australia')"/>
+                  <circle cx="364" cy="140" r="10" fill="var(--accent-wine)" opacity="0.8" cursor="pointer" onclick="drillMap('australia')"/>
                   <text x="364" y="138" text-anchor="middle" font-size="8" font-weight="800" fill="white">2</text>
                   <text x="364" y="146" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">🇦🇺</text>
                   <circle cx="356" cy="132" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/><circle cx="372" cy="148" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="408" cy="160" r="8" fill="var(--wine)" opacity="0.8" cursor="pointer" onclick="drillMap('nz')"/>
+                  <circle cx="408" cy="160" r="8" fill="var(--accent-wine)" opacity="0.8" cursor="pointer" onclick="drillMap('nz')"/>
                   <text x="408" y="158" text-anchor="middle" font-size="8" font-weight="800" fill="white">2</text>
                   <text x="408" y="165" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">🇳🇿</text>
                   <circle cx="404" cy="154" r="2.5" fill="#D4C98A" stroke="#1a1520" stroke-width="0.8"/><circle cx="412" cy="166" r="2.5" fill="#D4C98A" stroke="#1a1520" stroke-width="0.8"/>
 
-                  <circle cx="46" cy="52" r="8" fill="var(--wine)" opacity="0.75" cursor="pointer" onclick="drillMap('usa')"/>
+                  <circle cx="46" cy="52" r="8" fill="var(--accent-wine)" opacity="0.75" cursor="pointer" onclick="drillMap('usa')"/>
                   <text x="46" y="50" text-anchor="middle" font-size="8" font-weight="800" fill="white">1</text>
                   <text x="46" y="57" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.7)">🇺🇸</text>
                   <circle cx="44" cy="48" r="2.5" fill="#722F37" stroke="#1a1520" stroke-width="0.8"/>
@@ -5477,7 +5461,7 @@
                   <circle cx="225" cy="118" r="3" fill="#722F37" stroke="#1a1520" stroke-width="1"><title>루이 라투르 피노 누아</title></circle>
 
                   <!-- 보르도 (남서) — 클릭 가능 -->
-                  <path d="M80,200 L110,190 L125,210 L120,240 L105,260 L85,255 L75,235 L75,215Z" fill="rgba(139,115,150,0.4)" stroke="var(--wine)" stroke-width="1.5" cursor="pointer" onclick="drillMap('bordeaux')"/>
+                  <path d="M80,200 L110,190 L125,210 L120,240 L105,260 L85,255 L75,235 L75,215Z" fill="rgba(139,115,150,0.4)" stroke="var(--accent-wine)" stroke-width="1.5" cursor="pointer" onclick="drillMap('bordeaux')"/>
                   <text x="100" y="230" text-anchor="middle" font-size="10" font-weight="700" fill="rgba(255,255,255,0.9)">Bordeaux</text>
                   <text x="100" y="242" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.5)">탭하여 확대 →</text>
 
@@ -5505,7 +5489,7 @@
                   <!-- 범례 -->
                   <text x="12" y="365" font-size="8" fill="#5a5060">● 마신 와인</text>
                   <text x="80" y="365" font-size="8" fill="#3a3545">--- 미탐험</text>
-                  <text x="140" y="365" font-size="8" fill="var(--wine)">█ 확대 가능</text>
+                  <text x="140" y="365" font-size="8" fill="var(--accent-wine)">█ 확대 가능</text>
                 </svg>
 
                 <!-- LEVEL 2: 보르도 -->
@@ -5545,8 +5529,8 @@
                   <text x="160" y="208" text-anchor="middle" font-size="7" fill="#4a4050">Deux-Mers</text>
 
                   <!-- CTA -->
-                  <rect x="70" y="310" width="200" height="40" rx="12" fill="rgba(139,115,150,0.15)" stroke="var(--wine)" stroke-width="1" stroke-dasharray="4,3" cursor="pointer" onclick="alert('보르도 와인 검색/등록')"/>
-                  <text x="170" y="334" text-anchor="middle" font-size="11" font-weight="600" fill="var(--wine)">보르도 와인 기록하기 →</text>
+                  <rect x="70" y="310" width="200" height="40" rx="12" fill="rgba(139,115,150,0.15)" stroke="var(--accent-wine)" stroke-width="1" stroke-dasharray="4,3" cursor="pointer" onclick="alert('보르도 와인 검색/등록')"/>
+                  <text x="170" y="334" text-anchor="middle" font-size="11" font-weight="600" fill="var(--accent-wine)">보르도 와인 기록하기 →</text>
 
                   <text x="170" y="370" text-anchor="middle" font-size="9" fill="#4a4050">지역을 탭하면 해당 산지 와인을 볼 수 있어요</text>
                 </svg>
@@ -5626,18 +5610,18 @@
                 </div>
                 <!-- 70s: 1병=17% -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'70-79')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:17%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.5;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:17%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.5;"></div>
                 </div>
                 <!-- 80s: 5병=83% (숫자 막대 안) -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'80-89')">
-                  <div style="width:100%;height:83%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:83%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">5</span>
                   </div>
                 </div>
                 <!-- 90s: 6병=100% (숫자 막대 안) -->
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByScore(this,'90-100')">
-                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--accent-wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">6</span>
                   </div>
                 </div>
@@ -5663,31 +5647,31 @@
               <div class="pd-lock-text">기록 20개 이상일 때 표시</div>
             </div>
             <div class="wine-filter-section">
-              <div class="wine-section-label">월별 소비 <small style="font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
+              <div class="wine-section-label">월별 소비 <small style="font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:6px;padding:2px 8px;">총 124만</small></div>
               <div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:0 16px;">
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('10월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('11월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">2</div>
-                  <div style="width:100%;height:50%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.55;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">2</div>
+                  <div style="width:100%;height:50%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.55;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('12월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('1월')">
-                  <div style="width:100%;height:75%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:75%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.75;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">3</span>
                   </div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('2월')">
-                  <div style="font-size:10px;font-weight:700;color:var(--wine);margin-bottom:2px;">1</div>
-                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--wine);opacity:0.4;"></div>
+                  <div style="font-size:10px;font-weight:700;color:var(--accent-wine);margin-bottom:2px;">1</div>
+                  <div style="width:100%;height:25%;border-radius:3px 3px 0 0;background:var(--accent-wine);opacity:0.4;"></div>
                 </div>
                 <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;" onclick="filterByMonth('3월')">
-                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
+                  <div style="width:100%;height:100%;border-radius:3px 3px 0 0;background:var(--accent-wine);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;">
                     <span style="font-size:10px;font-weight:800;color:#fff;">4</span>
                   </div>
                 </div>
@@ -5696,9 +5680,9 @@
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">10월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">8만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">11월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">22만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">12월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">12만</div></div>
-                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">1월</div><div style="font-size:8px;font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">32만</div></div>
+                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">1월</div><div style="font-size:8px;font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">32만</div></div>
                 <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">2월</div><div style="font-size:8px;font-weight:600;color:var(--text-hint);background:var(--bg-page);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">14만</div></div>
-                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">3월</div><div style="font-size:8px;font-weight:600;color:var(--wine);background:var(--wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">36만</div></div>
+                <div style="flex:1;text-align:center;"><div style="font-size:9px;color:var(--text-hint);">3월</div><div style="font-size:8px;font-weight:600;color:var(--accent-wine);background:var(--accent-wine-light);border-radius:4px;padding:1px 4px;margin-top:2px;display:inline-block;">36만</div></div>
               </div>
             </div>
             </div><!-- /pd-section-wrap monthly -->
@@ -5795,7 +5779,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/18 저장</span>
+                      <span style="font-size:10px;color:var(--accent-wine);font-weight:600;background:var(--accent-wine-light);padding:2px 8px;border-radius:6px;">3/18 저장</span>
                       <span style="font-size:10px;color:var(--text-hint);">≈ 38만</span>
                     </div>
                   </div>
@@ -5815,7 +5799,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/12 저장</span>
+                      <span style="font-size:10px;color:var(--accent-wine);font-weight:600;background:var(--accent-wine-light);padding:2px 8px;border-radius:6px;">3/12 저장</span>
                       <span style="font-size:10px;color:var(--text-hint);">≈ 28만</span>
                     </div>
                   </div>
@@ -5835,7 +5819,7 @@
                       </div>
                     </div>
                     <div class="place-engagement">
-                      <span style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:6px;">3/5 저장</span>
+                      <span style="font-size:10px;color:var(--accent-wine);font-weight:600;background:var(--accent-wine-light);padding:2px 8px;border-radius:6px;">3/5 저장</span>
                       <span style="font-size:10px;color:var(--text-hint);">≈ 15만</span>
                     </div>
                   </div>
@@ -5858,7 +5842,7 @@
               <div id="wineCellarCompact" style="display:none;">
                 <div class="compact-list">
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                    <div class="compact-rank" style="color:var(--wine);">1</div>
+                    <div class="compact-rank" style="color:var(--accent-wine);">1</div>
                     <div class="compact-thumb wine-thumb">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                     </div>
@@ -5869,7 +5853,7 @@
                     <div class="compact-score wine-score">94</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                    <div class="compact-rank" style="color:var(--wine);">2</div>
+                    <div class="compact-rank" style="color:var(--accent-wine);">2</div>
                     <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=400&fit=crop') center/cover no-repeat;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                     </div>
@@ -5880,7 +5864,7 @@
                     <div class="compact-score wine-score">96</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                    <div class="compact-rank" style="color:var(--wine);">3</div>
+                    <div class="compact-rank" style="color:var(--accent-wine);">3</div>
                     <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1474722883778-792e7990302f?w=400&h=400&fit=crop') center/cover no-repeat;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                     </div>
@@ -5891,7 +5875,7 @@
                     <div class="compact-score wine-score">93</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                    <div class="compact-rank" style="color:var(--wine);">4</div>
+                    <div class="compact-rank" style="color:var(--accent-wine);">4</div>
                     <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=400&h=400&fit=crop') center/cover no-repeat;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                     </div>
@@ -5902,7 +5886,7 @@
                     <div class="compact-score wine-score">89</div>
                   </div>
                   <div class="compact-item" onclick="location.href='02_detail_wine.html'">
-                    <div class="compact-rank" style="color:var(--wine);">5</div>
+                    <div class="compact-rank" style="color:var(--accent-wine);">5</div>
                     <div class="compact-thumb wine-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=400&h=400&fit=crop') center/cover no-repeat;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><path d="M8 2h8l1 5H7L8 2z"/><rect x="7" y="7" width="10" height="14" rx="1"/></svg>
                     </div>
@@ -5925,11 +5909,11 @@
                     <div class="place-name">Opus One 2020</div>
                     <div class="place-meta">레드 · 나파밸리 · 카베르네</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="color:var(--wine);">94</div>
+                      <div class="place-total-score" style="color:var(--accent-wine);">94</div>
                     </div>
                     <div class="place-sources" style="margin-top:2px;">
                       <div class="place-source">
-                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-tag" style="background:var(--accent-wine-light);color:var(--accent-wine);">셀러</span>
                         <span class="source-text">구매 <strong>85만</strong> · 2024.01</span>
                       </div>
                     </div>
@@ -5947,11 +5931,11 @@
                     <div class="place-name">Penfolds Grange 2018</div>
                     <div class="place-meta">레드 · 쉬라즈 · 호주</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="color:var(--wine);">96</div>
+                      <div class="place-total-score" style="color:var(--accent-wine);">96</div>
                     </div>
                     <div class="place-sources" style="margin-top:2px;">
                       <div class="place-source">
-                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-tag" style="background:var(--accent-wine-light);color:var(--accent-wine);">셀러</span>
                         <span class="source-text">구매 <strong>72만</strong> · 2023.11</span>
                       </div>
                     </div>
@@ -5969,11 +5953,11 @@
                     <div class="place-name">Dom Pérignon 2012</div>
                     <div class="place-meta">스파클링 · 샴페인 · 프랑스</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="color:var(--wine);">93</div>
+                      <div class="place-total-score" style="color:var(--accent-wine);">93</div>
                     </div>
                     <div class="place-sources" style="margin-top:2px;">
                       <div class="place-source">
-                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-tag" style="background:var(--accent-wine-light);color:var(--accent-wine);">셀러</span>
                         <span class="source-text">구매 <strong>45만</strong> · 2024.02</span>
                       </div>
                     </div>
@@ -5991,11 +5975,11 @@
                     <div class="place-name">Barolo Riserva 2016</div>
                     <div class="place-meta">레드 · 네비올로 · 이탈리아</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="color:var(--wine);">89</div>
+                      <div class="place-total-score" style="color:var(--accent-wine);">89</div>
                     </div>
                     <div class="place-sources" style="margin-top:2px;">
                       <div class="place-source">
-                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-tag" style="background:var(--accent-wine-light);color:var(--accent-wine);">셀러</span>
                         <span class="source-text">구매 <strong>18만</strong> · 2024.01</span>
                       </div>
                     </div>
@@ -6013,11 +5997,11 @@
                     <div class="place-name">Cloudy Bay Sauv. Blanc 2022</div>
                     <div class="place-meta">화이트 · 소비뇽 블랑 · NZ</div>
                     <div class="place-score-row">
-                      <div class="place-total-score" style="color:var(--wine);">90</div>
+                      <div class="place-total-score" style="color:var(--accent-wine);">90</div>
                     </div>
                     <div class="place-sources" style="margin-top:2px;">
                       <div class="place-source">
-                        <span class="source-tag" style="background:var(--wine-light);color:var(--wine);">셀러</span>
+                        <span class="source-tag" style="background:var(--accent-wine-light);color:var(--accent-wine);">셀러</span>
                         <span class="source-text">구매 <strong>5만</strong> · 2024.03</span>
                       </div>
                     </div>
@@ -6079,18 +6063,18 @@
                     <div class="compact-thumb" style="background:url('https://images.unsplash.com/photo-1586370434639-0fe43b2d32e6?w=200&h=200&fit=crop') center/cover;border-radius:10px"></div>
                     <div class="compact-info">
                       <div class="compact-name">Penfolds Grange 2018</div>
-                      <div class="compact-meta" style="color:var(--wine)">Shiraz · 바로사 밸리</div>
+                      <div class="compact-meta" style="color:var(--accent-wine)">Shiraz · 바로사 밸리</div>
                     </div>
-                    <div class="compact-score" style="color:var(--wine)">96</div>
+                    <div class="compact-score" style="color:var(--accent-wine)">96</div>
                   </div>
                   <div class="compact-item">
                     <div class="compact-rank top3" style="width:auto;font-size:10px;color:var(--text-hint)">2차</div>
                     <div class="compact-thumb" style="background:url('https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?w=200&h=200&fit=crop') center/cover;border-radius:10px"></div>
                     <div class="compact-info">
                       <div class="compact-name">Barolo Brunate 2017</div>
-                      <div class="compact-meta" style="color:var(--wine)">Nebbiolo · 피에몬테</div>
+                      <div class="compact-meta" style="color:var(--accent-wine)">Nebbiolo · 피에몬테</div>
                     </div>
-                    <div class="compact-score" style="color:var(--wine)">91</div>
+                    <div class="compact-score" style="color:var(--accent-wine)">91</div>
                   </div>
                 </div>
               </div>
@@ -6133,17 +6117,17 @@
           <div class="photo-grid">
             <!-- 감지된 사진 (하이라이트) -->
             <div class="photo-grid-item selected" onclick="togglePhotoSelect(this)">
-              <div class="photo-grid-placeholder" style="background:var(--primary-light);">
-                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--primary);"></i>
-                <span style="color:var(--primary);">3/19 12:34</span>
+              <div class="photo-grid-placeholder" style="background:var(--accent-food-light);">
+                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--accent-food);"></i>
+                <span style="color:var(--accent-food);">3/19 12:34</span>
               </div>
               <div class="photo-nudge-badge"><i data-lucide="sparkles"></i> 감지</div>
               <div class="photo-check">✓</div>
             </div>
             <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
-              <div class="photo-grid-placeholder" style="background:var(--primary-light);">
-                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--primary);"></i>
-                <span style="color:var(--primary);">3/19 12:30</span>
+              <div class="photo-grid-placeholder" style="background:var(--accent-food-light);">
+                <i data-lucide="utensils" style="width:24px;height:24px;color:var(--accent-food);"></i>
+                <span style="color:var(--accent-food);">3/19 12:30</span>
               </div>
               <div class="photo-nudge-badge"><i data-lucide="sparkles"></i> 감지</div>
               <div class="photo-check">✓</div>
@@ -6171,9 +6155,9 @@
               <div class="photo-check">✓</div>
             </div>
             <div class="photo-grid-item" onclick="togglePhotoSelect(this)">
-              <div class="photo-grid-placeholder" style="background:var(--wine-light);">
-                <i data-lucide="wine" style="width:20px;height:20px;color:var(--wine);"></i>
-                <span style="color:var(--wine);">3/17 20:15</span>
+              <div class="photo-grid-placeholder" style="background:var(--accent-wine-light);">
+                <i data-lucide="wine" style="width:20px;height:20px;color:var(--accent-wine);"></i>
+                <span style="color:var(--accent-wine);">3/17 20:15</span>
               </div>
               <div class="photo-check">✓</div>
             </div>
@@ -6256,7 +6240,7 @@
           <div id="addRestSearchResults" style="display:none">
             <div class="rec-search-item" onclick="addRestaurant('스시코우지','일식 · 교대역', true)">
               <div><div class="rec-search-name">스시코우지</div><div class="rec-search-meta">일식 · 교대역</div></div>
-              <div style="font-size:11px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
+              <div style="font-size:11px;color:var(--accent-food);font-weight:600;background:var(--accent-food-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
             </div>
             <div class="rec-search-item" onclick="addRestaurant('스시코우지 을지로점','일식 · 을지로3가', false)">
               <div><div class="rec-search-name">스시코우지 을지로점</div><div class="rec-search-meta">일식 · 을지로3가</div></div>
@@ -6275,7 +6259,7 @@
                 <div class="nearby-info"><div class="nearby-name">스시코우지</div><div class="nearby-meta">일식 · 을지로</div></div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                   <div class="nearby-dist">120m</div>
-                  <div style="font-size:10px;color:var(--primary);font-weight:600;">기록 있음</div>
+                  <div style="font-size:10px;color:var(--accent-food);font-weight:600;">기록 있음</div>
                 </div>
               </div>
               <div class="nearby-item" onclick="addRestaurant('몽탄','한식 · 을지로', false)">
@@ -6314,7 +6298,7 @@
         <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
         <div class="record-nav">
           <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
-          <div class="record-nav-title" style="color:var(--wine);">와인 추가</div>
+          <div class="record-nav-title" style="color:var(--accent-wine);">와인 추가</div>
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;padding-bottom:20px;">
@@ -6350,7 +6334,7 @@
         <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
         <div class="record-nav">
           <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
-          <div class="record-nav-title" style="color:var(--wine);">와인 확인</div>
+          <div class="record-nav-title" style="color:var(--accent-wine);">와인 확인</div>
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
@@ -6378,7 +6362,7 @@
         <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
         <div class="record-nav">
           <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
-          <div class="record-nav-title" style="color:var(--wine);">와인 검색</div>
+          <div class="record-nav-title" style="color:var(--accent-wine);">와인 검색</div>
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
         <div class="scroll-content">
@@ -6392,7 +6376,7 @@
             </div>
             <div class="rec-search-item" onclick="addWine('Chateau Margaux 2015','Red · Bordeaux', true)">
               <div><div class="rec-search-name">Chateau Margaux 2015</div><div class="rec-search-meta">Red · Bordeaux, France</div></div>
-              <div style="font-size:11px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
+              <div style="font-size:11px;color:var(--accent-wine);font-weight:600;background:var(--accent-wine-light);padding:3px 8px;border-radius:20px;">기록 있음</div>
             </div>
             <div class="rec-search-item" onclick="addWine('Chateau Margaux 2010','Red · Bordeaux', false)">
               <div><div class="rec-search-name">Chateau Margaux 2010</div><div class="rec-search-meta">Red · Bordeaux, France</div></div>
@@ -6554,7 +6538,7 @@
                     <div style="font-size:13px;font-weight:700;color:var(--text);">Opus One 2020</div>
                     <div style="font-size:11px;color:var(--text-sub);">Red · Napa Valley</div>
                   </div>
-                  <div style="font-size:10px;color:var(--wine);font-weight:600;background:var(--wine-light);padding:2px 8px;border-radius:20px;">내 기록</div>
+                  <div style="font-size:10px;color:var(--accent-wine);font-weight:600;background:var(--accent-wine-light);padding:2px 8px;border-radius:20px;">내 기록</div>
                 </div>
                 <!-- DB에 있지만 내 기록 없는 와인 -->
                 <div class="rest-rec-wine-result" onclick="linkExistingWine('Sassicaia 2019','Red · Toscana')">
@@ -6568,11 +6552,11 @@
                 </div>
                 <!-- 미등록 → 신규 기록 유도 -->
                 <div class="rest-rec-wine-result rest-rec-wine-new" onclick="linkNewWine()">
-                  <div style="width:28px;height:40px;border:1.5px dashed var(--wine);border-radius:6px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="plus" style="width:12px;height:12px;color:var(--wine);"></i>
+                  <div style="width:28px;height:40px;border:1.5px dashed var(--accent-wine);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="plus" style="width:12px;height:12px;color:var(--accent-wine);"></i>
                   </div>
                   <div style="flex:1;">
-                    <div style="font-size:13px;font-weight:700;color:var(--wine);">새 와인으로 등록</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--accent-wine);">새 와인으로 등록</div>
                     <div style="font-size:11px;color:var(--text-hint);">검색 결과에 없는 와인 추가</div>
                   </div>
                 </div>
@@ -6596,7 +6580,7 @@
         <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="8" y="4" width="4" height="14" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/><rect x="20" y="2" width="2" height="16" rx="1" opacity="0.3"/></svg></div></div>
         <div class="record-nav">
           <div class="record-nav-back" onclick="goBack()"><i data-lucide="chevron-left" style="width:22px;height:22px;"></i></div>
-          <div class="record-nav-title" style="color:var(--wine);">기록</div>
+          <div class="record-nav-title" style="color:var(--accent-wine);">기록</div>
           <div class="record-nav-close" onclick="exitRecord()"><i data-lucide="x" style="width:20px;height:20px;"></i></div>
         </div>
         <div class="scroll-content">
@@ -6610,7 +6594,7 @@
               <div class="rest-record-info">
                 <div class="rest-record-name" id="wineRecName">Chateau Margaux 2018</div>
                 <div class="rest-record-meta" id="wineRecMeta">Red · Bordeaux · 2018</div>
-                <div class="rest-record-ai-badge" style="color:var(--wine);">
+                <div class="rest-record-ai-badge" style="color:var(--accent-wine);">
                   <i data-lucide="sparkles" style="width:10px;height:10px;"></i> AI 자동 인식
                 </div>
               </div>
@@ -6781,7 +6765,7 @@
           <div class="rest-record-section">
             <div class="rest-rec-field">
               <label>가격 (병) <span class="ai-tag wine">AI 추정</span></label>
-              <input class="rest-rec-input" type="text" value="89,000원" placeholder="예: 89,000원" style="border-color:var(--wine);" />
+              <input class="rest-rec-input" type="text" value="89,000원" placeholder="예: 89,000원" style="border-color:var(--accent-wine);" />
             </div>
           </div>
 
@@ -6799,7 +6783,7 @@
                   <div class="rest-rec-wine-name">스시코우지</div>
                   <div class="rest-rec-wine-meta">일식 · 을지로</div>
                 </div>
-                <div class="rest-rec-wine-badge" style="color:var(--primary);background:var(--primary-light);">연결됨</div>
+                <div class="rest-rec-wine-badge" style="color:var(--accent-food);background:var(--accent-food-light);">연결됨</div>
                 <div class="rest-rec-comp-remove" onclick="this.closest('.rest-rec-wine-linked').style.display='none'">
                   <i data-lucide="x" style="width:14px;height:14px;"></i>
                 </div>
@@ -6807,7 +6791,7 @@
             </div>
 
             <!-- 식당 검색 버튼 -->
-            <div class="rest-rec-wine-add" style="color:var(--primary);" onclick="document.getElementById('restSearchAreaInWine').style.display=document.getElementById('restSearchAreaInWine').style.display==='none'?'block':'none'">
+            <div class="rest-rec-wine-add" style="color:var(--accent-food);" onclick="document.getElementById('restSearchAreaInWine').style.display=document.getElementById('restSearchAreaInWine').style.display==='none'?'block':'none'">
               <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
               <span>식당 검색</span>
             </div>

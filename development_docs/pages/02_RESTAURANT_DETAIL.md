@@ -176,7 +176,7 @@ text-align: center
 | 요소 | 스타일 |
 |------|--------|
 | 라벨 | 9px, weight 600, `--text-hint`, letter-spacing 0.02em |
-| 점수 | 24px, weight 800, `--primary` |
+| 점수 | 24px, weight 800, `--accent-food` |
 | 점수 (빈) | 18px, `--border-bold`, "—" 표시 |
 | 부가 텍스트 | 9px, `--text-hint` |
 
@@ -212,7 +212,7 @@ text-align: center
 | 아이콘 | 24px 정사각, radius 6px, 버블 테마색 light 배경, 아이콘 12px |
 | 버블명 | 12px, weight 500, `--text` |
 | 평가 수 | 10px, `--text-hint` |
-| 점수 | 16px, weight 800, `--primary` |
+| 점수 | 16px, weight 800, `--accent-food` |
 | 행 스타일 | flex, align-center, gap 8px, `bg-card`, border, radius 8px, padding 6px 10px |
 
 #### nyam 점수 산출 로직 (식당)
@@ -251,7 +251,7 @@ text-align: center
 
 #### 기록 있음: 타임라인
 ```
-│ (세로선: linear-gradient primary → 투명)
+│ (세로선: linear-gradient accent-food → 투명)
 ● 2026.03.15  [데이트]
   92점 "분위기 최고, 오마카세 감동"
   [📷] [📷]
@@ -263,7 +263,7 @@ text-align: center
 
 | 요소 | 스타일 |
 |------|--------|
-| 세로선 | `left: 6px`, width 2px, `linear-gradient(to bottom, --primary, #D4A089, transparent)` |
+| 세로선 | `left: 6px`, width 2px, `linear-gradient(to bottom, --accent-food, #D4A089, transparent)` |
 | 타임라인 dot | 12px 원, 2px `--bg` 보더 + `box-shadow: 0 0 0 2px` 외부 링 |
 | 날짜 | 11px, `--text-sub`, flex row with gap 6px |
 | 상황 칩 | padding `2px 8px`, radius 20px, 10px weight 600, 흰색 텍스트, 상황별 배경색 |
@@ -277,7 +277,7 @@ text-align: center
 
 각 타임라인 아이템의 **dot 색상과 점수 색상은 항상 동일** (일관된 색상 페어링).
 
-- **CSS 기본값**: `--primary` (#C17B5E) — dot background + box-shadow + 점수 color 모두 적용
+- **CSS 기본값**: `--accent-food` (#C17B5E) — dot background + box-shadow + 점수 color 모두 적용
 - **상황별 오버라이드**: 아이템별로 inline style로 dot과 점수 색상을 상황 태그 색상으로 변경 가능
 
 | 상황 태그 | CSS 변수 | 색상 | dot/점수 오버라이드 |
@@ -286,10 +286,10 @@ text-align: center
 | 데이트 | `--scene-romantic` | `#B8879B` | `var(--scene-romantic)` |
 | 친구/모임 | `--scene-friends` | `#7EAE8B` | `var(--positive)` |
 | 가족 | `--scene-family` | `#C9A96E` | `var(--caution)` |
-| 회식/접대 | `--scene-business` | `#8B7396` | `var(--wine)` |
+| 회식/접대 | `--scene-business` | `#8B7396` | `var(--accent-wine)` |
 | 술자리 | `--scene-drinks` | `#B87272` | `var(--negative)` |
 
-> 목업에서는 최근 기록이 기본 `--primary`를 사용하고, 이전 기록들이 상황 태그 색상으로 오버라이드됨. 구현 시 모든 기록에 상황 태그 기반 색상을 적용하는 것을 권장.
+> 목업에서는 최근 기록이 기본 `--accent-food`를 사용하고, 이전 기록들이 상황 태그 색상으로 오버라이드됨. 구현 시 모든 기록에 상황 태그 기반 색상을 적용하는 것을 권장.
 
 #### 기록 없음
 ```
@@ -326,7 +326,7 @@ text-align: center
 
 | 종류 | 크기 | 스타일 | z-index |
 |------|------|--------|---------|
-| **현재 식당** (current) | 38px | `--primary` 배경, 3px `--primary-light` 보더, `#fff` 텍스트, weight 800, 11px | 10 |
+| **현재 식당** (current) | 38px | `--accent-food` 배경, 3px `--accent-food-light` 보더, `#fff` 텍스트, weight 800, 11px | 10 |
 | **참조 식당** (ref) | 28px | `--border-bold` 배경, 2px `--border` 보더, `--text` 텍스트, opacity 0.35, weight 600, 8px | 5 |
 
 - 현재 식당 dot: `box-shadow: 0 2px 10px rgba(193,123,94,0.4)`
@@ -336,7 +336,7 @@ text-align: center
 
 #### 하단 설명
 ```
-ℹ️ (12px, --text-hint) "내가 리뷰한 비슷한 가격대·지역 식당과의 상대적 위치"
+ℹ️ info 아이콘 (12px, --text-hint) + "내가 리뷰한 비슷한 가격대·지역 식당과의 상대적 위치" (11px, --text-hint)
 ```
 
 ### Layer 7: 실용 정보
@@ -347,7 +347,7 @@ text-align: center
 |----|--------|------|------|
 | 주소 | `map-pin` | 주소 텍스트 + 미니 지도 iframe | 탭 → 외부 지도 앱 |
 | 영업 | `clock` | `영업 중` (`--positive`, weight 600) · 시간 | — |
-| 전화 | `phone` | 전화번호 | "전화하기" (`--primary`, weight 600) |
+| 전화 | `phone` | 전화번호 | "전화하기" (`--accent-food`, weight 600) |
 | 메뉴 | — | 접이식 버튼 (내 기록 모드에서만 표시) | 토글 |
 
 > **미방문 상태 (추천/버블 리뷰 모드)에서는 메뉴 접이식 버튼이 표시되지 않음.**
@@ -381,7 +381,7 @@ font-size: 13px
 #### 가로 스크롤 카드
 ```
 카드 너비: 130px
-배경: --wine-light
+배경: --accent-wine-light
 border: 1px solid #DDD6E3
 border-radius: 12px
 padding: 10px
@@ -390,8 +390,8 @@ padding: 10px
 | 요소 | 스타일 |
 |------|--------|
 | 와인 라벨 | 100% × 56px, 보라 그라디언트 배경, radius 6px, wine 아이콘 (20px) |
-| 와인명 | 11px, weight 600, `--wine`, line-height 1.3 |
-| 점수 | 11px, `--text-sub`, 점수 bold `--wine` |
+| 와인명 | 11px, weight 600, `--accent-wine`, line-height 1.3 |
+| 점수 | 11px, `--text-sub`, 점수 bold `--accent-wine` |
 
 탭 → 와인 상세 페이지로 이동
 
@@ -403,13 +403,13 @@ padding: 10px
 #### 필터 칩
 - pill 형태: padding `5px 12px`, radius 20px, 11px weight 500
 - 비활성: `--bg` 배경, `1.5px solid --border`, `--text-sub`
-- 활성: `--primary-light` 배경, `1.5px solid --primary`, `--primary` 텍스트
+- 활성: `--accent-food-light` 배경, `1.5px solid --accent-food`, `--accent-food` 텍스트
 - 단일 선택 (전체 / 버블명별)
 
 #### 버블 카드
 ```
 ┌─────────────────────────────────────┐
-│ [아바타32] 유저명              90점  │
+│ [아바타32] 유저명 [일식 Lv.6]  90점  │
 │            버블명                    │
 │ "한줄평 텍스트"                      │
 │ 상황·시간               ♡4  💬2    │
@@ -421,8 +421,10 @@ padding: 10px
 | 카드 | `--bg-card`, radius 12px, border, padding 12px, margin-bottom 8px |
 | 아바타 | 32px 원형, 그라디언트 배경 (유저별), 이니셜 (14px weight 700 흰색) |
 | 유저명 | 12px, weight 600, `--text` |
+| 레벨 뱃지 | 유저명 옆 inline, 11px weight 500, radius 4px, padding `1px 6px`, margin-left 4px |
+| 레벨 뱃지 색상 | 유저별 상이 — 예: `--accent-wine` 텍스트 + `--accent-wine-light` 배경, 또는 `--accent-social` 텍스트 + `#EDF2F5` 배경 |
 | 버블명 | 10px, `--text-sub` |
-| 점수 | 14px, weight 700, `--primary` |
+| 점수 | 14px, weight 700, `--accent-food` |
 | 한줄평 | 12px, `--text-sub`, line-height 1.5 |
 | 메타 | 10px, `--text-hint` (상황 · 시간) |
 | 리액션 | 11px, `--text-sub`, `heart`/`message-circle` 12px |

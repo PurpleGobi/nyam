@@ -14,7 +14,7 @@
 - 식당 상세 (02_detail_restaurant.html) → Layer 5: 나의 기록 타임라인
 - 와인 상세 (02_detail_wine.html) → Layer 6: 나의 기록 타임라인
 
-타임라인 아이템 탭 시 `/records/[id]`로 이동하는 것으로 설계되어 있으나 (00_IA.md, 02_RESTAURANT_DETAIL.md, 03_WINE_DETAIL.md 참조), 상세 화면 자체의 프로토타입은 미구현 상태.
+타임라인 아이템 탭 시 `/records/[id]`로 이동하는 것으로 설계되어 있으나 (00_IA.md, 02_RESTAURANT_DETAIL.md, 02_WINE_DETAIL.md 참조), 상세 화면 자체의 프로토타입은 미구현 상태.
 
 아래는 00_IA.md와 관련 문서를 기반으로 한 기록 상세 페이지 스펙이다.
 
@@ -70,8 +70,8 @@
 │ 🍽 스시코우지 (식당 연결)             │  와인 기록: 연결된 식당
 │                                      │
 │ ── 경험치 ────────────────────      │  Section 9
-│ 을지로 +18 XP (Lv.4)                │
-│ 일식 +12 XP (Lv.3)                  │
+│ 을지로 +5 XP (Lv.4)                 │
+│ 일식 +5 XP (Lv.3)                   │
 │                                      │
 │ ── 액션 ──────────────────────      │  Section 10
 │ [수정하기]  [삭제하기]                │
@@ -154,7 +154,7 @@
 
 ### Section 6: 페어링 (와인 기록만)
 
-- `pairings` 있을 때만 표시
+- `pairing_categories` 있을 때만 표시
 - 선택된 페어링 카테고리를 칩으로 나열
 - 칩 스타일: `var(--wine-light)` 배경, `var(--wine-border)` 테두리, `var(--wine)` 텍스트
 
@@ -190,8 +190,8 @@
   - 수정 후 저장 시 `records` UPDATE + XP 재계산
 - **[삭제하기]**: Destructive 버튼 (`text-red-500`)
   - 탭 → 확인 모달: "이 기록을 삭제하시겠습니까? 경험치가 차감됩니다."
-  - 확인 시: soft delete (`status → 'deleted'` 또는 `deleted_at` 설정)
-  - XP 재계산: `xp_histories`에서 해당 `record_id` 관련 XP 차감
+  - 확인 시: hard delete (`records` DELETE → `record_photos` ON DELETE CASCADE 자동 삭제)
+  - XP 차감: 해당 `record_id`의 `xp_histories` 삭제 + `user_experiences` XP 재계산
   - 삭제 후 → 이전 페이지로 이동
 - **[버블에 공유]**: Phase 2. Phase 1에서는 숨김
 
@@ -205,9 +205,9 @@
 | 아로마 | 와인 아닌 경우 or aroma_regions NULL | 섹션 숨김 |
 | 한줄평 | comment NULL | 섹션 숨김 |
 | 사진 | record_photos 0개 | 섹션 숨김 |
-| 페어링 | 와인 아닌 경우 or pairings NULL | 섹션 숨김 |
+| 페어링 | 와인 아닌 경우 or pairing_categories NULL | 섹션 숨김 |
 | 메뉴/팁 | menu_tags + tips 모두 NULL | 섹션 숨김 |
-| 실용 정보 | price + companions NULL | 방문일만 표시 |
+| 실용 정보 | total_price/purchase_price + companions NULL | 방문일만 표시 |
 | 경험치 | xp_histories 0건 | 섹션 숨김 |
 
 ---
@@ -236,7 +236,7 @@
 | 사분면 좌표 | records.axis_x/y + 동일 target records | 실시간 |
 | 아로마 | records.aroma_regions/labels | 실시간 |
 | 구조 평가 | records.complexity/finish/balance | 실시간 |
-| 페어링 | records.pairings | 실시간 |
+| 페어링 | records.pairing_categories | 실시간 |
 | 경험치 | xp_histories + user_experiences | 실시간 |
 | 와인 연결 | records.linked_wine_id → wines | 실시간 |
 | 식당 연결 | records.linked_restaurant_id → restaurants | 실시간 |
