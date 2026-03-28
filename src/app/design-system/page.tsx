@@ -322,7 +322,7 @@ export default function DesignSystemPage() {
         </Row>
 
         <Sub title="Social Login" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '340px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '340px', margin: '0 auto' }}>
           <button type="button" className="btn-social google">Google로 시작</button>
           <button type="button" className="btn-social kakao">카카오로 시작</button>
           <button type="button" className="btn-social apple">Apple로 시작</button>
