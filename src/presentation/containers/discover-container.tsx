@@ -74,7 +74,7 @@ export function DiscoverContainer() {
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
           <Search size={40} style={{ color: 'var(--text-hint)' }} />
           <p className="mt-4 text-[14px]" style={{ color: 'var(--text-sub)', textAlign: 'center' }}>
-            {area ? `${area}에 등록된 식당이 없습니다` : '지역을 선택해 맛집을 탐색하세요'}
+            {`${area}에 등록된 식당이 없습니다`}
           </p>
           <button
             type="button"
@@ -89,7 +89,7 @@ export function DiscoverContainer() {
       )}
 
       {/* Initial loading */}
-      {isLoading && cards.length === 0 && area && (
+      {isLoading && cards.length === 0 && (
         <div className="flex flex-1 items-center justify-center py-12">
           <Loader2 size={24} className="animate-spin" style={{ color: 'var(--text-hint)' }} />
         </div>

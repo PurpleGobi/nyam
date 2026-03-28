@@ -61,5 +61,7 @@ export async function GET(request: NextRequest) {
     if (cards.length >= 10) break
   }
 
-  return NextResponse.json({ cards })
+  return NextResponse.json({ cards }, {
+    headers: { 'Cache-Control': 'public, max-age=1800' },
+  })
 }

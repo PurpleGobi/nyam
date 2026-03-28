@@ -16,7 +16,7 @@ export function GenreChart({ genres }: GenreChartProps) {
     <div className="flex flex-col gap-[8px]">
       {genres.map((genre) => {
         const widthPercent = (genre.count / maxCount) * 100
-        const opacity = 0.4 + (genre.count / maxCount) * 0.6
+        const opacity = 0.3 + (genre.count / maxCount) * 0.7
 
         return (
           <div key={genre.name} className="flex items-center gap-[8px]">

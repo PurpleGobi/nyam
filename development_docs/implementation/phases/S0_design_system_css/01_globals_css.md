@@ -60,7 +60,7 @@
 | 클래스 | 주요 속성 |
 |--------|----------|
 | `.top-fixed` | `position: absolute; top:0; z-index:90; bg:rgba(248,246,243,0.55); backdrop-filter:blur(20px) saturate(1.5); box-shadow:0 1px 12px rgba(0,0,0,0.08)` |
-| `.app-header` | `padding:2px 16px 8px; display:flex; align-items:center; justify-content:space-between` |
+| `.app-header` | `padding:5px 16px; display:flex; align-items:center; justify-content:space-between` |
 | `.header-right` | `display:flex; gap:6px; align-items:center` |
 | `.header-brand` | `font-family:Comfortaa; font-size:22px; font-weight:700; letter-spacing:-0.5px; gradient` |
 | `.header-bubbles` | `font-family:Comfortaa; font-size:13px; font-weight:700; color:var(--brand)` |

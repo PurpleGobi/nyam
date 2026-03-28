@@ -78,7 +78,7 @@ interface AppHeaderProps {
   position: sticky;
   top: 0;
   z-index: 60;
-  padding: 2px 16px 8px;
+  padding: 5px 16px;
   background: rgba(248, 246, 243, 0.55);
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);

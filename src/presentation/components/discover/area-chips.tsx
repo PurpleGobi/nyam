@@ -4,8 +4,8 @@ import { DISCOVER_AREAS } from '@/domain/entities/discover'
 import type { DiscoverArea } from '@/domain/entities/discover'
 
 interface AreaChipsProps {
-  activeArea: DiscoverArea | null
-  onAreaChange: (area: DiscoverArea | null) => void
+  activeArea: DiscoverArea
+  onAreaChange: (area: DiscoverArea) => void
 }
 
 export function AreaChips({ activeArea, onAreaChange }: AreaChipsProps) {
@@ -15,7 +15,7 @@ export function AreaChips({ activeArea, onAreaChange }: AreaChipsProps) {
         <button
           key={area}
           type="button"
-          onClick={() => onAreaChange(activeArea === area ? null : area)}
+          onClick={() => onAreaChange(area)}
           className="shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors"
           style={{
             backgroundColor: activeArea === area ? 'var(--accent-food)' : 'var(--bg-card)',

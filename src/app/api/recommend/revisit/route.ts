@@ -89,5 +89,7 @@ export async function GET() {
   scored.sort((a, b) => b.score - a.score)
   const cards: RecommendationCard[] = scored.slice(0, 10).map(({ score: _score, ...card }) => card)
 
-  return NextResponse.json({ cards })
+  return NextResponse.json({ cards }, {
+    headers: { 'Cache-Control': 'public, max-age=1800' },
+  })
 }

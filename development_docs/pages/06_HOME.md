@@ -52,7 +52,7 @@
 | 요소 | 스펙 |
 |------|------|
 | 배경 | `rgba(248,246,243,0.55)`, `backdrop-filter: blur(20px) saturate(1.5)` |
-| 패딩 | `2px 16px 8px` |
+| 패딩 | `5px 16px` |
 | z-index | 60 |
 | 그림자 | `0 1px 12px rgba(0,0,0,0.08)` |
 | 브랜드 로고 | `nyam` Comfortaa 22px 700, gradient text `linear-gradient(135deg, #FF6038, #8B7396)` |
