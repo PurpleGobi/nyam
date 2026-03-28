@@ -55,11 +55,14 @@
 // src/domain/entities/restaurant.ts
 // R1: 외부 의존 0
 
-/** restaurants.genre CHECK 값 */
+/** restaurants.genre CHECK 값 (16개, 6대분류) */
 export type RestaurantGenre =
-  | '한식' | '일식' | '양식' | '중식' | '이탈리안' | '프렌치'
-  | '동남아' | '태국' | '베트남' | '인도' | '스페인' | '멕시칸'
-  | '아시안' | '파인다이닝' | '비스트로' | '카페' | '베이커리' | '바' | '주점'
+  | '한식' | '일식' | '중식'           // 동아시아
+  | '태국' | '베트남' | '인도'         // 동남아/남아시아
+  | '이탈리안' | '프렌치' | '스페인' | '지중해'  // 유럽
+  | '미국' | '멕시칸'                  // 아메리카
+  | '카페' | '바/주점' | '베이커리'     // 음료/디저트
+  | '기타'                             // 기타
 
 /** restaurants.price_range: 1~4 */
 export type PriceRange = 1 | 2 | 3 | 4
@@ -103,8 +106,8 @@ export interface Restaurant {
   id: string
   name: string
   address: string | null
-  country: string           // 기본값 '한국'
-  city: string              // 기본값 '서울'
+  country: string           // NOT NULL DEFAULT '한국'
+  city: string              // NOT NULL DEFAULT '서울'
   area: string | null       // 생활권 동네명
   district: string | null   // 구
   genre: RestaurantGenre | null
@@ -113,8 +116,8 @@ export interface Restaurant {
   lng: number | null
   phone: string | null
   hours: BusinessHours | null
-  photos: string[]          // TEXT[]
-  menus: MenuItem[]         // JSONB
+  photos: string[] | null   // TEXT[] (nullable)
+  menus: MenuItem[] | null  // JSONB (nullable)
 
   // 외부 평점
   naverRating: number | null    // DECIMAL(2,1)
@@ -124,7 +127,7 @@ export interface Restaurant {
   // 권위 인증
   michelinStars: number | null  // NULL or 1,2,3
   hasBlueRibbon: boolean
-  mediaAppearances: MediaAppearance[]
+  mediaAppearances: MediaAppearance[] | null  // JSONB (nullable)
 
   // nyam 종합 점수
   nyamScore: number | null      // 0~100, DECIMAL(4,1)
@@ -184,7 +187,7 @@ export interface QuadrantRefDot {
 export interface LinkedWineCard {
   wineId: string
   wineName: string
-  wineType: string        // 'red' | 'white' | ...
+  wineType: string | null   // 'red' | 'white' | ... (미분류 시 null)
   labelImageUrl: string | null
   satisfaction: number | null
 }
@@ -193,10 +196,10 @@ export interface LinkedWineCard {
 export interface BubbleScoreRow {
   bubbleId: string
   bubbleName: string
-  bubbleIcon: string      // lucide 아이콘명
-  bubbleColor: string     // 테마색 hex
-  memberCount: number     // 평가 참여 멤버 수
-  avgScore: number        // 평균 점수
+  bubbleIcon: string | null   // lucide 아이콘명 (미설정 시 null)
+  bubbleColor: string | null  // 테마색 hex (미설정 시 null)
+  memberCount: number         // 평가 참여 멤버 수
+  avgScore: number | null     // 평균 점수 (평가 없으면 null)
 }
 ```
 
@@ -208,7 +211,7 @@ export interface BubbleScoreRow {
 // src/application/hooks/use-restaurant-detail.ts
 // R3: domain 인터페이스에만 의존. infrastructure 직접 사용 금지.
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import type { Restaurant } from '@/domain/entities/restaurant'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
@@ -218,6 +221,8 @@ import type {
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
+import type { NyamScoreBreakdown } from '@/domain/services/nyam-score'
+import { calcNyamScore } from '@/domain/services/nyam-score'
 
 /** Hook 반환값 */
 export interface RestaurantDetailState {
@@ -240,20 +245,11 @@ export interface RestaurantDetailState {
   viewMode: 'my_records' | 'recommend' | 'bubble_review'
 }
 
-/** nyam 점수 산출 분해 */
-export interface NyamScoreBreakdown {
-  naverRating: number | null
-  kakaoRating: number | null
-  googleRating: number | null
-  webAvg: number              // (N×40% + K×30% + G×30%) / 5.0 × 100
-  webScore: number            // webAvg × 20 → 0~100
-  prestigeBonus: number       // michelin+8, blueRibbon+5, tv+3, cap 15
-  finalScore: number          // webScore × 0.82 + prestigeBonus × 1.15
-}
+// NyamScoreBreakdown: domain/services/nyam-score.ts에서 정의 및 import
 
 export function useRestaurantDetail(
   restaurantId: string,
-  userId: string,
+  userId: string | null,   // 비로그인 시 null → 식당 기본 정보만 표시
   repo: RestaurantRepository,
 ): RestaurantDetailState {
   // 구현:
@@ -277,10 +273,7 @@ export function useRestaurantDetail(
 // src/domain/services/nyam-score.ts
 // R1: 외부 의존 0
 
-import type { Restaurant } from '@/domain/entities/restaurant'
-
-// NyamScoreBreakdown은 위 엔티티 섹션에서 정의 (중복 정의 금지)
-import type { NyamScoreBreakdown } from '@/domain/entities/restaurant'
+// NyamScoreBreakdown은 이 파일에서 직접 정의 (서비스 반환 타입 co-locate)
 
 /**
  * nyam 점수 산출
@@ -344,8 +337,8 @@ export function calcNyamScore(r: Restaurant): NyamScoreBreakdown | null {
 interface HeroCarouselProps {
   /** 사진 URL 배열 */
   photos: string[]
-  /** 사진 없을 때 fallback 아이콘 (lucide 아이콘명) */
-  fallbackIcon: string
+  /** 사진 없을 때 fallback 아이콘 */
+  fallbackIcon: 'restaurant' | 'wine'
   /** 히어로 썸네일 */
   thumbnail: HeroThumbnailData | null
   /** 좋아요 상태 */
@@ -373,7 +366,7 @@ interface HeroThumbnailData {
 | 속성 | 값 |
 |------|---|
 | 높이 | `h-56` (224px) |
-| 사진 없음 | `bg-neutral-100` + fallbackIcon (28px, `--text-hint`) |
+| 사진 없음 | `var(--bg-elevated)` + fallbackIcon (28px, `--text-hint`) |
 | 스와이프 | 좌우 터치/마우스 드래그 |
 | 자동 전환 | 4초 간격, `transform 0.4s ease` |
 | dot indicator | 일반 6x6px 원 (`rgba(255,255,255,0.5)`), 활성 16x6px pill (`#fff`, border-radius 3px), 하단 중앙 |
@@ -844,7 +837,7 @@ export function RestaurantDetailContainer({ id }: { id: string }) {
 | 점수 카드 | 3슬롯 유지, 값만 "---" (18px, `var(--border-bold)`) | 레이아웃 불변 |
 | 기록 | `search` 아이콘 + "아직 방문 기록이 없어요" + CTA | padding 40px 20px |
 | 사분면 | 섹션 숨김 | 리뷰 2개+ 시 표시 |
-| 사진 (히어로) | `bg-neutral-100` + 장르 아이콘 | --- |
+| 사진 (히어로) | `var(--bg-elevated)` + 장르 아이콘 | --- |
 | 와인 연결 | 섹션 숨김 | 기록에 linked_wine_id 있을 때만 |
 | 버블 기록 | `message-circle` 아이콘 + "아직 버블 기록이 없어요" + CTA | S4에서는 항상 빈 상태 |
 

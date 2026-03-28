@@ -17,7 +17,7 @@ interface AppHeaderProps {
 export function AppHeader({ variant = 'main', title, backHref }: AppHeaderProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { notifications, unreadCount, markAsRead, markAllAsRead, updateAction } = useNotifications(user?.id ?? null)
+  const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
   const [notifOpen, setNotifOpen] = useState(false)
 
   return (
@@ -107,7 +107,7 @@ export function AppHeader({ variant = 'main', title, backHref }: AppHeaderProps)
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
-        onAction={updateAction}
+        onAction={handleAction}
       />
     </>
   )

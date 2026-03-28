@@ -12,7 +12,7 @@ export interface FilterAttribute {
 
 export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
   { key: 'name', label: '식당명', type: 'text' },
-  { key: 'genre', label: '장르', type: 'select', options: ['한식', '일식', '중식', '양식', '아시안', '퓨전', '카페', '베이커리', '바', '기타'] },
+  { key: 'genre', label: '장르', type: 'select', options: ['한식', '일식', '중식', '태국', '베트남', '인도', '이탈리안', '프렌치', '스페인', '지중해', '미국', '멕시칸', '카페', '바/주점', '베이커리', '기타'] },
   { key: 'area', label: '지역', type: 'text' },
   { key: 'price_range', label: '가격대', type: 'select', options: ['$', '$$', '$$$', '$$$$'] },
   { key: 'satisfaction', label: '만족도', type: 'number' },

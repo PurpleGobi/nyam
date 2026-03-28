@@ -1,19 +1,36 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, MoreHorizontal, Edit2, Trash2, Share2 } from 'lucide-react'
+import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRecordDetail } from '@/application/hooks/use-record-detail'
+import { recordRepo, restaurantRepo, wineRepo, xpRepo, wishlistRepo } from '@/shared/di/container'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
-import { SatisfactionGauge } from '@/presentation/components/record/satisfaction-gauge'
 import { MiniQuadrant } from '@/presentation/components/record/mini-quadrant'
 import { AromaDisplay } from '@/presentation/components/record/aroma-display'
 import { PhotoGallery } from '@/presentation/components/record/photo-gallery'
 import { PairingDisplay } from '@/presentation/components/record/pairing-display'
 import { RecordPracticalInfo } from '@/presentation/components/record/record-practical-info'
+import { XpEarnedSection } from '@/presentation/components/record/xp-earned-section'
 import { RecordActions } from '@/presentation/components/record/record-actions'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import type { PairingCategory } from '@/domain/entities/record'
+
+/** YYYY-MM-DD → YYYY.MM.DD */
+function formatDate(iso: string): string {
+  return iso.split('T')[0].replace(/-/g, '.')
+}
+
+/** 상황 태그 → 색상 매핑 (RATING_ENGINE §7) */
+const SCENE_COLORS: Record<string, string> = {
+  solo: '#7A9BAE',
+  romantic: '#B8879B',
+  friends: '#7EAE8B',
+  family: '#C9A96E',
+  business: '#8B7396',
+  drinks: '#B87272',
+}
 
 interface RecordDetailContainerProps {
   recordId: string
@@ -21,11 +38,40 @@ interface RecordDetailContainerProps {
 
 export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) {
   const router = useRouter()
-  const { record, photos, isLoading, isDeleting, deleteRecord } = useRecordDetail(recordId)
+  const { user } = useAuth()
+  const {
+    record, photos, targetInfo, linkedItem, otherRecords, xpEarned,
+    isLoading, error, isDeleting, deleteError, deleteRecord,
+  } = useRecordDetail(recordId, user?.id ?? null, { recordRepo, restaurantRepo, wineRepo, xpRepo, wishlistRepo })
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // 스크롤 시 헤더 glassmorphism
+  useEffect(() => {
+    function onScroll() {
+      setIsScrolled(window.scrollY > 60)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // 드롭다운 외부 클릭 닫기
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    if (showDropdown) document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [showDropdown])
 
   const handleEdit = useCallback(() => {
     if (!record) return
+    setShowDropdown(false)
     router.push(`/record?type=${record.targetType}&targetId=${record.targetId}&edit=${record.id}&from=record_detail`)
   }, [record, router])
 
@@ -33,6 +79,15 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
     const success = await deleteRecord()
     if (success) router.back()
   }, [deleteRecord, router])
+
+  const navigateToTarget = useCallback(() => {
+    if (!targetInfo) return
+    router.push(`/${targetInfo.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${targetInfo.id}`)
+  }, [targetInfo, router])
+
+  const navigateToLinkedItem = useCallback((id: string, type: 'restaurant' | 'wine') => {
+    router.push(`/${type === 'restaurant' ? 'restaurants' : 'wines'}/${id}`)
+  }, [router])
 
   if (isLoading || !record) {
     return (
@@ -42,53 +97,182 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-2 px-4">
+        <p style={{ fontSize: '15px', color: 'var(--text-sub)' }}>{error}</p>
+        <button type="button" onClick={() => router.back()} style={{ fontSize: '14px', color: 'var(--accent-food)' }}>
+          뒤로 가기
+        </button>
+      </div>
+    )
+  }
+
   const isRestaurant = record.targetType === 'restaurant'
   const isWine = record.targetType === 'wine'
   const accentColor = isRestaurant ? 'var(--accent-food)' : 'var(--accent-wine)'
 
-  const quadrantDots = [
-    { x: record.axisX ?? 50, y: record.axisY ?? 50, satisfaction: record.satisfaction ?? 50, isCurrent: true },
-  ]
+  // 사분면: currentDot + refDots
+  const hasQuadrant = record.axisX !== null && record.axisY !== null
+  const currentDot = hasQuadrant
+    ? { axisX: record.axisX!, axisY: record.axisY!, satisfaction: record.satisfaction ?? 50 }
+    : null
+  const refDots = otherRecords
+    .filter((r) => r.axisX !== null && r.axisY !== null)
+    .map((r) => ({ axisX: r.axisX!, axisY: r.axisY!, satisfaction: r.satisfaction ?? 50 }))
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
+      {/* 고정 헤더 — glassmorphism */}
+      <nav
+        className="sticky top-0 z-40 flex items-center justify-between px-4"
+        style={{
+          height: '44px',
+          backgroundColor: isScrolled ? 'rgba(248,246,243,0.55)' : 'var(--bg)',
+          backdropFilter: isScrolled ? 'blur(20px)' : undefined,
+          WebkitBackdropFilter: isScrolled ? 'blur(20px)' : undefined,
+          transition: 'background-color 200ms ease',
+        }}
+      >
         <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
           <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
         </button>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: accentColor }}>기록 상세</span>
-        <div className="w-11" />
+
+        {/* 스크롤 시 대상명 표시 */}
+        {isScrolled && targetInfo && (
+          <span
+            className="truncate px-2"
+            style={{ fontSize: '15px', fontWeight: 700, color: accentColor, maxWidth: '200px' }}
+          >
+            {targetInfo.name}
+          </span>
+        )}
+        {!isScrolled && <div />}
+
+        {/* 더보기 드롭다운 */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="flex h-11 w-11 items-center justify-center"
+          >
+            <MoreHorizontal size={22} style={{ color: 'var(--text)' }} />
+          </button>
+          {showDropdown && (
+            <div
+              className="absolute right-0 top-11 z-50 w-40 rounded-xl py-1"
+              style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+            >
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="flex w-full items-center gap-2 px-4 py-2.5"
+                style={{ fontSize: '14px', color: 'var(--text)' }}
+              >
+                <Edit2 size={16} /> 수정
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowDropdown(false); setShowDeleteConfirm(true) }}
+                className="flex w-full items-center gap-2 px-4 py-2.5"
+                style={{ fontSize: '14px', color: 'var(--negative)' }}
+              >
+                <Trash2 size={16} /> 삭제
+              </button>
+              {/* 공유: S8까지 숨김 */}
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className="flex flex-col gap-6 px-4 py-4">
+        {/* 대상명 + 방문 정보 */}
+        <section>
+          <button type="button" onClick={navigateToTarget}>
+            <h2
+              style={{
+                fontSize: '21px',
+                fontWeight: 800,
+                color: isWine ? 'var(--accent-wine)' : 'var(--text)',
+              }}
+            >
+              {targetInfo?.name ?? ''}
+            </h2>
+            {targetInfo?.subText && (
+              <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                {targetInfo.subText}
+              </p>
+            )}
+          </button>
+          <div className="mt-1 flex items-center gap-2">
+            <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+              {formatDate(record.visitDate ?? record.createdAt)}
+            </span>
+            {record.scene && (
+              <span
+                className="rounded-full px-2 py-0.5"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  backgroundColor: SCENE_COLORS[record.scene] ?? 'var(--text-hint)',
+                }}
+              >
+                {record.scene}
+              </span>
+            )}
+          </div>
+        </section>
+
         {/* §1: Mini Quadrant */}
         <section>
           <MiniQuadrant
-            dots={quadrantDots}
-            type={record.targetType}
-            onTap={() => router.push(`/${isRestaurant ? 'restaurants' : 'wines'}/${record.targetId}`)}
+            currentDot={currentDot}
+            refDots={refDots}
+            targetType={record.targetType}
+            onTap={navigateToTarget}
+            onEdit={handleEdit}
           />
         </section>
 
-        {/* §2: Satisfaction */}
+        {/* §2: Satisfaction — 설계: 2.5rem 숫자 + 4px 게이지 바 */}
         {record.satisfaction !== null && (
           <section>
-            <div className="mb-2 flex items-center gap-3">
+            <span
+              style={{
+                fontSize: '2.5rem',
+                fontWeight: 700,
+                color: getGaugeColor(record.satisfaction),
+                lineHeight: 1.2,
+                display: 'block',
+              }}
+            >
+              {record.satisfaction}
+            </span>
+            <div
+              className="mt-2"
+              style={{
+                height: '4px',
+                borderRadius: '2px',
+                backgroundColor: 'var(--bg-elevated)',
+                overflow: 'hidden',
+              }}
+            >
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-full"
-                style={{ backgroundColor: getGaugeColor(record.satisfaction) }}
-              >
-                <span style={{ fontSize: '18px', fontWeight: 800, color: '#FFFFFF' }}>{record.satisfaction}</span>
-              </div>
-              <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>만족도</span>
+                style={{
+                  width: `${record.satisfaction}%`,
+                  height: '100%',
+                  borderRadius: '2px',
+                  backgroundColor: getGaugeColor(record.satisfaction),
+                  transition: 'width 0.3s ease-out',
+                }}
+              />
             </div>
-            <SatisfactionGauge value={record.satisfaction} />
           </section>
         )}
 
-        {/* §3: Aroma (wine only) */}
-        {isWine && record.aromaLabels && record.aromaLabels.length > 0 && (
+        {/* §3: Aroma (wine only) — 설계: aromaRegions 있을 때만 */}
+        {isWine && record.aromaRegions && (
           <section>
             <h3 className="mb-2" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>향</h3>
             <AromaDisplay
@@ -107,7 +291,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
             className="rounded-xl p-4"
             style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
           >
-            <p style={{ fontSize: '14px', color: 'var(--text-sub)', fontStyle: 'italic', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '1rem', color: 'var(--text-sub)', fontStyle: 'italic', lineHeight: 1.6 }}>
               {record.comment}
             </p>
           </section>
@@ -129,29 +313,18 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
           </section>
         )}
 
-        {/* §7: Scene + Menu Tags (restaurant only) */}
-        {isRestaurant && (record.scene || (record.menuTags && record.menuTags.length > 0)) && (
+        {/* §7: Menu Tags / Tips (restaurant only) */}
+        {isRestaurant && (record.menuTags?.length || record.tips) && (
           <section>
-            {record.scene && (
-              <div className="mb-2 flex items-center gap-2">
-                <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>상황</span>
-                <span
-                  className="rounded-full px-2.5 py-0.5"
-                  style={{ fontSize: '12px', fontWeight: 600, backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                >
-                  {record.scene}
-                </span>
-              </div>
-            )}
             {record.menuTags && record.menuTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {record.menuTags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-[var(--bg)] px-3 py-1 text-[12px] text-[var(--text-sub)]">{tag}</span>
+                  <span key={tag} className="rounded-full px-3 py-1" style={{ fontSize: '12px', backgroundColor: 'var(--bg-elevated)', color: 'var(--text-sub)' }}>{tag}</span>
                 ))}
               </div>
             )}
             {record.tips && (
-              <p className="mt-2" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>{record.tips}</p>
+              <p className="mt-2" style={{ fontSize: '0.875rem', color: 'var(--text-sub)' }}>{record.tips}</p>
             )}
           </section>
         )}
@@ -159,13 +332,32 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         {/* §8: Practical Info */}
         <section>
           <h3 className="mb-2" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>정보</h3>
-          <RecordPracticalInfo record={record} />
+          <RecordPracticalInfo
+            targetType={record.targetType}
+            totalPrice={record.totalPrice}
+            purchasePrice={record.purchasePrice}
+            companions={record.companions}
+            visitDate={record.visitDate}
+            createdAt={record.createdAt}
+            linkedItem={linkedItem}
+            onLinkedItemTap={navigateToLinkedItem}
+          />
         </section>
 
+        {/* §9: XP Earned */}
+        {xpEarned.length > 0 && (
+          <section>
+            <XpEarnedSection items={xpEarned} />
+          </section>
+        )}
+
         {/* §10: Actions */}
-        <section className="pb-8">
+        <section>
           <RecordActions onEdit={handleEdit} onDelete={() => setShowDeleteConfirm(true)} />
         </section>
+
+        {/* h-20 spacer */}
+        <div className="h-20" />
       </div>
 
       <DeleteConfirmModal
@@ -174,6 +366,16 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      {/* 삭제 실패 시 에러 토스트 */}
+      {deleteError && (
+        <div
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-4 py-2.5"
+          style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF', fontSize: '13px', fontWeight: 600 }}
+        >
+          {deleteError}
+        </div>
+      )}
     </div>
   )
 }

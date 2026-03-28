@@ -1,6 +1,6 @@
-# 07: 씬태그 + 동행자 (Scene Tags & Companions)
+# 07: 씬태그 + 동반자 (Scene Tags & Companions)
 
-> 식당 기록 시 상황(혼밥/데이트/친구 등) 단일 선택 칩 + 동행자 이름 입력 컴포넌트. AI가 사진/시간/위치 기반으로 pre-select.
+> 식당 기록 시 상황(혼밥/데이트/친구 등) 단일 선택 칩 + 동반자 이름 입력 컴포넌트. AI가 사진/시간/위치 기반으로 pre-select.
 
 ---
 
@@ -30,9 +30,9 @@
 
 | 파일 | 레이어 | 역할 |
 |------|--------|------|
-| `src/domain/entities/scene.ts` | domain | SceneTag 타입 + 6개 상수 정의 |
+| `src/domain/entities/scene.ts` | domain | RestaurantScene/WineScene 타입 + 상수 정의 |
 | `src/presentation/components/record/scene-tag-selector.tsx` | presentation | 씬태그 6개 칩 UI (단일 선택) |
-| `src/presentation/components/record/companion-input.tsx` | presentation | 동행자 입력/표시 UI |
+| `src/presentation/components/record/companion-input.tsx` | presentation | 동반자 입력/표시 UI |
 
 ### 스코프 외
 
@@ -49,15 +49,15 @@
 **파일**: `src/domain/entities/scene.ts`
 
 ```typescript
-/**
- * 식당 기록 상황 태그. DB VARCHAR(20).
- * RATING_ENGINE.md §7 참조.
- */
-export type SceneTag = 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks'
+/** 식당 상황 태그 6종 — RATING_ENGINE.md §7 */
+export type RestaurantScene = 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks'
 
-/** 씬태그 메타데이터. UI 렌더링에 사용. */
-export interface SceneTagMeta {
-  value: SceneTag
+/** 와인 상황 태그 7종 — RATING_ENGINE.md §7 */
+export type WineScene = 'solo' | 'romantic' | 'gathering' | 'pairing' | 'gift' | 'tasting' | 'decanting'
+
+/** 씬태그 메타데이터. 제네릭으로 식당/와인 겸용. */
+export interface SceneTagMeta<T extends string = string> {
+  value: T
   label: string
   /** CSS 변수명 (예: '--scene-solo') */
   colorVar: string
@@ -66,16 +66,29 @@ export interface SceneTagMeta {
 }
 
 /**
- * 6개 씬태그 정의.
+ * 식당 씬태그 6개 정의.
  * RATING_ENGINE.md §7 + RECORD_DETAIL.md 색상 참조.
  */
-export const SCENE_TAGS: readonly SceneTagMeta[] = [
+export const SCENE_TAGS: readonly SceneTagMeta<RestaurantScene>[] = [
   { value: 'solo', label: '혼밥', colorVar: '--scene-solo', hex: '#7A9BAE' },
   { value: 'romantic', label: '데이트', colorVar: '--scene-romantic', hex: '#B8879B' },
   { value: 'friends', label: '친구', colorVar: '--scene-friends', hex: '#7EAE8B' },
   { value: 'family', label: '가족', colorVar: '--scene-family', hex: '#C9A96E' },
   { value: 'business', label: '회식', colorVar: '--scene-business', hex: '#8B7396' },
   { value: 'drinks', label: '술자리', colorVar: '--scene-drinks', hex: '#B87272' },
+] as const
+
+/**
+ * 와인 씬태그 7개 정의.
+ */
+export const WINE_SCENES: readonly SceneTagMeta<WineScene>[] = [
+  { value: 'solo', label: '혼술', colorVar: '--scene-solo', hex: '#7A9BAE' },
+  { value: 'romantic', label: '데이트', colorVar: '--scene-romantic', hex: '#B8879B' },
+  { value: 'gathering', label: '모임', colorVar: '--scene-friends', hex: '#7EAE8B' },
+  { value: 'pairing', label: '페어링', colorVar: '--scene-family', hex: '#C9A96E' },
+  { value: 'gift', label: '선물', colorVar: '--scene-business', hex: '#8B7396' },
+  { value: 'tasting', label: '테이스팅', colorVar: '--scene-drinks', hex: '#B87272' },
+  { value: 'decanting', label: '디캔팅', colorVar: '--scene-solo', hex: '#7A9BAE' },
 ] as const
 ```
 
@@ -86,11 +99,11 @@ export const SCENE_TAGS: readonly SceneTagMeta[] = [
 ```typescript
 interface SceneTagSelectorProps {
   /** 현재 선택된 씬태그. null이면 미선택. */
-  value: SceneTag | null
+  value: RestaurantScene | null
   /** 선택 변경 콜백 */
-  onChange: (value: SceneTag | null) => void
+  onChange: (value: RestaurantScene | null) => void
   /** AI 추천 씬태그. pre-select + ai-tag 뱃지 표시. */
-  aiSuggestion?: SceneTag
+  aiSuggestion?: RestaurantScene
 }
 ```
 
@@ -129,7 +142,7 @@ interface SceneTagSelectorProps {
 
 ```typescript
 // 단일 선택: 이미 선택된 항목 탭 → 해제 (null), 다른 항목 탭 → 교체
-function handleSelect(tag: SceneTag) {
+function handleSelect(tag: RestaurantScene) {
   if (value === tag) {
     onChange(null)  // 같은 태그 재탭 → 해제
   } else {
@@ -155,11 +168,11 @@ function handleSelect(tag: SceneTag) {
 
 ```typescript
 interface CompanionInputProps {
-  /** 현재 동행자 이름 배열 */
+  /** 현재 동반자 이름 배열 */
   value: string[]
   /** 변경 콜백 */
   onChange: (value: string[]) => void
-  /** AI 얼굴 인식으로 감지된 동행자 이름 */
+  /** AI 얼굴 인식으로 감지된 동반자 이름 */
   aiCompanions?: string[]
 }
 ```
@@ -173,7 +186,7 @@ interface CompanionInputProps {
     {aiCompanions?.length > 0 && <span className="ai-tag">사진 인식</span>}
   </div>
 
-  {/* 등록된 동행자 목록 */}
+  {/* 등록된 동반자 목록 */}
   {value.map((name, index) => (
     <div key={index} className="rest-rec-companion">
       <div
@@ -192,7 +205,7 @@ interface CompanionInputProps {
     </div>
   ))}
 
-  {/* 동행자 추가 입력 */}
+  {/* 동반자 추가 입력 */}
   <div className="rest-rec-comp-add" onClick={showAddInput}>
     <Plus size={14} />
     동반자 추가
@@ -256,7 +269,7 @@ function getAvatarGradient(name: string): string {
 }
 ```
 
-#### AI 동행자 초기화
+#### AI 동반자 초기화
 
 - 마운트 시 `aiCompanions`가 비어있지 않고 `value`가 빈 배열이면 → `aiCompanions`를 `value`로 자동 설정
 - 이미 사용자가 수동 입력한 상태면 AI 결과 무시
@@ -328,7 +341,7 @@ function getAvatarGradient(name: string): string {
 ### 씬태그
 
 ```
-[AI 사진 분석] ─── aiSuggestion: SceneTag (예: 'romantic')
+[AI 사진 분석] ─── aiSuggestion: RestaurantScene (예: 'romantic')
     │
     ▼
 [SceneTagSelector 마운트]
@@ -347,7 +360,7 @@ function getAvatarGradient(name: string): string {
        null이면 scene 컬럼 NULL
 ```
 
-### 동행자
+### 동반자
 
 ```
 [AI 얼굴 인식] ─── aiCompanions: string[] (예: ['김영수'])
@@ -377,8 +390,8 @@ function getAvatarGradient(name: string): string {
 
 ```typescript
 /**
- * 동행자 수 → companion_count 변환.
- * 본인 포함 인원수: 동행자 0명 = 혼자(1), 동행자 1명 = 2명, ...
+ * 동반자 수 → companion_count 변환.
+ * 본인 포함 인원수: 동반자 0명 = 혼자(1), 동반자 1명 = 2명, ...
  * 5 이상은 5로 클램프.
  */
 function calculateCompanionCount(companionsLength: number): number {
@@ -411,8 +424,8 @@ function calculateCompanionCount(companionsLength: number): number {
 □ 재탭 해제 — 같은 칩 다시 탭하면 null로 해제
 □ 씬태그 색상 — 각 태그별 고유 색상(--scene-*) 적용, 선택 시 배경+텍스트 변경
 □ AI 추천 — aiSuggestion으로 전달된 태그 pre-select + ai-tag 뱃지
-□ 동행자 추가 — 이름 입력 + Enter/추가 버튼으로 등록
-□ 동행자 삭제 — X 버튼으로 개별 삭제
+□ 동반자 추가 — 이름 입력 + Enter/추가 버튼으로 등록
+□ 동반자 삭제 — X 버튼으로 개별 삭제
 □ 중복 방지 — 같은 이름 중복 추가 불가
 □ 아바타 — 이름 첫 글자 + 그라디언트 배경
 □ 프라이버시 — companions는 외부 노출 경로 없음 확인 (코드 리뷰)

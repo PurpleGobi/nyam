@@ -1,57 +1,108 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-
-interface RegisterResult {
-  id: string
-  name: string
-  type: 'restaurant' | 'wine'
-  isExisting: boolean
-}
+import type { CreateRestaurantInput, CreateWineInput, RegisterResult } from '@/domain/entities/register'
 
 export function useRegister() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const registerRestaurant = useCallback(async (data: { name: string; genre?: string; area?: string }): Promise<RegisterResult | null> => {
-    setIsLoading(true)
+  const registerRestaurant = useCallback(async (
+    input: CreateRestaurantInput,
+  ): Promise<RegisterResult | null> => {
+    if (!input.name.trim()) {
+      setError('가게명을 입력해주세요')
+      return null
+    }
+
+    setIsSubmitting(true)
     setError(null)
+
     try {
       const res = await fetch('/api/restaurants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: input.name,
+          address: input.address,
+          area: input.area,
+          genre: input.genre,
+          priceRange: input.priceRange,
+          lat: input.lat,
+          lng: input.lng,
+        }),
       })
-      if (!res.ok) throw new Error('등록 실패')
-      return await res.json()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '등록에 실패했습니다')
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error === 'NAME_REQUIRED' ? '가게명을 입력해주세요' : '등록에 실패했습니다')
+        return null
+      }
+
+      return data as RegisterResult
+    } catch {
+      setError('네트워크 오류가 발생했습니다')
       return null
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }, [])
 
-  const registerWine = useCallback(async (data: {
-    name: string; wineType: string; producer?: string; vintage?: number; region?: string; country?: string
-  }): Promise<RegisterResult | null> => {
-    setIsLoading(true)
+  const registerWine = useCallback(async (
+    input: CreateWineInput,
+  ): Promise<RegisterResult | null> => {
+    if (!input.name.trim()) {
+      setError('와인명을 입력해주세요')
+      return null
+    }
+    if (!input.wineType) {
+      setError('와인 타입을 선택해주세요')
+      return null
+    }
+
+    setIsSubmitting(true)
     setError(null)
+
     try {
       const res = await fetch('/api/wines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: input.name,
+          producer: input.producer,
+          wineType: input.wineType,
+          vintage: input.vintage,
+          region: input.region,
+          country: input.country,
+          variety: input.variety,
+        }),
       })
-      if (!res.ok) throw new Error('등록 실패')
-      return await res.json()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '등록에 실패했습니다')
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        const errorMap: Record<string, string> = {
+          NAME_REQUIRED: '와인명을 입력해주세요',
+          WINE_TYPE_REQUIRED: '와인 타입을 선택해주세요',
+        }
+        setError(errorMap[data.error] ?? '등록에 실패했습니다')
+        return null
+      }
+
+      return data as RegisterResult
+    } catch {
+      setError('네트워크 오류가 발생했습니다')
       return null
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }, [])
 
-  return { registerRestaurant, registerWine, isLoading, error }
+  const reset = useCallback(() => {
+    setIsSubmitting(false)
+    setError(null)
+  }, [])
+
+  return { registerRestaurant, registerWine, isSubmitting, error, reset }
 }

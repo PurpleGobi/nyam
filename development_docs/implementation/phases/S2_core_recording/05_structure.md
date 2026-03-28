@@ -144,7 +144,7 @@ interface WineStructureEvalProps {
     <div className="wine-slider-sub-labels">
       <span>짧음 (&lt;3초)</span>
       <span>보통 (5~8초)</span>
-      <span>긺 (10초+)</span>
+      <span>긴 (10초+)</span>
     </div>
   </div>
 

@@ -12,7 +12,7 @@ interface WineConfirmCardProps {
   onReject: () => void
 }
 
-const WINE_TYPE_MAP: globalThis.Record<string, { label: string; className: string }> = {
+const WINE_TYPE_MAP: Record<string, { label: string; className: string }> = {
   red: { label: '레드', className: 'bg-accent-wine-light text-accent-wine' },
   white: { label: '화이트', className: 'bg-accent-food-light text-accent-food' },
   rose: { label: '로제', className: 'bg-[var(--scene-romantic)]/10 text-[var(--scene-romantic)]' },
@@ -40,7 +40,7 @@ export function WineConfirmCard({
 
       <div className="w-full max-w-[320px] rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-wine)_10%,transparent)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-wine-light)]">
             <Wine size={20} className="text-[var(--accent-wine)]" />
           </div>
           <div className="min-w-0 flex-1">
@@ -68,8 +68,7 @@ export function WineConfirmCard({
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold"
-          style={{ color: '#FFFFFF' }}
+          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold text-white"
         >
           맞아요
         </button>

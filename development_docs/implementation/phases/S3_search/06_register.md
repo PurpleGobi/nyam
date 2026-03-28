@@ -53,21 +53,25 @@
 // src/domain/entities/register.ts
 // R1: 외부 의존 0
 
-/** 식당 등록 입력 */
+/** 식당 등록 입력 — 선택 필드는 ?:로 표기 (외부 API 데이터 플로우에서 부분 전달 가능) */
 export interface CreateRestaurantInput {
   /** 가게명 (필수) */
   name: string
   /** 주소 (선택) */
-  address: string | null
+  address?: string | null
   /** 동네 (선택) */
-  area: string | null
+  area?: string | null
   /** 장르 (선택) — restaurants.genre CHECK 제약 값 중 하나 */
-  genre: RestaurantGenre | null
+  genre?: RestaurantGenre | null
   /** 가격대 (선택) — 1~4 */
-  priceRange: number | null
+  priceRange?: number | null
   /** GPS 좌표 (선택) — 사용자 현재 위치 기반 자동 입력 */
-  lat: number | null
-  lng: number | null
+  lat?: number | null
+  lng?: number | null
+  /** 전화번호 (선택) — 외부 API에서 전달 */
+  phone?: string | null
+  /** 외부 API ID (선택) — 캐싱/중복 방지용 */
+  externalIds?: Record<string, string> | null
 }
 
 /** DATA_MODEL.md restaurants.genre CHECK 제약 값 */
@@ -77,28 +81,40 @@ export interface CreateRestaurantInput {
 // restaurant.ts의 RestaurantGenre 타입은 먼저 완료되는 스프린트에서 정의하고
 // 나중 스프린트에서 import한다
 export type RestaurantGenre =
-  | '한식' | '일식' | '양식' | '중식'
-  | '이탈리안' | '프렌치' | '동남아' | '태국'
-  | '베트남' | '인도' | '스페인' | '멕시칸'
-  | '아시안' | '파인다이닝' | '비스트로' | '카페'
-  | '베이커리' | '바' | '주점'
+  | '한식' | '일식' | '중식'           // 동아시아
+  | '태국' | '베트남' | '인도'         // 동남아/남아시아
+  | '이탈리안' | '프렌치' | '스페인' | '지중해'  // 유럽
+  | '미국' | '멕시칸'                  // 아메리카
+  | '카페' | '바/주점' | '베이커리'     // 음료/디저트
+  | '기타'                             // 기타
 
 export const RESTAURANT_GENRES: RestaurantGenre[] = [
-  '한식', '일식', '양식', '중식',
-  '이탈리안', '프렌치', '동남아', '태국',
-  '베트남', '인도', '스페인', '멕시칸',
-  '아시안', '파인다이닝', '비스트로', '카페',
-  '베이커리', '바', '주점',
+  '한식', '일식', '중식',
+  '태국', '베트남', '인도',
+  '이탈리안', '프렌치', '스페인', '지중해',
+  '미국', '멕시칸',
+  '카페', '바/주점', '베이커리',
+  '기타',
+]
+
+/** 장르 대분류 그룹 (UI 표시용 — register-form에서 그룹별 렌더링) */
+export const GENRE_GROUPS: { label: string; genres: RestaurantGenre[] }[] = [
+  { label: '동아시아', genres: ['한식', '일식', '중식'] },
+  { label: '동남아 · 남아시아', genres: ['태국', '베트남', '인도'] },
+  { label: '유럽', genres: ['이탈리안', '프렌치', '스페인', '지중해'] },
+  { label: '아메리카', genres: ['미국', '멕시칸'] },
+  { label: '음료 · 디저트', genres: ['카페', '바/주점', '베이커리'] },
+  { label: '기타', genres: ['기타'] },
 ]
 
 /** 와인 등록 입력 */
 export interface CreateWineInput {
   /** 와인명 (필수) */
   name: string
-  /** 생산자 (선택) */
-  producer: string | null
-  /** 와인 타입 (필수) — wines.wine_type */
+  /** 와인 타입 (필수) — wines.wine_type. WineType | string 불가, 반드시 WineType */
   wineType: WineType
+  /** 생산자 (선택) — null이면 DB에 null 저장 */
+  producer: string | null
   /** 빈티지 (선택, null=NV) */
   vintage: number | null
   /** 산지 (선택) */
@@ -107,28 +123,35 @@ export interface CreateWineInput {
   country: string | null
   /** 품종 (선택) */
   variety: string | null
+  /** 라벨 이미지 URL (선택) — 촬영/업로드된 라벨 이미지 */
+  labelImageUrl?: string | null
 }
 
-/** wines.wine_type NOT NULL */
-export type WineType =
-  | 'red' | 'white' | 'rose' | 'sparkling'
-  | 'orange' | 'fortified' | 'dessert'
+/** wines.wine_type NOT NULL — as const 튜플 + 별도 라벨 Record 패턴 (더 타입 안전) */
+export const WINE_TYPES = [
+  'red', 'white', 'rose', 'sparkling',
+  'orange', 'fortified', 'dessert',
+] as const
 
-export const WINE_TYPES: { value: WineType; label: string }[] = [
-  { value: 'red', label: '레드' },
-  { value: 'white', label: '화이트' },
-  { value: 'rose', label: '로제' },
-  { value: 'sparkling', label: '스파클링' },
-  { value: 'orange', label: '오렌지' },
-  { value: 'fortified', label: '주정강화' },
-  { value: 'dessert', label: '디저트' },
-]
+export type WineType = (typeof WINE_TYPES)[number]
+
+export const WINE_TYPE_LABELS: Record<WineType, string> = {
+  red: '레드',
+  white: '화이트',
+  rose: '로제',
+  sparkling: '스파클링',
+  orange: '오렌지',
+  fortified: '주정강화',
+  dessert: '디저트',
+}
 
 /** 등록 결과 (생성된 ID 반환) */
 export interface RegisterResult {
   id: string
   name: string
   type: 'restaurant' | 'wine'
+  /** 중복 체크로 기존 항목이 반환된 경우 true */
+  isExisting: boolean
 }
 ```
 
@@ -138,10 +161,10 @@ export interface RegisterResult {
 // src/app/api/restaurants/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -158,6 +181,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const name = body.name.trim()
 
   // 중복 체크 (정규화된 이름 기준)
+  // 참고: supabase-restaurant-repository.ts create()에서는 .limit(1).maybeSingle() 패턴 사용
   const { data: existing } = await supabase
     .from('restaurants')
     .select('id, name')
@@ -207,10 +231,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 // src/app/api/wines/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -420,26 +444,26 @@ import { UtensilsCrossed } from 'lucide-react'
 import type { CreateRestaurantInput, RestaurantGenre } from '@/domain/entities/register'
 import { RESTAURANT_GENRES } from '@/domain/entities/register'
 
+// 설계 변경: isSubmitting → isLoading, GENRE_GROUPS 대분류 그룹 UI 적용
+// area/priceRange 입력 필드 추가 (설계보다 풍부한 등록 폼)
 interface RestaurantRegisterFormProps {
-  /** 검색어 pre-fill */
-  initialName: string
-  /** GPS 좌표 (자동 입력) */
-  currentLat: number | null
-  currentLng: number | null
-  /** 제출 핸들러 */
-  onSubmit: (input: CreateRestaurantInput) => void
-  /** 로딩 상태 */
-  isSubmitting: boolean
-  /** 에러 메시지 */
+  initialName?: string
+  currentLat?: number | null
+  currentLng?: number | null
+  onSubmit: (input: CreateRestaurantInput) => Promise<void>
+  isLoading: boolean
   error: string | null
 }
+
+// 참고: 장르 UI 그룹핑에 GENRE_GROUPS 상수 사용 가능
+// → 동아시아/동남아·남아시아/유럽/아메리카/음료·디저트/기타로 시각적 분류
 
 export function RestaurantRegisterForm({
   initialName,
   currentLat,
   currentLng,
   onSubmit,
-  isSubmitting,
+  isLoading,
   error,
 }: RestaurantRegisterFormProps) {
   const [name, setName] = useState(initialName)
@@ -531,10 +555,10 @@ export function RestaurantRegisterForm({
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={isSubmitting || !name.trim()}
+        disabled={isLoading || !name.trim()}
         className="w-full py-3.5 rounded-xl bg-[var(--accent-food)] text-white text-[15px] font-semibold disabled:opacity-50"
       >
-        {isSubmitting ? '등록 중...' : '등록하기'}
+        {isLoading ? '등록 중...' : '등록하기'}
       </button>
     </div>
   )
@@ -549,31 +573,37 @@ export function RestaurantRegisterForm({
 import { useState } from 'react'
 import { Wine } from 'lucide-react'
 import type { CreateWineInput, WineType } from '@/domain/entities/register'
-import { WINE_TYPES } from '@/domain/entities/register'
+import { WINE_TYPES, WINE_TYPE_LABELS } from '@/domain/entities/register'
 
+// 설계 변경: error prop 제거 → 컨테이너(register-container.tsx)에서 에러 표시
+// isSubmitting → isLoading으로 prop 이름 변경
+// initialWineType prop 추가 (OCR pre-fill 지원)
+// vintageUnknown 체크박스 추가 (SEARCH_REGISTER.md §6 "빈티지 모름")
 interface WineRegisterFormProps {
-  initialName: string
-  initialProducer: string | null
-  initialVintage: number | null
-  onSubmit: (input: CreateWineInput) => void
-  isSubmitting: boolean
-  error: string | null
+  initialName?: string
+  initialProducer?: string
+  initialVintage?: number
+  initialWineType?: string
+  onSubmit: (input: CreateWineInput) => Promise<void>
+  isLoading: boolean
 }
 
 export function WineRegisterForm({
   initialName,
   initialProducer,
   initialVintage,
+  initialWineType,
   onSubmit,
-  isSubmitting,
-  error,
+  isLoading,
 }: WineRegisterFormProps) {
-  const [name, setName] = useState(initialName)
+  const [name, setName] = useState(initialName ?? '')
   const [producer, setProducer] = useState(initialProducer ?? '')
   const [wineType, setWineType] = useState<WineType | null>(null)
   const [vintage, setVintage] = useState(initialVintage ? String(initialVintage) : '')
   const [region, setRegion] = useState('')
   const [country, setCountry] = useState('')
+
+  const [variety, setVariety] = useState('')
 
   const handleSubmit = () => {
     if (!wineType) return
@@ -585,7 +615,7 @@ export function WineRegisterForm({
       vintage: vintage ? Number(vintage) : null,
       region: region.trim() || null,
       country: country.trim() || null,
-      variety: null,
+      variety: variety.trim() || null,
     })
   }
 
@@ -624,16 +654,16 @@ export function WineRegisterForm({
         <div className="flex flex-wrap gap-2">
           {WINE_TYPES.map((t) => (
             <button
-              key={t.value}
+              key={t}
               type="button"
-              onClick={() => setWineType(wineType === t.value ? null : t.value)}
+              onClick={() => setWineType(wineType === t ? null : t)}
               className={`px-3 py-1.5 rounded-full text-[12px] border transition-colors ${
-                wineType === t.value
+                wineType === t
                   ? 'bg-[var(--accent-wine)] text-white border-[var(--accent-wine)]'
                   : 'bg-[var(--bg-card)] text-[var(--text-sub)] border-[var(--border)]'
               }`}
             >
-              {t.label}
+              {WINE_TYPE_LABELS[t]}
             </button>
           ))}
         </div>
@@ -697,19 +727,28 @@ export function WineRegisterForm({
         </div>
       </div>
 
-      {/* 에러 */}
-      {error && (
-        <p className="text-[13px] text-red-500">{error}</p>
-      )}
+      {/* 품종 (선택) — OCR 실패 시 사용자 직접 입력 경로 */}
+      <div>
+        <label className="block text-[13px] font-medium text-[var(--text)] mb-1.5">
+          품종 <span className="text-[12px] text-[var(--text-hint)]">(선택)</span>
+        </label>
+        <input
+          type="text"
+          value={variety}
+          onChange={(e) => setVariety(e.target.value)}
+          placeholder="예: Cabernet Sauvignon, 피노 누아"
+          className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-[14px] text-[var(--text)] placeholder:text-[var(--text-hint)] outline-none focus:border-[var(--accent-wine)]"
+        />
+      </div>
 
       {/* 등록 버튼 */}
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={isSubmitting || !name.trim() || !wineType}
+        disabled={isLoading || !name.trim() || !wineType}
         className="w-full py-3.5 rounded-xl bg-[var(--accent-wine)] text-white text-[15px] font-semibold disabled:opacity-50"
       >
-        {isSubmitting ? '등록 중...' : '등록하기'}
+        {isLoading ? '등록 중...' : '등록하기'}
       </button>
     </div>
   )
@@ -747,7 +786,8 @@ export function WineRegisterForm({
    │   ├─ producer (선택, OCR pre-fill)
    │   ├─ vintage (선택, OCR pre-fill)
    │   ├─ region (선택)
-   │   └─ country (선택)
+   │   ├─ country (선택)
+   │   └─ variety (선택, OCR 실패 시 사용자 직접 입력 — 프로필 품종 차트 데이터용)
    │
    ├─ useRegister.registerWine(input)
    │   └─ POST /api/wines
@@ -767,8 +807,8 @@ export function WineRegisterForm({
 □ R1: domain/entities/register.ts에 외부 import 없음
 □ R3: application/hooks/use-register.ts에 infrastructure import 없음
 □ R4: presentation/components/register/*.tsx에 infrastructure import 없음
-□ 식당 등록: name 필수, address/genre 선택
-□ 와인 등록: name+wineType 필수, 나머지 선택
+□ 식당 등록: name 필수, address/area/genre 선택
+□ 와인 등록: name+wineType 필수, producer/vintage/region/country/variety 선택
 □ 중복 체크: 같은 이름 식당 → 기존 ID 반환 (중복 INSERT 방지)
 □ 와인 중복: 같은 이름+빈티지 → 기존 ID 반환
 □ OCR 결과 pre-fill: 와인명/생산자/빈티지 자동 입력

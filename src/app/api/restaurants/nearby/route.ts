@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const radius = Number(request.nextUrl.searchParams.get('radius') ?? 2000)
 
   if (isNaN(lat) || isNaN(lng)) {
-    return NextResponse.json({ restaurants: [] })
+    return NextResponse.json({ restaurants: [] }, { status: 400 })
   }
 
   const { data: nearby } = await supabase.rpc('restaurants_within_radius', {
@@ -23,11 +23,15 @@ export async function GET(request: NextRequest) {
     radius_meters: radius,
   })
 
-  const { data: userRecords } = await supabase
-    .from('records')
-    .select('target_id')
-    .eq('user_id', user.id)
-    .eq('target_type', 'restaurant')
+  const ids = ((nearby as Array<{ id: string }>) ?? []).map((r) => r.id)
+  const { data: userRecords } = ids.length > 0
+    ? await supabase
+        .from('records')
+        .select('target_id')
+        .eq('user_id', user.id)
+        .eq('target_type', 'restaurant')
+        .in('target_id', ids)
+    : { data: [] }
 
   const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
 

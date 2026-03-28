@@ -174,7 +174,7 @@ export interface UseWishlistReturn {
  * - 검색 결과 카드 (홈 카드에서도 재사용 가능)
  */
 export function useWishlist(
-  userId: string,
+  userId: string | null,
   targetId: string,
   targetType: 'restaurant' | 'wine',
   repo: WishlistRepository,
@@ -202,7 +202,7 @@ interface WishlistButtonProps {
   isWishlisted: boolean
   onToggle: () => void
   /** 히어로 위치에서는 흰색 아이콘, 카드에서는 기본 색상 */
-  variant: 'hero' | 'card'
+  variant?: 'hero' | 'card'  // 기본값 'card'
   size?: number    // 기본 20
 }
 ```
@@ -319,10 +319,11 @@ export const wishlistRepo: WishlistRepository = new SupabaseWishlistRepository()
 ### 기록 생성 시
 
 ```typescript
-// application/hooks/use-create-record.ts 내부 (S2에서 구현, 여기서 확장)
+// application/hooks/use-create-record.ts 내부 (S2에서 구현)
+// S2 설계(10_infra.md)에 따라 recordRepo.markWishlistVisited()로 처리
 
 // 기록 저장 성공 후:
-await wishlistRepo.updateVisitStatus(userId, targetId, targetType, true)
+await recordRepo.markWishlistVisited(userId, targetId, targetType)
 ```
 
 ### 기록 삭제 시

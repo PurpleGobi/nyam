@@ -28,7 +28,7 @@ interface CreateWineRecordInput {
   axisX: number
   axisY: number
   satisfaction: number
-  aromaRegions: globalThis.Record<string, unknown>
+  aromaRegions: Record<string, unknown>
   aromaLabels: string[]
   aromaColor: string
   complexity?: number
@@ -48,6 +48,7 @@ interface WineRecordFormProps {
   referenceRecords?: QuadrantReferencePoint[]
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
+  photoSlot?: React.ReactNode
 }
 
 function countActiveRings(regions: AromaSelection['regions']): number {
@@ -65,6 +66,7 @@ export function WineRecordForm({
   referenceRecords,
   onSave,
   isLoading,
+  photoSlot,
 }: WineRecordFormProps) {
   const [quadrant, setQuadrant] = useState({ x: 50, y: 50, satisfaction: 50 })
   const [aroma, setAroma] = useState<AromaSelection>({ regions: {}, labels: [], color: null })
@@ -105,7 +107,7 @@ export function WineRecordForm({
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: quadrant.satisfaction,
-      aromaRegions: aroma.regions as globalThis.Record<string, unknown>,
+      aromaRegions: aroma.regions as Record<string, unknown>,
       aromaLabels: aroma.labels,
       aromaColor: aroma.color,
       complexity: structure.complexity,
@@ -149,6 +151,13 @@ export function WineRecordForm({
           )}
         </div>
       </div>
+
+      {/* 사진 */}
+      {photoSlot && (
+        <section className="px-4 py-4">
+          {photoSlot}
+        </section>
+      )}
 
       {/* 사분면 */}
       <section className="px-4 py-4">

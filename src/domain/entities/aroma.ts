@@ -54,7 +54,7 @@ export interface AromaSelection {
    * 예: { citrus: true, tropical: true, vanilla: true }
    * JSONB로 records.aroma_regions에 저장
    */
-  regions: Partial<globalThis.Record<AromaSectorId, boolean>>
+  regions: Partial<Record<AromaSectorId, boolean>>
 
   /**
    * 선택된 섹터의 한국어 이름 배열 (자동 추출)

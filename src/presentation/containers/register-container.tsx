@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useCallback, Suspense } from 'react'
+import { useCallback, useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType } from '@/domain/entities/record'
+import type { CreateRestaurantInput, CreateWineInput } from '@/domain/entities/register'
+import { useRegister } from '@/application/hooks/use-register'
 import { RecordNav } from '@/presentation/components/record/record-nav'
 import { RestaurantRegisterForm } from '@/presentation/components/register/restaurant-register-form'
 import { WineRegisterForm } from '@/presentation/components/register/wine-register-form'
@@ -12,56 +14,44 @@ function RegisterInner() {
   const searchParams = useSearchParams()
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const initialName = searchParams.get('name') ?? ''
+  const initialProducer = searchParams.get('producer') ?? undefined
+  const initialVintage = searchParams.get('vintage') ? Number(searchParams.get('vintage')) : undefined
+  const initialWineType = searchParams.get('wineType') ?? undefined
 
-  const [isLoading, setIsLoading] = useState(false)
+  const { registerRestaurant, registerWine, isSubmitting, error } = useRegister()
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null)
+
+  useEffect(() => {
+    if (targetType !== 'restaurant') return
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { timeout: 5000 },
+    )
+  }, [targetType])
 
   const handleRestaurantSubmit = useCallback(
-    async (data: { name: string; genre?: string; area?: string }) => {
-      setIsLoading(true)
-      try {
-        const response = await fetch('/api/restaurants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-        const result = await response.json()
+    async (data: CreateRestaurantInput) => {
+      const result = await registerRestaurant(data)
+      if (!result) return
 
-        router.push(
-          `/record?type=restaurant&targetId=${result.id}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent([data.genre, data.area].filter(Boolean).join(' · '))}`,
-        )
-      } finally {
-        setIsLoading(false)
-      }
+      router.push(
+        `/record?type=restaurant&targetId=${result.id}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent([data.genre, data.area].filter(Boolean).join(' · '))}`,
+      )
     },
-    [router],
+    [router, registerRestaurant],
   )
 
   const handleWineSubmit = useCallback(
-    async (data: {
-      name: string
-      wineType: string
-      producer?: string
-      vintage?: number
-      region?: string
-      country?: string
-    }) => {
-      setIsLoading(true)
-      try {
-        const response = await fetch('/api/wines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-        const result = await response.json()
+    async (data: CreateWineInput) => {
+      const result = await registerWine(data)
+      if (!result) return
 
-        router.push(
-          `/record?type=wine&targetId=${result.id}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent([data.wineType, data.region, data.vintage].filter(Boolean).join(' · '))}`,
-        )
-      } finally {
-        setIsLoading(false)
-      }
+      router.push(
+        `/record?type=wine&targetId=${result.id}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent([data.wineType, data.region, data.vintage].filter(Boolean).join(' · '))}`,
+      )
     },
-    [router],
+    [router, registerWine],
   )
 
   return (
@@ -73,17 +63,29 @@ function RegisterInner() {
         onClose={() => router.push('/')}
       />
 
+      {error && (
+        <div className="mx-4 mt-2 rounded-lg bg-[color-mix(in_srgb,var(--negative)_10%,transparent)] px-4 py-2.5 text-[13px] text-[var(--negative)]">
+          {error}
+        </div>
+      )}
+
       {targetType === 'restaurant' ? (
         <RestaurantRegisterForm
           initialName={initialName}
+          currentLat={gps?.lat}
+          currentLng={gps?.lng}
           onSubmit={handleRestaurantSubmit}
-          isLoading={isLoading}
+          isLoading={isSubmitting}
+          error={error}
         />
       ) : (
         <WineRegisterForm
           initialName={initialName}
+          initialProducer={initialProducer}
+          initialVintage={initialVintage}
+          initialWineType={initialWineType}
           onSubmit={handleWineSubmit}
-          isLoading={isLoading}
+          isLoading={isSubmitting}
         />
       )}
     </div>

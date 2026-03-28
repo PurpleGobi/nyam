@@ -77,7 +77,7 @@ export interface DiningRecord {
    * - shelf: { wines: Array<{ name: string, price: number }> }
    * - receipt: { items: Array<{ name: string, price: number, qty: number }>, total: number }
    */
-  ocrData: globalThis.Record<string, unknown> | null
+  ocrData: Record<string, unknown> | null
 
   // ─── 사분면 ───
 
@@ -96,7 +96,7 @@ export interface DiningRecord {
   // ─── 와인 전용 ───
 
   /** 향 팔레트 칠한 영역 데이터 (JSONB) */
-  aromaRegions: globalThis.Record<string, unknown> | null
+  aromaRegions: Record<string, unknown> | null
 
   /** 자동 추출된 향 라벨 (TEXT[]) — 예: ['시트러스', '열대과일', '바닐라'] */
   aromaLabels: string[] | null
@@ -247,7 +247,7 @@ export interface CreateRecordInput {
   axisY?: number | null
   satisfaction?: number | null
   scene?: string | null
-  aromaRegions?: globalThis.Record<string, unknown> | null
+  aromaRegions?: Record<string, unknown> | null
   aromaLabels?: string[] | null
   aromaColor?: string | null
   complexity?: number | null

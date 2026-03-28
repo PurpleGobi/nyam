@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { UserExperience, LevelThreshold, LevelInfo } from '@/domain/entities/xp'
+import type { UserExperience, XpHistory, LevelThreshold, LevelInfo } from '@/domain/entities/xp'
 import { getLevel } from '@/domain/services/xp-calculator'
 import { xpRepo } from '@/shared/di/container'
 
+/**
+ * XP 조회 hook — 경험치, 레벨, 최근 이력을 로드.
+ */
 export function useXp(userId: string | null) {
   const [experiences, setExperiences] = useState<UserExperience[]>([])
+  const [recentXp, setRecentXp] = useState<XpHistory[]>([])
   const [thresholds, setThresholds] = useState<LevelThreshold[]>([])
   const [totalXp, setTotalXp] = useState(0)
   const [isLoading, setIsLoading] = useState(!!userId)
@@ -15,11 +19,13 @@ export function useXp(userId: string | null) {
     if (!userId) return
 
     Promise.all([
-      xpRepo.getExperiences(userId),
+      xpRepo.getUserExperiences(userId),
       xpRepo.getLevelThresholds(),
-    ]).then(([exp, thresh]) => {
+      xpRepo.getRecentXpHistories(userId, 20),
+    ]).then(([exp, thresh, recent]) => {
       setExperiences(exp)
       setThresholds(thresh)
+      setRecentXp(recent)
       setTotalXp(exp.reduce((sum, e) => sum + e.totalXp, 0))
       setIsLoading(false)
     })
@@ -31,14 +37,16 @@ export function useXp(userId: string | null) {
 
   const refetch = useCallback(async () => {
     if (!userId) return
-    const [exp, thresh] = await Promise.all([
-      xpRepo.getExperiences(userId),
+    const [exp, thresh, recent] = await Promise.all([
+      xpRepo.getUserExperiences(userId),
       xpRepo.getLevelThresholds(),
+      xpRepo.getRecentXpHistories(userId, 20),
     ])
     setExperiences(exp)
     setThresholds(thresh)
+    setRecentXp(recent)
     setTotalXp(exp.reduce((sum, e) => sum + e.totalXp, 0))
   }, [userId])
 
-  return { experiences, thresholds, totalXp, levelInfo, isLoading, refetch }
+  return { experiences, recentXp, thresholds, totalXp, levelInfo, isLoading, refetch }
 }

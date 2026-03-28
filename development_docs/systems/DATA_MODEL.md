@@ -59,54 +59,54 @@ CREATE TABLE users (
                                     -- 배열 순서 = 중요도 순 (앞쪽 N개 = highlight 태그, 뒤쪽 = 보조 태그) — 04_bubbler_profile 취향 필
   taste_updated_at TIMESTAMPTZ,      -- 취향 분석 마지막 갱신 시점 (기록 N개 이상 변경 시 재생성)
   preferred_areas TEXT[],           -- 온보딩에서 선택한 동네
-  privacy_profile VARCHAR(20) DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private' → 05_settings: 프라이버시 > 기본 공개 대상
-  privacy_records VARCHAR(20) DEFAULT 'shared_only',  -- 'all' | 'shared_only' → 05_settings: 프라이버시 > 기록 범위
+  privacy_profile VARCHAR(20) NOT NULL DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private' → 05_settings: 프라이버시 > 기본 공개 대상
+  privacy_records VARCHAR(20) NOT NULL DEFAULT 'shared_only',  -- 'all' | 'shared_only' → 05_settings: 프라이버시 > 기록 범위
                                                       -- (profile이 'private'이면 어차피 전체 비공개이므로 records에 'private' 불필요)
   -- 프라이버시: 공개 범위별 가시성 토글 (05_settings 프라이버시 섹션)
   -- 각 키: score(점수), comment(한줄평), photos(사진), level(레벨 뱃지), quadrant(사분면), bubbles(소속 버블), price(가격 정보)
-  visibility_public JSONB DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}',
+  visibility_public JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}',
     -- 전체 공개 시 보이는 항목. price는 기본 false (목업: "버블에서만")
-  visibility_bubble JSONB DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":true,"price":true}',
+  visibility_bubble JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":true,"price":true}',
     -- 버블 멤버에게 보이는 항목 기본값. 버블별 커스텀은 bubble_members.visibility_override
 
   -- 알림 설정 (05_settings 알림 섹션)
-  notify_push BOOLEAN DEFAULT true,           -- 푸시 알림 전체 ON/OFF
-  notify_level_up BOOLEAN DEFAULT true,       -- 레벨업 알림
-  notify_bubble_join BOOLEAN DEFAULT true,    -- 버블 가입 알림
-  notify_follow BOOLEAN DEFAULT true,         -- 팔로우 알림
+  notify_push BOOLEAN NOT NULL DEFAULT true,           -- 푸시 알림 전체 ON/OFF
+  notify_level_up BOOLEAN NOT NULL DEFAULT true,       -- 레벨업 알림
+  notify_bubble_join BOOLEAN NOT NULL DEFAULT true,    -- 버블 가입 알림
+  notify_follow BOOLEAN NOT NULL DEFAULT true,         -- 팔로우 알림
   dnd_start TIME,                             -- 방해 금지 시작 시각 (예: 23:00)
   dnd_end TIME,                               -- 방해 금지 종료 시각 (예: 08:00)
 
   -- 화면 디폴트 (05_settings 화면 디폴트 섹션)
-  pref_landing VARCHAR(20) DEFAULT 'last',        -- 'last' | 'home' | 'bubbles' | 'profile' — 앱 실행 시 첫 화면
-  pref_home_tab VARCHAR(20) DEFAULT 'last',       -- 'last' | 'restaurant' | 'wine' — 홈 진입 시 탭
-  pref_restaurant_sub VARCHAR(20) DEFAULT 'last', -- 'last' | 'visited' | 'wishlist' | 'recommended' | 'following' — 식당 탭 서브탭
-  pref_wine_sub VARCHAR(20) DEFAULT 'last',       -- 'last' | 'tasted' | 'wishlist' | 'cellar' — 와인 탭 서브탭
-  pref_bubble_tab VARCHAR(20) DEFAULT 'last',     -- 'last' | 'bubble' | 'bubbler' — 버블 페이지 탭
-  pref_view_mode VARCHAR(20) DEFAULT 'last',      -- 'last' | 'detailed' | 'compact' | 'calendar' — 홈 보기 모드 (상세/간단/캘린더)
+  pref_landing VARCHAR(20) NOT NULL DEFAULT 'last',        -- 'last' | 'home' | 'bubbles' | 'profile' — 앱 실행 시 첫 화면
+  pref_home_tab VARCHAR(20) NOT NULL DEFAULT 'last',       -- 'last' | 'restaurant' | 'wine' — 홈 진입 시 탭
+  pref_restaurant_sub VARCHAR(20) NOT NULL DEFAULT 'last', -- 'last' | 'visited' | 'wishlist' | 'recommended' | 'following' — 식당 탭 서브탭
+  pref_wine_sub VARCHAR(20) NOT NULL DEFAULT 'last',       -- 'last' | 'tasted' | 'wishlist' | 'cellar' — 와인 탭 서브탭
+  pref_bubble_tab VARCHAR(20) NOT NULL DEFAULT 'last',     -- 'last' | 'bubble' | 'bubbler' — 버블 페이지 탭
+  pref_view_mode VARCHAR(20) NOT NULL DEFAULT 'last',      -- 'last' | 'detailed' | 'compact' | 'calendar' — 홈 보기 모드 (상세/간단/캘린더)
 
   -- 기능 디폴트 (05_settings 기능 디폴트 섹션)
-  pref_default_sort VARCHAR(20) DEFAULT 'latest',  -- 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count' — 기본 정렬
-  pref_record_input VARCHAR(20) DEFAULT 'camera',  -- 'camera' | 'search' — 기록 시 카메라/검색 우선
-  pref_bubble_share VARCHAR(20) DEFAULT 'ask',     -- 'ask' | 'auto' | 'never' — 기록 후 버블 공유 방식
-  pref_temp_unit VARCHAR(5) DEFAULT 'C',           -- 'C' | 'F' — 와인 온도 단위
+  pref_default_sort VARCHAR(20) NOT NULL DEFAULT 'latest',  -- 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count' — 기본 정렬
+  pref_record_input VARCHAR(20) NOT NULL DEFAULT 'camera',  -- 'camera' | 'search' — 기록 시 카메라/검색 우선
+  pref_bubble_share VARCHAR(20) NOT NULL DEFAULT 'ask',     -- 'ask' | 'auto' | 'never' — 기록 후 버블 공유 방식
+  pref_temp_unit VARCHAR(5) NOT NULL DEFAULT 'C',           -- 'C' | 'F' — 와인 온도 단위
 
   -- 계정 삭제 (05_settings 계정 삭제 시트: 30일 유예 후 영구 삭제)
   deleted_at TIMESTAMPTZ,                          -- 삭제 요청 시점 (NULL이면 활성 계정)
   delete_mode VARCHAR(20),                         -- 'anonymize' | 'hard_delete' — 기록 처리 방식 선택
   delete_scheduled_at TIMESTAMPTZ,                 -- 영구 삭제 예정 시점 (deleted_at + 30일)
 
-  record_count INT DEFAULT 0,            -- 비정규화: 총 기록 수 (04_bubbler_profile: "기록 72", 04_bubbles 버블러 카드: "기록 47개")
-  follower_count INT DEFAULT 0,          -- 비정규화: 팔로워 수 (04_bubbler_profile: 프로필 상단 표시)
-  following_count INT DEFAULT 0,         -- 비정규화: 팔로잉 수 (04_bubbler_profile: 프로필 상단 표시)
-  current_streak INT DEFAULT 0,          -- 연속 기록 주 수 (04_bubbler_profile: 활동 히트맵 "8주 연속 기록 중")
-  total_xp INT DEFAULT 0,               -- 누적 XP (절대 안 줄어듦)
-  active_xp INT DEFAULT 0,              -- 최근 6개월 XP (자동 갱신)
-  active_verified INT DEFAULT 0,         -- 최근 6개월 검증 기록 수
+  record_count INT NOT NULL DEFAULT 0,            -- 비정규화: 총 기록 수 (04_bubbler_profile: "기록 72", 04_bubbles 버블러 카드: "기록 47개")
+  follower_count INT NOT NULL DEFAULT 0,          -- 비정규화: 팔로워 수 (04_bubbler_profile: 프로필 상단 표시)
+  following_count INT NOT NULL DEFAULT 0,         -- 비정규화: 팔로잉 수 (04_bubbler_profile: 프로필 상단 표시)
+  current_streak INT NOT NULL DEFAULT 0,          -- 연속 기록 주 수 (04_bubbler_profile: 활동 히트맵 "8주 연속 기록 중")
+  total_xp INT NOT NULL DEFAULT 0,               -- 누적 XP (절대 안 줄어듦)
+  active_xp INT NOT NULL DEFAULT 0,              -- 최근 6개월 XP (자동 갱신)
+  active_verified INT NOT NULL DEFAULT 0,         -- 최근 6개월 검증 기록 수
   auth_provider VARCHAR(20) NOT NULL,    -- 'kakao' | 'google' | 'apple' | 'naver'
   auth_provider_id VARCHAR(100) NOT NULL UNIQUE,  -- 소셜 계정 1:1 매핑 (중복 가입 차단)
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
@@ -116,12 +116,12 @@ CREATE TABLE restaurants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
   address TEXT,
-  country VARCHAR(50) DEFAULT '한국',  -- 국가 (한국, 프랑스, 일본 등) — 식당 통계 세계지도 클러스터용
-  city VARCHAR(50) DEFAULT '서울',     -- 도시 (서울, 파리, 도쿄 등) — 세계지도 도시별 그룹핑
+  country VARCHAR(50) NOT NULL DEFAULT '한국',  -- 국가 (한국, 프랑스, 일본 등) — 식당 통계 세계지도 클러스터용
+  city VARCHAR(50) NOT NULL DEFAULT '서울',     -- 도시 (서울, 파리, 도쿄 등) — 세계지도 도시별 그룹핑
   area VARCHAR(50),                -- 생활권 동네명 (광화문, 을지로 등) — 국내 식당 전용
   district VARCHAR(50),            -- 구 (종로구, 강남구 등) — 국내 식당 전용
-  genre VARCHAR(30),               -- CHECK: 한식/일식/양식/중식/이탈리안/프렌치/동남아/태국/베트남/인도/스페인/멕시칸/아시안/파인다이닝/비스트로/카페/베이커리/바/주점
-                                  -- 03_profile 장르별 XP 레벨 목록 + 00_onboarding 시드 데이터 기준
+  genre VARCHAR(30),               -- CHECK: 한식/일식/중식/태국/베트남/인도/이탈리안/프렌치/스페인/지중해/미국/멕시칸/카페/바/주점/베이커리/기타
+                                  -- 6대분류: 동아시아(한식,일식,중식) / 동남아·남아시아(태국,베트남,인도) / 유럽(이탈리안,프렌치,스페인,지중해) / 아메리카(미국,멕시칸) / 음료·디저트(카페,바/주점,베이커리) / 기타
   price_range INT,                 -- 1~4 (₩~₩₩₩₩)
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
@@ -137,7 +137,7 @@ CREATE TABLE restaurants (
 
   -- 권위 인증
   michelin_stars INT,              -- NULL or 1,2,3
-  has_blue_ribbon BOOLEAN DEFAULT false,
+  has_blue_ribbon BOOLEAN NOT NULL DEFAULT false,
   media_appearances JSONB,         -- TV출연 등 [{"show":"흑백요리사","season":"S1","year":2024}]
 
   -- nyam 종합 점수 (외부 평점 + 권위 인증 가중 평균. 주기적 재계산 캐시)
@@ -149,7 +149,7 @@ CREATE TABLE restaurants (
   cached_at TIMESTAMPTZ,
   next_refresh_at TIMESTAMPTZ,     -- 2주 갱신 스케줄
 
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- 가격대 필터 매핑: price_range 1=~2만, 2=2~5만, 3=5~10만, 4=10만+
@@ -158,7 +158,7 @@ CREATE INDEX idx_restaurants_area ON restaurants(area);
 CREATE INDEX idx_restaurants_country_city ON restaurants(country, city);  -- 세계지도 드릴다운
 CREATE INDEX idx_restaurants_location ON restaurants USING gist(
   ST_MakePoint(lng, lat)
-);
+) WHERE lng IS NOT NULL AND lat IS NOT NULL;
 ```
 
 ### wines
@@ -207,7 +207,7 @@ CREATE TABLE wines (
   cached_at TIMESTAMPTZ,
   next_refresh_at TIMESTAMPTZ,      -- 갱신 스케줄 (restaurants와 동일 패턴)
 
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_wines_type ON wines(wine_type);
@@ -224,7 +224,7 @@ CREATE TABLE records (
   target_type VARCHAR(10) NOT NULL, -- 'restaurant' | 'wine'
 
   -- 상태
-  status VARCHAR(10) DEFAULT 'rated', -- 'checked' | 'rated' | 'draft'
+  status VARCHAR(10) NOT NULL DEFAULT 'rated', -- 'checked' | 'rated' | 'draft'
 
   -- 와인 분류 (와인 기록 전용) — 시음/셀러/찜 3분류
   wine_status VARCHAR(10),         -- 'tasted' | 'cellar' | 'wishlist' (target_type='wine'일 때만 사용)
@@ -271,13 +271,13 @@ CREATE TABLE records (
   linked_restaurant_id UUID REFERENCES restaurants(id),  -- 와인 기록의 식당 연결
   linked_wine_id UUID REFERENCES wines(id),              -- 식당 기록의 와인 연결
 
-  has_exif_gps BOOLEAN DEFAULT false,
-  is_exif_verified BOOLEAN DEFAULT false,  -- GPS가 식당 위치 반경 200m 이내일 때 true
-  record_quality_xp INT DEFAULT 0,         -- 이 기록으로 획득한 총 XP (비정규화)
+  has_exif_gps BOOLEAN NOT NULL DEFAULT false,
+  is_exif_verified BOOLEAN NOT NULL DEFAULT false,  -- GPS가 식당 위치 반경 200m 이내일 때 true
+  record_quality_xp INT NOT NULL DEFAULT 0,         -- 이 기록으로 획득한 총 XP (비정규화)
   score_updated_at TIMESTAMPTZ,            -- 만족도 점수 마지막 부여 시점 (6개월 제한 기준)
 
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_records_user_type_date ON records(user_id, target_type, visit_date DESC);  -- 홈 피드 (유저+타입+최신순)
@@ -298,9 +298,10 @@ CREATE TABLE record_photos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   record_id UUID NOT NULL REFERENCES records(id) ON DELETE CASCADE,
   url TEXT NOT NULL,
-  order_index INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  order_index INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX idx_record_photos_record ON record_photos(record_id, order_index);
 ```
 
 ### wishlists
@@ -310,7 +311,7 @@ CREATE TABLE wishlists (
   user_id UUID NOT NULL REFERENCES users(id),
   target_id UUID NOT NULL,
   target_type VARCHAR(10) NOT NULL,  -- 'restaurant' | 'wine'
-  source VARCHAR(10) DEFAULT 'direct',  -- 'direct' | 'bubble' | 'ai' | 'web'
+  source VARCHAR(10) NOT NULL DEFAULT 'direct',  -- 'direct' | 'bubble' | 'ai' | 'web'
                                         -- direct: 사용자가 직접 찜 (상세 페이지 하트)
                                         -- bubble: 버블 멤버 기록 보고 찜 (reactions.bookmark 트리거)
                                         -- ai: AI 추천에서 찜
@@ -318,11 +319,12 @@ CREATE TABLE wishlists (
   source_record_id UUID REFERENCES records(id) ON DELETE SET NULL,  -- source='bubble'일 때 원본 기록 ID
                                                   -- 찜 카드에서 "김영수 93 · 을지로 최고 바베큐" 표시용
                                                   -- source='ai'일 때 ai_recommendations.id 참조도 가능 (target_id로)
-  is_visited BOOLEAN DEFAULT false,
+  is_visited BOOLEAN NOT NULL DEFAULT false,
   -- 기록 생성 시 동일 target의 wishlist.is_visited = true로 자동 업데이트 (트리거 또는 application layer)
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, target_id, target_type)
 );
+CREATE INDEX idx_wishlists_user ON wishlists(user_id, target_type, is_visited);
 ```
 
 ---
@@ -341,9 +343,9 @@ CREATE TABLE user_experiences (
                                     -- genre: '일식' | '양식' 등
                                     -- wine_variety: 'Cabernet Sauvignon' 등
                                     -- wine_region: '프랑스' 등
-  total_xp INT DEFAULT 0,
-  level INT DEFAULT 1,
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  total_xp INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 1,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, axis_type, axis_value)
 );
 
@@ -363,7 +365,7 @@ CREATE TABLE xp_histories (
                        -- | 'bonus_onboard' | 'bonus_first_record' | 'bonus_first_bubble' | 'bonus_first_share'
                        -- | 'milestone'  ← 03_profile 레벨 디테일 시트 XP 구성에 마일스톤 항목 존재
                        -- | 'revisit'    ← 재방문 XP (최근 경험치 목록의 "재방문 2차" 등)
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_xp_histories_user_created ON xp_histories(user_id, created_at DESC);  -- 최근 경험치 리스트 + 월간 XP 합계
@@ -393,7 +395,7 @@ CREATE TABLE user_milestones (
   user_id UUID NOT NULL REFERENCES users(id),
   milestone_id UUID NOT NULL REFERENCES milestones(id),
   axis_value VARCHAR(50) NOT NULL DEFAULT '_global',  -- '을지로' 등 (global 마일스톤은 '_global'. PK 포함이므로 NOT NULL 필수)
-  achieved_at TIMESTAMPTZ DEFAULT NOW(),
+  achieved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY(user_id, milestone_id, axis_value)
 );
 -- user_milestones로 달성 여부 추적 + 다음 마일스톤 계산 가능
@@ -421,42 +423,42 @@ CREATE TABLE bubbles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(20) NOT NULL,
   description VARCHAR(100),
-  focus_type VARCHAR(20) DEFAULT 'all',        -- 'all' | 'restaurant' | 'wine' (라벨일 뿐, 제한 없음)
+  focus_type VARCHAR(20) NOT NULL DEFAULT 'all',        -- 'all' | 'restaurant' | 'wine' (라벨일 뿐, 제한 없음)
   area VARCHAR(50),                           -- 버블 주요 지역 (을지로, 광화문 등) — 04_bubbles 필터: 지역
-  visibility VARCHAR(20) DEFAULT 'private',   -- 'private' | 'public'
-  content_visibility VARCHAR(20) DEFAULT 'rating_only',  -- 'rating_only' | 'rating_and_comment'
+  visibility VARCHAR(20) NOT NULL DEFAULT 'private',   -- 'private' | 'public'
+  content_visibility VARCHAR(20) NOT NULL DEFAULT 'rating_only',  -- 'rating_only' | 'rating_and_comment'
                                                          -- UI 라벨: rating_and_comment → "양방향", rating_only → "일방향"
                                                          -- 04_bubbles_detail 설정: "유형: 양방향"
-  allow_comments BOOLEAN DEFAULT true,
-  allow_external_share BOOLEAN DEFAULT false,
+  allow_comments BOOLEAN NOT NULL DEFAULT true,
+  allow_external_share BOOLEAN NOT NULL DEFAULT false,
 
   -- 가입 정책 (04_bubbles 생성 화면 + 04_bubbles_detail 설정 화면)
-  join_policy VARCHAR(20) DEFAULT 'invite_only',  -- 'invite_only' | 'closed' | 'manual_approve' | 'auto_approve' | 'open'
+  join_policy VARCHAR(20) NOT NULL DEFAULT 'invite_only',  -- 'invite_only' | 'closed' | 'manual_approve' | 'auto_approve' | 'open'
                                                    -- invite_only: 비공개 — 초대받은 사람만 가입
                                                    -- closed: 공개 — 팔로우만 (가입 안 받음, 이름+점수만 열람)
                                                    -- manual_approve: 공개 — 가입 신청 → 관리자 승인/거절
                                                    -- auto_approve: 공개 — 기준 충족 시 자동 가입
                                                    -- open: 공개 — 누구나 바로 가입
-  min_records INT DEFAULT 0,                  -- 가입 최소 기록 수 (04_bubbles_detail 설정: "최소 기록 수 5개")
-  min_level INT DEFAULT 0,                    -- 가입 최소 레벨 (04_bubbles_detail 설정: "최소 레벨 Lv.3")
+  min_records INT NOT NULL DEFAULT 0,                  -- 가입 최소 기록 수 (04_bubbles_detail 설정: "최소 기록 수 5개")
+  min_level INT NOT NULL DEFAULT 0,                    -- 가입 최소 레벨 (04_bubbles_detail 설정: "최소 레벨 Lv.3")
   max_members INT,                            -- 최대 인원 (NULL=무제한) (04_bubbles_detail 설정: "최대 인원 20명")
   rules TEXT[],                               -- 버블 규칙 텍스트 배열 (04_bubbles_detail info sheet: "직장 주변 식당 위주로...")
 
   -- 검색/탐색 (04_bubbles_detail 설정: 검색 노출)
-  is_searchable BOOLEAN DEFAULT true,          -- 탐색에 노출 여부
+  is_searchable BOOLEAN NOT NULL DEFAULT true,          -- 탐색에 노출 여부
   search_keywords TEXT[],                     -- 검색 키워드 배열
 
   -- 비정규화: 기본 카운트 (트리거 실시간 갱신)
-  follower_count INT DEFAULT 0,               -- 팔로워 수 (role='follower')
-  member_count INT DEFAULT 0,                 -- 멤버 수 (role in 'owner','admin','member') — 04_bubbles: "멤버 8명"
-  record_count INT DEFAULT 0,                 -- 총 기록 수 — 04_bubbles: "기록 47개", 소팅 "기록 많은순"
+  follower_count INT NOT NULL DEFAULT 0,               -- 팔로워 수 (role='follower')
+  member_count INT NOT NULL DEFAULT 0,                 -- 멤버 수 (role in 'owner','admin','member') — 04_bubbles: "멤버 8명"
+  record_count INT NOT NULL DEFAULT 0,                 -- 총 기록 수 — 04_bubbles: "기록 47개", 소팅 "기록 많은순"
   avg_satisfaction DECIMAL(4,1),              -- 평균 만족도 — 04_bubbles_detail 통계: "평균 점수 87" (크론 일간)
   last_activity_at TIMESTAMPTZ,               -- 최신 활동 시점 — 04_bubbles 소팅: "최신 활동순"
 
   -- 비정규화: 통계 캐시 (크론 일/주간 갱신) — 04_bubbles_detail 통계칩 + 설정 통계
-  unique_target_count INT DEFAULT 0,          -- 고유 장소/와인 수 — 04_bubbles_detail 통계: "고유 장소 15"
-  weekly_record_count INT DEFAULT 0,          -- 이번 주 기록수 — 04_bubbles_detail 통계: "이번 주 6"
-  prev_weekly_record_count INT DEFAULT 0,     -- 지난 주 기록수 — 04_bubbles_detail 설정 통계: "주간 활성도 +12%" 계산용
+  unique_target_count INT NOT NULL DEFAULT 0,          -- 고유 장소/와인 수 — 04_bubbles_detail 통계: "고유 장소 15"
+  weekly_record_count INT NOT NULL DEFAULT 0,          -- 이번 주 기록수 — 04_bubbles_detail 통계: "이번 주 6"
+  prev_weekly_record_count INT NOT NULL DEFAULT 0,     -- 지난 주 기록수 — 04_bubbles_detail 설정 통계: "주간 활성도 +12%" 계산용
 
   -- 아이콘
   icon TEXT,                                  -- lucide 아이콘명 (예: 'utensils-crossed', 'wine', 'flame')
@@ -465,16 +467,16 @@ CREATE TABLE bubbles (
   created_by UUID REFERENCES users(id),
   invite_code VARCHAR(20) UNIQUE,
   invite_expires_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE bubble_members (
   bubble_id UUID NOT NULL REFERENCES bubbles(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id),
-  role VARCHAR(20) DEFAULT 'member',  -- 'owner' | 'admin' | 'member' | 'follower'
+  role VARCHAR(20) NOT NULL DEFAULT 'member',  -- 'owner' | 'admin' | 'member' | 'follower'
   -- 기존 'subscriber' → 'follower'로 변경. follower도 동일 테이블에 저장.
-  status VARCHAR(10) DEFAULT 'active',  -- 'pending' | 'active' | 'rejected'
+  status VARCHAR(10) NOT NULL DEFAULT 'active',  -- 'pending' | 'active' | 'rejected'
                                         -- pending: 가입 신청 대기 (알림 수락/거절 버튼)
                                         -- active: 가입 승인 완료
                                         -- rejected: 거절됨 (재신청 방지용)
@@ -487,18 +489,18 @@ CREATE TABLE bubble_members (
   taste_match_pct DECIMAL(4,1),           -- 뷰어와의 취향 일치도 (0.0~100.0). 뷰어 로그인 시 재계산 (application layer)
                                           -- 04_bubbles_detail 멤버 카드: "91%", 멤버 소팅 "일치도순"
                                           -- 04_bubbler_profile 컨텍스트: "나와 취향 일치도 78%"
-  common_target_count INT DEFAULT 0,      -- 뷰어와 공통 방문 장소/와인 수. taste_match_pct와 동시 갱신
+  common_target_count INT NOT NULL DEFAULT 0,      -- 뷰어와 공통 방문 장소/와인 수. taste_match_pct와 동시 갱신
                                           -- 04_bubbler_profile 컨텍스트: "같이 가본 곳 8곳"
   avg_satisfaction DECIMAL(4,1),          -- 이 멤버의 버블 내 평균 만족도 (크론 일간)
                                           -- 04_bubbles_detail 멤버 탭 "나" 카드: "88점"
-  member_unique_target_count INT DEFAULT 0, -- 이 멤버의 버블 내 고유 장소/와인 수 (크론 일간)
+  member_unique_target_count INT NOT NULL DEFAULT 0, -- 이 멤버의 버블 내 고유 장소/와인 수 (크론 일간)
                                           -- 04_bubbles_detail 멤버 카드: "8곳"
-  weekly_share_count INT DEFAULT 0,       -- 이번 주 공유 수 (크론 주간 리셋)
+  weekly_share_count INT NOT NULL DEFAULT 0,       -- 이번 주 공유 수 (크론 주간 리셋)
                                           -- 04_bubbler_profile 컨텍스트: "이번 주 순위 1위/8명" 계산용
   badge_label VARCHAR(30),                -- 버블 내 대표 배지 라벨 (크론 일간, milestones 기반)
                                           -- 04_bubbles_detail 멤버 카드: "🧭 탐험왕" (고유장소 최다 등)
 
-  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY(bubble_id, user_id)
 );
 
@@ -510,7 +512,7 @@ CREATE TABLE bubble_shares (
   record_id UUID NOT NULL REFERENCES records(id) ON DELETE CASCADE,  -- 기록 삭제 시 공유도 제거
   bubble_id UUID NOT NULL REFERENCES bubbles(id) ON DELETE CASCADE,
   shared_by UUID NOT NULL REFERENCES users(id),
-  shared_at TIMESTAMPTZ DEFAULT NOW(),
+  shared_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(record_id, bubble_id)
 );
 
@@ -525,8 +527,8 @@ CREATE TABLE comments (
   bubble_id UUID REFERENCES bubbles(id) ON DELETE CASCADE,  -- 버블 삭제 시 댓글도 삭제
   user_id UUID REFERENCES users(id),
   content VARCHAR(300) NOT NULL,
-  is_anonymous BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  is_anonymous BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_comments_target ON comments(target_type, target_id, bubble_id);  -- 기록별 버블 내 댓글 조회
@@ -542,7 +544,7 @@ CREATE TABLE reactions (
                                        -- check: "나도가봤어" (04_bubbles_detail 피드 리액션 버튼)
                                        -- fire: "맛있어보인다" (04_bubbles_detail 피드 리액션 버튼)
   user_id UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(target_type, target_id, reaction_type, user_id)
 );
 
@@ -552,7 +554,7 @@ CREATE INDEX idx_reactions_target ON reactions(target_type, target_id, reaction_
 CREATE TABLE bubble_share_reads (
   share_id UUID NOT NULL REFERENCES bubble_shares(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id),
-  read_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY(share_id, user_id)
 );
 
@@ -565,20 +567,21 @@ CREATE TABLE bubble_ranking_snapshots (
   period_start DATE NOT NULL,                -- 스냅샷 기준 주 시작일 (월요일)
   rank_position INT NOT NULL,                -- 해당 주 순위
   avg_satisfaction DECIMAL(4,1),             -- 해당 주 평균 만족도
-  record_count INT DEFAULT 0,                -- 해당 주 기록 수
+  record_count INT NOT NULL DEFAULT 0,                -- 해당 주 기록 수
   PRIMARY KEY(bubble_id, target_id, target_type, period_start)
 );
 
 CREATE INDEX idx_ranking_snapshots_bubble_period ON bubble_ranking_snapshots(bubble_id, target_type, period_start DESC);
 
 CREATE TABLE follows (
-  follower_id UUID REFERENCES users(id),
-  following_id UUID REFERENCES users(id),
-  status VARCHAR(10) DEFAULT 'accepted',  -- 'pending' | 'accepted' | 'rejected'
+  follower_id UUID NOT NULL REFERENCES users(id),
+  following_id UUID NOT NULL REFERENCES users(id),
+  status VARCHAR(10) NOT NULL DEFAULT 'accepted',  -- 'pending' | 'accepted' | 'rejected'
                                           -- pending: 팔로우 요청 대기 (알림 수락/거절 버튼)
                                           -- accepted: 수락 완료
                                           -- rejected: 거절됨
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_follows_no_self CHECK (follower_id != following_id),
   PRIMARY KEY(follower_id, following_id)
 );
 
@@ -629,13 +632,13 @@ CREATE TABLE notifications (
   --   reaction_like:        {"actor_name":"...","target_name":"..."}
   --   comment_reply:        {"actor_name":"...","comment_preview":"..."}
 
-  is_read BOOLEAN DEFAULT false,       -- 06_notifications: unread dot + 굵은 제목 + 헤더 벨 뱃지
+  is_read BOOLEAN NOT NULL DEFAULT false,       -- 06_notifications: unread dot + 굵은 제목 + 헤더 벨 뱃지
   action_status VARCHAR(10),           -- 'pending' | 'accepted' | 'rejected' | NULL
   -- 액션 있는 알림: bubble_join_request, follow_request, bubble_invite (06_notifications: 인라인 수락/거절 버튼)
   -- NULL: 액션 불필요 (level_up, follow_accepted, bubble_join_approved 등)
   -- 06_notifications: 처리 후 버튼 → 결과 텍스트 ("수락 완료" / "거절됨")
 
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read, created_at DESC);  -- 06_notifications 드롭다운: 미읽음 우선, 최신순
@@ -649,15 +652,16 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, is_read, created_a
 CREATE TABLE nudge_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id),
-  nudge_type VARCHAR(30),  -- 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
+  nudge_type VARCHAR(30) NOT NULL,  -- 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
   target_id UUID,
-  status VARCHAR(10),      -- 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  status VARCHAR(10) NOT NULL,      -- 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX idx_nudge_history_user ON nudge_history(user_id, created_at DESC);
 
 CREATE TABLE nudge_fatigue (
   user_id UUID PRIMARY KEY REFERENCES users(id),
-  score INT DEFAULT 0,
+  score INT NOT NULL DEFAULT 0,
   last_nudge_at TIMESTAMPTZ,
   paused_until TIMESTAMPTZ
 );
@@ -705,8 +709,8 @@ CREATE TABLE saved_filters (
                                       --    {"attr":"genre","op":"is","value":"일식"},
                                       --    {"conjunction":"or","attr":"genre","op":"is","value":"프렌치"}]}]
   sort_by VARCHAR(20),                -- 저장된 소팅 (최신순, 점수높은순, 점수낮은순, 이름순, 방문많은순)
-  order_index INT DEFAULT 0,          -- 칩 표시 순서
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  order_index INT NOT NULL DEFAULT 0,          -- 칩 표시 순서
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_saved_filters_user ON saved_filters(user_id, target_type);
@@ -730,8 +734,8 @@ CREATE TABLE ai_recommendations (
   reason TEXT NOT NULL,               -- AI 추천 사유 ("오마카세를 좋아하시니까 여기도 좋아하실 거예요")
   algorithm VARCHAR(30),              -- 추천 알고리즘 식별자 (taste_match, new_area, bubble_popular 등)
   confidence DECIMAL(3,2),            -- 추천 확신도 0.00~1.00
-  is_dismissed BOOLEAN DEFAULT false, -- 사용자가 무시한 추천
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_dismissed BOOLEAN NOT NULL DEFAULT false, -- 사용자가 무시한 추천
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ              -- 추천 만료 시점 (주기적 갱신)
 );
 

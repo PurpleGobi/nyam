@@ -18,14 +18,37 @@ function DotScale({ value, max = 5 }: { value: number; max?: number }) {
   )
 }
 
-const BODY_LABELS: Record<number, string> = { 1: 'Light', 2: 'Light-Medium', 3: 'Medium', 4: 'Medium-Full', 5: 'Full' }
+const BODY_LABELS: Record<number, string> = { 1: 'Light', 2: 'Medium-Light', 3: 'Medium', 4: 'Medium-Full', 5: 'Full' }
 const ACIDITY_LABELS: Record<number, string> = { 1: '낮음', 2: '중간', 3: '높음' }
-const SWEETNESS_LABELS: Record<number, string> = { 1: '드라이', 2: '중간', 3: '스위트' }
+const SWEETNESS_LABELS: Record<number, string> = { 1: '드라이', 2: '오프 드라이', 3: '스위트' }
+
+/** 참고 시세 포맷: 만원 단위 반올림, 1만 미만은 원 단위 */
+function formatPrice(price: number): string {
+  if (price >= 10000) {
+    const man = Math.round(price / 10000)
+    return `≈ ${man}만원`
+  }
+  return `≈ ${price.toLocaleString()}원`
+}
+
+/** 품종 비율 문자열 생성 */
+function formatGrapeVarieties(wine: Wine): string | null {
+  // grapeVarieties 배열이 있으면 비율 포함 표시
+  if (wine.grapeVarieties.length > 0) {
+    return wine.grapeVarieties
+      .map((g) => g.pct > 0 ? `${g.name} ${g.pct}%` : g.name)
+      .join(', ')
+  }
+  // 단일 품종 fallback
+  return wine.variety ?? null
+}
 
 export function WineFactsTable({ wine }: WineFactsTableProps) {
   const rows: { label: string; value: React.ReactNode }[] = []
 
-  if (wine.variety) rows.push({ label: '품종', value: wine.variety })
+  const varietyText = formatGrapeVarieties(wine)
+  if (varietyText) rows.push({ label: '품종', value: varietyText })
+
   if (wine.country || wine.region) {
     rows.push({ label: '산지', value: [wine.country, wine.region, wine.subRegion].filter(Boolean).join(' ') })
   }
@@ -50,7 +73,7 @@ export function WineFactsTable({ wine }: WineFactsTableProps) {
   }
   if (wine.servingTemp) rows.push({ label: '적정 온도', value: wine.servingTemp })
   if (wine.decanting) rows.push({ label: '디캔팅', value: wine.decanting })
-  if (wine.referencePrice) rows.push({ label: '시세', value: `≈ ${wine.referencePrice.toLocaleString()}원` })
+  if (wine.referencePrice) rows.push({ label: '참고 시세', value: formatPrice(wine.referencePrice) })
   if (wine.drinkingWindowStart && wine.drinkingWindowEnd) {
     rows.push({ label: '음용 적기', value: `${wine.drinkingWindowStart}–${wine.drinkingWindowEnd}` })
   }

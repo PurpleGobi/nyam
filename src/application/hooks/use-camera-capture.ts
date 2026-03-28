@@ -62,7 +62,7 @@ export function useCameraCapture(): UseCameraCaptureReturn {
         const data: IdentifyResponse = await response.json()
 
         if (!data.success || !data.result) {
-          const errorMap: globalThis.Record<string, string> = {
+          const errorMap: Record<string, string> = {
             NOT_FOOD: '음식 사진을 선택해주세요',
             NOT_WINE_LABEL: '와인 라벨을 찾지 못했어요',
             UNAUTHORIZED: '로그인이 필요합니다',

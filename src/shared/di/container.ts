@@ -38,6 +38,7 @@ import type { ProfileRepository } from '@/domain/repositories/profile-repository
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { CommentRepository } from '@/domain/repositories/comment-repository'
 import type { ReactionRepository } from '@/domain/repositories/reaction-repository'
+import type { OnboardingRepository } from '@/domain/repositories/onboarding-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -64,4 +65,4 @@ export const profileRepo: ProfileRepository = new SupabaseProfileRepository()
 export const settingsRepo: SettingsRepository = new SupabaseSettingsRepository()
 export const commentRepo: CommentRepository = new SupabaseCommentRepository()
 export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
-export const onboardingRepo = new SupabaseOnboardingRepository()
+export const onboardingRepo: OnboardingRepository = new SupabaseOnboardingRepository()

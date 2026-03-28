@@ -43,11 +43,10 @@
 | `src/app/api/records/identify/route.ts` | app | API route: 이미지 → AI 인식 → 후보 반환 |
 | `src/application/hooks/use-camera-capture.ts` | application | 카메라 촬영/앨범 선택 + AI 인식 호출 |
 | `src/presentation/components/camera/camera-capture.tsx` | presentation | 카메라 뷰파인더 + 촬영 버튼 |
-| `src/presentation/components/camera/album-picker.tsx` | presentation | 앨범에서 사진 선택 |
 | `src/presentation/components/camera/ai-result-display.tsx` | presentation | AI 인식 결과 표시 (후보 목록) |
 | `src/presentation/components/camera/wine-confirm-card.tsx` | presentation | 와인 확인 화면 (screen-add-wine-confirm) |
-| `src/presentation/containers/camera-container.tsx` | presentation | 카메라 화면 컨테이너 (식당/와인 분기) |
-| `src/presentation/containers/wine-confirm-container.tsx` | presentation | 와인 확인 컨테이너 |
+
+> **구현 시 변경 사항**: `album-picker.tsx`와 `camera-container.tsx`는 별도 파일로 분리되지 않고 `add-flow-container.tsx`에 통합됨. `useCameraCapture` hook이 앨범 선택 로직을 포함하고, 카메라/AI/와인컨펌 step 렌더링을 `AddFlowContainer` 내부에서 직접 처리.
 
 ### 스코프 외
 
@@ -172,6 +171,10 @@ export interface IdentifyResponse {
   success: boolean
   result: AIRecognitionResult | null
   error?: string
+  /** shelf 모드 OCR 결과 (cameraMode='shelf'일 때만 포함) */
+  shelfData?: ShelfOcrData
+  /** receipt 모드 OCR 결과 (cameraMode='receipt'일 때만 포함) */
+  receiptData?: ReceiptOcrData
 }
 ```
 
@@ -309,12 +312,19 @@ async function callGeminiVision(request: GeminiVisionRequest): Promise<GeminiVis
   return { text, confidence: data.candidates?.[0]?.avgLogProbs ?? 0 }
 }
 
+/** Gemini 응답에서 ```json ... ``` 감싸기 제거 후 파싱 */
+function safeJsonParse(text: string): Record<string, unknown> {
+  const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim()
+  try { return JSON.parse(cleaned) }
+  catch { throw new Error('AI_PARSE_ERROR') }
+}
+
 // ─── 식당 인식 ───
 
 const RESTAURANT_PROMPT = `이 음식/식당 사진을 분석해주세요. JSON으로 응답해주세요.
 {
   "food_type": "인식된 음식 종류 (예: 초밥, 파스타, 삼겹살)",
-  "genre": "음식 장르 (한식/일식/양식/중식/이탈리안/프렌치/동남아/태국/베트남/인도/스페인/멕시칸/아시안/파인다이닝/비스트로/카페/베이커리/바/주점 중 하나)",
+  "genre": "음식 장르 (한식/일식/중식/태국/베트남/인도/이탈리안/프렌치/스페인/지중해/미국/멕시칸/카페/바·주점/베이커리/기타 중 하나)",
   "restaurant_name": "간판이 보이면 식당 이름, 없으면 null",
   "confidence": 0.0~1.0
 }
@@ -333,7 +343,7 @@ export async function recognizeRestaurant(imageBase64: string): Promise<Restaura
     prompt: RESTAURANT_PROMPT,
   })
 
-  const parsed = JSON.parse(response.text)
+  const parsed = safeJsonParse(response.text)
 
   if (parsed.error === 'not_food') {
     throw new Error('NOT_FOOD')
@@ -377,7 +387,7 @@ export async function recognizeWineLabel(imageBase64: string): Promise<WineLabel
     prompt: WINE_LABEL_PROMPT,
   })
 
-  const parsed = JSON.parse(response.text)
+  const parsed = safeJsonParse(response.text)
 
   if (parsed.error === 'not_wine_label') {
     throw new Error('NOT_WINE_LABEL')
@@ -415,7 +425,7 @@ export async function recognizeWineShelf(imageBase64: string): Promise<ShelfReco
     prompt: WINE_SHELF_PROMPT,
   })
 
-  const parsed = JSON.parse(response.text)
+  const parsed = safeJsonParse(response.text)
   return { wines: parsed.wines ?? [] }
 }
 
@@ -442,7 +452,7 @@ export async function recognizeWineReceipt(imageBase64: string): Promise<Receipt
     prompt: WINE_RECEIPT_PROMPT,
   })
 
-  const parsed = JSON.parse(response.text)
+  const parsed = safeJsonParse(response.text)
   return {
     items: parsed.items ?? [],
     total: parsed.total ?? null,
@@ -458,7 +468,7 @@ export async function recognizeWineReceipt(imageBase64: string): Promise<Receipt
 // src/app/api/records/identify/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'
 import {
   recognizeRestaurant,
   recognizeWineLabel,
@@ -476,7 +486,7 @@ import type {
 } from '@/domain/entities/camera'
 
 export async function POST(request: NextRequest): Promise<NextResponse<IdentifyResponse>> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   // 인증 확인
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -958,13 +968,13 @@ interface WineConfirmCardProps {
 
 /** 와인 타입 → 한글 변환 + 칩 색상 */
 const WINE_TYPE_MAP: Record<string, { label: string; className: string }> = {
-  red: { label: '레드', className: 'bg-red-100 text-red-700' },
-  white: { label: '화이트', className: 'bg-yellow-100 text-yellow-700' },
-  rose: { label: '로제', className: 'bg-pink-100 text-pink-700' },
-  sparkling: { label: '스파클링', className: 'bg-blue-100 text-blue-700' },
-  orange: { label: '오렌지', className: 'bg-orange-100 text-orange-700' },
-  fortified: { label: '주정강화', className: 'bg-amber-100 text-amber-700' },
-  dessert: { label: '디저트', className: 'bg-purple-100 text-purple-700' },
+  red: { label: '레드', className: 'bg-accent-wine-light text-accent-wine' },
+  white: { label: '화이트', className: 'bg-accent-food-light text-accent-food' },
+  rose: { label: '로제', className: 'bg-[var(--scene-romantic)]/10 text-[var(--scene-romantic)]' },
+  sparkling: { label: '스파클링', className: 'bg-accent-social-light text-accent-social' },
+  orange: { label: '오렌지', className: 'bg-[var(--caution)]/10 text-caution' },
+  fortified: { label: '주정강화', className: 'bg-accent-food-dim text-accent-food' },
+  dessert: { label: '디저트', className: 'bg-accent-wine-light text-accent-wine' },
 }
 
 export function WineConfirmCard({
@@ -1144,8 +1154,9 @@ export function AIResultDisplay({
 ┌─ 사용자: FAB(+) 탭
 │
 ├─ 현재 홈 탭 확인 (currentHomeTab)
-│  ├─ restaurant → CameraContainer(targetType='restaurant')
-│  └─ wine → CameraContainer(targetType='wine')
+│  ├─ restaurant → AddFlowContainer(type='restaurant')
+│  └─ wine → AddFlowContainer(type='wine')
+│  (참고: camera-container.tsx는 add-flow-container.tsx에 통합되어 삭제됨)
 │
 ├─ 촬영 or 앨범 선택
 │  └─ handleFileChange → base64 변환
@@ -1189,7 +1200,7 @@ export function AIResultDisplay({
 □ 와인 shelf: 진열장 촬영 → 와인 목록 인식
 □ 와인 receipt: 영수증 촬영 → 구매 목록 인식
 □ GPS + 장르 교차 매칭: GPS 200m 내 후보 중 장르 일치 우선
-□ isConfidentMatch: 후보 1개 + 0.7 이상 → 바로 기록 화면
+□ isConfidentMatch: 후보 1개 + 0.5 이상, 또는 다수 후보 중 1위 0.7 이상 + 2위와 0.2 이상 차이 → 바로 기록 화면
 □ NOT_FOOD 에러: "음식 사진을 선택해주세요" 표시
 □ NOT_WINE_LABEL 에러: "와인을 찾지 못했어요" → 검색/등록 옵션
 □ GEMINI_API_KEY 클라이언트 미노출 (서버 전용 API Route)

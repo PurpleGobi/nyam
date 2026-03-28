@@ -11,13 +11,13 @@ interface SceneTagSelectorProps {
 }
 
 export function SceneTagSelector({ value, onChange, aiSuggestion }: SceneTagSelectorProps) {
-  // AI 추천 자동 pre-select (마운트 시 1회)
+  // AI 추천 자동 pre-select (aiSuggestion 변경 시)
   useEffect(() => {
     if (aiSuggestion && value === null) {
       onChange(aiSuggestion)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [aiSuggestion])
 
   const handleSelect = useCallback(
     (tag: RestaurantScene) => {
@@ -51,13 +51,13 @@ export function SceneTagSelector({ value, onChange, aiSuggestion }: SceneTagSele
             <button
               key={tag.value}
               type="button"
-              className="transition-all"
+              className="transition-all duration-200 ease-in-out"
               style={{
                 padding: '8px 16px',
                 borderRadius: '9999px',
-                border: `1.5px solid ${isSelected ? tag.hex : 'var(--border)'}`,
-                backgroundColor: isSelected ? `${tag.hex}20` : 'var(--bg-card)',
-                color: isSelected ? tag.hex : 'var(--text-sub)',
+                border: `1.5px solid ${isSelected ? `var(${tag.colorVar})` : 'var(--border)'}`,
+                backgroundColor: isSelected ? `var(${tag.colorVar})20` : 'var(--bg-card)',
+                color: isSelected ? `var(${tag.colorVar})` : 'var(--text-sub)',
                 fontSize: '13px',
                 fontWeight: 600,
                 transform: isSelected ? 'scale(1.05)' : 'scale(1)',

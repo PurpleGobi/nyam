@@ -44,7 +44,7 @@ export interface BubbleMember {
   userId: string
   role: BubbleMemberRole
   status: BubbleMemberStatus
-  visibilityOverride: globalThis.Record<string, boolean> | null
+  visibilityOverride: Record<string, boolean> | null
   tasteMatchPct: number | null
   commonTargetCount: number
   avgSatisfaction: number | null

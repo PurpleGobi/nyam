@@ -1,12 +1,6 @@
 'use client'
 
-import { getLevelColor } from '@/domain/services/xp-calculator'
-
-interface XpEarnedItem {
-  axisValue: string
-  xpAmount: number
-  currentLevel: number
-}
+import type { XpEarnedItem } from '@/application/hooks/use-record-detail'
 
 interface XpEarnedSectionProps {
   items: XpEarnedItem[]
@@ -30,8 +24,8 @@ export function XpEarnedSection({ items }: XpEarnedSectionProps) {
               style={{
                 fontSize: '10px',
                 fontWeight: 700,
-                color: getLevelColor(item.currentLevel),
-                backgroundColor: `${getLevelColor(item.currentLevel)}15`,
+                color: item.levelColor,
+                backgroundColor: `${item.levelColor}15`,
               }}
             >
               Lv.{item.currentLevel}

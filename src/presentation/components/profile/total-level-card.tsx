@@ -2,13 +2,15 @@
 
 interface TotalLevelCardProps {
   level: number
+  title: string
+  color: string
   totalXp: number
   nextLevelXp: number
   progress: number
-  levelColor: string
 }
 
-export function TotalLevelCard({ level, totalXp, nextLevelXp, progress, levelColor }: TotalLevelCardProps) {
+export function TotalLevelCard({ level, title, color, totalXp, nextLevelXp, progress }: TotalLevelCardProps) {
+  const levelColor = color
   const clampedProgress = Math.min(Math.max(progress, 0), 1)
 
   return (
@@ -31,7 +33,7 @@ export function TotalLevelCard({ level, totalXp, nextLevelXp, progress, levelCol
               Total Level
             </p>
             <p style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>
-              Lv.{level}
+              Lv.{level} {title}
             </p>
           </div>
         </div>

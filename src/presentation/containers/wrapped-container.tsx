@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWrapped } from '@/application/hooks/use-wrapped'
 import { WrappedCard } from '@/presentation/components/profile/wrapped-card'
+import { GaugeSlider } from '@/presentation/components/profile/gauge-slider'
 import type { WrappedCategory } from '@/domain/entities/profile'
 
 const FILTER_TABS: { key: WrappedCategory; label: string }[] = [
@@ -16,14 +16,10 @@ const FILTER_TABS: { key: WrappedCategory; label: string }[] = [
 
 export function WrappedContainer() {
   const router = useRouter()
-  const { user: authUser } = useAuth()
-  const { wrappedData, category, isLoading, loadWrapped } = useWrapped(authUser?.id ?? null)
-
-  useEffect(() => {
-    if (authUser?.id) {
-      loadWrapped('all')
-    }
-  }, [authUser?.id, loadWrapped])
+  const [category, setCategory] = useState<WrappedCategory>('all')
+  const [gaugePrivacy, setGaugePrivacy] = useState<0 | 1 | 2>(1)
+  const [gaugeDetail, setGaugeDetail] = useState<0 | 1 | 2>(1)
+  const { data: wrappedData } = useWrapped(category)
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
@@ -46,7 +42,7 @@ export function WrappedContainer() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => loadWrapped(tab.key)}
+              onClick={() => setCategory(tab.key)}
               className="rounded-full px-4 py-1.5 transition-colors"
               style={{
                 fontSize: '13px',
@@ -62,13 +58,25 @@ export function WrappedContainer() {
         })}
       </div>
 
+      {/* Gauge Sliders */}
+      <div className="flex flex-col gap-3 px-4">
+        <GaugeSlider
+          label="개인정보"
+          options={['최소', '보통', '공개']}
+          value={gaugePrivacy}
+          onChange={setGaugePrivacy}
+        />
+        <GaugeSlider
+          label="디테일"
+          options={['심플', '보통', '상세']}
+          value={gaugeDetail}
+          onChange={setGaugeDetail}
+        />
+      </div>
+
       {/* Content */}
-      <div className="flex-1 pb-20">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-food)] border-t-transparent" />
-          </div>
-        ) : wrappedData ? (
+      <div className="flex-1 pb-20 pt-4">
+        {wrappedData ? (
           <WrappedCard category={category} data={wrappedData} />
         ) : (
           <div className="flex flex-col items-center py-20">

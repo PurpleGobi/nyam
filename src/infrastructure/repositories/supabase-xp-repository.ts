@@ -1,23 +1,84 @@
-import { createClient } from '@/infrastructure/supabase/client'
 import type { XpRepository } from '@/domain/repositories/xp-repository'
-import type { UserExperience, XpHistory, LevelThreshold, Milestone, UserMilestone, XpReason } from '@/domain/entities/xp'
+import type {
+  UserExperience, XpHistory, LevelThreshold, Milestone,
+  UserMilestone, AxisType, DailySocialCounts, BonusType,
+} from '@/domain/entities/xp'
+import { createClient } from '@/infrastructure/supabase/client'
 
 export class SupabaseXpRepository implements XpRepository {
   private get supabase() {
     return createClient()
   }
 
-  async getExperiences(userId: string): Promise<UserExperience[]> {
+  // ── 경험치 조회 ──
+
+  async getUserExperiences(userId: string): Promise<UserExperience[]> {
     const { data, error } = await this.supabase
       .from('user_experiences')
       .select('*')
       .eq('user_id', userId)
+    if (error) throw error
+    return (data ?? []).map(mapUserExperience)
+  }
 
-    if (error) throw new Error(`XP experiences 조회 실패: ${error.message}`)
-    return (data ?? []).map((r) => ({
-      id: r.id, userId: r.user_id, axisType: r.axis_type as UserExperience['axisType'],
-      axisValue: r.axis_value, totalXp: r.total_xp, level: r.level, updatedAt: r.updated_at,
-    }))
+  async getUserExperiencesByAxisType(userId: string, axisType: AxisType): Promise<UserExperience[]> {
+    const { data, error } = await this.supabase
+      .from('user_experiences')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('axis_type', axisType)
+    if (error) throw error
+    return (data ?? []).map(mapUserExperience)
+  }
+
+  async getUserExperience(userId: string, axisType: AxisType, axisValue: string): Promise<UserExperience | null> {
+    const { data, error } = await this.supabase
+      .from('user_experiences')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('axis_type', axisType)
+      .eq('axis_value', axisValue)
+      .maybeSingle()
+    if (error) throw error
+    return data ? mapUserExperience(data) : null
+  }
+
+  // ── 경험치 갱신 ──
+
+  async upsertUserExperience(
+    userId: string, axisType: AxisType, axisValue: string,
+    xpDelta: number, newLevel: number,
+  ): Promise<UserExperience> {
+    const { data, error } = await this.supabase.rpc('upsert_user_experience', {
+      p_user_id: userId,
+      p_axis_type: axisType,
+      p_axis_value: axisValue,
+      p_xp_delta: xpDelta,
+      p_new_level: newLevel,
+    })
+    if (error) throw error
+    return mapUserExperience(data)
+  }
+
+  async updateUserTotalXp(userId: string, xpDelta: number): Promise<void> {
+    const { error } = await this.supabase.rpc('increment_user_total_xp', {
+      p_user_id: userId,
+      p_xp_delta: xpDelta,
+    })
+    if (error) throw error
+  }
+
+  // ── XP 이력 ──
+
+  async getRecentXpHistories(userId: string, limit: number): Promise<XpHistory[]> {
+    const { data, error } = await this.supabase
+      .from('xp_histories')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data ?? []).map(mapXpHistory)
   }
 
   async getHistoriesByRecord(recordId: string): Promise<XpHistory[]> {
@@ -26,42 +87,61 @@ export class SupabaseXpRepository implements XpRepository {
       .select('*')
       .eq('record_id', recordId)
       .order('created_at', { ascending: false })
-
-    if (error) throw new Error(`XP histories 조회 실패: ${error.message}`)
-    return (data ?? []).map(mapHistory)
+    if (error) throw error
+    return (data ?? []).map(mapXpHistory)
   }
 
-  async getRecentHistories(userId: string, limit: number): Promise<XpHistory[]> {
+  async createXpHistory(history: Omit<XpHistory, 'id' | 'createdAt'>): Promise<XpHistory> {
     const { data, error } = await this.supabase
       .from('xp_histories')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit)
-
-    if (error) throw new Error(`XP recent histories 조회 실패: ${error.message}`)
-    return (data ?? []).map(mapHistory)
+      .insert({
+        user_id: history.userId,
+        record_id: history.recordId,
+        axis_type: history.axisType,
+        axis_value: history.axisValue,
+        xp_amount: history.xpAmount,
+        reason: history.reason,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return mapXpHistory(data)
   }
+
+  // ── 레벨 테이블 ──
 
   async getLevelThresholds(): Promise<LevelThreshold[]> {
     const { data, error } = await this.supabase
       .from('level_thresholds')
       .select('*')
       .order('level', { ascending: true })
-
-    if (error) throw new Error(`Level thresholds 조회 실패: ${error.message}`)
-    return (data ?? []).map((r) => ({
-      level: r.level, requiredXp: r.required_xp, title: r.title, color: r.color,
-    }))
+    if (error) throw error
+    return (data ?? []).map(mapLevelThreshold)
   }
 
-  async getMilestones(): Promise<Milestone[]> {
-    const { data, error } = await this.supabase.from('milestones').select('*')
-    if (error) throw new Error(`Milestones 조회 실패: ${error.message}`)
-    return (data ?? []).map((r) => ({
-      id: r.id, axisType: r.axis_type as Milestone['axisType'],
-      metric: r.metric, threshold: r.threshold, xpReward: r.xp_reward, label: r.label,
-    }))
+  // ── 마일스톤 ──
+
+  async getMilestonesByAxisType(axisType: string): Promise<Milestone[]> {
+    const { data, error } = await this.supabase
+      .from('milestones')
+      .select('*')
+      .eq('axis_type', axisType)
+    if (error) throw error
+    return (data ?? []).map(mapMilestone)
+  }
+
+  async getNextMilestone(axisType: string, metric: string, currentCount: number): Promise<Milestone | null> {
+    const { data, error } = await this.supabase
+      .from('milestones')
+      .select('*')
+      .eq('axis_type', axisType)
+      .eq('metric', metric)
+      .gt('threshold', currentCount)
+      .order('threshold', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (error) throw error
+    return data ? mapMilestone(data) : null
   }
 
   async getUserMilestones(userId: string): Promise<UserMilestone[]> {
@@ -69,120 +149,196 @@ export class SupabaseXpRepository implements XpRepository {
       .from('user_milestones')
       .select('*')
       .eq('user_id', userId)
-
-    if (error) throw new Error(`User milestones 조회 실패: ${error.message}`)
-    return (data ?? []).map((r) => ({
-      userId: r.user_id, milestoneId: r.milestone_id,
-      axisValue: r.axis_value, achievedAt: r.achieved_at,
-    }))
+    if (error) throw error
+    return (data ?? []).map(mapUserMilestone)
   }
 
-  async addXpHistory(params: {
-    userId: string; recordId?: string; axisType?: string; axisValue?: string; xpAmount: number; reason: XpReason
-  }): Promise<XpHistory> {
+  async hasAchievedMilestone(userId: string, milestoneId: string, axisValue: string): Promise<boolean> {
+    const { count, error } = await this.supabase
+      .from('user_milestones')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('milestone_id', milestoneId)
+      .eq('axis_value', axisValue)
+    if (error) throw error
+    return (count ?? 0) > 0
+  }
+
+  async createUserMilestone(userId: string, milestoneId: string, axisValue: string): Promise<UserMilestone> {
     const { data, error } = await this.supabase
-      .from('xp_histories')
-      .insert({
-        user_id: params.userId,
-        record_id: params.recordId ?? null,
-        axis_type: params.axisType ?? null,
-        axis_value: params.axisValue ?? null,
-        xp_amount: params.xpAmount,
-        reason: params.reason,
-      })
-      .select()
-      .single()
-
-    if (error) throw new Error(`XP history INSERT 실패: ${error.message}`)
-    return mapHistory(data)
-  }
-
-  async upsertExperience(params: {
-    userId: string; axisType: string; axisValue: string; xpDelta: number
-  }): Promise<UserExperience> {
-    const { data: existing } = await this.supabase
-      .from('user_experiences')
-      .select('*')
-      .eq('user_id', params.userId)
-      .eq('axis_type', params.axisType)
-      .eq('axis_value', params.axisValue)
-      .single()
-
-    if (existing) {
-      const { data, error } = await this.supabase
-        .from('user_experiences')
-        .update({ total_xp: existing.total_xp + params.xpDelta, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .select()
-        .single()
-      if (error) throw new Error(`Experience UPDATE 실패: ${error.message}`)
-      return mapExperience(data)
-    }
-
-    const { data, error } = await this.supabase
-      .from('user_experiences')
-      .insert({
-        user_id: params.userId,
-        axis_type: params.axisType,
-        axis_value: params.axisValue,
-        total_xp: params.xpDelta,
-        level: 1,
-      })
-      .select()
-      .single()
-    if (error) throw new Error(`Experience INSERT 실패: ${error.message}`)
-    return mapExperience(data)
-  }
-
-  async updateUserTotalXp(userId: string, xpDelta: number): Promise<void> {
-    const { data: user } = await this.supabase
-      .from('users')
-      .select('total_xp')
-      .eq('id', userId)
-      .single()
-
-    if (!user) throw new Error('User not found')
-
-    const { error } = await this.supabase
-      .from('users')
-      .update({ total_xp: user.total_xp + xpDelta })
-      .eq('id', userId)
-
-    if (error) throw new Error(`User total_xp UPDATE 실패: ${error.message}`)
-  }
-
-  async achieveMilestone(userId: string, milestoneId: string, axisValue: string): Promise<void> {
-    await this.supabase
       .from('user_milestones')
       .insert({ user_id: userId, milestone_id: milestoneId, axis_value: axisValue })
+      .select()
+      .single()
+    if (error) throw error
+    return mapUserMilestone(data)
   }
 
-  async getTodayRecordCount(userId: string): Promise<number> {
-    const today = new Date().toISOString().split('T')[0]
+  // ── 어뷰징 방지 ──
+
+  async getDailySocialCounts(userId: string, date: string): Promise<DailySocialCounts> {
+    const startOfDay = `${date}T00:00:00Z`
+    const endOfDay = `${date}T23:59:59Z`
+    const { data, error } = await this.supabase
+      .from('xp_histories')
+      .select('reason, xp_amount')
+      .eq('user_id', userId)
+      .in('reason', ['social_share', 'social_like', 'social_follow', 'social_mutual'])
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay)
+    if (error) throw error
+
+    const counts: DailySocialCounts = { share: 0, like: 0, follow: 0, mutual: 0, total: 0 }
+    for (const row of data ?? []) {
+      const xp = (row.xp_amount as number) ?? 0
+      if (row.reason === 'social_share') counts.share += xp
+      else if (row.reason === 'social_like') counts.like += xp
+      else if (row.reason === 'social_follow') counts.follow += xp
+      else if (row.reason === 'social_mutual') counts.mutual += xp
+      counts.total += xp
+    }
+    return counts
+  }
+
+  async getDailyRecordCount(userId: string, date: string): Promise<number> {
     const { count, error } = await this.supabase
       .from('records')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .gte('created_at', `${today}T00:00:00`)
-
-    if (error) return 0
+      .gte('created_at', `${date}T00:00:00Z`)
+      .lte('created_at', `${date}T23:59:59Z`)
+    if (error) throw error
     return count ?? 0
   }
-}
 
-function mapHistory(r: Record<string, unknown>): XpHistory {
-  return {
-    id: r.id as string, userId: r.user_id as string, recordId: r.record_id as string | null,
-    axisType: r.axis_type as string | null, axisValue: r.axis_value as string | null,
-    xpAmount: r.xp_amount as number | null, reason: r.reason as XpHistory['reason'],
-    createdAt: r.created_at as string,
+  async getLastScoreDate(userId: string, targetId: string): Promise<string | null> {
+    const { data, error } = await this.supabase
+      .from('records')
+      .select('score_updated_at')
+      .eq('user_id', userId)
+      .eq('target_id', targetId)
+      .not('score_updated_at', 'is', null)
+      .order('score_updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (error) throw error
+    return data?.score_updated_at ?? null
+  }
+
+  // ── 보너스 ──
+
+  async hasBonusBeenGranted(userId: string, bonusType: BonusType): Promise<boolean> {
+    const reasonMap: Record<BonusType, string> = {
+      onboard: 'bonus_onboard',
+      first_record: 'bonus_first_record',
+      first_bubble: 'bonus_first_bubble',
+      first_share: 'bonus_first_share',
+    }
+    const { count, error } = await this.supabase
+      .from('xp_histories')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('reason', reasonMap[bonusType])
+    if (error) throw error
+    return (count ?? 0) > 0
+  }
+
+  // ── 통계 조회 ──
+
+  async getUniqueCount(userId: string, axisType: AxisType, axisValue: string): Promise<number> {
+    const { data, error } = await this.supabase.rpc('get_unique_count', {
+      p_user_id: userId, p_axis_type: axisType, p_axis_value: axisValue,
+    })
+    if (error) throw error
+    return data ?? 0
+  }
+
+  async getTotalRecordCountByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<number> {
+    const { data, error } = await this.supabase.rpc('get_record_count_by_axis', {
+      p_user_id: userId, p_axis_type: axisType, p_axis_value: axisValue,
+    })
+    if (error) throw error
+    return data ?? 0
+  }
+
+  async getRevisitCountByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<number> {
+    const { data, error } = await this.supabase.rpc('get_revisit_count_by_axis', {
+      p_user_id: userId, p_axis_type: axisType, p_axis_value: axisValue,
+    })
+    if (error) throw error
+    return data ?? 0
+  }
+
+  async getXpBreakdownByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<Record<string, number>> {
+    const { data, error } = await this.supabase
+      .from('xp_histories')
+      .select('reason, xp_amount')
+      .eq('user_id', userId)
+      .eq('axis_type', axisType)
+      .eq('axis_value', axisValue)
+    if (error) throw error
+
+    const breakdown: Record<string, number> = {}
+    for (const row of data ?? []) {
+      const key = (row.reason as string) ?? 'unknown'
+      breakdown[key] = (breakdown[key] ?? 0) + ((row.xp_amount as number) ?? 0)
+    }
+    return breakdown
   }
 }
 
-function mapExperience(r: Record<string, unknown>): UserExperience {
+// ── 매퍼 ──
+
+function mapUserExperience(row: Record<string, unknown>): UserExperience {
   return {
-    id: r.id as string, userId: r.user_id as string,
-    axisType: r.axis_type as UserExperience['axisType'], axisValue: r.axis_value as string,
-    totalXp: r.total_xp as number, level: r.level as number, updatedAt: r.updated_at as string,
+    id: row.id as string,
+    userId: row.user_id as string,
+    axisType: row.axis_type as AxisType,
+    axisValue: row.axis_value as string,
+    totalXp: row.total_xp as number,
+    level: row.level as number,
+    updatedAt: row.updated_at as string,
+  }
+}
+
+function mapXpHistory(row: Record<string, unknown>): XpHistory {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    recordId: (row.record_id as string) ?? null,
+    axisType: (row.axis_type as AxisType) ?? null,
+    axisValue: (row.axis_value as string) ?? null,
+    xpAmount: row.xp_amount as number,
+    reason: row.reason as XpHistory['reason'],
+    createdAt: row.created_at as string,
+  }
+}
+
+function mapLevelThreshold(row: Record<string, unknown>): LevelThreshold {
+  return {
+    level: row.level as number,
+    requiredXp: row.required_xp as number,
+    title: row.title as string,
+    color: row.color as string,
+  }
+}
+
+function mapMilestone(row: Record<string, unknown>): Milestone {
+  return {
+    id: row.id as string,
+    axisType: row.axis_type as string,
+    metric: row.metric as string,
+    threshold: row.threshold as number,
+    xpReward: row.xp_reward as number,
+    label: row.label as string,
+  }
+}
+
+function mapUserMilestone(row: Record<string, unknown>): UserMilestone {
+  return {
+    userId: row.user_id as string,
+    milestoneId: row.milestone_id as string,
+    axisValue: row.axis_value as string,
+    achievedAt: row.achieved_at as string,
   }
 }

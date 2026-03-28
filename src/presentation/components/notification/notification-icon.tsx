@@ -1,23 +1,17 @@
 'use client'
 
 import {
-  Trophy, UserPlus, CheckCircle, UserCheck, Mail,
-  FilePlus, Users, Heart, MessageCircle, Bell,
+  Trophy, CircleDot, CircleCheck, UserPlus, UserCheck, Bell,
 } from 'lucide-react'
 import type { NotificationType } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
 
-const ICON_MAP: Record<NotificationType, typeof Bell> = {
-  level_up: Trophy,
-  bubble_join_request: UserPlus,
-  bubble_join_approved: CheckCircle,
-  follow_request: UserPlus,
-  follow_accepted: UserCheck,
-  bubble_invite: Mail,
-  bubble_new_record: FilePlus,
-  bubble_member_joined: Users,
-  reaction_like: Heart,
-  comment_reply: MessageCircle,
+const ICON_MAP: Record<string, typeof Bell> = {
+  'trophy': Trophy,
+  'circle-dot': CircleDot,
+  'circle-check': CircleCheck,
+  'user-plus': UserPlus,
+  'user-check': UserCheck,
 }
 
 interface NotificationIconProps {
@@ -26,14 +20,14 @@ interface NotificationIconProps {
 
 export function NotificationIcon({ type }: NotificationIconProps) {
   const config = NOTIFICATION_TYPE_CONFIG[type]
-  const Icon = ICON_MAP[type] ?? Bell
+  const Icon = ICON_MAP[config?.icon ?? ''] ?? Bell
 
   return (
     <div
       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-      style={{ backgroundColor: `${config.iconColor}15` }}
+      style={{ backgroundColor: `color-mix(in srgb, ${config?.iconColor ?? 'var(--text-sub)'} 15%, transparent)` }}
     >
-      <Icon size={14} style={{ color: config.iconColor }} />
+      <Icon size={16} style={{ color: config?.iconColor ?? 'var(--text-sub)' }} />
     </div>
   )
 }

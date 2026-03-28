@@ -48,36 +48,27 @@
 ### 1. Domain 인터페이스 — `src/domain/repositories/wine-repository.ts`
 
 ```typescript
-// src/domain/repositories/wine-repository.ts (추가 메서드)
+// src/domain/repositories/wine-repository.ts
+// R1: 외부 의존 0
 
 import type { WineSearchResult } from '@/domain/entities/search'
+import type { CreateWineInput } from '@/domain/entities/register'
+
+export type { CreateWineInput }
 
 export interface WineRepository {
-  // ... 기존 메서드 (S1에서 정의)
+  /** 텍스트 검색 (name, producer ILIKE) */
+  search(query: string, userId: string): Promise<WineSearchResult[]>
 
-  /** 텍스트 검색 (이름, 생산자, 빈티지) */
-  searchByName(params: {
-    query: string
-    userId: string
-    limit: number
-  }): Promise<WineSearchResult[]>
-
-  /** 이름+빈티지로 정확 매칭 */
-  findByNameAndVintage(params: {
-    name: string
-    vintage: number | null
-    producer: string | null
-  }): Promise<WineSearchResult | null>
-
-  /** 신규 와인 INSERT */
-  create(wine: CreateWineInput): Promise<string>
+  /** 신규 와인 등록 (중복 체크 포함 — 같은 이름+빈티지 존재 시 기존 ID 반환) */
+  create(input: CreateWineInput): Promise<{ id: string; name: string; isExisting: boolean }>
 }
-
-// CreateWineInput 정식 정의는 06_register.md의 src/domain/entities/wine.ts에서 정의
-// 여기서는 Wine 엔티티 참조만 사용
-import type { Wine } from '@/domain/entities/wine'
-import type { CreateWineInput } from '@/domain/entities/register'
 ```
+
+> **설계 변경 사항**: 초기 설계의 `searchByName(params)`, `findByNameAndVintage()` 메서드는 구현 시 단순화됨.
+> - `searchByName` → `search` (개별 파라미터, limit 고정 20)
+> - `findByNameAndVintage` → `create()` 내부 중복 체크 로직으로 통합
+> - `create` 반환값에 `isExisting` 플래그 추가 (기존 와인 재사용 지원)
 
 ### 2. `src/infrastructure/repositories/supabase-wine-repository.ts`
 
@@ -91,20 +82,15 @@ import type { WineSearchResult } from '@/domain/entities/search'
 export class SupabaseWineRepository implements WineRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async searchByName(params: {
-    query: string
-    userId: string
-    limit: number
-  }): Promise<WineSearchResult[]> {
-    const { query, userId, limit } = params
-
+  // 설계 변경: searchByName(params) → search(query, userId) — 개별 파라미터, limit 고정 20
+  async search(query: string, userId: string): Promise<WineSearchResult[]> {
     // 이름 or 생산자로 검색
     const { data: wines, error } = await this.supabase
       .from('wines')
       .select('id, name, producer, vintage, wine_type, region, country')
       .or(`name.ilike.%${query}%,producer.ilike.%${query}%`)
       .order('name')
-      .limit(limit)
+      .limit(20)
 
     if (error || !wines) return []
 
@@ -134,41 +120,23 @@ export class SupabaseWineRepository implements WineRepository {
     }))
   }
 
-  async findByNameAndVintage(params: {
-    name: string
-    vintage: number | null
-    producer: string | null
-  }): Promise<WineSearchResult | null> {
-    let queryBuilder = this.supabase
+  // 설계 변경: findByNameAndVintage() → create() 내부 중복 체크로 통합
+  // create() 반환값이 { id, name, isExisting } 구조로 변경됨
+  async create(wine: CreateWineInput): Promise<{ id: string; name: string; isExisting: boolean }> {
+    // 중복 체크 (이름+빈티지) — .maybeSingle() 사용 (결과 없으면 null, 에러 없음)
+    let dupQuery = this.supabase
       .from('wines')
-      .select('id, name, producer, vintage, wine_type, region, country')
-      .ilike('name', `%${params.name}%`)
-
-    if (params.vintage) {
-      queryBuilder = queryBuilder.eq('vintage', params.vintage)
+      .select('id, name')
+      .ilike('name', wine.name)
+    if (wine.vintage) {
+      dupQuery = dupQuery.eq('vintage', wine.vintage)
     }
-    if (params.producer) {
-      queryBuilder = queryBuilder.ilike('producer', `%${params.producer}%`)
+    const { data: existing } = await dupQuery.limit(1).maybeSingle()
+
+    if (existing) {
+      return { id: existing.id, name: existing.name, isExisting: true }
     }
 
-    const { data } = await queryBuilder.limit(1).single()
-
-    if (!data) return null
-
-    return {
-      id: data.id,
-      type: 'wine' as const,
-      name: data.name,
-      producer: data.producer,
-      vintage: data.vintage,
-      wineType: data.wine_type,
-      region: data.region,
-      country: data.country,
-      hasRecord: false,
-    }
-  }
-
-  async create(wine: CreateWineInput): Promise<string> {
     const { data, error } = await this.supabase
       .from('wines')
       .insert({
@@ -179,16 +147,16 @@ export class SupabaseWineRepository implements WineRepository {
         region: wine.region,
         country: wine.country,
         variety: wine.variety,
-        label_image_url: wine.labelImageUrl,
+        label_image_url: wine.labelImageUrl ?? null,  // OCR 라벨 이미지 URL
       })
-      .select('id')
+      .select('id, name')
       .single()
 
     if (error || !data) {
       throw new Error(`Failed to create wine: ${error?.message}`)
     }
 
-    return data.id
+    return { id: data.id, name: data.name, isExisting: false }
   }
 }
 ```
@@ -199,11 +167,11 @@ export class SupabaseWineRepository implements WineRepository {
 // src/app/api/wines/search/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'
 import type { WineSearchResult } from '@/domain/entities/search'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -266,72 +234,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 **와인 검색 + OCR 폴백 통합**: 텍스트 검색 결과 없으면 라벨 OCR 유도
 
+> **설계 변경 사항**: `useWineSearch(userId)` 파라미터 추가, 반환 필드명 `searchResults` → `results`, `search()` 메서드 추가.
+> DI 컨테이너에서 `wineRepo.search()`를 직접 호출 (API route 경유하지 않음).
+> 이는 클라이언트에서 Supabase를 직접 호출하는 구조로, `shared/di/container`를 통해 R3 규칙을 준수함.
+> 실제 코드는 `src/application/hooks/use-wine-search.ts` 참조.
+
 ```typescript
-// src/application/hooks/use-wine-search.ts
+// src/application/hooks/use-wine-search.ts (실제 구현 시그니처)
 
-import { useState, useCallback } from 'react'
-import type { WineSearchResult } from '@/domain/entities/search'
-import type { WineCandidate } from '@/domain/entities/camera'
-
-interface UseWineSearchReturn {
-  /** 텍스트 검색 결과 */
-  searchResults: WineSearchResult[]
-  /** OCR 인식 후보 (카메라 경로) */
-  ocrCandidates: WineCandidate[]
-  /** 선택된 와인 (확인 화면용) */
-  selectedWine: WineCandidate | null
-  /** 검색 중 */
-  isSearching: boolean
-  /** OCR에서 이 hook으로 후보 전달 */
-  setOcrCandidates: (candidates: WineCandidate[]) => void
-  /** 확인 화면에서 와인 선택 */
-  selectWineCandidate: (candidate: WineCandidate) => void
-  /** 선택 초기화 */
-  clearSelection: () => void
-  /** OCR 매칭 결과 → 확인 필요 여부 판정 */
-  needsConfirmation: boolean
-}
-
-export function useWineSearch(): UseWineSearchReturn {
-  const [searchResults, setSearchResults] = useState<WineSearchResult[]>([])
-  const [ocrCandidates, setOcrCandidatesState] = useState<WineCandidate[]>([])
-  const [selectedWine, setSelectedWine] = useState<WineCandidate | null>(null)
-  const [isSearching, setIsSearching] = useState(false)
-
-  const setOcrCandidates = useCallback((candidates: WineCandidate[]) => {
-    setOcrCandidatesState(candidates)
-
-    // 확실한 매칭 (1개 + 0.8 이상) → 자동 선택
-    if (candidates.length === 1 && candidates[0].matchScore >= 0.8) {
-      setSelectedWine(candidates[0])
-    }
-  }, [])
-
-  const selectWineCandidate = useCallback((candidate: WineCandidate) => {
-    setSelectedWine(candidate)
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setSelectedWine(null)
-    setOcrCandidatesState([])
-  }, [])
-
-  // 확인 필요 여부: 후보가 있지만 자동 선택되지 않은 경우
-  const needsConfirmation = ocrCandidates.length > 0 && (
-    ocrCandidates.length > 1 ||
-    (ocrCandidates.length === 1 && ocrCandidates[0].matchScore < 0.8)
-  )
-
-  return {
-    searchResults,
-    ocrCandidates,
-    selectedWine,
-    isSearching,
-    setOcrCandidates,
-    selectWineCandidate,
-    clearSelection,
-    needsConfirmation,
-  }
+export function useWineSearch(userId: string | null) {
+  // 반환:
+  //   results: WineSearchResult[]        (텍스트 검색 결과)
+  //   isSearching: boolean
+  //   ocrCandidates: WineCandidate[]
+  //   selectedWine: WineCandidate | null
+  //   search: (query: string) => Promise<void>
+  //   setOcrCandidates: (candidates: WineCandidate[]) => void
+  //   selectWineCandidate: (candidate: WineCandidate) => void
+  //   clearSelection: () => void
+  //   needsConfirmation: boolean
 }
 ```
 
@@ -388,6 +309,7 @@ export function useWineSearch(): UseWineSearchReturn {
 □ R2: SupabaseWineRepository implements WineRepository
 □ R3: application/hooks/use-wine-search.ts에 infrastructure import 없음
 □ 텍스트 검색: 와인명, 생산자 모두 검색 가능
+□ 검색 결과 정렬: 기록 있는 항목 우선 → 이름순
 □ "기록 있음" 뱃지: accent-wine 컬러
 □ "기록 있음" 선택 → 토스트 + 상세 페이지 이동
 □ OCR 결과 → 확실한 매칭 → 바로 기록 화면

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, address, area, genre, priceRange, lat, lng } = body
+  const { name, address, area, genre, priceRange, lat, lng, phone, externalIds } = body
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'NAME_REQUIRED' }, { status: 400 })
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     .select('id, name')
     .ilike('name', name.trim())
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     return NextResponse.json({ id: existing.id, name: existing.name, type: 'restaurant', isExisting: true })
@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
       price_range: priceRange ?? null,
       lat: lat ?? null,
       lng: lng ?? null,
+      phone: phone ?? null,
+      external_ids: externalIds ?? null,
     })
     .select('id, name')
     .single()
@@ -45,5 +47,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ id: data.id, name: data.name, type: 'restaurant', isExisting: false })
+  return NextResponse.json({ id: data.id, name: data.name, type: 'restaurant', isExisting: false }, { status: 201 })
 }

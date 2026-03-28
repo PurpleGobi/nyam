@@ -50,6 +50,16 @@
 - XP 적립 전체 로직 → **S6** (여기서는 `record_quality_xp` 필드만 0으로 저장)
 - 버블 공유 → **S7**
 
+### S3 선행 통합 (S2 container에 미리 포함)
+
+<!-- 2026-03-28 설계 보완: S3 풀플로우와의 매끄러운 통합을 위해 아래 로직을 S2 container에 선행 구현.
+     S2 범위에서는 entryPath='camera'이므로 determineRecordStatus는 항상 'rated' 반환.
+     EXIF 검증도 사진이 있고 GPS 정보가 있을 때만 동작하므로 S2 단독 사용 시 영향 없음. -->
+
+- **`determineRecordStatus(entryPath, hasRating)`**: S3 `07_full_flow.md`에서 정의. S2에서는 `entryPath='camera'`이므로 항상 `'rated'` 반환. S3 검색 경로에서 `'checked'` 분기 활성화.
+- **EXIF GPS 검증**: `extractExifFromFile` + `validateExifGps` — 첫 번째 사진에서 GPS 추출 후 대상 좌표와 비교. `hasExifGps`, `isExifVerified` 필드 저장. 검증 실패 시 `exifWarning` 메시지 표시.
+- **`exifWarning`**: `RecordSuccessProps`에 `exifWarning?: string | null` 추가. 성공 화면에서 GPS 불일치 경고 표시.
+
 ---
 
 ## 상세 구현 지침
@@ -115,6 +125,8 @@ interface RestaurantRecordFormProps {
   referenceRecords?: QuadrantPoint[]  // 기존 기록 참조점
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
+  /** 사진 관련 props — container에서 usePhotoUpload hook으로 주입 */
+  photoSlot?: React.ReactNode         // <PhotoPicker> 컴포넌트를 container에서 전달
 }
 ```
 
@@ -128,14 +140,15 @@ interface RestaurantRecordFormProps {
 | 순서 | 섹션 | 컴포넌트 | 필수 여부 |
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
-| 2 | 사분면 평가 (가격×분위기 + 만족도) | `QuadrantInput type="restaurant"` | Phase 1 필수 |
-| 3 | 상황 태그 (6종 단일 선택) | `SceneTagSelector` | Phase 1 필수 |
-| 4 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
-| 5 | 동행자 | `CompanionInput` | Phase 2 선택 |
-| 6 | 추천 메뉴 | 태그 입력 (`menuTags TEXT[]`, 사용자가 먹은 메뉴) | Phase 2 선택 |
-| 7 | 가격 (1인) | `<input type="number">` + "원" suffix | Phase 2 선택 |
-| 8 | 방문 날짜 | 날짜 선택 (기본값: 오늘, 과거 방문 변경 가능) | Phase 2 선택 |
-| 9 | 같이 마신 와인 | 와인 연결 UI (인라인 검색 토글) | Phase 2 선택 |
+| 2 | 사진 | `PhotoPicker` (container에서 props 주입) | Phase 2 선택 |
+| 3 | 사분면 평가 (가격×분위기 + 만족도) | `QuadrantInput type="restaurant"` | Phase 1 필수 |
+| 4 | 상황 태그 (6종 단일 선택) | `SceneTagSelector` | Phase 1 필수 |
+| 5 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
+| 6 | 동행자 | `CompanionInput` | Phase 2 선택 |
+| 7 | 추천 메뉴 | 태그 입력 (`menuTags TEXT[]`, 사용자가 먹은 메뉴) | Phase 2 선택 |
+| 8 | 가격 (1인) | `<input type="number">` + "원" suffix | Phase 2 선택 |
+| 9 | 방문 날짜 | 날짜 선택 (기본값: 오늘, 과거 방문 변경 가능) | Phase 2 선택 |
+| 10 | 같이 마신 와인 | 와인 연결 UI (인라인 검색 토글) | Phase 2 선택 |
 
 **AI 인식 결과 헤더 (`rest-record-header`):**
 
@@ -146,7 +159,7 @@ interface RestaurantRecordFormProps {
 ```
 
 - 아이콘: `utensils` (lucide, 20px)
-- AI 뱃지: `sparkles` 아이콘 (10x10) + "AI 자동 인식" 텍스트 (10px), `color: var(--primary)`
+- AI 뱃지: `sparkles` 아이콘 (10x10) + "AI 자동 인식" 텍스트 (10px), `color: var(--accent-food)`
 
 **와인 연결 섹션:**
 
@@ -172,6 +185,8 @@ interface WineRecordFormProps {
   referenceRecords?: QuadrantPoint[]
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
+  /** 사진 관련 props — container에서 usePhotoUpload hook으로 주입 */
+  photoSlot?: React.ReactNode         // <PhotoPicker> 컴포넌트를 container에서 전달
 }
 ```
 
@@ -182,14 +197,15 @@ interface WineRecordFormProps {
 | 순서 | 섹션 | 컴포넌트 | 필수 여부 |
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
-| 2 | 사분면 평가 (산미×바디 + 만족도) | `QuadrantInput type="wine"` | Phase 1 필수 |
-| 3 | 아로마 팔레트 (15섹터 3링) | `AromaWheel` | Phase 1 필수 |
-| 4 | 구조 평가 (복합성/여운/균형) | `WineStructureEval` | Phase 1 선택 |
-| 5 | 페어링 (WSET 8카테고리) | `PairingGrid` | Phase 1 필수 |
-| 6 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
-| 7 | 가격 (병) | `<input type="number">` + "원" suffix | Phase 2 선택 |
-| 8 | 음용 날짜 | 날짜 선택 (기본값: 오늘, 과거 음용 변경 가능) | Phase 2 선택 |
-| 9 | 어디서 마셨나요? (식당 연결) | 식당 연결 UI | Phase 2 선택 |
+| 2 | 사진 | `PhotoPicker` (container에서 props 주입) | Phase 2 선택 |
+| 3 | 사분면 평가 (산미×바디 + 만족도) | `QuadrantInput type="wine"` | Phase 1 필수 |
+| 4 | 아로마 팔레트 (15섹터 3링) | `AromaWheel` | Phase 1 필수 |
+| 5 | 구조 평가 (복합성/여운/균형) | `WineStructureEval` | Phase 1 선택 |
+| 6 | 페어링 (WSET 8카테고리) | `PairingGrid` | Phase 1 필수 |
+| 7 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
+| 8 | 가격 (병) | `<input type="number">` + "원" suffix | Phase 2 선택 |
+| 9 | 음용 날짜 | 날짜 선택 (기본값: 오늘, 과거 음용 변경 가능) | Phase 2 선택 |
+| 10 | 어디서 마셨나요? (식당 연결) | 식당 연결 UI | Phase 2 선택 |
 
 **AI 인식 결과 헤더:**
 
@@ -200,7 +216,7 @@ interface WineRecordFormProps {
 ```
 
 - 아이콘: `wine` (lucide, 20px)
-- AI 뱃지: `sparkles` + "AI 자동 인식" (10px), `color: var(--wine)`
+- AI 뱃지: `sparkles` + "AI 자동 인식" (10px), `color: var(--accent-wine)`
 
 **만족도 자동 산출 (구조평가 입력 시):**
 
@@ -232,7 +248,7 @@ function calculateAutoScore(activeRingCount: number, finish: number, balance: nu
 ```typescript
 interface RecordNavProps {
   title: string                     // "기록", "식당 추가", "와인 추가" 등
-  variant?: 'food' | 'wine'        // 와인일 때 타이틀 color: var(--wine)
+  variant?: 'food' | 'wine'        // 와인일 때 타이틀 color: var(--accent-wine)
   onBack: () => void               // chevron-left 22px → goBack()
   onClose: () => void              // x 20px → exitRecord() (플로우 전체 종료)
 }
@@ -247,8 +263,8 @@ interface RecordNavProps {
 - 높이: 44px (터치 타겟)
 - 뒤로: `chevron-left` (lucide, 22px) → `onBack`
 - 닫기: `x` (lucide, 20px) → `onClose`
-- 와인 variant: 타이틀 `color: var(--wine)`
-- 배경: `var(--background)`
+- 와인 variant: 타이틀 `color: var(--accent-wine)`
+- 배경: `var(--bg)`
 
 ### 6. 하단 저장 바 (`record-save-bar.tsx`)
 
@@ -290,6 +306,7 @@ interface RecordSuccessProps {
   targetName: string               // "몽탄"
   targetMeta: string               // "한식 · 을지로"
   photoError?: string | null       // 사진 업로드 실패 메시지 (DEC-007)
+  exifWarning?: string | null      // EXIF GPS 불일치 경고 메시지 (S3 선행 통합)
   onAddMore: () => void            // "내용 추가하기" → 상세페이지 이동
   onAddAnother: () => void         // "한 곳 더 추가" → restartAdd()
   onGoHome: () => void             // "홈으로" → exitRecord()
@@ -470,12 +487,24 @@ export function RecordFlowContainer() {
     return <RecordSuccess variant={...} targetName={...} photoError={photoError} ... />
   }
 
+  // PhotoPicker를 container에서 조립하여 폼에 slot으로 주입 (DEC-007: 관심사 분리)
+  const photoPickerSlot = (
+    <PhotoPicker
+      photos={photos}
+      onAddFiles={addFiles}
+      onRemovePhoto={removePhoto}
+      isUploading={isUploading}
+      isMaxReached={photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS}
+      theme={state.targetType === 'wine' ? 'wine' : 'food'}
+    />
+  )
+
   return (
     <>
       <RecordNav title="기록" variant={...} onBack={handleBack} onClose={handleClose} />
       {state.targetType === 'restaurant'
-        ? <RestaurantRecordForm target={...} onSave={handleSave} isLoading={isLoading} />
-        : <WineRecordForm target={...} onSave={handleSave} isLoading={isLoading} />
+        ? <RestaurantRecordForm target={...} onSave={handleSave} isLoading={isLoading} photoSlot={photoPickerSlot} />
+        : <WineRecordForm target={...} onSave={handleSave} isLoading={isLoading} photoSlot={photoPickerSlot} />
       }
     </>
   )

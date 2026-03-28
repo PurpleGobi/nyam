@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleScore {
@@ -14,36 +12,16 @@ interface BubbleScore {
 }
 
 interface BubbleExpandPanelProps {
+  isOpen: boolean
   bubbleScores: BubbleScore[]
-  variant: 'food' | 'wine'
+  accentColor: string  // '--accent-food' | '--accent-wine'
 }
 
-export function BubbleExpandPanel({ bubbleScores, variant }: BubbleExpandPanelProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const accentColor = variant === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
-
+export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleExpandPanelProps) {
   if (bubbleScores.length === 0) return null
 
   return (
-    <div className="px-4">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between py-2"
-      >
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-          버블 평가 ({bubbleScores.length})
-        </span>
-        <ChevronDown
-          size={16}
-          style={{
-            color: 'var(--text-hint)',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.25s ease',
-          }}
-        />
-      </button>
-
+    <div style={{ padding: '0 20px 10px' }}>
       <div
         style={{
           maxHeight: isOpen ? '200px' : '0px',
@@ -75,7 +53,7 @@ export function BubbleExpandPanel({ bubbleScores, variant }: BubbleExpandPanelPr
                   {b.ratingCount}명 평가
                 </span>
               </div>
-              <span style={{ fontSize: '16px', fontWeight: 800, color: accentColor }}>
+              <span style={{ fontSize: '16px', fontWeight: 800, color: `var(${accentColor})` }}>
                 {b.avgScore ?? '—'}
               </span>
             </div>

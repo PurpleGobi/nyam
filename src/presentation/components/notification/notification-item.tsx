@@ -1,13 +1,13 @@
 'use client'
 
-import type { Notification, ActionStatus } from '@/domain/entities/notification'
+import type { Notification } from '@/domain/entities/notification'
 import { NotificationIcon } from '@/presentation/components/notification/notification-icon'
 import { NotificationActions } from '@/presentation/components/notification/notification-actions'
 
 interface NotificationItemProps {
   notification: Notification
   onPress: (notification: Notification) => void
-  onAction: (id: string, status: ActionStatus) => void
+  onAction: (id: string, status: 'accepted' | 'rejected') => void
 }
 
 export function NotificationItem({ notification, onPress, onAction }: NotificationItemProps) {
@@ -26,13 +26,16 @@ export function NotificationItem({ notification, onPress, onAction }: Notificati
       }}
     >
       <div className="mt-0.5">
-        <NotificationIcon type={n.notificationType} />
+        <NotificationIcon type={n.type} />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p style={{ fontSize: '13px', color: 'var(--text)' }}>
-          {formatNotification(n)}
+        <p style={{ fontSize: '13px', fontWeight: n.isRead ? 400 : 600, color: 'var(--text)' }}>
+          {n.title}
         </p>
+        {n.body && (
+          <p className="mt-0.5" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>{n.body}</p>
+        )}
         <p className="mt-0.5" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
           {formatTimeAgo(n.createdAt)}
         </p>
@@ -47,39 +50,11 @@ export function NotificationItem({ notification, onPress, onAction }: Notificati
       {!n.isRead && (
         <div
           className="mt-2 h-[7px] w-[7px] shrink-0 rounded-full"
-          style={{ backgroundColor: 'var(--negative)' }}
+          style={{ backgroundColor: 'var(--brand)', border: '1.5px solid var(--bg)' }}
         />
       )}
     </button>
   )
-}
-
-function formatNotification(n: Notification): string {
-  const meta = n.metadata as Record<string, string> | null
-  switch (n.notificationType) {
-    case 'level_up':
-      return `${meta?.axis ?? ''} 레벨 ${meta?.level ?? ''} 달성!`
-    case 'bubble_join_request':
-      return `${meta?.nickname ?? ''}님이 가입 신청`
-    case 'bubble_join_approved':
-      return '가입이 승인되었습니다'
-    case 'follow_request':
-      return `${meta?.nickname ?? ''}님이 팔로우 요청`
-    case 'follow_accepted':
-      return `${meta?.nickname ?? ''}님이 팔로우 수락`
-    case 'bubble_invite':
-      return `${meta?.bubble_name ?? '버블'}에 초대되었습니다`
-    case 'bubble_new_record':
-      return `${meta?.nickname ?? ''}님이 새 기록을 남겼습니다`
-    case 'bubble_member_joined':
-      return `${meta?.nickname ?? ''}님이 버블에 가입했습니다`
-    case 'reaction_like':
-      return `${meta?.nickname ?? ''}님이 좋아합니다`
-    case 'comment_reply':
-      return `${meta?.nickname ?? ''}님이 댓글을 남겼습니다`
-    default:
-      return '새 알림'
-  }
 }
 
 function formatTimeAgo(dateStr: string): string {

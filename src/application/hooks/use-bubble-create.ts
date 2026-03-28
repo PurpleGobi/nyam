@@ -16,8 +16,11 @@ export function useBubbleCreate() {
       // 첫 버블 생성 보너스 XP (+5)
       const existing = await bubbleRepo.findByUserId(input.createdBy)
       if (existing.length <= 1) {
-        await xpRepo.addXpHistory({
+        await xpRepo.createXpHistory({
           userId: input.createdBy,
+          recordId: null,
+          axisType: null,
+          axisValue: null,
           xpAmount: 5,
           reason: 'bonus_first_bubble',
         })

@@ -10,6 +10,19 @@ export interface ExifData {
   hasGps: boolean
 }
 
+export async function parseExifFromBase64(base64: string): Promise<ExifData> {
+  try {
+    const binaryStr = atob(base64)
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i)
+    }
+    return parseExifBuffer(bytes.buffer)
+  } catch {
+    return { gps: null, capturedAt: null, hasGps: false }
+  }
+}
+
 export async function extractExifFromFile(file: File): Promise<ExifData> {
   try {
     const buffer = await file.arrayBuffer()
@@ -92,7 +105,8 @@ function parseTiff(buffer: ArrayBuffer, tiffStart: number): ExifData {
         const strOffset = tiffStart + getU32(entryOff + 8)
         if (strOffset + 19 <= buffer.byteLength) {
           const bytes = new Uint8Array(buffer, strOffset, 19)
-          capturedAt = String.fromCharCode(...bytes).replace(/:/g, (m, idx) => (idx < 5 ? '-' : ':'))
+          const raw = String.fromCharCode(...bytes)
+          capturedAt = raw.slice(0, 10).replace(/:/g, '-') + 'T' + raw.slice(11) + 'Z'
         }
       }
     }

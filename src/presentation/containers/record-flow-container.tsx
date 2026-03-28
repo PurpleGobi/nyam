@@ -1,15 +1,20 @@
 'use client'
 
-import { useState, useCallback, Suspense } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { RecordTargetType } from '@/domain/entities/record'
-import type { CreateRecordInput } from '@/domain/entities/record'
+import type { RecordTargetType, CreateRecordInput } from '@/domain/entities/record'
+import { determineRecordStatus } from '@/domain/entities/add-flow'
+import type { AddFlowEntryPath } from '@/domain/entities/add-flow'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
+import { extractExifFromFile } from '@/shared/utils/exif-parser'
+import { validateExifGps } from '@/domain/services/exif-validator'
 import { photoRepo } from '@/shared/di/container'
+import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { RecordNav } from '@/presentation/components/record/record-nav'
 import { RecordSuccess } from '@/presentation/components/record/record-success'
+import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
 
@@ -32,6 +37,9 @@ function RecordFlowInner() {
   const { photos, addFiles, removePhoto, uploadAll, isUploading } = usePhotoUpload()
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
+  const entryPath = (searchParams.get('from') ?? 'camera') as AddFlowEntryPath
+  const targetLat = searchParams.get('lat') ? Number(searchParams.get('lat')) : null
+  const targetLng = searchParams.get('lng') ? Number(searchParams.get('lng')) : null
 
   const [state, setState] = useState<RecordFlowState>({
     step: 'form',
@@ -43,7 +51,29 @@ function RecordFlowInner() {
   })
 
   const [photoError, setPhotoError] = useState<string | null>(null)
+  const [exifWarning, setExifWarning] = useState<string | null>(null)
   const isLoading = isRecordLoading || isUploading
+
+  // sessionStorage에서 촬영 이미지를 읽어 자동 첨부
+  useEffect(() => {
+    try {
+      const base64 = sessionStorage.getItem('nyam_captured_image')
+      if (!base64) return
+      sessionStorage.removeItem('nyam_captured_image')
+
+      // base64 → File 변환
+      const byteString = atob(base64)
+      const ab = new ArrayBuffer(byteString.length)
+      const ia = new Uint8Array(ab)
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i)
+      }
+      const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
+      addFiles([file])
+    } catch {
+      // ignore
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = useCallback(
     async (formData: { targetId: string; targetType: RecordTargetType; [key: string]: unknown }) => {
@@ -51,12 +81,36 @@ function RecordFlowInner() {
       setPhotoError(null)
 
       try {
+        // 0. EXIF GPS 검증 (첫 번째 사진)
+        let hasExifGps = false
+        let isExifVerified = false
+
+        if (photos.length > 0 && photos[0].file) {
+          const exifData = await extractExifFromFile(photos[0].file)
+          hasExifGps = exifData.hasGps
+
+          if (exifData.gps && targetLat !== null && targetLng !== null) {
+            const validation = validateExifGps(
+              exifData.gps,
+              targetLat,
+              targetLng,
+              exifData.capturedAt,
+            )
+            isExifVerified = validation.isWithinRadius
+            if (validation.warningMessage) {
+              setExifWarning(validation.warningMessage)
+            }
+          }
+        }
+
         // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
         const input: CreateRecordInput = {
           userId: user.id,
           targetId: formData.targetId,
           targetType: formData.targetType,
-          status: 'rated',
+          status: determineRecordStatus(entryPath, !!(formData.axisX || formData.axisY || formData.satisfaction)),
+          hasExifGps,
+          isExifVerified,
           axisX: formData.axisX as number | undefined,
           axisY: formData.axisY as number | undefined,
           satisfaction: formData.satisfaction as number | undefined,
@@ -103,7 +157,7 @@ function RecordFlowInner() {
         // useCreateRecord 내부에서 error state 처리
       }
     },
-    [user, createRecord, photos, uploadAll],
+    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng],
   )
 
   const handleBack = useCallback(() => router.back(), [router])
@@ -113,8 +167,8 @@ function RecordFlowInner() {
     router.push(`/${prefix}/${state.targetId}`)
   }, [router, state.targetType, state.targetId])
   const handleAddAnother = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 'form', savedRecordId: null }))
-  }, [])
+    router.push(`/add?type=${state.targetType}`)
+  }, [router, state.targetType])
 
   if (state.step === 'success') {
     return (
@@ -123,6 +177,7 @@ function RecordFlowInner() {
         targetName={state.targetName}
         targetMeta={state.targetMeta}
         photoError={photoError}
+        exifWarning={exifWarning}
         onAddMore={handleAddMore}
         onAddAnother={handleAddAnother}
         onGoHome={handleClose}
@@ -131,6 +186,17 @@ function RecordFlowInner() {
   }
 
   const variant = state.targetType === 'wine' ? 'wine' : 'food'
+
+  const photoPickerSlot = (
+    <PhotoPicker
+      photos={photos}
+      onAddFiles={addFiles}
+      onRemovePhoto={removePhoto}
+      isUploading={isUploading}
+      isMaxReached={photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS}
+      theme={state.targetType === 'wine' ? 'wine' : 'food'}
+    />
+  )
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -151,6 +217,7 @@ function RecordFlowInner() {
           }}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
           isLoading={isLoading}
+          photoSlot={photoPickerSlot}
         />
       ) : (
         <WineRecordForm
@@ -162,6 +229,7 @@ function RecordFlowInner() {
           }}
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}
           isLoading={isLoading}
+          photoSlot={photoPickerSlot}
         />
       )}
     </div>

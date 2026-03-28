@@ -7,6 +7,7 @@ interface RecordSuccessProps {
   targetName: string
   targetMeta: string
   photoError?: string | null
+  exifWarning?: string | null
   onAddMore: () => void
   onAddAnother: () => void
   onGoHome: () => void
@@ -17,6 +18,7 @@ export function RecordSuccess({
   targetName,
   targetMeta,
   photoError,
+  exifWarning,
   onAddMore,
   onAddAnother,
   onGoHome,
@@ -40,6 +42,15 @@ export function RecordSuccess({
       >
         {targetName} · {targetMeta}
       </p>
+
+      {exifWarning && (
+        <p
+          className="mt-2 text-center"
+          style={{ fontSize: '12px', color: 'var(--text-hint)', lineHeight: 1.4 }}
+        >
+          {exifWarning}
+        </p>
+      )}
 
       {photoError && (
         <p

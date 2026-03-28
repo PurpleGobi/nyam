@@ -12,7 +12,7 @@ export interface Reaction {
   createdAt: string
 }
 
-export const REACTION_CONFIG: globalThis.Record<ReactionType, { icon: string; label: string; color: string }> = {
+export const REACTION_CONFIG: Record<ReactionType, { icon: string; label: string; color: string }> = {
   want: { icon: 'bookmark-plus', label: '가고싶다', color: 'var(--accent-food)' },
   check: { icon: 'check-circle', label: '다녀왔다', color: 'var(--positive)' },
   fire: { icon: 'flame', label: '불꽃', color: '#E55A35' },

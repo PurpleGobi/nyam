@@ -77,4 +77,6 @@ export interface IdentifyResponse {
   success: boolean
   result: AIRecognitionResult | null
   error?: string
+  shelfData?: ShelfOcrData
+  receiptData?: ReceiptOcrData
 }

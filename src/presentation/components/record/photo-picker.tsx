@@ -30,14 +30,7 @@ export function PhotoPicker({
   const handleFiles = useCallback(
     (fileList: FileList | null) => {
       if (!fileList) return
-      const files = Array.from(fileList)
-      const acceptedTypes: readonly string[] = PHOTO_CONSTANTS.ACCEPTED_TYPES
-      const valid = files
-        .filter((f) => acceptedTypes.includes(f.type))
-        .filter((f) => f.size <= PHOTO_CONSTANTS.MAX_FILE_SIZE)
-      if (valid.length > 0) {
-        onAddFiles(valid)
-      }
+      onAddFiles(Array.from(fileList))
     },
     [onAddFiles],
   )
@@ -65,7 +58,7 @@ export function PhotoPicker({
             onClick={() => cameraInputRef.current?.click()}
             disabled={isUploading}
           >
-            <Camera size={24} style={{ color: `var(${accentVar})` }} />
+            <Camera size={22} style={{ color: 'var(--text-hint)' }} />
             <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>촬영</span>
           </button>
         )}
@@ -84,7 +77,7 @@ export function PhotoPicker({
             onClick={() => galleryInputRef.current?.click()}
             disabled={isUploading}
           >
-            <ImageIcon size={24} style={{ color: `var(${accentVar})` }} />
+            <ImageIcon size={22} style={{ color: 'var(--text-hint)' }} />
             <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>앨범</span>
           </button>
         )}

@@ -53,277 +53,40 @@
 기존 RestaurantRepository 인터페이스에 검색 메서드 추가.
 
 ```typescript
-// src/domain/repositories/restaurant-repository.ts (추가 메서드)
+// src/domain/repositories/restaurant-repository.ts
+// R1: 외부 의존 0
 
 import type { RestaurantSearchResult, NearbyRestaurant } from '@/domain/entities/search'
+import type { CreateRestaurantInput } from '@/domain/entities/register'
+
+export type { CreateRestaurantInput }
 
 export interface RestaurantRepository {
-  // ... 기존 메서드 (S1에서 정의)
+  /** 텍스트 검색 (Nyam DB) — name ILIKE */
+  search(query: string, userId: string): Promise<RestaurantSearchResult[]>
 
-  /** 텍스트 검색 (Nyam DB) */
-  searchByName(params: {
-    query: string
-    userId: string
-    limit: number
-  }): Promise<RestaurantSearchResult[]>
+  /** GPS 기반 근처 식당 조회 (PostGIS RPC) */
+  findNearby(lat: number, lng: number, radiusMeters: number, userId: string): Promise<NearbyRestaurant[]>
 
-  /** GPS 기반 근처 식당 조회 */
-  findNearby(params: {
-    latitude: number
-    longitude: number
-    radiusMeters: number
-    userId: string
-    limit: number
-  }): Promise<NearbyRestaurant[]>
-
-  /** 외부 API 결과로 식당 INSERT (캐싱) */
-  upsertFromExternal(restaurant: ExternalRestaurantData): Promise<string>
-
-  /** 반경 내 식당 조회 (AI 매칭용) */
-  findWithinRadius(params: {
-    latitude: number
-    longitude: number
-    radiusMeters: number
-  }): Promise<Array<{
-    id: string
-    name: string
-    genre: string | null
-    area: string | null
-    distance: number
-  }>>
-}
-
-/** 외부 API에서 가져온 식당 데이터 */
-export interface ExternalRestaurantData {
-  name: string
-  address: string | null
-  area: string | null
-  genre: string | null
-  lat: number | null
-  lng: number | null
-  phone: string | null
-  externalIds: {
-    kakao?: string
-    naver?: string
-    google?: string
-  }
+  /** 신규 식당 등록 (중복 체크 포함 — 같은 이름 존재 시 기존 ID 반환) */
+  create(input: CreateRestaurantInput): Promise<{ id: string; name: string; isExisting: boolean }>
 }
 ```
 
-### 2. `src/infrastructure/api/kakao-local.ts`
+> **설계 변경 사항**: 초기 설계의 `searchByName(params)`, `upsertFromExternal()`, `findWithinRadius()` 메서드는 구현 시 단순화됨.
+> - `searchByName` → `search` (개별 파라미터)
+> - `upsertFromExternal` → `create`로 통합 (중복 체크 포함)
+> - `findWithinRadius` → API Route에서 RPC 직접 호출 (`restaurants_within_radius`)
 
-```typescript
-// src/infrastructure/api/kakao-local.ts
-// 서버 전용 — KAKAO_REST_API_KEY 클라이언트 노출 금지
+### 2~4. 외부 API 클라이언트
 
-const KAKAO_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
-
-export interface KakaoSearchResult {
-  id: string
-  placeName: string
-  categoryGroupCode: string
-  categoryGroupName: string
-  phone: string
-  addressName: string
-  roadAddressName: string
-  x: string  // longitude
-  y: string  // latitude
-  distance: string  // meters (좌표 기준 검색 시)
-}
-
-interface KakaoSearchParams {
-  query: string
-  /** 중심 좌표 (거리순 정렬용) */
-  x?: number
-  y?: number
-  /** 반경 (m), 최대 20000 */
-  radius?: number
-  /** 페이지 (1~45) */
-  page?: number
-  /** 1~15 */
-  size?: number
-}
-
-export async function searchKakaoLocal(params: KakaoSearchParams): Promise<KakaoSearchResult[]> {
-  const apiKey = process.env.KAKAO_REST_API_KEY
-  if (!apiKey) {
-    throw new Error('KAKAO_REST_API_KEY is not configured')
-  }
-
-  const url = new URL(KAKAO_SEARCH_URL)
-  url.searchParams.set('query', params.query)
-  url.searchParams.set('category_group_code', 'FD6')  // 음식점
-  url.searchParams.set('size', String(params.size ?? 10))
-  url.searchParams.set('page', String(params.page ?? 1))
-
-  if (params.x && params.y) {
-    url.searchParams.set('x', String(params.x))
-    url.searchParams.set('y', String(params.y))
-    url.searchParams.set('sort', 'distance')
-    if (params.radius) {
-      url.searchParams.set('radius', String(params.radius))
-    }
-  }
-
-  const response = await fetch(url.toString(), {
-    headers: { Authorization: `KakaoAK ${apiKey}` },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Kakao API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-
-  return (data.documents ?? []).map((doc: Record<string, string>) => ({
-    id: doc.id,
-    placeName: doc.place_name,
-    categoryGroupCode: doc.category_group_code,
-    categoryGroupName: doc.category_group_name,
-    phone: doc.phone,
-    addressName: doc.address_name,
-    roadAddressName: doc.road_address_name,
-    x: doc.x,
-    y: doc.y,
-    distance: doc.distance,
-  }))
-}
-```
-
-### 3. `src/infrastructure/api/naver-local.ts`
-
-```typescript
-// src/infrastructure/api/naver-local.ts
-// 서버 전용 — NAVER_CLIENT_ID, NAVER_CLIENT_SECRET 클라이언트 노출 금지
-
-const NAVER_SEARCH_URL = 'https://openapi.naver.com/v1/search/local.json'
-
-export interface NaverSearchResult {
-  title: string       // HTML 태그 포함 가능 (<b> 등)
-  link: string
-  category: string    // "한식>육류,고기요리" 형태
-  description: string
-  telephone: string
-  address: string
-  roadAddress: string
-  mapx: string        // KATEC x좌표
-  mapy: string        // KATEC y좌표
-}
-
-interface NaverSearchParams {
-  query: string
-  display?: number  // 1~5
-  start?: number
-  sort?: 'random' | 'comment'  // random=정확도, comment=리뷰순
-}
-
-export async function searchNaverLocal(params: NaverSearchParams): Promise<NaverSearchResult[]> {
-  const clientId = process.env.NAVER_CLIENT_ID
-  const clientSecret = process.env.NAVER_CLIENT_SECRET
-  if (!clientId || !clientSecret) {
-    throw new Error('NAVER_CLIENT_ID or NAVER_CLIENT_SECRET is not configured')
-  }
-
-  const url = new URL(NAVER_SEARCH_URL)
-  url.searchParams.set('query', `${params.query} 맛집`)  // "맛집" 추가로 음식점 필터링
-  url.searchParams.set('display', String(params.display ?? 5))
-  url.searchParams.set('start', String(params.start ?? 1))
-  url.searchParams.set('sort', params.sort ?? 'random')
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      'X-Naver-Client-Id': clientId,
-      'X-Naver-Client-Secret': clientSecret,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Naver API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  return data.items ?? []
-}
-
-/** HTML 태그 제거 유틸 */
-export function stripHtmlTags(html: string): string {
-  return html.replace(/<[^>]*>/g, '')
-}
-```
-
-### 4. `src/infrastructure/api/google-places.ts`
-
-```typescript
-// src/infrastructure/api/google-places.ts
-// 서버 전용 — GOOGLE_PLACES_API_KEY 클라이언트 노출 금지
-
-const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
-
-export interface GooglePlaceResult {
-  placeId: string
-  name: string
-  formattedAddress: string
-  geometry: {
-    location: { lat: number; lng: number }
-  }
-  types: string[]
-  rating: number | null
-  openingHours: { openNow: boolean } | null
-}
-
-interface GooglePlacesSearchParams {
-  query: string
-  /** 중심 좌표 */
-  latitude?: number
-  longitude?: number
-  /** 반경 (m) */
-  radius?: number
-  /** 언어 */
-  language?: string
-  /** 타입 필터 */
-  type?: string
-}
-
-export async function searchGooglePlaces(params: GooglePlacesSearchParams): Promise<GooglePlaceResult[]> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY
-  if (!apiKey) {
-    throw new Error('GOOGLE_PLACES_API_KEY is not configured')
-  }
-
-  const url = new URL(GOOGLE_PLACES_URL)
-  url.searchParams.set('query', params.query)
-  url.searchParams.set('key', apiKey)
-  url.searchParams.set('language', params.language ?? 'ko')
-  url.searchParams.set('type', params.type ?? 'restaurant')
-
-  if (params.latitude && params.longitude) {
-    url.searchParams.set('location', `${params.latitude},${params.longitude}`)
-    if (params.radius) {
-      url.searchParams.set('radius', String(params.radius))
-    }
-  }
-
-  const response = await fetch(url.toString())
-
-  if (!response.ok) {
-    throw new Error(`Google Places API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-
-  return (data.results ?? []).map((result: Record<string, unknown>) => ({
-    placeId: result.place_id as string,
-    name: result.name as string,
-    formattedAddress: result.formatted_address as string,
-    geometry: result.geometry as { location: { lat: number; lng: number } },
-    types: result.types as string[],
-    rating: (result.rating as number) ?? null,
-    openingHours: (result.opening_hours as { open_now: boolean } | null)
-      ? { openNow: (result.opening_hours as { open_now: boolean }).open_now }
-      : null,
-  }))
-}
-```
+> **구현 시 변경 사항**: 각 API 클라이언트는 설계의 `params` 객체 패턴 대신 **개별 파라미터 방식**으로 단순화됨.
+> 실제 구현 코드는 `src/infrastructure/api/kakao-local.ts`, `naver-local.ts`, `google-places.ts` 참조.
+>
+> 주요 차이:
+> - Kakao: `searchKakaoLocal(query, lat?, lng?, options?: { radius?, size? })` — options 객체 패턴, FD6 카테고리 필터 미적용. `radius` 기본값 20000, `size` 기본값 5
+> - Naver: `searchNaverLocal(query)` — 개별 파라미터, 좌표는 `mapy/mapx` 필드를 `/ 1e7`로 변환 (KATEC 아님, 1e7 형식)
+> - Google: `searchGooglePlaces(query, lat?, lng?, options?: { radius?, maxResults? })` — options 객체 패턴, New Places API(v1) POST 방식, `locationBias.circle.center` 형식 사용. `radius` 기본값 20000, `maxResults` 기본값 5
 
 ### 5. `src/app/api/restaurants/search/route.ts`
 
@@ -333,15 +96,16 @@ export async function searchGooglePlaces(params: GooglePlacesSearchParams): Prom
 // src/app/api/restaurants/search/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'  // createClient (구 createServerClient 아님)
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { searchNaverLocal, stripHtmlTags } from '@/infrastructure/api/naver-local'
 import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
-import type { ExternalRestaurantData } from '@/domain/repositories/restaurant-repository'
+// 설계 변경: ExternalRestaurantData 타입은 domain에 별도 정의하지 않고,
+// search route 내부에 인라인 ExternalItem 인터페이스로 대체됨
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -386,7 +150,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     lat: r.lat,
     lng: r.lng,
     distance: lat && lng && r.lat && r.lng
-      ? calculateDistance(Number(lat), Number(lng), r.lat, r.lng)
+      ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
     hasRecord: recordedIds.has(r.id),
   }))
@@ -401,15 +165,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // ── Step 2: 외부 API 동시 호출 (폴백) ──
   const externalResults = await fetchExternalResults(query, lat ? Number(lat) : undefined, lng ? Number(lng) : undefined)
 
-  // 중복 제거 (이름+주소 기준)
-  const existingNames = new Set(nyamResults.map((r) => normalizeForDedup(r.name)))
+  // 중복 제거 (이름+주소 기준 — name만으로는 동명이점 구분 불가)
+  const existingKeys = new Set(nyamResults.map((r) => normalizeForDedup(r.name) + '||' + normalizeForDedup(r.address ?? '')))
   const newExternals = externalResults.filter(
-    (ext) => !existingNames.has(normalizeForDedup(ext.name))
+    (ext) => !existingKeys.has(normalizeForDedup(ext.name) + '||' + normalizeForDedup(ext.address ?? ''))
   )
 
   // 외부 결과를 SearchResult로 변환 (아직 DB에 미저장)
   const externalSearchResults: RestaurantSearchResult[] = newExternals.map((ext) => ({
-    id: `ext_${ext.externalIds.kakao ?? ext.externalIds.naver ?? ext.externalIds.google ?? ''}`,
+    id: ext.externalIds.kakao ? `kakao_${ext.externalIds.kakao}` : ext.externalIds.naver ? `naver_${ext.externalIds.naver}` : `google_${ext.externalIds.google ?? ''}`,
     type: 'restaurant' as const,
     name: ext.name,
     genre: ext.genre,
@@ -418,7 +182,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     lat: ext.lat,
     lng: ext.lng,
     distance: lat && lng && ext.lat && ext.lng
-      ? calculateDistance(Number(lat), Number(lng), ext.lat, ext.lng)
+      ? haversineDistance(Number(lat), Number(lng), ext.lat, ext.lng)
       : null,
     hasRecord: false,
   }))
@@ -439,10 +203,15 @@ async function fetchExternalResults(
   const results: ExternalRestaurantData[] = []
 
   // 병렬 호출 (실패해도 다른 API 결과는 유지)
+  // 실제 구현: Kakao/Google은 options 객체 패턴, Naver는 query만
+  //   searchKakaoLocal(query, lat?, lng?, options?: { radius?, size? }) — radius 기본값 20000, size 기본값 5
+  //   searchNaverLocal(query) — 좌표 미지원, mapy/mapx 필드를 / 1e7로 변환 반환
+  //   searchGooglePlaces(query, lat?, lng?, options?: { radius?, maxResults? }) — New Places API(v1) POST 방식
+  // 각 함수 반환값은 정규화된 인터페이스 (raw API 응답 필드 아님)
   const [kakaoResult, naverResult, googleResult] = await Promise.allSettled([
-    searchKakaoLocal({ query, x: lng, y: lat, radius: 20000, size: 5 }),
-    searchNaverLocal({ query, display: 5 }),
-    searchGooglePlaces({ query, latitude: lat, longitude: lng, radius: 20000 }),
+    searchKakaoLocal(query, lat, lng, { radius: 20000, size: 5 }),
+    searchNaverLocal(query),
+    searchGooglePlaces(query, lat, lng, { radius: 20000, maxResults: 5 }),
   ])
 
   // 카카오 결과 변환
@@ -469,8 +238,8 @@ async function fetchExternalResults(
         address: item.roadAddress || item.address || null,
         area: extractArea(item.roadAddress || item.address),
         genre: mapNaverCategory(item.category),
-        lat: null,  // KATEC 좌표 변환 필요 — 별도 처리
-        lng: null,
+        lat: Number(item.mapy) / 1e7,  // 네이버는 1e7 형식 좌표 반환
+        lng: Number(item.mapx) / 1e7,
         phone: item.telephone || null,
         externalIds: { naver: item.link },
       })
@@ -496,24 +265,32 @@ async function fetchExternalResults(
   return results
 }
 
-/** 결과 정렬: Nyam DB 우선 → 거리순 */
+/** 결과 정렬: 기록 있음 우선 → Nyam DB 우선 → 거리순 → 이름순 */
 function sortResults(results: RestaurantSearchResult[]): RestaurantSearchResult[] {
   return results.sort((a, b) => {
-    // Nyam DB 항목 우선 (ext_ prefix 없는 것)
-    const aIsNyam = !a.id.startsWith('ext_')
-    const bIsNyam = !b.id.startsWith('ext_')
+    // 1. 기록 있는 항목 우선
+    if (a.hasRecord && !b.hasRecord) return -1
+    if (!a.hasRecord && b.hasRecord) return 1
+
+    // 2. Nyam DB 항목 우선 (외부 API prefix 없는 것)
+    const externalPrefixes = ['ext_', 'kakao_', 'naver_', 'google_']
+    const aIsNyam = !externalPrefixes.some((p) => a.id.startsWith(p))
+    const bIsNyam = !externalPrefixes.some((p) => b.id.startsWith(p))
     if (aIsNyam && !bIsNyam) return -1
     if (!aIsNyam && bIsNyam) return 1
 
-    // 같은 소스 내에서는 거리순
+    // 3. 같은 소스 내에서는 거리순
     const aDist = a.distance ?? Infinity
     const bDist = b.distance ?? Infinity
-    return aDist - bDist
+    if (aDist !== bDist) return aDist - bDist
+
+    // 4. 최종 폴백: 이름순
+    return a.name.localeCompare(b.name)
   })
 }
 
 /** Haversine 거리 계산 (m) */
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLng = (lng2 - lng1) * Math.PI / 180
@@ -540,11 +317,11 @@ function mapKakaoCategory(category: string): string | null {
     '음식점': '한식',
     '한식': '한식',
     '일식': '일식',
-    '양식': '양식',
     '중식': '중식',
     '카페': '카페',
     '분식': '한식',
-    '패스트푸드': '양식',
+    '패스트푸드': '미국',
+    '양식': '이탈리안',
   }
   return map[category] ?? null
 }
@@ -563,11 +340,11 @@ function mapNaverCategory(category: string): string | null {
 // src/app/api/restaurants/nearby/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/infrastructure/supabase/server'
+import { createClient } from '@/infrastructure/supabase/server'
 import type { NearbyRestaurant } from '@/domain/entities/search'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -687,15 +464,18 @@ $$;
 │  │   ├─ 네이버: searchNaverLocal("스시코우지") → 5건
 │  │   └─ 구글: searchGooglePlaces("스시코우지") → 5건
 │  │
-│  ├─ 중복 제거 (이름 정규화 기준)
+│  ├─ 중복 제거 (이름+주소 정규화 기준)
 │  ├─ 정렬: Nyam DB 우선 → 거리순
 │  └─ 반환: { results: [...], externalData: [...] }
 │
-├─ 사용자: 외부 결과 선택
-│  └─ 07_full_flow.md:
-│     ├─ POST /api/restaurants (externalData → restaurants INSERT)
-│     ├─ records INSERT (status='checked')
-│     └─ 성공 화면
+├─ 사용자: 외부 결과 선택 (id가 kakao_/naver_/google_ prefix)
+│  └─ search-container.tsx에서 자동 INSERT:
+│     ├─ POST /api/restaurants { name, address, area, genre, lat, lng }
+│     │     INSERT 시 cached_at=NOW(), next_refresh_at=NOW()+14일 포함
+│     ├─ 중복 체크 (name ILIKE) → 기존 ID 반환 or 새 INSERT
+│     ├─ 반환된 DB ID로 targetId 교체 (외부 prefix ID → UUID)
+│     ├─ /record 페이지로 이동 (targetId=새 UUID)
+│     └─ INSERT 실패 시 → 외부 ID로 계속 진행 (graceful fallback)
 │
 └─ 캐싱: restaurants.cached_at = NOW(), next_refresh_at = NOW() + 14일
 ```
@@ -712,7 +492,7 @@ $$;
 □ KAKAO_REST_API_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, GOOGLE_PLACES_API_KEY 서버 전용 (클라이언트 미노출)
 □ Nyam DB 검색 결과 >= 5개 → 외부 API 호출 안 함
 □ 외부 API 3종 병렬 호출 (Promise.allSettled — 하나 실패해도 나머지 유지)
-□ 중복 제거: 같은 이름 식당 중복 표시 안 함
+□ 중복 제거: 같은 이름+주소 식당 중복 표시 안 함
 □ 정렬: Nyam DB 우선, 거리순
 □ 외부 결과 선택 시 restaurants 테이블 자동 INSERT
 □ "기록 있음" 뱃지: 사용자 기록 존재 여부 정확

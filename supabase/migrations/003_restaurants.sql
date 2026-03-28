@@ -42,8 +42,12 @@ CREATE TABLE restaurants (
 
   -- CHECK 제약
   CONSTRAINT chk_restaurants_genre CHECK (genre IS NULL OR genre IN (
-    '한식', '일식', '양식', '중식', '이탈리안', '프렌치', '동남아', '태국', '베트남',
-    '인도', '스페인', '멕시칸', '아시안', '파인다이닝', '비스트로', '카페', '베이커리', '바', '주점'
+    '한식', '일식', '중식',
+    '태국', '베트남', '인도',
+    '이탈리안', '프렌치', '스페인', '지중해',
+    '미국', '멕시칸',
+    '카페', '바/주점', '베이커리',
+    '기타'
   )),
   CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 4)),
   CONSTRAINT chk_restaurants_michelin CHECK (michelin_stars IS NULL OR (michelin_stars >= 1 AND michelin_stars <= 3))

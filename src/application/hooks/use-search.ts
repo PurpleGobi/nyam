@@ -11,9 +11,11 @@ const RECENT_SEARCHES_KEY = 'nyam_recent_searches'
 
 interface UseSearchParams {
   targetType: 'restaurant' | 'wine'
+  lat?: number | null
+  lng?: number | null
 }
 
-export function useSearch({ targetType }: UseSearchParams) {
+export function useSearch({ targetType, lat, lng }: UseSearchParams) {
   const [query, setQueryState] = useState('')
   const [screenState, setScreenState] = useState<SearchScreenState>('idle')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -49,10 +51,14 @@ export function useSearch({ targetType }: UseSearchParams) {
       setScreenState('searching')
 
       try {
-        const endpoint =
+        let endpoint =
           targetType === 'restaurant'
             ? `/api/restaurants/search?q=${encodeURIComponent(q)}`
             : `/api/wines/search?q=${encodeURIComponent(q)}`
+
+        if (targetType === 'restaurant' && lat != null && lng != null) {
+          endpoint += `&lat=${lat}&lng=${lng}`
+        }
 
         const response = await fetch(endpoint, { signal: controller.signal })
         const data = await response.json()
@@ -72,7 +78,7 @@ export function useSearch({ targetType }: UseSearchParams) {
         setIsSearching(false)
       }
     },
-    [targetType],
+    [targetType, lat, lng],
   )
 
   const debouncedSearch = useMemo(
@@ -86,7 +92,10 @@ export function useSearch({ targetType }: UseSearchParams) {
       if (q.length === 0) {
         setScreenState('idle')
         setResults([])
-      } else if (q.length >= MIN_QUERY_LENGTH) {
+      } else if (q.length < MIN_QUERY_LENGTH) {
+        setScreenState('idle')
+        setResults([])
+      } else {
         setScreenState('typing')
         debouncedSearch(q)
       }

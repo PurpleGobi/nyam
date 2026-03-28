@@ -67,9 +67,11 @@ export function validateExifGps(
     daysSinceCaptured = Math.floor((now.getTime() - capturedDate.getTime()) / (1000 * 60 * 60 * 24))
     isOldPhoto = daysSinceCaptured >= 30
 
-    if (isOldPhoto) {
+    if (daysSinceCaptured >= 30) {
       const months = Math.floor(daysSinceCaptured / 30)
-      warningMessage = months > 0 ? `${months}개월 전 사진이네요` : `${daysSinceCaptured}일 전 사진이네요`
+      warningMessage = `${months}개월 전 사진이네요`
+    } else if (daysSinceCaptured >= 7) {
+      warningMessage = `${daysSinceCaptured}일 전 사진이네요`
     }
   }
 

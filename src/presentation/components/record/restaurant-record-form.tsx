@@ -40,6 +40,7 @@ interface RestaurantRecordFormProps {
   referenceRecords?: QuadrantReferencePoint[]
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
+  photoSlot?: React.ReactNode
 }
 
 export function RestaurantRecordForm({
@@ -47,6 +48,7 @@ export function RestaurantRecordForm({
   referenceRecords,
   onSave,
   isLoading,
+  photoSlot,
 }: RestaurantRecordFormProps) {
   const [quadrant, setQuadrant] = useState({ x: 50, y: 50, satisfaction: 50 })
   const [scene, setScene] = useState<RestaurantScene | null>(null)
@@ -123,6 +125,13 @@ export function RestaurantRecordForm({
           )}
         </div>
       </div>
+
+      {/* 사진 */}
+      {photoSlot && (
+        <section className="px-4 py-4">
+          {photoSlot}
+        </section>
+      )}
 
       {/* 사분면 */}
       <section className="px-4 py-4">

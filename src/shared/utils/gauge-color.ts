@@ -43,3 +43,4 @@ export function getGaugeTailwindClass(score: number): string {
   const step = GAUGE_STEPS.find((g) => clamped <= g.max)
   return step ? step.tailwind : GAUGE_STEPS[4].tailwind
 }
+

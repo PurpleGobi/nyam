@@ -29,11 +29,13 @@ export const AROMA_SECTORS: readonly AromaSectorMeta[] = [
 export const RING_SECTOR_COUNTS: Record<AromaRing, number> = { 1: 8, 2: 4, 3: 3 }
 
 /** 링별 라벨 */
-export const RING_LABELS: Record<AromaRing, string> = { 1: '1차향', 2: '2차향', 3: '3차향' }
+export const RING_LABELS: Record<AromaRing, string> = { 1: '1차향 (과일/꽃)', 2: '2차향 (발효/숙성)', 3: '3차향 (숙성)' }
 
 /** ID로 섹터 조회 */
-export function getAromaSectorById(id: AromaSectorId): AromaSectorMeta | undefined {
-  return AROMA_SECTORS.find((s) => s.id === id)
+export function getAromaSectorById(id: AromaSectorId): AromaSectorMeta {
+  const sector = AROMA_SECTORS.find((s) => s.id === id)
+  if (!sector) throw new Error(`Unknown aroma sector: ${id}`)
+  return sector
 }
 
 /** 링 번호로 섹터 필터 */

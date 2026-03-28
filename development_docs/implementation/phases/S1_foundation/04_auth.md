@@ -289,7 +289,7 @@ export async function createClient() {
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_ROUTES = ['/auth/login', '/auth/callback']
+const PUBLIC_ROUTES = ['/auth/login', '/auth/callback', '/onboarding']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -425,28 +425,48 @@ export function LoginContainer() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background" style={{ padding: '60px 32px 40px' }}>
+      <div style={{ height: '44px' }} />
+
       {/* 로고 */}
       <h1
-        className="mb-2 text-[42px] font-bold tracking-[-1px]"
-        style={{
-          fontFamily: "'Comfortaa', cursive",
-          background: 'linear-gradient(135deg, #FF6038, #8B7396)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}
+        className="logo-gradient"
+        style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px', marginBottom: '10px' }}
       >
         nyam
       </h1>
 
       {/* 서브텍스트 */}
-      <p className="mb-12 text-sub text-text-sub">
-        나만의 맛 기록을 시작하세요
+      <p
+        style={{
+          fontSize: '14px',
+          color: 'var(--text-sub)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          marginBottom: '48px',
+          minHeight: '2.4em',
+        }}
+      >
+        낯선 별점 천 개보다, 믿을만한 한 명의 기록.
       </p>
 
       {/* 소셜 로그인 버튼 */}
-      <LoginButtons onLogin={handleLogin} />
+      <div style={{ width: '100%', marginBottom: '32px' }}>
+        <LoginButtons onLogin={handleLogin} />
+      </div>
+
+      {/* 이용약관 */}
+      <p style={{ fontSize: '11px', color: 'var(--text-hint)', textAlign: 'center', lineHeight: 1.6 }}>
+        가입 시{' '}
+        <a href="#" style={{ color: 'var(--text-sub)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+          이용약관
+        </a>
+        {' '}및{' '}
+        <a href="#" style={{ color: 'var(--text-sub)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+          개인정보처리방침
+        </a>
+        에 동의합니다
+      </p>
     </div>
   )
 }
@@ -454,17 +474,14 @@ export function LoginContainer() {
 
 ### 8-2. `src/infrastructure/supabase/auth-service.ts`
 
-OAuth 호출을 infrastructure 레이어에 캡슐화한다. `as any`는 infrastructure 레이어의 외부 SDK 어댑터에서만 허용한다.
+OAuth 호출을 infrastructure 레이어에 캡슐화한다. `as never`로 타입 캐스트하여 `as any` 사용을 회피한다.
 
 ```typescript
 import { createClient } from './client'
 import type { AuthProvider } from '@/domain/entities/auth'
 
-const client = createClient()
-
 export async function signInWithProvider(provider: AuthProvider, redirectTo: string) {
-  // Supabase SDK의 signInWithOAuth는 런타임에 문자열을 받는다.
-  // 'naver'는 Custom OIDC provider로 등록되어 있으므로 정상 동작한다.
+  const client = createClient()
   const options: Record<string, unknown> = { redirectTo }
 
   if (provider === 'google') {
@@ -475,17 +492,18 @@ export async function signInWithProvider(provider: AuthProvider, redirectTo: str
   }
 
   return client.auth.signInWithOAuth({
-    provider: provider as any,  // infrastructure 레이어에서만 허용
+    provider: provider as never, // infrastructure 레이어에서만 허용 — Supabase SDK에 'naver'/'kakao' 타입 없음
     options,
   })
 }
 
 export async function signOutUser() {
+  const client = createClient()
   return client.auth.signOut()
 }
 ```
 
-> **금지 표현 예외**: `as any`는 infrastructure 레이어의 외부 SDK 어댑터에서만 허용한다. Supabase SDK 타입에 `'naver'`가 없으므로 이 지점에서만 타입 캐스트를 사용한다.
+> **타입 캐스트**: `as never`를 사용한다 (`as any` 금지). Supabase SDK 타입에 `'naver'`가 없으므로 이 지점에서만 타입 캐스트를 사용한다. 클라이언트는 함수 호출 시 생성하여 모듈 수준 싱글턴을 피한다 (lazy init).
 
 ### 8-3. `src/shared/di/container.ts`에 등록
 
@@ -493,9 +511,13 @@ export async function signOutUser() {
 // shared/di/container.ts — 조합 루트
 import { createClient } from '@/infrastructure/supabase/client'
 
-export const supabaseClient = createClient()
+export function getSupabaseClient() {
+  return createClient()
+}
 export { signInWithProvider, signOutUser } from '@/infrastructure/supabase/auth-service'
 ```
+
+> **lazy init**: `const supabaseClient = createClient()` 대신 `getSupabaseClient()` 함수를 export한다. 모듈 수준 싱글턴은 SSR 환경에서 요청 간 상태가 공유될 수 있으므로, 함수 호출 시 생성하는 방식이 더 안전하다.
 
 ### 8-4. `src/application/hooks/use-auth-actions.ts`
 
@@ -619,8 +641,8 @@ export function LoginButtons({ onLogin }: LoginButtonsProps) {
 ```typescript
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabaseClient } from '@/shared/di/container'
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react'
+import { getSupabaseClient } from '@/shared/di/container'
 import { mapSupabaseUser, mapSupabaseSession } from '@/shared/di/auth-mappers'
 import type { AuthUser, AuthSession } from '@/domain/entities/auth'
 
@@ -642,11 +664,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [session, setSession] = useState<AuthSession | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const clientRef = useRef(getSupabaseClient())
 
   useEffect(() => {
-    // 초기 세션 가져오기
+    const client = clientRef.current
+
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await supabaseClient.auth.getSession()
+      const { data: { session: initialSession } } = await client.auth.getSession()
       if (initialSession) {
         setSession(mapSupabaseSession(initialSession))
         setUser(mapSupabaseUser(initialSession.user))
@@ -656,8 +680,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession()
 
-    // 인증 상태 변경 리스너
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       (_event, newSession) => {
         if (newSession) {
           setSession(mapSupabaseSession(newSession))
@@ -675,14 +698,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signOut = async () => {
-    await supabaseClient.auth.signOut()
+  const handleSignOut = async () => {
+    await clientRef.current.auth.signOut()
     setUser(null)
     setSession(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signOut: handleSignOut }}>
       {children}
     </AuthContext.Provider>
   )
@@ -702,6 +725,8 @@ export function useAuth() {
 > // shared/di/auth-mappers.ts
 > export { mapSupabaseUser, mapSupabaseSession } from '@/infrastructure/supabase/auth-mapper'
 > ```
+>
+> **lazy init + useRef**: `getSupabaseClient()`를 `useRef`에 저장하여 컴포넌트 리렌더링 시 클라이언트 재생성을 방지하면서, 모듈 수준 싱글턴의 SSR 상태 공유 문제를 회피한다.
 
 ### 11. `src/app/layout.tsx`에 AuthProvider 래핑
 

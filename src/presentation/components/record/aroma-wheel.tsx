@@ -107,7 +107,7 @@ export function AromaWheel({ value, onChange }: AromaWheelProps) {
       const labels = activeIds
         .map((id) => AROMA_SECTORS.find((s) => s.id === id)?.nameKo)
         .filter(Boolean) as string[]
-      const color = calculateAromaColor(activeIds)
+      const color = calculateAromaColor(activeIds) ?? ''
 
       onChange({ regions: newRegions, labels, color })
     },
@@ -140,6 +140,9 @@ export function AromaWheel({ value, onChange }: AromaWheelProps) {
 
   return (
     <div className="flex w-full flex-col items-center">
+      <span style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '8px' }}>
+        향을 느껴보세요
+      </span>
       <svg
         viewBox="0 0 300 300"
         className="w-full max-w-[300px]"

@@ -1,27 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { User } from '@/domain/entities/user'
-import { getSupabaseClient } from '@/shared/di/container'
+import useSWR from 'swr'
+import { profileRepo, xpRepo } from '@/shared/di/container'
+import { useAuth } from '@/presentation/providers/auth-provider'
 
-export function useProfile(userId: string | null) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(!!userId)
+/** 프로필 전체 데이터 로드 (병렬 요청) */
+export function useProfile() {
+  const { user } = useAuth()
+  const userId = user?.id ?? null
 
-  useEffect(() => {
-    if (!userId) return
+  const { data: profile, isLoading: profileLoading } = useSWR(
+    userId ? ['profile', userId] : null,
+    ([, id]) => profileRepo.getUserProfile(id),
+  )
 
-    const supabase = getSupabaseClient()
-    supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-      .then(({ data }) => {
-        if (data) setUser(data as unknown as User)
-        setIsLoading(false)
-      })
-  }, [userId])
+  const { data: experiences, isLoading: xpLoading } = useSWR(
+    userId ? ['experiences', userId] : null,
+    ([, id]) => xpRepo.getUserExperiences(id),
+  )
 
-  return { user, isLoading }
+  const { data: recentXp, isLoading: recentXpLoading } = useSWR(
+    userId ? ['recent-xp', userId] : null,
+    ([, id]) => xpRepo.getRecentXpHistories(id, 5),
+  )
+
+  const { data: activitySummary, isLoading: activityLoading } = useSWR(
+    userId ? ['activity-summary', userId] : null,
+    ([, id]) => profileRepo.getActivitySummary(id),
+  )
+
+  const { data: heatmapData, isLoading: heatmapLoading } = useSWR(
+    userId ? ['heatmap', userId] : null,
+    ([, id]) => profileRepo.getHeatmapData(id, 13),
+  )
+
+  const { data: thresholds } = useSWR(
+    'level-thresholds',
+    () => xpRepo.getLevelThresholds(),
+    { revalidateOnFocus: false, revalidateOnReconnect: false },
+  )
+
+  const isLoading = profileLoading || xpLoading || recentXpLoading || activityLoading || heatmapLoading
+
+  return {
+    profile,
+    experiences,
+    recentXp,
+    activitySummary,
+    heatmapData,
+    thresholds,
+    isLoading,
+  }
 }

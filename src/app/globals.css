@@ -103,6 +103,7 @@
   --scene-family: #C9A96E;
   --scene-business: #8B7396;
   --scene-drinks: #B87272;
+  --scene-decanting: #A0896C;
 
   /* ── §2 Typography ── */
   --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
@@ -270,4 +271,80 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Wine structure slider — 프로토타입 .wine-slider ��타일 */
+.wine-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+}
+
+.wine-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-wine);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.wine-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-wine);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.wine-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.wine-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+/* 찜 하트 애니메이션 */
+@keyframes wishlist-add-anim {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wishlist-remove-anim {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.8); }
+  100% { transform: scale(1); }
+}
+
+.wishlist-add {
+  animation: wishlist-add-anim 0.3s ease-out;
+}
+
+.wishlist-remove {
+  animation: wishlist-remove-anim 0.2s ease;
+}
+
+/* Notification dropdown */
+@keyframes dropdown-in {
+  0% { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Bottom sheet slide up */
+@keyframes slide-up {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
 }

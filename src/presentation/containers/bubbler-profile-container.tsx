@@ -7,7 +7,7 @@ import type { User } from '@/domain/entities/user'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
-import { getSupabaseClient } from '@/shared/di/container'
+import { profileRepo } from '@/shared/di/container'
 
 interface BubblerProfileContainerProps {
   userId: string
@@ -21,11 +21,15 @@ export function BubblerProfileContainer({ userId }: BubblerProfileContainerProps
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = getSupabaseClient()
-    supabase.from('users').select('*').eq('id', userId).single().then(({ data }) => {
-      if (data) setProfile(data as unknown as User)
+    profileRepo.getUserProfile(userId).then((data) => {
+      setProfile({
+        id: data.id, nickname: data.nickname, handle: data.handle,
+        avatar_url: data.avatarUrl, avatar_color: data.avatarColor,
+        bio: data.bio, record_count: data.recordCount,
+        total_xp: data.totalXp, follower_count: 0, following_count: 0,
+      } as unknown as User)
       setIsLoading(false)
-    })
+    }).catch(() => setIsLoading(false))
   }, [userId])
 
   if (isLoading || !profile) {

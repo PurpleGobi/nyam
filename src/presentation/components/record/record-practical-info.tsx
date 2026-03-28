@@ -1,37 +1,50 @@
 'use client'
 
 import { DollarSign, Users, Calendar, Wine, UtensilsCrossed } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import type { DiningRecord } from '@/domain/entities/record'
+import type { LinkedTarget } from '@/application/hooks/use-record-detail'
 
 interface RecordPracticalInfoProps {
-  record: DiningRecord
-  linkedItemName?: string | null
+  targetType: 'restaurant' | 'wine'
+  totalPrice: number | null
+  purchasePrice: number | null
+  companions: string[] | null
+  visitDate: string | null
+  createdAt: string
+  linkedItem: LinkedTarget | null
+  onLinkedItemTap: (id: string, type: 'restaurant' | 'wine') => void
 }
 
-export function RecordPracticalInfo({ record, linkedItemName }: RecordPracticalInfoProps) {
-  const router = useRouter()
-  const isRestaurant = record.targetType === 'restaurant'
-  const price = record.totalPrice ?? record.purchasePrice
+export function RecordPracticalInfo({
+  targetType,
+  totalPrice,
+  purchasePrice,
+  companions,
+  visitDate,
+  createdAt,
+  linkedItem,
+  onLinkedItemTap,
+}: RecordPracticalInfoProps) {
+  const isRestaurant = targetType === 'restaurant'
+  const price = isRestaurant ? totalPrice : purchasePrice
 
   return (
     <div className="flex flex-col gap-2.5">
       {/* 가격 */}
-      {price !== null && (
-        <div className="flex items-center gap-2.5">
-          <DollarSign size={16} style={{ color: 'var(--text-hint)' }} />
-          <span style={{ fontSize: '14px', color: 'var(--text)' }}>
-            ₩{price.toLocaleString()} ({isRestaurant ? '1인' : '병'})
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-2.5">
+        <DollarSign size={16} style={{ color: 'var(--text-hint)' }} />
+        <span style={{ fontSize: '14px', color: 'var(--text)' }}>
+          {price !== null
+            ? `₩${price.toLocaleString()} (${isRestaurant ? '1인' : '병'})`
+            : '---'}
+        </span>
+      </div>
 
-      {/* 동행자 */}
-      {record.companions && record.companions.length > 0 && (
+      {/* 동반자 (비공개: 본인 기록에서만 표시) */}
+      {companions && companions.length > 0 && (
         <div className="flex items-center gap-2.5">
           <Users size={16} style={{ color: 'var(--text-hint)' }} />
           <span style={{ fontSize: '14px', color: 'var(--text)' }}>
-            {record.companions.join(', ')}
+            {companions.join(', ')}
           </span>
         </div>
       )}
@@ -40,32 +53,30 @@ export function RecordPracticalInfo({ record, linkedItemName }: RecordPracticalI
       <div className="flex items-center gap-2.5">
         <Calendar size={16} style={{ color: 'var(--text-hint)' }} />
         <span style={{ fontSize: '14px', color: 'var(--text)' }}>
-          {record.visitDate ?? record.createdAt.split('T')[0]}
+          {(visitDate ?? createdAt.split('T')[0]).replace(/-/g, '.')}
         </span>
       </div>
 
       {/* 연결 아이템 */}
-      {isRestaurant && record.linkedWineId && linkedItemName && (
+      {linkedItem && (
         <button
           type="button"
-          onClick={() => router.push(`/wines/${record.linkedWineId}`)}
+          onClick={() => onLinkedItemTap(linkedItem.id, linkedItem.targetType)}
           className="flex items-center gap-2.5"
         >
-          <Wine size={16} style={{ color: 'var(--accent-wine)' }} />
-          <span style={{ fontSize: '14px', color: 'var(--accent-wine)', textDecoration: 'underline' }}>
-            {linkedItemName}
-          </span>
-        </button>
-      )}
-      {!isRestaurant && record.linkedRestaurantId && linkedItemName && (
-        <button
-          type="button"
-          onClick={() => router.push(`/restaurants/${record.linkedRestaurantId}`)}
-          className="flex items-center gap-2.5"
-        >
-          <UtensilsCrossed size={16} style={{ color: 'var(--accent-food)' }} />
-          <span style={{ fontSize: '14px', color: 'var(--accent-food)', textDecoration: 'underline' }}>
-            {linkedItemName}
+          {linkedItem.targetType === 'wine' ? (
+            <Wine size={16} style={{ color: 'var(--accent-wine)' }} />
+          ) : (
+            <UtensilsCrossed size={16} style={{ color: 'var(--accent-food)' }} />
+          )}
+          <span
+            style={{
+              fontSize: '14px',
+              color: linkedItem.targetType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)',
+              textDecoration: 'underline',
+            }}
+          >
+            {linkedItem.name}
           </span>
         </button>
       )}

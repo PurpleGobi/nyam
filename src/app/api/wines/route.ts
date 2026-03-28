@@ -10,10 +10,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, wineType, producer, vintage, region, country, variety } = body
+  const { name, wineType, producer, vintage, region, country, variety, labelImageUrl } = body
 
-  if (!name?.trim() || !wineType) {
-    return NextResponse.json({ error: 'NAME_AND_TYPE_REQUIRED' }, { status: 400 })
+  if (!name?.trim()) {
+    return NextResponse.json({ error: 'NAME_REQUIRED' }, { status: 400 })
+  }
+  if (!wineType) {
+    return NextResponse.json({ error: 'WINE_TYPE_REQUIRED' }, { status: 400 })
   }
 
   let query = supabase
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
     query = query.eq('vintage', vintage)
   }
 
-  const { data: existing } = await query.limit(1).single()
+  const { data: existing } = await query.limit(1).maybeSingle()
 
   if (existing) {
     return NextResponse.json({ id: existing.id, name: existing.name, type: 'wine', isExisting: true })
@@ -41,6 +44,7 @@ export async function POST(request: NextRequest) {
       region: region ?? null,
       country: country ?? null,
       variety: variety ?? null,
+      label_image_url: labelImageUrl ?? null,
     })
     .select('id, name')
     .single()
@@ -49,5 +53,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ id: data.id, name: data.name, type: 'wine', isExisting: false })
+  return NextResponse.json({ id: data.id, name: data.name, type: 'wine', isExisting: false }, { status: 201 })
 }

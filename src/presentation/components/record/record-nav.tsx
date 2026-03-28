@@ -30,8 +30,8 @@ export function RecordNav({ title, variant = 'food', onBack, onClose }: RecordNa
 
       <span
         style={{
-          fontSize: '15px',
-          fontWeight: 700,
+          fontSize: '16px',
+          fontWeight: 600,
           color: variant === 'wine' ? 'var(--accent-wine)' : 'var(--text)',
         }}
       >

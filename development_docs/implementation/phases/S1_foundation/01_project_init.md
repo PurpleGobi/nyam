@@ -61,36 +61,48 @@ cd nyam
 ```json
 {
   "name": "nyam",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 7911",
+    "dev": "next dev --port 7911",
     "build": "next build --webpack",
     "start": "next start -p 7911",
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "^15",
+    "next": "^16",
     "react": "^19",
     "react-dom": "^19",
     "@supabase/supabase-js": "^2",
     "@supabase/ssr": "^0.9",
-    "lucide-react": "^0.468",
+    "lucide-react": "^0.577",
     "class-variance-authority": "^0.7",
     "clsx": "^2",
-    "tailwind-merge": "^3"
+    "tailwind-merge": "^3",
+    "framer-motion": "^12",
+    "swr": "^2",
+    "sonner": "^2",
+    "html-to-image": "^1",
+    "@base-ui/react": "^1",
+    "tw-animate-css": "^1",
+    "@ducanh2912/next-pwa": "^10",
+    "server-only": "^0.0.1",
+    "shadcn": "^4"
   },
   "devDependencies": {
     "typescript": "^5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/node": "^22",
+    "@types/node": "^20",
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "^15",
+    "eslint-config-next": "^16",
     "@eslint/eslintrc": "^3",
-    "supabase": "^2"
+    "supabase": "^2",
+    "@playwright/test": "^1",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8"
   }
 }
 ```
@@ -260,7 +272,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'nyam',
-  description: '나만의 맛 컬렉션',
+  description: '나만의 맛 기록',
 }
 
 export const viewport: Viewport = {

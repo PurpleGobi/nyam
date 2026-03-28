@@ -69,14 +69,15 @@ export interface PairingCategoryMeta {
  * Row 4: dessert(디저트·과일) | charcuterie(샤퀴트리·견과)
  */
 export const PAIRING_CATEGORIES: readonly PairingCategoryMeta[] = [
-  { value: 'red_meat', label: '적색육', icon: '🥩', examples: '스테이크 · 양갈비 · 오리 · 사슴' },
-  { value: 'white_meat', label: '백색육', icon: '🍗', examples: '닭 · 돼지 · 송아지 · 토끼' },
-  { value: 'seafood', label: '어패류', icon: '🦐', examples: '생선 · 갑각류 · 조개 · 굴 · 초밥' },
-  { value: 'cheese', label: '치즈·유제품', icon: '🧀', examples: '숙성치즈 · 블루 · 브리 · 크림소스' },
-  { value: 'vegetable', label: '채소·곡물', icon: '🌿', examples: '버섯 · 트러플 · 리조또 · 파스타' },
-  { value: 'spicy', label: '매운·발효', icon: '🌶️', examples: '커리 · 마라 · 김치 · 된장' },
-  { value: 'dessert', label: '디저트·과일', icon: '🍫', examples: '다크초콜릿 · 타르트 · 건과일' },
-  { value: 'charcuterie', label: '샤퀴트리·견과', icon: '🥜', examples: '하몽 · 살라미 · 아몬드 · 올리브' },
+  // icon 값은 lucide-react 아이콘 이름 (프로젝트 전역 이모지→Lucide 전환 적용)
+  { value: 'red_meat', label: '적색육', icon: 'beef', examples: '스테이크 · 양갈비 · 오리 · 사슴' },
+  { value: 'white_meat', label: '백색육', icon: 'drumstick', examples: '닭 · 돼지 · 송아지 · 토끼' },
+  { value: 'seafood', label: '어패류', icon: 'fish', examples: '생선 · 갑각류 · 조개 · 굴 · 초밥' },
+  { value: 'cheese', label: '치즈·유제품', icon: 'milk', examples: '숙성치즈 · 블루 · 브리 · 크림소스' },
+  { value: 'vegetable', label: '채소·곡물', icon: 'leaf', examples: '버섯 · 트러플 · 리조또 · 파스타' },
+  { value: 'spicy', label: '매운·발효', icon: 'flame', examples: '커리 · 마라 · 김치 · 된장' },
+  { value: 'dessert', label: '디저트·과일', icon: 'candy', examples: '다크초콜릿 · 타르트 · 건과일' },
+  { value: 'charcuterie', label: '샤퀴트리·견과', icon: 'nut', examples: '하몽 · 살라미 · 아몬드 · 올리브' },
 ] as const
 ```
 
@@ -126,14 +127,16 @@ interface PairingGridProps {
     ))}
   </div>
 
-  {/* 직접 입력 */}
-  <input
-    type="text"
-    placeholder="직접 입력 (예: 트러플 리조또)"
-    value={customInput}
-    onChange={(e) => onCustomInputChange?.(e.target.value)}
-    className="pairing-custom-input"
-  />
+  {/* 직접 입력 — onCustomInputChange prop이 있을 때만 렌더 */}
+  {onCustomInputChange && (
+    <input
+      type="text"
+      placeholder="직접 입력 (예: 트러플 리조또)"
+      value={customInput ?? ''}
+      onChange={(e) => onCustomInputChange(e.target.value)}
+      className="pairing-custom-input"
+    />
+  )}
 </div>
 ```
 
@@ -231,11 +234,11 @@ function isSelected(category: PairingCategory): boolean {
   <div class="rest-record-section-title">페어링 <span class="ai-tag wine">AI 추천</span></div>
   <div class="pairing-grid">
     <div class="pairing-cell selected" onclick="togglePairingCell(this)">
-      <div class="pairing-cell-icon">🥩</div>
+      <div class="pairing-cell-icon"><Beef size={22} /></div>  <!-- lucide icon -->
       <div class="pairing-cell-name">적색육</div>
       <div class="pairing-cell-examples">스테이크 · 양갈비 · 오리 · 사슴</div>
     </div>
-    <!-- ... 7개 더 ... -->
+    <!-- ... 7개 더 (각 셀의 icon도 lucide 컴포넌트로 렌더링) ... -->
   </div>
   <input placeholder="직접 입력 (예: 트러플 리조또)" />
 </div>

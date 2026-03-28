@@ -11,14 +11,22 @@ export interface KakaoLocalResult {
   kakaoId: string
 }
 
-export async function searchKakaoLocal(query: string, lat?: number, lng?: number): Promise<KakaoLocalResult[]> {
+export async function searchKakaoLocal(
+  query: string,
+  lat?: number,
+  lng?: number,
+  options?: { radius?: number; size?: number },
+): Promise<KakaoLocalResult[]> {
   const apiKey = process.env.KAKAO_REST_API_KEY
   if (!apiKey) return []
 
-  const params = new URLSearchParams({ query, size: '5' })
+  const size = options?.size ?? 5
+  const radius = options?.radius ?? 20000
+  const params = new URLSearchParams({ query, size: String(size) })
   if (lat && lng) {
     params.set('x', String(lng))
     params.set('y', String(lat))
+    params.set('radius', String(radius))
     params.set('sort', 'distance')
   }
 

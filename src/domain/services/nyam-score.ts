@@ -5,52 +5,66 @@ export interface NyamScoreBreakdown {
   naverRating: number | null
   kakaoRating: number | null
   googleRating: number | null
-  webAvg: number | null
-  webScore: number | null
-  prestigeBonus: number
-  finalScore: number | null
+  webAvg: number              // (N×40% + K×30% + G×30%) / 5.0 × 100
+  webScore: number            // webAvg × 20 → 0~100
+  prestigeBonus: number       // michelin+8, blueRibbon+5, tv+3, cap 15
+  finalScore: number          // webScore × 0.82 + prestigeBonus × 1.15
 }
 
 /**
  * Nyam 점수 계산
- * Web Score = (Naver×0.4 + Kakao×0.3 + Google×0.3) × 20 → 0~100
- * Prestige Bonus = Michelin +8, BlueRibbon +5, TV +3 (max 15)
- * Final = Web Score × 0.82 + Prestige Bonus × 1.15
+ * 공식: (Naver×40% + Kakao×30% + Google×30%) × 20 → webScore
+ *        미슐랭 +8, 블루리본 +5, TV +3 (상한 15) → prestigeBonus
+ *        최종 = webScore × 0.82 + prestigeBonus × 1.15
+ *
+ * 외부 평점 하나도 없으면 null 반환
  */
-export function calculateNyamScore(params: {
+export function calcNyamScore(r: {
   naverRating: number | null
   kakaoRating: number | null
   googleRating: number | null
   michelinStars: number | null
   hasBlueRibbon: boolean
-  mediaCount: number
-}): NyamScoreBreakdown {
-  const { naverRating, kakaoRating, googleRating, michelinStars, hasBlueRibbon, mediaCount } = params
+  mediaAppearances: { show: string }[] | null
+}): NyamScoreBreakdown | null {
+  const n = r.naverRating
+  const k = r.kakaoRating
+  const g = r.googleRating
 
-  const ratings = [
-    { value: naverRating, weight: 0.4 },
-    { value: kakaoRating, weight: 0.3 },
-    { value: googleRating, weight: 0.3 },
-  ].filter((r) => r.value !== null)
+  // 외부 평점 하나도 없으면 산출 불가
+  if (n === null && k === null && g === null) return null
 
-  let webAvg: number | null = null
-  let webScore: number | null = null
+  // 가중 평균 (5.0 만점 기준)
+  let totalWeight = 0
+  let weightedSum = 0
+  if (n !== null) { weightedSum += n * 0.4; totalWeight += 0.4 }
+  if (k !== null) { weightedSum += k * 0.3; totalWeight += 0.3 }
+  if (g !== null) { weightedSum += g * 0.3; totalWeight += 0.3 }
+  const webAvg = weightedSum / totalWeight  // 5.0 만점 기준 평균
 
-  if (ratings.length > 0) {
-    const totalWeight = ratings.reduce((sum, r) => sum + r.weight, 0)
-    webAvg = ratings.reduce((sum, r) => sum + (r.value as number) * r.weight, 0) / totalWeight
-    webScore = webAvg * 20
+  // 100점 환산: (webAvg / 5.0) × 100 → 0~100
+  const webScore = (webAvg / 5.0) * 100
+
+  // 명성 보너스
+  let prestige = 0
+  if (r.michelinStars && r.michelinStars >= 1) prestige += 8
+  if (r.hasBlueRibbon) prestige += 5
+  if (r.mediaAppearances && r.mediaAppearances.length > 0) prestige += 3
+  const prestigeBonus = Math.min(prestige, 15)
+
+  // 최종 점수
+  const finalScore = Math.min(Math.round(webScore * 0.82 + prestigeBonus * 1.15), 100)
+
+  return {
+    naverRating: n,
+    kakaoRating: k,
+    googleRating: g,
+    webAvg,
+    webScore,
+    prestigeBonus,
+    finalScore,
   }
-
-  let prestigeBonus = 0
-  if (michelinStars) prestigeBonus += 8
-  if (hasBlueRibbon) prestigeBonus += 5
-  if (mediaCount > 0) prestigeBonus += 3
-  prestigeBonus = Math.min(prestigeBonus, 15)
-
-  const finalScore = webScore !== null
-    ? Math.round(webScore * 0.82 + prestigeBonus * 1.15)
-    : null
-
-  return { naverRating, kakaoRating, googleRating, webAvg, webScore, prestigeBonus, finalScore }
 }
+
+/** @deprecated use calcNyamScore instead */
+export const calculateNyamScore = calcNyamScore

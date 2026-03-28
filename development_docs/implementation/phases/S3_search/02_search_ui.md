@@ -139,7 +139,7 @@ const KOREAN_TO_ENGLISH: Record<string, string[]> = {
   '버거': ['burger'],
   '스테이크': ['steak'],
   '와인': ['wine'],
-  '비스트로': ['bistro'],
+  '프렌치': ['french', 'bistro'],
 }
 
 /**
@@ -166,8 +166,9 @@ export function fuzzyMatch(query: string, target: string): boolean {
 
   if (normQuery.length === 0) return false
 
-  // 직접 포함
+  // 직접 포함 (순방향 + 역방향)
   if (normTarget.includes(normQuery)) return true
+  if (normQuery.includes(normTarget)) return true
 
   // 한영 혼용 체크
   for (const [korean, englishVariants] of Object.entries(KOREAN_TO_ENGLISH)) {
@@ -199,6 +200,7 @@ export function calculateSearchRelevance(query: string, name: string): number {
   if (normName === normQuery) return 100       // 완전 일치
   if (normName.startsWith(normQuery)) return 80 // 시작 일치
   if (normName.includes(normQuery)) return 60   // 포함
+  if (fuzzyMatch(query, name)) return 40        // fuzzy 매칭
 
   return 0
 }
@@ -237,7 +239,7 @@ export function debounce<T extends (...args: Parameters<T>) => void>(
 ```typescript
 // src/application/hooks/use-search.ts
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { debounce } from '@/shared/utils/debounce'
 import type { SearchResult, SearchScreenState, RecentSearch } from '@/domain/entities/search'
 
@@ -248,6 +250,9 @@ const RECENT_SEARCHES_KEY = 'nyam_recent_searches'
 
 interface UseSearchParams {
   targetType: 'restaurant' | 'wine'
+  /** GPS 좌표 (검색 API에 전달 — 거리 기반 정렬용) */
+  lat?: number | null
+  lng?: number | null
 }
 
 interface UseSearchReturn {
@@ -267,12 +272,14 @@ interface UseSearchReturn {
   reset: () => void
 }
 
-export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
+export function useSearch({ targetType, lat, lng }: UseSearchParams): UseSearchReturn {
   const [query, setQueryInternal] = useState('')
   const [screenState, setScreenState] = useState<SearchScreenState>('idle')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+  /** 진행 중인 fetch 요청 취소용 AbortController */
+  const abortRef = useRef<AbortController | null>(null)
 
   // 로컬 스토리지에서 최근 검색 로드
   useEffect(() => {
@@ -294,6 +301,13 @@ export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
       return
     }
 
+    // 이전 진행 중인 요청 취소
+    if (abortRef.current) {
+      abortRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsSearching(true)
     setScreenState('searching')
 
@@ -302,7 +316,12 @@ export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
         ? '/api/restaurants/search'
         : '/api/wines/search'
 
-      const response = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`)
+      let url = `${endpoint}?q=${encodeURIComponent(q)}`
+      if (lat != null && lng != null) url += `&lat=${lat}&lng=${lng}`
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+      })
       const data: { results: SearchResult[] } = await response.json()
 
       if (data.results.length === 0) {
@@ -311,7 +330,9 @@ export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
         setScreenState('results')
       }
       setResults(data.results)
-    } catch {
+    } catch (err) {
+      // AbortError는 무시 (새 검색으로 대체된 요청)
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setScreenState('empty')
       setResults([])
     } finally {
@@ -329,15 +350,22 @@ export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
 
   const setQuery = useCallback((q: string) => {
     setQueryInternal(q)
-    if (q.length >= MIN_QUERY_LENGTH) {
-      setScreenState('typing')
-      debouncedSearch(q)
-    } else {
+    if (q.length === 0) {
+      // 입력 완전 삭제 → idle (최근 검색 표시 조건)
       setScreenState('idle')
       setResults([])
+    } else if (q.length < MIN_QUERY_LENGTH) {
+      // 1자 입력 → 너무 짧음, 검색 없이 idle 유지
+      setScreenState('idle')
+      setResults([])
+    } else {
+      // MIN_QUERY_LENGTH(2자) 이상 → typing + debounce 검색
+      setScreenState('typing')
+      debouncedSearch(q)
     }
   }, [debouncedSearch])
 
+  // addRecentSearch: 검색 쿼리 문자열을 직접 받음 (결과 이름이 아닌 사용자 입력 쿼리 저장)
   const addRecentSearch = useCallback((q: string) => {
     const newEntry: RecentSearch = {
       query: q,
@@ -373,6 +401,11 @@ export function useSearch({ targetType }: UseSearchParams): UseSearchReturn {
   }, [targetType])
 
   const reset = useCallback(() => {
+    // 진행 중인 요청 취소
+    if (abortRef.current) {
+      abortRef.current.abort()
+      abortRef.current = null
+    }
     setQueryInternal('')
     setScreenState('idle')
     setResults([])
@@ -427,8 +460,8 @@ export function SearchBar({
   }, [autoFocus])
 
   const focusRingClass = variant === 'restaurant'
-    ? 'focus-within:border-[var(--accent-food)]'
-    : 'focus-within:border-[var(--accent-wine)]'
+    ? 'border-[var(--accent-food)]'  // onFocusCapture/onBlurCapture inline style로 구현
+    : 'border-[var(--accent-wine)]'
 
   return (
     <div
@@ -541,8 +574,8 @@ function WineResultItem({
     }
     subtextParts.push(typeMap[result.wineType] ?? result.wineType)
   }
-  if (result.region) subtextParts.push(result.region)
   if (result.country) subtextParts.push(result.country)
+  if (result.region) subtextParts.push(result.region)
 
   return (
     <button
@@ -750,9 +783,11 @@ export function SearchResults({
 
 ## 목업 매핑
 
+> **SearchContainer**: `screenState === 'idle'`일 때 `RecentSearches` 컴포넌트를 NearbyList/힌트 위에 렌더링함 (최근 검색어가 있을 경우). `addRecentSearch`는 사용자가 결과 항목을 선택할 때 결과 이름이 아닌 **검색 쿼리 문자열**을 전달받아 저장.
+
 | 프로토타입 Screen ID | 구현 컴포넌트 | 상태 |
 |---------------------|-------------|------|
-| `screen-add-restaurant-search` (검색 전) | `SearchBar` + `NearbyList` | `screenState = 'idle'` |
+| `screen-add-restaurant-search` (검색 전) | `SearchBar` + `RecentSearches` + `NearbyList` | `screenState = 'idle'` |
 | `screen-add-restaurant-search` (검색 중) | `SearchBar` + `SearchResults` | `screenState = 'results'` |
 | `screen-add-wine-search` (검색 전) | `SearchBar` + 힌트 텍스트 | `screenState = 'idle'` |
 | `screen-add-wine-search` (검색 중) | `SearchBar` + `SearchResults` | `screenState = 'results'` |
@@ -765,7 +800,8 @@ export function SearchResults({
 ┌─ 사용자: 텍스트 입력
 │
 ├─ setQuery(text)
-│  ├─ text.length < 2 → screenState='idle' (근처 목록 or 힌트 표시)
+│  ├─ text.length === 0 → screenState='idle' (RecentSearches + 근처 목록 or 힌트 표시)
+│  ├─ text.length < 2 → screenState='idle' (검색 없이 대기)
 │  └─ text.length >= 2 → screenState='typing' → debounce(300ms)
 │
 ├─ debounce 만료 → executeSearch(query)

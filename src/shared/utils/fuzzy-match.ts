@@ -1,6 +1,6 @@
 const SUFFIX_PATTERN = /\s*(점|역|호|지점|본점|매장|가게|식당|맛집)$/
 
-const KOREAN_TO_ENGLISH: globalThis.Record<string, string[]> = {
+const KOREAN_TO_ENGLISH: Record<string, string[]> = {
   '스시': ['sushi'],
   '파스타': ['pasta'],
   '라멘': ['ramen'],
@@ -10,7 +10,7 @@ const KOREAN_TO_ENGLISH: globalThis.Record<string, string[]> = {
   '버거': ['burger'],
   '스테이크': ['steak'],
   '와인': ['wine'],
-  '비스트로': ['bistro'],
+  '프렌치': ['french', 'bistro'],
 }
 
 export function normalizeQuery(query: string): string {
@@ -21,18 +21,22 @@ export function fuzzyMatch(query: string, target: string): boolean {
   const normQuery = normalizeQuery(query)
   const normTarget = normalizeQuery(target)
 
+  if (normQuery.length === 0) return false
+
   if (normTarget.includes(normQuery)) return true
   if (normQuery.includes(normTarget)) return true
 
   for (const [ko, enVariants] of Object.entries(KOREAN_TO_ENGLISH)) {
     if (normQuery.includes(ko)) {
       for (const en of enVariants) {
-        if (normTarget.includes(en)) return true
+        const replaced = normQuery.replace(ko, en)
+        if (normTarget.includes(replaced)) return true
       }
     }
     for (const en of enVariants) {
       if (normQuery.includes(en)) {
-        if (normTarget.includes(ko)) return true
+        const replaced = normQuery.replace(en, ko)
+        if (normTarget.includes(replaced)) return true
       }
     }
   }

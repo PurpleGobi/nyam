@@ -1,25 +1,18 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import type { WrappedData, WrappedCategory } from '@/domain/entities/profile'
+import useSWR from 'swr'
 import { profileRepo } from '@/shared/di/container'
+import { useAuth } from '@/presentation/providers/auth-provider'
+import type { WrappedData, WrappedCategory } from '@/domain/entities/profile'
 
-export function useWrapped(userId: string | null) {
-  const [wrappedData, setWrappedData] = useState<WrappedData | null>(null)
-  const [category, setCategory] = useState<WrappedCategory>('all')
-  const [isLoading, setIsLoading] = useState(false)
+export function useWrapped(category: WrappedCategory) {
+  const { user } = useAuth()
+  const userId = user?.id ?? null
 
-  const loadWrapped = useCallback(async (cat: WrappedCategory) => {
-    if (!userId) return
-    setIsLoading(true)
-    setCategory(cat)
-    try {
-      const data = await profileRepo.getWrappedData(userId, cat)
-      setWrappedData(data)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [userId])
+  const { data } = useSWR<WrappedData>(
+    userId ? ['wrapped', userId, category] : null,
+    ([, id, cat]: [string, string, WrappedCategory]) => profileRepo.getWrappedData(id, cat),
+  )
 
-  return { wrappedData, category, isLoading, loadWrapped }
+  return { data }
 }

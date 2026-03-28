@@ -56,7 +56,7 @@ export function WineStructureEval({
           max={100}
           value={value.complexity}
           onChange={(e) => handleChange('complexity', e.target.value)}
-          className="w-full accent-[var(--accent-wine)]"
+          className="wine-slider w-full"
         />
         <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
           <span>1차향 (과일/꽃)</span>
@@ -77,7 +77,7 @@ export function WineStructureEval({
           max={100}
           value={value.finish}
           onChange={(e) => handleChange('finish', e.target.value)}
-          className="w-full accent-[var(--accent-wine)]"
+          className="wine-slider w-full"
         />
         <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
           <span>짧음 (&lt;3초)</span>
@@ -98,7 +98,7 @@ export function WineStructureEval({
           max={100}
           value={value.balance}
           onChange={(e) => handleChange('balance', e.target.value)}
-          className="w-full accent-[var(--accent-wine)]"
+          className="wine-slider w-full"
         />
         <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
           <span>산미 치우침</span>

@@ -2,24 +2,25 @@
 
 import { useState, useCallback } from 'react'
 import type { AddFlowStep, AddFlowTarget } from '@/domain/entities/add-flow'
-import type { RecordTargetType } from '@/domain/entities/record'
+
+interface UseAddFlowParams {
+  initialStep: AddFlowStep
+  initialTarget?: AddFlowTarget | null
+}
 
 interface UseAddFlowReturn {
   step: AddFlowStep
   target: AddFlowTarget | null
   stepHistory: AddFlowStep[]
-  setTarget: (target: AddFlowTarget) => void
+  setTarget: (target: AddFlowTarget | null) => void
   pushStep: (next: AddFlowStep) => void
   goBack: () => AddFlowStep | null
   reset: () => void
 }
 
-export function useAddFlow(
-  initialStep: AddFlowStep,
-  targetType: RecordTargetType,
-): UseAddFlowReturn {
+export function useAddFlow({ initialStep, initialTarget }: UseAddFlowParams): UseAddFlowReturn {
   const [step, setStep] = useState<AddFlowStep>(initialStep)
-  const [target, setTarget] = useState<AddFlowTarget | null>(null)
+  const [target, setTarget] = useState<AddFlowTarget | null>(initialTarget ?? null)
   const [stepHistory, setStepHistory] = useState<AddFlowStep[]>([])
 
   const pushStep = useCallback((next: AddFlowStep) => {

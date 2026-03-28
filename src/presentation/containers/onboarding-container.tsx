@@ -25,7 +25,7 @@ const SEED_RESTAURANTS: Record<string, Array<{ id: string; name: string; genre: 
     { id: 'seed-1', name: '을지면옥', genre: '한식', area: '을지로', address: null, thumbnailUrl: null },
     { id: 'seed-2', name: '스시코우지', genre: '일식', area: '을지로', address: null, thumbnailUrl: null },
     { id: 'seed-3', name: '을지다락', genre: '카페', area: '을지로', address: null, thumbnailUrl: null },
-    { id: 'seed-4', name: '을지OB맥주', genre: '주점', area: '을지로', address: null, thumbnailUrl: null },
+    { id: 'seed-4', name: '을지OB맥주', genre: '바/주점', area: '을지로', address: null, thumbnailUrl: null },
   ],
   광화문: [
     { id: 'seed-5', name: '토속촌삼계탕', genre: '한식', area: '광화문', address: null, thumbnailUrl: null },

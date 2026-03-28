@@ -67,7 +67,7 @@ export function PairingGrid({
               style={{
                 border: `1.5px solid ${isSelected ? 'var(--accent-wine)' : 'var(--border)'}`,
                 borderRadius: '10px',
-                backgroundColor: isSelected ? 'color-mix(in srgb, var(--accent-wine) 8%, transparent)' : 'var(--bg-card)',
+                backgroundColor: isSelected ? 'var(--accent-wine-light)' : 'var(--bg-card)',
               }}
               onClick={() => toggleCategory(cat.value)}
             >
@@ -88,7 +88,7 @@ export function PairingGrid({
               )}
               {(() => {
                 const Icon = PAIRING_ICON_MAP[cat.icon]
-                return Icon ? <Icon size={22} style={{ marginBottom: '2px', color: isSelected ? 'var(--accent-wine)' : 'var(--text-sub)' }} /> : null
+                return Icon ? <Icon size={22} style={{ marginBottom: '2px', color: isSelected ? 'var(--accent-wine)' : 'var(--text)' }} /> : null
               })()}
               <span
                 style={{
@@ -121,7 +121,7 @@ export function PairingGrid({
           type="text"
           value={customInput ?? ''}
           onChange={(e) => onCustomInputChange(e.target.value)}
-          placeholder="직접 입력 (예: 그릴 채소, 트러플 리조또)"
+          placeholder="직접 입력 (예: 트러플 리조또)"
           className="mt-2 w-full"
           style={{
             padding: '10px 14px',

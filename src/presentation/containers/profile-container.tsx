@@ -1,17 +1,55 @@
 'use client'
 
-import { useAuth } from '@/presentation/providers/auth-provider'
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useProfile } from '@/application/hooks/use-profile'
-import { useXp } from '@/application/hooks/use-xp'
+import { getLevel } from '@/domain/services/xp-calculator'
+import type { UserExperience } from '@/domain/entities/xp'
 import { ProfileHeader } from '@/presentation/components/profile/profile-header'
 import { TasteIdentityCard } from '@/presentation/components/profile/taste-identity-card'
+import { TotalLevelCard } from '@/presentation/components/profile/total-level-card'
+import { OverviewGrid } from '@/presentation/components/profile/overview-grid'
+import { ActivityHeatmap } from '@/presentation/components/profile/activity-heatmap'
+import { RecentXpList } from '@/presentation/components/profile/recent-xp-list'
+import { StatTabs } from '@/presentation/components/profile/stat-tabs'
+import { LevelList } from '@/presentation/components/profile/level-list'
+import { LevelDetailSheet } from '@/presentation/components/profile/level-detail-sheet'
 
 export function ProfileContainer() {
-  const { user: authUser } = useAuth()
-  const { user, isLoading: profileLoading } = useProfile(authUser?.id ?? null)
-  const { levelInfo, isLoading: xpLoading } = useXp(authUser?.id ?? null)
+  const router = useRouter()
+  const { profile, experiences, recentXp, activitySummary, heatmapData, thresholds, isLoading } = useProfile()
 
-  if (profileLoading || xpLoading) {
+  // 상태
+  const [activeStatTab, setActiveStatTab] = useState<'food' | 'wine'>('food')
+  const [foodMiniTab, setFoodMiniTab] = useState<'region' | 'genre'>('region')
+  const [wineMiniTab, setWineMiniTab] = useState<'origin' | 'grape'>('origin')
+  const [levelDetailOpen, setLevelDetailOpen] = useState(false)
+  const [selectedExperience, setSelectedExperience] = useState<UserExperience | null>(null)
+
+  // 레벨 산출
+  const levelInfo = useMemo(() => {
+    if (!profile || !thresholds || thresholds.length === 0) return null
+    return getLevel(profile.totalXp, thresholds)
+  }, [profile, thresholds])
+
+  // 경험치 그룹핑
+  const groupedExperiences = useMemo(() => {
+    if (!experiences) return null
+    return {
+      area: experiences.filter((e) => e.axisType === 'area'),
+      genre: experiences.filter((e) => e.axisType === 'genre'),
+      wineRegion: experiences.filter((e) => e.axisType === 'wine_region'),
+      wineVariety: experiences.filter((e) => e.axisType === 'wine_variety'),
+      category: experiences.filter((e) => e.axisType === 'category'),
+    }
+  }, [experiences])
+
+  const handleLevelItemPress = (exp: UserExperience) => {
+    setSelectedExperience(exp)
+    setLevelDetailOpen(true)
+  }
+
+  if (isLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-food)] border-t-transparent" />
@@ -19,7 +57,7 @@ export function ProfileContainer() {
     )
   }
 
-  if (!user) {
+  if (!profile) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <p style={{ color: 'var(--text-hint)' }}>로그인이 필요합니다</p>
@@ -27,25 +65,116 @@ export function ProfileContainer() {
     )
   }
 
+  // 현재 탭의 경험치 목록
+  const currentLevelExperiences =
+    activeStatTab === 'food'
+      ? foodMiniTab === 'region'
+        ? groupedExperiences?.area ?? []
+        : groupedExperiences?.genre ?? []
+      : wineMiniTab === 'origin'
+        ? groupedExperiences?.wineRegion ?? []
+        : groupedExperiences?.wineVariety ?? []
+
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)] pb-20">
+    <div className="flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
+      {/* 프로필 헤더 */}
       <ProfileHeader
-        nickname={user.nickname}
-        handle={user.handle ?? null}
-        avatarUrl={user.avatar_url ?? null}
-        avatarColor={user.avatar_color ?? null}
-        bio={user.bio ?? null}
-        level={levelInfo}
-        recordCount={user.record_count}
-        followerCount={user.follower_count}
-        followingCount={user.following_count}
+        profile={profile}
+        level={levelInfo?.level ?? 1}
+        levelColor={levelInfo?.color ?? '#7EAE8B'}
       />
 
+      {/* 맛 정체성 카드 */}
       <TasteIdentityCard
-        tasteSummary={user.taste_summary ?? null}
-        tasteTags={user.taste_tags ?? null}
-        recordCount={user.record_count}
+        tasteSummary={profile.tasteSummary}
+        tasteTags={profile.tasteTags}
+        recordCount={profile.recordCount}
+        onSharePress={() => router.push('/profile/wrapped')}
+      />
+
+      {/* Activity Section */}
+      {levelInfo && (
+        <TotalLevelCard
+          level={levelInfo.level}
+          title={levelInfo.title}
+          color={levelInfo.color}
+          totalXp={profile.totalXp}
+          nextLevelXp={levelInfo.nextLevelXp}
+          progress={levelInfo.progress}
+        />
+      )}
+
+      {activitySummary && <OverviewGrid summary={activitySummary} />}
+
+      {heatmapData && <ActivityHeatmap data={heatmapData} />}
+
+      {recentXp && recentXp.length > 0 && <RecentXpList items={recentXp} />}
+
+      {/* Stat Tabs */}
+      <StatTabs />
+
+      {/* Level Section (mini tabs + level list) */}
+      {thresholds && thresholds.length > 0 && (
+        <div className="mx-4">
+          {/* Mini tabs */}
+          <div className="mb-3 flex gap-2">
+            {activeStatTab === 'food' ? (
+              <>
+                <MiniTab label="지역" active={foodMiniTab === 'region'} onClick={() => setFoodMiniTab('region')} />
+                <MiniTab label="장르" active={foodMiniTab === 'genre'} onClick={() => setFoodMiniTab('genre')} />
+              </>
+            ) : (
+              <>
+                <MiniTab label="산지" active={wineMiniTab === 'origin'} onClick={() => setWineMiniTab('origin')} />
+                <MiniTab label="품종" active={wineMiniTab === 'grape'} onClick={() => setWineMiniTab('grape')} />
+              </>
+            )}
+          </div>
+
+          <LevelList
+            experiences={currentLevelExperiences}
+            thresholds={thresholds}
+            category={activeStatTab === 'food' ? 'restaurant' : 'wine'}
+            onItemPress={handleLevelItemPress}
+          />
+        </div>
+      )}
+
+      {/* Level Detail Sheet */}
+      <LevelDetailSheet
+        isOpen={levelDetailOpen}
+        axisType={selectedExperience?.axisType ?? null}
+        axisValue={selectedExperience?.axisValue ?? null}
+        data={{
+          experience: selectedExperience,
+          levelInfo: selectedExperience && thresholds
+            ? getLevel(selectedExperience.totalXp, thresholds)
+            : null,
+        }}
+        onClose={() => {
+          setLevelDetailOpen(false)
+          setSelectedExperience(null)
+        }}
       />
     </div>
+  )
+}
+
+function MiniTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full px-3 py-1 transition-colors"
+      style={{
+        fontSize: '12px',
+        fontWeight: active ? 700 : 500,
+        backgroundColor: active ? 'var(--accent-food)' : 'var(--bg-card)',
+        color: active ? '#FFFFFF' : 'var(--text-sub)',
+        border: active ? 'none' : '1px solid var(--border)',
+      }}
+    >
+      {label}
+    </button>
   )
 }

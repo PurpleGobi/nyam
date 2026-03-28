@@ -23,8 +23,7 @@ export function AIResultDisplay({
         <button
           type="button"
           onClick={onSearchFallback}
-          className="mt-4 rounded-xl bg-[var(--accent-food)] px-6 py-3 text-[14px] font-semibold"
-          style={{ color: '#FFFFFF' }}
+          className="mt-4 rounded-xl bg-[var(--accent-food)] px-6 py-3 text-[14px] font-semibold text-white"
         >
           직접 검색하기
         </button>
@@ -47,9 +46,9 @@ export function AIResultDisplay({
             <button
               type="button"
               onClick={() => onSelect(candidate.restaurantId)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3.5 transition-colors hover:bg-[color-mix(in_srgb,var(--accent-food)_8%,transparent)]"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3.5 transition-colors hover:bg-[var(--accent-food-light)]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--accent-food)_10%,transparent)]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-food-light)]">
                 <UtensilsCrossed size={18} className="text-[var(--accent-food)]" />
               </div>
               <div className="min-w-0 flex-1 text-left">

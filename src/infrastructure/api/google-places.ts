@@ -4,26 +4,33 @@
 export interface GooglePlacesResult {
   name: string
   address: string
-  lat: number
-  lng: number
+  lat: number | null
+  lng: number | null
   rating: number | null
   googlePlaceId: string
 }
 
-export async function searchGooglePlaces(query: string, lat?: number, lng?: number): Promise<GooglePlacesResult[]> {
+export async function searchGooglePlaces(
+  query: string,
+  lat?: number,
+  lng?: number,
+  options?: { radius?: number; maxResults?: number },
+): Promise<GooglePlacesResult[]> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) return []
 
-  const params = new URLSearchParams({ input: query, inputtype: 'textquery', key: apiKey, language: 'ko' })
+  const radius = options?.radius ?? 20000
+  const maxResults = options?.maxResults ?? 5
+
+  const body: Record<string, unknown> = { textQuery: query, maxResultCount: maxResults, languageCode: 'ko' }
   if (lat && lng) {
-    params.set('locationbias', `circle:2000@${lat},${lng}`)
+    body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius } }
   }
-  params.set('fields', 'places.displayName,places.formattedAddress,places.location,places.rating,places.id')
 
   const response = await fetch(`https://places.googleapis.com/v1/places:searchText`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey },
-    body: JSON.stringify({ textQuery: query, maxResultCount: 5, languageCode: 'ko' }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) return []
@@ -35,8 +42,8 @@ export async function searchGooglePlaces(query: string, lat?: number, lng?: numb
     return {
       name: name?.text ?? '',
       address: (p.formattedAddress as string) ?? '',
-      lat: loc?.latitude ?? 0,
-      lng: loc?.longitude ?? 0,
+      lat: loc?.latitude ?? null,
+      lng: loc?.longitude ?? null,
       rating: (p.rating as number) ?? null,
       googlePlaceId: (p.id as string) ?? '',
     }

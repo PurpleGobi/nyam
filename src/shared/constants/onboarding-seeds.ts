@@ -85,7 +85,7 @@ export const SEED_RESTAURANTS = {
   광화문: [
     { id: 'seed-r-010', name: '토속촌', genre: '한식', address: '광화문' },
     { id: 'seed-r-011', name: '광화문미진', genre: '한식', address: '광화문' },
-    { id: 'seed-r-012', name: '정식당', genre: '파인다이닝', address: '광화문' },
+    { id: 'seed-r-012', name: '정식당', genre: '프렌치', address: '광화문' },
   ],
   성수: [
     { id: 'seed-r-020', name: '도토리', genre: '일식', address: '성수동' },
@@ -98,7 +98,7 @@ export const SEED_RESTAURANTS = {
     { id: 'seed-r-032', name: '리베', genre: '이탈리안', address: '신사동' },
   ],
   홍대: [
-    { id: 'seed-r-040', name: '키친크래프트', genre: '양식', address: '홍대입구' },
+    { id: 'seed-r-040', name: '키친크래프트', genre: '이탈리안', address: '홍대입구' },
     { id: 'seed-r-041', name: '제순식당', genre: '한식', address: '연남동' },
     { id: 'seed-r-042', name: '메이사스', genre: '멕시칸', address: '상수동' },
   ],

@@ -7,7 +7,14 @@ export interface NaverLocalResult {
   lat: number
   lng: number
   category: string | null
+  phone: string | null
   naverId: string | null
+}
+
+/** 네이버 link URL에서 place ID 추출 (예: /restaurant/1234 → "1234") */
+function extractNaverIdFromLink(link: string): string | null {
+  const match = link.match(/\/(\d+)(?:\?|$)/)
+  return match ? match[1] : null
 }
 
 export async function searchNaverLocal(query: string): Promise<NaverLocalResult[]> {
@@ -33,6 +40,7 @@ export async function searchNaverLocal(query: string): Promise<NaverLocalResult[
     lat: Number(item.mapy) / 1e7,
     lng: Number(item.mapx) / 1e7,
     category: (item.category as string) || null,
-    naverId: null,
+    phone: (item.telephone as string) || null,
+    naverId: extractNaverIdFromLink(String(item.link ?? '')),
   }))
 }

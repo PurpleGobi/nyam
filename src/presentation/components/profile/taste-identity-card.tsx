@@ -4,12 +4,12 @@ import { Share2, Sparkles } from 'lucide-react'
 
 interface TasteIdentityCardProps {
   tasteSummary: string | null
-  tasteTags: string[] | null
-  recordCount?: number
-  onShare?: () => void
+  tasteTags: string[]
+  recordCount: number
+  onSharePress: () => void
 }
 
-export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShare }: TasteIdentityCardProps) {
+export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onSharePress }: TasteIdentityCardProps) {
   if (!tasteSummary && (!tasteTags || tasteTags.length === 0)) {
     return (
       <div className="mx-4 rounded-xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -46,8 +46,8 @@ export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShar
             <Sparkles size={10} /> {recordCount}개 기록 기반
           </span>
         )}
-        {onShare && (
-          <button type="button" onClick={onShare} className="flex items-center gap-1" style={{ fontSize: '12px', color: 'var(--accent-food)' }}>
+        {onSharePress && (
+          <button type="button" onClick={onSharePress} className="flex items-center gap-1" style={{ fontSize: '12px', color: 'var(--accent-food)' }}>
             <Share2 size={12} /> 공유
           </button>
         )}

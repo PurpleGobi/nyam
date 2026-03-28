@@ -45,168 +45,36 @@
 
 ### 1. `src/shared/utils/exif-parser.ts`
 
-**브라우저 환경에서 File 객체의 EXIF 메타데이터 파싱.** piexifjs 대신 자체 바이너리 파싱으로 외부 의존 최소화.
+**브라우저 환경에서 File 객체의 EXIF 메타데이터 파싱.** 외부 라이브러리 없이 자체 바이너리 파싱으로 구현 완료.
+
+> **설계 변경 사항**: 초기 설계에서는 `parseTiffIfd`가 TODO 스켈레톤이었으나, 실제 구현에서는 외부 라이브러리 없이 완전히 구현됨.
+> 내부 함수명도 단순화: `extractExifFromBuffer` → `parseExifBuffer`, `parseTiffIfd` → `parseTiff`, `dmsToDecimal` private화.
+> `extractExifFromFile`은 FileReader 대신 `file.arrayBuffer()` 사용 (더 현대적).
 
 ```typescript
-// src/shared/utils/exif-parser.ts
+// src/shared/utils/exif-parser.ts (실제 구현 시그니처)
 
-/** EXIF 파싱 결과 */
 export interface ExifData {
-  /** GPS 좌표 */
-  gps: {
-    latitude: number
-    longitude: number
-  } | null
-  /** 촬영 시각 (ISO string) */
+  gps: { latitude: number; longitude: number } | null
   capturedAt: string | null
-  /** 원본 EXIF에 GPS 정보가 존재하는지 */
   hasGps: boolean
 }
 
-/**
- * File 객체에서 EXIF 메타데이터 추출
- * GPS 좌표 + 촬영 시각만 추출 (최소 파싱)
- */
-export async function parseExifFromFile(file: File): Promise<ExifData> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
+/** File 객체에서 EXIF 추출 */
+export async function extractExifFromFile(file: File): Promise<ExifData>
 
-    reader.onload = () => {
-      try {
-        const arrayBuffer = reader.result as ArrayBuffer
-        const result = extractExifFromBuffer(arrayBuffer)
-        resolve(result)
-      } catch {
-        resolve({ gps: null, capturedAt: null, hasGps: false })
-      }
-    }
+/** base64 문자열에서 EXIF 추출 */
+export async function parseExifFromBase64(base64: string): Promise<ExifData>
 
-    reader.onerror = () => {
-      resolve({ gps: null, capturedAt: null, hasGps: false })
-    }
+// 내부 함수 (private):
+// parseExifBuffer(buffer: ArrayBuffer): ExifData
+// parseTiff(view: DataView, tiffOffset: number, le: boolean): {...}
+// dmsToDecimal(d: number, m: number, s: number, ref: string): number
+```
 
-    reader.readAsArrayBuffer(file)
-  })
-}
-
-/**
- * base64 문자열에서 EXIF 추출
- */
-export async function parseExifFromBase64(base64: string): Promise<ExifData> {
-  try {
-    const binaryStr = atob(base64)
-    const bytes = new Uint8Array(binaryStr.length)
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i)
-    }
-    return extractExifFromBuffer(bytes.buffer)
-  } catch {
-    return { gps: null, capturedAt: null, hasGps: false }
-  }
-}
-
-/**
- * ArrayBuffer에서 EXIF GPS + DateTimeOriginal 추출
- * JPEG EXIF IFD 바이너리 파싱 (최소 구현)
- */
-function extractExifFromBuffer(buffer: ArrayBuffer): ExifData {
-  const view = new DataView(buffer)
-  let offset = 0
-
-  // JPEG SOI 마커 확인 (0xFFD8)
-  if (view.getUint16(0) !== 0xFFD8) {
-    return { gps: null, capturedAt: null, hasGps: false }
-  }
-  offset = 2
-
-  let gpsLatitude: number | null = null
-  let gpsLongitude: number | null = null
-  let capturedAt: string | null = null
-
-  // APP1 마커 (0xFFE1) 탐색
-  while (offset < view.byteLength - 2) {
-    const marker = view.getUint16(offset)
-
-    if (marker === 0xFFE1) {
-      // EXIF 데이터 발견
-      const length = view.getUint16(offset + 2)
-      const exifOffset = offset + 4
-
-      // "Exif\0\0" 시그니처 확인
-      if (
-        view.getUint8(exifOffset) === 0x45 &&  // E
-        view.getUint8(exifOffset + 1) === 0x78 && // x
-        view.getUint8(exifOffset + 2) === 0x69 && // i
-        view.getUint8(exifOffset + 3) === 0x66    // f
-      ) {
-        const tiffOffset = exifOffset + 6
-        const isLittleEndian = view.getUint16(tiffOffset) === 0x4949
-
-        // IFD0 파싱 → GPS IFD 오프셋, DateTimeOriginal 추출
-        const parsed = parseTiffIfd(view, tiffOffset, isLittleEndian)
-        gpsLatitude = parsed.latitude
-        gpsLongitude = parsed.longitude
-        capturedAt = parsed.dateTimeOriginal
-      }
-
-      break  // 첫 번째 EXIF 블록만 처리
-    }
-
-    // 다음 마커로 이동
-    if ((marker & 0xFF00) === 0xFF00) {
-      offset += 2 + view.getUint16(offset + 2)
-    } else {
-      break
-    }
-  }
-
-  const hasGps = gpsLatitude !== null && gpsLongitude !== null
-
-  return {
-    gps: (hasGps && gpsLatitude !== null && gpsLongitude !== null)
-      ? { latitude: gpsLatitude, longitude: gpsLongitude }
-      : null,
-    capturedAt,
-    hasGps,
-  }
-}
-
-/** 간략화된 TIFF IFD 파싱 (GPS + DateTimeOriginal만 추출) */
-function parseTiffIfd(
-  view: DataView,
-  tiffOffset: number,
-  isLittleEndian: boolean
-): { latitude: number | null; longitude: number | null; dateTimeOriginal: string | null } {
-  // 실제 구현에서는 TIFF IFD 구조를 따라
-  // Tag 0x8825 (GPSInfo) → GPS IFD → Tag 0x0002 (GPSLatitude), 0x0004 (GPSLongitude)
-  // Tag 0x8769 (ExifIFD) → Tag 0x9003 (DateTimeOriginal)
-  // 를 바이너리 파싱합니다.
-  //
-  // 이 부분은 구현 시 piexifjs 또는 exif-reader 라이브러리 사용을 권장합니다.
-  // 아래는 라이브러리 없는 최소 구현 스켈레톤입니다.
-
-  // TODO: S3 구현 시 piexifjs 의존성 추가 또는 자체 바이너리 파싱 완성
-  // 현재는 null 반환 (런타임에서 라이브러리 로드)
-  return {
-    latitude: null,
-    longitude: null,
-    dateTimeOriginal: null,
-  }
-}
-
-/**
- * DMS (도/분/초) → DD (소수점) 변환
- * EXIF GPS 좌표는 DMS 형식으로 저장됨
- */
-export function dmsToDecimal(
-  degrees: number,
-  minutes: number,
-  seconds: number,
-  ref: 'N' | 'S' | 'E' | 'W'
-): number {
-  const decimal = degrees + minutes / 60 + seconds / 3600
-  return ref === 'S' || ref === 'W' ? -decimal : decimal
-}
+// 내부 구현: JPEG SOI(0xFFD8) → APP1(0xFFE1) → TIFF IFD 파싱 → GPS/DateTimeOriginal 추출
+// 실제 코드: parseExifBuffer(), parseTiff(), dmsToDecimal() — 외부 라이브러리 없이 완전 구현
+// 상세 구현은 src/shared/utils/exif-parser.ts 참조
 ```
 
 ### 2. `src/domain/services/exif-validator.ts`
@@ -227,7 +95,11 @@ export interface ExifValidationResult {
   daysSinceCaptured: number | null
   /** 1개월(30일) 이상 된 사진인지 */
   isOldPhoto: boolean
-  /** 경고 메시지 (1개월+ 사진일 때) */
+  /** 경고 메시지 (7일+ 사진일 때)
+   * - 30일 이상: "N개월 전 사진이네요"
+   * - 7~29일: "N일 전 사진이네요"
+   * - 7일 미만: null
+   */
   warningMessage: string | null
 }
 
@@ -240,115 +112,29 @@ export interface ExifValidationResult {
  * @param targetLng 식당/와인바 경도
  * @param capturedAt 사진 촬영 시각 (ISO string)
  */
-export function validateExif(params: {
-  photoGps: { latitude: number; longitude: number } | null
-  targetLat: number | null
-  targetLng: number | null
-  capturedAt: string | null
-  now?: Date
-}): ExifValidationResult {
-  const { photoGps, targetLat, targetLng, capturedAt, now = new Date() } = params
-
-  // GPS 없음
-  if (!photoGps) {
-    return {
-      hasGps: false,
-      isWithinRadius: false,
-      daysSinceCaptured: calculateDaysSince(capturedAt, now),
-      isOldPhoto: isPhotoOlderThanDays(capturedAt, 30, now),
-      warningMessage: generateWarningMessage(capturedAt, now),
-    }
-  }
-
-  // 식당 좌표 없음 (DB에 lat/lng 미등록)
-  if (targetLat === null || targetLng === null) {
-    return {
-      hasGps: true,
-      isWithinRadius: false,
-      daysSinceCaptured: calculateDaysSince(capturedAt, now),
-      isOldPhoto: isPhotoOlderThanDays(capturedAt, 30, now),
-      warningMessage: generateWarningMessage(capturedAt, now),
-    }
-  }
-
-  // 거리 계산 (Haversine)
-  const distanceMeters = haversineDistance(
-    photoGps.latitude,
-    photoGps.longitude,
-    targetLat,
-    targetLng
-  )
-
-  // 반경 200m 이내 판정
-  const RADIUS_METERS = 200
-  const isWithinRadius = distanceMeters <= RADIUS_METERS
-
-  return {
-    hasGps: true,
-    isWithinRadius,
-    daysSinceCaptured: calculateDaysSince(capturedAt, now),
-    isOldPhoto: isPhotoOlderThanDays(capturedAt, 30, now),
-    warningMessage: generateWarningMessage(capturedAt, now),
-  }
-}
-
-/**
- * Haversine 거리 계산 (미터)
- */
-function haversineDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371000 // 지구 반경 (m)
-  const dLat = toRadians(lat2 - lat1)
-  const dLng = toRadians(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function toRadians(degrees: number): number {
-  return degrees * (Math.PI / 180)
-}
-
-/**
- * 촬영일~현재 경과 일수
- */
-function calculateDaysSince(capturedAt: string | null, now: Date): number | null {
-  if (!capturedAt) return null
-  const captured = new Date(capturedAt)
-  if (isNaN(captured.getTime())) return null
-  const diffMs = now.getTime() - captured.getTime()
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24))
-}
-
-/**
- * 사진이 N일 이상 된 것인지
- */
-function isPhotoOlderThanDays(
+export function validateExifGps(
+  photoGps: { latitude: number; longitude: number } | null,
+  targetLat: number | null,
+  targetLng: number | null,
   capturedAt: string | null,
-  days: number,
-  now: Date
-): boolean {
-  const daysSince = calculateDaysSince(capturedAt, now)
-  if (daysSince === null) return false
-  return daysSince >= days
+  radiusMeters: number = 200,
+): ExifValidationResult {
+  const now = new Date()
+
+  // GPS 없음 → hasGps: false 반환
+  // 식당 좌표 없음 → hasGps: true, isWithinRadius: false
+  // 거리 계산 (Haversine) → 반경 200m 이내 판정
+  // daysSinceCaptured, isOldPhoto, warningMessage 모두 인라인 계산
+  // 상세 구현: src/domain/services/exif-validator.ts 참조
 }
 
-/**
- * SEARCH_REGISTER.md §8: "N개월 전 사진이네요"
- */
-function generateWarningMessage(capturedAt: string | null, now: Date): string | null {
-  const daysSince = calculateDaysSince(capturedAt, now)
-  if (daysSince === null || daysSince < 30) return null
-
-  const months = Math.floor(daysSince / 30)
-  if (months < 1) return null
-  return `${months}개월 전 사진이네요`
-}
+// 내부 함수: haversineDistance(), daysSinceCaptured/isOldPhoto/warningMessage (인라인 계산)
+// 설계 변경: 보조 함수(toRadians, calculateDaysSince, isPhotoOlderThanDays, generateWarningMessage)는
+// 실제 구현에서 validateExifGps() 내부에 인라인 처리됨.
+// 경고 메시지 분기:
+//   daysSinceCaptured >= 30 → "N개월 전 사진이네요" (Math.floor(days / 30)개월)
+//   daysSinceCaptured >= 7  → "N일 전 사진이네요"
+//   그 외 → warningMessage: null
 ```
 
 ### 3. XP 계산 — S6 위임
@@ -377,7 +163,8 @@ function generateWarningMessage(capturedAt: string | null, now: Date): string | 
 │  │   })
 │  │   ├─ isWithinRadius=true → records.is_exif_verified=true
 │  │   ├─ isWithinRadius=false → records.is_exif_verified=false (사진 XP는 정상)
-│  │   ├─ isOldPhoto=true → 경고 "N개월 전 사진이네요"
+│  │   ├─ warningMessage 있음 → record-flow-container의 exifWarning state에 저장
+│  │   │     → RecordSuccess 컴포넌트에 prop으로 전달하여 화면에 표시
 │  │   └─ hasGps=false → records.has_exif_gps=false
 │  │
 │  └─ records INSERT:
@@ -404,7 +191,9 @@ function generateWarningMessage(capturedAt: string | null, now: Date): string | 
 □ 반경 200m 판정: haversineDistance 정확도 검증
 □ is_exif_verified=true: GPS 존재 + 반경 200m 이내
 □ is_exif_verified=false: GPS 없음 or 불일치 (사진 XP는 정상)
-□ 1개월+ 사진: "N개월 전 사진이네요" 경고 메시지
+□ 30일+ 사진: "N개월 전 사진이네요" 경고 메시지
+□ 7~29일 사진: "N일 전 사진이네요" 경고 메시지
+□ record-flow-container: validation.warningMessage → exifWarning state → RecordSuccess에 전달
 □ TypeScript strict: any/as any/@ts-ignore/! 0개
 □ 단위 테스트: validateExif 각 케이스
 ```

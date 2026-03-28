@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Search, X } from 'lucide-react'
 
 interface SearchBarProps {
@@ -11,14 +12,17 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ value, onChange, placeholder, variant, autoFocus }: SearchBarProps) {
-  const focusColor = variant === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const [focused, setFocused] = useState(false)
+
+  const focusRingClass = variant === 'restaurant'
+    ? 'border-[var(--accent-food)]'
+    : 'border-[var(--accent-wine)]'
 
   return (
     <div
-      className="mx-4 flex items-center gap-2 rounded-xl border bg-[var(--bg-card)] px-4 py-3 transition-colors"
-      style={{ borderColor: 'var(--border)', '--focus-color': focusColor } as React.CSSProperties}
-      onFocusCapture={(e) => { e.currentTarget.style.borderColor = focusColor }}
-      onBlurCapture={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+      className={`mx-4 flex items-center gap-2 rounded-xl border bg-[var(--bg-card)] px-4 py-3 transition-colors ${
+        focused ? focusRingClass : 'border-[var(--border)]'
+      }`}
     >
       <Search size={18} className="shrink-0 text-[var(--text-hint)]" />
       <input
@@ -27,6 +31,8 @@ export function SearchBar({ value, onChange, placeholder, variant, autoFocus }: 
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         className="min-w-0 flex-1 bg-transparent text-[14px] text-[var(--text)] outline-none placeholder:text-[var(--text-hint)]"
       />
       {value.length > 0 && (

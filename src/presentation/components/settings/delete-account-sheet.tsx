@@ -1,15 +1,23 @@
 'use client'
 
-import { useEffect } from 'react'
-import { X, AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, AlertTriangle, EyeOff, Trash2 } from 'lucide-react'
+import type { DeleteMode } from '@/domain/entities/settings'
 
 interface DeleteAccountSheetProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (mode: DeleteMode) => void
 }
 
+const DELETE_OPTIONS: { mode: DeleteMode; icon: typeof EyeOff; title: string; desc: string }[] = [
+  { mode: 'anonymize', icon: EyeOff, title: '익명화', desc: '기록은 남기되 개인정보를 삭제합니다' },
+  { mode: 'hard_delete', icon: Trash2, title: '완전 삭제', desc: '모든 데이터를 영구 삭제합니다' },
+]
+
 export function DeleteAccountSheet({ isOpen, onClose, onConfirm }: DeleteAccountSheetProps) {
+  const [selectedMode, setSelectedMode] = useState<DeleteMode>('anonymize')
+
   useEffect(() => {
     if (!isOpen) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -31,18 +39,23 @@ export function DeleteAccountSheet({ isOpen, onClose, onConfirm }: DeleteAccount
       {/* Sheet */}
       <div
         className="fixed inset-x-0 bottom-0 z-[200] flex flex-col rounded-t-2xl"
-        style={{
-          backgroundColor: 'var(--bg-elevated)',
-          animation: 'slide-up 0.25s ease',
-        }}
+        style={{ maxHeight: '75%', backgroundColor: 'var(--bg-elevated)', animation: 'slide-up 0.25s ease' }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-2 pb-1">
           <div className="h-1 w-10 rounded-full" style={{ backgroundColor: 'var(--border-bold)' }} />
         </div>
 
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>계정 삭제</h2>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--bg)' }}>
+            <X size={16} style={{ color: 'var(--text-sub)' }} />
+          </button>
+        </div>
+
         {/* Content */}
-        <div className="px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
           <div className="flex flex-col items-center">
             <div
               className="flex h-12 w-12 items-center justify-center rounded-full"
@@ -51,55 +64,76 @@ export function DeleteAccountSheet({ isOpen, onClose, onConfirm }: DeleteAccount
               <AlertTriangle size={24} style={{ color: 'var(--negative)' }} />
             </div>
 
-            <h2 className="mt-4" style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>
-              계정을 삭제하시겠습니까?
-            </h2>
-
-            <p className="mt-2 text-center" style={{ fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
-              계정 삭제를 요청하면 <strong style={{ color: 'var(--negative)' }}>30일의 유예기간</strong> 후
-              모든 데이터가 영구 삭제됩니다.
+            <p className="mt-3 text-center" style={{ fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
+              삭제를 요청하면 30일간 복구 가능합니다. 30일 후 선택한 모드에 따라 처리됩니다.
             </p>
+          </div>
 
-            <div
-              className="mt-4 w-full rounded-xl px-4 py-3"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--negative) 5%, transparent)' }}
-            >
-              <ul className="flex flex-col gap-1.5" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
-                <li>- 30일 내 재로그인 시 삭제가 취소됩니다</li>
-                <li>- 모든 기록, 경험치, 버블 데이터가 삭제됩니다</li>
-                <li>- 삭제된 데이터는 복구할 수 없습니다</li>
-              </ul>
-            </div>
+          {/* Mode selection */}
+          <div className="mt-4 flex flex-col gap-3">
+            {DELETE_OPTIONS.map((opt) => {
+              const isSelected = selectedMode === opt.mode
+              return (
+                <button
+                  key={opt.mode}
+                  type="button"
+                  onClick={() => setSelectedMode(opt.mode)}
+                  className="flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors"
+                  style={{
+                    border: `2px solid ${isSelected ? 'var(--negative)' : 'var(--border)'}`,
+                    backgroundColor: isSelected ? 'color-mix(in srgb, var(--negative) 5%, transparent)' : 'var(--bg-card)',
+                  }}
+                >
+                  <div
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `color-mix(in srgb, var(--negative) 15%, transparent)` }}
+                  >
+                    <opt.icon size={16} style={{ color: 'var(--negative)' }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{opt.title}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-hint)', marginTop: '2px' }}>{opt.desc}</p>
+                  </div>
+                  {/* Radio indicator */}
+                  <div className="ml-auto mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ border: `2px solid ${isSelected ? 'var(--negative)' : 'var(--border)'}` }}>
+                    {isSelected && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--negative)' }} />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Info box */}
+          <div
+            className="mt-4 rounded-xl px-4 py-3"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--negative) 5%, transparent)' }}
+          >
+            <ul className="flex flex-col gap-1.5" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
+              <li>• 가입한 버블에서 자동 탈퇴됩니다</li>
+              <li>• 버블 owner인 경우 소유권 이전이 필요합니다</li>
+              <li>• 모든 팔로우/팔로워 관계가 삭제됩니다</li>
+              <li>• 소셜 로그인 연동이 해제됩니다</li>
+            </ul>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 px-4 pb-8">
+        <div className="flex gap-3 px-4 pb-8 pt-3">
           <button
             type="button"
             onClick={onClose}
             className="flex-1 rounded-xl py-3 text-center"
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              border: '1px solid var(--border)',
-              color: 'var(--text-sub)',
-            }}
+            style={{ fontSize: '15px', fontWeight: 600, border: '1px solid var(--border)', color: 'var(--text-sub)' }}
           >
             취소
           </button>
           <button
             type="button"
-            onClick={() => { onConfirm(); onClose() }}
+            onClick={() => onConfirm(selectedMode)}
             className="flex-1 rounded-xl py-3 text-center"
-            style={{
-              fontSize: '15px',
-              fontWeight: 700,
-              backgroundColor: 'var(--negative)',
-              color: '#FFFFFF',
-            }}
+            style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
           >
-            계정 삭제
+            계정 삭제 요청
           </button>
         </div>
       </div>

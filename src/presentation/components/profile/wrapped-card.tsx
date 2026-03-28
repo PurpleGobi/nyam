@@ -1,6 +1,6 @@
 'use client'
 
-import { Utensils, Wine, MapPin, Grape, Star, Flame, CalendarDays } from 'lucide-react'
+import { Award } from 'lucide-react'
 import type { WrappedData, WrappedCategory } from '@/domain/entities/profile'
 
 interface WrappedCardProps {
@@ -13,7 +13,7 @@ export function WrappedCard({ category, data }: WrappedCardProps) {
 
   return (
     <div
-      className="mx-4 flex flex-col gap-3 rounded-2xl px-4 py-4"
+      className="mx-4 flex flex-col gap-4 rounded-2xl px-4 py-4"
       style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       {/* Header */}
@@ -21,65 +21,76 @@ export function WrappedCard({ category, data }: WrappedCardProps) {
         <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)' }}>
           나의 기록 요약
         </span>
-        <span
-          className="rounded-full px-2 py-0.5"
-          style={{ fontSize: '11px', fontWeight: 600, backgroundColor: `${accentColor}15`, color: accentColor }}
+      </div>
+
+      {/* Level */}
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{ backgroundColor: `${accentColor}15` }}
         >
-          {data.totalRecords}건
-        </span>
+          <Award size={18} style={{ color: accentColor }} />
+        </div>
+        <div>
+          <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+            Lv.{data.level.level} {data.level.title}
+          </p>
+          {data.level.axisLabel && (
+            <p style={{ fontSize: '12px', color: 'var(--text-hint)' }}>{data.level.axisLabel}</p>
+          )}
+        </div>
       </div>
 
-      {/* Stat rows */}
-      <div className="flex flex-col gap-2">
-        {(category === 'all' || category === 'restaurant') && data.topGenre && (
-          <StatRow icon={<Utensils size={14} />} label="자주 찾는 장르" value={data.topGenre} color="var(--accent-food)" />
-        )}
-        {(category === 'all' || category === 'restaurant') && data.topCity && (
-          <StatRow icon={<MapPin size={14} />} label="자주 찾는 지역" value={data.topCity} color="var(--accent-food)" />
-        )}
-        {(category === 'all' || category === 'wine') && data.topVarietal && (
-          <StatRow icon={<Grape size={14} />} label="자주 마신 품종" value={data.topVarietal} color="var(--accent-wine)" />
-        )}
-        {(category === 'all' || category === 'wine') && data.topCountry && (
-          <StatRow icon={<Wine size={14} />} label="자주 마신 국가" value={data.topCountry} color="var(--accent-wine)" />
-        )}
-        {data.avgSatisfaction > 0 && (
-          <StatRow icon={<Star size={14} />} label="평균 만족도" value={`${data.avgSatisfaction}점`} color="#C9A96E" />
-        )}
-        {data.streakDays > 0 && (
-          <StatRow icon={<Flame size={14} />} label="연속 기록" value={`${data.streakDays}일`} color="#E8637A" />
-        )}
-        {data.mostActiveMonth && (
-          <StatRow icon={<CalendarDays size={14} />} label="가장 활발한 달" value={data.mostActiveMonth} color="var(--text-sub)" />
-        )}
-      </div>
-    </div>
-  )
-}
+      {/* Stats */}
+      {data.stats.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {data.stats.map((stat) => (
+            <div key={stat.label} className="flex items-center justify-between">
+              <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>{stat.label}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{stat.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
-function StatRow({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  color: string
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: `${color}15`, color }}
-      >
-        {icon}
-      </div>
-      <div className="flex flex-1 items-center justify-between">
-        <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>{label}</span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{value}</span>
-      </div>
+      {/* Tags */}
+      {data.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {data.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full px-3 py-1"
+              style={{ fontSize: '12px', backgroundColor: `${accentColor}10`, color: accentColor }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Top Items */}
+      {data.topItems.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Top Picks</p>
+          {data.topItems.map((item) => (
+            <div key={item.rank} className="flex items-center gap-2">
+              <span
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                style={{ fontSize: '10px', fontWeight: 700, backgroundColor: `${accentColor}15`, color: accentColor }}
+              >
+                {item.rank}
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="truncate" style={{ fontSize: '13px', color: 'var(--text)' }}>{item.name}</span>
+                <span className="ml-1" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>{item.meta}</span>
+              </div>
+              {item.score > 0 && (
+                <span style={{ fontSize: '12px', fontWeight: 700, color: accentColor }}>{item.score}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

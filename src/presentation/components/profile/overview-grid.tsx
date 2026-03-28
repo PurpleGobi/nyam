@@ -1,6 +1,6 @@
 'use client'
 
-import { Utensils, Wine, Star, Flame } from 'lucide-react'
+import { Utensils, Wine, Star, TrendingUp } from 'lucide-react'
 import type { ActivitySummary } from '@/domain/entities/profile'
 
 interface OverviewGridProps {
@@ -14,10 +14,10 @@ const GRID_ITEMS: {
   color: string
   format: (v: number) => string
 }[] = [
-  { key: 'totalRestaurants', label: '식당', icon: Utensils, color: 'var(--accent-food)', format: (v) => `${v}곳` },
-  { key: 'totalWines', label: '와인', icon: Wine, color: 'var(--accent-wine)', format: (v) => `${v}병` },
+  { key: 'restaurantVisits', label: '식당 방문', icon: Utensils, color: 'var(--accent-food)', format: (v) => `${v}곳` },
+  { key: 'wineTastings', label: '와인 시음', icon: Wine, color: 'var(--accent-wine)', format: (v) => `${v}병` },
   { key: 'avgSatisfaction', label: '평균 만족도', icon: Star, color: '#C9A96E', format: (v) => v > 0 ? `${v}점` : '-' },
-  { key: 'currentStreak', label: '연속 기록', icon: Flame, color: '#E8637A', format: (v) => v > 0 ? `${v}일` : '-' },
+  { key: 'monthlyXp', label: '이번 달 XP', icon: TrendingUp, color: '#E8637A', format: (v) => `+${v}` },
 ]
 
 export function OverviewGrid({ summary }: OverviewGridProps) {

@@ -6,7 +6,7 @@ import { recordRepo } from '@/shared/di/container'
 
 export function useRecords(userId: string | null, targetType?: RecordTargetType) {
   const [records, setRecords] = useState<DiningRecord[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchRecords = useCallback(async () => {

@@ -1,14 +1,17 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { PhotoRepository } from '@/domain/repositories/photo-repository'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
+import type { Database } from '@/infrastructure/supabase/types'
 
-function mapToEntity(row: globalThis.Record<string, unknown>): RecordPhoto {
+type PhotoRow = Database['public']['Tables']['record_photos']['Row']
+
+function mapToEntity(row: PhotoRow): RecordPhoto {
   return {
-    id: row.id as string,
-    recordId: row.record_id as string,
-    url: row.url as string,
-    orderIndex: row.order_index as number,
-    createdAt: row.created_at as string,
+    id: row.id,
+    recordId: row.record_id,
+    url: row.url,
+    orderIndex: row.order_index,
+    createdAt: row.created_at,
   }
 }
 

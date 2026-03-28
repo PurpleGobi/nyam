@@ -55,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
   }
 
   const body: IdentifyRequest = await request.json()
-  const { imageBase64, targetType, cameraMode, latitude, longitude } = body
+  const { imageBase64, targetType, cameraMode, latitude, longitude, capturedAt } = body
 
   if (!imageBase64 || !targetType) {
     return NextResponse.json({ success: false, result: null, error: 'MISSING_FIELDS' }, { status: 400 })
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
           success: true,
           result,
           shelfData: recognition,
-        } as IdentifyResponse & { shelfData: typeof recognition })
+        })
       } else if (mode === 'receipt') {
         const recognition = await recognizeWineReceipt(imageBase64)
         const result: WineAIResult = {
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
           success: true,
           result,
           receiptData: recognition,
-        } as IdentifyResponse & { receiptData: typeof recognition })
+        })
       } else {
         const recognition = await recognizeWineLabel(imageBase64)
 

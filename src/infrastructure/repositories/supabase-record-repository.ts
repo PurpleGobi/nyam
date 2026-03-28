@@ -16,12 +16,12 @@ function mapDbToRecord(row: RecordRow): DiningRecord {
     status: row.status,
     wineStatus: row.wine_status,
     cameraMode: row.camera_mode,
-    ocrData: row.ocr_data as globalThis.Record<string, unknown> | null,
+    ocrData: row.ocr_data as Record<string, unknown> | null,
     axisX: row.axis_x ? Number(row.axis_x) : null,
     axisY: row.axis_y ? Number(row.axis_y) : null,
     satisfaction: row.satisfaction,
     scene: row.scene,
-    aromaRegions: row.aroma_regions as globalThis.Record<string, unknown> | null,
+    aromaRegions: row.aroma_regions as Record<string, unknown> | null,
     aromaLabels: row.aroma_labels,
     aromaColor: row.aroma_color,
     complexity: row.complexity,
@@ -164,7 +164,7 @@ export class SupabaseRecordRepository implements RecordRepository {
   }
 
   async update(id: string, data: Partial<DiningRecord>): Promise<DiningRecord> {
-    const updateData: globalThis.Record<string, unknown> = {}
+    const updateData: Record<string, unknown> = {}
     if (data.satisfaction !== undefined) updateData.satisfaction = data.satisfaction
     if (data.axisX !== undefined) updateData.axis_x = data.axisX
     if (data.axisY !== undefined) updateData.axis_y = data.axisY

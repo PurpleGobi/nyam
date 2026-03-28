@@ -2,9 +2,9 @@
 // R1: 외부 의존 0
 
 export type RestaurantGenre =
-  | '한식' | '일식' | '양식' | '중식' | '이탈리안' | '프렌치'
-  | '동남아' | '태국' | '베트남' | '인도' | '스페인' | '멕시칸'
-  | '아시안' | '파인다이닝' | '비스트로' | '카페' | '베이커리' | '바' | '주점'
+  | '한식' | '일식' | '중식' | '태국' | '베트남' | '인도'
+  | '이탈리안' | '프렌치' | '스페인' | '지중해' | '미국' | '멕시칸'
+  | '카페' | '바/주점' | '베이커리' | '기타'
 
 export type PriceRange = 1 | 2 | 3 | 4
 
@@ -23,8 +23,8 @@ export interface Restaurant {
   id: string
   name: string
   address: string | null
-  country: string | null
-  city: string | null
+  country: string
+  city: string
   area: string | null
   district: string | null
   genre: RestaurantGenre | null

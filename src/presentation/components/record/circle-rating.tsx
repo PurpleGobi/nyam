@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { getGaugeLevel } from '@/domain/entities/quadrant'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface CircleRatingProps {
@@ -12,6 +13,7 @@ interface CircleRatingProps {
 export function CircleRating({ value, onChange, disabled = false }: CircleRatingProps) {
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ y: number; value: number } | null>(null)
+  const prevValueRef = useRef(value)
 
   const size = 28 + (value / 100) * 92
   const color = getGaugeColor(value)
@@ -35,10 +37,11 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (disabled) return
+      e.preventDefault()
       setIsDragging(true)
       dragStartRef.current = { y: e.clientY, value }
       navigator?.vibrate?.(10)
-      e.currentTarget.setPointerCapture(e.pointerId)
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     },
     [disabled, value],
   )
@@ -50,15 +53,16 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
       const sensitivity = 0.5
       const newVal = Math.max(1, Math.min(100, Math.round(dragStartRef.current.value + deltaY * sensitivity)))
 
-      if (Math.floor(value / 10) !== Math.floor(newVal / 10)) {
+      if (Math.floor(prevValueRef.current / 10) !== Math.floor(newVal / 10)) {
         navigator?.vibrate?.(15)
       }
-      const prevGauge = Math.ceil(value / 20)
-      const nextGauge = Math.ceil(newVal / 20)
+      const prevGauge = getGaugeLevel(prevValueRef.current)
+      const nextGauge = getGaugeLevel(newVal)
       if (prevGauge !== nextGauge) {
         navigator?.vibrate?.(20)
       }
 
+      prevValueRef.current = newVal
       onChange(newVal)
     },
     [isDragging, value, onChange],
@@ -82,7 +86,7 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
         backgroundColor: color,
         boxShadow,
         filter,
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         transition:

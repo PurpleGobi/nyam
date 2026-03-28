@@ -92,8 +92,9 @@ export class SupabaseRecordRepository implements RecordRepository {
 #### 3-1. 클래스 선언
 
 ```typescript
-import type { RecordRepository, RecordTargetType } from '@/domain/repositories/record-repository'
-import type { DiningRecord, RecordPhoto, CreateRecordInput } from '@/domain/entities/record'
+import type { DiningRecord, CreateRecordInput, RecordTargetType } from '@/domain/entities/record'
+import type { RecordPhoto } from '@/domain/entities/record-photo'
+import type { RecordRepository } from '@/domain/repositories/record-repository'
 import { createClient } from '@/infrastructure/supabase/client'
 
 export class SupabaseRecordRepository implements RecordRepository {
@@ -119,7 +120,7 @@ function mapDbToRecord(row: RecordRow): DiningRecord {
     id: row.id,
     userId: row.user_id,
     targetId: row.target_id,
-    targetType: row.target_type as RecordTargetType,
+    targetType: row.target_type,  // Database 타입에서 이미 narrowed (generated types 의존)
     status: row.status,
     wineStatus: row.wine_status,
     cameraMode: row.camera_mode,
@@ -165,10 +166,10 @@ function mapRecordToDb(input: CreateRecordInput): Database['public']['Tables']['
     user_id: input.userId,
     target_id: input.targetId,
     target_type: input.targetType,
-    status: input.status ?? 'rated',
+    status: input.status,  // CreateRecordInput에서 required
     wine_status: input.wineStatus,
     camera_mode: input.cameraMode,
-    ocr_data: input.ocrData,
+    ocr_data: null,  // S3 카메라/OCR에서 별도 설정
     axis_x: input.axisX,
     axis_y: input.axisY,
     satisfaction: input.satisfaction,
@@ -194,8 +195,8 @@ function mapRecordToDb(input: CreateRecordInput): Database['public']['Tables']['
     linked_wine_id: input.linkedWineId,
     has_exif_gps: input.hasExifGps ?? false,
     is_exif_verified: input.isExifVerified ?? false,
-    record_quality_xp: input.recordQualityXp ?? 0,
-    score_updated_at: input.scoreUpdatedAt ?? null,
+    record_quality_xp: 0,  // S6 XP 엔진에서 별도 갱신
+    score_updated_at: null,  // S6에서 별도 갱신
   }
 }
 ```
@@ -332,6 +333,11 @@ async update(id: string, data: Partial<DiningRecord>): Promise<DiningRecord> {
   if (data.balance !== undefined) dbData.balance = data.balance
   if (data.autoScore !== undefined) dbData.auto_score = data.autoScore
   if (data.pairingCategories !== undefined) dbData.pairing_categories = data.pairingCategories
+  if (data.menuTags !== undefined) dbData.menu_tags = data.menuTags
+  if (data.tips !== undefined) dbData.tips = data.tips
+  if (data.mealTime !== undefined) dbData.meal_time = data.mealTime
+  if (data.visitDate !== undefined) dbData.visit_date = data.visitDate
+  if (data.wineStatus !== undefined) dbData.wine_status = data.wineStatus
   if (data.linkedWineId !== undefined) dbData.linked_wine_id = data.linkedWineId
   if (data.linkedRestaurantId !== undefined) dbData.linked_restaurant_id = data.linkedRestaurantId
   if (data.status !== undefined) dbData.status = data.status
@@ -403,7 +409,7 @@ async deletePhoto(photoId: string): Promise<void> {
 import { SupabaseRecordRepository } from '@/infrastructure/repositories/supabase-record-repository'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 
-export const recordRepository: RecordRepository = new SupabaseRecordRepository()
+export const recordRepo: RecordRepository = new SupabaseRecordRepository()
 ```
 
 - `shared/di/container.ts`는 유일하게 infrastructure를 import하는 조합 루트
@@ -536,22 +542,33 @@ const { records, isLoading, error, refetch } = useRecords(currentUser.id, 'resta
 **application hook에서의 입력 검증 (create 전):**
 
 ```typescript
-function validateRecordInput(input: CreateRecordInput): void {
-  if (!input.targetId) throw new Error('대상을 선택해주세요')
-  if (!input.targetType) throw new Error('기록 유형을 선택해주세요')
+// 검증 실패 시 에러 메시지 반환, 성공 시 null. 호출부에서 throw 처리.
+function validateRecordInput(input: CreateRecordInput): string | null {
+  if (!input.targetId) return 'targetId는 필수입니다'
+  if (!input.targetType) return 'targetType은 필수입니다'
 
-  if (input.axisX !== undefined && (input.axisX < 0 || input.axisX > 100)) {
-    throw new Error('사분면 X축 값은 0~100이어야 합니다')
+  // != null: null과 undefined 모두 체크 (optional 필드 안전 처리)
+  if (input.axisX != null && (input.axisX < 0 || input.axisX > 100)) {
+    return 'axisX는 0~100 범위여야 합니다'
   }
-  if (input.axisY !== undefined && (input.axisY < 0 || input.axisY > 100)) {
-    throw new Error('사분면 Y축 값은 0~100이어야 합니다')
+  if (input.axisY != null && (input.axisY < 0 || input.axisY > 100)) {
+    return 'axisY는 0~100 범위여야 합니다'
   }
-  if (input.satisfaction !== undefined && (input.satisfaction < 1 || input.satisfaction > 100)) {
-    throw new Error('만족도는 1~100이어야 합니다')
+  if (input.satisfaction != null && (input.satisfaction < 1 || input.satisfaction > 100)) {
+    return 'satisfaction은 1~100 범위여야 합니다'
   }
   if (input.comment && input.comment.length > 200) {
-    throw new Error('코멘트는 200자 이내여야 합니다')
+    return '코멘트는 200자 이하여야 합니다'
   }
+  return null
+}
+
+// 호출부 (useCreateRecord 내부):
+const validationError = validateRecordInput(input)
+if (validationError) {
+  setError(validationError)
+  setIsLoading(false)
+  throw new Error(validationError)
 }
 ```
 

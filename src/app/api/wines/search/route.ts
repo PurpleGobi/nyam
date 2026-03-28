@@ -14,18 +14,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] })
   }
 
-  const { data: wines } = await supabase
+  const { data: wines, error } = await supabase
     .from('wines')
     .select('id, name, producer, vintage, wine_type, region, country')
     .or(`name.ilike.%${q}%,producer.ilike.%${q}%`)
     .order('name')
     .limit(20)
 
-  const { data: userRecords } = await supabase
-    .from('records')
-    .select('target_id')
-    .eq('user_id', user.id)
-    .eq('target_type', 'wine')
+  if (error || !wines) {
+    return NextResponse.json({ results: [] })
+  }
+
+  const wineIds = (wines ?? []).map((w) => w.id)
+
+  const { data: userRecords } = wineIds.length > 0
+    ? await supabase
+        .from('records')
+        .select('target_id')
+        .eq('user_id', user.id)
+        .eq('target_type', 'wine')
+        .in('target_id', wineIds)
+    : { data: [] }
 
   const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
 
@@ -40,6 +49,13 @@ export async function GET(request: NextRequest) {
     country: w.country,
     hasRecord: recordedIds.has(w.id),
   }))
+
+  // 정렬: 기록 있는 항목 우선 → 이름순
+  results.sort((a, b) => {
+    if (a.hasRecord && !b.hasRecord) return -1
+    if (!a.hasRecord && b.hasRecord) return 1
+    return a.name.localeCompare(b.name)
+  })
 
   return NextResponse.json({ results })
 }

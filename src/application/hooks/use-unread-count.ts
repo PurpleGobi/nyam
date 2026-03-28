@@ -1,26 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { notificationRepo } from '@/shared/di/container'
+import { useAuth } from '@/presentation/providers/auth-provider'
 
-export function useUnreadCount(userId: string | null) {
-  const [count, setCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(!!userId)
+export function useUnreadCount() {
+  const { user } = useAuth()
+  const userId = user?.id ?? null
 
-  useEffect(() => {
-    if (!userId) return
-    notificationRepo.getUnreadCount(userId).then((c) => {
-      setCount(c)
-      setIsLoading(false)
-    })
+  const { data: count } = useSWR(
+    userId ? ['unread-count', userId] : null,
+    ([, id]) => notificationRepo.getUnreadCount(id),
+    { refreshInterval: 30000 },
+  )
 
-    // 30초 폴링
-    const interval = setInterval(() => {
-      notificationRepo.getUnreadCount(userId).then(setCount)
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [userId])
-
-  return { count, isLoading }
+  return { count: count ?? 0 }
 }

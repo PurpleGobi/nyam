@@ -1,17 +1,21 @@
 'use client'
 
-import { useState, useCallback, Suspense } from 'react'
+import { useCallback, useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType } from '@/domain/entities/record'
-import type { AddFlowStep, AddFlowTarget } from '@/domain/entities/add-flow'
+import type { AddFlowStep } from '@/domain/entities/add-flow'
 import type { RestaurantAIResult, WineAIResult } from '@/domain/entities/camera'
 import { useAuth } from '@/presentation/providers/auth-provider'
+import { useAddFlow } from '@/application/hooks/use-add-flow'
 import { useCameraCapture } from '@/application/hooks/use-camera-capture'
+import { useCreateRecord } from '@/application/hooks/use-create-record'
+import { photoRepo, imageService } from '@/shared/di/container'
+import { parseExifFromBase64 } from '@/shared/utils/exif-parser'
 import { RecordNav } from '@/presentation/components/record/record-nav'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { AIResultDisplay } from '@/presentation/components/camera/ai-result-display'
 import { WineConfirmCard } from '@/presentation/components/camera/wine-confirm-card'
-import { RecordFlowContainer } from '@/presentation/containers/record-flow-container'
+import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
 
 function AddFlowInner() {
   const router = useRouter()
@@ -27,9 +31,9 @@ function AddFlowInner() {
       : entryPath === 'search' ? 'search'
         : 'camera'
 
-  const [step, setStep] = useState<AddFlowStep>(initialStep)
-  const [target, setTarget] = useState<AddFlowTarget | null>(
-    searchParams.get('targetId')
+  const { step, target, pushStep, setTarget, goBack: hookGoBack, reset: resetFlow } = useAddFlow({
+    initialStep,
+    initialTarget: searchParams.get('targetId')
       ? {
           id: searchParams.get('targetId') ?? '',
           name: searchParams.get('name') ?? '',
@@ -38,31 +42,99 @@ function AddFlowInner() {
           isAiRecognized: false,
         }
       : null,
-  )
-  const [stepHistory, setStepHistory] = useState<AddFlowStep[]>([])
+  })
 
   const { isRecognizing, result, identify, reset: resetCamera } = useCameraCapture()
+  const { createRecord, isLoading: isQuickAdding } = useCreateRecord()
+  const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
 
-  const pushStep = useCallback((next: AddFlowStep) => {
-    setStepHistory((prev) => [...prev, step])
-    setStep(next)
-  }, [step])
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setGps({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 5000 },
+    )
+  }, [])
+
+  /** 촬영 이미지를 리사이즈 → Storage 업로드 → photo 레코드 저장 */
+  const uploadCapturedPhoto = useCallback(async (recordId: string) => {
+    if (!capturedImage || !user) return
+    try {
+      const byteString = atob(capturedImage)
+      const ab = new ArrayBuffer(byteString.length)
+      const ia = new Uint8Array(ab)
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i)
+      }
+      const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
+      const blob = await imageService.resizeImage(file)
+      const url = await imageService.uploadImage(user.id, recordId, blob, crypto.randomUUID())
+      await photoRepo.savePhotos(recordId, [{ url, orderIndex: 0 }])
+    } catch {
+      // 사진 업로드 실패해도 record는 유지
+    }
+  }, [capturedImage, user])
 
   const goBack = useCallback(() => {
-    if (stepHistory.length > 0) {
-      const prev = stepHistory[stepHistory.length - 1]
-      setStepHistory((h) => h.slice(0, -1))
-      setStep(prev)
-    } else {
+    const prev = hookGoBack()
+    if (prev === null) {
       router.back()
     }
-  }, [stepHistory, router])
+  }, [hookGoBack, router])
 
-  const handleCapture = useCallback(
+  const handleShelfMode = useCallback(
     async (imageBase64: string) => {
       const aiResult = await identify({
         imageBase64,
+        targetType: 'wine',
+        cameraMode: 'shelf',
+        latitude: gps?.latitude,
+        longitude: gps?.longitude,
+      })
+      if (!aiResult) return
+      const wineResult = aiResult as WineAIResult
+      if (wineResult.candidates.length === 1) {
+        // 단일 후보 → wine_confirm
+        pushStep('wine_confirm')
+      } else {
+        pushStep('search')
+      }
+    },
+    [identify, gps, pushStep],
+  )
+
+  const handleReceiptMode = useCallback(
+    async (imageBase64: string) => {
+      const aiResult = await identify({
+        imageBase64,
+        targetType: 'wine',
+        cameraMode: 'receipt',
+        latitude: gps?.latitude,
+        longitude: gps?.longitude,
+      })
+      if (!aiResult) return
+      const wineResult = aiResult as WineAIResult
+      if (wineResult.candidates.length === 1) {
+        // 단일 후보 → wine_confirm
+        pushStep('wine_confirm')
+      } else {
+        pushStep('search')
+      }
+    },
+    [identify, gps, pushStep],
+  )
+
+  /** confident match → quickAdd(checked) → success, 아니면 ai_result/wine_confirm/search */
+  const handleCapture = useCallback(
+    async (imageBase64: string) => {
+      setCapturedImage(imageBase64)
+
+      const aiResult = await identify({
+        imageBase64,
         targetType,
+        latitude: gps?.latitude,
+        longitude: gps?.longitude,
       })
       if (!aiResult) return
 
@@ -70,28 +142,73 @@ function AddFlowInner() {
         const restResult = aiResult as RestaurantAIResult
         if (restResult.isConfidentMatch && restResult.candidates.length > 0) {
           const top = restResult.candidates[0]
-          setTarget({
+          const newTarget = {
             id: top.restaurantId,
             name: top.name,
-            type: 'restaurant',
+            type: 'restaurant' as const,
             meta: [top.genre, top.area].filter(Boolean).join(' · '),
             isAiRecognized: true,
-          })
+          }
+          setTarget(newTarget)
+          // 빠른추가: checked 기록 INSERT → success
+          if (user) {
+            try {
+              // EXIF GPS 검증 (candidate에 좌표 없으므로 GPS 존재여부만 기록)
+              const exif = await parseExifFromBase64(imageBase64)
+              const record = await createRecord({
+                userId: user.id,
+                targetId: top.restaurantId,
+                targetType: 'restaurant',
+                status: 'checked',
+                hasExifGps: exif.hasGps,
+                isExifVerified: false,
+              })
+              await uploadCapturedPhoto(record.id)
+              pushStep('success')
+              return
+            } catch {
+              // quickAdd 실패 → full record form으로 폴백
+            }
+          }
           pushStep('record')
-        } else {
+        } else if (restResult.candidates.length > 0) {
           pushStep('ai_result')
+        } else {
+          pushStep('search')
         }
       } else {
         const wineResult = aiResult as WineAIResult
         if (wineResult.isConfidentMatch && wineResult.candidates.length > 0) {
           const top = wineResult.candidates[0]
-          setTarget({
+          const newTarget = {
             id: top.wineId,
             name: top.name,
-            type: 'wine',
+            type: 'wine' as const,
             meta: [top.wineType, top.region, top.vintage].filter(Boolean).join(' · '),
             isAiRecognized: true,
-          })
+          }
+          setTarget(newTarget)
+          // 빠른추가: checked 기록 INSERT → success
+          if (user) {
+            try {
+              // EXIF GPS 검증
+              const exif = await parseExifFromBase64(imageBase64)
+              const record = await createRecord({
+                userId: user.id,
+                targetId: top.wineId,
+                targetType: 'wine',
+                status: 'checked',
+                wineStatus: 'tasted',
+                hasExifGps: exif.hasGps,
+                isExifVerified: false,
+              })
+              await uploadCapturedPhoto(record.id)
+              pushStep('success')
+              return
+            } catch {
+              // quickAdd 실패 → full record form으로 폴백
+            }
+          }
           pushStep('record')
         } else if (wineResult.candidates.length > 0) {
           pushStep('wine_confirm')
@@ -100,11 +217,11 @@ function AddFlowInner() {
         }
       }
     },
-    [identify, targetType, pushStep],
+    [identify, targetType, gps, pushStep, setTarget, user, createRecord, uploadCapturedPhoto],
   )
 
   const handleRestaurantSelect = useCallback(
-    (restaurantId: string) => {
+    async (restaurantId: string) => {
       if (result?.targetType !== 'restaurant') return
       const restResult = result as RestaurantAIResult
       const selected = restResult.candidates.find((c) => c.restaurantId === restaurantId)
@@ -116,12 +233,29 @@ function AddFlowInner() {
         meta: [selected.genre, selected.area].filter(Boolean).join(' · '),
         isAiRecognized: true,
       })
+      // 빠른추가 시도
+      if (user && capturedImage) {
+        try {
+          const exif = await parseExifFromBase64(capturedImage)
+          const record = await createRecord({
+            userId: user.id,
+            targetId: selected.restaurantId,
+            targetType: 'restaurant',
+            status: 'checked',
+            hasExifGps: exif.hasGps,
+            isExifVerified: false,
+          })
+          await uploadCapturedPhoto(record.id)
+          pushStep('success')
+          return
+        } catch { /* 폴백 */ }
+      }
       pushStep('record')
     },
-    [result, pushStep],
+    [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage],
   )
 
-  const handleWineConfirm = useCallback(() => {
+  const handleWineConfirm = useCallback(async () => {
     if (result?.targetType !== 'wine') return
     const wineResult = result as WineAIResult
     const top = wineResult.candidates[0]
@@ -133,8 +267,26 @@ function AddFlowInner() {
       meta: [top.wineType, top.region, top.vintage].filter(Boolean).join(' · '),
       isAiRecognized: true,
     })
+    // 빠른추가 시도
+    if (user && capturedImage) {
+      try {
+        const exif = await parseExifFromBase64(capturedImage)
+        const record = await createRecord({
+          userId: user.id,
+          targetId: top.wineId,
+          targetType: 'wine',
+          status: 'checked',
+          wineStatus: 'tasted',
+          hasExifGps: exif.hasGps,
+          isExifVerified: false,
+        })
+        await uploadCapturedPhoto(record.id)
+        pushStep('success')
+        return
+      } catch { /* 폴백 */ }
+    }
     pushStep('record')
-  }, [result, pushStep])
+  }, [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage])
 
   const handleSearchFallback = useCallback(() => {
     router.push(`/search?type=${targetType}`)
@@ -144,6 +296,32 @@ function AddFlowInner() {
 
   // step: record → 기존 RecordFlowContainer로 위임 (target 정보를 URL params로 전달)
   if (step === 'record' && target) {
+    // AI prefill 데이터 + 촬영 이미지를 sessionStorage로 전달
+    if (result) {
+      const aiPrefill: Record<string, unknown> = {}
+      if (result.targetType === 'restaurant') {
+        const r = result as RestaurantAIResult
+        aiPrefill.genre = r.detectedGenre
+      } else {
+        const w = result as WineAIResult
+        const top = w.candidates[0]
+        if (top) {
+          aiPrefill.wineType = top.wineType
+          aiPrefill.region = top.region
+          aiPrefill.vintage = top.vintage
+        }
+      }
+      if (gps) aiPrefill.gps = gps
+      try {
+        sessionStorage.setItem('nyam_ai_prefill', JSON.stringify(aiPrefill))
+      } catch { /* ignore */ }
+    }
+    // 촬영 이미지를 sessionStorage에 저장 → record-flow에서 자동 첨부
+    if (capturedImage) {
+      try {
+        sessionStorage.setItem('nyam_captured_image', capturedImage)
+      } catch { /* ignore — 용량 초과 시 무시 */ }
+    }
     router.replace(
       `/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}&meta=${encodeURIComponent(target.meta)}&from=${entryPath}`,
     )
@@ -164,10 +342,55 @@ function AddFlowInner() {
           targetType={targetType}
           onCapture={handleCapture}
           onAlbumSelect={() => {
-            // camera-capture 내부 input이 처리
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.accept = 'image/*'
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1]
+                handleCapture(base64)
+              }
+              reader.readAsDataURL(file)
+            }
+            input.click()
           }}
           onSearchFallback={handleSearchFallback}
-          isRecognizing={isRecognizing}
+          onShelfMode={targetType === 'wine' ? () => {
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.accept = 'image/*'
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1]
+                handleShelfMode(base64)
+              }
+              reader.readAsDataURL(file)
+            }
+            input.click()
+          } : undefined}
+          onReceiptMode={targetType === 'wine' ? () => {
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.accept = 'image/*'
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1]
+                handleReceiptMode(base64)
+              }
+              reader.readAsDataURL(file)
+            }
+            input.click()
+          } : undefined}
+          isRecognizing={isRecognizing || isQuickAdding}
         />
       )}
 
@@ -190,7 +413,7 @@ function AddFlowInner() {
           onConfirm={handleWineConfirm}
           onReject={() => {
             resetCamera()
-            setStep('camera')
+            resetFlow()
           }}
         />
       )}
@@ -216,6 +439,20 @@ function AddFlowInner() {
             직접 등록
           </button>
         </div>
+      )}
+
+      {step === 'success' && target && (
+        <SuccessScreen
+          variant={variant}
+          targetName={target.name}
+          targetMeta={target.meta}
+          onAddDetail={() => router.push(`/${target.type === 'restaurant' ? 'restaurants' : 'wines'}/${target.id}`)}
+          onAddAnother={() => {
+            resetFlow()
+            resetCamera()
+          }}
+          onGoHome={() => router.push('/')}
+        />
       )}
     </div>
   )

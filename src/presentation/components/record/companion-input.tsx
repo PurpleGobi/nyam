@@ -82,20 +82,6 @@ export function CompanionInput({ value, onChange, aiCompanions }: CompanionInput
             <span className="flex-1" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
               {name}
             </span>
-            {isAi && (
-              <span
-                style={{
-                  fontSize: '9px',
-                  fontWeight: 700,
-                  color: 'var(--accent-food)',
-                  padding: '1px 4px',
-                  borderRadius: '4px',
-                  backgroundColor: 'color-mix(in srgb, var(--accent-food) 10%, transparent)',
-                }}
-              >
-                사진 인식
-              </span>
-            )}
             <button
               type="button"
               onClick={() => handleRemove(name)}
@@ -153,8 +139,8 @@ export function CompanionInput({ value, onChange, aiCompanions }: CompanionInput
           }}
           onClick={() => setIsAdding(true)}
         >
-          <Plus size={16} />
-          <span>동행자 추가</span>
+          <Plus size={14} />
+          <span>동반자 추가</span>
         </button>
       )}
     </div>

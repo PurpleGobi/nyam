@@ -3,41 +3,51 @@
 import { ChevronLeft, Plus } from 'lucide-react'
 
 interface DetailFabProps {
-  variant: 'food' | 'wine'
   onBack: () => void
   onAdd: () => void
 }
 
-export function DetailFab({ variant, onBack, onAdd }: DetailFabProps) {
-  const accentColor = variant === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
-
+export function DetailFab({ onBack, onAdd }: DetailFabProps) {
   return (
     <>
-      {/* 뒤로 FAB */}
+      {/* 뒤로 FAB — 좌하단 */}
       <button
         type="button"
         onClick={onBack}
-        className="fixed left-4 top-[env(safe-area-inset-top,12px)] z-50 flex h-10 w-10 items-center justify-center rounded-full"
+        className="absolute flex items-center justify-center rounded-full transition-transform active:scale-90"
         style={{
-          marginTop: '12px',
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          backdropFilter: 'blur(8px)',
+          bottom: '28px',
+          left: '16px',
+          width: '44px',
+          height: '44px',
+          backgroundColor: 'rgba(248,246,243,0.88)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+          zIndex: 85,
         }}
       >
-        <ChevronLeft size={22} color="#FFFFFF" />
+        <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
       </button>
 
-      {/* 추가 FAB */}
+      {/* 추가 FAB — 우하단 */}
       <button
         type="button"
         onClick={onAdd}
-        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-90"
+        className="absolute flex items-center justify-center rounded-full transition-transform active:scale-90"
         style={{
-          backgroundColor: accentColor,
-          marginBottom: 'env(safe-area-inset-bottom, 0px)',
+          bottom: '28px',
+          right: '16px',
+          width: '44px',
+          height: '44px',
+          backgroundColor: 'rgba(248,246,243,0.88)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+          zIndex: 85,
         }}
       >
-        <Plus size={28} color="#FFFFFF" />
+        <Plus size={22} style={{ color: 'var(--text)' }} />
       </button>
     </>
   )

@@ -1,53 +1,95 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import type { Notification, ActionStatus } from '@/domain/entities/notification'
+import useSWR, { useSWRConfig } from 'swr'
+import { useCallback, useEffect } from 'react'
 import { notificationRepo } from '@/shared/di/container'
+import { useAuth } from '@/presentation/providers/auth-provider'
+import type { Notification } from '@/domain/entities/notification'
 
-export function useNotifications(userId: string | null) {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+const MAX_NOTIFICATIONS = 20
 
-  const fetchNotifications = useCallback(async () => {
-    if (!userId) return
-    setIsLoading(true)
-    try {
-      const [notifs, count] = await Promise.all([
-        notificationRepo.getNotifications(userId, 30),
-        notificationRepo.getUnreadCount(userId),
-      ])
-      setNotifications(notifs)
-      setUnreadCount(count)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [userId])
+export function useNotifications() {
+  const { user } = useAuth()
+  const userId = user?.id ?? null
+  const { mutate } = useSWRConfig()
 
+  const { data: notifications, isLoading } = useSWR(
+    userId ? ['notifications', userId] : null,
+    ([, id]) => notificationRepo.getNotifications(id, MAX_NOTIFICATIONS),
+  )
+
+  const { data: unreadCount } = useSWR(
+    userId ? ['unread-count', userId] : null,
+    ([, id]) => notificationRepo.getUnreadCount(id),
+  )
+
+  // 실시간 구독
   useEffect(() => {
-    fetchNotifications()
-  }, [fetchNotifications])
+    if (!userId) return
+    const { unsubscribe } = notificationRepo.subscribeToNotifications(userId, () => {
+      mutate(['notifications', userId])
+      mutate(['unread-count', userId])
+    })
+    return unsubscribe
+  }, [userId, mutate])
 
-  const markAsRead = useCallback(async (id: string) => {
-    await notificationRepo.markAsRead(id)
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
-    setUnreadCount((prev) => Math.max(0, prev - 1))
-  }, [])
+  const markAsRead = useCallback(async (notificationId: string) => {
+    if (!userId) return
+    mutate(
+      ['notifications', userId],
+      (prev: Notification[] | undefined) =>
+        prev?.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n)),
+      false,
+    )
+    mutate(
+      ['unread-count', userId],
+      (prev: number | undefined) => Math.max(0, (prev ?? 1) - 1),
+      false,
+    )
+    await notificationRepo.markAsRead(notificationId)
+  }, [userId, mutate])
 
   const markAllAsRead = useCallback(async () => {
     if (!userId) return
-    await notificationRepo.markAllAsRead(userId)
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    setUnreadCount(0)
-  }, [userId])
-
-  const updateAction = useCallback(async (id: string, status: ActionStatus) => {
-    await notificationRepo.updateActionStatus(id, status)
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, actionStatus: status, isRead: true } : n)),
+    mutate(
+      ['notifications', userId],
+      (prev: Notification[] | undefined) =>
+        prev?.map((n) => ({ ...n, isRead: true })),
+      false,
     )
-    setUnreadCount((prev) => Math.max(0, prev - 1))
-  }, [])
+    mutate(['unread-count', userId], 0, false)
+    await notificationRepo.markAllAsRead(userId)
+  }, [userId, mutate])
 
-  return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, updateAction, refetch: fetchNotifications }
+  const handleAction = useCallback(async (
+    notificationId: string,
+    action: 'accepted' | 'rejected',
+  ) => {
+    if (!userId) return
+    mutate(
+      ['notifications', userId],
+      (prev: Notification[] | undefined) =>
+        prev?.map((n) =>
+          n.id === notificationId
+            ? { ...n, actionStatus: action, isRead: true }
+            : n,
+        ),
+      false,
+    )
+    mutate(
+      ['unread-count', userId],
+      (prev: number | undefined) => Math.max(0, (prev ?? 1) - 1),
+      false,
+    )
+    await notificationRepo.updateActionStatus(notificationId, action)
+  }, [userId, mutate])
+
+  return {
+    notifications: notifications ?? [],
+    unreadCount: unreadCount ?? 0,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    handleAction,
+  }
 }

@@ -69,7 +69,7 @@ function safeJsonParse(text: string): Record<string, unknown> {
 const RESTAURANT_PROMPT = `이 음식/식당 사진을 분석해주세요. JSON으로 응답해주세요.
 {
   "food_type": "인식된 음식 종류 (예: 초밥, 파스타, 삼겹살)",
-  "genre": "음식 장르 (한식/일식/양식/중식/이탈리안/프렌치/동남아/태국/베트남/인도/스페인/멕시칸/아시안/파인다이닝/비스트로/카페/베이커리/바/주점 중 하나)",
+  "genre": "음식 장르 (한식/일식/중식/태국/베트남/인도/이탈리안/프렌치/스페인/지중해/미국/멕시칸/카페/바·주점/베이커리/기타 중 하나)",
   "restaurant_name": "간판이 보이면 식당 이름, 없으면 null",
   "confidence": 0.0~1.0
 }

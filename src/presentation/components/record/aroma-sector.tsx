@@ -30,8 +30,8 @@ export function AromaSector({
         fill={sector.hex}
         stroke="var(--bg-card)"
         strokeWidth={1}
-        opacity={isActive ? 1.0 : 0.25}
-        style={{ transition: 'opacity 0.15s ease-out' }}
+        fillOpacity={isActive ? 1.0 : 0.25}
+        style={{ transition: 'fill-opacity 0.15s ease-out' }}
       />
       <text
         x={labelPosition.x}
@@ -41,7 +41,7 @@ export function AromaSector({
         fill={isActive ? 'var(--text)' : 'var(--text-hint)'}
         fontSize={isActive ? 10 : 9}
         fontWeight={isActive ? 600 : 400}
-        style={{ pointerEvents: 'none', transition: 'fill 0.15s, font-size 0.15s' }}
+        style={{ pointerEvents: 'none', userSelect: 'none', transition: 'fill 0.15s ease-out, font-size 0.15s ease-out' }}
       >
         {sector.nameKo}
       </text>

@@ -15,7 +15,8 @@ export function SatisfactionGauge({
   labelRight = '최고',
   showNumber = true,
 }: SatisfactionGaugeProps) {
-  const color = getGaugeColor(value)
+  const clamped = Math.max(1, Math.min(100, value))
+  const color = getGaugeColor(clamped)
 
   return (
     <div className="flex w-full items-center">
@@ -38,47 +39,30 @@ export function SatisfactionGauge({
       >
         <div
           style={{
-            width: `${value}%`,
+            width: `${clamped}%`,
+            minWidth: '32px',
             height: '100%',
             backgroundColor: color,
             borderRadius: '9999px',
             transition: 'width 0.2s ease-out, background-color 0.15s ease-out',
-            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {showNumber && value > 15 && (
+          {showNumber && (
             <span
               style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
                 fontSize: '14px',
                 fontWeight: 700,
                 color: '#FFFFFF',
                 lineHeight: 1,
               }}
             >
-              {value}
+              {clamped}
             </span>
           )}
         </div>
-        {showNumber && value <= 15 && (
-          <span
-            style={{
-              position: 'absolute',
-              left: `${Math.max(value + 2, 8)}%`,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: '14px',
-              fontWeight: 700,
-              color: 'var(--text-sub)',
-              lineHeight: 1,
-            }}
-          >
-            {value}
-          </span>
-        )}
       </div>
 
       <span

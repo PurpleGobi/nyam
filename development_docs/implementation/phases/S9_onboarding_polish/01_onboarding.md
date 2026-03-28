@@ -560,7 +560,7 @@ export const SEED_RESTAURANTS: Record<string, OnboardingSeedRestaurant[]> = {
   '을지로': [
     { id: 'seed-euljiro-1', name: '을지면옥', genre: '한식', area: '을지로' },
     { id: 'seed-euljiro-2', name: '스시코우지', genre: '일식', area: '을지로' },
-    { id: 'seed-euljiro-3', name: '을지다락', genre: '주점', area: '을지로' },
+    { id: 'seed-euljiro-3', name: '을지다락', genre: '바/주점', area: '을지로' },
     { id: 'seed-euljiro-4', name: '을지OB맥주', genre: '한식', area: '을지로' },
   ],
   '광화문': [
@@ -569,9 +569,9 @@ export const SEED_RESTAURANTS: Record<string, OnboardingSeedRestaurant[]> = {
     { id: 'seed-gwanghwa-3', name: '광화문국밥', genre: '한식', area: '광화문' },
   ],
   '성수': [
-    { id: 'seed-seongsu-1', name: '레스토랑 오르되브르', genre: '양식', area: '성수' },
+    { id: 'seed-seongsu-1', name: '레스토랑 오르되브르', genre: '프렌치', area: '성수' },
     { id: 'seed-seongsu-2', name: '카페 어니언', genre: '카페', area: '성수' },
-    { id: 'seed-seongsu-3', name: '다운타우너', genre: '양식', area: '성수' },
+    { id: 'seed-seongsu-3', name: '다운타우너', genre: '이탈리안', area: '성수' },
   ],
   '강남': [
     { id: 'seed-gangnam-1', name: '도쿄등심', genre: '일식', area: '강남' },
@@ -579,14 +579,14 @@ export const SEED_RESTAURANTS: Record<string, OnboardingSeedRestaurant[]> = {
     { id: 'seed-gangnam-3', name: '한신포차', genre: '한식', area: '강남' },
   ],
   '홍대': [
-    { id: 'seed-hongdae-1', name: '피자알볼로', genre: '양식', area: '홍대' },
-    { id: 'seed-hongdae-2', name: '비스트로 홍대', genre: '양식', area: '홍대' },
+    { id: 'seed-hongdae-1', name: '피자알볼로', genre: '이탈리안', area: '홍대' },
+    { id: 'seed-hongdae-2', name: '르뱅앤블레 홍대', genre: '프렌치', area: '홍대' },
     { id: 'seed-hongdae-3', name: '옥동식', genre: '한식', area: '홍대' },
   ],
   '이태원': [
-    { id: 'seed-itaewon-1', name: '포잉', genre: '아시안', area: '이태원' },
-    { id: 'seed-itaewon-2', name: '레바논익스프레스', genre: '양식', area: '이태원' },
-    { id: 'seed-itaewon-3', name: '그리디키친', genre: '양식', area: '이태원' },
+    { id: 'seed-itaewon-1', name: '포잉', genre: '기타', area: '이태원' },
+    { id: 'seed-itaewon-2', name: '레바논익스프레스', genre: '기타', area: '이태원' },
+    { id: 'seed-itaewon-3', name: '그리디키친', genre: '이탈리안', area: '이태원' },
   ],
 };
 

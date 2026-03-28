@@ -1,7 +1,8 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { OnboardingSeedRestaurant, OnboardingSeedBubble } from '@/domain/entities/onboarding'
+import type { OnboardingRepository } from '@/domain/repositories/onboarding-repository'
 
-export class SupabaseOnboardingRepository {
+export class SupabaseOnboardingRepository implements OnboardingRepository {
   private get supabase() { return createClient() }
 
   async getSeedRestaurants(area: string): Promise<OnboardingSeedRestaurant[]> {
