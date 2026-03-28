@@ -11,6 +11,7 @@ interface BubblerHeroProps {
   avatarColor: string | null
   level: number
   levelTitle: string
+  tasteTags?: string[]
   accessLevel: AccessLevel
   isOwnProfile: boolean
   isFollowLoading: boolean
@@ -24,6 +25,7 @@ export function BubblerHero({
   avatarColor,
   level,
   levelTitle,
+  tasteTags,
   accessLevel,
   isOwnProfile,
   isFollowLoading,
@@ -33,19 +35,35 @@ export function BubblerHero({
 
   return (
     <div className="flex flex-col items-center px-6 pb-4 pt-6">
-      <div
-        className="flex h-20 w-20 items-center justify-center rounded-full text-[28px] font-bold"
-        style={{
-          backgroundColor: avatarColor ?? 'var(--accent-social-light)',
-          color: '#FFFFFF',
-          border: `3px solid ${levelColor}`,
-        }}
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-        ) : (
-          nickname.charAt(0)
-        )}
+      {/* 아바타 72×72px + 레벨 뱃지 오버레이 */}
+      <div className="relative">
+        <div
+          className="flex items-center justify-center rounded-full text-[28px] font-bold"
+          style={{
+            width: '72px',
+            height: '72px',
+            backgroundColor: avatarColor ?? 'var(--accent-social-light)',
+            color: '#FFFFFF',
+            border: `3px solid ${levelColor}`,
+          }}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+          ) : (
+            nickname.charAt(0)
+          )}
+        </div>
+        <div
+          className="absolute flex items-center gap-0.5 rounded-full px-1.5 py-0.5"
+          style={{
+            bottom: '-2px',
+            right: '-4px',
+            backgroundColor: `${levelColor}20`,
+            border: `1.5px solid ${levelColor}`,
+          }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: levelColor }}>Lv.{level}</span>
+        </div>
       </div>
 
       <h1 className="mt-3 text-[18px] font-bold" style={{ color: 'var(--text)' }}>{nickname}</h1>
@@ -53,13 +71,22 @@ export function BubblerHero({
         <span className="mt-0.5 text-[13px]" style={{ color: 'var(--text-hint)' }}>@{handle}</span>
       )}
 
-      <div
-        className="mt-2 flex items-center gap-1.5 rounded-full px-2.5 py-0.5"
-        style={{ backgroundColor: `${levelColor}20` }}
-      >
-        <span className="text-[11px] font-bold" style={{ color: levelColor }}>Lv.{level}</span>
-        <span className="text-[11px] font-medium" style={{ color: levelColor }}>{levelTitle}</span>
-      </div>
+      <span className="mt-1 text-[12px] font-medium" style={{ color: levelColor }}>{levelTitle}</span>
+
+      {/* 취향 태그 */}
+      {tasteTags && tasteTags.length > 0 && (
+        <div className="mt-2 flex flex-wrap justify-center gap-1">
+          {tasteTags.slice(0, 5).map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full px-2 py-0.5 text-[11px]"
+              style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-sub)' }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       {!isOwnProfile && (
         <div className="mt-4">

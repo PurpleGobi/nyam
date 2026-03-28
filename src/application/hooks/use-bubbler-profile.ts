@@ -46,6 +46,7 @@ interface BubblerProfileData {
   level: number
   levelTitle: string
   accessLevel: AccessLevel
+  tasteTags: string[]
   categories: CategoryStat[]
   avgSatisfaction: number
   totalRecords: number
@@ -101,6 +102,7 @@ export function useBubblerProfile(
           level: profile.level ?? 1,
           levelTitle: profile.levelTitle ?? '입문자',
           accessLevel,
+          tasteTags: profile.tasteTags ?? [],
           categories: profile.categories ?? [],
           avgSatisfaction: profile.avgSatisfaction ?? 0,
           totalRecords: profile.totalRecords ?? 0,

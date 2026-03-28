@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, Share2 } from 'lucide-react'
 
 interface RecordSuccessProps {
   variant: 'food' | 'wine'
@@ -11,6 +11,7 @@ interface RecordSuccessProps {
   onAddMore: () => void
   onAddAnother: () => void
   onGoHome: () => void
+  onShareToBubble?: () => void
 }
 
 export function RecordSuccess({
@@ -22,6 +23,7 @@ export function RecordSuccess({
   onAddMore,
   onAddAnother,
   onGoHome,
+  onShareToBubble,
 }: RecordSuccessProps) {
   const accentColor = variant === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
@@ -77,6 +79,25 @@ export function RecordSuccess({
         >
           내용 추가하기
         </button>
+
+        {onShareToBubble && (
+          <button
+            type="button"
+            onClick={onShareToBubble}
+            className="flex w-full items-center justify-center gap-2 transition-opacity active:opacity-80"
+            style={{
+              height: '48px',
+              borderRadius: 'var(--r-md)',
+              backgroundColor: 'transparent',
+              border: '1.5px solid var(--accent-social)',
+              color: 'var(--accent-social)',
+              fontSize: '15px',
+              fontWeight: 700,
+            }}
+          >
+            <Share2 size={16} /> 버블에 공유
+          </button>
+        )}
 
         <button
           type="button"

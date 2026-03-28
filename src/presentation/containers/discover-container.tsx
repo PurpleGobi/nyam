@@ -73,8 +73,8 @@ export function DiscoverContainer() {
       {isEmpty && !isLoading && (
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
           <Search size={40} style={{ color: 'var(--text-hint)' }} />
-          <p className="mt-4 text-[14px]" style={{ color: 'var(--text-sub)', textAlign: 'center' }}>
-            {`${area}에 등록된 식당이 없습니다`}
+          <p className="mt-4 whitespace-pre-line text-[14px]" style={{ color: 'var(--text-sub)', textAlign: 'center' }}>
+            {`이 지역에 등록된\n식당이 아직 없어요\n첫 번째로 등록해 보세요!`}
           </p>
           <button
             type="button"
@@ -99,7 +99,7 @@ export function DiscoverContainer() {
       <div className="mt-auto px-4 pb-6 pt-3">
         <button
           type="button"
-          onClick={() => router.push('/')}
+          onClick={() => router.back()}
           className="flex w-full items-center justify-center gap-[6px] rounded-xl py-3 text-[14px] font-semibold"
           style={{
             color: 'var(--text)',
@@ -107,7 +107,8 @@ export function DiscoverContainer() {
             border: '1.5px solid var(--border)',
           }}
         >
-          홈으로 돌아가기
+          <ChevronLeft size={16} style={{ color: 'var(--text)' }} />
+          홈으로
         </button>
       </div>
     </div>

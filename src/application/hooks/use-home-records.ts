@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { DiningRecord } from '@/domain/entities/record'
+import type { DiningRecord, RecordTargetType } from '@/domain/entities/record'
 import type { HomeTab } from '@/domain/entities/home-state'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { recordRepo } from '@/shared/di/container'
@@ -82,7 +82,8 @@ export function useHomeRecords(params: {
     if (!userId) return
     setIsLoading(true)
     try {
-      const data = await recordRepo.findByUserId(userId, tab)
+      const targetType: RecordTargetType = tab === 'following' ? 'restaurant' : tab
+      const data = await recordRepo.findByUserId(userId, targetType)
       setAllRecords(data)
       setPage(1)
     } catch {

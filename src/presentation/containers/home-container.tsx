@@ -420,6 +420,7 @@ export function HomeContainer() {
   }
 
   const isCalendarMode = viewMode === 'calendar'
+  const isFollowingMode = activeTab === 'following'
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
@@ -462,8 +463,8 @@ export function HomeContainer() {
           isSearchOpen={isSearchOpen}
         />
 
-        {/* 필터/소팅/검색 패널 — 캘린더 모드에서는 숨김 */}
-        {!isCalendarMode && isFilterOpen && (
+        {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
+        {!isCalendarMode && !isFollowingMode && isFilterOpen && (
           <div className="pt-2">
             <NotionFilterPanel
               rules={filterRules}
@@ -477,7 +478,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        {!isCalendarMode && isSortOpen && (
+        {!isCalendarMode && !isFollowingMode && isSortOpen && (
           <div className="pt-2">
             <SortDropdown
               currentSort={currentSort}
@@ -487,7 +488,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        {!isCalendarMode && isSearchOpen && (
+        {!isCalendarMode && !isFollowingMode && isSearchOpen && (
           <div className="pt-2">
             <SearchDropdown
               query={searchQuery}
@@ -497,8 +498,8 @@ export function HomeContainer() {
           </div>
         )}
 
-        {/* 저장 필터 칩 — 캘린더 모드에서는 숨김 */}
-        {!isCalendarMode && (
+        {/* 저장 필터 칩 — 캘린더/팔로잉 모드에서는 숨김 */}
+        {!isCalendarMode && !isFollowingMode && (
           <SavedFilterChips
             chips={filters}
             activeChipId={activeChipId}
@@ -508,8 +509,8 @@ export function HomeContainer() {
           />
         )}
 
-        {/* 통계 패널 — 캘린더/지도 모드에서는 숨김 */}
-        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
+        {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
+        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2">
             <StatsToggle
               isOpen={isStatsOpen}
@@ -603,7 +604,7 @@ export function HomeContainer() {
         )}
 
         {/* 추천 카드 */}
-        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
+        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
           <div className="px-4 pb-2 pt-3">
             <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -618,7 +619,7 @@ export function HomeContainer() {
         {renderContent()}
       </div>
 
-      <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
+      <FabAdd currentTab={activeTab === 'following' ? 'restaurant' : activeTab} onClick={() => router.push(`/add?type=${activeTab === 'following' ? 'restaurant' : activeTab}`)} />
 
       <FilterChipSaveModal
         isOpen={isSaveModalOpen}

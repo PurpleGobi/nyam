@@ -38,7 +38,7 @@ export function HomeTabs({
   const tabType = foodActive ? 'food' : 'wine'
 
   return (
-    <div className="flex items-center px-4 pt-2">
+    <div className="flex items-center px-4 pt-3">
       {/* 탭 — 밑줄 active 스타일 */}
       <div className="flex gap-0">
         <button

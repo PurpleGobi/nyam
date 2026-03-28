@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       algorithm: 'wine_pairing',
       source: 'ai',
       reason: `${category} 페어링 · 만족도 ${r.satisfaction}%`,
-      normalizedScore: (r.satisfaction ?? 0) / 100,
+      normalizedScore: r.satisfaction ?? 0,
       confidence: null,
     })
 

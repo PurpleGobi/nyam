@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
+import { useFollowList } from '@/application/hooks/use-follow-list'
 import { useBubblerProfile } from '@/application/hooks/use-bubbler-profile'
 import { BubblerHero } from '@/presentation/components/bubbler/bubbler-hero'
 import { BubbleContextCard } from '@/presentation/components/bubbler/bubble-context-card'
@@ -21,6 +22,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
   const router = useRouter()
   const { user: authUser } = useAuth()
   const { accessLevel, isLoading: followLoading, toggleFollow } = useFollow(authUser?.id ?? null, userId)
+  const { counts } = useFollowList(userId)
   const { data, isLoading } = useBubblerProfile(authUser?.id ?? null, userId, bubbleId)
 
   if (isLoading || !data) {
@@ -49,27 +51,34 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
       </nav>
 
       <div className="flex flex-col gap-6 px-4 pb-8">
-        {/* 프로필 히어로 */}
+        {/* 프로필 히어로 — 모든 접근 레벨에서 표시 (none: 레벨만, follow+: 이름/태그) */}
         <BubblerHero
-          nickname={data.nickname}
-          handle={data.handle}
-          avatarUrl={data.avatarUrl}
+          nickname={data.accessLevel === 'none' ? `Lv.${data.level} 유저` : data.nickname}
+          handle={data.accessLevel === 'none' ? null : data.handle}
+          avatarUrl={data.accessLevel === 'none' ? null : data.avatarUrl}
           avatarColor={data.avatarColor}
           level={data.level}
           levelTitle={data.levelTitle}
+          tasteTags={data.accessLevel !== 'none' ? data.tasteTags : undefined}
           accessLevel={data.accessLevel}
           isOwnProfile={isSelf}
           isFollowLoading={followLoading}
           onToggleFollow={toggleFollow}
         />
 
-        {/* 통계 */}
+        {/* 통계 — none: 기록 수만, follow+: 팔로워/팔로잉 추가 */}
         <div className="flex justify-center gap-8">
           <StatItem label="기록" value={data.totalRecords} />
+          {data.accessLevel !== 'none' && (
+            <>
+              <StatItem label="팔로워" value={counts.followers} />
+              <StatItem label="팔로잉" value={counts.following} />
+            </>
+          )}
         </div>
 
-        {/* 버블 컨텍스트 카드 */}
-        {data.bubbleContext && (
+        {/* 버블 컨텍스트 카드 — follow+ */}
+        {data.accessLevel !== 'none' && data.bubbleContext && (
           <BubbleContextCard
             bubbleName={data.bubbleContext.bubbleName}
             bubbleIcon={data.bubbleContext.bubbleIcon}
@@ -79,27 +88,35 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           />
         )}
 
-        {/* 취향 프로필 */}
-        <TasteProfile
-          categories={data.categories}
-          scoreTendency={{ avgSatisfaction: data.avgSatisfaction, totalRecords: data.totalRecords }}
-          topRegions={data.topRegions}
-        />
+        {/* 취향 프로필 — follow+ */}
+        {data.accessLevel !== 'none' && (
+          <TasteProfile
+            categories={data.categories}
+            scoreTendency={{ avgSatisfaction: data.avgSatisfaction, totalRecords: data.totalRecords }}
+            topRegions={data.topRegions}
+          />
+        )}
 
-        {/* 강력 추천 (Picks) */}
-        <PicksGrid
-          picks={data.topPicks}
-          onItemPress={(id, type) => router.push(type === 'restaurant' ? `/restaurants/${id}` : `/wines/${id}`)}
-        />
+        {/* 강력 추천 (Picks) — mutual only */}
+        {data.accessLevel === 'mutual' && (
+          <PicksGrid
+            picks={data.topPicks}
+            onItemPress={(id, type) => router.push(type === 'restaurant' ? `/restaurants/${id}` : `/wines/${id}`)}
+          />
+        )}
 
-        {/* 최근 기록 */}
-        <RecentRecords
-          records={data.recentRecords}
-          onRecordPress={(id) => router.push(`/records/${id}`)}
-        />
+        {/* 최근 기록 — mutual only */}
+        {data.accessLevel === 'mutual' && (
+          <RecentRecords
+            records={data.recentRecords}
+            onRecordPress={(id) => router.push(`/records/${id}`)}
+          />
+        )}
 
-        {/* 활동 히트맵 */}
-        <ActivitySection heatmap={data.heatmap} />
+        {/* 활동 히트맵 — follow+ */}
+        {data.accessLevel !== 'none' && (
+          <ActivitySection heatmap={data.heatmap} />
+        )}
       </div>
     </div>
   )

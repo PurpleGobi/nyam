@@ -15,6 +15,8 @@ import { photoRepo, recordRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { RecordNav } from '@/presentation/components/record/record-nav'
 import { RecordSuccess } from '@/presentation/components/record/record-success'
+import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
+import { useShareRecord } from '@/application/hooks/use-share-record'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
@@ -55,6 +57,12 @@ function RecordFlowInner() {
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [exifWarning, setExifWarning] = useState<string | null>(null)
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
+  const [showShareSheet, setShowShareSheet] = useState(false)
+
+  const { availableBubbles, shareToBubble } = useShareRecord(
+    user?.id ?? null,
+    state.savedRecordId,
+  )
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
@@ -283,16 +291,33 @@ function RecordFlowInner() {
 
   if (state.step === 'success') {
     return (
-      <RecordSuccess
-        variant={state.targetType === 'wine' ? 'wine' : 'food'}
-        targetName={state.targetName}
-        targetMeta={state.targetMeta}
-        photoError={photoError}
-        exifWarning={exifWarning}
-        onAddMore={handleAddMore}
-        onAddAnother={handleAddAnother}
-        onGoHome={handleClose}
-      />
+      <>
+        <RecordSuccess
+          variant={state.targetType === 'wine' ? 'wine' : 'food'}
+          targetName={state.targetName}
+          targetMeta={state.targetMeta}
+          photoError={photoError}
+          exifWarning={exifWarning}
+          onAddMore={handleAddMore}
+          onAddAnother={handleAddAnother}
+          onGoHome={handleClose}
+          onShareToBubble={availableBubbles.length > 0 ? () => setShowShareSheet(true) : undefined}
+        />
+        <ShareToBubbleSheet
+          isOpen={showShareSheet}
+          onClose={() => setShowShareSheet(false)}
+          bubbles={availableBubbles.map((b) => ({
+            id: b.id,
+            name: b.name,
+            icon: b.icon,
+            iconBgColor: b.iconBgColor,
+            isAlreadyShared: b.isShared,
+          }))}
+          onShare={async (bubbleId) => {
+            await shareToBubble(bubbleId)
+          }}
+        />
+      </>
     )
   }
 

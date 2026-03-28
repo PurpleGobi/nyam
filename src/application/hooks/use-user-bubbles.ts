@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { bubbleRepo } from '@/shared/di/container'
 
 interface UserBubbleItem {
@@ -20,11 +20,11 @@ export function useUserBubbles(userId: string | null): UseUserBubblesResult {
   const [bubbles, setBubbles] = useState<UserBubbleItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
+  const fetch = useCallback(async () => {
     if (!userId) return
-
     setIsLoading(true)
-    bubbleRepo.getUserBubbles(userId).then((memberships) => {
+    try {
+      const memberships = await bubbleRepo.getUserBubbles(userId)
       setBubbles(
         memberships
           .filter((m) => m.status === 'active')
@@ -35,8 +35,14 @@ export function useUserBubbles(userId: string | null): UseUserBubblesResult {
             iconBgColor: m.bubbleIconBgColor ?? null,
           })),
       )
-    }).finally(() => setIsLoading(false))
+    } finally {
+      setIsLoading(false)
+    }
   }, [userId])
+
+  useEffect(() => {
+    fetch()
+  }, [fetch])
 
   return {
     bubbles,

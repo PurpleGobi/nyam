@@ -652,7 +652,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
   async getBubblerProfile(userId: string, bubbleId: string | null): Promise<BubblerProfileData | null> {
     const { data: user } = await this.supabase
       .from('users')
-      .select('nickname, handle, avatar_url, avatar_color, total_xp')
+      .select('nickname, handle, avatar_url, avatar_color, total_xp, taste_tags')
       .eq('id', userId)
       .single()
 
@@ -732,6 +732,41 @@ export class SupabaseProfileRepository implements ProfileRepository {
       }
     }
 
+    // 카테고리 비율 계산
+    const allRecords = records ?? []
+    const categoryMap = new Map<string, number>()
+    for (const r of allRecords) {
+      const tType = r.target_type as string
+      const label = tType === 'restaurant' ? '식당' : '와인'
+      categoryMap.set(label, (categoryMap.get(label) ?? 0) + 1)
+    }
+    const categories = Array.from(categoryMap.entries()).map(([name, count]) => ({
+      name,
+      percentage: allRecords.length > 0 ? Math.round((count / allRecords.length) * 100) : 0,
+    }))
+
+    // 평균 만족도
+    const satisfactions = allRecords
+      .map((r) => r.satisfaction as number | null)
+      .filter((s): s is number => s !== null)
+    const avgSatisfaction = satisfactions.length > 0
+      ? Math.round(satisfactions.reduce((a, b) => a + b, 0) / satisfactions.length)
+      : 0
+
+    // 지역 태그 (식당 기준 상위 3개)
+    const regionMap = new Map<string, number>()
+    for (const r of allRecords) {
+      if (r.target_type === 'restaurant') {
+        const rest = r.restaurant as unknown as Record<string, unknown> | null
+        const genre = rest?.genre as string | null
+        if (genre) regionMap.set(genre, (regionMap.get(genre) ?? 0) + 1)
+      }
+    }
+    const topRegions = Array.from(regionMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name)
+
     return {
       nickname: user.nickname as string,
       handle: user.handle as string | null,
@@ -739,7 +774,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
       avatarColor: user.avatar_color as string | null,
       level,
       levelTitle: getLevelTitle(level),
-      totalRecords: (records ?? []).length,
+      tasteTags: (user.taste_tags as string[]) ?? [],
+      categories,
+      avgSatisfaction,
+      totalRecords: allRecords.length,
+      topRegions,
       topPicks,
       recentRecords,
       heatmap,

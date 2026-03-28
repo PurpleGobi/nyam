@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       algorithm: 'scene',
       source: 'ai',
       reason: `${scene} · 만족도 ${r.satisfaction}%`,
-      normalizedScore: (r.satisfaction ?? 0) / 100,
+      normalizedScore: r.satisfaction ?? 0,
       confidence: null,
     })
 

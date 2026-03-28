@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { HomeTab } from '@/domain/entities/home-state'
+import type { RecordTargetType } from '@/domain/entities/record'
 import type { CalendarDayData } from '@/presentation/components/home/calendar-view'
 import { recordRepo } from '@/shared/di/container'
 
@@ -22,7 +23,8 @@ export function useCalendarRecords(params: {
     if (!userId) return
     setIsLoading(true)
     try {
-      const records = await recordRepo.findByUserId(userId, tab)
+      const targetType: RecordTargetType = tab === 'following' ? 'restaurant' : tab
+      const records = await recordRepo.findByUserId(userId, targetType)
 
       const monthStr = `${year}-${String(month).padStart(2, '0')}`
       const monthRecords = records.filter((r) => r.visitDate?.startsWith(monthStr))

@@ -1104,6 +1104,11 @@
   border-bottom-color: var(--accent-wine);
 }
 
+.filter-tab.active.social {
+  color: var(--accent-social);
+  border-bottom-color: var(--accent-social);
+}
+
 /* ── 10. 뷰 사이클 버튼 ── */
 
 .view-cycle-btn {

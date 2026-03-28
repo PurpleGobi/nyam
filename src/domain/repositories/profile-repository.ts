@@ -15,6 +15,7 @@ export interface BubblerProfileData {
   avatarColor?: string | null
   level?: number
   levelTitle?: string
+  tasteTags?: string[]
   categories?: { name: string; percentage: number }[]
   avgSatisfaction?: number
   totalRecords?: number

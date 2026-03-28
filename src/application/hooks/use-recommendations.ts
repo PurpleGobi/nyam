@@ -37,16 +37,9 @@ export function useRecommendations(userId: string | null, recordCount: number): 
           // 5~19개 → 재방문 + 권위 + 버블
           endpoints = ['/api/recommend/revisit', '/api/recommend/authority', '/api/recommend/bubble']
         } else {
-          // 20+ → 전체 7종 (wine-pairing은 주요 3카테고리 병렬 호출)
-          endpoints = [
-            '/api/recommend/revisit',
-            '/api/recommend/authority',
-            '/api/recommend/bubble',
-            '/api/recommend/scene',
-            '/api/recommend/wine-pairing?category=red_meat',
-            '/api/recommend/wine-pairing?category=seafood',
-            '/api/recommend/wine-pairing?category=cheese',
-          ]
+          // 20+ → 추천 칩 기본 병합: revisit + authority + bubble (SSOT §6)
+          // scene은 상황 필터 선택 시, wine-pairing은 와인 기록 풍성화 시 별도 트리거
+          endpoints = ['/api/recommend/revisit', '/api/recommend/authority', '/api/recommend/bubble']
         }
 
         const results = await Promise.allSettled(

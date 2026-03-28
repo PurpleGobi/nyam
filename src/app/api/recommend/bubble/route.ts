@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import { calcBubbleScore } from '@/domain/services/recommendation-service'
 import type { RecommendationCard, RecommendationSource } from '@/domain/entities/recommendation'
 
 export async function GET() {
@@ -70,40 +71,75 @@ export async function GET() {
     .eq('target_type', 'restaurant')
 
   const myVisited = new Set((myRecords ?? []).map((r) => r.target_id))
-  const seen = new Set<string>()
-  const cards: RecommendationCard[] = []
+
+  // target_id별 집계: 평균 만족도 + 평가 멤버 수 (RECOMMENDATION.md §6)
+  const grouped = new Map<string, {
+    targetId: string
+    targetType: string
+    totalSat: number
+    memberCount: number
+    memberIds: Set<string>
+    restaurant: { name: string; genre: string | null; photo_url: string | null } | null
+    bubbleId: string
+  }>()
 
   for (const r of records) {
-    if (myVisited.has(r.target_id) || seen.has(r.target_id)) continue
-    seen.add(r.target_id)
+    if (myVisited.has(r.target_id)) continue
 
-    const restaurant = r.restaurants as unknown as { name: string; genre: string | null; photo_url: string | null } | null
-    const bubbleId = userBubbleMap.get(r.user_id) ?? bubbleIds[0]
-    const bubble = bubbleMap.get(bubbleId)
+    const existing = grouped.get(r.target_id)
+    if (existing) {
+      if (!existing.memberIds.has(r.user_id)) {
+        existing.totalSat += r.satisfaction ?? 0
+        existing.memberCount += 1
+        existing.memberIds.add(r.user_id)
+      }
+    } else {
+      const restaurant = r.restaurants as unknown as { name: string; genre: string | null; photo_url: string | null } | null
+      const bubbleId = userBubbleMap.get(r.user_id) ?? bubbleIds[0]
+      grouped.set(r.target_id, {
+        targetId: r.target_id,
+        targetType: r.target_type,
+        totalSat: r.satisfaction ?? 0,
+        memberCount: 1,
+        memberIds: new Set([r.user_id]),
+        restaurant,
+        bubbleId,
+      })
+    }
+  }
+
+  const scored: Array<RecommendationCard & { score: number }> = []
+
+  for (const [, g] of grouped) {
+    const avgSat = g.totalSat / g.memberCount
+    const score = calcBubbleScore(avgSat, g.memberCount)
+    const bubble = bubbleMap.get(g.bubbleId)
 
     // private 버블 → source='ai', 버블 존재 비노출 (RECOMMENDATION.md §2-6)
     const isPrivate = bubble?.visibility === 'private'
     const source: RecommendationSource = isPrivate ? 'ai' : 'bubble'
     const reason = isPrivate
-      ? `만족도 ${r.satisfaction}%`
-      : `${bubble?.name ?? '버블'} 추천 · 만족도 ${r.satisfaction}%`
+      ? `만족도 ${Math.round(avgSat)}%`
+      : `${bubble?.name ?? '버블'} 추천 · 만족도 ${Math.round(avgSat)}%`
 
-    cards.push({
-      id: `bubble-${r.target_id}`,
-      targetId: r.target_id,
-      targetType: r.target_type as 'restaurant' | 'wine',
-      name: restaurant?.name ?? '',
-      meta: restaurant?.genre ?? '',
-      photoUrl: restaurant?.photo_url ?? null,
+    scored.push({
+      id: `bubble-${g.targetId}`,
+      targetId: g.targetId,
+      targetType: g.targetType as 'restaurant' | 'wine',
+      name: g.restaurant?.name ?? '',
+      meta: g.restaurant?.genre ?? '',
+      photoUrl: g.restaurant?.photo_url ?? null,
       algorithm: 'bubble',
       source,
       reason,
-      normalizedScore: (r.satisfaction ?? 0) / 100,
+      normalizedScore: score,
       confidence: null,
+      score,
     })
-
-    if (cards.length >= 10) break
   }
+
+  scored.sort((a, b) => b.score - a.score)
+  const cards: RecommendationCard[] = scored.slice(0, 10).map(({ score: _score, ...card }) => card)
 
   return NextResponse.json({ cards }, {
     headers: { 'Cache-Control': 'public, max-age=1800' },

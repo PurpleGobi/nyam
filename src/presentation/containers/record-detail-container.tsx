@@ -15,6 +15,8 @@ import { RecordPracticalInfo } from '@/presentation/components/record/record-pra
 import { XpEarnedSection } from '@/presentation/components/record/xp-earned-section'
 import { RecordActions } from '@/presentation/components/record/record-actions'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
+import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
+import { useShareRecord } from '@/application/hooks/use-share-record'
 import type { PairingCategory } from '@/domain/entities/record'
 
 /** YYYY-MM-DD → YYYY.MM.DD */
@@ -46,6 +48,9 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showShareSheet, setShowShareSheet] = useState(false)
+
+  const { availableBubbles, shareToBubble } = useShareRecord(user?.id ?? null, recordId)
   const [isScrolled, setIsScrolled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -175,13 +180,20 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
               </button>
               <button
                 type="button"
+                onClick={() => { setShowDropdown(false); setShowShareSheet(true) }}
+                className="flex w-full items-center gap-2 px-4 py-2.5"
+                style={{ fontSize: '14px', color: 'var(--text)' }}
+              >
+                <Share2 size={16} /> 버블에 공유
+              </button>
+              <button
+                type="button"
                 onClick={() => { setShowDropdown(false); setShowDeleteConfirm(true) }}
                 className="flex w-full items-center gap-2 px-4 py-2.5"
                 style={{ fontSize: '14px', color: 'var(--negative)' }}
               >
                 <Trash2 size={16} /> 삭제
               </button>
-              {/* 공유: S8까지 숨김 */}
             </div>
           )}
         </div>
@@ -355,7 +367,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
         {/* §10: Actions */}
         <section>
-          <RecordActions onEdit={handleEdit} onDelete={() => setShowDeleteConfirm(true)} />
+          <RecordActions onEdit={handleEdit} onDelete={() => setShowDeleteConfirm(true)} onShare={() => setShowShareSheet(true)} />
         </section>
 
         {/* h-20 spacer */}
@@ -367,6 +379,21 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         isDeleting={isDeleting}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ShareToBubbleSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        bubbles={availableBubbles.map((b) => ({
+          id: b.id,
+          name: b.name,
+          icon: b.icon,
+          iconBgColor: b.iconBgColor,
+          isAlreadyShared: b.isShared,
+        }))}
+        onShare={async (bubbleId) => {
+          await shareToBubble(bubbleId)
+        }}
       />
 
       {/* 삭제 실패 시 에러 토스트 */}
