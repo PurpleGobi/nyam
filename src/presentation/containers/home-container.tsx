@@ -31,10 +31,10 @@ import { CalendarDayDetail } from '@/presentation/components/home/calendar-day-d
 import { MapView } from '@/presentation/components/home/map-view'
 import type { MapRecord } from '@/presentation/components/home/map-view'
 import { SavedFilterChips } from '@/presentation/components/home/saved-filter-chips'
-import { NotionFilterPanel } from '@/presentation/components/home/notion-filter-panel'
+import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
-import { FilterChipSaveModal } from '@/presentation/components/home/filter-chip-save-modal'
+// FilterChipSaveModal은 FilterSystem 내장으로 대체
 import { StatsToggle } from '@/presentation/components/home/stats-toggle'
 import { WorldMapChart } from '@/presentation/components/home/world-map-chart'
 import { GenreChart } from '@/presentation/components/home/genre-chart'
@@ -194,6 +194,7 @@ export function HomeContainer() {
   }, [isFollowingMode, setActiveChipId, setFilterRules])
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [chipName, setChipName] = useState('')
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
   // 캘린더 상태
@@ -513,20 +514,21 @@ export function HomeContainer() {
 
         {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
         {!isCalendarMode && isFilterOpen && (
-          <div className="pt-2">
-            <NotionFilterPanel
+          <div className="px-4 pt-2">
+            <FilterSystem
               rules={filterRules}
               conjunction={conjunction}
               attributes={filterAttributes}
               onRulesChange={handleRulesChange}
               onConjunctionChange={setConjunction}
-              onSaveAsChip={() => setIsSaveModalOpen(true)}
-              accentColor={accentColor}
-            />
-            <FilterChipSaveModal
-              isOpen={isSaveModalOpen}
-              onClose={() => setIsSaveModalOpen(false)}
-              onSave={handleSaveChip}
+              chipName={chipName}
+              onChipNameChange={setChipName}
+              onSaveAsChip={(name) => {
+                if (name) {
+                  handleSaveChip(name)
+                  setChipName('')
+                }
+              }}
               accentColor={accentColor}
             />
           </div>

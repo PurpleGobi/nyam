@@ -23,7 +23,7 @@ export interface BubblerProfileData {
   topPicks?: { id: string; name: string; targetType: 'restaurant' | 'wine'; satisfaction: number | null; thumbnailUrl: string | null; genre: string | null }[]
   recentRecords?: { id: string; targetName: string; targetType: 'restaurant' | 'wine'; satisfaction: number | null; comment: string | null; visitDate: string | null }[]
   heatmap?: HeatmapCell[]
-  bubbleContext?: { bubbleId: string; bubbleName: string; bubbleIcon: string | null; rank: number | null; memberSince: string; tasteMatchPct: number | null } | null
+  bubbleContext?: { bubbleId: string; bubbleName: string; bubbleIcon: string | null; rank: number | null; rankTotal: number | null; memberSince: string; tasteMatchPct: number | null } | null
   currentStreak?: number
   activeDuration?: string
 }

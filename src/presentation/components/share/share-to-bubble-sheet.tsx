@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { Toast } from '@/presentation/components/ui/toast'
 import { BubbleSelectList } from './bubble-select-list'
 
 interface BubbleSelectItem {
@@ -24,6 +25,8 @@ interface ShareToBubbleSheetProps {
 export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }: ShareToBubbleSheetProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isSharing, setIsSharing] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastVisible, setToastVisible] = useState(false)
 
   if (!isOpen) return null
 
@@ -43,9 +46,12 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }
     if (selectedIds.size === 0 || isSharing) return
     setIsSharing(true)
     try {
+      const count = selectedIds.size
       await onShareMultiple(Array.from(selectedIds))
       setSelectedIds(new Set())
-      onClose()
+      setToastMessage(`${count}개 버블에 공유했어요`)
+      setToastVisible(true)
+      setTimeout(() => onClose(), 1500)
     } finally {
       setIsSharing(false)
     }
@@ -97,6 +103,9 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }
           </button>
         </div>
       </div>
+      {toastMessage && (
+        <Toast message={toastMessage} visible={toastVisible} onHide={() => { setToastVisible(false); setToastMessage(null) }} />
+      )}
     </div>
   )
 }

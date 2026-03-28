@@ -7,6 +7,7 @@ interface BubbleContextCardProps {
   bubbleName: string
   bubbleIcon: string | null
   rank: number | null
+  rankTotal: number | null
   memberSince: string
   tasteMatchPct: number | null
 }
@@ -15,6 +16,7 @@ export function BubbleContextCard({
   bubbleName,
   bubbleIcon,
   rank,
+  rankTotal,
   memberSince,
   tasteMatchPct,
 }: BubbleContextCardProps) {
@@ -32,7 +34,7 @@ export function BubbleContextCard({
         {rank !== null && (
           <div className="flex items-center gap-1.5">
             <Trophy size={14} style={{ color: 'var(--accent-food)' }} />
-            <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>{rank}위</span>
+            <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>{rank}위{rankTotal !== null ? `/${rankTotal}명` : ''}</span>
           </div>
         )}
         <div className="flex items-center gap-1.5">

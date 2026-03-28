@@ -6,8 +6,6 @@ import { Bell, Users, User } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
-import { useBubbleRecords } from '@/application/hooks/use-bubble-records'
-import { useUserBubbles } from '@/application/hooks/use-user-bubbles'
 import { restaurantRepo, wishlistRepo } from '@/shared/di/container'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -18,8 +16,7 @@ import { QuadrantDisplay } from '@/presentation/components/detail/quadrant-displ
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
 import { ConnectedItems } from '@/presentation/components/detail/connected-items'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
-import { BubbleFilterChips } from '@/presentation/components/detail/bubble-filter-chips'
-import { BubbleRecordCard } from '@/presentation/components/detail/bubble-record-card'
+import { BubbleRecordSection } from '@/presentation/components/detail/bubble-record-section'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
 
@@ -66,14 +63,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     bubbleCount,
     viewMode,
   } = useRestaurantDetail(restaurantId, user?.id ?? null, restaurantRepo)
-
-  const { bubbles: userBubbles, bubbleIds: userBubbleIds } = useUserBubbles(user?.id ?? null)
-  const {
-    records: bubbleRecords,
-    hasMore: bubbleHasMore,
-    selectedBubbleId,
-    setSelectedBubbleId,
-  } = useBubbleRecords(restaurantId, 'restaurant', userBubbleIds)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null,
@@ -320,58 +309,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         )}
 
         {/* L9: 버블 멤버 기록 */}
-        <section style={{ padding: '16px 20px' }}>
-          <div className="mb-3.5">
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-              버블 기록
-            </span>
-          </div>
-          {bubbleRecords.length > 0 ? (
-            <>
-              <BubbleFilterChips
-                bubbles={userBubbles}
-                selectedId={selectedBubbleId}
-                onSelect={setSelectedBubbleId}
-                accentType="food"
-              />
-              <div className="mt-3 flex flex-col gap-2">
-                {bubbleRecords.map((r) => (
-                  <BubbleRecordCard
-                    key={r.shareId}
-                    authorNickname={r.authorNickname}
-                    authorAvatar={r.authorAvatar}
-                    authorAvatarColor={r.authorAvatarColor}
-                    authorLevel={r.authorLevel}
-                    authorLevelTitle={r.authorLevelTitle}
-                    bubbleName={r.bubbleName}
-                    satisfaction={r.satisfaction}
-                    comment={r.comment}
-                    scene={r.scene}
-                    visitDate={r.visitDate}
-                    likeCount={r.likeCount}
-                    commentCount={r.commentCount}
-                    isMember={r.isMember}
-                    contentVisibility={r.contentVisibility}
-                  />
-                ))}
-                {bubbleHasMore && (
-                  <p className="py-2 text-center text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
-                    더보기
-                  </p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="text-center" style={{ padding: '40px 20px' }}>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-sub)' }}>
-                아직 버블 기록이 없어요
-              </p>
-              <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
-                버블에서 이 식당에 대한 이야기를 나눠보세요
-              </p>
-            </div>
-          )}
-        </section>
+        <BubbleRecordSection targetId={restaurantId} targetType="restaurant" />
 
         {/* 하단 spacer (FAB 클리어런스) */}
         <div style={{ height: '80px' }} />

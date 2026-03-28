@@ -910,8 +910,8 @@
 /* ── 7. 필터 시스템 ── */
 
 .icon-button {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -943,11 +943,11 @@
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 100px;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-sub);
   cursor: pointer;
@@ -964,6 +964,11 @@
 .filter-chip.active.wine {
   background: var(--accent-wine);
   border-color: var(--accent-wine);
+}
+
+.filter-chip.active.social {
+  background: var(--accent-social);
+  border-color: var(--accent-social);
 }
 
 .ds-sort-dropdown {
@@ -1093,7 +1098,7 @@
 /* ── 9. 필터 탭 (언더라인) ── */
 
 .filter-tab {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-hint);
   background: none;
@@ -1126,8 +1131,8 @@
 /* ── 10. 뷰 사이클 버튼 ── */
 
 .view-cycle-btn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-sm);
   background: none;
   border: none;

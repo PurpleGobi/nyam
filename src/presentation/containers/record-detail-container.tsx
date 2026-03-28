@@ -16,6 +16,7 @@ import { XpEarnedSection } from '@/presentation/components/record/xp-earned-sect
 import { RecordActions } from '@/presentation/components/record/record-actions'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
+import { Toast } from '@/presentation/components/ui/toast'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import type { PairingCategory } from '@/domain/entities/record'
 
@@ -50,8 +51,9 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
   const [showDropdown, setShowDropdown] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
 
-  const { availableBubbles, shareToBubbles } = useShareRecord(user?.id ?? null, recordId)
+  const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, recordId)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [privacyToast, setPrivacyToast] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 스크롤 시 헤더 glassmorphism
@@ -180,7 +182,14 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
               </button>
               <button
                 type="button"
-                onClick={() => { setShowDropdown(false); setShowShareSheet(true) }}
+                onClick={() => {
+                  setShowDropdown(false)
+                  if (!canShare) {
+                    setPrivacyToast(true)
+                  } else {
+                    setShowShareSheet(true)
+                  }
+                }}
                 className="flex w-full items-center gap-2 px-4 py-2.5"
                 style={{ fontSize: '14px', color: 'var(--text)' }}
               >
@@ -386,6 +395,12 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
         onClose={() => setShowShareSheet(false)}
         bubbles={availableBubbles}
         onShareMultiple={shareToBubbles}
+      />
+
+      <Toast
+        message={blockReason ?? '비공개 프로필은 공유할 수 없습니다'}
+        visible={privacyToast}
+        onHide={() => setPrivacyToast(false)}
       />
 
       {/* 삭제 실패 시 에러 토스트 */}

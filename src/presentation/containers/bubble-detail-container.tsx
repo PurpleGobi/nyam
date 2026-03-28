@@ -169,12 +169,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className="shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors"
-      style={{
-        backgroundColor: active ? 'var(--accent-social)' : 'var(--bg-card)',
-        color: active ? '#FFFFFF' : 'var(--text-sub)',
-        border: active ? 'none' : '1px solid var(--border)',
-      }}
+      className={`filter-chip ${active ? 'active social' : ''}`}
     >
       {label}
     </button>

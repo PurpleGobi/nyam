@@ -723,17 +723,57 @@ export class SupabaseProfileRepository implements ProfileRepository {
     if (bubbleId) {
       const { data: member } = await this.supabase
         .from('bubble_members')
-        .select('taste_match_pct, joined_at, bubbles(name, icon)')
+        .select('taste_match_pct, common_target_count, joined_at, bubbles(name, icon)')
         .eq('bubble_id', bubbleId).eq('user_id', userId)
         .single()
 
       if (member) {
         const bubble = (member as Record<string, unknown>).bubbles as Record<string, unknown> | null
+
+        // 주간 랭킹 계산: 이번 주 버블 공유 수 기준
+        let weeklyRank: number | null = null
+        let weeklyTotal: number | null = null
+        const weekStart = new Date()
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+        const weekStartIso = weekStart.toISOString()
+
+        const { data: allMembers } = await this.supabase
+          .from('bubble_members')
+          .select('user_id')
+          .eq('bubble_id', bubbleId)
+          .eq('status', 'active')
+
+        if (allMembers && allMembers.length > 0) {
+          const memberUserIds = allMembers.map((m: Record<string, unknown>) => m.user_id as string)
+          weeklyTotal = memberUserIds.length
+
+          const { data: weekShares } = await this.supabase
+            .from('bubble_shares')
+            .select('shared_by')
+            .eq('bubble_id', bubbleId)
+            .gte('shared_at', weekStartIso)
+
+          const shareCounts = new Map<string, number>()
+          for (const uid of memberUserIds) {
+            shareCounts.set(uid, 0)
+          }
+          for (const s of weekShares ?? []) {
+            const uid = s.shared_by as string
+            shareCounts.set(uid, (shareCounts.get(uid) ?? 0) + 1)
+          }
+
+          const sorted = [...shareCounts.entries()].sort((a, b) => b[1] - a[1])
+          const myIndex = sorted.findIndex(([uid]) => uid === userId)
+          weeklyRank = myIndex >= 0 ? myIndex + 1 : null
+        }
+
         bubbleContext = {
           bubbleId,
           bubbleName: (bubble?.name as string) ?? '',
           bubbleIcon: (bubble?.icon as string) ?? null,
-          rank: null,
+          rank: weeklyRank,
+          rankTotal: weeklyTotal,
           memberSince: (member as Record<string, unknown>).joined_at as string,
           tasteMatchPct: (member as Record<string, unknown>).taste_match_pct as number | null,
         }

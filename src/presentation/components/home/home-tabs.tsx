@@ -38,7 +38,7 @@ export function HomeTabs({
   return (
     <div className="content-tabs flex items-center px-4 pt-3">
       {/* 탭 — 밑줄 active 스타일 */}
-      <div className="flex gap-0">
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={() => onTabChange('restaurant')}
@@ -58,14 +58,14 @@ export function HomeTabs({
       <div className="flex-1" />
 
       {/* 우측 아이콘들 */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={onViewCycle}
             className="view-cycle-btn"
             title="보기 전환"
           >
-            <ViewIcon size={18} />
+            <ViewIcon size={20} />
           </button>
           {foodActive && (
             <button
@@ -74,7 +74,7 @@ export function HomeTabs({
               className={`icon-button ${isMapOpen ? 'active map' : ''}`}
               title="지도"
             >
-              <Map size={18} />
+              <Map size={20} />
             </button>
           )}
           <button
@@ -83,7 +83,7 @@ export function HomeTabs({
             className={`icon-button ${isFilterOpen ? `active ${tabType}` : ''}`}
             title="필터"
           >
-            <SlidersHorizontal size={18} />
+            <SlidersHorizontal size={20} />
           </button>
           <button
             type="button"
@@ -91,7 +91,7 @@ export function HomeTabs({
             className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`}
             title="정렬"
           >
-            <ArrowUpDown size={18} />
+            <ArrowUpDown size={20} />
           </button>
           <button
             type="button"
@@ -99,7 +99,7 @@ export function HomeTabs({
             className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`}
             title="검색"
           >
-            <Search size={18} />
+            <Search size={20} />
           </button>
       </div>
     </div>

@@ -110,6 +110,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
             bubbleName={data.bubbleContext.bubbleName}
             bubbleIcon={data.bubbleContext.bubbleIcon}
             rank={data.bubbleContext.rank}
+            rankTotal={data.bubbleContext.rankTotal}
             memberSince={data.bubbleContext.memberSince}
             tasteMatchPct={data.bubbleContext.tasteMatchPct}
           />

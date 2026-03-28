@@ -66,24 +66,26 @@ export function BubbleListContainer() {
 
   return (
     <div className="flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      <AppHeader variant="inner" title="버블" backHref="/" />
+      <AppHeader />
 
       {/* 콘텐츠 탭: 버블 / 버블러 */}
-      <div className="flex items-center px-4 pt-2" style={{ borderBottom: '1px solid var(--border)' }}>
-        {(['bubbles', 'bubblers'] as const).map((tab) => (
+      <div className="content-tabs flex items-center px-4 pt-3">
+        <div className="flex gap-2">
           <button
-            key={tab}
             type="button"
-            onClick={() => setContentTab(tab)}
-            className="px-4 py-2.5 text-[13px] font-semibold"
-            style={{
-              color: contentTab === tab ? 'var(--accent-social)' : 'var(--text-hint)',
-              borderBottom: contentTab === tab ? '2px solid var(--accent-social)' : '2px solid transparent',
-            }}
+            onClick={() => setContentTab('bubbles')}
+            className={`filter-tab ${contentTab === 'bubbles' ? 'active social' : ''}`}
           >
-            {tab === 'bubbles' ? '버블' : '버블러'}
+            버블
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => setContentTab('bubblers')}
+            className={`filter-tab ${contentTab === 'bubblers' ? 'active social' : ''}`}
+          >
+            버블러
+          </button>
+        </div>
       </div>
 
       {contentTab === 'bubbles' && (
@@ -99,12 +101,7 @@ export function BubbleListContainer() {
                 key={key}
                 type="button"
                 onClick={() => { setRoleFilter(key); setPage(1) }}
-                className="shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold"
-                style={{
-                  backgroundColor: roleFilter === key ? 'var(--accent-social)' : 'var(--bg-card)',
-                  color: roleFilter === key ? '#FFFFFF' : 'var(--text-sub)',
-                  border: roleFilter === key ? 'none' : '1px solid var(--border)',
-                }}
+                className={`filter-chip ${roleFilter === key ? 'active social' : ''}`}
               >
                 {label}
               </button>

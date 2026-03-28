@@ -34,6 +34,7 @@ interface BubbleContext {
   bubbleName: string
   bubbleIcon: string | null
   rank: number | null
+  rankTotal: number | null
   memberSince: string
   tasteMatchPct: number | null
 }
