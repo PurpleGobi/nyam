@@ -12,6 +12,8 @@ export interface FilterRule {
 
 export type SortOption = 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
 
+export type BubbleSortOption = 'activity' | 'members' | 'records' | 'name'
+
 export type FilterTargetType = 'restaurant' | 'wine'
 
 export interface SavedFilter {

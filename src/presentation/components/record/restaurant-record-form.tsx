@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { Utensils, Sparkles, X } from 'lucide-react'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { RestaurantScene } from '@/domain/entities/scene'
+import type { RestaurantGenre } from '@/domain/entities/restaurant'
+import { GENRE_MAJOR_CATEGORIES, ALL_GENRES } from '@/domain/entities/restaurant'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { SceneTagSelector } from '@/presentation/components/record/scene-tag-selector'
 import { CompanionInput } from '@/presentation/components/record/companion-input'
@@ -21,6 +23,7 @@ interface RestaurantTarget {
 interface CreateRestaurantRecordInput {
   targetId: string
   targetType: 'restaurant'
+  genre?: string
   axisX: number
   axisY: number
   satisfaction: number
@@ -49,6 +52,7 @@ interface RestaurantInitialData {
 
 interface RestaurantRecordFormProps {
   target: RestaurantTarget
+  genreHint?: string | null
   referenceRecords?: QuadrantReferencePoint[]
   initialData?: RestaurantInitialData
   saveLabel?: string
@@ -59,6 +63,7 @@ interface RestaurantRecordFormProps {
 
 export function RestaurantRecordForm({
   target,
+  genreHint,
   referenceRecords,
   initialData,
   saveLabel,
@@ -66,6 +71,17 @@ export function RestaurantRecordForm({
   isLoading,
   photoSlot,
 }: RestaurantRecordFormProps) {
+  const [selectedGenre, setSelectedGenre] = useState<RestaurantGenre | null>(
+    (target.genre as RestaurantGenre) ?? null,
+  )
+
+  const suggestedGenres = useMemo<RestaurantGenre[]>(() => {
+    if (genreHint && GENRE_MAJOR_CATEGORIES[genreHint]) {
+      return GENRE_MAJOR_CATEGORIES[genreHint]
+    }
+    return ALL_GENRES
+  }, [genreHint])
+
   const [quadrant, setQuadrant] = useState({
     x: initialData?.axisX ?? 50,
     y: initialData?.axisY ?? 50,
@@ -106,6 +122,7 @@ export function RestaurantRecordForm({
     await onSave({
       targetId: target.id,
       targetType: 'restaurant',
+      genre: selectedGenre ?? undefined,
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: quadrant.satisfaction,
@@ -149,6 +166,29 @@ export function RestaurantRecordForm({
           )}
         </div>
       </div>
+
+      {/* 음식 종류 */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          음식 종류 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {suggestedGenres.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                selectedGenre === g
+                  ? 'bg-[var(--accent-food)] text-white'
+                  : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-sub)]'
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* 사진 */}
       {photoSlot && (

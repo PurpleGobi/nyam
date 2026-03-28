@@ -446,7 +446,10 @@ function AddFlowInner() {
           variant={variant}
           targetName={target.name}
           targetMeta={target.meta}
-          onAddDetail={() => router.push(`/${target.type === 'restaurant' ? 'restaurants' : 'wines'}/${target.id}`)}
+          onAddDetail={() => {
+            const meta = target.meta ? `&meta=${encodeURIComponent(target.meta)}` : ''
+            router.push(`/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}${meta}&from=camera`)
+          }}
           onAddAnother={() => {
             resetFlow()
             resetCamera()

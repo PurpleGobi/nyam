@@ -1,6 +1,7 @@
 'use client'
 
-import { Inbox } from 'lucide-react'
+import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { FollowingFeedCard } from './following-feed-card'
 
 interface FeedItem {
@@ -71,13 +72,20 @@ export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onS
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-4 py-16">
-          <Inbox size={40} style={{ color: 'var(--text-hint)' }} />
+          <Users size={40} style={{ color: 'var(--text-hint)' }} />
           <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text-sub)' }}>
-            아직 피드가 없어요
+            팔로우하는 버블이 없거나 맞팔 친구가 없어요
           </p>
           <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>
             버블에 가입하거나 다른 유저를 팔로우해보세요
           </p>
+          <Link
+            href="/bubbles"
+            className="mt-4 rounded-lg px-4 py-2 text-[13px] font-semibold no-underline"
+            style={{ backgroundColor: 'var(--accent-social)', color: '#fff' }}
+          >
+            버블 탐색하기
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col gap-3 px-4 py-3">

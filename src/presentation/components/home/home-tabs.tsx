@@ -1,6 +1,7 @@
 'use client'
 
 import { LayoutGrid, List, CalendarDays, Map, SlidersHorizontal, ArrowUpDown, Search } from 'lucide-react'
+import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import type { HomeTab, ViewMode } from '@/domain/entities/home-state'
 
 interface HomeTabsProps {
@@ -24,6 +25,11 @@ const VIEW_ICONS: Record<ViewMode, typeof LayoutGrid> = {
   calendar: CalendarDays,
 }
 
+const HOME_TABS: { key: HomeTab; label: string; variant: 'food' | 'wine' }[] = [
+  { key: 'restaurant', label: '식당', variant: 'food' },
+  { key: 'wine', label: '와인', variant: 'wine' },
+]
+
 export function HomeTabs({
   activeTab, viewMode, onTabChange, onViewCycle,
   onMapToggle, isMapOpen,
@@ -34,74 +40,35 @@ export function HomeTabs({
   const foodActive = activeTab === 'restaurant'
   const ViewIcon = VIEW_ICONS[viewMode]
   const tabType = foodActive ? 'food' : 'wine'
+  const activeVariant = HOME_TABS.find((t) => t.key === activeTab)?.variant ?? 'food'
 
   return (
-    <div className="content-tabs flex items-center px-4 pt-3">
-      {/* 탭 — 밑줄 active 스타일 */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onTabChange('restaurant')}
-          className={`filter-tab ${activeTab === 'restaurant' ? 'active food' : ''}`}
-        >
-          식당
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('wine')}
-          className={`filter-tab ${activeTab === 'wine' ? 'active wine' : ''}`}
-        >
-          와인
-        </button>
-      </div>
-
-      <div className="flex-1" />
-
-      {/* 우측 아이콘들 */}
-      <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onViewCycle}
-            className="view-cycle-btn"
-            title="보기 전환"
-          >
+    <StickyTabs
+      tabs={HOME_TABS}
+      activeTab={activeTab}
+      variant={activeVariant}
+      onTabChange={onTabChange}
+      rightSlot={
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
             <ViewIcon size={20} />
           </button>
           {foodActive && (
-            <button
-              type="button"
-              onClick={onMapToggle}
-              className={`icon-button ${isMapOpen ? 'active map' : ''}`}
-              title="지도"
-            >
+            <button type="button" onClick={onMapToggle} className={`icon-button ${isMapOpen ? 'active map' : ''}`} title="지도">
               <Map size={20} />
             </button>
           )}
-          <button
-            type="button"
-            onClick={onFilterToggle}
-            className={`icon-button ${isFilterOpen ? `active ${tabType}` : ''}`}
-            title="필터"
-          >
+          <button type="button" onClick={onFilterToggle} className={`icon-button ${isFilterOpen ? `active ${tabType}` : ''}`} title="필터">
             <SlidersHorizontal size={20} />
           </button>
-          <button
-            type="button"
-            onClick={onSortToggle}
-            className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`}
-            title="정렬"
-          >
+          <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`} title="정렬">
             <ArrowUpDown size={20} />
           </button>
-          <button
-            type="button"
-            onClick={onSearchToggle}
-            className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`}
-            title="검색"
-          >
+          <button type="button" onClick={onSearchToggle} className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`} title="검색">
             <Search size={20} />
           </button>
-      </div>
-    </div>
+        </div>
+      }
+    />
   )
 }

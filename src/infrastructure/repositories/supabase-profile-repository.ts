@@ -650,10 +650,10 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   // ── 버블러 프로필 ──
 
-  async getBubblerProfile(userId: string, bubbleId: string | null): Promise<BubblerProfileData | null> {
+  async getBubblerProfile(userId: string, bubbleId: string | null, targetType: 'restaurant' | 'wine' = 'restaurant'): Promise<BubblerProfileData | null> {
     const { data: user } = await this.supabase
       .from('users')
-      .select('nickname, handle, avatar_url, avatar_color, total_xp, taste_tags')
+      .select('nickname, handle, avatar_url, avatar_color, total_xp, taste_tags, bio')
       .eq('id', userId)
       .single()
 
@@ -679,8 +679,9 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: records } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, photos), wine:wines!linked_wine_id_fkey(name, photos)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!linked_wine_id_fkey(name, type, region, photos)')
       .eq('user_id', userId).eq('status', 'rated')
+      .eq('target_type', targetType)
       .order('satisfaction', { ascending: false })
       .limit(20)
 
@@ -688,20 +689,27 @@ export class SupabaseProfileRepository implements ProfileRepository {
       const rest = r.restaurant as unknown as Record<string, unknown> | null
       const wine = r.wine as unknown as Record<string, unknown> | null
       const tType = r.target_type as string
+      const name = tType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? '')
+      const genre = tType === 'restaurant' ? ((rest?.genre as string) ?? null) : ((wine?.type as string) ?? null)
+      const area = tType === 'restaurant' ? ((rest?.area as string) ?? null) : ((wine?.region as string) ?? null)
+      const metaParts = [genre, area].filter(Boolean)
       return {
-        id: r.target_id as string,
-        name: tType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
+        id: r.id as string,
+        targetId: r.target_id as string,
         targetType: tType as 'restaurant' | 'wine',
+        name,
+        meta: metaParts.join(' · ') || '',
         satisfaction: r.satisfaction as number | null,
         thumbnailUrl: (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null,
-        genre: tType === 'restaurant' ? ((rest?.genre as string) ?? null) : null,
+        genre,
       }
     })
 
     const { data: recentData } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name), wine:wines!linked_wine_id_fkey(name)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!linked_wine_id_fkey(name, type, region, photos)')
       .eq('user_id', userId).eq('status', 'rated')
+      .eq('target_type', targetType)
       .order('created_at', { ascending: false })
       .limit(10)
 
@@ -709,13 +717,23 @@ export class SupabaseProfileRepository implements ProfileRepository {
       const rest = r.restaurant as unknown as Record<string, unknown> | null
       const wine = r.wine as unknown as Record<string, unknown> | null
       const tType = r.target_type as string
+      const targetName = tType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? '')
+      const genre = tType === 'restaurant' ? ((rest?.genre as string) ?? null) : ((wine?.type as string) ?? null)
+      const area = tType === 'restaurant' ? ((rest?.area as string) ?? null) : ((wine?.region as string) ?? null)
+      const dateStr = r.visit_date as string | null
+      const relativeDate = dateStr ? formatRelativeDate(dateStr) : null
+      const metaParts = [genre, area, relativeDate].filter(Boolean)
+      const thumbnailUrl = (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null
       return {
         id: r.id as string,
-        targetName: tType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
+        targetId: r.target_id as string,
         targetType: tType as 'restaurant' | 'wine',
+        targetName,
+        meta: metaParts.join(' · ') || '',
         satisfaction: r.satisfaction as number | null,
         comment: r.comment as string | null,
-        visitDate: r.visit_date as string | null,
+        thumbnailUrl,
+        visitDate: dateStr,
       }
     })
 
@@ -768,6 +786,10 @@ export class SupabaseProfileRepository implements ProfileRepository {
           weeklyRank = myIndex >= 0 ? myIndex + 1 : null
         }
 
+        const matchPct = (member as Record<string, unknown>).taste_match_pct as number | null
+        const matchCount = (member as Record<string, unknown>).common_target_count as number | null
+        const commonCount = (matchCount as number) ?? 0
+
         bubbleContext = {
           bubbleId,
           bubbleName: (bubble?.name as string) ?? '',
@@ -775,23 +797,37 @@ export class SupabaseProfileRepository implements ProfileRepository {
           rank: weeklyRank,
           rankTotal: weeklyTotal,
           memberSince: (member as Record<string, unknown>).joined_at as string,
-          tasteMatchPct: (member as Record<string, unknown>).taste_match_pct as number | null,
+          tasteMatchPct: matchPct,
+          tasteMatchCount: matchCount,
+          tasteMatchDetail: matchPct !== null && commonCount >= 3
+            ? `${matchPct}% (${commonCount}곳 일치)`
+            : null,
+          commonTargetCount: commonCount,
         }
       }
     }
 
-    // 카테고리 비율 계산
+    // 카테고리 비율 계산 (장르/타입 기준)
     const allRecords = records ?? []
     const categoryMap = new Map<string, number>()
     for (const r of allRecords) {
       const tType = r.target_type as string
-      const label = tType === 'restaurant' ? '식당' : '와인'
-      categoryMap.set(label, (categoryMap.get(label) ?? 0) + 1)
+      if (tType === 'restaurant') {
+        const rest = r.restaurant as unknown as Record<string, unknown> | null
+        const genre = (rest?.genre as string) ?? '기타'
+        categoryMap.set(genre, (categoryMap.get(genre) ?? 0) + 1)
+      } else {
+        const wine = r.wine as unknown as Record<string, unknown> | null
+        const wType = (wine?.type as string) ?? '기타'
+        categoryMap.set(wType, (categoryMap.get(wType) ?? 0) + 1)
+      }
     }
-    const categories = Array.from(categoryMap.entries()).map(([name, count]) => ({
-      name,
-      percentage: allRecords.length > 0 ? Math.round((count / allRecords.length) * 100) : 0,
-    }))
+    const categories = Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({
+        name,
+        percentage: allRecords.length > 0 ? Math.round((count / allRecords.length) * 100) : 0,
+      }))
 
     // 평균 만족도
     const satisfactions = allRecords
@@ -801,13 +837,20 @@ export class SupabaseProfileRepository implements ProfileRepository {
       ? Math.round(satisfactions.reduce((a, b) => a + b, 0) / satisfactions.length)
       : 0
 
-    // 지역 태그 (식당 기준 상위 3개)
+    // 평점 성향 라벨
+    const scoreTendencyLabel = getScoreTendencyLabel(avgSatisfaction)
+
+    // 지역 태그 (식당: area, 와인: region 기준 상위 3개)
     const regionMap = new Map<string, number>()
     for (const r of allRecords) {
-      if (r.target_type === 'restaurant') {
+      if (targetType === 'restaurant') {
         const rest = r.restaurant as unknown as Record<string, unknown> | null
-        const genre = rest?.genre as string | null
-        if (genre) regionMap.set(genre, (regionMap.get(genre) ?? 0) + 1)
+        const area = rest?.area as string | null
+        if (area) regionMap.set(area, (regionMap.get(area) ?? 0) + 1)
+      } else {
+        const wine = r.wine as unknown as Record<string, unknown> | null
+        const region = wine?.region as string | null
+        if (region) regionMap.set(region, (regionMap.get(region) ?? 0) + 1)
       }
     }
     const topRegions = Array.from(regionMap.entries())
@@ -820,11 +863,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
       handle: user.handle as string | null,
       avatarUrl: user.avatar_url as string | null,
       avatarColor: user.avatar_color as string | null,
+      bio: (user.bio as string) ?? null,
       level,
       levelTitle: getLevelTitle(level),
       tasteTags: (user.taste_tags as string[]) ?? [],
       categories,
       avgSatisfaction,
+      scoreTendencyLabel,
       totalRecords: allRecords.length,
       topRegions,
       topPicks,
@@ -838,6 +883,26 @@ export class SupabaseProfileRepository implements ProfileRepository {
 }
 
 // ── 유틸 ──
+
+function formatRelativeDate(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return '오늘'
+  if (diffDays === 1) return '어제'
+  if (diffDays < 7) return `${diffDays}일 전`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전`
+  return `${Math.floor(diffDays / 365)}년 전`
+}
+
+function getScoreTendencyLabel(avgSatisfaction: number): string {
+  if (avgSatisfaction === 0) return '-'
+  if (avgSatisfaction >= 85) return '후한 편'
+  if (avgSatisfaction >= 75) return '조금 후한 편'
+  if (avgSatisfaction >= 65) return '보통'
+  if (avgSatisfaction >= 55) return '조금 까다로운 편'
+  return '까다로운 편'
+}
 
 function getLevelTitle(level: number): string {
   if (level <= 3) return '입문자'

@@ -154,7 +154,7 @@ export class SupabaseRecordRepository implements RecordRepository {
   async findByUserIdWithTarget(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
     let query = this.supabase
       .from('records')
-      .select('*, restaurants(name, genre, area, photo_url), wines(name, variety, region, photo_url)')
+      .select('*')
       .eq('user_id', userId)
       .order('visit_date', { ascending: false })
 
@@ -165,19 +165,46 @@ export class SupabaseRecordRepository implements RecordRepository {
     const { data, error } = await query
     if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
 
-    return data.map((row: RecordRow & {
-      restaurants: { name: string; genre: string | null; area: string | null; photo_url: string | null } | null
-      wines: { name: string; variety: string | null; region: string | null; photo_url: string | null } | null
-    }) => {
+    const rows = data as RecordRow[]
+
+    // target_id로 식당/와인 정보를 별도 조회
+    const restaurantIds = [...new Set(rows.filter((r) => r.target_type === 'restaurant').map((r) => r.target_id))]
+    const wineIds = [...new Set(rows.filter((r) => r.target_type === 'wine').map((r) => r.target_id))]
+
+    const restaurantMap = new Map<string, { name: string; genre: string | null; area: string | null; photo_url: string | null }>()
+    const wineMap = new Map<string, { name: string; variety: string | null; region: string | null; photo_url: string | null }>()
+
+    if (restaurantIds.length > 0) {
+      const { data: restaurants } = await this.supabase
+        .from('restaurants')
+        .select('id, name, genre, area, photo_url')
+        .in('id', restaurantIds)
+      for (const r of restaurants ?? []) {
+        restaurantMap.set(r.id, r)
+      }
+    }
+
+    if (wineIds.length > 0) {
+      const { data: wines } = await this.supabase
+        .from('wines')
+        .select('id, name, variety, region, photo_url')
+        .in('id', wineIds)
+      for (const w of wines ?? []) {
+        wineMap.set(w.id, w)
+      }
+    }
+
+    return rows.map((row) => {
       const base = mapDbToRecord(row)
       const isRestaurant = row.target_type === 'restaurant'
-      const target = isRestaurant ? row.restaurants : row.wines
+      const restaurant = isRestaurant ? restaurantMap.get(row.target_id) : null
+      const wine = !isRestaurant ? wineMap.get(row.target_id) : null
       return {
         ...base,
-        targetName: target?.name ?? '',
-        targetMeta: isRestaurant ? (row.restaurants?.genre ?? null) : (row.wines?.variety ?? null),
-        targetArea: isRestaurant ? (row.restaurants?.area ?? null) : (row.wines?.region ?? null),
-        targetPhotoUrl: target?.photo_url ?? null,
+        targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
+        targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
+        targetArea: isRestaurant ? (restaurant?.area ?? null) : (wine?.region ?? null),
+        targetPhotoUrl: (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
       }
     })
   }

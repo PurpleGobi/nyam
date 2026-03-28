@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { AccessLevel } from '@/domain/entities/follow'
 import type { HeatmapCell } from '@/domain/entities/profile'
+import type { BubblerPickItem, BubblerRecentRecord, BubblerBubbleContext } from '@/domain/repositories/profile-repository'
 import { profileRepo, followRepo } from '@/shared/di/container'
 import { getAccessLevel } from '@/domain/services/follow-access'
 
@@ -11,51 +12,25 @@ interface CategoryStat {
   percentage: number
 }
 
-interface PickItem {
-  id: string
-  name: string
-  targetType: 'restaurant' | 'wine'
-  satisfaction: number | null
-  thumbnailUrl: string | null
-  genre: string | null
-}
-
-interface RecentRecordItem {
-  id: string
-  targetName: string
-  targetType: 'restaurant' | 'wine'
-  satisfaction: number | null
-  comment: string | null
-  visitDate: string | null
-}
-
-interface BubbleContext {
-  bubbleId: string
-  bubbleName: string
-  bubbleIcon: string | null
-  rank: number | null
-  rankTotal: number | null
-  memberSince: string
-  tasteMatchPct: number | null
-}
-
 interface BubblerProfileData {
   nickname: string
   handle: string | null
   avatarUrl: string | null
   avatarColor: string | null
+  bio: string | null
   level: number
   levelTitle: string
   accessLevel: AccessLevel
   tasteTags: string[]
   categories: CategoryStat[]
   avgSatisfaction: number
+  scoreTendencyLabel: string
   totalRecords: number
   topRegions: string[]
-  topPicks: PickItem[]
-  recentRecords: RecentRecordItem[]
+  topPicks: BubblerPickItem[]
+  recentRecords: BubblerRecentRecord[]
   heatmap: HeatmapCell[]
-  bubbleContext: BubbleContext | null
+  bubbleContext: BubblerBubbleContext | null
   currentStreak: number
   activeDuration: string
 }
@@ -78,6 +53,7 @@ export function useBubblerProfile(
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<ProfileTab>('restaurant')
 
+  // 탭 전환 + 초기 로드 모두 데이터 재조회
   useEffect(() => {
     if (!targetUserId) return
 
@@ -96,7 +72,7 @@ export function useBubblerProfile(
           accessLevel = 'mutual'
         }
 
-        const profile = await profileRepo.getBubblerProfile(targetUserId, bubbleId)
+        const profile = await profileRepo.getBubblerProfile(targetUserId, bubbleId, activeTab)
         if (!profile) {
           setData(null)
           return
@@ -107,12 +83,14 @@ export function useBubblerProfile(
           handle: profile.handle ?? null,
           avatarUrl: profile.avatarUrl ?? null,
           avatarColor: profile.avatarColor ?? null,
+          bio: profile.bio ?? null,
           level: profile.level ?? 1,
           levelTitle: profile.levelTitle ?? '입문자',
           accessLevel,
           tasteTags: profile.tasteTags ?? [],
           categories: profile.categories ?? [],
           avgSatisfaction: profile.avgSatisfaction ?? 0,
+          scoreTendencyLabel: profile.scoreTendencyLabel ?? '-',
           totalRecords: profile.totalRecords ?? 0,
           topRegions: profile.topRegions ?? [],
           topPicks: profile.topPicks ?? [],
@@ -128,7 +106,7 @@ export function useBubblerProfile(
     }
 
     fetchProfile()
-  }, [currentUserId, targetUserId, bubbleId])
+  }, [currentUserId, targetUserId, bubbleId, activeTab])
 
   return { data, isLoading, activeTab, setActiveTab }
 }

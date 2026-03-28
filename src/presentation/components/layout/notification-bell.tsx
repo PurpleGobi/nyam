@@ -11,7 +11,7 @@ interface NotificationBellProps {
 export function NotificationBell({ unreadCount, onClick }: NotificationBellProps) {
   return (
     <button type="button" onClick={onClick} className="icon-btn">
-      <Bell size={20} />
+      <Bell size={22} />
       <UnreadBadge count={unreadCount} />
     </button>
   )

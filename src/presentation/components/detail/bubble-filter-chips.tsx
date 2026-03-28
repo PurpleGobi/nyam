@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 
 interface BubbleChipItem {
   id: string
@@ -20,20 +21,14 @@ interface BubbleFilterChipsProps {
 export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 'food' }: BubbleFilterChipsProps) {
   if (bubbles.length === 0) return null
 
-  const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
-  const accentLightColor = accentType === 'food' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)'
+  const variant = accentType === 'food' ? 'food' : 'wine'
 
   return (
-    <div className="flex gap-2 overflow-x-auto py-1 scrollbar-none">
+    <FilterChipGroup className="py-1">
       <button
         type="button"
         onClick={() => onSelect(null)}
-        className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
-        style={{
-          backgroundColor: selectedId === null ? accentLightColor : 'var(--bg-card)',
-          color: selectedId === null ? accentColor : 'var(--text-sub)',
-          border: selectedId === null ? `1.5px solid ${accentColor}` : '1px solid var(--border)',
-        }}
+        className={`filter-chip ${selectedId === null ? `active ${variant}` : ''}`}
       >
         전체
       </button>
@@ -44,12 +39,7 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 
             key={b.id}
             type="button"
             onClick={() => onSelect(isActive ? null : b.id)}
-            className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
-            style={{
-              backgroundColor: isActive ? accentLightColor : 'var(--bg-card)',
-              color: isActive ? accentColor : 'var(--text-sub)',
-              border: isActive ? `1.5px solid ${accentColor}` : '1px solid var(--border)',
-            }}
+            className={`filter-chip ${isActive ? `active ${variant}` : ''}`}
           >
             <BubbleIcon icon={b.icon} size={11} />
             {b.name}
@@ -57,6 +47,6 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 
           </button>
         )
       })}
-    </div>
+    </FilterChipGroup>
   )
 }

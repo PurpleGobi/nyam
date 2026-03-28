@@ -12,6 +12,7 @@ import { TasteProfile } from '@/presentation/components/bubbler/taste-profile'
 import { PicksGrid } from '@/presentation/components/bubbler/picks-grid'
 import { RecentRecords } from '@/presentation/components/bubbler/recent-records'
 import { ActivitySection } from '@/presentation/components/bubbler/activity-section'
+import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 
 interface BubblerProfileContainerProps {
   userId: string
@@ -50,8 +51,8 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         </button>
       </nav>
 
-      <div className="flex flex-col gap-6 px-4 pb-8">
-        {/* 프로필 히어로 — 모든 접근 레벨에서 표시 (none: 레벨만, follow+: 이름/태그) */}
+      <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* 프로필 히어로 — 통계 포함 (목업 기준 가로 배치) */}
         <BubblerHero
           nickname={data.accessLevel === 'none' ? `Lv.${data.level} 유저` : data.nickname}
           handle={data.accessLevel === 'none' ? null : data.handle}
@@ -64,55 +65,35 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           isOwnProfile={isSelf}
           isFollowLoading={followLoading}
           onToggleFollow={toggleFollow}
+          recordCount={data.totalRecords}
+          followerCount={counts.followers}
+          followingCount={counts.following}
         />
-
-        {/* 통계 — none: 기록 수만, follow+: 팔로워/팔로잉 추가 */}
-        <div className="flex justify-center gap-8">
-          <StatItem label="기록" value={data.totalRecords} />
-          {data.accessLevel !== 'none' && (
-            <>
-              <StatItem label="팔로워" value={counts.followers} />
-              <StatItem label="팔로잉" value={counts.following} />
-            </>
-          )}
-        </div>
-
-        {/* Sticky Tabs (식당/와인) — follow+ */}
-        {data.accessLevel !== 'none' && (
-          <div
-            className="sticky top-0 z-10 flex"
-            style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
-          >
-            {(['restaurant', 'wine'] as const).map((tab) => {
-              const isActive = activeTab === tab
-              const accentColor = tab === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className="flex-1 py-3 text-center text-[14px] font-semibold transition-colors"
-                  style={{
-                    color: isActive ? accentColor : 'var(--text-hint)',
-                    borderBottom: isActive ? `2px solid ${accentColor}` : '2px solid transparent',
-                  }}
-                >
-                  {tab === 'restaurant' ? '식당' : '와인'}
-                </button>
-              )
-            })}
-          </div>
-        )}
 
         {/* 버블 컨텍스트 카드 — mutual only (버블 멤버끼리) */}
         {data.accessLevel === 'mutual' && data.bubbleContext && (
           <BubbleContextCard
+            bubbleId={data.bubbleContext.bubbleId}
             bubbleName={data.bubbleContext.bubbleName}
             bubbleIcon={data.bubbleContext.bubbleIcon}
             rank={data.bubbleContext.rank}
             rankTotal={data.bubbleContext.rankTotal}
             memberSince={data.bubbleContext.memberSince}
             tasteMatchPct={data.bubbleContext.tasteMatchPct}
+            tasteMatchCount={data.bubbleContext.tasteMatchCount}
+            commonTargetCount={data.bubbleContext.commonTargetCount}
+          />
+        )}
+
+        {/* Sticky Tabs (식당/와인) — follow+ */}
+        {data.accessLevel !== 'none' && (
+          <StickyTabs
+            tabs={[
+              { key: 'restaurant' as const, label: '식당', variant: 'food' },
+              { key: 'wine' as const, label: '와인', variant: 'wine' },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
         )}
 
@@ -153,15 +134,6 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           />
         )}
       </div>
-    </div>
-  )
-}
-
-function StatItem({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="text-center">
-      <p className="text-[18px] font-bold" style={{ color: 'var(--text)' }}>{value}</p>
-      <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{label}</p>
     </div>
   )
 }

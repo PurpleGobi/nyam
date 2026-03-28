@@ -23,6 +23,8 @@ import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import { MemberGrid } from '@/presentation/components/bubble/member-grid'
 import { MemberListView } from '@/presentation/components/bubble/member-list-view'
 import { CommentSheetContainer } from '@/presentation/containers/comment-sheet-container'
+import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
+import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import type { RankingTargetType, BubbleMemberRole, BubbleContentVisibility } from '@/domain/entities/bubble'
 import type { ReactionType } from '@/domain/entities/reaction'
 
@@ -81,40 +83,33 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       />
 
       {/* 스티키 탭 */}
-      <div className="sticky top-0 z-50 mt-4 flex items-center" style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-        <div className="flex flex-1">
-          {(['feed', 'ranking', 'members'] as const).map((tab) => (
+      <StickyTabs
+        tabs={[
+          { key: 'feed' as const, label: '피드' },
+          { key: 'ranking' as const, label: '랭킹' },
+          { key: 'members' as const, label: '멤버' },
+        ]}
+        activeTab={activeTab}
+        variant="social"
+        onTabChange={setActiveTab}
+        rightSlot={
+          (activeTab === 'feed' || activeTab === 'members') ? (
             <button
-              key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
-              className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
-              style={{
-                color: activeTab === tab ? 'var(--accent-social)' : 'var(--text-hint)',
-                borderBottom: activeTab === tab ? '2px solid var(--accent-social)' : '2px solid transparent',
+              onClick={() => {
+                if (activeTab === 'feed') setFeedViewMode((v) => v === 'card' ? 'compact' : 'card')
+                if (activeTab === 'members') setMemberViewMode((v) => v === 'grid' ? 'list' : 'grid')
               }}
+              className="icon-button"
             >
-              {tab === 'feed' ? '피드' : tab === 'ranking' ? '랭킹' : '멤버'}
+              {(activeTab === 'feed' ? feedViewMode === 'card' : memberViewMode === 'grid')
+                ? <List size={20} />
+                : <Eye size={20} />
+              }
             </button>
-          ))}
-        </div>
-        {/* 우측: 뷰 전환 */}
-        {(activeTab === 'feed' || activeTab === 'members') && (
-          <button
-            type="button"
-            onClick={() => {
-              if (activeTab === 'feed') setFeedViewMode((v) => v === 'card' ? 'compact' : 'card')
-              if (activeTab === 'members') setMemberViewMode((v) => v === 'grid' ? 'list' : 'grid')
-            }}
-            className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg"
-          >
-            {(activeTab === 'feed' ? feedViewMode === 'card' : memberViewMode === 'grid')
-              ? <List size={16} style={{ color: 'var(--text-hint)' }} />
-              : <Eye size={16} style={{ color: 'var(--text-hint)' }} />
-            }
-          </button>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* 탭 콘텐츠 */}
       <div className="flex-1 px-4 py-4">
@@ -155,26 +150,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   )
 }
 
-/* ──── 필터칩 공통 ──── */
-function FilterChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`filter-chip ${active ? 'active social' : ''}`}
-    >
-      {label}
-    </button>
-  )
-}
+/* FilterChip & FilterChipGroup imported from @/presentation/components/ui/filter-chip */
 
 /* ──── 피드 탭 ──── */
 function FeedTabContent({
@@ -208,35 +184,23 @@ function FeedTabContent({
   return (
     <>
       {/* 필터칩 행 */}
-      <div className="mb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-        {/* 유형 필터 */}
+      <FilterChipGroup className="mb-3">
         {(['all', 'restaurant', 'wine'] as FeedTargetFilter[]).map((t) => (
-          <FilterChip
-            key={t}
-            label={t === 'all' ? '전체' : t === 'restaurant' ? '식당' : '와인'}
-            active={filters.targetType === t}
-            onClick={() => setFilters({ ...filters, targetType: t })}
-          />
+          <FilterChip key={t} active={filters.targetType === t} variant="social" onClick={() => setFilters({ ...filters, targetType: t })}>
+            {t === 'all' ? '전체' : t === 'restaurant' ? '식당' : '와인'}
+          </FilterChip>
         ))}
-        {/* 시기 필터 */}
         {(['all', 'week', 'month'] as FeedPeriodFilter[]).map((p) => (
-          <FilterChip
-            key={p}
-            label={p === 'all' ? '전체 기간' : p === 'week' ? '이번 주' : '이번 달'}
-            active={filters.period === p}
-            onClick={() => setFilters({ ...filters, period: p })}
-          />
+          <FilterChip key={p} active={filters.period === p} variant="social" onClick={() => setFilters({ ...filters, period: p })}>
+            {p === 'all' ? '전체 기간' : p === 'week' ? '이번 주' : '이번 달'}
+          </FilterChip>
         ))}
-        {/* 점수 필터 */}
         {(['all', '90', '80'] as FeedScoreFilter[]).map((s) => (
-          <FilterChip
-            key={s}
-            label={s === 'all' ? '점수 전체' : `${s}+`}
-            active={filters.minScore === s}
-            onClick={() => setFilters({ ...filters, minScore: s })}
-          />
+          <FilterChip key={s} active={filters.minScore === s} variant="social" onClick={() => setFilters({ ...filters, minScore: s })}>
+            {s === 'all' ? '점수 전체' : `${s}+`}
+          </FilterChip>
         ))}
-      </div>
+      </FilterChipGroup>
 
       {/* 정렬 */}
       <div className="mb-3 flex items-center gap-2">
@@ -443,25 +407,18 @@ function MemberTabContent({
 
   return (
     <>
-      {/* 필터칩 */}
-      <div className="mb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+      <FilterChipGroup className="mb-3">
         {(['all', 'admin', 'member'] as MemberRoleFilter[]).map((r) => (
-          <FilterChip
-            key={r}
-            label={r === 'all' ? '전체' : r === 'admin' ? '관리자' : '멤버'}
-            active={filters.role === r}
-            onClick={() => setFilters({ ...filters, role: r })}
-          />
+          <FilterChip key={r} active={filters.role === r} variant="social" onClick={() => setFilters({ ...filters, role: r })}>
+            {r === 'all' ? '전체' : r === 'admin' ? '관리자' : '멤버'}
+          </FilterChip>
         ))}
         {(['all', '80', '60'] as MemberMatchFilter[]).map((m) => (
-          <FilterChip
-            key={m}
-            label={m === 'all' ? '일치도 전체' : `${m}%+`}
-            active={filters.minMatch === m}
-            onClick={() => setFilters({ ...filters, minMatch: m })}
-          />
+          <FilterChip key={m} active={filters.minMatch === m} variant="social" onClick={() => setFilters({ ...filters, minMatch: m })}>
+            {m === 'all' ? '일치도 전체' : `${m}%+`}
+          </FilterChip>
         ))}
-      </div>
+      </FilterChipGroup>
 
       {/* 정렬 */}
       <div className="mb-3 flex items-center gap-2">

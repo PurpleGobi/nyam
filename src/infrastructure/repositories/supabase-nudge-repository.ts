@@ -34,12 +34,12 @@ export class SupabaseNudgeRepository implements NudgeRepository {
       .from('nudge_fatigue')
       .select('*')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') return null
       throw new Error(`넛지 피로도 조회 실패: ${error.message}`)
     }
+    if (!data) return null
 
     return {
       userId: data.user_id,

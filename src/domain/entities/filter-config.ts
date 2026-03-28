@@ -161,6 +161,70 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
   },
 ]
 
+// ─── 버블 필터 속성 (5종) ───
+// SSOT: pages/08_BUBBLE.md §11-2
+
+export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
+  {
+    key: 'focus_type',
+    label: '유형',
+    type: 'select',
+    options: [
+      { value: 'all', label: '전체' },
+      { value: 'restaurant', label: '식당' },
+      { value: 'wine', label: '와인' },
+    ],
+  },
+  {
+    key: 'area',
+    label: '지역',
+    type: 'select',
+    options: [
+      { value: '강남', label: '강남' },
+      { value: '을지로', label: '을지로' },
+      { value: '청담', label: '청담' },
+      { value: '이태원', label: '이태원' },
+      { value: '홍대', label: '홍대' },
+      { value: '광화문', label: '광화문' },
+      { value: '성수', label: '성수' },
+      { value: '한남', label: '한남' },
+    ],
+  },
+  {
+    key: 'join_policy',
+    label: '가입 방식',
+    type: 'select',
+    options: [
+      { value: 'open', label: '자유 가입' },
+      { value: 'auto_approve', label: '자동 승인' },
+      { value: 'manual_approve', label: '승인 필요' },
+      { value: 'invite_only', label: '초대만' },
+      { value: 'closed', label: '비공개' },
+    ],
+  },
+  {
+    key: 'member_count',
+    label: '멤버 수',
+    type: 'select',
+    options: [
+      { value: '5', label: '5명 이상' },
+      { value: '10', label: '10명 이상' },
+      { value: '20', label: '20명 이상' },
+      { value: '50', label: '50명 이상' },
+    ],
+  },
+  {
+    key: 'activity',
+    label: '활성도',
+    type: 'select',
+    options: [
+      { value: '1d', label: '24시간 내' },
+      { value: '1w', label: '최근 1주' },
+      { value: '1m', label: '최근 1개월' },
+    ],
+  },
+]
+
 // ─── 와인 필터 속성 (12종) ───
 
 export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [

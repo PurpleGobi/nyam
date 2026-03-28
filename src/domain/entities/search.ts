@@ -41,6 +41,9 @@ export interface NearbyRestaurant {
   name: string
   genre: string | null
   area: string | null
+  address: string | null
+  lat: number | null
+  lng: number | null
   distance: number
   hasRecord: boolean
 }

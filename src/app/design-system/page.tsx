@@ -14,8 +14,9 @@ import { SceneTag } from '@/presentation/components/ui/scene-tag'
 import { WineChip } from '@/presentation/components/ui/wine-chip'
 import { Badge } from '@/presentation/components/ui/badge'
 import { NyamCard } from '@/presentation/components/ui/nyam-card'
-import { FilterChip } from '@/presentation/components/ui/filter-chip'
+import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterTab } from '@/presentation/components/ui/filter-tab'
+import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { Toast } from '@/presentation/components/ui/toast'
 import { EmptyState } from '@/presentation/components/ui/empty-state'
 import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
@@ -109,6 +110,11 @@ export default function DesignSystemPage() {
   const [demoConjunction, setDemoConjunction] = useState<'and' | 'or'>('and')
   const [demoSort, setDemoSort] = useState<SortOption>('latest')
   const [demoSearch, setDemoSearch] = useState('')
+
+  // StickyTabs demo states
+  const [homeTab, setHomeTab] = useState<'restaurant' | 'wine'>('restaurant')
+  const [bubbleTab, setBubbleTab] = useState<'feed' | 'ranking' | 'members'>('feed')
+  const [socialTab, setSocialTab] = useState<'bubbles' | 'bubblers'>('bubbles')
 
   const toggleDark = () => {
     const next = !darkMode
@@ -439,22 +445,163 @@ export default function DesignSystemPage() {
         <Note>식당·와인 공통. 절제된 자연색 5단계.</Note>
       </Section>
 
-      {/* ── 7. Filter Tabs ── */}
-      <Section title="7. Filter Tabs">
-        <Sub title="Restaurant Context" />
+      {/* ── 7. Sticky Tabs (StickyTabs) ── */}
+      <Section title="7. Sticky Tabs">
+        <Note>StickyTabs — 중앙화 컴포넌트. variant: food / wine / social. rightSlot으로 우측 아이콘 배치.</Note>
+
+        <Sub title="홈 스타일 (식당/와인 + 우측 아이콘)" />
+        <div style={{ maxWidth: '420px', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <StickyTabs
+            tabs={[
+              { key: 'restaurant' as const, label: '식당', variant: 'food' },
+              { key: 'wine' as const, label: '와인', variant: 'wine' },
+            ]}
+            activeTab={homeTab}
+            onTabChange={setHomeTab}
+            rightSlot={
+              <div className="flex items-center gap-1">
+                <button type="button" className="view-cycle-btn"><LayoutGrid size={20} /></button>
+                <button type="button" className={`icon-button ${homeTab === 'restaurant' ? 'active food' : 'active wine'}`}><SlidersHorizontal size={20} /></button>
+                <button type="button" className="icon-button"><ArrowUpDown size={20} /></button>
+                <button type="button" className="icon-button"><Search size={20} /></button>
+              </div>
+            }
+          />
+        </div>
+
+        <Sub title="버블 상세 (피드/랭킹/멤버)" />
+        <div style={{ maxWidth: '420px', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <StickyTabs
+            tabs={[
+              { key: 'feed' as const, label: '피드' },
+              { key: 'ranking' as const, label: '랭킹' },
+              { key: 'members' as const, label: '멤버' },
+            ]}
+            activeTab={bubbleTab}
+            variant="social"
+            onTabChange={setBubbleTab}
+            rightSlot={
+              <button type="button" className="icon-button"><List size={20} /></button>
+            }
+          />
+        </div>
+
+        <Sub title="버블 목록 (버블/버블러)" />
+        <div style={{ maxWidth: '420px', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <StickyTabs
+            tabs={[
+              { key: 'bubbles' as const, label: '버블' },
+              { key: 'bubblers' as const, label: '버블러' },
+            ]}
+            activeTab={socialTab}
+            variant="social"
+            onTabChange={setSocialTab}
+          />
+        </div>
+
+        <Sub title="탭 + 필터칩 조합 (표준 간격)" />
+        <Note>탭 바(content-tabs) 바로 아래 필터칩. 간격: 탭 하단 border → 칩 상단 = 8px (py-2). 좌우 px-4 동일.</Note>
+        <div style={{ maxWidth: '420px', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <StickyTabs
+            tabs={[
+              { key: 'restaurant' as const, label: '식당', variant: 'food' },
+              { key: 'wine' as const, label: '와인', variant: 'wine' },
+            ]}
+            activeTab={homeTab}
+            onTabChange={setHomeTab}
+          />
+          <FilterChipGroup className="px-4 py-2">
+            <FilterChip active variant={homeTab === 'restaurant' ? 'food' : 'wine'} count={24}>전체</FilterChip>
+            <FilterChip variant={homeTab === 'restaurant' ? 'food' : 'wine'} count={8}>광화문</FilterChip>
+            <FilterChip variant={homeTab === 'restaurant' ? 'food' : 'wine'} count={5}>을지로</FilterChip>
+          </FilterChipGroup>
+          <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>컨텐츠 영역</div>
+        </div>
+
+        <div style={{ height: '16px' }} />
+
+        <div style={{ maxWidth: '420px', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <StickyTabs
+            tabs={[{ key: 'bubbles' as const, label: '버블' }, { key: 'bubblers' as const, label: '버블러' }]}
+            activeTab={socialTab}
+            variant="social"
+            onTabChange={setSocialTab}
+          />
+          <FilterChipGroup className="px-4 py-2">
+            <FilterChip active variant="social" count={12}>전체</FilterChip>
+            <FilterChip variant="social" count={3}>운영</FilterChip>
+            <FilterChip variant="social" count={9}>가입</FilterChip>
+          </FilterChipGroup>
+          <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>컨텐츠 영역</div>
+        </div>
+
+        <Sub title="개별 FilterTab (레거시 호환)" />
         <Row>
-          <FilterTab active variant="food">전체</FilterTab>
-          <FilterTab variant="food">광화문</FilterTab>
-          <FilterTab variant="food">을지로</FilterTab>
-          <FilterTab variant="food">강남</FilterTab>
-        </Row>
-        <Sub title="Wine Context" />
-        <Row>
-          <FilterTab active variant="wine">전체</FilterTab>
-          <FilterTab variant="wine">레드</FilterTab>
+          <FilterTab active variant="food">식당</FilterTab>
+          <FilterTab variant="food">와인</FilterTab>
+          <FilterTab active variant="wine">레드</FilterTab>
           <FilterTab variant="wine">화이트</FilterTab>
-          <FilterTab variant="wine">스파클링</FilterTab>
         </Row>
+      </Section>
+
+      {/* ── 7-A. Filter Chips ── */}
+      <Section title="7-A. Filter Chips">
+        <Note>FilterChip + FilterChipGroup — 중앙화 컴포넌트. variant: food / wine / social.</Note>
+
+        <Sub title="Food variant" />
+        <FilterChipGroup>
+          <FilterChip active variant="food" count={24}>전체</FilterChip>
+          <FilterChip variant="food" count={8}>한식</FilterChip>
+          <FilterChip variant="food" count={6}>일식</FilterChip>
+          <FilterChip variant="food" count={5}>양식</FilterChip>
+          <FilterChip variant="food" count={3}>중식</FilterChip>
+          <FilterChip variant="food" count={2}>카페</FilterChip>
+        </FilterChipGroup>
+
+        <Sub title="Wine variant" />
+        <FilterChipGroup>
+          <FilterChip active variant="wine" count={18}>전체</FilterChip>
+          <FilterChip variant="wine" count={7}>레드</FilterChip>
+          <FilterChip variant="wine" count={5}>화이트</FilterChip>
+          <FilterChip variant="wine" count={4}>스파클링</FilterChip>
+          <FilterChip variant="wine" count={2}>로제</FilterChip>
+        </FilterChipGroup>
+
+        <Sub title="Social variant (버블)" />
+        <FilterChipGroup>
+          <FilterChip active variant="social" count={12}>전체</FilterChip>
+          <FilterChip variant="social" count={3}>운영</FilterChip>
+          <FilterChip variant="social" count={9}>가입</FilterChip>
+        </FilterChipGroup>
+
+        <Sub title="Mixed — 카운트 없음" />
+        <FilterChipGroup>
+          <FilterChip active variant="food">전체</FilterChip>
+          <FilterChip variant="food">이번 주</FilterChip>
+          <FilterChip variant="food">이번 달</FilterChip>
+          <FilterChip variant="food">90+</FilterChip>
+          <FilterChip variant="food">80+</FilterChip>
+        </FilterChipGroup>
+
+        <Sub title="States 비교" />
+        <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Default</div>
+            <FilterChip>라벨</FilterChip>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Active (food)</div>
+            <FilterChip active variant="food">라벨</FilterChip>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Active (wine)</div>
+            <FilterChip active variant="wine">라벨</FilterChip>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Active (social)</div>
+            <FilterChip active variant="social">라벨</FilterChip>
+          </div>
+        </div>
       </Section>
 
       {/* ── 7-B. Filter / Sort System ── */}
@@ -471,7 +618,7 @@ export default function DesignSystemPage() {
           </div>
 
           {/* 필터칩 */}
-          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+          <FilterChipGroup className="mt-2.5">
             {demoChips.map((chip) => (
               <FilterChip
                 key={chip.id}
@@ -484,7 +631,7 @@ export default function DesignSystemPage() {
                 {chip.name}
               </FilterChip>
             ))}
-          </div>
+          </FilterChipGroup>
 
           {/* 필터 패널 (Notion 스타일) */}
           {filterActive && (

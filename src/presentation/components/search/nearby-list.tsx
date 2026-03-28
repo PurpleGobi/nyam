@@ -3,19 +3,48 @@
 import { MapPin, Plus, UtensilsCrossed } from 'lucide-react'
 import type { NearbyRestaurant } from '@/domain/entities/search'
 
+export const NEARBY_GENRE_FILTERS = [
+  { value: '', label: '전체' },
+  { value: '한식', label: '한식' },
+  { value: '일식', label: '일식' },
+  { value: '중식', label: '중식' },
+  { value: '양식', label: '양식' },
+  { value: '아시아음식', label: '아시안' },
+  { value: '카페', label: '카페/바' },
+] as const
+
 interface NearbyListProps {
   restaurants: NearbyRestaurant[]
   isLoading: boolean
+  genre: string
+  onGenreChange: (genre: string) => void
   onSelect: (restaurantId: string) => void
   onRegister?: () => void
 }
 
-export function NearbyList({ restaurants, isLoading, onSelect, onRegister }: NearbyListProps) {
+export function NearbyList({ restaurants, isLoading, genre, onGenreChange, onSelect, onRegister }: NearbyListProps) {
   return (
     <div className="px-4 py-3">
       <div className="mb-2 flex items-center gap-1.5 px-1">
         <MapPin size={14} className="text-[var(--text-sub)]" />
         <span className="text-[14px] text-[var(--text-sub)]">근처 식당</span>
+      </div>
+
+      <div className="mb-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">
+        {NEARBY_GENRE_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => onGenreChange(f.value)}
+            className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-medium transition-colors ${
+              genre === f.value
+                ? 'bg-[var(--accent-food)] text-white'
+                : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-sub)]'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {isLoading && (

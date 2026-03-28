@@ -91,7 +91,7 @@ export function CameraCapture({
           : '와인 라벨을 촬영하면 자동으로 인식합니다'}
       </p>
 
-      <div className={`flex w-full gap-3 ${targetType === 'wine' ? 'flex-wrap justify-center' : ''}`}>
+      <div className={`flex w-full justify-center gap-3 ${targetType === 'wine' ? 'flex-wrap' : ''}`}>
         <button
           type="button"
           onClick={onAlbumSelect}

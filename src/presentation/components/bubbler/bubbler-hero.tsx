@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { BarChart2 } from 'lucide-react'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
 import { getLevelColor } from '@/domain/services/xp-calculator'
 import type { AccessLevel } from '@/domain/entities/follow'
@@ -17,6 +18,10 @@ interface BubblerHeroProps {
   isOwnProfile: boolean
   isFollowLoading: boolean
   onToggleFollow: () => void
+  /** 통계 — hero 내부 렌더 */
+  recordCount: number
+  followerCount: number
+  followingCount: number
 }
 
 export function BubblerHero({
@@ -31,62 +36,84 @@ export function BubblerHero({
   isOwnProfile,
   isFollowLoading,
   onToggleFollow,
+  recordCount,
+  followerCount,
+  followingCount,
 }: BubblerHeroProps) {
   const levelColor = getLevelColor(level)
 
   return (
-    <div className="flex flex-col items-center px-6 pb-4 pt-6">
-      {/* 아바타 72×72px + 레벨 뱃지 오버레이 */}
-      <div className="relative">
-        <div
-          className="flex items-center justify-center rounded-full text-[28px] font-bold"
-          style={{
-            width: '72px',
-            height: '72px',
-            backgroundColor: avatarColor ?? 'var(--accent-social-light)',
-            color: '#FFFFFF',
-            border: `3px solid ${levelColor}`,
-          }}
-        >
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt="" width={72} height={72} className="h-full w-full rounded-full object-cover" unoptimized />
-          ) : (
-            nickname.charAt(0)
-          )}
+    <div>
+      {/* ===== 프로필 히어로: 가로 배치 (목업 .profile-hero) ===== */}
+      <div className="flex items-start gap-3.5" style={{ padding: '20px 20px 0' }}>
+        {/* 아바타 72×72px + 레벨 뱃지 오버레이 */}
+        <div className="relative flex-shrink-0">
+          <div
+            className="flex items-center justify-center rounded-full text-[26px] font-bold"
+            style={{
+              width: '72px',
+              height: '72px',
+              backgroundColor: avatarColor ?? 'var(--accent-food)',
+              color: '#FFFFFF',
+              border: '3px solid var(--bg)',
+              boxShadow: `0 0 0 2px ${levelColor}`,
+            }}
+          >
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt="" width={72} height={72} className="h-full w-full rounded-full object-cover" unoptimized />
+            ) : (
+              nickname.charAt(0)
+            )}
+          </div>
+          <div
+            className="absolute whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+            style={{
+              bottom: '-2px',
+              right: '-4px',
+              backgroundColor: levelColor,
+              color: '#fff',
+              border: '2px solid var(--bg)',
+            }}
+          >
+            Lv.{level}
+          </div>
         </div>
-        <div
-          className="absolute flex items-center gap-0.5 rounded-full px-1.5 py-0.5"
-          style={{
-            bottom: '-2px',
-            right: '-4px',
-            backgroundColor: `${levelColor}20`,
-            border: `1.5px solid ${levelColor}`,
-          }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: levelColor }}>Lv.{level}</span>
+
+        {/* 메타 + 통계 (목업 .profile-meta) */}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[18px] font-[800] leading-tight" style={{ color: 'var(--text)' }}>
+            {nickname}
+          </h1>
+          {handle && (
+            <p className="mb-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>@{handle}</p>
+          )}
+
+          {/* 통계 행 (목업 .profile-stats-row) */}
+          <div className="flex gap-3.5">
+            <StatItem label="기록" value={recordCount} />
+            {accessLevel !== 'none' && (
+              <>
+                <StatItem label="팔로워" value={followerCount} />
+                <StatItem label="팔로잉" value={followingCount} />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      <h1 className="mt-3 text-[18px] font-bold" style={{ color: 'var(--text)' }}>{nickname}</h1>
-      {handle && (
-        <span className="mt-0.5 text-[13px]" style={{ color: 'var(--text-hint)' }}>@{handle}</span>
-      )}
-
-      <span className="mt-1 text-[12px] font-medium" style={{ color: levelColor }}>{levelTitle}</span>
-
-      {/* 취향 태그 — 앞쪽 3개 highlight */}
+      {/* ===== 맛 태그 (목업 .profile-taste-tags) ===== */}
       {tasteTags && tasteTags.length > 0 && (
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+        <div className="flex flex-wrap gap-[5px]" style={{ padding: '12px 20px 0' }}>
           {tasteTags.slice(0, 5).map((tag, i) => {
-            const isHighlight = i < 3
+            const isHighlight = i < 2
             return (
               <span
                 key={tag}
-                className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                className="rounded-full px-2.5 py-[3px] text-[11px] font-semibold"
                 style={{
                   backgroundColor: isHighlight ? 'var(--accent-food-light)' : 'var(--bg-section)',
                   color: isHighlight ? 'var(--accent-food)' : 'var(--text-sub)',
-                  border: isHighlight ? 'none' : '1px solid var(--border)',
+                  border: isHighlight ? '1px solid transparent' : '1px solid var(--border)',
                 }}
               >
                 {tag}
@@ -96,15 +123,41 @@ export function BubblerHero({
         </div>
       )}
 
+      {/* ===== 액션 행 (목업 .profile-actions) ===== */}
       {!isOwnProfile && (
-        <div className="mt-4">
-          <FollowButton
-            accessLevel={accessLevel}
-            onToggle={onToggleFollow}
-            isLoading={isFollowLoading}
-          />
+        <div className="flex gap-2" style={{ padding: '12px 20px 0' }}>
+          <div className="flex-1">
+            <FollowButton
+              accessLevel={accessLevel}
+              onToggle={onToggleFollow}
+              isLoading={isFollowLoading}
+            />
+          </div>
+          {accessLevel === 'mutual' && (
+            <button
+              type="button"
+              className="flex items-center gap-[5px] rounded-[10px] px-3.5 py-[9px] text-[13px] font-semibold transition-colors active:opacity-75"
+              style={{
+                backgroundColor: 'var(--bg-section)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <BarChart2 size={14} />
+              취향 비교
+            </button>
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+function StatItem({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="text-center">
+      <p className="text-[16px] font-[800] leading-none" style={{ color: 'var(--text)' }}>{value}</p>
+      <p className="mt-0.5 text-[10px]" style={{ color: 'var(--text-sub)' }}>{label}</p>
     </div>
   )
 }

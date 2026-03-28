@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import type { SavedFilter } from '@/domain/entities/saved-filter'
 import { InlinePager } from '@/presentation/components/home/inline-pager'
+import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 
 interface SavedFilterChipsProps {
   chips: SavedFilter[]
@@ -49,8 +50,8 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
   }
 
   return (
-    <div className="flex items-center px-4 pb-2 pt-2">
-      <div ref={scrollRef} className="flex min-w-0 flex-1 gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+    <div className="flex items-center px-4 py-2">
+      <FilterChipGroup ref={scrollRef} className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => onChipSelect(null)}
@@ -67,7 +68,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
           >
             {chip.name}
             {counts[chip.id] !== undefined && (
-              <span className="ml-1 opacity-70">{counts[chip.id]}</span>
+              <span className="filter-chip-count">{counts[chip.id]}</span>
             )}
           </button>
         ))}
@@ -79,11 +80,11 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
           >
             팔로잉
             {followingCount !== undefined && followingCount > 0 && (
-              <span className="ml-1 opacity-70">{followingCount}</span>
+              <span className="filter-chip-count">{followingCount}</span>
             )}
           </button>
         )}
-      </div>
+      </FilterChipGroup>
       {needsPager && (
         <InlinePager
           currentPage={currentPage}

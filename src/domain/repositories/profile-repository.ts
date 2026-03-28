@@ -8,22 +8,60 @@ import type {
   WrappedCategory,
 } from '@/domain/entities/profile'
 
+export interface BubblerPickItem {
+  id: string
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  name: string
+  meta: string                    // "일식 · 광화문" 또는 "레드 · 보르도"
+  satisfaction: number | null
+  thumbnailUrl: string | null
+  genre: string | null
+}
+
+export interface BubblerRecentRecord {
+  id: string
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  targetName: string
+  meta: string                    // "한식 · 을지로 · 3일 전"
+  satisfaction: number | null
+  comment: string | null
+  thumbnailUrl: string | null
+  visitDate: string | null
+}
+
+export interface BubblerBubbleContext {
+  bubbleId: string
+  bubbleName: string
+  bubbleIcon: string | null
+  rank: number | null
+  rankTotal: number | null
+  memberSince: string
+  tasteMatchPct: number | null
+  tasteMatchCount: number | null
+  tasteMatchDetail: string | null  // "78% (9/12곳 일치)"
+  commonTargetCount: number
+}
+
 export interface BubblerProfileData {
   nickname: string
   handle?: string | null
   avatarUrl?: string | null
   avatarColor?: string | null
+  bio?: string | null
   level?: number
   levelTitle?: string
   tasteTags?: string[]
   categories?: { name: string; percentage: number }[]
   avgSatisfaction?: number
+  scoreTendencyLabel?: string      // "조금 후한 편"
   totalRecords?: number
   topRegions?: string[]
-  topPicks?: { id: string; name: string; targetType: 'restaurant' | 'wine'; satisfaction: number | null; thumbnailUrl: string | null; genre: string | null }[]
-  recentRecords?: { id: string; targetName: string; targetType: 'restaurant' | 'wine'; satisfaction: number | null; comment: string | null; visitDate: string | null }[]
+  topPicks?: BubblerPickItem[]
+  recentRecords?: BubblerRecentRecord[]
   heatmap?: HeatmapCell[]
-  bubbleContext?: { bubbleId: string; bubbleName: string; bubbleIcon: string | null; rank: number | null; rankTotal: number | null; memberSince: string; tasteMatchPct: number | null } | null
+  bubbleContext?: BubblerBubbleContext | null
   currentStreak?: number
   activeDuration?: string
 }
@@ -53,5 +91,5 @@ export interface ProfileRepository {
   getWrappedData(userId: string, category: WrappedCategory): Promise<WrappedData>
 
   // 버블러 프로필
-  getBubblerProfile(userId: string, bubbleId: string | null): Promise<BubblerProfileData | null>
+  getBubblerProfile(userId: string, bubbleId: string | null, targetType?: 'restaurant' | 'wine'): Promise<BubblerProfileData | null>
 }

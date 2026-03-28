@@ -59,6 +59,18 @@ function RecordFlowInner() {
   const [exifWarning, setExifWarning] = useState<string | null>(null)
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [genreHint, setGenreHint] = useState<string | null>(null)
+
+  // sessionStorage에서 장르 대분류 힌트 읽기
+  useEffect(() => {
+    try {
+      const hint = sessionStorage.getItem('nyam_genre_hint')
+      if (hint) {
+        setGenreHint(hint)
+        sessionStorage.removeItem('nyam_genre_hint')
+      }
+    } catch {}
+  }, [])
 
   const { availableBubbles, shareToBubbles, canShare } = useShareRecord(
     user?.id ?? null,
@@ -249,6 +261,15 @@ function RecordFlowInner() {
           }
           savedRecord = await createRecord(input)
 
+          // 선택한 장르가 있으면 식당 genre 업데이트
+          if (formData.genre && formData.targetType === 'restaurant') {
+            fetch('/api/restaurants', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: formData.targetId, genre: formData.genre }),
+            }).catch(() => {})
+          }
+
           // 사진 업로드 (신규 모드에서만)
           if (photos.length > 0) {
             try {
@@ -390,6 +411,7 @@ function RecordFlowInner() {
             genre: state.targetMeta.split(' · ')[0],
             area: state.targetMeta.split(' · ')[1],
           }}
+          genreHint={genreHint}
           referenceRecords={referenceRecords}
           initialData={restaurantInitial}
           saveLabel={saveLabel}
