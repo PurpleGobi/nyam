@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { UtensilsCrossed, Wine } from 'lucide-react'
-import type { NudgeDisplay } from '@/domain/entities/nudge'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { DiningRecord } from '@/domain/entities/record'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
@@ -15,6 +14,9 @@ import { useSavedFilters } from '@/application/hooks/use-saved-filters'
 import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
+import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
+import { useNudge } from '@/application/hooks/use-nudge'
+import { useRecommendations } from '@/application/hooks/use-recommendations'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -42,20 +44,7 @@ import { WineRegionMap } from '@/presentation/components/home/wine-region-map'
 import { VarietalChart } from '@/presentation/components/home/varietal-chart'
 import { WineTypeChart } from '@/presentation/components/home/wine-type-chart'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
-
-function getTimeGreeting(): { message: string; restaurantId: string | null } {
-  const hour = new Date().getHours()
-  if (hour >= 6 && hour < 11) {
-    return { message: '좋은 아침이에요! 오늘 점심 뭐 먹을지 고민 중이라면 — 기록을 참고해보세요.', restaurantId: null }
-  }
-  if (hour >= 11 && hour < 15) {
-    return { message: '점심 메뉴 고민 중이세요? 이번 주 광화문 쪽을 자주 가셨네요 — 오늘은 새로운 데 어때요?', restaurantId: null }
-  }
-  if (hour >= 15 && hour < 21) {
-    return { message: '오늘 저녁은 어떠세요? 이번 주 기록 3건 — 꾸준히 잘 하고 계세요.', restaurantId: null }
-  }
-  return { message: '늦은 밤이네요. 이번 주 기록 3건 — 꾸준히 잘 하고 계세요.', restaurantId: null }
-}
+import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
 
 function sortRecords(records: DiningRecord[], sort: SortOption): DiningRecord[] {
   const sorted = [...records]
@@ -115,16 +104,52 @@ export function HomeContainer() {
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)
 
-  const [showGreeting, setShowGreeting] = useState(true)
-  const [nudge, setNudge] = useState<NudgeDisplay | null>({
-    type: 'photo',
-    icon: '📷',
-    title: '사진 감지',
-    subtitle: '3/19 12:34',
-    actionLabel: '기록',
-    actionHref: '/record/new',
-    targetId: null,
+  // AI 인사말 — greeting-generator 기반
+  const recentRecordsForGreeting = useMemo(() => {
+    return records
+      .filter((r) => r.targetType === 'restaurant' && r.visitDate)
+      .slice(0, 5)
+      .map((r) => ({
+        restaurantName: r.targetId,
+        restaurantId: r.targetId,
+        satisfaction: r.satisfaction ?? 0,
+        visitDate: r.visitDate ?? '',
+        area: '',
+        scene: r.scene ?? null,
+      }))
+  }, [records])
+
+  const weeklyRecordCount = useMemo(() => {
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const cutoff = oneWeekAgo.toISOString().slice(0, 10)
+    return records.filter((r) => (r.visitDate ?? r.createdAt) >= cutoff).length
+  }, [records])
+
+  const {
+    greeting,
+    isVisible: isGreetingVisible,
+    isDismissing: isGreetingDismissing,
+    dismiss: dismissGreeting,
+  } = useAiGreeting({
+    recentRecords: recentRecordsForGreeting,
+    weeklyRecordCount,
+    frequentArea: null,
   })
+
+  // 넛지 — useNudge hook
+  const hasUnratedRecords = useMemo(() => records.some((r) => r.status === 'checked'), [records])
+  const {
+    nudge,
+    isVisible: isNudgeVisible,
+    isDismissing: isNudgeDismissing,
+    handleAction: handleNudgeAction,
+    handleDismiss: handleNudgeDismiss,
+  } = useNudge({ userId: user?.id ?? null, hasUnratedRecords })
+
+  // 추천 카드
+  const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
+
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
@@ -133,8 +158,6 @@ export function HomeContainer() {
   const [calYear, setCalYear] = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-
-  const greeting = useMemo(() => getTimeGreeting(), [])
 
   const filterAttributes = activeTab === 'restaurant'
     ? RESTAURANT_FILTER_ATTRIBUTES
@@ -373,23 +396,23 @@ export function HomeContainer() {
       <AppHeader />
 
       <div className="flex flex-1 flex-col overflow-y-auto">
-        {showGreeting && (
+        {isGreetingVisible && (
           <div className="pt-2">
             <AiGreeting
               greeting={greeting}
-              isDismissing={!showGreeting}
-              onDismiss={() => setShowGreeting(false)}
+              isDismissing={isGreetingDismissing}
+              onDismiss={dismissGreeting}
             />
           </div>
         )}
 
-        {nudge && (
+        {isNudgeVisible && nudge && (
           <div className="pt-2">
             <NudgeStrip
               nudge={nudge}
-              isDismissing={false}
-              onAction={() => {/* navigate to record */}}
-              onDismiss={() => setNudge(null)}
+              isDismissing={isNudgeDismissing}
+              onAction={handleNudgeAction}
+              onDismiss={handleNudgeDismiss}
             />
           </div>
         )}
@@ -546,6 +569,18 @@ export function HomeContainer() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 추천 카드 */}
+        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
+          <div className="px-4 pb-2 pt-3">
+            <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
+            <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {recommendationCards.map((card) => (
+                <RecommendationCard key={card.id} card={card} />
+              ))}
+            </div>
           </div>
         )}
 

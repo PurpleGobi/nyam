@@ -136,6 +136,19 @@ export function useSettings() {
     await settingsRepo.updateBio(userId, bio)
   }, [userId, settings, mutate])
 
+  const updateAvatar = useCallback(async (file: File) => {
+    if (!userId || !settings) return
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `avatars/${userId}.${ext}`
+    const { createClient } = await import('@/infrastructure/supabase/client')
+    const supabase = createClient()
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadError) throw uploadError
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    await settingsRepo.updateAvatar(userId, publicUrl)
+    mutate(['settings', userId], { ...settings, avatarUrl: publicUrl }, false)
+  }, [userId, settings, mutate])
+
   const updateDndTime = useCallback(async (start: string | null, end: string | null) => {
     if (!userId || !settings) return
     mutate(['settings', userId], { ...settings, dndStart: start, dndEnd: end }, false)
@@ -181,6 +194,7 @@ export function useSettings() {
     updateNickname,
     updateBio,
     updateDndTime,
+    updateAvatar,
     exportData,
     importData,
     clearCache,

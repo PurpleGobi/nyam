@@ -24,6 +24,14 @@ import { StepProgress } from '@/presentation/components/ui/step-progress'
 import { NyamToggle } from '@/presentation/components/ui/nyam-toggle'
 import { Segment } from '@/presentation/components/ui/segment'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
+import { NudgeCard } from '@/presentation/components/ui/nudge-card'
+import { NudgeStrip } from '@/presentation/components/ui/nudge-strip'
+import { CompactListItem } from '@/presentation/components/ui/compact-list-item'
+import { ViewCycleButton } from '@/presentation/components/ui/view-cycle-button'
+import { IntroCard } from '@/presentation/components/ui/intro-card'
+import { LoadingState } from '@/presentation/components/ui/loading-state'
+import { NyamInput } from '@/presentation/components/ui/nyam-input'
+import { LayoutGrid, List } from 'lucide-react'
 
 /* ── 섹션 래퍼 (프로토타입 .section 스타일) ── */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -466,10 +474,10 @@ export default function DesignSystemPage() {
           </div>
         </div>
 
-        <Sub title="Text Input" />
-        <input type="text" className="nyam-input" placeholder="와인 이름 검색..." style={{ maxWidth: '340px' }} />
+        <Sub title="Text Input (NyamInput)" />
+        <NyamInput placeholder="와인 이름 검색..." style={{ maxWidth: '340px' }} />
         <div style={{ display: 'flex', gap: '8px', marginTop: '8px', maxWidth: '340px' }}>
-          <input type="text" className="nyam-input" placeholder="와인 이름 검색..." style={{ flex: 1 }} />
+          <NyamInput placeholder="와인 이름 검색..." style={{ flex: 1 }} />
           <button type="button" className="btn-search-submit">찾기</button>
         </div>
       </Section>
@@ -490,19 +498,20 @@ export default function DesignSystemPage() {
 
       {/* ── 10. Intro Selection ── */}
       <Section title="10. Intro Selection">
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div className="intro-card selected" style={{ flex: 1, padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: 'var(--r-md)', background: 'var(--accent-food-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Utensils size={20} style={{ color: 'var(--accent-food)' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>맛집 기록</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-hint)' }}>가본 식당에 점수를 매기고 찜하기</div>
-            </div>
-            <div className="intro-card-check" style={{ background: 'var(--accent-food)', color: '#fff' }}>
-              <Check size={14} />
-            </div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <IntroCard
+            selected
+            variant="food"
+            icon={<Utensils size={20} style={{ color: 'var(--accent-food)' }} />}
+            title="맛집 기록"
+            description="가본 식당에 점수를 매기고 찜하기"
+          />
+          <IntroCard
+            variant="wine"
+            icon={<Wine size={20} style={{ color: 'var(--accent-wine)' }} />}
+            title="와인 기록"
+            description="사진이나 검색으로 와인 등록"
+          />
         </div>
       </Section>
 
@@ -533,6 +542,10 @@ export default function DesignSystemPage() {
         <Sub title="Empty" />
         <NyamCard>
           <EmptyState icon={Wine} title="아직 등록한 와인이 없어요" description="위 버튼으로 와인을 추가해보세요" />
+        </NyamCard>
+        <Sub title="Loading" />
+        <NyamCard>
+          <LoadingState message="와인을 찾고 있어요..." />
         </NyamCard>
         <Sub title="Toast" />
         <button type="button" className="btn-primary" onClick={() => setToastVisible(true)}>토스트 보기</button>
@@ -576,6 +589,37 @@ export default function DesignSystemPage() {
           ))}
         </Row>
         <Note>카드는 기본적으로 shadow 없이 border만 사용. 그림자는 절제 — 시트/토스트 전용.</Note>
+      </Section>
+
+      {/* ── 14-B. Nudge (NudgeCard / NudgeStrip) ── */}
+      <Section title="14-B. Nudge">
+        <Sub title="Nudge Card" />
+        <NudgeCard
+          icon={<Utensils size={20} style={{ color: 'var(--accent-food)' }} />}
+          title="첫 기록을 남겨보세요"
+          description="최근 방문한 식당을 기록하면 XP를 받아요"
+          onConfirm={() => {}}
+          onDismiss={() => {}}
+          onClose={() => {}}
+          confirmLabel="기록하기"
+          dismissLabel="나중에"
+        />
+        <Sub title="Nudge Strip" />
+        <NudgeStrip
+          icon={<Star size={14} color="#fff" />}
+          text="레벨 3까지 50XP 남았어요"
+          actionLabel="확인"
+          onAction={() => {}}
+        />
+      </Section>
+
+      {/* ── 14-C. View Cycle Button ── */}
+      <Section title="14-C. View Cycle Button">
+        <Row>
+          <ViewCycleButton icon={LayoutGrid} active />
+          <ViewCycleButton icon={List} />
+        </Row>
+        <Note>탭 헤더 우측에 위치. 클릭 시 보기 모드 순환 (상세 → 컴팩트 → 캘린더)</Note>
       </Section>
 
       {/* ── 15. Form Controls ── */}
@@ -649,26 +693,12 @@ export default function DesignSystemPage() {
         </Row>
       </Section>
 
-      {/* ── 17. Compact List ── */}
+      {/* ── 17. Compact List (CompactListItem) ── */}
       <Section title="17. Compact List">
-        {[
-          { rank: 1, name: '스시 오마카세', meta: '일식 · 강남 · 혼밥', score: 92 },
-          { rank: 2, name: '라 트라토리아', meta: '이탈리안 · 이태원', score: 88 },
-          { rank: 3, name: '차이나 팰리스', meta: '중식 · 종로', score: 85 },
-          { rank: 4, name: '미평가 식당', meta: '한식 · 합정', score: null },
-        ].map((item) => (
-          <div key={item.rank} className="compact-item">
-            <span className={`compact-rank ${item.rank <= 3 ? 'top' : ''}`}>{item.rank}</span>
-            <div className="compact-thumb" style={{ background: 'linear-gradient(135deg, var(--accent-food-light), var(--accent-food-dim))' }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="compact-name">{item.name}</p>
-              <p className="compact-meta">{item.meta}</p>
-            </div>
-            <span className={`compact-score ${item.score ? 'food' : 'unrated'}`}>
-              {item.score ?? '—'}
-            </span>
-          </div>
-        ))}
+        <CompactListItem rank={1} name="스시 오마카세" meta="일식 · 강남 · 혼밥" score={92} variant="food" />
+        <CompactListItem rank={2} name="라 트라토리아" meta="이탈리안 · 이태원" score={88} variant="food" />
+        <CompactListItem rank={3} name="차이나 팰리스" meta="중식 · 종로" score={85} variant="food" />
+        <CompactListItem rank={4} name="미평가 식당" meta="한식 · 합정" score={null} variant="food" />
       </Section>
 
       {/* ── 18. Step Progress ── */}

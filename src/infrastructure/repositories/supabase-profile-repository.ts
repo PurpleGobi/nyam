@@ -429,7 +429,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     return Array.from(countryMap.entries()).map(([country, c]) => ({
       country,
-      countryCode: '',
+      countryCode: COUNTRY_CODE_MAP[country] ?? '',
       totalWines: c.totalWines,
       typeBreakdown: c.typeBreakdown,
       regions: Array.from(c.regions.entries()).map(([region, r]) => ({
@@ -585,6 +585,68 @@ export class SupabaseProfileRepository implements ProfileRepository {
     }
   }
 
+  // ── 통계 헬퍼 ──
+
+  private async getThisMonthNewAreas(userId: string, thisMonth: string, existingAreas: Set<string>): Promise<number> {
+    const lastMonth = new Date()
+    lastMonth.setMonth(lastMonth.getMonth() - 1)
+    const lastMonthStr = lastMonth.toISOString().slice(0, 7)
+
+    const { data: prevRecords } = await this.supabase
+      .from('records').select('restaurant:restaurants(city)')
+      .eq('user_id', userId).eq('target_type', 'restaurant')
+      .lt('created_at', `${thisMonth}-01`)
+
+    const prevAreas = new Set<string>()
+    for (const r of prevRecords ?? []) {
+      const rest = r.restaurant as unknown as Record<string, unknown> | null
+      if (rest?.city) prevAreas.add(rest.city as string)
+    }
+
+    let newCount = 0
+    for (const area of existingAreas) {
+      if (!prevAreas.has(area)) newCount++
+    }
+    return newCount
+  }
+
+  private async getThisMonthNewCellar(userId: string, thisMonth: string): Promise<number> {
+    const { count } = await this.supabase
+      .from('records').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('target_type', 'wine').eq('wine_status', 'cellar')
+      .gte('created_at', `${thisMonth}-01`)
+
+    return count ?? 0
+  }
+
+  private async getScoreDelta(userId: string, targetType: string): Promise<number> {
+    const now = new Date()
+    const thisMonth = now.toISOString().slice(0, 7)
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const lastMonthStr = lastMonth.toISOString().slice(0, 7)
+    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+
+    const { data: thisData } = await this.supabase
+      .from('records').select('satisfaction')
+      .eq('user_id', userId).eq('target_type', targetType)
+      .not('satisfaction', 'is', null)
+      .gte('created_at', `${thisMonth}-01`)
+
+    const { data: lastData } = await this.supabase
+      .from('records').select('satisfaction')
+      .eq('user_id', userId).eq('target_type', targetType)
+      .not('satisfaction', 'is', null)
+      .gte('created_at', `${lastMonthStr}-01`)
+      .lt('created_at', `${thisMonth}-01`)
+
+    const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
+    const thisAvg = avg((thisData ?? []).map((r) => r.satisfaction as number))
+    const lastAvg = avg((lastData ?? []).map((r) => r.satisfaction as number))
+
+    if (thisAvg === 0 || lastAvg === 0) return 0
+    return thisAvg - lastAvg
+  }
+
   // ── 버블러 프로필 ──
 
   async getBubblerProfile(userId: string, bubbleId: string | null): Promise<BubblerProfileData | null> {
@@ -694,6 +756,19 @@ function getLevelTitle(level: number): string {
   if (level <= 7) return '탐식가'
   if (level <= 9) return '미식가'
   return '식도락 마스터'
+}
+
+const COUNTRY_CODE_MAP: Record<string, string> = {
+  '프랑스': 'FR', '이탈리아': 'IT', '스페인': 'ES', '독일': 'DE',
+  '포르투갈': 'PT', '미국': 'US', '호주': 'AU', '뉴질랜드': 'NZ',
+  '칠레': 'CL', '아르헨티나': 'AR', '남아프리카공화국': 'ZA',
+  '오스트리아': 'AT', '그리스': 'GR', '헝가리': 'HU', '조지아': 'GE',
+  '일본': 'JP', '한국': 'KR', '중국': 'CN', '레바논': 'LB',
+  France: 'FR', Italy: 'IT', Spain: 'ES', Germany: 'DE',
+  Portugal: 'PT', USA: 'US', Australia: 'AU', 'New Zealand': 'NZ',
+  Chile: 'CL', Argentina: 'AR', 'South Africa': 'ZA',
+  Austria: 'AT', Greece: 'GR', Hungary: 'HU', Georgia: 'GE',
+  Japan: 'JP', Korea: 'KR', China: 'CN', Lebanon: 'LB',
 }
 
 function buildScoreDistribution(scores: number[]): ScoreDistribution[] {

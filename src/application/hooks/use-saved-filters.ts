@@ -79,5 +79,13 @@ export function useSavedFilters(userId: string | null, targetType: string) {
     })
   }, [])
 
-  return { filters, counts, isLoading, createFilter, deleteFilter }
+  const reorderFilters = useCallback(async (ids: string[]) => {
+    await savedFilterRepo.reorder(ids)
+    setFilters((prev) => {
+      const map = new Map(prev.map((f) => [f.id, f]))
+      return ids.map((id) => map.get(id)).filter((f): f is SavedFilter => f !== undefined)
+    })
+  }, [])
+
+  return { filters, counts, isLoading, createFilter, deleteFilter, reorderFilters }
 }

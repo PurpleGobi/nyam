@@ -86,7 +86,7 @@ function DeltaBadge({ delta }: { delta: number | 'new' | null }) {
 
   if (delta === 'new') {
     return (
-      <span className="rounded px-1 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-hint)' }}>
+      <span className="rounded px-1 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-hint)' }}>
         NEW
       </span>
     )

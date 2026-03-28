@@ -9,7 +9,7 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
   }
 
   async getByArea(area: string, page: number, limit: number): Promise<DiscoverCard[]> {
-    const from = page * limit
+    const from = (page - 1) * limit
     const to = from + limit - 1
 
     const { data, error } = await this.supabase

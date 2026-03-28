@@ -165,11 +165,11 @@ export class SupabaseRecommendationRepository implements RecommendationRepositor
     return results
   }
 
-  async saveRecommendation(card: RecommendationCard): Promise<void> {
+  async saveRecommendation(userId: string, card: RecommendationCard): Promise<void> {
     const { error } = await this.supabase
       .from('ai_recommendations')
       .insert({
-        user_id: card.id,
+        user_id: userId,
         target_id: card.targetId,
         target_type: card.targetType,
         algorithm: card.algorithm,

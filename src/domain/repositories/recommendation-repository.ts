@@ -48,7 +48,7 @@ export interface RecommendationRepository {
 
   getBubbleCandidates(userId: string): Promise<BubbleCandidate[]>
 
-  saveRecommendation(card: RecommendationCard): Promise<void>
+  saveRecommendation(userId: string, card: RecommendationCard): Promise<void>
 
   dismissRecommendation(recommendationId: string): Promise<void>
 }

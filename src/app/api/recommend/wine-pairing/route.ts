@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import type { RecommendationCard } from '@/domain/entities/recommendation'
 
+/** WSET 8-category pairing map */
+const VALID_PAIRING_CATEGORIES = [
+  'red_meat', 'white_meat', 'seafood', 'cheese',
+  'vegetable', 'spicy', 'dessert', 'charcuterie',
+] as const
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
@@ -11,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   const category = request.nextUrl.searchParams.get('category')
-  if (!category) {
+  if (!category || !(VALID_PAIRING_CATEGORIES as readonly string[]).includes(category)) {
     return NextResponse.json({ cards: [] })
   }
 

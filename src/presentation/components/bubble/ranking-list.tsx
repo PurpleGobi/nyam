@@ -63,7 +63,7 @@ function DeltaIndicator({ delta }: { delta: RankingEntry['delta'] }) {
     return (
       <span
         className="rounded px-1 text-[10px] font-semibold"
-        style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-hint)' }}
+        style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-hint)' }}
       >
         NEW
       </span>

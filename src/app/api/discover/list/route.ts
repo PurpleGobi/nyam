@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import { calculateCompositeScore } from '@/domain/services/composite-score'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const { data: restaurants } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, photos, nyam_score, naver_rating, kakao_rating, google_rating, michelin_stars, has_blue_ribbon')
+    .select('id, name, genre, area, specialty, photos, nyam_score, naver_rating, kakao_rating, google_rating, michelin_stars, has_blue_ribbon, external_avg, record_count')
     .eq('area', area)
     .order('nyam_score', { ascending: false, nullsFirst: false })
     .range(offset, offset + limit - 1)
@@ -31,12 +32,24 @@ export async function GET(request: NextRequest) {
     name: r.name,
     genre: r.genre,
     area: r.area,
+    specialty: r.specialty ?? null,
     photoUrl: r.photos?.[0] ?? null,
     nyamScore: r.nyam_score ? Number(r.nyam_score) : null,
-    compositeScore: 0,
+    naverRating: r.naver_rating ? Number(r.naver_rating) : null,
+    kakaoRating: r.kakao_rating ? Number(r.kakao_rating) : null,
+    googleRating: r.google_rating ? Number(r.google_rating) : null,
+    compositeScore: calculateCompositeScore(
+      r.external_avg ?? 0,
+      r.nyam_score ?? 0,
+      r.record_count ?? 0,
+      (r.michelin_stars ?? 0) > 0 || (r.has_blue_ribbon ?? false),
+    ),
     michelinStars: r.michelin_stars,
     hasBlueRibbon: r.has_blue_ribbon,
   }))
 
-  return NextResponse.json({ results })
+  return NextResponse.json(
+    { results },
+    { headers: { 'Cache-Control': 'public, max-age=3600' } },
+  )
 }

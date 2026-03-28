@@ -7,6 +7,21 @@ export type RecommendationAlgorithm =
 
 export type RecommendationSource = 'ai' | 'bubble' | 'web'
 
+/** DB 테이블(ai_recommendations) 매핑 엔티티 */
+export interface AIRecommendation {
+  id: string
+  userId: string
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  reason: string
+  algorithm: RecommendationAlgorithm
+  confidence: number
+  isDismissed: boolean
+  createdAt: string
+  expiresAt: string | null
+}
+
+/** UI 표시용 추천 카드 */
 export interface RecommendationCard {
   id: string
   targetId: string

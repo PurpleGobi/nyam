@@ -6,6 +6,7 @@ import type { SavedFilter, FilterRule } from '@/domain/entities/saved-filter'
 export interface SavedFilterRepository {
   getByUser(userId: string, targetType: string): Promise<SavedFilter[]>
   create(params: { userId: string; name: string; targetType: string; rules: FilterRule[]; sortBy?: string }): Promise<SavedFilter>
+  update(id: string, data: Partial<Pick<SavedFilter, 'name' | 'rules' | 'sortBy' | 'orderIndex'>>): Promise<void>
   delete(filterId: string): Promise<void>
   getRecordCount(userId: string, targetType: string, rules: FilterRule[]): Promise<number>
   reorder(ids: string[]): Promise<void>

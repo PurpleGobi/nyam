@@ -11,7 +11,7 @@ interface UseRecommendationsResult {
   dismiss: (cardId: string) => void
 }
 
-export function useRecommendations(userId: string | null): UseRecommendationsResult {
+export function useRecommendations(userId: string | null, recordCount: number): UseRecommendationsResult {
   const [cards, setCards] = useState<RecommendationCard[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [coldStartMode, setColdStartMode] = useState(false)
@@ -27,25 +27,24 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
       setIsLoading(true)
 
       try {
-        // 콜드스타트 판단: 사용자 기록 수 확인
-        const countRes = await fetch('/api/recommend/revisit')
-        const countData = await countRes.json() as { cards: RecommendationCard[] }
-        const revisitCards = countData.cards ?? []
-        const recordCount = revisitCards.length
-
-        if (cancelled) return
-
         let endpoints: string[]
-        if (recordCount === 0) {
+
+        if (recordCount < 5) {
           // < 5개 기록 → 권위만 (콜드스타트)
           setColdStartMode(true)
           endpoints = ['/api/recommend/authority']
-        } else if (recordCount < 5) {
+        } else if (recordCount < 20) {
           // 5~19개 → 재방문 + 권위 + 버블
-          endpoints = ['/api/recommend/authority', '/api/recommend/bubble']
+          endpoints = ['/api/recommend/revisit', '/api/recommend/authority', '/api/recommend/bubble']
         } else {
-          // 20+ → 전체
-          endpoints = ['/api/recommend/authority', '/api/recommend/bubble']
+          // 20+ → 전체 7종
+          endpoints = [
+            '/api/recommend/revisit',
+            '/api/recommend/authority',
+            '/api/recommend/bubble',
+            '/api/recommend/scene',
+            '/api/recommend/wine-pairing?category=red_meat',
+          ]
         }
 
         const results = await Promise.allSettled(
@@ -56,7 +55,7 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
 
         if (cancelled) return
 
-        const allCards: RecommendationCard[] = [...revisitCards]
+        const allCards: RecommendationCard[] = []
         for (const result of results) {
           if (result.status === 'fulfilled' && result.value.cards) {
             allCards.push(...result.value.cards)
@@ -77,7 +76,7 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, recordCount])
 
   const dismiss = useCallback((cardId: string) => {
     setCards((prev) => prev.filter((c) => c.id !== cardId))

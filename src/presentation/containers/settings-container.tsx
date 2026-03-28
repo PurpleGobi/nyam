@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Pencil, MessageSquare, ImageIcon, Shield, Bell, Trophy, CircleDot, UserPlus,
@@ -118,7 +118,7 @@ export function SettingsContainer() {
     updateVisibilityPublic, updateVisibilityBubble,
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
-    updateNickname, updateBio, updateDndTime,
+    updateNickname, updateBio, updateAvatar, updateDndTime,
     exportData, importData, clearCache,
   } = useSettings()
 
@@ -126,7 +126,22 @@ export function SettingsContainer() {
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
   const [editField, setEditField] = useState<'nickname' | 'bio' | null>(null)
   const [dndSheetOpen, setDndSheetOpen] = useState(false)
+  const [cacheSize, setCacheSize] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const avatarRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'storage' in navigator && navigator.storage.estimate) {
+      navigator.storage.estimate().then((est) => {
+        const bytes = est.usage ?? 0
+        if (bytes < 1024 * 1024) {
+          setCacheSize(`${(bytes / 1024).toFixed(1)} KB`)
+        } else {
+          setCacheSize(`${(bytes / (1024 * 1024)).toFixed(1)} MB`)
+        }
+      })
+    }
+  }, [])
 
   if (isLoading || !settings) {
     return (
@@ -163,8 +178,19 @@ export function SettingsContainer() {
           <SettingsCard>
             <SettingsItem icon={<Pencil size={16} />} label="닉네임" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
             <SettingsItem icon={<MessageSquare size={16} />} label="한줄 소개" value={settings.bio ?? '미설정'} showChevron onPress={() => setEditField('bio')} />
-            <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron onPress={() => setEditField('avatar')} />
+            <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron onPress={() => avatarRef.current?.click()} />
           </SettingsCard>
+          <input
+            ref={avatarRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) updateAvatar(file)
+              e.target.value = ''
+            }}
+          />
         </SettingsSection>
 
         {/* ── 프라이버시 ── */}
@@ -370,7 +396,7 @@ export function SettingsContainer() {
           <SettingsCard>
             <SettingsItem icon={<Upload size={16} />} label="데이터 내보내기" showChevron onPress={() => exportData('json')} />
             <SettingsItem icon={<Download size={16} />} label="데이터 가져오기" showChevron onPress={() => importRef.current?.click()} />
-            <SettingsItem icon={<Eraser size={16} />} label="캐시 삭제" showChevron onPress={clearCache} />
+            <SettingsItem icon={<Eraser size={16} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
           </SettingsCard>
           <input
             ref={importRef}

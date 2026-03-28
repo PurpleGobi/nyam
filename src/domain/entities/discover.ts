@@ -17,6 +17,10 @@ export interface DiscoverCard {
   googleRating: number | null
 }
 
+export interface DiscoverFilter {
+  area: string
+}
+
 export const DISCOVER_AREAS = [
   '광화문', '을지로', '종로', '강남', '성수', '홍대', '이태원', '연남',
 ] as const

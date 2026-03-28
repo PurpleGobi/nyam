@@ -25,6 +25,21 @@ export class SupabaseSavedFilterRepository implements SavedFilterRepository {
     return mapFilter(data)
   }
 
+  async update(id: string, data: Partial<Pick<SavedFilter, 'name' | 'rules' | 'sortBy' | 'orderIndex'>>): Promise<void> {
+    const updatePayload: Record<string, unknown> = {}
+    if (data.name !== undefined) updatePayload.name = data.name
+    if (data.rules !== undefined) updatePayload.rules = data.rules
+    if (data.sortBy !== undefined) updatePayload.sort_by = data.sortBy
+    if (data.orderIndex !== undefined) updatePayload.order_index = data.orderIndex
+
+    const { error } = await this.supabase
+      .from('saved_filters')
+      .update(updatePayload)
+      .eq('id', id)
+
+    if (error) throw new Error(`필터 수정 실패: ${error.message}`)
+  }
+
   async delete(filterId: string): Promise<void> {
     await this.supabase.from('saved_filters').delete().eq('id', filterId)
   }
