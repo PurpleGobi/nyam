@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import { calculateAutoScore, finishToSeconds, getComplexityInitialValue } from '@/domain/entities/wine-structure'
+import { LabeledGaugeSlider } from '@/presentation/components/ui/gauge-slider'
 
 interface WineStructureEvalProps {
   value: WineStructure
@@ -30,8 +31,7 @@ export function WineStructureEval({
   }, [aromaRingCount])
 
   const handleChange = useCallback(
-    (field: keyof WineStructure, rawValue: string) => {
-      const numValue = Number(rawValue)
+    (field: keyof WineStructure, numValue: number) => {
       if (field === 'complexity') {
         hasUserModifiedComplexity.current = true
       }
@@ -43,69 +43,31 @@ export function WineStructureEval({
   )
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      {/* 복합성 */}
-      <div>
-        <div className="mb-1.5 flex items-center justify-between" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-          <span>복합성</span>
-          <span style={{ fontWeight: 800, color: 'var(--accent-wine)' }}>{value.complexity}</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={value.complexity}
-          onChange={(e) => handleChange('complexity', e.target.value)}
-          className="wine-slider w-full"
-        />
-        <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
-          <span>1차향 (과일/꽃)</span>
-          <span>2차향 (발효)</span>
-          <span>3차향 (숙성)</span>
-        </div>
-      </div>
-
-      {/* 여운 */}
-      <div>
-        <div className="mb-1.5 flex items-center justify-between" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-          <span>여운</span>
-          <span style={{ fontWeight: 800, color: 'var(--accent-wine)' }}>{finishToSeconds(value.finish)}초+</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={value.finish}
-          onChange={(e) => handleChange('finish', e.target.value)}
-          className="wine-slider w-full"
-        />
-        <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
-          <span>짧음 (&lt;3초)</span>
-          <span>보통 (5~8초)</span>
-          <span>긴 (10초+)</span>
-        </div>
-      </div>
-
-      {/* 균형 */}
-      <div>
-        <div className="mb-1.5 flex items-center justify-between" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-          <span>균형</span>
-          <span style={{ fontWeight: 800, color: 'var(--accent-wine)' }}>{value.balance}</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={value.balance}
-          onChange={(e) => handleChange('balance', e.target.value)}
-          className="wine-slider w-full"
-        />
-        <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
-          <span>산미 치우침</span>
-          <span>조화</span>
-          <span>타닌/알코올 치우침</span>
-        </div>
-      </div>
+    <div className="flex w-full flex-col gap-5">
+      <LabeledGaugeSlider
+        label="복합성"
+        valueLabel={String(value.complexity)}
+        value={value.complexity}
+        onChange={(v) => handleChange('complexity', v)}
+        accentVar="--accent-wine"
+        marks={['1차향 (과일/꽃)', '2차향 (발효)', '3차향 (숙성)']}
+      />
+      <LabeledGaugeSlider
+        label="여운"
+        valueLabel={`${finishToSeconds(value.finish)}초+`}
+        value={value.finish}
+        onChange={(v) => handleChange('finish', v)}
+        accentVar="--accent-wine"
+        marks={['짧음 (<3초)', '보통 (5~8초)', '긴 (10초+)']}
+      />
+      <LabeledGaugeSlider
+        label="균형"
+        valueLabel={String(value.balance)}
+        value={value.balance}
+        onChange={(v) => handleChange('balance', v)}
+        accentVar="--accent-wine"
+        marks={['불균형', '보통', '완벽한 조화']}
+      />
     </div>
   )
 }

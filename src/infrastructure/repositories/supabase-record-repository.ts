@@ -194,6 +194,22 @@ export class SupabaseRecordRepository implements RecordRepository {
       }
     }
 
+    // record_photos에서 각 레코드의 첫 번째 사진 조회
+    const recordIds = rows.map((r) => r.id)
+    const recordPhotoMap = new Map<string, string>()
+    if (recordIds.length > 0) {
+      const { data: photos } = await this.supabase
+        .from('record_photos')
+        .select('record_id, url')
+        .in('record_id', recordIds)
+        .order('order_index', { ascending: true })
+      for (const p of photos ?? []) {
+        if (!recordPhotoMap.has(p.record_id)) {
+          recordPhotoMap.set(p.record_id, p.url)
+        }
+      }
+    }
+
     // 팔로잉 유저들의 target_id 셋 조회 → source 태깅용
     const followingTargetIds = new Set<string>()
     const { data: followRows } = await this.supabase
@@ -228,7 +244,7 @@ export class SupabaseRecordRepository implements RecordRepository {
         targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
         targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
         targetArea: isRestaurant ? (restaurant?.area ?? null) : (wine?.region ?? null),
-        targetPhotoUrl: (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
+        targetPhotoUrl: recordPhotoMap.get(row.id) ?? (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
         source: followingTargetIds.has(row.target_id) ? 'following' as const : 'mine' as const,
       }
     })

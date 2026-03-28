@@ -32,9 +32,6 @@ export function StickyTabs<T extends string>({
     <div
       className="content-tabs flex items-center px-4"
       style={{
-        position: 'sticky',
-        top: '49px',
-        zIndex: 80,
         backgroundColor: 'var(--bg)',
         borderBottom: '1px solid var(--border)',
       }}

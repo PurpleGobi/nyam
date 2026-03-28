@@ -53,7 +53,12 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
   const sorted = [...records]
   switch (sort) {
     case 'latest':
-      return sorted.sort((a, b) => (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt))
+      return sorted.sort((a, b) => {
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
+        if (dateA !== dateB) return dateB.localeCompare(dateA)
+        return b.createdAt.localeCompare(a.createdAt)
+      })
     case 'score_high':
       return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
     case 'score_low':
@@ -479,6 +484,7 @@ export function HomeContainer() {
           </div>
         )}
 
+        <div style={{ position: 'sticky', top: '46px', zIndex: 80, backgroundColor: 'var(--bg)' }}>
         <HomeTabs
           activeTab={activeTab}
           viewMode={viewMode}
@@ -557,6 +563,7 @@ export function HomeContainer() {
             onRecordPageNext={() => setCurrentRecordPage((p) => Math.min(totalRecordPages, p + 1))}
           />
         )}
+        </div>
 
         {/* 팔로잉 피드 */}
         {isFollowingMode && (

@@ -6,6 +6,8 @@ import {
   recognizeWineShelf,
   recognizeWineReceipt,
 } from '@/infrastructure/api/gemini'
+import type { WineLabelRecognition } from '@/infrastructure/api/gemini'
+import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { rankCandidatesByGenreMatch, isConfidentMatch } from '@/domain/services/ai-recognition'
 import type {
   IdentifyRequest,
@@ -16,31 +18,65 @@ import type {
   WineCandidate,
 } from '@/domain/entities/camera'
 
-function calculateWineMatchScore(
-  dbWine: { name: string; producer: string | null; vintage: number | null },
-  recognition: { wineName: string | null; producer: string | null; vintage: number | null },
-): number {
-  let score = 0
-
-  if (recognition.wineName && dbWine.name) {
-    const nameNorm = dbWine.name.toLowerCase().replace(/\s/g, '')
-    const ocrNorm = recognition.wineName.toLowerCase().replace(/\s/g, '')
-    if (nameNorm === ocrNorm) score += 0.5
-    else if (nameNorm.includes(ocrNorm) || ocrNorm.includes(nameNorm)) score += 0.3
+/** AI 인식 결과로 wines 테이블에 중복 체크 후 INSERT (없으면 생성) */
+async function upsertWineFromAI(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  recognition: WineLabelRecognition,
+): Promise<{ id: string; name: string; isExisting: boolean }> {
+  if (!recognition.wineName) {
+    throw new Error('NO_WINE_NAME')
   }
 
-  if (recognition.producer && dbWine.producer) {
-    const prodNorm = dbWine.producer.toLowerCase().replace(/\s/g, '')
-    const ocrProdNorm = recognition.producer.toLowerCase().replace(/\s/g, '')
-    if (prodNorm === ocrProdNorm) score += 0.25
-    else if (prodNorm.includes(ocrProdNorm) || ocrProdNorm.includes(prodNorm)) score += 0.15
+  // 중복 체크: 이름(대소문자 무시) + 빈티지
+  let query = supabase
+    .from('wines')
+    .select('id, name, producer, vintage, wine_type, region, country')
+    .ilike('name', recognition.wineName)
+
+  if (recognition.vintage) {
+    query = query.eq('vintage', recognition.vintage)
   }
 
-  if (recognition.vintage && dbWine.vintage && recognition.vintage === dbWine.vintage) {
-    score += 0.25
+  const { data: existing } = await query.limit(1).maybeSingle()
+
+  if (existing) {
+    return { id: existing.id, name: existing.name, isExisting: true }
   }
 
-  return Math.min(score, 1)
+  // 새 와인 등록 (AI 추정 데이터 포함)
+  const { data, error } = await supabase
+    .from('wines')
+    .insert({
+      name: recognition.wineName,
+      producer: recognition.producer,
+      vintage: recognition.vintage,
+      region: recognition.region,
+      sub_region: recognition.subRegion,
+      country: recognition.country,
+      wine_type: recognition.wineType ?? 'red',
+      variety: recognition.variety,
+      grape_varieties: recognition.grapeVarieties,
+      abv: recognition.abv,
+      classification: recognition.classification,
+      body_level: recognition.bodyLevel,
+      acidity_level: recognition.acidityLevel,
+      sweetness_level: recognition.sweetnessLevel,
+      food_pairings: recognition.foodPairings,
+      serving_temp: recognition.servingTemp,
+      decanting: recognition.decanting,
+      reference_price: recognition.referencePrice,
+      drinking_window_start: recognition.drinkingWindowStart,
+      drinking_window_end: recognition.drinkingWindowEnd,
+      vivino_rating: recognition.vivinoRating,
+    })
+    .select('id, name')
+    .single()
+
+  if (error) {
+    throw new Error(`와인 등록 실패: ${error.message}`)
+  }
+
+  return { id: data.id, name: data.name, isExisting: false }
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<IdentifyResponse>> {
@@ -67,30 +103,30 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
 
       let candidates: RestaurantCandidate[] = []
 
-      if (latitude && longitude) {
-        const { data: nearby } = await supabase.rpc('restaurants_within_radius', {
-          lat: latitude,
-          lng: longitude,
-          radius_meters: 200,
-        })
+      // 카카오 API로 검색: 식당 이름 > 검색 키워드 > 장르 순으로 시도
+      const searchQueries: string[] = []
+      if (recognition.restaurantName) searchQueries.push(recognition.restaurantName)
+      if (recognition.searchKeywords.length > 0) searchQueries.push(...recognition.searchKeywords)
+      if (recognition.genre) searchQueries.push(recognition.genre)
 
-        if (nearby) {
-          candidates = (
-            nearby as Array<{
-              id: string
-              name: string
-              genre: string | null
-              area: string | null
-              distance: number
-            }>
-          ).map((r) => ({
-            restaurantId: r.id,
-            name: r.name,
-            genre: r.genre,
-            area: r.area,
-            distance: r.distance,
+      for (const query of searchQueries) {
+        if (candidates.length >= 5) break
+        const kakaoResults = await searchKakaoLocal(query, latitude, longitude, {
+          radius: 1000,
+          size: 5,
+        })
+        for (const k of kakaoResults) {
+          if (candidates.some((c) => c.name === k.name)) continue
+          candidates.push({
+            restaurantId: `kakao_${k.kakaoId}`,
+            name: k.name,
+            genre: k.category ?? null,
+            area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
+            distance: latitude && longitude
+              ? haversineDistance(latitude, longitude, k.lat, k.lng)
+              : 0,
             matchScore: 0,
-          }))
+          })
         }
       }
 
@@ -101,7 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
         detectedGenre: recognition.genre,
         detectedName: recognition.restaurantName,
         candidates: rankedCandidates,
-        isConfidentMatch: isConfidentMatch(rankedCandidates),
+        isConfidentMatch: recognition.restaurantName != null && rankedCandidates.length > 0 && rankedCandidates[0].matchScore >= 0.5,
       }
 
       return NextResponse.json({ success: true, result })
@@ -145,36 +181,37 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
           producer: recognition.producer,
         }
 
-        let candidates: WineCandidate[] = []
-
-        if (recognition.wineName) {
-          const { data: wines } = await supabase
-            .from('wines')
-            .select('id, name, producer, vintage, wine_type, region, country')
-            .or(`name.ilike.%${recognition.wineName}%,producer.ilike.%${recognition.wineName}%`)
-            .limit(10)
-
-          if (wines) {
-            candidates = wines
-              .map((w) => ({
-                wineId: w.id,
-                name: w.name,
-                producer: w.producer,
-                vintage: w.vintage,
-                wineType: w.wine_type,
-                region: w.region,
-                country: w.country,
-                matchScore: calculateWineMatchScore(w, recognition),
-              }))
-              .sort((a, b) => b.matchScore - a.matchScore)
+        if (!recognition.wineName) {
+          // 와인 이름 인식 실패 → search 폴백
+          const result: WineAIResult = {
+            targetType: 'wine',
+            ocrData,
+            candidates: [],
+            isConfidentMatch: false,
+            cameraMode: 'individual',
           }
+          return NextResponse.json({ success: true, result })
         }
+
+        // AI 인식 결과로 wines 테이블에 자동 등록 (중복이면 기존 반환)
+        const wine = await upsertWineFromAI(supabase, recognition)
+
+        const candidates: WineCandidate[] = [{
+          wineId: wine.id,
+          name: wine.name,
+          producer: recognition.producer,
+          vintage: recognition.vintage,
+          wineType: recognition.wineType ?? 'red',
+          region: recognition.region,
+          country: recognition.country,
+          matchScore: recognition.confidence >= 0.5 ? 1.0 : recognition.confidence,
+        }]
 
         const result: WineAIResult = {
           targetType: 'wine',
           ocrData,
           candidates,
-          isConfidentMatch: candidates.length > 0 && candidates[0].matchScore >= 0.8,
+          isConfidentMatch: recognition.confidence >= 0.5,
           cameraMode: 'individual',
         }
 
@@ -191,6 +228,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
       return NextResponse.json({ success: false, result: null, error: 'NOT_WINE_LABEL' }, { status: 422 })
     }
 
+    // AI 실패 시 GPS 기반 폴백 결과 반환
+    if (targetType === 'restaurant' && latitude && longitude) {
+      try {
+        const fallbackResults = await searchKakaoLocal('음식점', latitude, longitude, { radius: 500, size: 10 })
+        const fallbackCandidates: RestaurantCandidate[] = fallbackResults.map((k) => ({
+          restaurantId: `kakao_${k.kakaoId}`,
+          name: k.name,
+          genre: k.category ?? null,
+          area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
+          distance: haversineDistance(latitude, longitude, k.lat, k.lng),
+          matchScore: 0,
+        }))
+        const fallbackResult: RestaurantAIResult = {
+          targetType: 'restaurant',
+          detectedGenre: null,
+          detectedName: null,
+          candidates: fallbackCandidates,
+          isConfidentMatch: false,
+        }
+        return NextResponse.json({ success: true, result: fallbackResult })
+      } catch {}
+    }
+
     return NextResponse.json({ success: false, result: null, error: message }, { status: 500 })
   }
+}
+
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }

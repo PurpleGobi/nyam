@@ -53,7 +53,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
   const showRecordPager = recordTotalPages != null && recordTotalPages > 1
 
   return (
-    <div className="flex items-center px-4 py-2">
+    <div className="flex items-center px-4 py-2" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="relative min-w-0 flex-1">
         <FilterChipGroup ref={scrollRef} className="min-w-0 flex-1" style={showRecordPager ? { maskImage: 'linear-gradient(to right, black calc(100% - 32px), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 32px), transparent)' } : undefined}>
           <button

@@ -11,6 +11,8 @@ import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
 import { PairingGrid } from '@/presentation/components/record/pairing-grid'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
+import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
+import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
 import { AROMA_SECTORS } from '@/shared/constants/aroma-sectors'
 
 interface WineTarget {
@@ -67,6 +69,8 @@ interface WineRecordFormProps {
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
+  onDelete?: () => void
+  isDeleting?: boolean
 }
 
 function countActiveRings(regions: AromaSelection['regions']): number {
@@ -87,6 +91,8 @@ export function WineRecordForm({
   onSave,
   isLoading,
   photoSlot,
+  onDelete,
+  isDeleting,
 }: WineRecordFormProps) {
   const [quadrant, setQuadrant] = useState({
     x: initialData?.axisX ?? 50,
@@ -115,6 +121,8 @@ export function WineRecordForm({
   const [visitDate, setVisitDate] = useState(
     initialData?.visitDate ?? new Date().toISOString().split('T')[0],
   )
+  const [linkedRestaurant, setLinkedRestaurant] = useState<LinkSearchResult | null>(null)
+  const [showLinkSheet, setShowLinkSheet] = useState(false)
   const isManualOverrideRef = useRef(false)
 
   const aromaRingCount = countActiveRings(aroma.regions)
@@ -156,8 +164,9 @@ export function WineRecordForm({
       comment: comment || undefined,
       purchasePrice: purchasePrice ? Number(purchasePrice) : undefined,
       visitDate,
+      linkedRestaurantId: linkedRestaurant?.id,
     })
-  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, visitDate, target.id, onSave])
+  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, visitDate, target.id, onSave, linkedRestaurant])
 
   return (
     <div className="flex flex-col pb-24">
@@ -297,13 +306,38 @@ export function WineRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어디서 마셨나요? <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
         </h3>
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text-hint)]"
-        >
-          <span>⊕</span> 식당 검색
-        </button>
+        {linkedRestaurant ? (
+          <div
+            className="flex items-center justify-between rounded-xl px-4 py-3"
+            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--accent-food)' }}
+          >
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{linkedRestaurant.name}</p>
+              {linkedRestaurant.meta && (
+                <p style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '1px' }}>{linkedRestaurant.meta}</p>
+              )}
+            </div>
+            <button type="button" onClick={() => setLinkedRestaurant(null)} style={{ fontSize: '12px', color: 'var(--negative)' }}>
+              해제
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowLinkSheet(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text-hint)]"
+          >
+            <span>⊕</span> 식당 검색
+          </button>
+        )}
       </section>
+
+      <LinkSearchSheet
+        isOpen={showLinkSheet}
+        onClose={() => setShowLinkSheet(false)}
+        type="restaurant"
+        onSelect={setLinkedRestaurant}
+      />
 
       {/* 저장 바 */}
       <RecordSaveBar
@@ -312,6 +346,8 @@ export function WineRecordForm({
         isLoading={isLoading}
         disabled={!isValid}
         label={saveLabel}
+        onDelete={onDelete}
+        isDeleting={isDeleting}
       />
     </div>
   )

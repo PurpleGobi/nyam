@@ -68,6 +68,7 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
         </div>
         </div>
       </header>
+      <div className="header-spacer" style={{ height: '46px' }} />
 
       <NotificationDropdown
         isOpen={notifOpen}

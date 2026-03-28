@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Bell, Users, User } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
@@ -165,23 +164,10 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
         variant="inner"
         title={FROM_LABELS[from] ?? '홈'}
         backHref={from === 'profile' ? '/profile' : from === 'bubble' ? '/bubbles' : '/'}
-        actions={
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => router.push('/bubbles')}>
-              <Users size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-            <button type="button">
-              <Bell size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-            <button type="button" onClick={() => router.push('/profile')}>
-              <User size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-          </div>
-        }
       />
 
       {/* 스크롤 영역 */}
-      <div style={{ paddingTop: '80px' }}>
+      <div>
         {/* L1: 히어로 캐러셀 */}
         <HeroCarousel
           photos={wine.photos.length > 0 ? wine.photos : (wine.labelImageUrl ? [wine.labelImageUrl] : [])}

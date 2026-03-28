@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
+import type { Wine } from '@/domain/entities/wine'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
 import type { WineRepository } from '@/domain/repositories/wine-repository'
@@ -36,6 +37,8 @@ export interface RecordDetailState {
   record: DiningRecord | null
   photos: RecordPhoto[]
   targetInfo: LinkedTarget | null
+  /** 와인 기록인 경우 와인 전체 정보 */
+  wineInfo: Wine | null
   linkedItem: LinkedTarget | null
   otherRecords: DiningRecord[]
   xpEarned: XpEarnedItem[]
@@ -63,6 +66,7 @@ export function useRecordDetail(
   const [record, setRecord] = useState<DiningRecord | null>(null)
   const [photos, setPhotos] = useState<RecordPhoto[]>([])
   const [targetInfo, setTargetInfo] = useState<LinkedTarget | null>(null)
+  const [wineInfo, setWineInfo] = useState<Wine | null>(null)
   const [linkedItem, setLinkedItem] = useState<LinkedTarget | null>(null)
   const [otherRecords, setOtherRecords] = useState<DiningRecord[]>([])
   const [xpEarned, setXpEarned] = useState<XpEarnedItem[]>([])
@@ -111,6 +115,7 @@ export function useRecordDetail(
                   id: wine.id, name: wine.name, targetType: 'wine',
                   subText: parts.length > 0 ? parts.join(' · ') : null,
                 })
+                setWineInfo(wine)
               }
             }
           })(),
@@ -256,6 +261,7 @@ export function useRecordDetail(
     record,
     photos,
     targetInfo,
+    wineInfo,
     linkedItem,
     otherRecords,
     xpEarned,

@@ -11,10 +11,11 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
-import { photoRepo, recordRepo } from '@/shared/di/container'
+import { photoRepo, recordRepo, xpRepo, wishlistRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { RecordNav } from '@/presentation/components/record/record-nav'
 import { RecordSuccess } from '@/presentation/components/record/record-success'
+import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useSettings } from '@/application/hooks/use-settings'
@@ -59,6 +60,8 @@ function RecordFlowInner() {
   const [exifWarning, setExifWarning] = useState<string | null>(null)
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [genreHint, setGenreHint] = useState<string | null>(null)
 
   // sessionStorage에서 장르 대분류 힌트 읽기
@@ -152,24 +155,33 @@ function RecordFlowInner() {
   }, [userId, state.targetId, editRecordId])
 
   // sessionStorage에서 촬영 이미지를 읽어 자동 첨부
+  const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
+
+  // sessionStorage에서 촬영 이미지 + AI prefill 읽기
   useEffect(() => {
-    if (isEditMode) return // 수정 모드에서는 카메라 이미지 불필요
+    if (isEditMode) return
     try {
       const base64 = sessionStorage.getItem('nyam_captured_image')
-      if (!base64) return
-      sessionStorage.removeItem('nyam_captured_image')
-
-      const byteString = atob(base64)
-      const ab = new ArrayBuffer(byteString.length)
-      const ia = new Uint8Array(ab)
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i)
+      if (base64) {
+        sessionStorage.removeItem('nyam_captured_image')
+        const byteString = atob(base64)
+        const ab = new ArrayBuffer(byteString.length)
+        const ia = new Uint8Array(ab)
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i)
+        }
+        const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
+        addFiles([file])
       }
-      const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
-      addFiles([file])
-    } catch {
-      // ignore
-    }
+    } catch {}
+    try {
+      const prefillStr = sessionStorage.getItem('nyam_ai_prefill')
+      if (prefillStr) {
+        sessionStorage.removeItem('nyam_ai_prefill')
+        const prefill = JSON.parse(prefillStr)
+        setAiPrefill(prefill)
+      }
+    } catch {}
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = useCallback(
@@ -310,6 +322,30 @@ function RecordFlowInner() {
 
   const handleBack = useCallback(() => router.back(), [router])
   const handleClose = useCallback(() => router.push('/'), [router])
+  const handleDelete = useCallback(async () => {
+    if (!editRecordId || !user) return
+    setIsDeleting(true)
+    try {
+      await recordRepo.delete(editRecordId)
+      // XP 차감 + wishlist 복원은 record-detail과 동일 로직
+      const histories = await xpRepo.getHistoriesByRecord(editRecordId)
+      if (histories.length > 0) {
+        let totalXpToDeduct = 0
+        for (const h of histories) totalXpToDeduct += h.xpAmount
+        await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
+        await xpRepo.deleteByRecordId(editRecordId)
+      }
+      if (editingRecord) {
+        const remaining = await recordRepo.findByUserAndTarget(user.id, editingRecord.targetId)
+        if (remaining.filter((r) => r.id !== editRecordId).length === 0) {
+          await wishlistRepo.updateVisitStatus(user.id, editingRecord.targetId, editingRecord.targetType, false)
+        }
+      }
+      router.replace('/')
+    } catch {
+      setIsDeleting(false)
+    }
+  }, [editRecordId, user, editingRecord, router])
   const handleAddMore = useCallback(() => {
     const prefix = state.targetType === 'wine' ? 'wines' : 'restaurants'
     router.push(`/${prefix}/${state.targetId}`)
@@ -405,19 +441,23 @@ function RecordFlowInner() {
 
       {state.targetType === 'restaurant' ? (
         <RestaurantRecordForm
+          key={aiPrefill ? 'prefilled' : 'default'}
           target={{
             id: state.targetId,
             name: state.targetName,
-            genre: state.targetMeta.split(' · ')[0],
+            genre: aiPrefill?.genre ?? state.targetMeta.split(' · ')[0],
             area: state.targetMeta.split(' · ')[1],
           }}
-          genreHint={genreHint}
+          genreHint={genreHint ?? aiPrefill?.genre}
           referenceRecords={referenceRecords}
-          initialData={restaurantInitial}
+          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: 50, axisY: 50, satisfaction: 50, scene: null, comment: null, companions: null, totalPrice: null, visitDate: null } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
           isLoading={isLoading}
           photoSlot={photoPickerSlot}
+          onDelete={isEditMode ? () => setShowDeleteConfirm(true) : undefined}
+          isDeleting={isDeleting}
+
         />
       ) : (
         <WineRecordForm
@@ -433,6 +473,18 @@ function RecordFlowInner() {
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}
           isLoading={isLoading}
           photoSlot={photoPickerSlot}
+          onDelete={isEditMode ? () => setShowDeleteConfirm(true) : undefined}
+          isDeleting={isDeleting}
+
+        />
+      )}
+
+      {isEditMode && (
+        <DeleteConfirmModal
+          isOpen={showDeleteConfirm}
+          isDeleting={isDeleting}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
     </div>

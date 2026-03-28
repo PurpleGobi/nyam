@@ -167,7 +167,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       />
 
       {/* 스크롤 영역 */}
-      <div style={{ paddingTop: '80px' }}>
+      <div>
         {/* L1: 히어로 캐러셀 */}
         <HeroCarousel
           photos={restaurant.photos ?? []}

@@ -10,6 +10,8 @@ import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { SceneTagSelector } from '@/presentation/components/record/scene-tag-selector'
 import { CompanionInput } from '@/presentation/components/record/companion-input'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
+import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
+import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
 
 interface RestaurantTarget {
   id: string
@@ -59,6 +61,8 @@ interface RestaurantRecordFormProps {
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
+  onDelete?: () => void
+  isDeleting?: boolean
 }
 
 export function RestaurantRecordForm({
@@ -70,6 +74,8 @@ export function RestaurantRecordForm({
   onSave,
   isLoading,
   photoSlot,
+  onDelete,
+  isDeleting,
 }: RestaurantRecordFormProps) {
   const [selectedGenre, setSelectedGenre] = useState<RestaurantGenre | null>(
     (target.genre as RestaurantGenre) ?? null,
@@ -98,6 +104,8 @@ export function RestaurantRecordForm({
   const [visitDate, setVisitDate] = useState(
     initialData?.visitDate ?? new Date().toISOString().split('T')[0],
   )
+  const [linkedWine, setLinkedWine] = useState<LinkSearchResult | null>(null)
+  const [showLinkSheet, setShowLinkSheet] = useState(false)
   const menuTagInputRef = useRef<HTMLInputElement>(null)
 
   const isValid = quadrant.satisfaction >= 1 && scene !== null
@@ -133,8 +141,9 @@ export function RestaurantRecordForm({
       menuTags: menuTags.length > 0 ? menuTags : undefined,
       totalPrice: totalPrice ? Number(totalPrice) : undefined,
       visitDate,
+      linkedWineId: linkedWine?.id,
     })
-  }, [isValid, quadrant, scene, comment, companions, menuTags, totalPrice, visitDate, target.id, onSave])
+  }, [isValid, quadrant, scene, comment, companions, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine])
 
   return (
     <div className="flex flex-col pb-24">
@@ -343,14 +352,38 @@ export function RestaurantRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           같이 마신 와인 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
         </h3>
-        {/* S3 검색 연동 전까지 껍데기만 */}
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text-hint)]"
-        >
-          <span>⊕</span> 와인 추가
-        </button>
+        {linkedWine ? (
+          <div
+            className="flex items-center justify-between rounded-xl px-4 py-3"
+            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--accent-wine)' }}
+          >
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{linkedWine.name}</p>
+              {linkedWine.meta && (
+                <p style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '1px' }}>{linkedWine.meta}</p>
+              )}
+            </div>
+            <button type="button" onClick={() => setLinkedWine(null)} style={{ fontSize: '12px', color: 'var(--negative)' }}>
+              해제
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowLinkSheet(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text-hint)]"
+          >
+            <span>⊕</span> 와인 검색
+          </button>
+        )}
       </section>
+
+      <LinkSearchSheet
+        isOpen={showLinkSheet}
+        onClose={() => setShowLinkSheet(false)}
+        type="wine"
+        onSelect={setLinkedWine}
+      />
 
       {/* 저장 바 */}
       <RecordSaveBar
@@ -359,6 +392,8 @@ export function RestaurantRecordForm({
         isLoading={isLoading}
         disabled={!isValid}
         label={saveLabel}
+        onDelete={onDelete}
+        isDeleting={isDeleting}
       />
     </div>
   )

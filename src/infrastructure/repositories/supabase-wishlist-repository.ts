@@ -28,7 +28,7 @@ export class SupabaseWishlistRepository implements WishlistRepository {
       .eq('target_id', targetId)
       .eq('target_type', targetType)
       .limit(1)
-      .single()
+      .maybeSingle()
 
     return !!data
   }

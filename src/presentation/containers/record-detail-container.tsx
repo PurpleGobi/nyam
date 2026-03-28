@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, MoreHorizontal, Edit2, Trash2, Share2 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -14,6 +14,9 @@ import { PairingDisplay } from '@/presentation/components/record/pairing-display
 import { RecordPracticalInfo } from '@/presentation/components/record/record-practical-info'
 import { XpEarnedSection } from '@/presentation/components/record/xp-earned-section'
 import { RecordActions } from '@/presentation/components/record/record-actions'
+import { WineFactsTable } from '@/presentation/components/detail/wine-facts-table'
+import { WineTypeChip } from '@/presentation/components/detail/wine-type-chip'
+import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { Toast } from '@/presentation/components/ui/toast'
@@ -42,10 +45,11 @@ interface RecordDetailContainerProps {
 export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
+  const repoDeps = useMemo(() => ({ recordRepo, restaurantRepo, wineRepo, xpRepo, wishlistRepo }), [])
   const {
-    record, photos, targetInfo, linkedItem, otherRecords, xpEarned,
+    record, photos, targetInfo, wineInfo, linkedItem, otherRecords, xpEarned,
     isLoading, error, isDeleting, deleteError, deleteRecord,
-  } = useRecordDetail(recordId, user?.id ?? null, { recordRepo, restaurantRepo, wineRepo, xpRepo, wishlistRepo })
+  } = useRecordDetail(recordId, user?.id ?? null, repoDeps)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -209,7 +213,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
       </nav>
 
       <div className="flex flex-col gap-6 px-4 py-4">
-        {/* 대상명 + 방문 정보 */}
+        {/* 대상명 + 방문 정보 + 와인 상세 */}
         <section>
           <button type="button" onClick={navigateToTarget}>
             <h2
@@ -227,7 +231,24 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
               </p>
             )}
           </button>
-          <div className="mt-1 flex items-center gap-2">
+
+          {/* 와인 메타행: 타입칩 · 산지 · 품종 */}
+          {isWine && wineInfo && (
+            <div className="mt-1.5 flex items-center" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+              <WineTypeChip wineType={wineInfo.wineType} />
+              {[
+                [wineInfo.country, wineInfo.region].filter(Boolean).join(' '),
+                wineInfo.variety,
+              ].filter(Boolean).map((part, i) => (
+                <span key={i}>
+                  <span style={{ fontSize: '8px', color: 'var(--border-bold)', margin: '0 5px' }}>·</span>
+                  {part}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-1.5 flex items-center gap-2">
             <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
               {formatDate(record.visitDate ?? record.createdAt)}
             </span>
@@ -245,6 +266,13 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
               </span>
             )}
           </div>
+
+          {/* 와인 팩트 테이블 */}
+          {isWine && wineInfo && (
+            <div className="mt-4">
+              <WineFactsTable wine={wineInfo} />
+            </div>
+          )}
         </section>
 
         {/* §1: Mini Quadrant */}

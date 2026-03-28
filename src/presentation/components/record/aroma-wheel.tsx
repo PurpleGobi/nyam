@@ -1,14 +1,15 @@
 'use client'
 
 import { useCallback, useRef } from 'react'
-import type { AromaSectorId, AromaSelection } from '@/domain/entities/aroma'
-import { AROMA_SECTORS } from '@/shared/constants/aroma-sectors'
+import type { AromaSectorId, AromaSelection, AromaRing } from '@/domain/entities/aroma'
+import { AROMA_SECTORS, RING_LABELS } from '@/shared/constants/aroma-sectors'
 import { calculateAromaColor } from '@/shared/utils/aroma-color'
 import { AromaSector } from '@/presentation/components/record/aroma-sector'
 
 interface AromaWheelProps {
   value: AromaSelection
-  onChange: (value: AromaSelection) => void
+  onChange?: (value: AromaSelection) => void
+  readOnly?: boolean
 }
 
 const CX = 150
@@ -91,11 +92,27 @@ function buildSectorPaths() {
 
 const SECTOR_PATHS = buildSectorPaths()
 
-export function AromaWheel({ value, onChange }: AromaWheelProps) {
+/** 선택된 향을 1차/2차/3차 링별로 그룹화 */
+function groupByRing(activeIds: AromaSectorId[]) {
+  const groups: { ring: AromaRing; label: string; sectors: { id: AromaSectorId; nameKo: string; hex: string }[] }[] = []
+
+  for (const ring of [1, 2, 3] as AromaRing[]) {
+    const sectors = AROMA_SECTORS
+      .filter((s) => s.ring === ring && activeIds.includes(s.id))
+      .map((s) => ({ id: s.id, nameKo: s.nameKo, hex: s.hex }))
+    if (sectors.length > 0) {
+      groups.push({ ring, label: RING_LABELS[ring], sectors })
+    }
+  }
+  return groups
+}
+
+export function AromaWheel({ value, onChange, readOnly = false }: AromaWheelProps) {
   const isDraggingRef = useRef(false)
 
   const toggleSector = useCallback(
     (sectorId: AromaSectorId) => {
+      if (readOnly || !onChange) return
       const newRegions = { ...value.regions }
       if (newRegions[sectorId]) {
         delete newRegions[sectorId]
@@ -111,25 +128,26 @@ export function AromaWheel({ value, onChange }: AromaWheelProps) {
 
       onChange({ regions: newRegions, labels, color })
     },
-    [value, onChange],
+    [value, onChange, readOnly],
   )
 
   const handlePointerDown = useCallback(
     (sectorId: AromaSectorId) => {
+      if (readOnly) return
       isDraggingRef.current = true
       toggleSector(sectorId)
     },
-    [toggleSector],
+    [toggleSector, readOnly],
   )
 
   const handlePointerEnter = useCallback(
     (sectorId: AromaSectorId) => {
-      if (!isDraggingRef.current) return
+      if (readOnly || !isDraggingRef.current) return
       if (!value.regions[sectorId]) {
         toggleSector(sectorId)
       }
     },
-    [value.regions, toggleSector],
+    [value.regions, toggleSector, readOnly],
   )
 
   const handlePointerUp = useCallback(() => {
@@ -137,15 +155,18 @@ export function AromaWheel({ value, onChange }: AromaWheelProps) {
   }, [])
 
   const activeIds = Object.keys(value.regions) as AromaSectorId[]
+  const ringGroups = groupByRing(activeIds)
 
   return (
     <div className="flex w-full flex-col items-center">
-      <span style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '8px' }}>
-        향을 느껴보세요
-      </span>
+      {!readOnly && (
+        <span style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '8px' }}>
+          향을 느껴보세요
+        </span>
+      )}
       <svg
         viewBox="0 0 300 300"
-        className="w-full max-w-[300px]"
+        className="w-full max-w-[360px]"
         style={{ touchAction: 'none' }}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
@@ -157,40 +178,34 @@ export function AromaWheel({ value, onChange }: AromaWheelProps) {
             pathData={pathData}
             labelPosition={labelPosition}
             isActive={!!value.regions[sector.id]}
+            readOnly={readOnly}
             onPointerDown={() => handlePointerDown(sector.id)}
             onPointerEnter={() => handlePointerEnter(sector.id)}
           />
         ))}
       </svg>
 
-      {/* 선택 요약 */}
-      <div className="mt-3 flex w-full items-center gap-2">
-        <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-hint)' }}>
-          선택된 향:
-        </span>
-        {activeIds.length > 0 ? (
-          <>
-            {value.color && (
-              <div
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  backgroundColor: value.color,
-                  flexShrink: 0,
-                }}
-              />
-            )}
-            <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
-              {value.labels.join(', ')}
-            </span>
-          </>
-        ) : (
-          <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+      {/* 선택된 향: 1차/2차/3차 텍스트 리스트 */}
+      {activeIds.length > 0 ? (
+        <div className="mt-3 flex w-full flex-col items-end gap-1">
+          {ringGroups.map((group) => (
+            <div key={group.ring} className="flex items-baseline gap-1.5">
+              <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-hint)' }}>
+                {group.ring}차
+              </span>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+                {group.sectors.map((s) => s.nameKo).join(', ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : !readOnly ? (
+        <div className="mt-3 flex w-full items-center">
+          <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
             탭하여 향을 선택하세요
           </span>
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   )
 }

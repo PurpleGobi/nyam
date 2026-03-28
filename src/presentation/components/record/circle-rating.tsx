@@ -15,9 +15,9 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
   const dragStartRef = useRef<{ y: number; value: number } | null>(null)
   const prevValueRef = useRef(value)
 
-  const size = 28 + (value / 100) * 92
+  const size = 14 + (value / 100) * 46
   const color = getGaugeColor(value)
-  const fontSize = Math.max(12, size * 0.3)
+  const fontSize = Math.max(10, size * 0.35)
   const glowSize = size * 0.3
 
   let boxShadow: string
