@@ -285,18 +285,17 @@ export default function DesignSystemPage() {
         <Note>뒤로가기: §16 Floating Back Button 사용. 건너뛰기: 우측 상단 텍스트 링크로 처리.</Note>
 
         <Sub title="Card Actions" />
-        <Row>
-          <button type="button" className="btn-card-action">가봤음</button>
-          <button type="button" className="btn-card-action">가보고싶음</button>
-        </Row>
-        <Row>
-          <button type="button" className="btn-card-action active-food">가봤음</button>
-          <button type="button" className="btn-card-action">가보고싶음</button>
-        </Row>
-        <Row>
-          <button type="button" className="btn-card-action active-wine">맞아요</button>
-          <button type="button" className="btn-card-action">다른 와인이에요</button>
-        </Row>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '340px' }}>
+          <Row>
+            <button type="button" className="btn-card-action">가봤음</button>
+            <button type="button" className="btn-card-action">가보고싶음</button>
+          </Row>
+          <Row>
+            <button type="button" className="btn-card-action active-food">가봤음</button>
+            <button type="button" className="btn-card-action active-wish">찜</button>
+            <button type="button" className="btn-card-action active-wine">맞아요</button>
+          </Row>
+        </div>
 
         <Sub title="Search Actions" />
         <Row>

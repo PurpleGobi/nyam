@@ -1060,17 +1060,16 @@
   <div class="note">뒤로가기: §16 Floating Back Button 사용. 건너뛰기: 우측 상단 텍스트 링크로 처리.</div>
 
   <h3>Card Actions</h3>
-  <div class="row" style="max-width:340px;">
-    <button class="btn-action">가봤음</button>
-    <button class="btn-action">가보고싶음</button>
-  </div>
-  <div class="row" style="max-width:340px;">
-    <button class="btn-action active-food">가봤음</button>
-    <button class="btn-action">가보고싶음</button>
-  </div>
-  <div class="row" style="max-width:340px;">
-    <button class="btn-action active-wine">맞아요</button>
-    <button class="btn-action">다른 와인이에요</button>
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:340px;">
+    <div class="row">
+      <button class="btn-action">가봤음</button>
+      <button class="btn-action">가보고싶음</button>
+    </div>
+    <div class="row">
+      <button class="btn-action active-food">가봤음</button>
+      <button class="btn-action active-wish">찜</button>
+      <button class="btn-action active-wine">맞아요</button>
+    </div>
   </div>
 
   <h3>Search Actions</h3>
