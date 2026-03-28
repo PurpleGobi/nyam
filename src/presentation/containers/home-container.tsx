@@ -33,7 +33,6 @@ import type { MapRecord } from '@/presentation/components/home/map-view'
 import { SavedFilterChips } from '@/presentation/components/home/saved-filter-chips'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
 // FilterChipSaveModal은 FilterSystem 내장으로 대체
 import { StatsToggle } from '@/presentation/components/home/stats-toggle'
 import { WorldMapChart } from '@/presentation/components/home/world-map-chart'
@@ -308,8 +307,8 @@ export function HomeContainer() {
       name: r.targetName,
       genre: r.targetMeta ?? '',
       area: r.targetArea ?? '',
-      lat: 0,
-      lng: 0,
+      lat: r.targetLat ?? 0,
+      lng: r.targetLng ?? 0,
       score: r.satisfaction,
       distanceKm: null,
     }))
@@ -317,7 +316,7 @@ export function HomeContainer() {
 
   // 빈 상태
   const renderEmptyState = () => (
-    <div className="flex flex-col items-center py-16">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
       {activeTab === 'restaurant' ? (
         <UtensilsCrossed size={48} style={{ color: 'var(--text-hint)' }} />
       ) : (
@@ -326,7 +325,7 @@ export function HomeContainer() {
       <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
         {activeTab === 'restaurant' ? '첫 식당을 기록해보세요' : '첫 와인을 기록해보세요'}
       </p>
-      <p className="mt-1 text-[13px] text-[var(--text-hint)]">
+      <p className="mt-1 text-center text-[13px] text-[var(--text-hint)]">
         +버튼을 눌러 시작하세요
       </p>
     </div>
@@ -498,6 +497,9 @@ export function HomeContainer() {
           isSortOpen={isSortOpen}
           onSearchToggle={toggleSearch}
           isSearchOpen={isSearchOpen}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onSearchClear={() => setSearchQuery('')}
         />
 
         {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
@@ -539,15 +541,6 @@ export function HomeContainer() {
           </div>
         )}
 
-        {!isCalendarMode && isSearchOpen && (
-          <div className="relative">
-            <SearchDropdown
-              query={searchQuery}
-              onQueryChange={setSearchQuery}
-              onClear={() => setSearchQuery('')}
-            />
-          </div>
-        )}
 
         {/* 저장 필터 칩 — 캘린더/팔로잉 모드에서는 숨김 */}
         {!isCalendarMode && (

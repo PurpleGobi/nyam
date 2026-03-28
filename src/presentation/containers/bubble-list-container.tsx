@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Users, Compass, SlidersHorizontal, ArrowUpDown, Search } from 'lucide-react'
+import { Plus, Users, User, Compass, SlidersHorizontal, ArrowUpDown, Search, X } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -11,13 +11,13 @@ import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
 import { BUBBLE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule } from '@/domain/entities/saved-filter'
 import type { BubbleSortOption } from '@/domain/entities/saved-filter'
 
 type ContentTab = 'bubbles' | 'bubblers'
 type RoleFilter = 'all' | 'mine' | 'joined'
+type BubblerFilter = 'all' | 'following' | 'followers' | 'mutual'
 
 const PAGE_SIZE = 10
 
@@ -37,6 +37,7 @@ export function BubbleListContainer() {
   const [contentTab, setContentTab] = useState<ContentTab>('bubbles')
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [sortBy, setSortBy] = useState<BubbleSortOption>('activity')
+  const [bubblerFilter, setBubblerFilter] = useState<BubblerFilter>('all')
   const [page, setPage] = useState(1)
 
   // 패널 토글 (상호 배타)
@@ -50,6 +51,11 @@ export function BubbleListContainer() {
 
   // 검색
   const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isSearchOpen) searchInputRef.current?.focus()
+  }, [isSearchOpen])
 
   const toggleFilter = () => { setFilterOpen(!isFilterOpen); setSortOpen(false); setSearchOpen(false) }
   const toggleSort = () => { setSortOpen(!isSortOpen); setFilterOpen(false); setSearchOpen(false) }
@@ -151,20 +157,60 @@ export function BubbleListContainer() {
         variant="social"
         onTabChange={setContentTab}
         rightSlot={
-          <div className="flex items-center gap-1">
-            <button type="button" className="icon-button" title="탐색" onClick={() => router.push('/discover')}>
-              <Compass size={20} />
-            </button>
-            <button type="button" className={`icon-button ${isFilterOpen ? 'active social' : ''}`} title="필터" onClick={toggleFilter}>
-              <SlidersHorizontal size={20} />
-            </button>
-            <button type="button" className={`icon-button ${isSortOpen ? 'active social' : ''}`} title="정렬" onClick={toggleSort}>
-              <ArrowUpDown size={20} />
-            </button>
-            <button type="button" className={`icon-button ${isSearchOpen ? 'active social' : ''}`} title="검색" onClick={toggleSearch}>
-              <Search size={20} />
-            </button>
-          </div>
+          isSearchOpen ? (
+            <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
+              <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
+                placeholder="버블 이름·지역으로 검색"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  border: 'none',
+                  background: 'none',
+                  fontSize: '13px',
+                  color: 'var(--text)',
+                  outline: 'none',
+                }}
+              />
+              {searchQuery.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setPage(1) }}
+                  className="flex shrink-0 items-center justify-center"
+                  style={{ color: 'var(--text-hint)' }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleSearch}
+                className="shrink-0 text-[12px] font-medium"
+                style={{ color: 'var(--text-sub)' }}
+              >
+                닫기
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button type="button" className="icon-button" title="탐색" onClick={() => router.push('/discover')}>
+                <Compass size={20} />
+              </button>
+              <button type="button" className={`icon-button ${isFilterOpen ? 'active social' : ''}`} title="필터" onClick={toggleFilter}>
+                <SlidersHorizontal size={20} />
+              </button>
+              <button type="button" className={`icon-button ${isSortOpen ? 'active social' : ''}`} title="정렬" onClick={toggleSort}>
+                <ArrowUpDown size={20} />
+              </button>
+              <button type="button" className={`icon-button ${isSearchOpen ? 'active social' : ''}`} title="검색" onClick={toggleSearch}>
+                <Search size={20} />
+              </button>
+            </div>
+          )
         }
       />
 
@@ -194,15 +240,6 @@ export function BubbleListContainer() {
         </div>
       )}
 
-      {/* 검색 */}
-      {isSearchOpen && (
-        <SearchDropdown
-          query={searchQuery}
-          onQueryChange={(q) => { setSearchQuery(q); setPage(1) }}
-          onClear={() => { setSearchQuery(''); setPage(1) }}
-          placeholder="버블 이름·지역으로 검색"
-        />
-      )}
 
       {contentTab === 'bubbles' && (
         <>
@@ -219,23 +256,23 @@ export function BubbleListContainer() {
           </FilterChipGroup>
 
           {/* 버블 목록 */}
-          <div className="flex flex-col gap-3 px-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
-              </div>
-            ) : paged.length === 0 ? (
-              <div className="flex flex-col items-center py-16">
-                <Users size={48} style={{ color: 'var(--text-hint)' }} />
-                <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {searchQuery || filterRules.length > 0 ? '조건에 맞는 버블이 없어요' : '아직 버블이 없어요'}
-                </p>
-                <p className="mt-1 text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                  {searchQuery || filterRules.length > 0 ? '필터를 변경해보세요' : '버블을 만들어 맛집을 공유해보세요'}
-                </p>
-              </div>
-            ) : (
-              paged.map(({ bubble: b, role }) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
+            </div>
+          ) : paged.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+              <Users size={48} style={{ color: 'var(--text-hint)' }} />
+              <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
+                {searchQuery || filterRules.length > 0 ? '조건에 맞는 버블이 없어요' : '아직 버블이 없어요'}
+              </p>
+              <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
+                {searchQuery || filterRules.length > 0 ? '필터를 변경해보세요' : '버블을 만들어 맛집을 공유해보세요'}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 px-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">
+              {paged.map(({ bubble: b, role }) => (
                 <BubbleCard
                   key={b.id}
                   bubble={b}
@@ -243,9 +280,9 @@ export function BubbleListContainer() {
                   isRecentlyActive={b.lastActivityAt ? now - new Date(b.lastActivityAt).getTime() < 86400000 : false}
                   onClick={() => router.push(`/bubbles/${b.id}`)}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* 인라인 페이저 */}
           {totalPages > 1 && (
@@ -277,10 +314,30 @@ export function BubbleListContainer() {
       )}
 
       {contentTab === 'bubblers' && (
-        <div className="flex flex-col items-center py-16">
-          <Users size={48} style={{ color: 'var(--text-hint)' }} />
-          <p className="mt-4 text-[14px]" style={{ color: 'var(--text-hint)' }}>버블러 탭은 준비 중입니다</p>
-        </div>
+        <>
+          <FilterChipGroup className="px-4 py-2">
+            {([
+              { key: 'all' as const, label: '전체', count: 0 },
+              { key: 'following' as const, label: '팔로잉', count: 0 },
+              { key: 'followers' as const, label: '팔로워', count: 0 },
+              { key: 'mutual' as const, label: '맞팔', count: 0 },
+            ]).map(({ key, label, count }) => (
+              <FilterChip key={key} active={bubblerFilter === key} variant="social" count={count} onClick={() => { setBubblerFilter(key); setPage(1) }}>
+                {label}
+              </FilterChip>
+            ))}
+          </FilterChipGroup>
+
+          <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+            <User size={48} style={{ color: 'var(--text-hint)' }} />
+            <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
+              아직 버블러가 없어요
+            </p>
+            <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
+              버블에 가입하면 버블러를 만날 수 있어요
+            </p>
+          </div>
+        </>
       )}
 
       {/* FAB */}

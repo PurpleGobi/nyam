@@ -25,8 +25,6 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     type: 'select',
     options: [
       { value: 'visited', label: '방문' },
-      { value: 'wishlist', label: '찜' },
-      { value: 'recommended', label: '추천' },
       { value: 'following', label: '팔로잉' },
     ],
   },

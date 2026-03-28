@@ -85,12 +85,12 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
     setShowDropdown(false)
     const name = encodeURIComponent(targetInfo?.name ?? '')
     const meta = encodeURIComponent(targetInfo?.subText ?? '')
-    router.push(`/record?type=${record.targetType}&targetId=${record.targetId}&name=${name}&meta=${meta}&edit=${record.id}&from=record_detail`)
+    router.replace(`/record?type=${record.targetType}&targetId=${record.targetId}&name=${name}&meta=${meta}&edit=${record.id}&from=record_detail`)
   }, [record, router, targetInfo])
 
   const handleDelete = useCallback(async () => {
     const success = await deleteRecord()
-    if (success) router.back()
+    if (success) router.replace('/')
   }, [deleteRecord, router])
 
   const navigateToTarget = useCallback(() => {

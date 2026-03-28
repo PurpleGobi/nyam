@@ -1057,12 +1057,45 @@ html, body, * {
   position: absolute;
   right: 0;
   width: 50%;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   z-index: 90;
-  padding: 8px;
+}
+
+.ds-search-dropdown-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  line-height: 1.4;
+}
+
+.ds-search-dropdown-input::placeholder {
+  color: var(--text-hint);
+}
+
+.ds-search-dropdown-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-hint);
+  cursor: pointer;
 }
 
 /* ── 8. 드롭다운 셀렉트 (범용) ── */
@@ -1163,6 +1196,12 @@ html, body, * {
   z-index: 10;
   background: var(--bg);
   border-bottom: 1.5px solid var(--border);
+}
+
+.content-tabs input[type="text"]:focus {
+  outline: none;
+  box-shadow: none;
+  -webkit-appearance: none;
 }
 
 /* ── 9. 필터 탭 (언더라인) ── */

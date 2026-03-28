@@ -154,6 +154,13 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
+  // ── 가상 속성: status=visited → checked 또는 rated ──
+  if (attribute === 'status' && String(value) === 'visited') {
+    const status = String(record.status ?? '')
+    const matches = status === 'checked' || status === 'rated'
+    return operator === 'eq' ? matches : !matches
+  }
+
   // ── 가상 속성: status=following → source 필드로 매칭 ──
   if (attribute === 'status' && String(value) === 'following') {
     const source = record.source ?? record['source']

@@ -248,8 +248,25 @@ export interface RecordWithTarget extends DiningRecord {
   targetArea: string | null
   /** 대상 대표 사진 URL */
   targetPhotoUrl: string | null
+  /** 대상 위도 (restaurants.lat) */
+  targetLat: number | null
+  /** 대상 경도 (restaurants.lng) */
+  targetLng: number | null
   /** 가상 속성: 레코드 소스 (mine=내 기록, following=팔로잉 유저 기록) */
   source?: RecordSource
+  // ─── 필터용 대상 속성 (식당) ───
+  genre?: string | null
+  area?: string | null
+  priceRange?: number | null
+  michelinStars?: number | null
+  hasBlueRibbon?: boolean | null
+  mediaAppearances?: string[] | null
+  // ─── 필터용 대상 속성 (와인) ───
+  wineType?: string | null
+  variety?: string | null
+  country?: string | null
+  region?: string | null
+  vintage?: number | null
 }
 
 // ─── 기록 생성 입력 타입 ───

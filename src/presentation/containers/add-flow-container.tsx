@@ -559,7 +559,7 @@ function AddFlowInner() {
             resetFlow()
             resetCamera()
           }}
-          onGoHome={() => router.push('/')}
+          onGoHome={() => router.replace('/')}
         />
       )}
     </div>

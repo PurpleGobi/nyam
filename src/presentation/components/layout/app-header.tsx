@@ -23,11 +23,7 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
   const [notifOpen, setNotifOpen] = useState(false)
 
   const handleBack = () => {
-    if (backHref) {
-      router.push(backHref)
-    } else {
-      router.back()
-    }
+    router.back()
   }
 
   return (
@@ -37,7 +33,6 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
         {variant === 'inner' ? (
           <button type="button" onClick={handleBack} className="inner-back-btn">
             <ChevronLeft />
-            {title && <span>{title}</span>}
           </button>
         ) : (
           <h1 onClick={() => router.push('/')} className="header-brand">

@@ -34,7 +34,7 @@ import { LoadingState } from '@/presentation/components/ui/loading-state'
 import { NyamInput } from '@/presentation/components/ui/nyam-input'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
+import { SearchDropdown } from '@/presentation/components/ui/search-dropdown'
 import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { LayoutGrid, List } from 'lucide-react'
@@ -669,11 +669,13 @@ export default function DesignSystemPage() {
 
           {/* 검색 드롭다운 */}
           {searchActive && (
-            <div style={{ marginTop: '10px' }}>
+            <div style={{ marginTop: '10px', position: 'relative', height: '44px' }}>
               <SearchDropdown
                 query={demoSearch}
                 onQueryChange={setDemoSearch}
                 onClear={() => setDemoSearch('')}
+                placeholder="식당·와인 이름으로 검색"
+                autoFocus={false}
               />
             </div>
           )}
@@ -711,6 +713,24 @@ export default function DesignSystemPage() {
           검색 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>search</code> 아이콘, 32×32 터치 영역<br />
           검색 드롭다운: 우측 정렬, 폭 50%, textarea 자동 확장<br />
           상호 배타: 필터·소팅·검색 중 하나만 열림
+        </Note>
+      </Section>
+
+      {/* ── 7-C. Search Dropdown ── */}
+      <Section title="7-C. Search Dropdown">
+        <Sub title="기본" />
+        <div style={{ position: 'relative', height: '44px' }}>
+          <SearchDropdown
+            query={demoSearch}
+            onQueryChange={setDemoSearch}
+            onClear={() => setDemoSearch('')}
+            placeholder="식당·와인 이름으로 검색"
+            autoFocus={false}
+          />
+        </div>
+        <Note>
+          ds-search-dropdown 클래스 사용. position: absolute + right: 0 으로 부모 기준 드롭다운 표시.<br />
+          홈 툴바 검색 버튼 클릭 시 열리는 입력 패널. 단색 bg-elevated 배경, 아이콘 + 인풋 + 클리어 버튼 구성.
         </Note>
       </Section>
 

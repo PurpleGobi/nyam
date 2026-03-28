@@ -7,7 +7,6 @@ import { savedFilterRepo } from '@/shared/di/container'
 const RESTAURANT_PRESETS: { name: string; rules: FilterRule[] }[] = [
   { name: '방문', rules: [{ attribute: 'status', operator: 'eq', value: 'visited' }] },
   { name: '찜', rules: [{ attribute: 'status', operator: 'eq', value: 'wishlist' }] },
-  { name: '추천', rules: [{ attribute: 'status', operator: 'eq', value: 'recommended' }] },
   { name: '팔로잉', rules: [{ attribute: 'status', operator: 'eq', value: 'following' }] },
 ]
 
