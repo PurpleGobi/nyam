@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
@@ -39,13 +40,13 @@ export function PicksGrid({ picks, onItemPress }: PicksGridProps) {
             style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
           >
             <div
-              className="flex h-24 items-center justify-center"
+              className="relative flex h-24 items-center justify-center"
               style={{
                 backgroundColor: item.targetType === 'restaurant' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)',
               }}
             >
               {item.thumbnailUrl ? (
-                <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                <Image src={item.thumbnailUrl} alt="" fill className="object-cover" sizes="50vw" unoptimized />
               ) : item.targetType === 'restaurant' ? (
                 <UtensilsCrossed size={24} style={{ color: 'var(--text-hint)' }} />
               ) : (

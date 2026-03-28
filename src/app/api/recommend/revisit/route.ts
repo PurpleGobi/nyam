@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import { calcRevisitScore } from '@/domain/services/recommendation-service'
 import type { RecommendationCard } from '@/domain/entities/recommendation'
+import { fetchEngagementCounts } from '@/app/api/recommend/_shared/engagement'
 
 export async function GET() {
   const supabase = await createClient()
@@ -82,12 +83,21 @@ export async function GET() {
       reason: `만족도 ${Math.round(avgSat)}% · ${g.count}회 방문`,
       normalizedScore: score,
       confidence: null,
+      likeCount: 0,
+      commentCount: 0,
       score,
     })
   }
 
   scored.sort((a, b) => b.score - a.score)
-  const cards: RecommendationCard[] = scored.slice(0, 10).map(({ score: _score, ...card }) => card)
+  const top = scored.slice(0, 10)
+
+  // engagement 집계
+  const engagement = await fetchEngagementCounts(supabase, top.map((c) => c.targetId), 'restaurant')
+  const cards: RecommendationCard[] = top.map(({ score: _score, ...card }) => {
+    const eng = engagement.get(card.targetId)
+    return { ...card, likeCount: eng?.likes ?? 0, commentCount: eng?.comments ?? 0 }
+  })
 
   return NextResponse.json({ cards }, {
     headers: { 'Cache-Control': 'public, max-age=1800' },

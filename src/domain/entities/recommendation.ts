@@ -34,4 +34,6 @@ export interface RecommendationCard {
   reason: string
   normalizedScore: number
   confidence: number | null
+  likeCount: number
+  commentCount: number
 }

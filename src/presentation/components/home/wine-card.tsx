@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Wine } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
@@ -57,7 +58,7 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
     >
       <div className="relative w-[46%] shrink-0">
         {wine.photoUrl ? (
-          <img src={wine.photoUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={wine.photoUrl} alt="" fill className="object-cover" sizes="46vw" unoptimized />
         ) : (
           <div
             className="flex h-full w-full items-center justify-center"

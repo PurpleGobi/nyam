@@ -34,7 +34,7 @@ export function useFollow(userId: string | null, targetUserId: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, targetUserId, accessLevel, isLoading])
+  }, [userId, targetUserId, accessLevel, isLoading, awardSocialXp])
 
   return { accessLevel, isLoading, toggleFollow }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Clock, Heart, MessageCircle, Bookmark, CheckCircle2, Flame } from 'lucide-react'
 import type { ReactionType } from '@/domain/entities/reaction'
 
@@ -176,8 +177,8 @@ function ReactionChip({
 function PhotoGrid({ photos }: { photos: string[] }) {
   if (photos.length === 1) {
     return (
-      <div className="aspect-video w-full">
-        <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+      <div className="relative aspect-video w-full">
+        <Image src={photos[0]} alt="" fill className="object-cover" sizes="100vw" unoptimized />
       </div>
     )
   }
@@ -185,8 +186,8 @@ function PhotoGrid({ photos }: { photos: string[] }) {
     return (
       <div className="flex gap-0.5" style={{ aspectRatio: '16/9' }}>
         {photos.map((url, i) => (
-          <div key={i} className="flex-1">
-            <img src={url} alt="" className="h-full w-full object-cover" />
+          <div key={i} className="relative flex-1">
+            <Image src={url} alt="" fill className="object-cover" sizes="50vw" unoptimized />
           </div>
         ))}
       </div>
@@ -195,16 +196,16 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   // 3+: 좌 1장(큰) + 우 2장(작은) 스택
   return (
     <div className="flex gap-0.5" style={{ aspectRatio: '16/9' }}>
-      <div className="flex-1">
-        <img src={photos[0]} alt="" className="h-full w-full object-cover" />
+      <div className="relative flex-1">
+        <Image src={photos[0]} alt="" fill className="object-cover" sizes="67vw" unoptimized />
       </div>
       <div className="flex w-1/3 flex-col gap-0.5">
-        <div className="flex-1">
-          <img src={photos[1]} alt="" className="h-full w-full object-cover" />
+        <div className="relative flex-1">
+          <Image src={photos[1]} alt="" fill className="object-cover" sizes="33vw" unoptimized />
         </div>
         {photos[2] && (
-          <div className="flex-1">
-            <img src={photos[2]} alt="" className="h-full w-full object-cover" />
+          <div className="relative flex-1">
+            <Image src={photos[2]} alt="" fill className="object-cover" sizes="33vw" unoptimized />
           </div>
         )}
       </div>

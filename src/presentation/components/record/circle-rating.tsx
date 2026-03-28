@@ -65,7 +65,7 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
       prevValueRef.current = newVal
       onChange(newVal)
     },
-    [isDragging, value, onChange],
+    [isDragging, onChange],
   )
 
   const handlePointerUp = useCallback(

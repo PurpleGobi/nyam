@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Check, Plus, ArrowRight, UtensilsCrossed } from 'lucide-react'
 import { AreaSelect } from './area-select'
 import { OnboardingSearch } from './onboarding-search'
@@ -82,7 +83,7 @@ export function RestaurantRegisterStep({
                     style={{ backgroundColor: 'var(--bg-elevated)' }}
                   >
                     {r.thumbnailUrl ? (
-                      <img src={r.thumbnailUrl} alt="" className="h-full w-full rounded-lg object-cover" />
+                      <Image src={r.thumbnailUrl} alt="" width={48} height={48} className="h-full w-full rounded-lg object-cover" unoptimized />
                     ) : (
                       <UtensilsCrossed size={20} style={{ color: 'var(--text-hint)' }} />
                     )}

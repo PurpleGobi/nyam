@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
 import { getLevelColor } from '@/domain/services/xp-calculator'
 import type { AccessLevel } from '@/domain/entities/follow'
@@ -48,7 +49,7 @@ export function BubblerHero({
           }}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+            <Image src={avatarUrl} alt="" width={72} height={72} className="h-full w-full rounded-full object-cover" unoptimized />
           ) : (
             nickname.charAt(0)
           )}

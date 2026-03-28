@@ -16,11 +16,13 @@ export function AreaChips({ activeArea, onAreaChange }: AreaChipsProps) {
           key={area}
           type="button"
           onClick={() => onAreaChange(area)}
-          className="shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors"
+          className="shrink-0 rounded-full text-[13px] font-semibold transition-all active:scale-95"
           style={{
-            backgroundColor: activeArea === area ? 'var(--accent-food)' : 'var(--bg-card)',
+            padding: '7px 14px',
+            minHeight: '34px',
+            backgroundColor: activeArea === area ? 'var(--accent-food)' : 'var(--bg)',
             color: activeArea === area ? '#FFFFFF' : 'var(--text-sub)',
-            border: `1px solid ${activeArea === area ? 'var(--accent-food)' : 'var(--border)'}`,
+            border: `1.5px solid ${activeArea === area ? 'var(--accent-food)' : 'var(--border)'}`,
           }}
         >
           {area}

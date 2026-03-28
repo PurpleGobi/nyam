@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import type { RecommendationCard } from '@/domain/entities/recommendation'
+import { fetchEngagementCounts } from '@/app/api/recommend/_shared/engagement'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -64,9 +65,20 @@ export async function GET(request: NextRequest) {
       reason: `${scene} · 만족도 ${r.satisfaction}%`,
       normalizedScore: r.satisfaction ?? 0,
       confidence: null,
+      likeCount: 0,
+      commentCount: 0,
     })
 
     if (cards.length >= 10) break
+  }
+
+  const engagement = await fetchEngagementCounts(supabase, cards.map((c) => c.targetId), 'restaurant')
+  for (const card of cards) {
+    const eng = engagement.get(card.targetId)
+    if (eng) {
+      card.likeCount = eng.likes
+      card.commentCount = eng.comments
+    }
   }
 
   return NextResponse.json({ cards }, {

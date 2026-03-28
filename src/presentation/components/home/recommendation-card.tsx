@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { UtensilsCrossed, Wine } from 'lucide-react'
+import { UtensilsCrossed, Wine, Heart, MessageCircle } from 'lucide-react'
 import type { RecommendationCard as CardType } from '@/domain/entities/recommendation'
 import { RecommendationSourceTag } from '@/presentation/components/home/recommendation-source-tag'
 
@@ -59,6 +59,20 @@ export function RecommendationCard({ card, onClick }: RecommendationCardProps) {
           </p>
         )}
         <p className="mt-1 text-[10px] text-[var(--text-hint)]">{card.reason}</p>
+        {(card.likeCount > 0 || card.commentCount > 0) && (
+          <div className="mt-1 flex items-center gap-2 text-[10px]" style={{ color: 'var(--text-hint)' }}>
+            {card.likeCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Heart size={10} /> {card.likeCount}
+              </span>
+            )}
+            {card.commentCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <MessageCircle size={10} /> {card.commentCount}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   )

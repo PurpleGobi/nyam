@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 import { FollowingSourceBadge } from './following-source-badge'
 
@@ -42,7 +43,7 @@ export function FollowingFeedCard({ item, onPress }: FollowingFeedCardProps) {
             style={{ backgroundColor: item.authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
             {item.authorAvatar ? (
-              <img src={item.authorAvatar} alt="" className="h-full w-full rounded-full object-cover" />
+              <Image src={item.authorAvatar} alt="" width={28} height={28} className="h-full w-full rounded-full object-cover" unoptimized />
             ) : (
               item.authorNickname.charAt(0)
             )}

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface BubbleRecordCardProps {
@@ -35,7 +36,7 @@ export function BubbleRecordCard({
         style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
       >
         {authorAvatar ? (
-          <img src={authorAvatar} alt="" className="h-full w-full rounded-full object-cover" />
+          <Image src={authorAvatar} alt="" width={36} height={36} className="h-full w-full rounded-full object-cover" unoptimized />
         ) : (
           authorNickname.charAt(0)
         )}

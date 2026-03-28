@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { UtensilsCrossed, Wine, Heart, MessageCircle, ArrowRight } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
@@ -72,7 +73,7 @@ export function RecordCard({
     >
       <div className="relative w-[46%] shrink-0">
         {photoUrl ? (
-          <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={photoUrl} alt="" fill className="object-cover" sizes="46vw" unoptimized />
         ) : isUnrated ? (
           <div
             className="flex h-full w-full items-center justify-center"

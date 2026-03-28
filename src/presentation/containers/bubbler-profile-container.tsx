@@ -142,7 +142,12 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
 
         {/* 활동 히트맵 — follow+ */}
         {data.accessLevel !== 'none' && (
-          <ActivitySection heatmap={data.heatmap} />
+          <ActivitySection
+            heatmap={data.heatmap}
+            totalRecords={data.totalRecords}
+            currentStreak={data.currentStreak}
+            activeDuration={data.activeDuration}
+          />
         )}
       </div>
     </div>

@@ -442,15 +442,54 @@ export default function DesignSystemPage() {
 
       {/* ── 7-B. Filter / Sort System ── */}
       <Section title="7-B. Filter / Sort System">
-        <Row>
-          <IconButton icon={SlidersHorizontal} active={filterActive} onClick={() => setFilterActive(!filterActive)} />
-          <IconButton icon={ArrowUpDown} active={sortActive} onClick={() => setSortActive(!sortActive)} />
-          <IconButton icon={Search} />
-        </Row>
-        <div style={{ display: 'flex', gap: '6px', marginTop: '12px', overflow: 'auto' }}>
-          <FilterChip active={activeChip === 'all'} onClick={() => setActiveChip('all')}>광화문 맛집</FilterChip>
-          <FilterChip active={activeChip === 'solo'} onClick={() => setActiveChip('solo')}>혼밥 85+</FilterChip>
+        <Note>필터 버튼 → Notion 스타일 필터 패널 · 소팅 버튼 → 드롭다운 · 검색 버튼 → 검색 입력 드롭다운. 세 버튼 나란히 배치, 상호 배타.</Note>
+
+        {/* 아이콘 버튼 + 필터칩 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <IconButton icon={SlidersHorizontal} active={filterActive} onClick={() => { setFilterActive(!filterActive); setSortActive(false) }} />
+            <IconButton icon={ArrowUpDown} active={sortActive} onClick={() => { setSortActive(!sortActive); setFilterActive(false) }} />
+            <IconButton icon={Search} />
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <FilterChip active={activeChip === 'all'} onClick={() => setActiveChip('all')}>광화문 맛집</FilterChip>
+            <FilterChip active={activeChip === 'solo'} onClick={() => setActiveChip('solo')}>혼밥 85+</FilterChip>
+          </div>
         </div>
+
+        {/* States */}
+        <Sub title="States" />
+        <div style={{ display: 'flex', gap: '40px' }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Default (닫힘)</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <IconButton icon={SlidersHorizontal} />
+              <IconButton icon={ArrowUpDown} />
+              <IconButton icon={Search} />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Active (열림)</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <IconButton icon={SlidersHorizontal} active />
+              <IconButton icon={ArrowUpDown} active />
+              <IconButton icon={Search} active />
+            </div>
+          </div>
+        </div>
+
+        {/* Spec */}
+        <Sub title="Spec" />
+        <Note>
+          필터 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>sliders-horizontal</code> 아이콘, 32×32 터치 영역<br />
+          소팅 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>arrow-up-down</code> 아이콘, 32×32 터치 영역<br />
+          활성 상태: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>color: var(--accent-food)</code><br />
+          필터 패널: max-height 애니메이션 (0 → 260px), Notion 스타일 룰 기반<br />
+          소팅 드롭다운: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>border-radius: 12px</code>, <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>box-shadow: 0 8px 28px</code>, 절대 위치<br />
+          검색 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>search</code> 아이콘, 32×32 터치 영역<br />
+          검색 드롭다운: 우측 정렬, 폭 50%, textarea 자동 확장<br />
+          상호 배타: 필터·소팅·검색 중 하나만 열림
+        </Note>
       </Section>
 
       {/* ── 8. Inputs ── */}

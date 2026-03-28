@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Check, X } from 'lucide-react'
 
 export interface PendingMemberInfo {
@@ -53,10 +54,13 @@ export function PendingApprovalList({ members, onApprove, onReject, maxPreview =
         >
           {/* 아바타 */}
           {m.avatarUrl ? (
-            <img
+            <Image
               src={m.avatarUrl}
               alt={m.nickname}
+              width={36}
+              height={36}
               className="h-9 w-9 shrink-0 rounded-full object-cover"
+              unoptimized
             />
           ) : (
             <div

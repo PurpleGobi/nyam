@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { PencilLine, MapPin } from 'lucide-react'
 import type { BubbleMemberRole } from '@/domain/entities/bubble'
 
@@ -61,7 +62,7 @@ export function MemberGrid({ members, onMemberClick, onFollowToggle }: MemberGri
             style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
             {m.avatarUrl ? (
-              <img src={m.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+              <Image src={m.avatarUrl} alt="" width={48} height={48} className="h-full w-full rounded-full object-cover" unoptimized />
             ) : (
               m.nickname.charAt(0)
             )}

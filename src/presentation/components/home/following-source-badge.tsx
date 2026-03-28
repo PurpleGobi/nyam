@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface FollowingSourceBadgeProps {
@@ -30,7 +31,7 @@ export function FollowingSourceBadge({
           style={{ backgroundColor: sourceAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
         >
           {sourceAvatar ? (
-            <img src={sourceAvatar} alt="" className="h-full w-full rounded-full object-cover" />
+            <Image src={sourceAvatar} alt="" width={16} height={16} className="h-full w-full rounded-full object-cover" unoptimized />
           ) : (
             sourceName.charAt(0)
           )}
