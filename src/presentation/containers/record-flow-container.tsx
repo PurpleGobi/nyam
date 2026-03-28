@@ -17,6 +17,7 @@ import { RecordNav } from '@/presentation/components/record/record-nav'
 import { RecordSuccess } from '@/presentation/components/record/record-success'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useSettings } from '@/application/hooks/use-settings'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
@@ -59,13 +60,29 @@ function RecordFlowInner() {
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
 
-  const { availableBubbles, shareToBubbles } = useShareRecord(
+  const { availableBubbles, shareToBubbles, canShare } = useShareRecord(
     user?.id ?? null,
     state.savedRecordId,
   )
+  const { settings } = useSettings()
+  const prefBubbleShare = settings?.prefBubbleShare ?? 'ask'
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
+
+  // pref_bubble_share 분기: 'ask' → 시트 표시, 'auto' → 자동 공유, 'never' → 미표시
+  useEffect(() => {
+    if (state.step !== 'success' || !state.savedRecordId) return
+    if (prefBubbleShare === 'ask' && availableBubbles.length > 0 && canShare) {
+      setShowShareSheet(true)
+    } else if (prefBubbleShare === 'auto' && availableBubbles.length > 0 && canShare) {
+      const shareableIds = availableBubbles.filter((b) => !b.isShared && b.canShare).map((b) => b.id)
+      if (shareableIds.length > 0) {
+        shareToBubbles(shareableIds.slice(0, 1))
+      }
+    }
+    // 'never': 아무 동작 없음
+  }, [state.step, state.savedRecordId, prefBubbleShare, availableBubbles, canShare, shareToBubbles])
 
   const isEditMode = !!editRecordId
 
@@ -301,7 +318,7 @@ function RecordFlowInner() {
           onAddMore={handleAddMore}
           onAddAnother={handleAddAnother}
           onGoHome={handleClose}
-          onShareToBubble={availableBubbles.length > 0 ? () => setShowShareSheet(true) : undefined}
+          onShareToBubble={prefBubbleShare !== 'never' && availableBubbles.length > 0 && canShare ? () => setShowShareSheet(true) : undefined}
         />
         <ShareToBubbleSheet
           isOpen={showShareSheet}

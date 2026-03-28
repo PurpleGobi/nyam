@@ -470,43 +470,20 @@ export default function DesignSystemPage() {
             <IconButton icon={Search} active={searchActive} onClick={() => { setSearchActive(!searchActive); setFilterActive(false); setSortActive(false) }} />
           </div>
 
-          {/* 필터칩 + 이름 입력 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-              {demoChips.map((chip) => (
-                <FilterChip
-                  key={chip.id}
-                  active={activeChip === chip.id}
-                  onClick={() => {
-                    setActiveChip(chip.id)
-                    setChipName(chip.name)
-                  }}
-                >
-                  {chip.name}
-                </FilterChip>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={chipName}
-              onChange={(e) => setChipName(e.target.value)}
-              placeholder="필터칩 이름..."
-              className="nyam-input"
-              style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
-            />
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={!chipName.trim() || demoChips.some((c) => c.name === chipName.trim())}
-              onClick={() => {
-                const id = `chip-${Date.now()}`
-                setDemoChips([...demoChips, { id, name: chipName.trim() }])
-                setActiveChip(id)
-              }}
-              style={{ padding: '5px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
-            >
-              생성
-            </button>
+          {/* 필터칩 */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+            {demoChips.map((chip) => (
+              <FilterChip
+                key={chip.id}
+                active={activeChip === chip.id}
+                onClick={() => {
+                  setActiveChip(chip.id)
+                  setChipName(chip.name)
+                }}
+              >
+                {chip.name}
+              </FilterChip>
+            ))}
           </div>
 
           {/* 필터 패널 (Notion 스타일) */}
@@ -518,7 +495,14 @@ export default function DesignSystemPage() {
                 attributes={RESTAURANT_FILTER_ATTRIBUTES}
                 onRulesChange={setDemoRules}
                 onConjunctionChange={setDemoConjunction}
-                onSaveAsChip={() => setToastVisible(true)}
+                chipName={chipName}
+                onChipNameChange={setChipName}
+                onSaveAsChip={(name) => {
+                  const id = `chip-${Date.now()}`
+                  setDemoChips([...demoChips, { id, name }])
+                  setActiveChip(id)
+                  setChipName('')
+                }}
                 accentColor="var(--accent-food)"
               />
             </div>

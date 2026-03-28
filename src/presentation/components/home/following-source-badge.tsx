@@ -37,7 +37,10 @@ export function FollowingSourceBadge({
           )}
         </div>
       )}
-      <span className="max-w-[60px] truncate text-[10px] font-medium" style={{ color: 'var(--text-sub)' }}>
+      <span
+        className="max-w-[60px] truncate text-[10px] font-medium"
+        style={{ color: sourceType === 'bubble' ? 'var(--accent-social)' : 'var(--text-sub)' }}
+      >
         {sourceName}
       </span>
     </div>

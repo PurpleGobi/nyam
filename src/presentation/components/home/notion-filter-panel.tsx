@@ -11,7 +11,9 @@ interface NotionFilterPanelProps {
   attributes: FilterAttribute[]
   onRulesChange: (rules: FilterRule[]) => void
   onConjunctionChange: (conjunction: 'and' | 'or') => void
-  onSaveAsChip: () => void
+  onSaveAsChip: (name?: string) => void
+  chipName?: string
+  onChipNameChange?: (name: string) => void
   accentColor?: string
 }
 
@@ -22,6 +24,8 @@ export function NotionFilterPanel({
   onRulesChange,
   onConjunctionChange,
   onSaveAsChip,
+  chipName = '',
+  onChipNameChange,
   accentColor,
 }: NotionFilterPanelProps) {
   const handleAddRule = () => {
@@ -49,6 +53,8 @@ export function NotionFilterPanel({
     onConjunctionChange(conjunction === 'and' ? 'or' : 'and')
   }
 
+  const canSave = rules.length > 0 && chipName.trim().length > 0
+
   return (
     <div
       className="mx-4 rounded-xl p-4"
@@ -61,7 +67,6 @@ export function NotionFilterPanel({
       <div className="flex flex-col gap-2">
         {rules.map((rule, index) => (
           <div key={index} className="flex items-center gap-2">
-            {/* conjunction 라벨 (첫 번째 행: Where, 이후: AND/OR 토글) */}
             <div className="w-12 shrink-0 text-right">
               {index === 0 ? (
                 <span
@@ -101,28 +106,43 @@ export function NotionFilterPanel({
       </div>
 
       {/* 하단 액션 */}
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
           onClick={handleAddRule}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors"
-          style={{ color: 'var(--text-sub)' }}
+          style={{ color: 'var(--text-sub)', flexShrink: 0 }}
         >
           <Plus size={14} />
           필터 추가
         </button>
 
-        {rules.length > 0 && (
-          <button
-            type="button"
-            onClick={onSaveAsChip}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors"
-            style={{ color: 'var(--text-sub)' }}
-          >
-            <Save size={14} />
-            칩으로 저장
-          </button>
-        )}
+        {/* 칩 이름 입력 */}
+        <input
+          type="text"
+          value={chipName}
+          onChange={(e) => onChipNameChange?.(e.target.value)}
+          placeholder="칩 이름"
+          className="nyam-input"
+          style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
+        />
+
+        {/* 칩으로 저장 */}
+        <button
+          type="button"
+          onClick={() => { if (canSave) onSaveAsChip(chipName.trim()) }}
+          disabled={!canSave}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors"
+          style={{
+            color: canSave ? 'var(--text-sub)' : 'var(--text-hint)',
+            opacity: canSave ? 1 : 0.5,
+            cursor: canSave ? 'pointer' : 'not-allowed',
+            flexShrink: 0,
+          }}
+        >
+          <Save size={14} />
+          칩으로 저장
+        </button>
       </div>
     </div>
   )

@@ -104,8 +104,8 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           </div>
         )}
 
-        {/* 버블 컨텍스트 카드 — follow+ */}
-        {data.accessLevel !== 'none' && data.bubbleContext && (
+        {/* 버블 컨텍스트 카드 — mutual only (버블 멤버끼리) */}
+        {data.accessLevel === 'mutual' && data.bubbleContext && (
           <BubbleContextCard
             bubbleName={data.bubbleContext.bubbleName}
             bubbleIcon={data.bubbleContext.bubbleIcon}
@@ -129,6 +129,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         {data.accessLevel === 'mutual' && (
           <PicksGrid
             picks={data.topPicks}
+            title={`${data.nickname}의 강력 추천`}
             onItemPress={(id, type) => router.push(type === 'restaurant' ? `/restaurants/${id}` : `/wines/${id}`)}
           />
         )}

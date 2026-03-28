@@ -15,10 +15,11 @@ interface PickItem {
 
 interface PicksGridProps {
   picks: PickItem[]
+  title?: string
   onItemPress: (id: string, targetType: 'restaurant' | 'wine') => void
 }
 
-export function PicksGrid({ picks, onItemPress }: PicksGridProps) {
+export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
   if (picks.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -29,46 +30,43 @@ export function PicksGrid({ picks, onItemPress }: PicksGridProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>Top Picks</h3>
-      <div className="grid grid-cols-2 gap-2">
+      <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>{title ?? '강력 추천'}</h3>
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
         {picks.slice(0, 6).map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => onItemPress(item.id, item.targetType)}
-            className="flex flex-col overflow-hidden rounded-xl transition-transform active:scale-[0.97]"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            className="flex w-[82px] shrink-0 flex-col overflow-hidden transition-transform active:scale-[0.96]"
           >
             <div
-              className="relative flex h-24 items-center justify-center"
+              className="relative flex items-center justify-center rounded-xl"
               style={{
+                width: '82px',
+                height: '82px',
                 backgroundColor: item.targetType === 'restaurant' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)',
               }}
             >
               {item.thumbnailUrl ? (
-                <Image src={item.thumbnailUrl} alt="" fill className="object-cover" sizes="50vw" unoptimized />
+                <>
+                  <Image src={item.thumbnailUrl} alt="" fill className="rounded-xl object-cover" sizes="82px" unoptimized />
+                  <div className="absolute inset-0 rounded-xl" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)' }} />
+                </>
               ) : item.targetType === 'restaurant' ? (
                 <UtensilsCrossed size={24} style={{ color: 'var(--text-hint)' }} />
               ) : (
                 <Wine size={24} style={{ color: 'var(--text-hint)' }} />
               )}
-            </div>
-            <div className="flex items-center justify-between px-2.5 py-2">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] font-semibold" style={{ color: 'var(--text)' }}>{item.name}</p>
-                {item.genre && (
-                  <p className="truncate text-[10px]" style={{ color: 'var(--text-hint)' }}>{item.genre}</p>
-                )}
-              </div>
               {item.satisfaction !== null && (
-                <div
-                  className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                  style={{ backgroundColor: getGaugeColor(item.satisfaction) }}
-                >
-                  <span style={{ fontSize: '9px', fontWeight: 800, color: '#FFFFFF' }}>{item.satisfaction}</span>
-                </div>
+                <span className="absolute bottom-[5px] right-[5px] text-[11px] font-extrabold" style={{ color: '#FFFFFF' }}>
+                  {item.satisfaction}
+                </span>
               )}
             </div>
+            <p className="mt-1 truncate text-[11px] font-semibold" style={{ color: 'var(--text)' }}>{item.name}</p>
+            {item.genre && (
+              <p className="truncate text-[10px]" style={{ color: 'var(--text-hint)' }}>{item.genre}</p>
+            )}
           </button>
         ))}
       </div>
