@@ -72,8 +72,10 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
   const handleEdit = useCallback(() => {
     if (!record) return
     setShowDropdown(false)
-    router.push(`/record?type=${record.targetType}&targetId=${record.targetId}&edit=${record.id}&from=record_detail`)
-  }, [record, router])
+    const name = encodeURIComponent(targetInfo?.name ?? '')
+    const meta = encodeURIComponent(targetInfo?.subText ?? '')
+    router.push(`/record?type=${record.targetType}&targetId=${record.targetId}&name=${name}&meta=${meta}&edit=${record.id}&from=record_detail`)
+  }, [record, router, targetInfo])
 
   const handleDelete = useCallback(async () => {
     const success = await deleteRecord()
@@ -82,11 +84,11 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
   const navigateToTarget = useCallback(() => {
     if (!targetInfo) return
-    router.push(`/${targetInfo.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${targetInfo.id}`)
+    router.push(`/${targetInfo.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${targetInfo.id}?from=record`)
   }, [targetInfo, router])
 
   const navigateToLinkedItem = useCallback((id: string, type: 'restaurant' | 'wine') => {
-    router.push(`/${type === 'restaurant' ? 'restaurants' : 'wines'}/${id}`)
+    router.push(`/${type === 'restaurant' ? 'restaurants' : 'wines'}/${id}?from=record`)
   }, [router])
 
   if (isLoading || !record) {

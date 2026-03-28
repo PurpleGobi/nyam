@@ -1,10 +1,12 @@
 'use client'
 
 import useSWR, { useSWRConfig } from 'swr'
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { settingsRepo } from '@/shared/di/container'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import type { VisibilityConfig, PrivacyProfile, PrivacyRecords, DeleteMode } from '@/domain/entities/settings'
+
+const DEBOUNCE_MS = 500
 
 export function useSettings() {
   const { user } = useAuth()
@@ -63,21 +65,42 @@ export function useSettings() {
     }
   }, [userId, settings, mutate])
 
-  // ── 알림 ──
+  // ── 알림 (optimistic + debounce) ──
+
+  const notifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const updateNotify = useCallback(async (field: string, value: boolean) => {
-    if (!userId) return
-    await settingsRepo.updateNotifySetting(userId, field, value)
-    mutate(['settings', userId])
-  }, [userId, mutate])
+    if (!userId || !settings) return
+    // camelCase mapping for optimistic update
+    const camelField = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+    mutate(['settings', userId], { ...settings, [camelField]: value }, false)
+    if (notifyTimerRef.current) clearTimeout(notifyTimerRef.current)
+    notifyTimerRef.current = setTimeout(async () => {
+      try {
+        await settingsRepo.updateNotifySetting(userId, field, value)
+      } catch {
+        mutate(['settings', userId])
+      }
+    }, DEBOUNCE_MS)
+  }, [userId, settings, mutate])
 
-  // ── 환경설정 ──
+  // ── 환경설정 (optimistic + debounce) ──
+
+  const prefTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const updatePreference = useCallback(async (field: string, value: string) => {
-    if (!userId) return
-    await settingsRepo.updatePreference(userId, field, value)
-    mutate(['settings', userId])
-  }, [userId, mutate])
+    if (!userId || !settings) return
+    const camelField = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+    mutate(['settings', userId], { ...settings, [camelField]: value }, false)
+    if (prefTimerRef.current) clearTimeout(prefTimerRef.current)
+    prefTimerRef.current = setTimeout(async () => {
+      try {
+        await settingsRepo.updatePreference(userId, field, value)
+      } catch {
+        mutate(['settings', userId])
+      }
+    }, DEBOUNCE_MS)
+  }, [userId, settings, mutate])
 
   // ── 계정 삭제 ──
 
@@ -93,6 +116,12 @@ export function useSettings() {
     mutate(['settings', userId])
   }, [userId, mutate])
 
+  const updateBubbleVisibility = useCallback(async (bubbleId: string, config: VisibilityConfig | null) => {
+    if (!userId) return
+    await settingsRepo.updateBubbleVisibilityOverride(userId, bubbleId, config)
+    mutate(['bubble-overrides', userId])
+  }, [userId, mutate])
+
   return {
     settings,
     bubbleOverrides,
@@ -102,6 +131,7 @@ export function useSettings() {
     updatePrivacyRecords,
     updateVisibilityPublic,
     updateVisibilityBubble,
+    updateBubbleVisibility,
     updateNotify,
     updatePreference,
     requestDeletion,

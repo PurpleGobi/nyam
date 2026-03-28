@@ -82,7 +82,7 @@ export function ScoreCards({
               {bubbleScore}
             </span>
           ) : (
-            <span style={{ fontSize: '18px', color: 'var(--border-bold)' }}>---</span>
+            <span style={{ fontSize: '18px', color: 'var(--border-bold)' }}>—</span>
           )}
           {bubbleSubText && (
             <span style={{ fontSize: '9px', color: 'var(--text-hint)' }}>{bubbleSubText}</span>
@@ -123,7 +123,7 @@ function ScoreCard({
           {value}
         </span>
       ) : (
-        <span style={{ fontSize: '18px', color: 'var(--border-bold)' }}>---</span>
+        <span style={{ fontSize: '18px', color: 'var(--border-bold)' }}>—</span>
       )}
       {subText && (
         <span style={{ fontSize: '9px', color: 'var(--text-hint)' }}>{subText}</span>

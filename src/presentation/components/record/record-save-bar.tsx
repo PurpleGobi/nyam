@@ -7,9 +7,10 @@ interface RecordSaveBarProps {
   onSave: () => void
   isLoading: boolean
   disabled?: boolean
+  label?: string
 }
 
-export function RecordSaveBar({ variant, onSave, isLoading, disabled = false }: RecordSaveBarProps) {
+export function RecordSaveBar({ variant, onSave, isLoading, disabled = false, label = '저장' }: RecordSaveBarProps) {
   const bgColor = variant === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   return (
@@ -38,7 +39,7 @@ export function RecordSaveBar({ variant, onSave, isLoading, disabled = false }: 
           cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
         }}
       >
-        {isLoading ? <Loader2 size={20} className="animate-spin" /> : '저장'}
+        {isLoading ? <Loader2 size={20} className="animate-spin" /> : label}
       </button>
     </div>
   )

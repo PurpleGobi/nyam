@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/application/hooks/use-profile'
 import { getLevel } from '@/domain/services/xp-calculator'
-import type { UserExperience } from '@/domain/entities/xp'
+import { xpRepo } from '@/shared/di/container'
+import type { UserExperience, Milestone } from '@/domain/entities/xp'
 import { ProfileHeader } from '@/presentation/components/profile/profile-header'
 import { TasteIdentityCard } from '@/presentation/components/profile/taste-identity-card'
 import { TotalLevelCard } from '@/presentation/components/profile/total-level-card'
 import { OverviewGrid } from '@/presentation/components/profile/overview-grid'
 import { ActivityHeatmap } from '@/presentation/components/profile/activity-heatmap'
 import { RecentXpList } from '@/presentation/components/profile/recent-xp-list'
-import { StatTabs } from '@/presentation/components/profile/stat-tabs'
+import { StatTabContainer } from '@/presentation/containers/stat-tab-container'
 import { LevelList } from '@/presentation/components/profile/level-list'
 import { LevelDetailSheet } from '@/presentation/components/profile/level-detail-sheet'
 
@@ -44,9 +45,37 @@ export function ProfileContainer() {
     }
   }, [experiences])
 
+  // LevelDetailSheet 통계 데이터
+  const [levelDetailStats, setLevelDetailStats] = useState<{
+    uniqueCount: number
+    totalRecords: number
+    revisitCount: number
+    xpBreakdown: Record<string, number>
+    nextMilestone: { milestone: Milestone; currentCount: number } | null
+  }>({ uniqueCount: 0, totalRecords: 0, revisitCount: 0, xpBreakdown: {}, nextMilestone: null })
+
+  const fetchLevelDetailStats = useCallback(async (exp: UserExperience) => {
+    if (!profile) return
+    const [uniqueCount, totalRecords, revisitCount, xpBreakdown] = await Promise.all([
+      xpRepo.getUniqueCount(profile.id, exp.axisType, exp.axisValue),
+      xpRepo.getTotalRecordCountByAxis(profile.id, exp.axisType, exp.axisValue),
+      xpRepo.getRevisitCountByAxis(profile.id, exp.axisType, exp.axisValue),
+      xpRepo.getXpBreakdownByAxis(profile.id, exp.axisType, exp.axisValue),
+    ])
+    const nextMilestone = await xpRepo.getNextMilestone(exp.axisType, 'record_count', totalRecords)
+    setLevelDetailStats({
+      uniqueCount,
+      totalRecords,
+      revisitCount,
+      xpBreakdown,
+      nextMilestone: nextMilestone ? { milestone: nextMilestone, currentCount: totalRecords } : null,
+    })
+  }, [profile])
+
   const handleLevelItemPress = (exp: UserExperience) => {
     setSelectedExperience(exp)
     setLevelDetailOpen(true)
+    fetchLevelDetailStats(exp)
   }
 
   if (isLoading) {
@@ -106,12 +135,23 @@ export function ProfileContainer() {
 
       {activitySummary && <OverviewGrid summary={activitySummary} />}
 
-      {heatmapData && <ActivityHeatmap data={heatmapData} />}
+      {heatmapData && (
+        <ActivityHeatmap
+          data={heatmapData}
+          stats={{
+            totalRecords: profile.recordCount,
+            currentStreak: profile.currentStreak,
+            activePeriodMonths: heatmapData.length > 0
+              ? Math.max(1, Math.ceil(new Set(heatmapData.filter(c => c.count > 0).map(c => c.date.slice(0, 7))).size))
+              : 0,
+          }}
+        />
+      )}
 
       {recentXp && recentXp.length > 0 && <RecentXpList items={recentXp} />}
 
       {/* Stat Tabs */}
-      <StatTabs />
+      <StatTabContainer />
 
       {/* Level Section (mini tabs + level list) */}
       {thresholds && thresholds.length > 0 && (
@@ -151,6 +191,11 @@ export function ProfileContainer() {
             ? getLevel(selectedExperience.totalXp, thresholds)
             : null,
         }}
+        uniqueCount={levelDetailStats.uniqueCount}
+        totalRecords={levelDetailStats.totalRecords}
+        revisitCount={levelDetailStats.revisitCount}
+        xpBreakdown={levelDetailStats.xpBreakdown}
+        nextMilestone={levelDetailStats.nextMilestone}
         onClose={() => {
           setLevelDetailOpen(false)
           setSelectedExperience(null)

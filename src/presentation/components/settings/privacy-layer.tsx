@@ -57,8 +57,11 @@ export function PrivacyLayer({ visible, dotColor, title, note, children }: Priva
       <div
         style={{
           maxHeight: isExpanded ? `${contentHeight}px` : '0px',
+          opacity: isExpanded ? 1 : 0,
           overflow: 'hidden',
-          transition: 'max-height 0.25s ease',
+          transition: isExpanded
+            ? 'max-height 0.35s ease, opacity 0.35s ease'
+            : 'max-height 0.25s ease, opacity 0.25s ease',
         }}
       >
         <div ref={contentRef} className="px-4 pb-3">

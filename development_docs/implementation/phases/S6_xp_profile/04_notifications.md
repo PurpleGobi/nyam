@@ -469,7 +469,7 @@ interface NotificationItemProps {
 - 아이콘: 16px, 배경 없음, 유형별 색상 (`NOTIFICATION_TYPE_CONFIG` 참조)
 - **미읽음**: 제목 `font-weight: 600` + 우측 `●` 도트 (`bg-brand`, 6px)
 - **읽음**: 제목 `font-weight: 500`, 도트 없음
-- 패딩: `px-3.5 py-2.75`
+- 패딩: `px-3.5 py-2.5`
 - 타임스탬프: 11px, text-hint (상대 시간: "3시간 전", "1일 전")
 - 구분선: 1px `border-bottom` (마지막 제외)
 

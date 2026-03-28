@@ -21,7 +21,7 @@ nyam/
 │   ├── prototype/                  #   인터랙티브 목업 HTML
 │   └── implementation/             #   개발 실행 문서
 │       ├── orchestration/          #     진행 추적 (MASTER_TRACKER, CURRENT_SPRINT 등)
-│       ├── phases/                 #     스프린트별 지침 (S1~S9)
+│       ├── phases/                 #     스프린트별 지침 (S1~S10)
 │       └── shared/                 #     공통 패턴 (클린 아키텍처, 테스트, 규칙)
 └── src/                            # 코드 (구현 시작 시 생성)
 ```
@@ -275,7 +275,7 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 
 ---
 
-## 스프린트 구조 (9 스프린트, 64 태스크)
+## 스프린트 구조 (10 스프린트, 68 태스크)
 
 | Sprint | 핵심 | 선행 |
 |--------|------|------|
@@ -288,6 +288,7 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 | **S7** Bubble | 생성/가입/초대 + 5종 가입정책 + 피드/랭킹/멤버 + 댓글/리액션 + 역할 + 랭킹 크론 | S1, S6 |
 | **S8** Integration | 팔로우/맞팔 + L9 + 홈 소셜 탭 + 버블 공유 + 버블러 프로필 | S4, S5, S7 |
 | **S9** Onboarding | 온보딩(로그인→맛집등록→버블생성→탐색→홈) + 넛지 정교화 + E2E + 최적화 | 전체 |
+| **S10** Maps | 식당 드릴다운 지도 + 와인 산지 3단계 드릴다운 지도 + SVG 데이터 | S6 |
 
 상세 태스크 목록 → `development_docs/implementation/orchestration/MASTER_TRACKER.md`
 의존성 그래프 → `development_docs/implementation/orchestration/DEPENDENCY_MAP.md`

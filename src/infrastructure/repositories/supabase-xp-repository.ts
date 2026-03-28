@@ -108,6 +108,14 @@ export class SupabaseXpRepository implements XpRepository {
     return mapXpHistory(data)
   }
 
+  async deleteByRecordId(recordId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('xp_histories')
+      .delete()
+      .eq('record_id', recordId)
+    if (error) throw error
+  }
+
   // ── 레벨 테이블 ──
 
   async getLevelThresholds(): Promise<LevelThreshold[]> {

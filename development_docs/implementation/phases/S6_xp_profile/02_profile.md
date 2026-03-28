@@ -404,10 +404,11 @@ interface TasteIdentityCardProps {
 ```typescript
 interface TotalLevelCardProps {
   level: number;
+  title: string;
+  color: string;
   totalXp: number;
   nextLevelXp: number;
   progress: number;               // 0~1
-  levelColor: string;
 }
 ```
 
@@ -433,8 +434,8 @@ interface OverviewGridProps {
 
 ```typescript
 interface ActivityHeatmapProps {
-  cells: HeatmapCell[];
-  stats: HeatmapStats;
+  data: HeatmapCell[];
+  stats?: HeatmapStats;
 }
 ```
 
@@ -484,15 +485,19 @@ interface LevelListProps {
 ```typescript
 interface LevelDetailSheetProps {
   isOpen: boolean;
-  onClose: () => void;
-  experience: UserExperience;
-  thresholds: LevelThreshold[];
+  axisType: AxisType | null;
+  axisValue: string | null;
+  data: {
+    experience: UserExperience | null;
+    levelInfo: LevelInfo | null;       // 외부에서 getLevel()로 미리 계산
+  };
   // 통계
   uniqueCount: number;
   totalRecords: number;
   revisitCount: number;
   xpBreakdown: Record<string, number>;  // reason → XP
   nextMilestone: { milestone: Milestone; currentCount: number } | null;
+  onClose: () => void;
 }
 ```
 
@@ -533,29 +538,43 @@ interface VerticalBarChartProps {
 
 ### 6-11. `RestaurantMap` — `src/presentation/components/profile/restaurant-map.tsx`
 
+> **S10 위임**: 제대로 된 SVG 드릴다운 지도는 `S10_maps/02_restaurant_map.md`에서 구현.
+> 현재는 타원 대륙 + lat/lng 마커 간이 버전만 구현.
+
 ```typescript
 interface RestaurantMapProps {
   markers: MapMarker[];
 }
 ```
 
-- SVG 세계 지도 (대륙 윤곽선, bg-page/border 색상)
-- 도시 마커: 원형, primary 색상, count 비례 크기
+**간이 버전 (현재)**:
+- 타원 대륙 배경 + lat/lng → SVG 좌표 변환 마커
+- 도시 마커: 원형, primary 색상, 3단계 크기 (5/7/10px)
 - 6곳+ 마커: 내부 숫자 (흰색)
 - 범례: `● 1~2곳 ● 3~5곳 ● 6곳+` (opacity 차등)
+- 드릴다운 없음
 
-### 6-12. `WineRegionMap` — `src/presentation/components/profile/wine-region-map.tsx`
+**S10 고도화 목표**:
+- 실제 대륙/국가 SVG path
+- 국가 탭 → 도시 목록 드릴다운
+
+### 6-12. `WineRegionMap` — `src/presentation/components/profile/wine-region-map-simple.tsx`
+
+> **S10 위임**: 3단계 드릴다운 지도는 `S10_maps/03_wine_region_map.md`에서 구현.
+> 현재는 국가별 바 리스트 + 타입 도트 간이 버전만 구현.
 
 ```typescript
-interface WineRegionMapProps {
+interface WineRegionMapSimpleProps {
   data: WineRegionMapData[];
-  drillLevel: 0 | 1 | 2;
-  drillTarget: { country?: string; region?: string } | null;
-  onDrill: (level: 0 | 1 | 2, target: { country?: string; region?: string } | null) => void;
 }
 ```
 
-3단계 드릴다운:
+**간이 버전 (현재)**:
+- 국가별 가로 바 리스트 (와인 수 내림차순)
+- 국가명 + 와인 수 + 타입별 도트 (최대 4색)
+- 드릴다운 없음
+
+**S10 고도화 목표 (3단계 드릴다운)**:
 
 | Level | 배경 | 내용 | 인터랙션 |
 |-------|------|------|----------|
@@ -633,7 +652,7 @@ export function ProfileContainer() {
   const [wineMiniTab, setWineMiniTab] = useState<'origin' | 'grape'>('origin');
   const [levelDetailOpen, setLevelDetailOpen] = useState(false);
   const [selectedExperience, setSelectedExperience] = useState<UserExperience | null>(null);
-  const [showAllVarieties, setShowAllVarieties] = useState(false);
+  // showAllVarieties는 StatTabContainer로 분리
 
   // 레벨 산출
   const levelInfo = useMemo(() => {
@@ -685,7 +704,7 @@ export function WrappedContainer() {
 | `wineMiniTab` | ProfileContainer local | `'origin' \| 'grape'` | `'origin'` |
 | `levelDetailOpen` | ProfileContainer local | `boolean` | `false` |
 | `selectedExperience` | ProfileContainer local | `UserExperience \| null` | `null` |
-| `showAllVarieties` | ProfileContainer local | `boolean` | `false` |
+| `showAllVarieties` | StatTabContainer local | `boolean` | `false` |
 | `wrappedCategory` | WrappedContainer local | `'all' \| 'rest' \| 'wine'` | `'all'` |
 | `gaugePrivacy` | WrappedContainer local | `0 \| 1 \| 2` | `1` |
 | `gaugeDetail` | WrappedContainer local | `0 \| 1 \| 2` | `1` |

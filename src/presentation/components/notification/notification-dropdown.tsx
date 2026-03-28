@@ -2,17 +2,12 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Check, Trophy, CircleDot, CircleCheck, UserPlus, UserCheck } from 'lucide-react'
-import type { Notification, NotificationType } from '@/domain/entities/notification'
+import { Bell } from 'lucide-react'
+import type { Notification } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
-
-const ICON_COMPONENTS: Record<string, typeof Bell> = {
-  'trophy': Trophy,
-  'circle-dot': CircleDot,
-  'circle-check': CircleCheck,
-  'user-plus': UserPlus,
-  'user-check': UserCheck,
-}
+import { NotificationIcon } from '@/presentation/components/notification/notification-icon'
+import { NotificationActions } from '@/presentation/components/notification/notification-actions'
+import { NotificationEmpty } from '@/presentation/components/notification/notification-empty'
 
 interface NotificationDropdownProps {
   isOpen: boolean
@@ -51,7 +46,7 @@ export function NotificationDropdown({
       const config = NOTIFICATION_TYPE_CONFIG[n.type]
       if (config.navigationTarget === 'profile') router.push('/profile')
       else if (config.navigationTarget === 'bubble_detail' && n.bubbleId) router.push(`/bubbles/${n.bubbleId}`)
-      else if (config.navigationTarget === 'actor_profile' && n.actorId) router.push(`/users/${n.actorId}`)
+      else if (config.navigationTarget === 'actor_profile' && n.actorId) router.push(`/bubbler/${n.actorId}`)
     }
     onClose()
   }
@@ -87,80 +82,49 @@ export function NotificationDropdown({
         {/* 목록 */}
         <div className="flex-1 overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center py-8">
-              <Bell size={32} style={{ color: 'var(--text-hint)' }} />
-              <p className="mt-2" style={{ fontSize: '13px', color: 'var(--text-hint)' }}>아직 알림이 없어요</p>
-            </div>
+            <NotificationEmpty />
           ) : (
-            notifications.map((n) => {
-              const config = NOTIFICATION_TYPE_CONFIG[n.type]
-              const IconComp = ICON_COMPONENTS[config?.icon ?? ''] ?? Bell
+            notifications.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => handleItemClick(n)}
+                className="flex w-full items-start gap-3 px-3.5 py-2.5 text-left transition-colors"
+                style={{
+                  backgroundColor: n.isRead ? 'transparent' : 'color-mix(in srgb, var(--accent-food) 5%, transparent)',
+                  borderBottom: '1px solid var(--border)',
+                }}
+              >
+                {/* 아이콘 */}
+                <div className="mt-0.5">
+                  <NotificationIcon type={n.type} />
+                </div>
 
-              return (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => handleItemClick(n)}
-                  className="flex w-full items-start gap-3 px-3.5 py-2.5 text-left transition-colors"
-                  style={{
-                    backgroundColor: n.isRead ? 'transparent' : 'color-mix(in srgb, var(--accent-food) 5%, transparent)',
-                    borderBottom: '1px solid var(--border)',
-                  }}
-                >
-                  {/* 아이콘 */}
-                  <div
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                    style={{ backgroundColor: `color-mix(in srgb, ${config?.iconColor ?? 'var(--text-sub)'} 15%, transparent)` }}
-                  >
-                    <IconComp size={16} style={{ color: config?.iconColor ?? 'var(--text-sub)' }} />
-                  </div>
-
-                  {/* 컨텐츠 */}
-                  <div className="min-w-0 flex-1">
-                    <p style={{ fontSize: '13px', fontWeight: n.isRead ? 400 : 600, color: 'var(--text)' }}>{n.title}</p>
-                    {n.body && (
-                      <p className="mt-0.5" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>{n.body}</p>
-                    )}
-                    <p className="mt-0.5" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>{formatTimeAgo(n.createdAt)}</p>
-
-                    {/* 액션 버튼 */}
-                    {n.actionStatus === 'pending' && (
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onAction(n.id, 'accepted') }}
-                          className="rounded-md px-2.5 py-0.5"
-                          style={{ fontSize: '11px', fontWeight: 600, backgroundColor: 'var(--text)', color: '#FFFFFF' }}
-                        >
-                          수락
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onAction(n.id, 'rejected') }}
-                          style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-hint)' }}
-                        >
-                          거절
-                        </button>
-                      </div>
-                    )}
-                    {n.actionStatus === 'accepted' && (
-                      <p className="mt-1" style={{ fontSize: '11px', color: 'var(--positive)' }}>수락 완료</p>
-                    )}
-                    {n.actionStatus === 'rejected' && (
-                      <p className="mt-1" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>거절됨</p>
-                    )}
-                  </div>
-
-                  {/* 미읽음 dot */}
-                  {!n.isRead && (
-                    <div
-                      className="mt-2 h-[7px] w-[7px] shrink-0 rounded-full"
-                      style={{ backgroundColor: 'var(--brand)', border: '1.5px solid var(--bg)' }}
-                    />
+                {/* 컨텐츠 */}
+                <div className="min-w-0 flex-1">
+                  <p style={{ fontSize: '13px', fontWeight: n.isRead ? 500 : 600, color: 'var(--text)' }}>{n.title}</p>
+                  {n.body && (
+                    <p className="mt-0.5" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>{n.body}</p>
                   )}
-                </button>
-              )
-            })
+                  <p className="mt-0.5" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>{formatTimeAgo(n.createdAt)}</p>
+
+                  {/* 액션 버튼 */}
+                  <NotificationActions
+                    actionStatus={n.actionStatus}
+                    onAccept={() => onAction(n.id, 'accepted')}
+                    onReject={() => onAction(n.id, 'rejected')}
+                  />
+                </div>
+
+                {/* 미읽음 dot */}
+                {!n.isRead && (
+                  <div
+                    className="mt-2 h-[6px] w-[6px] shrink-0 rounded-full"
+                    style={{ backgroundColor: 'var(--brand)', border: '1.5px solid var(--bg)' }}
+                  />
+                )}
+              </button>
+            ))
           )}
         </div>
 

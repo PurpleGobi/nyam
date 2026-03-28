@@ -1,9 +1,16 @@
 'use client'
 
-import { useState } from 'react'
 import { Utensils, Wine } from 'lucide-react'
-import { useRestaurantStats, useWineStats } from '@/application/hooks/use-profile-stats'
-import type { RestaurantStats, WineStats, BarChartItem } from '@/domain/entities/profile'
+import type {
+  RestaurantStats, WineStats, BarChartItem, ScoreDistribution,
+  MonthlySpending, MapMarker, SceneVisit, WineRegionMapData, WineTypeDistribution,
+} from '@/domain/entities/profile'
+import { StatSummaryCards } from '@/presentation/components/profile/stat-summary-cards'
+import { HorizontalBarChart } from '@/presentation/components/charts/horizontal-bar-chart'
+import { VerticalBarChart } from '@/presentation/components/charts/vertical-bar-chart'
+import { RestaurantMap } from '@/presentation/components/profile/restaurant-map'
+import { WineRegionMapSimple } from '@/presentation/components/profile/wine-region-map-simple'
+import { VarietyToggle } from '@/presentation/components/profile/variety-toggle'
 
 type TabType = 'restaurant' | 'wine'
 
@@ -12,17 +19,47 @@ const TABS: { key: TabType; label: string; icon: typeof Utensils }[] = [
   { key: 'wine', label: '와인', icon: Wine },
 ]
 
-export function StatTabs() {
-  const [activeTab, setActiveTab] = useState<TabType>('restaurant')
-  const { stats: restaurantStats, genres } = useRestaurantStats()
-  const { stats: wineStats, varieties } = useWineStats()
+interface StatTabsProps {
+  activeTab: TabType
+  onTabChange: (tab: TabType) => void
+  // Restaurant data
+  restaurantStats: RestaurantStats | null
+  restaurantGenres: BarChartItem[]
+  restaurantScoreDist: ScoreDistribution[]
+  restaurantMonthlySpending: MonthlySpending[]
+  restaurantMapMarkers: MapMarker[]
+  restaurantScenes: SceneVisit[]
+  // Wine data
+  wineStats: WineStats | null
+  wineVarieties: BarChartItem[]
+  wineScoreDist: ScoreDistribution[]
+  wineMonthlySpending: MonthlySpending[]
+  wineRegionMap: WineRegionMapData[]
+  wineTypeDistribution: WineTypeDistribution[]
+  // Variety toggle
+  showAllVarieties: boolean
+  onToggleVarieties: (showAll: boolean) => void
+}
 
+export function StatTabs({
+  activeTab, onTabChange,
+  restaurantStats, restaurantGenres, restaurantScoreDist,
+  restaurantMonthlySpending, restaurantMapMarkers, restaurantScenes,
+  wineStats, wineVarieties, wineScoreDist,
+  wineMonthlySpending, wineRegionMap, wineTypeDistribution,
+  showAllVarieties, onToggleVarieties,
+}: StatTabsProps) {
   return (
-    <div className="mx-4 mt-6">
-      {/* Tab bar */}
+    <div className="mt-6">
+      {/* Tab bar — sticky + glassmorphism */}
       <div
-        className="flex overflow-hidden rounded-xl"
-        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        className="sticky top-0 z-10 mx-4 flex overflow-hidden rounded-xl"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
+          border: '1px solid var(--border)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key
@@ -30,7 +67,7 @@ export function StatTabs() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => onTabChange(tab.key)}
               className="flex flex-1 items-center justify-center gap-1.5 py-2.5 transition-colors"
               style={{
                 backgroundColor: isActive
@@ -49,13 +86,29 @@ export function StatTabs() {
       </div>
 
       {/* Stats content */}
-      <div className="mt-3">
+      <div className="mx-4 mt-3">
         {activeTab === 'restaurant' && restaurantStats && (
-          <RestaurantPanel stats={restaurantStats} genres={genres ?? []} />
+          <RestaurantPanel
+            stats={restaurantStats}
+            genres={restaurantGenres}
+            scoreDist={restaurantScoreDist}
+            monthlySpending={restaurantMonthlySpending}
+            mapMarkers={restaurantMapMarkers}
+            scenes={restaurantScenes}
+          />
         )}
 
         {activeTab === 'wine' && wineStats && (
-          <WinePanel stats={wineStats} varieties={varieties ?? []} />
+          <WinePanel
+            stats={wineStats}
+            varieties={wineVarieties}
+            scoreDist={wineScoreDist}
+            monthlySpending={wineMonthlySpending}
+            regionMap={wineRegionMap}
+            typeDistribution={wineTypeDistribution}
+            showAllVarieties={showAllVarieties}
+            onToggleVarieties={onToggleVarieties}
+          />
         )}
 
         {activeTab === 'restaurant' && !restaurantStats && <EmptyStats label="식당" />}
@@ -65,88 +118,136 @@ export function StatTabs() {
   )
 }
 
-function RestaurantPanel({ stats, genres }: { stats: RestaurantStats; genres: BarChartItem[] }) {
+function RestaurantPanel({
+  stats, genres, scoreDist, monthlySpending, mapMarkers, scenes,
+}: {
+  stats: RestaurantStats
+  genres: BarChartItem[]
+  scoreDist: ScoreDistribution[]
+  monthlySpending: MonthlySpending[]
+  mapMarkers: MapMarker[]
+  scenes: SceneVisit[]
+}) {
   return (
     <div className="flex flex-col gap-3">
-      <SummaryCards
-        items={[
-          { label: '총 방문', value: stats.totalVisits, accent: 'var(--accent-food)' },
-          { label: '평균 점수', value: stats.avgScore, accent: 'var(--accent-food)' },
-          { label: '방문 지역', value: stats.visitedAreas, accent: 'var(--accent-food)' },
+      <StatSummaryCards
+        cards={[
+          { label: '총 방문', value: stats.totalVisits, color: 'var(--accent-food)' },
+          { label: '평균 점수', value: stats.avgScore, color: 'var(--accent-food)' },
+          { label: '방문 지역', value: stats.visitedAreas, color: 'var(--accent-food)' },
         ]}
       />
-      {genres.length > 0 && <BarChartSection title="장르 분포" items={genres} accentColor="var(--accent-food)" />}
+
+      {/* 식당 지도 */}
+      <RestaurantMap markers={mapMarkers} />
+
+      {/* 장르 분포 */}
+      {genres.length > 0 && (
+        <HorizontalBarChart title="장르 분포" items={genres} colorBase="var(--accent-food)" />
+      )}
+
+      {/* 점수 분포 */}
+      {scoreDist.length > 0 && (
+        <VerticalBarChart
+          title="점수 분포"
+          items={scoreDist.map((d) => ({ label: d.range, value: d.count }))}
+          colorBase="var(--accent-food)"
+        />
+      )}
+
+      {/* 월별 소비 */}
+      {monthlySpending.length > 0 && (
+        <VerticalBarChart
+          title="월별 소비"
+          items={monthlySpending.map((m) => ({
+            label: m.label,
+            value: m.amount,
+            highlight: m.amount === Math.max(...monthlySpending.map((s) => s.amount)),
+          }))}
+          colorBase="var(--accent-food)"
+          valueLabel="만"
+        />
+      )}
+
+      {/* 상황별 방문 */}
+      {scenes.length > 0 && (
+        <HorizontalBarChart
+          title="상황별 방문"
+          items={scenes.map((s) => ({ label: s.label, value: s.count, color: s.color }))}
+          colorBase="var(--accent-food)"
+        />
+      )}
     </div>
   )
 }
 
-function WinePanel({ stats, varieties }: { stats: WineStats; varieties: BarChartItem[] }) {
+function WinePanel({
+  stats, varieties, scoreDist, monthlySpending, regionMap, typeDistribution,
+  showAllVarieties, onToggleVarieties,
+}: {
+  stats: WineStats
+  varieties: BarChartItem[]
+  scoreDist: ScoreDistribution[]
+  monthlySpending: MonthlySpending[]
+  regionMap: WineRegionMapData[]
+  typeDistribution: WineTypeDistribution[]
+  showAllVarieties: boolean
+  onToggleVarieties: (showAll: boolean) => void
+}) {
   return (
     <div className="flex flex-col gap-3">
-      <SummaryCards
-        items={[
-          { label: '총 시음', value: stats.totalTastings, accent: 'var(--accent-wine)' },
-          { label: '평균 점수', value: stats.avgScore, accent: 'var(--accent-wine)' },
-          { label: '셀러 보유', value: stats.cellarCount, accent: 'var(--accent-wine)' },
+      <StatSummaryCards
+        cards={[
+          { label: '총 시음', value: stats.totalTastings, color: 'var(--accent-wine)' },
+          { label: '평균 점수', value: stats.avgScore, color: 'var(--accent-wine)' },
+          { label: '셀러 보유', value: stats.cellarCount, color: 'var(--accent-wine)' },
         ]}
       />
-      {varieties.length > 0 && <BarChartSection title="품종 분포" items={varieties} accentColor="var(--accent-wine)" />}
-    </div>
-  )
-}
 
-function SummaryCards({ items }: { items: { label: string; value: number; accent: string }[] }) {
-  return (
-    <div
-      className="flex gap-3 rounded-2xl px-4 py-3"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-    >
-      {items.map((item, idx) => (
-        <div key={item.label} className="flex flex-1 flex-col items-center">
-          {idx > 0 && <div className="absolute left-0 h-full w-[1px]" style={{ backgroundColor: 'var(--border)' }} />}
-          <p style={{ fontSize: '20px', fontWeight: 800, color: item.accent }}>
-            {item.value > 0 ? item.value : '-'}
-          </p>
-          <p style={{ fontSize: '11px', color: 'var(--text-hint)' }}>{item.label}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
+      {/* 와인 산지 지도 */}
+      <WineRegionMapSimple data={regionMap} />
 
-function BarChartSection({ title, items, accentColor }: { title: string; items: BarChartItem[]; accentColor: string }) {
-  const maxVal = items[0]?.value ?? 1
-
-  return (
-    <div
-      className="rounded-2xl px-4 py-3"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-    >
-      <p className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{title}</p>
-      <div className="flex flex-col gap-2">
-        {items.map((item, idx) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span
-              className="w-4 shrink-0 text-center"
-              style={{ fontSize: '11px', fontWeight: 700, color: idx < 3 ? accentColor : 'var(--text-hint)' }}
-            >
-              {idx + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="truncate" style={{ fontSize: '13px', color: 'var(--text)' }}>{item.label}</span>
-                <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>{item.value}</span>
-              </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${(item.value / maxVal) * 100}%`, backgroundColor: accentColor, opacity: 1 - idx * 0.15 }}
-                />
-              </div>
-            </div>
+      {/* 품종 분포 */}
+      {varieties.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-end">
+            <VarietyToggle showAll={showAllVarieties} onChange={onToggleVarieties} />
           </div>
-        ))}
-      </div>
+          <HorizontalBarChart title="품종 분포" items={varieties} colorBase="var(--accent-wine)" />
+        </div>
+      )}
+
+      {/* 점수 분포 */}
+      {scoreDist.length > 0 && (
+        <VerticalBarChart
+          title="점수 분포"
+          items={scoreDist.map((d) => ({ label: d.range, value: d.count }))}
+          colorBase="var(--accent-wine)"
+        />
+      )}
+
+      {/* 월별 소비 */}
+      {monthlySpending.length > 0 && (
+        <VerticalBarChart
+          title="월별 소비"
+          items={monthlySpending.map((m) => ({
+            label: m.label,
+            value: m.count ?? m.amount,
+            highlight: (m.count ?? m.amount) === Math.max(...monthlySpending.map((s) => s.count ?? s.amount)),
+          }))}
+          colorBase="var(--accent-wine)"
+          valueLabel="병"
+        />
+      )}
+
+      {/* 타입별 분포 */}
+      {typeDistribution.length > 0 && (
+        <HorizontalBarChart
+          title="타입별 분포"
+          items={typeDistribution.map((t) => ({ label: t.label, value: t.count, color: t.color }))}
+          colorBase="var(--accent-wine)"
+        />
+      )}
     </div>
   )
 }

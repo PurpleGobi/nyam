@@ -1,18 +1,24 @@
 'use client'
 
+import type { LucideIcon } from 'lucide-react'
+
 interface GaugeSliderProps {
+  icon?: LucideIcon
   label: string
   options: string[]
   value: 0 | 1 | 2
   onChange: (value: 0 | 1 | 2) => void
 }
 
-export function GaugeSlider({ label, options, value, onChange }: GaugeSliderProps) {
+export function GaugeSlider({ icon: Icon, label, options, value, onChange }: GaugeSliderProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
-        {label}
-      </span>
+      <div className="flex items-center gap-1.5">
+        {Icon && <Icon size={14} style={{ color: 'var(--text-hint)' }} />}
+        <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
+          {label}
+        </span>
+      </div>
 
       <div
         className="flex rounded-lg p-0.5"
@@ -30,7 +36,7 @@ export function GaugeSlider({ label, options, value, onChange }: GaugeSliderProp
               style={{
                 fontSize: '13px',
                 fontWeight: isActive ? 600 : 400,
-                backgroundColor: isActive ? 'var(--accent-food)' : 'var(--bg-elevated)',
+                backgroundColor: isActive ? 'var(--accent-food)' : 'var(--bg-page)',
                 color: isActive ? '#fff' : 'var(--text-sub)',
                 transition: 'all 0.2s',
               }}

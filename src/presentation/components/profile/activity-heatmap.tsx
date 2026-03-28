@@ -1,22 +1,24 @@
 'use client'
 
-import type { HeatmapCell } from '@/domain/entities/profile'
+import { Flame } from 'lucide-react'
+import type { HeatmapCell, HeatmapStats } from '@/domain/entities/profile'
 
 interface ActivityHeatmapProps {
   data: HeatmapCell[]
+  stats?: HeatmapStats
 }
 
 const INTENSITY_COLORS: Record<HeatmapCell['intensity'], string> = {
   0: 'var(--bg-elevated)',
-  1: 'color-mix(in srgb, var(--accent-food) 25%, transparent)',
-  2: 'color-mix(in srgb, var(--accent-food) 50%, transparent)',
-  3: 'color-mix(in srgb, var(--accent-food) 75%, transparent)',
-  4: 'var(--accent-food)',
+  1: 'color-mix(in srgb, var(--accent-social) 25%, transparent)',
+  2: 'color-mix(in srgb, var(--accent-social) 50%, transparent)',
+  3: 'color-mix(in srgb, var(--accent-social) 75%, transparent)',
+  4: 'var(--accent-social)',
 }
 
 const DAY_LABELS = ['', '월', '', '수', '', '금', '']
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ data, stats }: ActivityHeatmapProps) {
   // 13 weeks x 7 days grid
   const weeks = 13
   const grid: (HeatmapCell | null)[][] = Array.from({ length: weeks }, () =>
@@ -44,6 +46,25 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
       <p className="mb-3" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
         활동 기록
       </p>
+
+      {/* 상단 통계 3개 */}
+      {stats && (
+        <div className="mb-3 flex gap-3">
+          <div className="flex items-center gap-1.5">
+            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{stats.totalRecords}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>총 기록</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Flame size={14} style={{ color: 'var(--caution)' }} />
+            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--caution)' }}>{stats.currentStreak}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>연속일</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{stats.activePeriodMonths}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>개월</span>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1">
         {/* Day labels */}

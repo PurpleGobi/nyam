@@ -43,9 +43,27 @@ interface CreateWineRecordInput {
   visitDate?: string
 }
 
+interface WineInitialData {
+  axisX: number
+  axisY: number
+  satisfaction: number
+  aromaRegions: Record<string, unknown> | null
+  aromaLabels: string[] | null
+  aromaColor: string | null
+  complexity: number | null
+  finish: number | null
+  balance: number | null
+  pairingCategories: string[] | null
+  comment: string | null
+  purchasePrice: number | null
+  visitDate: string | null
+}
+
 interface WineRecordFormProps {
   target: WineTarget
   referenceRecords?: QuadrantReferencePoint[]
+  initialData?: WineInitialData
+  saveLabel?: string
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
@@ -64,19 +82,39 @@ function countActiveRings(regions: AromaSelection['regions']): number {
 export function WineRecordForm({
   target,
   referenceRecords,
+  initialData,
+  saveLabel,
   onSave,
   isLoading,
   photoSlot,
 }: WineRecordFormProps) {
-  const [quadrant, setQuadrant] = useState({ x: 50, y: 50, satisfaction: 50 })
-  const [aroma, setAroma] = useState<AromaSelection>({ regions: {}, labels: [], color: null })
-  const [structure, setStructure] = useState<WineStructure>({ complexity: 30, finish: 50, balance: 50 })
+  const [quadrant, setQuadrant] = useState({
+    x: initialData?.axisX ?? 50,
+    y: initialData?.axisY ?? 50,
+    satisfaction: initialData?.satisfaction ?? 50,
+  })
+  const [aroma, setAroma] = useState<AromaSelection>({
+    regions: (initialData?.aromaRegions as AromaSelection['regions']) ?? {},
+    labels: initialData?.aromaLabels ?? [],
+    color: initialData?.aromaColor ?? null,
+  })
+  const [structure, setStructure] = useState<WineStructure>({
+    complexity: initialData?.complexity ?? 30,
+    finish: initialData?.finish ?? 50,
+    balance: initialData?.balance ?? 50,
+  })
   const [autoScore, setAutoScore] = useState<number | null>(null)
-  const [pairingCategories, setPairingCategories] = useState<PairingCategory[]>([])
+  const [pairingCategories, setPairingCategories] = useState<PairingCategory[]>(
+    (initialData?.pairingCategories as PairingCategory[]) ?? [],
+  )
   const [pairingCustom, setPairingCustom] = useState('')
-  const [comment, setComment] = useState('')
-  const [purchasePrice, setPurchasePrice] = useState('')
-  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0])
+  const [comment, setComment] = useState(initialData?.comment ?? '')
+  const [purchasePrice, setPurchasePrice] = useState(
+    initialData?.purchasePrice ? String(initialData.purchasePrice) : '',
+  )
+  const [visitDate, setVisitDate] = useState(
+    initialData?.visitDate ?? new Date().toISOString().split('T')[0],
+  )
   const isManualOverrideRef = useRef(false)
 
   const aromaRingCount = countActiveRings(aroma.regions)
@@ -297,6 +335,7 @@ export function WineRecordForm({
         onSave={handleSave}
         isLoading={isLoading}
         disabled={!isValid}
+        label={saveLabel}
       />
     </div>
   )

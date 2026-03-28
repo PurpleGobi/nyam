@@ -20,6 +20,7 @@ export interface XpRepository {
   getRecentXpHistories(userId: string, limit: number): Promise<XpHistory[]>
   getHistoriesByRecord(recordId: string): Promise<XpHistory[]>
   createXpHistory(history: Omit<XpHistory, 'id' | 'createdAt'>): Promise<XpHistory>
+  deleteByRecordId(recordId: string): Promise<void>
 
   // ── 레벨 테이블 ──
   getLevelThresholds(): Promise<LevelThreshold[]>

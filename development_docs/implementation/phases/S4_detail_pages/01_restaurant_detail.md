@@ -633,7 +633,7 @@ interface QuadrantDisplayProps {
 | 종류 | 크기 | 배경 | 보더 | 텍스트 | z-index |
 |------|------|------|------|--------|---------|
 | 현재 (current) | 38px | `var(--accent-food)` | 3px `var(--accent-food-light)` | `#fff`, 11px, weight 800 | 10 |
-| 참조 (ref) | 28px | `var(--border-bold)` | 2px `var(--border)` | `var(--text)`, 8px, weight 600 | 5 |
+| 참조 (ref) | 18~32px (만족도 기반 동적) | `var(--border-bold)` | 2px `var(--border)` | `var(--text)`, 8px, weight 600 | 5 |
 
 - 현재 dot: `box-shadow: 0 2px 10px rgba(193,123,94,0.4)`, 하단 라벨 10px bold `var(--text-sub)` weight 700
 - 참조 dot: opacity 0.35, hover 시 0.7 + scale 1.15, 하단 라벨 9px `var(--text-hint)`

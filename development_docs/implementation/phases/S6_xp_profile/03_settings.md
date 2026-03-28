@@ -270,7 +270,7 @@ export function useSettings() {
 
 ```
 SettingsContainer
-├── InnerPageHeader (← 설정 | bubbles bell avatar)
+├── nav (← 뒤로 | 설정 | 우측 여백)
 ├── ScrollArea
 │   ├── SettingsSection [계정]
 │   │   └── SettingsCard

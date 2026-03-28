@@ -2,6 +2,7 @@
 
 import { Info } from 'lucide-react'
 import type { QuadrantRefDot } from '@/domain/repositories/restaurant-repository'
+import { getRefDotSize } from '@/domain/entities/quadrant'
 
 interface QuadrantDisplayProps {
   currentName: string
@@ -97,40 +98,44 @@ export function QuadrantDisplay({
               style={{ left: '50%', width: '1px', borderLeft: `1px solid ${theme.crosshairColor}` }}
             />
 
-            {/* 참조 dot */}
-            {refDots.slice(0, 12).map((dot) => (
-              <div
-                key={dot.targetId}
-                className="group absolute flex flex-col items-center"
-                style={{
-                  left: `${dot.avgAxisX}%`,
-                  bottom: `${dot.avgAxisY}%`,
-                  transform: 'translate(-50%, 50%)',
-                  zIndex: 5,
-                }}
-              >
+            {/* 참조 dot — RATING_ENGINE §6: opacity 0.3, pointer-events none, 만족도 기반 크기 */}
+            {refDots.slice(0, 12).map((dot) => {
+              const dotSize = getRefDotSize(dot.avgSatisfaction)
+              return (
                 <div
-                  className="flex items-center justify-center rounded-full transition-all group-hover:scale-[1.15] group-hover:opacity-70"
+                  key={dot.targetId}
+                  className="absolute flex flex-col items-center"
                   style={{
-                    width: '28px',
-                    height: '28px',
-                    backgroundColor: 'var(--border-bold)',
-                    border: '2px solid var(--border)',
-                    opacity: 0.35,
+                    left: `${dot.avgAxisX}%`,
+                    bottom: `${dot.avgAxisY}%`,
+                    transform: 'translate(-50%, 50%)',
+                    zIndex: 5,
+                    pointerEvents: 'none',
+                    opacity: 0.3,
                   }}
                 >
-                  <span style={{ fontSize: '8px', fontWeight: 600, color: 'var(--text)' }}>
-                    {dot.avgSatisfaction}
+                  <div
+                    className="flex items-center justify-center rounded-full"
+                    style={{
+                      width: `${dotSize}px`,
+                      height: `${dotSize}px`,
+                      backgroundColor: 'var(--border-bold)',
+                      border: '2px solid var(--border)',
+                    }}
+                  >
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#FFFFFF' }}>
+                      {dot.avgSatisfaction}
+                    </span>
+                  </div>
+                  <span
+                    className="mt-0.5 whitespace-nowrap"
+                    style={{ fontSize: '9px', color: 'var(--text-hint)', maxWidth: '48px', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {dot.targetName}
                   </span>
                 </div>
-                <span
-                  className="mt-0.5 whitespace-nowrap"
-                  style={{ fontSize: '9px', color: 'var(--text-hint)' }}
-                >
-                  {dot.targetName}
-                </span>
-              </div>
-            ))}
+              )
+            })}
 
             {/* 현재 dot */}
             {currentDot && (

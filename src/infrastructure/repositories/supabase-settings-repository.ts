@@ -175,6 +175,32 @@ export class SupabaseSettingsRepository implements SettingsRepository {
     return new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv' })
   }
 
+  async importData(userId: string, file: File): Promise<void> {
+    const text = await file.text()
+    const isJson = file.name.endsWith('.json')
+
+    let rows: Record<string, unknown>[]
+    if (isJson) {
+      rows = JSON.parse(text)
+    } else {
+      rows = parseCsv(text)
+    }
+
+    if (rows.length === 0) return
+
+    for (const row of rows) {
+      row.user_id = userId
+      delete row.id
+      delete row.created_at
+      delete row.updated_at
+    }
+
+    const { error } = await this.supabase
+      .from('records')
+      .insert(rows)
+    if (error) throw error
+  }
+
   async getCacheSize(): Promise<number> {
     if (typeof window === 'undefined') return 0
     const caches = await window.caches?.keys()
@@ -196,6 +222,24 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       await window.caches.delete(name)
     }
   }
+}
+
+function parseCsv(text: string): Record<string, unknown>[] {
+  const lines = text.split('\n').filter((l) => l.trim())
+  if (lines.length < 2) return []
+  const headers = lines[0].split(',').map((h) => h.trim())
+  return lines.slice(1).map((line) => {
+    const values = line.split(',').map((v) => {
+      const trimmed = v.trim()
+      if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+        return trimmed.slice(1, -1)
+      }
+      return trimmed
+    })
+    const obj: Record<string, unknown> = {}
+    headers.forEach((h, i) => { obj[h] = values[i] ?? '' })
+    return obj
+  })
 }
 
 function convertToCsv(rows: Record<string, unknown>[]): string {

@@ -14,7 +14,7 @@ export function DetailFab({ onBack, onAdd }: DetailFabProps) {
       <button
         type="button"
         onClick={onBack}
-        className="absolute flex items-center justify-center rounded-full transition-transform active:scale-90"
+        className="fixed flex items-center justify-center rounded-full transition-transform active:scale-90"
         style={{
           bottom: '28px',
           left: '16px',
@@ -34,7 +34,7 @@ export function DetailFab({ onBack, onAdd }: DetailFabProps) {
       <button
         type="button"
         onClick={onAdd}
-        className="absolute flex items-center justify-center rounded-full transition-transform active:scale-90"
+        className="fixed flex items-center justify-center rounded-full transition-transform active:scale-90"
         style={{
           bottom: '28px',
           right: '16px',

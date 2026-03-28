@@ -99,7 +99,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
 ### 사분면 관련
 - **와인 사분면은 식당과 다름**: 개별 기록이 아닌 **다른 리뷰 와인과의 상대 위치** 표시
 - 현재 와인 = hero dot (38px, `var(--accent-wine)`, 불투명, border 3px `#DDD6E3`)
-- 참고 와인 = ref dot (28px, `var(--border-bold)`, 불투명도 35%, hover 시 70%)
+- 참고 와인 = ref dot (18~32px 만족도 기반 동적, `var(--border-bold)`, 불투명도 35%, hover 시 70%)
 - 각 dot 아래 와인명 라벨 표시
 
 ---
@@ -208,7 +208,7 @@ badge-ws: bg: #F5F0E8; color: #8B7355; border: #E0D8C8
   - 축 라벨: 9px, `var(--accent-wine)` 색상
 - **점 (dot)**:
   - **현재 와인 (hero dot)**: 38×38px, `var(--accent-wine)` 배경, border 3px `#DDD6E3`, box-shadow `0 2px 10px rgba(139,115,150,0.4)`, 점수 표시 (11px, weight 800, 흰색), z-index 10
-  - **참고 와인 (ref dot)**: 28×28px, `var(--border-bold)` 배경, border 2px `var(--border)`, 불투명도 35%, 점수 표시 (8px, weight 600, `var(--text)`), hover 시 70% + scale 1.15, z-index 5
+  - **참고 와인 (ref dot)**: 18~32px 만족도 기반 동적, `var(--border-bold)` 배경, border 2px `var(--border)`, 불투명도 35%, 점수 표시 (8px, weight 600, `var(--text)`), hover 시 70% + scale 1.15, z-index 5
   - 각 dot 아래 와인명 라벨 (9px, `var(--text-hint)`)
   - 현재 와인 라벨: 10px bold, `var(--accent-wine)` 색상
 - **캡션**: info 아이콘 + "내가 리뷰한 와인과의 상대적 위치"

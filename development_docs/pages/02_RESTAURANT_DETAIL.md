@@ -327,7 +327,7 @@ text-align: center
 | 종류 | 크기 | 스타일 | z-index |
 |------|------|--------|---------|
 | **현재 식당** (current) | 38px | `--accent-food` 배경, 3px `--accent-food-light` 보더, `#fff` 텍스트, weight 800, 11px | 10 |
-| **참조 식당** (ref) | 28px | `--border-bold` 배경, 2px `--border` 보더, `--text` 텍스트, opacity 0.35, weight 600, 8px | 5 |
+| **참조 식당** (ref) | 18~32px (만족도 기반 동적) | `--border-bold` 배경, 2px `--border` 보더, `--text` 텍스트, opacity 0.35, weight 600, 8px | 5 |
 
 - 현재 식당 dot: `box-shadow: 0 2px 10px rgba(193,123,94,0.4)`
 - 참조 dot hover: opacity 0.7, scale 1.15

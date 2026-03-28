@@ -29,6 +29,9 @@ const FROM_LABELS: Record<string, string> = {
   bubble: '버블',
   search: '검색',
   recommend: '추천',
+  record: '기록',
+  camera: '카메라',
+  detail: '상세',
 }
 
 function Divider() {

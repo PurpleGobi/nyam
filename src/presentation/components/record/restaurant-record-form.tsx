@@ -35,9 +35,23 @@ interface CreateRestaurantRecordInput {
   photoUrls?: string[]
 }
 
+interface RestaurantInitialData {
+  axisX: number
+  axisY: number
+  satisfaction: number
+  scene: string | null
+  comment: string | null
+  companions: string[] | null
+  menuTags: string[] | null
+  totalPrice: number | null
+  visitDate: string | null
+}
+
 interface RestaurantRecordFormProps {
   target: RestaurantTarget
   referenceRecords?: QuadrantReferencePoint[]
+  initialData?: RestaurantInitialData
+  saveLabel?: string
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
@@ -46,18 +60,28 @@ interface RestaurantRecordFormProps {
 export function RestaurantRecordForm({
   target,
   referenceRecords,
+  initialData,
+  saveLabel,
   onSave,
   isLoading,
   photoSlot,
 }: RestaurantRecordFormProps) {
-  const [quadrant, setQuadrant] = useState({ x: 50, y: 50, satisfaction: 50 })
-  const [scene, setScene] = useState<RestaurantScene | null>(null)
-  const [comment, setComment] = useState('')
-  const [companions, setCompanions] = useState<string[]>([])
-  const [menuTags, setMenuTags] = useState<string[]>([])
+  const [quadrant, setQuadrant] = useState({
+    x: initialData?.axisX ?? 50,
+    y: initialData?.axisY ?? 50,
+    satisfaction: initialData?.satisfaction ?? 50,
+  })
+  const [scene, setScene] = useState<RestaurantScene | null>(
+    (initialData?.scene as RestaurantScene) ?? null,
+  )
+  const [comment, setComment] = useState(initialData?.comment ?? '')
+  const [companions, setCompanions] = useState<string[]>(initialData?.companions ?? [])
+  const [menuTags, setMenuTags] = useState<string[]>(initialData?.menuTags ?? [])
   const [menuTagInput, setMenuTagInput] = useState('')
-  const [totalPrice, setTotalPrice] = useState('')
-  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0])
+  const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice ? String(initialData.totalPrice) : '')
+  const [visitDate, setVisitDate] = useState(
+    initialData?.visitDate ?? new Date().toISOString().split('T')[0],
+  )
   const menuTagInputRef = useRef<HTMLInputElement>(null)
 
   const isValid = quadrant.satisfaction >= 1 && scene !== null
@@ -310,6 +334,7 @@ export function RestaurantRecordForm({
         onSave={handleSave}
         isLoading={isLoading}
         disabled={!isValid}
+        label={saveLabel}
       />
     </div>
   )

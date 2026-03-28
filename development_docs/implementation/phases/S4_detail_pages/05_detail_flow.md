@@ -49,9 +49,11 @@
 // presentation/containers/restaurant-detail-container.tsx (또는 wine)
 
 function handleAddRecord() {
-  // 대상 정보를 쿼리 파라미터 또는 상태로 전달
-  router.push(`/record?target_id=${restaurant.id}&target_type=restaurant&from=detail`)
-  // 기록 플로우는 target_id/target_type 파라미터를 감지하면
+  const meta = [restaurant?.genre, restaurant?.area].filter(Boolean).join(' · ')
+  router.push(
+    `/record?type=restaurant&targetId=${restaurant.id}&name=${encodeURIComponent(restaurant.name)}&meta=${encodeURIComponent(meta)}&from=detail`
+  )
+  // 기록 플로우는 targetId 파라미터를 감지하면
   // 검색/선택 단계를 스킵하고 바로 사분면 평가로 진입
 }
 ```
@@ -59,15 +61,20 @@ function handleAddRecord() {
 **기록 플로우 진입 파라미터:**
 
 ```typescript
-interface RecordFlowEntryParams {
-  /** 대상 ID (식당 또는 와인) — 있으면 검색 단계 스킵 */
-  targetId: string
+// URL 쿼리 파라미터로 전달 (searchParams)
+interface RecordFlowQueryParams {
   /** 'restaurant' | 'wine' */
-  targetType: 'restaurant' | 'wine'
+  type: 'restaurant' | 'wine'
+  /** 대상 ID — 있으면 검색 단계 스킵 */
+  targetId: string
+  /** 대상 이름 (UI 표시용) */
+  name: string
+  /** 대상 메타 정보 (장르·지역 등, UI 표시용) */
+  meta: string
   /** 진입 경로 (기록 완료 후 돌아갈 페이지) */
-  from: 'detail' | 'search' | 'home' | 'camera'
+  from: 'detail' | 'search' | 'home' | 'camera' | 'record_detail'
   /** 수정 모드일 때 기존 기록 ID */
-  editRecordId?: string
+  edit?: string
 }
 ```
 
@@ -207,7 +214,7 @@ function handleTargetTap() {
 
 function handleEdit() {
   router.push(
-    `/record?target_id=${record.targetId}&target_type=${record.targetType}&edit=${record.id}&from=record_detail`
+    `/record?type=${record.targetType}&targetId=${record.targetId}&edit=${record.id}&from=record_detail`
   )
 }
 ```
@@ -224,11 +231,11 @@ function handleEdit() {
 
 | 출발 | 도착 | 트리거 | 파라미터 |
 |------|------|--------|---------|
-| 식당 상세 | 기록 플로우 | FAB(+) 탭 | `target_id`, `target_type=restaurant`, `from=detail` |
-| 와인 상세 | 기록 플로우 | FAB(+) 탭 | `target_id`, `target_type=wine`, `from=detail` |
+| 식당 상세 | 기록 플로우 | FAB(+) 탭 | `type=restaurant`, `targetId`, `name`, `meta`, `from=detail` |
+| 와인 상세 | 기록 플로우 | FAB(+) 탭 | `type=wine`, `targetId`, `name`, `meta`, `from=detail` |
 | 식당/와인 상세 | 기록 상세 | 타임라인 아이템 탭 | --- |
 | 기록 상세 | 식당/와인 상세 | 대상명 탭 / 사분면 탭 | `from=record` |
-| 기록 상세 | 기록 플로우 (수정) | 수정하기 버튼 | `edit=recordId`, `from=record_detail` |
+| 기록 상세 | 기록 플로우 (수정) | 수정하기 버튼 | `type`, `targetId`, `edit=recordId`, `from=record_detail` |
 | 기록 상세 | 와인 상세 | 연결 와인 탭 | `from=record` |
 | 기록 상세 | 식당 상세 | 연결 식당 탭 | `from=record` |
 | 기록 플로우 | 식당/와인 상세 | 저장 완료 (from=detail) | `router.replace` |
@@ -242,22 +249,24 @@ function handleEdit() {
 URL 쿼리 파라미터로 전달. 전역 상태 관리 불필요.
 
 ```
-/record?target_id=uuid&target_type=restaurant&from=detail
-/record?target_id=uuid&target_type=wine&edit=uuid&from=record_detail
+/record?type=restaurant&targetId=uuid&name=식당명&meta=장르·지역&from=detail
+/record?type=wine&targetId=uuid&name=와인명&meta=타입·산지&edit=uuid&from=record_detail
 ```
 
 **기록 플로우 진입 판별 로직:**
 
 ```typescript
-// app/(main)/record/page.tsx 또는 containers/record-flow-container.tsx
+// containers/record-flow-container.tsx
 
 const searchParams = useSearchParams()
-const targetId = searchParams.get('target_id')
-const targetType = searchParams.get('target_type') as 'restaurant' | 'wine' | null
+const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
+const targetId = searchParams.get('targetId') ?? ''
+const targetName = searchParams.get('name') ?? ''
+const targetMeta = searchParams.get('meta') ?? ''
 const editRecordId = searchParams.get('edit')
 const from = searchParams.get('from')
 
-if (targetId && targetType) {
+if (targetId) {
   // 대상 이미 선택됨 → 검색 단계 스킵 → 사분면 평가 직행
   if (editRecordId) {
     // 수정 모드: 기존 기록 pre-fill

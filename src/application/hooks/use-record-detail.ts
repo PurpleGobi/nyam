@@ -11,6 +11,8 @@ import type { RestaurantRepository } from '@/domain/repositories/restaurant-repo
 import type { WineRepository } from '@/domain/repositories/wine-repository'
 import type { XpRepository } from '@/domain/repositories/xp-repository'
 import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
+import type { AxisType } from '@/domain/entities/xp'
+import { getLevelColor } from '@/domain/services/xp-calculator'
 
 /** XP 이력 항목 */
 export interface XpEarnedItem {
@@ -147,24 +149,30 @@ export function useRecordDetail(
           )
         }
 
-        // 2d. XP 이력
+        // 2d. XP 이력 + user_experiences에서 실제 레벨 조회
         promises.push(
           (async () => {
             try {
-              const histories = await deps.xpRepo.getHistoriesByRecord(recordId)
+              const [histories, experiences] = await Promise.all([
+                deps.xpRepo.getHistoriesByRecord(recordId),
+                userId ? deps.xpRepo.getUserExperiences(userId) : Promise.resolve([]),
+              ])
               if (cancelled) return
-              // XP 이력을 XpEarnedItem으로 변환
-              // 현재 레벨은 user_experiences에서 조회 필요하나,
-              // S6(XP 엔진) 단계에서 완성 예정. 지금은 이력 데이터만 표시.
+              const levelMap = new Map(
+                experiences.map((e) => [`${e.axisType}:${e.axisValue}`, e.level]),
+              )
               const items: XpEarnedItem[] = histories
                 .filter((h) => h.axisValue && h.xpAmount)
-                .map((h) => ({
-                  axisType: h.axisType ?? '',
-                  axisValue: h.axisValue ?? '',
-                  xpAmount: h.xpAmount ?? 0,
-                  currentLevel: 1, // TODO: S6에서 user_experiences JOIN으로 실제 레벨 조회
-                  levelColor: '#7EAE8B', // TODO: S6에서 level_thresholds.color 조회
-                }))
+                .map((h) => {
+                  const level = levelMap.get(`${h.axisType}:${h.axisValue}`) ?? 1
+                  return {
+                    axisType: h.axisType ?? '',
+                    axisValue: h.axisValue ?? '',
+                    xpAmount: h.xpAmount ?? 0,
+                    currentLevel: level,
+                    levelColor: getLevelColor(level),
+                  }
+                })
               setXpEarned(items)
             } catch {
               // XP 이력 조회 실패는 치명적이지 않으므로 무시
@@ -200,7 +208,41 @@ export function useRecordDetail(
         await deps.wishlistRepo.updateVisitStatus(userId, record.targetId, record.targetType, false)
       }
 
-      // TODO: S6 XP 엔진 완성 시 — xp_histories DELETE + user_experiences 재계산 + users.total_xp 갱신
+      // 3. XP 차감: xp_histories 조회 → user_experiences 차감 → total_xp 차감 → histories 삭제
+      const histories = await deps.xpRepo.getHistoriesByRecord(recordId)
+      if (histories.length > 0) {
+        // axis별 XP 합산
+        const axisXpMap = new Map<string, { axisType: string; axisValue: string; total: number }>()
+        let totalXpToDeduct = 0
+        for (const h of histories) {
+          if (h.axisType && h.axisValue) {
+            const key = `${h.axisType}:${h.axisValue}`
+            const entry = axisXpMap.get(key) ?? { axisType: h.axisType, axisValue: h.axisValue, total: 0 }
+            entry.total += h.xpAmount
+            axisXpMap.set(key, entry)
+          }
+          totalXpToDeduct += h.xpAmount
+        }
+        // user_experiences에서 각 축별 XP 차감
+        for (const { axisType, axisValue, total } of axisXpMap.values()) {
+          const exp = await deps.xpRepo.getUserExperience(userId, axisType as AxisType, axisValue)
+          const newXp = Math.max(0, (exp?.totalXp ?? 0) - total)
+          const thresholds = await deps.xpRepo.getLevelThresholds()
+          let newLevel = 1
+          for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (newXp >= thresholds[i].requiredXp) {
+              newLevel = thresholds[i].level
+              break
+            }
+          }
+          await deps.xpRepo.upsertUserExperience(userId, axisType as AxisType, axisValue, -total, newLevel)
+        }
+        // users.total_xp 차감
+        await deps.xpRepo.updateUserTotalXp(userId, -totalXpToDeduct)
+        // xp_histories 삭제
+        await deps.xpRepo.deleteByRecordId(recordId)
+      }
+
       return true
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : '삭제 실패')
