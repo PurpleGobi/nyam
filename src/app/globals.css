@@ -1638,6 +1638,24 @@
   color: var(--text-sub);
 }
 
+[data-theme="dark"] .btn-card-action.active-food {
+  background: var(--accent-food);
+  border-color: var(--accent-food);
+  color: #fff;
+}
+
+[data-theme="dark"] .btn-card-action.active-wine {
+  background: var(--accent-wine);
+  border-color: var(--accent-wine);
+  color: #fff;
+}
+
+[data-theme="dark"] .btn-card-action.active-wish {
+  background: var(--caution);
+  border-color: var(--caution);
+  color: #fff;
+}
+
 [data-theme="dark"] .btn-ghost {
   background: var(--bg-card);
   border-color: var(--border-bold);
