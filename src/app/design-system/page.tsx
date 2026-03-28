@@ -645,26 +645,111 @@ export default function DesignSystemPage() {
       {/* ── 16. Navigation Components ── */}
       <Section title="16. Global Navigation Components">
         <Sub title="App Header (모든 페이지 공통)" />
-        <div className="top-fixed app-header" style={{ position: 'relative', borderRadius: 'var(--r-md)' }}>
-          <h1 className="header-brand">nyam</h1>
-          <div className="header-right">
-            <button type="button" className="header-bubbles">bubbles</button>
-            <div className="icon-btn"><Bell size={20} /><div className="notif-badge" /></div>
-            <div className="header-avatar"><span>J</span></div>
+        <Note>상단 고정. glassmorphism 항상 적용. 아래 데모를 스크롤하여 확인.</Note>
+
+        {/* 디바이스 프레임 — Main Header */}
+        <div style={{
+          width: '375px', height: '320px', borderRadius: '20px', overflow: 'hidden',
+          border: '1px solid var(--border)', background: 'var(--bg)', position: 'relative', marginTop: '12px',
+        }}>
+          {/* Status bar */}
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 91,
+            padding: '8px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontSize: '14px', fontWeight: 600, color: 'var(--text)',
+            background: 'rgba(248,246,243,0.55)', backdropFilter: 'blur(20px) saturate(1.5)',
+          }}>
+            <span>9:41</span>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <svg width="16" height="12" viewBox="0 0 16 12"><path d="M1 8h2v4H1zM5 5h2v7H5zM9 2h2v10H9zM13 0h2v12h-2z" fill="var(--text)" opacity="0.5" /></svg>
+              <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="var(--text)" strokeWidth="1" fill="none" opacity="0.4" /><rect x="1.5" y="1.5" width="14" height="9" rx="1" fill="var(--text)" opacity="0.4" /><rect x="21" y="3.5" width="2" height="5" rx="1" fill="var(--text)" opacity="0.3" /></svg>
+            </div>
+          </div>
+          {/* App header */}
+          <div className="top-fixed app-header" style={{ position: 'sticky', borderRadius: 0 }}>
+            <h1 className="header-brand">nyam</h1>
+            <div className="header-right">
+              <button type="button" className="header-bubbles">bubbles</button>
+              <div className="icon-btn"><Bell size={20} /><div className="notif-badge" /></div>
+              <div className="header-avatar"><span>J</span></div>
+            </div>
+          </div>
+          {/* 스크롤 콘텐츠 */}
+          <div style={{ height: '240px', overflowY: 'auto', padding: '8px 16px' }}>
+            <div style={{ padding: '14px', borderRadius: 'var(--r-md)', background: 'var(--accent-food-light)', marginBottom: '8px', fontSize: '13px', color: 'var(--text-sub)' }}>AI 인사말 영역</div>
+            {['식당 카드 1', '식당 카드 2', '식당 카드 3', '식당 카드 4', '식당 카드 5', '와인 카드 1', '와인 카드 2'].map((label) => (
+              <div key={label} style={{ padding: '14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--bg-card)', marginBottom: '8px', fontSize: '13px', color: 'var(--text-sub)' }}>{label}</div>
+            ))}
           </div>
         </div>
 
-        <Sub title="Inner Page Header" />
-        <div className="top-fixed app-header" style={{ position: 'relative', borderRadius: 'var(--r-md)', marginTop: '12px' }}>
-          <button type="button" className="inner-back-btn">
-            <ChevronLeft />
-            <span>버블</span>
-          </button>
-          <div className="header-right">
-            <button type="button" className="header-bubbles">bubbles</button>
-            <div className="icon-btn"><Bell size={20} /></div>
-            <div className="header-avatar"><span>J</span></div>
+        <Sub title="내부 페이지 헤더 (Sub-page Header)" />
+        <Note>로고 자리에 쉐브론 + 이전 페이지명을 표시. 우측은 기본 헤더와 동일.</Note>
+
+        {/* 디바이스 프레임 — Inner Header */}
+        <div style={{
+          width: '375px', height: '320px', borderRadius: '20px', overflow: 'hidden',
+          border: '1px solid var(--border)', background: 'var(--bg)', position: 'relative', marginTop: '12px',
+        }}>
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 91,
+            padding: '8px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontSize: '14px', fontWeight: 600, color: 'var(--text)',
+            background: 'rgba(248,246,243,0.55)', backdropFilter: 'blur(20px) saturate(1.5)',
+          }}>
+            <span>9:41</span>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <svg width="16" height="12" viewBox="0 0 16 12"><path d="M1 8h2v4H1zM5 5h2v7H5zM9 2h2v10H9zM13 0h2v12h-2z" fill="var(--text)" opacity="0.5" /></svg>
+              <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="var(--text)" strokeWidth="1" fill="none" opacity="0.4" /><rect x="1.5" y="1.5" width="14" height="9" rx="1" fill="var(--text)" opacity="0.4" /><rect x="21" y="3.5" width="2" height="5" rx="1" fill="var(--text)" opacity="0.3" /></svg>
+            </div>
           </div>
+          <div className="top-fixed app-header" style={{ position: 'sticky', borderRadius: 0 }}>
+            <button type="button" className="inner-back-btn">
+              <ChevronLeft />
+              <span>버블</span>
+            </button>
+            <div className="header-right">
+              <button type="button" className="header-bubbles">bubbles</button>
+              <div className="icon-btn"><Bell size={20} /></div>
+              <div className="header-avatar"><span>J</span></div>
+            </div>
+          </div>
+          <div style={{ height: '240px', overflowY: 'auto', padding: '8px 16px' }}>
+            {['버블 상세 콘텐츠', '피드 카드 1', '피드 카드 2', '피드 카드 3', '피드 카드 4'].map((label) => (
+              <div key={label} style={{ padding: '14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--bg-card)', marginBottom: '8px', fontSize: '13px', color: 'var(--text-sub)' }}>{label}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* 깊이별 예시 */}
+        <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-hint)', margin: '24px 0 8px' }}>깊이별 예시</h4>
+        <p style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '12px' }}>내부 페이지 헤더는 항상 직전 페이지명만 표시 (최상위 페이지명 아님)</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { back: '프로필', desc: '프로필 → 공유' },
+            { back: '버블', desc: '버블 → 상세' },
+            { back: '직장 맛집', desc: '상세 → 설정 (depth 2)' },
+            { back: '홈', desc: '홈 → 식당 상세' },
+            { back: '프로필', desc: '프로필 → 설정' },
+          ].map(({ back, desc }) => (
+            <div key={desc} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="top-fixed app-header" style={{
+                position: 'relative', borderRadius: 'var(--r-sm)', flex: 1,
+                padding: '6px 12px 6px',
+              }}>
+                <button type="button" className="inner-back-btn">
+                  <ChevronLeft />
+                  <span>{back}</span>
+                </button>
+                <div className="header-right">
+                  <button type="button" className="header-bubbles">bubbles</button>
+                  <div className="icon-btn" style={{ width: '24px', height: '24px' }}><Bell size={16} /></div>
+                  <div className="header-avatar" style={{ width: '24px', height: '24px', fontSize: '10px' }}><span>J</span></div>
+                </div>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-hint)', whiteSpace: 'nowrap', minWidth: '120px' }}>{desc}</span>
+            </div>
+          ))}
         </div>
 
         <Sub title="Floating Back Button" />
