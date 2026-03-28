@@ -1174,7 +1174,7 @@ html, body, * {
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  padding: 10px 6px 8px;
+  padding: 10px 6px 0;
   cursor: pointer;
   transition: all 0.15s;
 }
