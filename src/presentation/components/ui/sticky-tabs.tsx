@@ -30,7 +30,7 @@ export function StickyTabs<T extends string>({
 }: StickyTabsProps<T>) {
   return (
     <div
-      className="content-tabs flex items-center px-4 pt-3 pb-1"
+      className="content-tabs flex items-center px-4 pb-1"
       style={{
         position: 'sticky',
         top: '46px', /* .top-fixed 헤더 높이 (padding 5+5 + content ~36) */
