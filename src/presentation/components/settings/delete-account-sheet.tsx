@@ -31,19 +31,15 @@ export function DeleteAccountSheet({ isOpen, onClose, onConfirm }: DeleteAccount
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[190]"
-        style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+        className="bottom-sheet-overlay"
         onClick={onClose}
       />
 
       {/* Sheet */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-[200] flex flex-col rounded-t-2xl"
-        style={{ maxHeight: '75%', backgroundColor: 'var(--bg-elevated)', animation: 'slide-up 0.25s ease' }}
-      >
+      <div className="bottom-sheet flex flex-col">
         {/* Handle */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="h-1 w-10 rounded-full" style={{ backgroundColor: 'var(--border-bold)' }} />
+        <div className="flex justify-center">
+          <div className="bottom-sheet-handle" />
         </div>
 
         {/* Header */}

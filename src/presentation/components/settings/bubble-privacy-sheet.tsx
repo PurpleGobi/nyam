@@ -47,23 +47,18 @@ export function BubblePrivacySheet({ isOpen, onClose, bubble, defaultConfig, onS
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[190]"
-        style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+        className="bottom-sheet-overlay"
         onClick={onClose}
       />
 
       {/* Sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-[200] flex flex-col rounded-t-2xl"
-        style={{
-          maxHeight: '70dvh',
-          backgroundColor: 'var(--bg-elevated)',
-          animation: 'slide-up 0.25s ease',
-        }}
+        className="bottom-sheet flex flex-col"
+        style={{ maxHeight: '70dvh' }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="h-1 w-10 rounded-full" style={{ backgroundColor: 'var(--border-bold)' }} />
+        <div className="flex justify-center">
+          <div className="bottom-sheet-handle" />
         </div>
 
         {/* Header */}
@@ -87,10 +82,7 @@ export function BubblePrivacySheet({ isOpen, onClose, bubble, defaultConfig, onS
             이 버블에서 보이는 항목을 개별로 설정합니다
           </p>
 
-          <div
-            className="overflow-hidden rounded-xl"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-          >
+          <div className="card overflow-hidden rounded-xl">
             {VISIBILITY_FIELDS.map((field) => (
               <div
                 key={field.key}
@@ -112,13 +104,7 @@ export function BubblePrivacySheet({ isOpen, onClose, bubble, defaultConfig, onS
           <button
             type="button"
             onClick={() => { onSave(config); onClose() }}
-            className="w-full rounded-xl py-3 text-center"
-            style={{
-              fontSize: '15px',
-              fontWeight: 700,
-              backgroundColor: 'var(--accent-food)',
-              color: '#FFFFFF',
-            }}
+            className="btn-primary w-full rounded-xl py-3 text-center"
           >
             저장
           </button>

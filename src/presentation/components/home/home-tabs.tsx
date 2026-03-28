@@ -34,7 +34,7 @@ export function HomeTabs({
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
   const ViewIcon = VIEW_ICONS[viewMode]
-  const accentColor = foodActive ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const tabType = foodActive ? 'food' : 'wine'
 
   return (
     <div className="flex items-center px-4 pt-2">
@@ -43,30 +43,16 @@ export function HomeTabs({
         <button
           type="button"
           onClick={() => onTabChange('restaurant')}
-          className="relative px-3 pb-2 pt-1 text-[14px] font-semibold"
-          style={{ color: foodActive ? accentColor : 'var(--text-hint)' }}
+          className={`filter-tab ${foodActive ? 'active food' : ''}`}
         >
           식당
-          {foodActive && (
-            <span
-              className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full"
-              style={{ backgroundColor: accentColor }}
-            />
-          )}
         </button>
         <button
           type="button"
           onClick={() => onTabChange('wine')}
-          className="relative px-3 pb-2 pt-1 text-[14px] font-semibold"
-          style={{ color: !foodActive ? accentColor : 'var(--text-hint)' }}
+          className={`filter-tab ${!foodActive ? 'active wine' : ''}`}
         >
           와인
-          {!foodActive && (
-            <span
-              className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full"
-              style={{ backgroundColor: accentColor }}
-            />
-          )}
         </button>
       </div>
 
@@ -77,8 +63,7 @@ export function HomeTabs({
         <button
           type="button"
           onClick={onViewCycle}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: 'var(--text-sub)' }}
+          className="view-cycle-btn"
           title="보기 전환"
         >
           <ViewIcon size={18} />
@@ -87,8 +72,7 @@ export function HomeTabs({
           <button
             type="button"
             onClick={onMapToggle}
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
-            style={{ color: isMapOpen ? accentColor : 'var(--text-sub)' }}
+            className={`icon-button ${isMapOpen ? `active ${tabType}` : ''}`}
             title="지도"
           >
             <Map size={18} />
@@ -97,8 +81,7 @@ export function HomeTabs({
         <button
           type="button"
           onClick={onFilterToggle}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: isFilterOpen ? accentColor : 'var(--text-sub)' }}
+          className={`icon-button ${isFilterOpen ? `active ${tabType}` : ''}`}
           title="필터"
         >
           <SlidersHorizontal size={18} />
@@ -106,8 +89,7 @@ export function HomeTabs({
         <button
           type="button"
           onClick={onSortToggle}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: isSortOpen ? accentColor : 'var(--text-sub)' }}
+          className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`}
           title="정렬"
         >
           <ArrowUpDown size={18} />
@@ -115,8 +97,7 @@ export function HomeTabs({
         <button
           type="button"
           onClick={onSearchToggle}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: isSearchOpen ? accentColor : 'var(--text-sub)' }}
+          className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`}
           title="검색"
         >
           <Search size={18} />

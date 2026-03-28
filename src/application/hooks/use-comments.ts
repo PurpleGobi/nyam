@@ -54,6 +54,8 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
         body: trimmed.length > 50 ? `${trimmed.slice(0, 50)}...` : trimmed,
         actionStatus: null,
         actorId: isAnonymous ? null : userId,
+        targetType,
+        targetId,
         bubbleId,
       })
     }

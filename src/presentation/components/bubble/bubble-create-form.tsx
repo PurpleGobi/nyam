@@ -88,7 +88,7 @@ export function BubbleCreateForm({ onSubmit, isLoading }: BubbleCreateFormProps)
 
       {/* 아이콘 피커 */}
       {showIconPicker && (
-        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="card rounded-xl p-3">
           <div className="grid grid-cols-6 gap-2">
             {ICON_OPTIONS.map(({ name: iconName, Icon }) => (
               <button
@@ -132,8 +132,7 @@ export function BubbleCreateForm({ onSubmit, isLoading }: BubbleCreateFormProps)
           onChange={(e) => setName(e.target.value)}
           placeholder="버블 이름을 입력하세요"
           maxLength={20}
-          className="rounded-xl px-4 py-3 text-[14px] text-[var(--text)] outline-none"
-          style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          className="nyam-input"
         />
         <span className="text-right text-[11px] text-[var(--text-hint)]">{name.length}/20</span>
       </div>
@@ -147,8 +146,7 @@ export function BubbleCreateForm({ onSubmit, isLoading }: BubbleCreateFormProps)
           placeholder="버블에 대한 설명을 입력하세요"
           maxLength={100}
           rows={3}
-          className="resize-none rounded-xl px-4 py-3 text-[14px] text-[var(--text)] outline-none"
-          style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          className="nyam-input resize-none"
         />
         <span className="text-right text-[11px] text-[var(--text-hint)]">{description.length}/100</span>
       </div>

@@ -142,6 +142,28 @@ export function useSettings() {
     await settingsRepo.updateDndTime(userId, start, end)
   }, [userId, settings, mutate])
 
+  // ── 데이터 ──
+
+  const exportData = useCallback(async (format: 'json' | 'csv') => {
+    if (!userId) return
+    const blob = await settingsRepo.exportData(userId, format)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `nyam-export.${format}`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [userId])
+
+  const importData = useCallback(async (file: File) => {
+    if (!userId) return
+    await settingsRepo.importData(userId, file)
+  }, [userId])
+
+  const clearCache = useCallback(async () => {
+    await settingsRepo.clearCache()
+  }, [])
+
   return {
     settings,
     bubbleOverrides,
@@ -159,5 +181,8 @@ export function useSettings() {
     updateNickname,
     updateBio,
     updateDndTime,
+    exportData,
+    importData,
+    clearCache,
   }
 }

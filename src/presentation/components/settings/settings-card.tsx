@@ -6,10 +6,7 @@ interface SettingsCardProps {
 
 export function SettingsCard({ children }: SettingsCardProps) {
   return (
-    <div
-      className="overflow-hidden rounded-xl"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-    >
+    <div className="card overflow-hidden rounded-xl">
       {children}
     </div>
   )

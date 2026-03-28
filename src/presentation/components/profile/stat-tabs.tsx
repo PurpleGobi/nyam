@@ -256,12 +256,9 @@ function WinePanel({
 
 function EmptyStats({ label }: { label: string }) {
   return (
-    <div
-      className="flex flex-col items-center rounded-2xl py-10"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-    >
-      <p style={{ fontSize: '14px', color: 'var(--text-hint)' }}>{label} 기록이 없습니다</p>
-      <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>첫 기록을 남겨보세요</p>
+    <div className="empty-state card rounded-2xl py-10">
+      <p className="empty-state-title">{label} 기록이 없습니다</p>
+      <p className="empty-state-desc">첫 기록을 남겨보세요</p>
     </div>
   )
 }

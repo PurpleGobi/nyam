@@ -27,8 +27,7 @@ export function BubbleQuickStats({
       {stats.map(({ icon: Icon, label, value, color }) => (
         <div
           key={label}
-          className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5"
-          style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          className="card flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5"
         >
           <Icon size={15} style={{ color }} />
           <div>

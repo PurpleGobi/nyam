@@ -20,6 +20,7 @@ export function NyamSelect({ options, value, onChange, accentColor = 'var(--acce
   const containerRef = useRef<HTMLDivElement>(null)
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? value
+  const isWine = accentColor === 'var(--accent-wine)'
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -37,47 +38,24 @@ export function NyamSelect({ options, value, onChange, accentColor = 'var(--acce
   }
 
   return (
-    <div ref={containerRef} className="relative min-w-0 flex-1">
+    <div ref={containerRef} className="nyam-select-wrap min-w-0 flex-1">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-9 w-full items-center justify-between gap-1.5 rounded-[10px] px-3 text-[13px] transition-colors"
-        style={{
-          backgroundColor: 'var(--bg-card)',
-          color: 'var(--text)',
-          border: '1px solid var(--border)',
-        }}
+        className={`nyam-select w-full ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''}`}
       >
         <span className="truncate">{selectedLabel}</span>
-        <ChevronDown
-          size={14}
-          className="shrink-0 transition-transform"
-          style={{
-            color: 'var(--text-hint)',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-          }}
-        />
+        <ChevronDown size={14} className="nyam-select-arrow shrink-0" />
       </button>
 
       {isOpen && (
-        <div
-          className="absolute right-0 top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto rounded-[10px] py-1"
-          style={{
-            backgroundColor: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-md)',
-          }}
-        >
+        <div className="nyam-dropdown absolute right-0 top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto">
           {options.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
-              style={{
-                color: option.value === value ? accentColor : 'var(--text)',
-                backgroundColor: option.value === value ? 'var(--bg-card)' : 'transparent',
-              }}
+              className={`nyam-dropdown-item w-full text-left ${option.value === value ? 'selected' : ''}`}
             >
               {option.label}
             </button>

@@ -140,14 +140,8 @@ export function RecordTimeline({
                   </span>
                   {record.scene && (
                     <span
-                      className="rounded-full"
-                      style={{
-                        padding: '2px 8px',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        color: '#FFFFFF',
-                        backgroundColor: dotColor,
-                      }}
+                      className="tag-chip"
+                      style={{ backgroundColor: dotColor }}
                     >
                       {record.scene}
                     </span>

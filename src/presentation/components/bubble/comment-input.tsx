@@ -43,8 +43,7 @@ export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage }:
             maxLength={maxLength}
             rows={2}
             disabled={disabled}
-            className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] text-[var(--text)] outline-none disabled:opacity-50"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            className="nyam-input w-full resize-none rounded-xl px-3 py-2.5 text-[13px] disabled:opacity-50"
           />
         </div>
         <button

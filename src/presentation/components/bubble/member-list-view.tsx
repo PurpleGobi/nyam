@@ -27,8 +27,7 @@ export function MemberListView({ members, onSelect }: MemberListViewProps) {
             key={m.userId}
             type="button"
             onClick={() => onSelect?.(m.userId)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            className="card flex items-center gap-3 rounded-xl px-3 py-2.5 text-left"
           >
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"

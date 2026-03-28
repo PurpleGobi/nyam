@@ -13,10 +13,7 @@ export function SettingsSection({ icon, title, children }: SettingsSectionProps)
         <span style={{ color: 'var(--text-sub)' }}>{icon}</span>
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{title}</span>
       </div>
-      <div
-        className="overflow-hidden rounded-xl"
-        style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
+      <div className="card overflow-hidden rounded-xl">
         {children}
       </div>
     </div>

@@ -30,15 +30,8 @@ export function SceneTagSelector({ value, onChange, aiSuggestion }: SceneTagSele
     <div className="flex flex-col gap-2">
       {aiSuggestion && (
         <span
-          style={{
-            fontSize: '10px',
-            fontWeight: 700,
-            color: '#FFFFFF',
-            backgroundColor: 'var(--accent-food)',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            alignSelf: 'flex-start',
-          }}
+          className="scene-tag"
+          style={{ alignSelf: 'flex-start', backgroundColor: 'var(--accent-food)' }}
         >
           AI 추천
         </span>

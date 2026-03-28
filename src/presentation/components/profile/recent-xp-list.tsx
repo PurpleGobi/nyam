@@ -95,8 +95,7 @@ export function RecentXpList({ items }: RecentXpListProps) {
 
   return (
     <div
-      className="mx-4 rounded-2xl px-4 py-4"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="card mx-4 rounded-2xl px-4 py-4"
     >
       <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
         최근 XP

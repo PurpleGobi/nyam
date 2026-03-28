@@ -11,14 +11,8 @@ interface SearchDropdownProps {
 
 export function SearchDropdown({ query, onQueryChange, onClear, placeholder = '식당·와인 이름으로 검색' }: SearchDropdownProps) {
   return (
-    <div
-      className="mx-4 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      <Search size={16} style={{ color: 'var(--text-hint)', flexShrink: 0 }} />
+    <div className="ds-search-dropdown mx-4 flex items-center gap-2.5">
+      <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
 
       <input
         type="text"

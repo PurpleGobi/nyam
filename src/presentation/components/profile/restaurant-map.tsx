@@ -10,10 +10,7 @@ interface RestaurantMapProps {
 export function RestaurantMap({ markers }: RestaurantMapProps) {
   if (markers.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center rounded-xl py-8"
-        style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
+      <div className="card empty-state rounded-xl py-8">
         <p style={{ fontSize: '13px', color: 'var(--text-hint)' }}>
           아직 방문 기록이 없어요
         </p>

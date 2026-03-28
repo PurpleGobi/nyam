@@ -1,6 +1,8 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride } from '@/domain/entities/bubble'
+
+// ─── camelCase → snake_case 변환 (Entity → DB) ───
 
 const BUBBLE_FIELD_MAP: Record<string, string> = {
   focusType: 'focus_type', contentVisibility: 'content_visibility',
@@ -15,13 +17,86 @@ const BUBBLE_FIELD_MAP: Record<string, string> = {
   createdAt: 'created_at', updatedAt: 'updated_at',
 }
 
-function toBubbleRow(data: Record<string, unknown>): Record<string, unknown> {
+const MEMBER_FIELD_MAP: Record<string, string> = {
+  bubbleId: 'bubble_id', userId: 'user_id',
+  visibilityOverride: 'visibility_override', tasteMatchPct: 'taste_match_pct',
+  commonTargetCount: 'common_target_count', avgSatisfaction: 'avg_satisfaction',
+  memberUniqueTargetCount: 'member_unique_target_count', weeklyShareCount: 'weekly_share_count',
+  badgeLabel: 'badge_label', joinedAt: 'joined_at',
+}
+
+function toEntityRow(data: Record<string, unknown>, fieldMap: Record<string, string>): Record<string, unknown> {
   const row: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(data)) {
     if (key === 'id') continue
-    row[BUBBLE_FIELD_MAP[key] ?? key] = value
+    row[fieldMap[key] ?? key] = value
   }
   return row
+}
+
+// ─── snake_case → camelCase 변환 (DB → Entity) ───
+
+function toBubble(row: Record<string, unknown>): Bubble {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: row.description as string | null,
+    focusType: row.focus_type as BubbleFocusType,
+    area: row.area as string | null,
+    visibility: row.visibility as BubbleVisibility,
+    contentVisibility: row.content_visibility as BubbleContentVisibility,
+    allowComments: row.allow_comments as boolean,
+    allowExternalShare: row.allow_external_share as boolean,
+    joinPolicy: row.join_policy as BubbleJoinPolicy,
+    minRecords: row.min_records as number,
+    minLevel: row.min_level as number,
+    maxMembers: row.max_members as number | null,
+    rules: row.rules as string[] | null,
+    isSearchable: row.is_searchable as boolean,
+    searchKeywords: row.search_keywords as string[] | null,
+    followerCount: (row.follower_count as number) ?? 0,
+    memberCount: (row.member_count as number) ?? 0,
+    recordCount: (row.record_count as number) ?? 0,
+    avgSatisfaction: row.avg_satisfaction as number | null,
+    lastActivityAt: row.last_activity_at as string | null,
+    uniqueTargetCount: (row.unique_target_count as number) ?? 0,
+    weeklyRecordCount: (row.weekly_record_count as number) ?? 0,
+    prevWeeklyRecordCount: (row.prev_weekly_record_count as number) ?? 0,
+    icon: row.icon as string | null,
+    iconBgColor: row.icon_bg_color as string | null,
+    createdBy: row.created_by as string | null,
+    inviteCode: row.invite_code as string | null,
+    inviteExpiresAt: row.invite_expires_at as string | null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  }
+}
+
+function toBubbleMember(row: Record<string, unknown>): BubbleMember {
+  return {
+    bubbleId: row.bubble_id as string,
+    userId: row.user_id as string,
+    role: row.role as BubbleMemberRole,
+    status: row.status as BubbleMemberStatus,
+    visibilityOverride: row.visibility_override as VisibilityOverride | null,
+    tasteMatchPct: row.taste_match_pct as number | null,
+    commonTargetCount: (row.common_target_count as number) ?? 0,
+    avgSatisfaction: row.avg_satisfaction as number | null,
+    memberUniqueTargetCount: (row.member_unique_target_count as number) ?? 0,
+    weeklyShareCount: (row.weekly_share_count as number) ?? 0,
+    badgeLabel: row.badge_label as string | null,
+    joinedAt: row.joined_at as string,
+  }
+}
+
+function toBubbleShare(row: Record<string, unknown>): BubbleShare {
+  return {
+    id: row.id as string,
+    recordId: row.record_id as string,
+    bubbleId: row.bubble_id as string,
+    sharedBy: row.shared_by as string,
+    sharedAt: row.shared_at as string,
+  }
 }
 
 export class SupabaseBubbleRepository implements BubbleRepository {
@@ -49,7 +124,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       created_by: input.createdBy,
     }).select().single()
     if (error) throw new Error(`Bubble 생성 실패: ${error.message}`)
-    const bubble = data as unknown as Bubble
+    const bubble = toBubble(data as Record<string, unknown>)
     // owner 자동 추가
     await this.addMember(bubble.id, input.createdBy, 'owner', 'active')
     return bubble
@@ -57,7 +132,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
   async findById(id: string): Promise<Bubble | null> {
     const { data } = await this.supabase.from('bubbles').select('*').eq('id', id).single()
-    return data as unknown as Bubble | null
+    return data ? toBubble(data as Record<string, unknown>) : null
   }
 
   async findByUserId(userId: string): Promise<Bubble[]> {
@@ -65,7 +140,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (!data || data.length === 0) return []
     const ids = data.map((m) => m.bubble_id)
     const { data: bubbles } = await this.supabase.from('bubbles').select('*').in('id', ids)
-    return (bubbles ?? []) as unknown as Bubble[]
+    return (bubbles ?? []).map((r) => toBubble(r as Record<string, unknown>))
   }
 
   async findPublic(options?: {
@@ -97,15 +172,15 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
     query = query.range(offset, offset + limit - 1)
     const { data, count } = await query
-    return { data: (data ?? []) as unknown as Bubble[], total: count ?? 0 }
+    return { data: (data ?? []).map((r) => toBubble(r as Record<string, unknown>)), total: count ?? 0 }
   }
 
   async update(id: string, updates: Partial<Bubble>): Promise<Bubble> {
-    const row = toBubbleRow(updates as Record<string, unknown>)
+    const row = toEntityRow(updates as Record<string, unknown>, BUBBLE_FIELD_MAP)
     row.updated_at = new Date().toISOString()
     const { data, error } = await this.supabase.from('bubbles').update(row).eq('id', id).select().single()
     if (error) throw new Error(`Bubble 수정 실패: ${error.message}`)
-    return data as unknown as Bubble
+    return toBubble(data as Record<string, unknown>)
   }
 
   async delete(id: string): Promise<void> {
@@ -140,7 +215,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     }
 
     const { data, count } = await query
-    return { data: (data ?? []) as unknown as BubbleMember[], total: count ?? 0 }
+    return { data: (data ?? []).map((r) => toBubbleMember(r as Record<string, unknown>)), total: count ?? 0 }
   }
 
   async getMember(bubbleId: string, userId: string): Promise<BubbleMember | null> {
@@ -150,7 +225,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .eq('bubble_id', bubbleId)
       .eq('user_id', userId)
       .single()
-    return (data as unknown as BubbleMember) ?? null
+    return data ? toBubbleMember(data as Record<string, unknown>) : null
   }
 
   async getPendingMembers(bubbleId: string): Promise<BubbleMember[]> {
@@ -160,17 +235,18 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .eq('bubble_id', bubbleId)
       .eq('status', 'pending')
       .order('joined_at', { ascending: true })
-    return (data ?? []) as unknown as BubbleMember[]
+    return (data ?? []).map((r) => toBubbleMember(r as Record<string, unknown>))
   }
 
   async addMember(bubbleId: string, userId: string, role: string, status: string): Promise<BubbleMember> {
     const { data, error } = await this.supabase.from('bubble_members').insert({ bubble_id: bubbleId, user_id: userId, role, status }).select().single()
     if (error) throw new Error(`멤버 추가 실패: ${error.message}`)
-    return data as unknown as BubbleMember
+    return toBubbleMember(data as Record<string, unknown>)
   }
 
   async updateMember(bubbleId: string, userId: string, updates: Partial<BubbleMember>): Promise<void> {
-    await this.supabase.from('bubble_members').update(updates as Record<string, unknown>).eq('bubble_id', bubbleId).eq('user_id', userId)
+    const row = toEntityRow(updates as Record<string, unknown>, MEMBER_FIELD_MAP)
+    await this.supabase.from('bubble_members').update(row).eq('bubble_id', bubbleId).eq('user_id', userId)
   }
 
   async removeMember(bubbleId: string, userId: string): Promise<void> {
@@ -188,6 +264,42 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }): Promise<{ data: BubbleShare[]; total: number }> {
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
+    const needsRecordFilter = !!(options?.targetType || options?.minSatisfaction || options?.sortBy === 'score')
+
+    if (needsRecordFilter) {
+      // records JOIN으로 targetType/minSatisfaction 서버측 필터링
+      let query = this.supabase
+        .from('bubble_shares')
+        .select('*, records!inner(target_type, satisfaction)', { count: 'exact' })
+        .eq('bubble_id', bubbleId)
+
+      if (options?.sharedBy) query = query.eq('shared_by', options.sharedBy)
+
+      if (options?.period && options.period !== 'all') {
+        const msMap = { week: 7 * 86400000, month: 30 * 86400000, '3months': 90 * 86400000 }
+        const cutoff = new Date(Date.now() - msMap[options.period]).toISOString()
+        query = query.gte('shared_at', cutoff)
+      }
+
+      if (options?.targetType) {
+        query = query.eq('records.target_type', options.targetType)
+      }
+      if (options?.minSatisfaction) {
+        query = query.gte('records.satisfaction', options.minSatisfaction)
+      }
+
+      switch (options?.sortBy) {
+        case 'score': query = query.order('shared_at', { ascending: false }); break
+        case 'member': query = query.order('shared_by', { ascending: true }); break
+        default: query = query.order('shared_at', { ascending: false })
+      }
+
+      query = query.range(offset, offset + limit - 1)
+      const { data, count } = await query
+      return { data: (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>)), total: count ?? 0 }
+    }
+
+    // 기본: records JOIN 불필요 시 단순 조회
     let query = this.supabase.from('bubble_shares').select('*', { count: 'exact' })
       .eq('bubble_id', bubbleId)
 
@@ -200,20 +312,19 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     }
 
     switch (options?.sortBy) {
-      case 'score': query = query.order('shared_at', { ascending: false }); break
       case 'member': query = query.order('shared_by', { ascending: true }); break
       default: query = query.order('shared_at', { ascending: false })
     }
 
     query = query.range(offset, offset + limit - 1)
     const { data, count } = await query
-    return { data: (data ?? []) as unknown as BubbleShare[], total: count ?? 0 }
+    return { data: (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>)), total: count ?? 0 }
   }
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare> {
     const { data, error } = await this.supabase.from('bubble_shares').insert({ record_id: recordId, bubble_id: bubbleId, shared_by: sharedBy }).select().single()
     if (error) throw new Error(`공유 실패: ${error.message}`)
-    return data as unknown as BubbleShare
+    return toBubbleShare(data as Record<string, unknown>)
   }
 
   async removeShare(shareId: string): Promise<void> {
@@ -295,7 +406,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
   async findByInviteCode(code: string): Promise<Bubble | null> {
     const { data } = await this.supabase.from('bubbles').select('*').eq('invite_code', code).single()
-    return data as unknown as Bubble | null
+    return data ? toBubble(data as Record<string, unknown>) : null
   }
 
   async generateInviteCode(bubbleId: string, expiresAt?: string | null): Promise<string> {
@@ -437,7 +548,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .from('bubble_shares')
       .select('*')
       .eq('record_id', recordId)
-    return (data ?? []) as unknown as BubbleShare[]
+    return (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>))
   }
 
   async shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare> {

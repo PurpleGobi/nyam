@@ -23,8 +23,7 @@ export function RankingList({ entries, targetType, targetNames }: RankingListPro
         return (
           <div
             key={entry.targetId}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            className="card flex items-center gap-3 rounded-xl px-3 py-2.5"
           >
             {/* 순위 */}
             <span className="w-6 text-center text-[14px] font-bold text-[var(--text)]">

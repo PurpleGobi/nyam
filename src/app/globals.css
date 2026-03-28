@@ -354,3 +354,1289 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+/* ============================================================
+   §7 REUSABLE UI COMPONENTS
+   SSOT: systems/DESIGN_SYSTEM.md §7
+   ============================================================ */
+
+/* ── 1. 레이아웃 — 고정 헤더 ── */
+
+.top-fixed {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: rgba(248, 246, 243, 0.55);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08);
+}
+
+.app-header {
+  padding: 2px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.header-brand {
+  font-family: var(--font-logo);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  background: linear-gradient(135deg, #FF6038, #8B7396);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-bubbles {
+  font-family: var(--font-logo);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  position: relative;
+  color: var(--text);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 1.5px solid var(--bg);
+  pointer-events: none;
+}
+
+.header-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--accent-food);
+  flex-shrink: 0;
+}
+
+.avatar-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 120px;
+  background: var(--bg-elevated);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  z-index: 90;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.avatar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.avatar-menu-item:hover {
+  background: var(--bg);
+}
+
+/* ── 이너 페이지 헤더 ── */
+
+.inner-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  color: var(--text);
+}
+
+.inner-back-btn svg {
+  width: 22px;
+  height: 22px;
+  color: var(--text-sub);
+}
+
+.inner-back-btn span {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.inner-back-btn:active {
+  opacity: 0.6;
+}
+
+/* ── 2. FAB (Floating Action Buttons) ── */
+
+.fab-back {
+  position: fixed;
+  bottom: 28px;
+  left: 16px;
+  z-index: 85;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(248, 246, 243, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+
+.fab-back:active {
+  transform: scale(0.9);
+}
+
+.fab-add {
+  position: fixed;
+  bottom: 28px;
+  right: 16px;
+  z-index: 85;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(248, 246, 243, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+
+.fab-add:active {
+  transform: scale(0.9);
+}
+
+.fab-forward {
+  position: fixed;
+  bottom: 28px;
+  right: 16px;
+  z-index: 85;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-food);
+  border: none;
+  box-shadow: 0 3px 16px rgba(193, 123, 94, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.15s;
+}
+
+.fab-forward:active {
+  transform: scale(0.9);
+}
+
+.fab-forward:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fab-forward.wine {
+  background: var(--accent-wine);
+  box-shadow: 0 3px 16px rgba(139, 115, 150, 0.4);
+}
+
+/* ── 3. 버튼 ── */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--accent-food);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  padding: 12px 24px;
+  font-size: 15px;
+  transition: opacity 0.15s;
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+}
+
+.btn-primary.wine {
+  background: var(--accent-wine);
+}
+
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--text-hint);
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.btn-ghost:active {
+  opacity: 0.7;
+}
+
+.btn-skip {
+  background: none;
+  border: none;
+  text-decoration: underline;
+  color: var(--text-hint);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-card-action.active-food {
+  background: var(--accent-food);
+  color: #fff;
+  border-color: var(--accent-food);
+}
+
+.btn-card-action.active-wine {
+  background: var(--accent-wine);
+  color: #fff;
+  border-color: var(--accent-wine);
+}
+
+.btn-card-action.active-wish {
+  background: var(--caution);
+  color: #fff;
+  border-color: var(--caution);
+}
+
+.btn-search-submit {
+  border-radius: var(--r-md);
+  background: var(--accent-wine);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.btn-social:active {
+  opacity: 0.85;
+}
+
+.btn-social.kakao {
+  background: #FEE500;
+  color: #3C1E1E;
+}
+
+.btn-social.google {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-social.naver {
+  background: #03C75A;
+  color: #fff;
+}
+
+.btn-social.apple {
+  background: #1D1D1F;
+  color: #fff;
+}
+
+/* ── 4. 카드 ── */
+
+.card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+}
+
+.card.visited {
+  border-color: var(--accent-food-dim);
+  background: var(--accent-food-light);
+}
+
+.card.confirmed {
+  border-color: var(--accent-wine-dim);
+  background: var(--accent-wine-light);
+}
+
+.card.wishlisted {
+  border-color: var(--caution);
+  background: #FBF8F1;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── 5. 만족도 게이지 ── */
+
+.satisfaction-gauge {
+  height: 32px;
+  border-radius: var(--r-full);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.satisfaction-gauge-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  transition: width 0.3s ease;
+}
+
+.satisfaction-gauge-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.satisfaction-gauge-hint {
+  font-size: 10px;
+  color: var(--text-hint);
+}
+
+/* ── 6. 태그 / 뱃지 / 칩 ── */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  background: var(--bg);
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+
+.tag.food {
+  background: var(--accent-food-light);
+  color: var(--accent-food);
+  border-color: var(--accent-food-dim);
+}
+
+.tag.wine {
+  background: var(--accent-wine-light);
+  color: var(--accent-wine);
+  border-color: var(--accent-wine-dim);
+}
+
+/* 씬 태그 */
+.scene-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  color: #fff;
+}
+
+/* 타임라인 인라인 칩 */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 2px 8px;
+  color: #fff;
+}
+
+/* 와인 타입 칩 */
+.wine-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border);
+}
+
+.wine-chip.red       { background: #FAF0F0; color: #B87272; }
+.wine-chip.white     { background: #FBF8F1; color: #C9A96E; }
+.wine-chip.rose      { background: #F8F0F4; color: #B8879B; }
+.wine-chip.orange    { background: #F5F0EA; color: #B8A078; }
+.wine-chip.sparkling { background: #EDF2F5; color: #7A9BAE; }
+.wine-chip.fortified { background: #F5F0F0; color: #8B6B5E; border-color: #DDD0C8; }
+.wine-chip.dessert   { background: #FDF8F0; color: #C9A96E; border-color: #E8E0C8; }
+
+/* 외부 평가 뱃지 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.badge.michelin       { background: #FDF6EC; color: #B8860B; border: 1px solid #E8DDCA; }
+.badge.blue-ribbon    { background: #EDF2FB; color: #4A6FA5; border: 1px solid #D0DCF0; }
+.badge.tv             { background: #FFF3F0; color: var(--brand); border: 1px solid #F0D8D0; }
+.badge.wine-class     { background: var(--accent-wine-light); color: var(--accent-wine); border: 1px solid #DDD6E3; }
+.badge.vivino         { background: #FBF0F0; color: #9B2335; border: 1px solid #E8D0D0; }
+.badge.wine-spectator { background: #F5F0E8; color: #8B7355; border: 1px solid #E0D8C8; }
+
+/* ── 7. 필터 시스템 ── */
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-hint);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: color 0.15s;
+}
+
+.icon-button.active {
+  color: var(--accent-food);
+}
+
+.icon-button.active.wine {
+  color: var(--accent-wine);
+}
+
+.ds-filter-drawer {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.filter-chip.active {
+  background: var(--accent-food);
+  border-color: var(--accent-food);
+  color: #fff;
+}
+
+.filter-chip.active.wine {
+  background: var(--accent-wine);
+  border-color: var(--accent-wine);
+}
+
+.ds-sort-dropdown {
+  position: absolute;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  z-index: 90;
+  overflow: hidden;
+  min-width: 140px;
+}
+
+.ds-search-dropdown {
+  position: absolute;
+  right: 0;
+  width: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  z-index: 90;
+  padding: 8px;
+}
+
+/* ── 8. 드롭다운 셀렉트 (범용) ── */
+
+.nyam-select-wrap {
+  position: relative;
+}
+
+.nyam-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.nyam-select-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--text-hint);
+  transition: transform 0.2s;
+}
+
+.nyam-select.open .nyam-select-arrow {
+  transform: rotate(180deg);
+}
+
+.nyam-dropdown {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.nyam-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.nyam-dropdown-item:hover {
+  background: var(--bg);
+}
+
+.nyam-dropdown-item.selected {
+  font-weight: 600;
+  color: var(--accent-food);
+}
+
+.nyam-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* 셀렉트 변형 — 와인 */
+.nyam-select.wine .nyam-dropdown-item.selected {
+  color: var(--accent-wine);
+}
+
+/* 셀렉트 변형 — 인라인 (설정 페이지 컴팩트) */
+.nyam-select.inline {
+  font-size: 12px;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  padding: 5px 10px;
+}
+
+.nyam-dropdown-item .item-desc {
+  font-size: 11px;
+  color: var(--text-hint);
+}
+
+/* ── 9. 필터 탭 (언더라인) ── */
+
+.filter-tab {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-hint);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-tab.active {
+  font-weight: 700;
+}
+
+.filter-tab.active.food {
+  color: var(--accent-food);
+  border-bottom-color: var(--accent-food);
+}
+
+.filter-tab.active.wine {
+  color: var(--accent-wine);
+  border-bottom-color: var(--accent-wine);
+}
+
+/* ── 10. 뷰 사이클 버튼 ── */
+
+.view-cycle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.view-cycle-btn:active,
+.view-cycle-btn.active {
+  background: var(--bg-page);
+}
+
+/* ── 11. 컴팩트 리스트 ── */
+
+.compact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.compact-item:last-child {
+  border-bottom: none;
+}
+
+.compact-rank {
+  font-size: 13px;
+  font-weight: 700;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--text-hint);
+}
+
+.compact-rank.top {
+  color: var(--accent-food);
+}
+
+.compact-rank.top.wine {
+  color: var(--accent-wine);
+}
+
+.compact-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.compact-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.compact-meta {
+  font-size: 11px;
+  color: var(--text-hint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-score {
+  font-size: 18px;
+  font-weight: 800;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.compact-score.food { color: var(--accent-food); }
+.compact-score.wine { color: var(--accent-wine); }
+
+.compact-score.unrated {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-hint);
+}
+
+/* ── 12. 토글 스위치 ── */
+
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--border-bold);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: left 0.2s;
+}
+
+.toggle.on {
+  background: var(--accent-food);
+}
+
+.toggle.on::after {
+  left: 20px;
+}
+
+/* ── 13. 세그먼트 컨트롤 ── */
+
+.prv-segment {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-page);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.prv-segment-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.prv-segment-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 14. 인풋 ── */
+
+.nyam-input {
+  width: 100%;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 14px;
+  color: var(--text);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.nyam-input::placeholder {
+  color: var(--text-hint);
+}
+
+.nyam-input:focus {
+  border-color: var(--border-bold);
+}
+
+/* ── 15. 바텀 시트 ── */
+
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-sheet);
+  z-index: 30;
+  max-height: 75%;
+  overflow-y: auto;
+  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.bottom-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-bold);
+  margin: 10px auto 6px;
+}
+
+/* ── 16. 알림 드롭다운 ── */
+
+.notif-dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 190;
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: 90px;
+  right: 16px;
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  animation: dropdown-in 0.16s ease-out;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 8px;
+}
+
+.notif-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.notif-header-action {
+  font-size: 11px;
+  color: var(--text-hint);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.notif-item {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  transition: background 0.1s;
+}
+
+.notif-item:active {
+  background: var(--bg);
+}
+
+.notif-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-icon.type-level   { color: var(--caution); }
+.notif-icon.type-bubble  { color: var(--accent-food); }
+.notif-icon.type-social  { color: var(--accent-social); }
+.notif-icon.type-success { color: var(--positive); }
+
+.notif-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.notif-item.unread .notif-title {
+  font-weight: 600;
+}
+
+.notif-body {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.notif-time {
+  font-size: 11px;
+  color: var(--text-hint);
+}
+
+.notif-unread-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+
+.notif-action-accept {
+  padding: 3px 10px;
+  border-radius: var(--r-xs);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.notif-action-reject {
+  padding: 3px 10px;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text-hint);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.notif-footer {
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent-social);
+  cursor: pointer;
+}
+
+/* ── 17. 넛지 ── */
+
+.nudge-card {
+  margin: 14px 16px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+}
+
+.nudge-strip {
+  padding: 10px 16px;
+  background: var(--accent-food-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+/* ── 18. 스텝 프로그레스 ── */
+
+.step-progress {
+  display: flex;
+  gap: 6px;
+}
+
+.step-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.step-bar.current {
+  background: var(--accent-food);
+}
+
+.step-bar.complete {
+  background: var(--accent-food);
+  opacity: 0.45;
+}
+
+/* ── 19. 선택 카드 (온보딩) ── */
+
+.intro-card {
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.intro-card.selected {
+  border-color: var(--accent-food);
+  background: var(--accent-food-light);
+}
+
+.intro-card.selected.wine {
+  border-color: var(--accent-wine);
+  background: var(--accent-wine-light);
+}
+
+.intro-card-check {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 20. 빈 상태 ── */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 16px;
+  gap: 8px;
+}
+
+.empty-state-icon {
+  color: var(--text-hint);
+}
+
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.empty-state-desc {
+  font-size: 12px;
+  color: var(--text-hint);
+}
+
+/* ── 21. 토스트 ── */
+
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  z-index: 300;
+  pointer-events: none;
+  animation: toast-fade 2s ease forwards;
+}
+
+@keyframes toast-fade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── 22. 로딩 ── */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.loading-state svg {
+  animation: aiPulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   DARK MODE — UI COMPONENTS (§10)
+   ============================================================ */
+
+[data-theme="dark"] .top-fixed {
+  background: rgba(30, 28, 26, 0.88);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .header-brand {
+  background: linear-gradient(135deg, #FF8060, #B8A0C8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="dark"] .fab-back,
+[data-theme="dark"] .fab-add {
+  background: rgba(42, 39, 37, 0.92);
+  border-color: var(--border-bold);
+}
+
+[data-theme="dark"] .nyam-dropdown,
+[data-theme="dark"] .avatar-menu,
+[data-theme="dark"] .ds-sort-dropdown,
+[data-theme="dark"] .ds-search-dropdown {
+  background: var(--bg-elevated);
+  border-color: var(--border-bold);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .notif-dropdown {
+  background: var(--bg-elevated);
+  border-color: var(--border-bold);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .card.visited {
+  background: var(--accent-food-light);
+  border-color: #5A4030;
+}
+
+[data-theme="dark"] .card.confirmed {
+  background: var(--accent-wine-light);
+  border-color: #4A3555;
+}
+
+[data-theme="dark"] .card.wishlisted {
+  background: #2E2A1E;
+  border-color: #5A4A2A;
+}

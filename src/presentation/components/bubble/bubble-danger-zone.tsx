@@ -40,8 +40,7 @@ export function BubbleDangerZone({ bubbleName, onConfirm, onCancel, isLoading }:
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder={bubbleName}
-              className="w-full rounded-lg px-3 py-2.5 text-[13px] text-[var(--text)] outline-none"
-              style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+              className="nyam-input text-[13px]"
             />
           </div>
 

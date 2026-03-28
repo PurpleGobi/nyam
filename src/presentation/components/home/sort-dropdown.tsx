@@ -21,23 +21,15 @@ export function SortDropdown({ currentSort, onSortChange, accentType }: SortDrop
   const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   return (
-    <div
-      className="mx-4 overflow-hidden rounded-xl py-1"
-      style={{
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        boxShadow: '0 8px 28px rgba(0, 0, 0, 0.12)',
-      }}
-    >
+    <div className="ds-sort-dropdown mx-4 py-1">
       {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
         <button
           key={key}
           type="button"
           onClick={() => onSortChange(key)}
-          className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition-colors"
+          className={`nyam-dropdown-item w-full justify-between ${currentSort === key ? 'selected' : ''}`}
           style={{
-            color: currentSort === key ? accentColor : 'var(--text)',
-            fontWeight: currentSort === key ? 600 : 500,
+            color: currentSort === key ? accentColor : undefined,
           }}
         >
           {SORT_LABELS[key]}

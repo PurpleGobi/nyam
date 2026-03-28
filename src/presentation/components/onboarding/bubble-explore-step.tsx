@@ -93,8 +93,7 @@ export function BubbleExploreStep({
         <button
           type="button"
           onClick={onComplete}
-          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-semibold"
-          style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+          className="btn-primary flex w-full items-center justify-center gap-2 rounded-xl py-3.5"
         >
           시작하기
           <ArrowRight size={16} />

@@ -31,8 +31,7 @@ export function OverviewGrid({ summary }: OverviewGridProps) {
         return (
           <div
             key={item.key}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3"
-            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            className="card flex items-center gap-3 rounded-2xl px-4 py-3"
           >
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"

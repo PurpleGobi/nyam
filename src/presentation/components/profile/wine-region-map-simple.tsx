@@ -21,10 +21,7 @@ const WINE_TYPE_COLORS: Record<string, string> = {
 export function WineRegionMapSimple({ data }: WineRegionMapSimpleProps) {
   if (data.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center rounded-xl py-8"
-        style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
+      <div className="card empty-state rounded-xl py-8">
         <Globe size={28} style={{ color: 'var(--text-hint)' }} />
         <p className="mt-2" style={{ fontSize: '13px', color: 'var(--text-hint)' }}>
           아직 와인 기록이 없어요
@@ -48,8 +45,7 @@ export function WineRegionMapSimple({ data }: WineRegionMapSimpleProps) {
 
       {/* 국가별 리스트 */}
       <div
-        className="flex flex-col overflow-hidden rounded-xl"
-        style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        className="card flex flex-col overflow-hidden rounded-xl"
       >
         {sorted.map((country, idx) => (
           <div

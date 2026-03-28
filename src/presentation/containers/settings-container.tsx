@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Pencil, MessageSquare, ImageIcon, Shield, Bell, Trophy, CircleDot, UserPlus,
@@ -119,12 +119,14 @@ export function SettingsContainer() {
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
     updateNickname, updateBio, updateDndTime,
+    exportData, importData, clearCache,
   } = useSettings()
 
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
   const [editField, setEditField] = useState<'nickname' | 'bio' | null>(null)
   const [dndSheetOpen, setDndSheetOpen] = useState(false)
+  const importRef = useRef<HTMLInputElement>(null)
 
   if (isLoading || !settings) {
     return (
@@ -366,10 +368,21 @@ export function SettingsContainer() {
         {/* ── 데이터 ── */}
         <SettingsSection icon={<Upload size={16} />} title="데이터">
           <SettingsCard>
-            <SettingsItem icon={<Upload size={16} />} label="데이터 내보내기" showChevron />
-            <SettingsItem icon={<Download size={16} />} label="데이터 가져오기" showChevron />
-            <SettingsItem icon={<Eraser size={16} />} label="캐시 삭제" showChevron />
+            <SettingsItem icon={<Upload size={16} />} label="데이터 내보내기" showChevron onPress={() => exportData('json')} />
+            <SettingsItem icon={<Download size={16} />} label="데이터 가져오기" showChevron onPress={() => importRef.current?.click()} />
+            <SettingsItem icon={<Eraser size={16} />} label="캐시 삭제" showChevron onPress={clearCache} />
           </SettingsCard>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) importData(file)
+              e.target.value = ''
+            }}
+          />
         </SettingsSection>
 
         {/* ── 정보 ── */}

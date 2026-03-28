@@ -22,57 +22,43 @@ export function CompactListItem({
   onClick,
 }: CompactListItemProps) {
   const isTop3 = rank <= 3
-  const accentColor = accentType === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const typeClass = accentType === 'wine' ? 'wine' : ''
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 text-left transition-transform active:scale-[0.985]"
-      style={{
-        padding: '10px 16px',
-        borderBottom: '1px solid var(--border)',
-      }}
+      className="compact-item w-full text-left transition-transform active:scale-[0.985]"
     >
-      <span
-        className="min-w-[20px] text-right text-[14px] font-bold"
-        style={{ color: isTop3 ? accentColor : 'var(--text-hint)' }}
-      >
+      <span className={`compact-rank ${isTop3 ? `top ${typeClass}` : ''}`}>
         {rank}
       </span>
 
       {thumbnailUrl ? (
         <div
-          className="h-10 w-10 shrink-0 rounded-[10px] bg-cover bg-center"
+          className="compact-thumb bg-cover bg-center"
           style={{ backgroundImage: `url(${thumbnailUrl})` }}
         />
       ) : accentType === 'wine' ? (
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
+          className="compact-thumb flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #2a2030, #1a1520)' }}
         >
           <Wine size={16} color="rgba(255,255,255,0.4)" />
         </div>
       ) : (
         <div
-          className="h-10 w-10 shrink-0 rounded-[10px]"
+          className="compact-thumb"
           style={{ backgroundColor: 'var(--bg-elevated)' }}
         />
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-          {name}
-        </p>
-        <p className="truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
-          {meta}
-        </p>
+        <p className="compact-name">{name}</p>
+        <p className="compact-meta">{meta}</p>
       </div>
 
-      <span
-        className="shrink-0 text-[18px] font-bold"
-        style={{ color: score != null ? accentColor : 'var(--text-hint)' }}
-      >
+      <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
         {score != null ? score : '—'}
       </span>
     </button>

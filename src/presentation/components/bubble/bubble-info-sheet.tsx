@@ -15,10 +15,10 @@ export function BubbleInfoSheet({ isOpen, onClose, bubble }: BubbleInfoSheetProp
   const joinConditions = getJoinConditions(bubble)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
       <div
-        className="w-full max-w-[430px] rounded-t-2xl pb-8"
-        style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '70vh' }}
+        className="bottom-sheet w-full max-w-[430px] pb-8"
+        style={{ maxHeight: '70vh', position: 'relative' }}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>

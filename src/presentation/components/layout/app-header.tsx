@@ -32,61 +32,25 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
 
   return (
     <>
-      <header
-        className="sticky top-0 z-[60] flex items-center justify-between"
-        style={{
-          padding: '2px 16px 8px',
-          backgroundColor: 'rgba(248,246,243,0.55)',
-          backdropFilter: 'blur(20px) saturate(1.5)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
-          boxShadow: '0 1px 12px rgba(0,0,0,0.08)',
-        }}
-      >
+      <header className="top-fixed app-header">
         {variant === 'inner' ? (
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={handleBack} className="flex h-11 w-11 items-center justify-center">
-              <ChevronLeft size={20} style={{ color: 'var(--text)' }} />
-            </button>
-            {title && (
-              <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>{title}</span>
-            )}
-          </div>
+          <button type="button" onClick={handleBack} className="inner-back-btn">
+            <ChevronLeft />
+            {title && <span>{title}</span>}
+          </button>
         ) : (
-          <h1
-            onClick={() => router.push('/')}
-            className="header-logo"
-            style={{
-              fontFamily: 'var(--font-logo)',
-              fontSize: '22px',
-              fontWeight: 700,
-              letterSpacing: '-0.5px',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              cursor: 'pointer',
-              userSelect: 'none',
-            }}
-          >
+          <h1 onClick={() => router.push('/')} className="header-brand">
             nyam
-            <style>{`
-              .header-logo {
-                background: linear-gradient(135deg, #FF6038, #8B7396);
-              }
-              .dark .header-logo,
-              [data-theme="dark"] .header-logo {
-                background: linear-gradient(135deg, #FF8060, #B8A0C8);
-              }
-            `}</style>
           </h1>
         )}
 
-        <div className="flex items-center" style={{ gap: '6px' }}>
+        <div className="header-right">
           {variant === 'main' ? (
             <>
               <button
                 type="button"
                 onClick={() => router.push('/bubbles')}
-                style={{ fontFamily: 'var(--font-logo)', fontSize: '13px', fontWeight: 700, color: 'var(--brand)', background: 'none', border: 'none', padding: '4px 0' }}
+                className="header-bubbles"
               >
                 bubbles
               </button>

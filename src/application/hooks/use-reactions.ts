@@ -97,6 +97,8 @@ export function useReactions({
           body: null,
           actionStatus: null,
           actorId: userId,
+          targetType,
+          targetId,
           bubbleId: null,
         })
       }

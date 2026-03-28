@@ -11,8 +11,7 @@ interface OnboardingSearchProps {
 export function OnboardingSearch({ value, onChange, placeholder = '식당 검색' }: OnboardingSearchProps) {
   return (
     <div
-      className="flex items-center gap-2 rounded-xl px-3 py-2.5"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="card flex items-center gap-2 rounded-xl px-3 py-2.5"
     >
       <Search size={16} style={{ color: 'var(--text-hint)' }} />
       <input

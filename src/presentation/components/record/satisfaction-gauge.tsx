@@ -20,55 +20,27 @@ export function SatisfactionGauge({
 
   return (
     <div className="flex w-full items-center">
-      <span
-        className="mr-1.5 shrink-0"
-        style={{ fontSize: '11px', color: 'var(--text-hint)' }}
-      >
+      <span className="satisfaction-gauge-hint mr-1.5 shrink-0">
         {labelLeft}
       </span>
 
-      <div
-        className="relative flex-1"
-        style={{
-          height: '32px',
-          backgroundColor: 'var(--bg)',
-          border: '1px solid var(--border)',
-          borderRadius: '9999px',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="satisfaction-gauge relative flex-1">
         <div
+          className="satisfaction-gauge-fill"
           style={{
             width: `${clamped}%`,
             minWidth: '32px',
-            height: '100%',
             backgroundColor: color,
-            borderRadius: '9999px',
-            transition: 'width 0.2s ease-out, background-color 0.15s ease-out',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
           }}
-        >
-          {showNumber && (
-            <span
-              style={{
-                fontSize: '14px',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1,
-              }}
-            >
-              {clamped}
-            </span>
-          )}
-        </div>
+        />
+        {showNumber && (
+          <span className="satisfaction-gauge-label">
+            {clamped}
+          </span>
+        )}
       </div>
 
-      <span
-        className="ml-1.5 shrink-0"
-        style={{ fontSize: '11px', color: 'var(--text-hint)' }}
-      >
+      <span className="satisfaction-gauge-hint ml-1.5 shrink-0">
         {labelRight}
       </span>
     </div>

@@ -15,8 +15,7 @@ export function TotalLevelCard({ level, title, color, totalXp, nextLevelXp, prog
 
   return (
     <div
-      className="mx-4 rounded-2xl px-4 py-4"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="card mx-4 rounded-2xl px-4 py-4"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

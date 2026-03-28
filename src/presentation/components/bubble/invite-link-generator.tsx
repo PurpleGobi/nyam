@@ -46,7 +46,7 @@ export function InviteLinkGenerator({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+    <div className="card flex flex-col gap-3 rounded-xl p-4">
       <span className="text-[13px] font-semibold text-[var(--text)]">초대 링크</span>
 
       {inviteCode ? (

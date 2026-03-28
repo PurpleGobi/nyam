@@ -50,23 +50,18 @@ export function LevelDetailSheet({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[190]"
-        style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+        className="bottom-sheet-overlay"
         onClick={onClose}
       />
 
       {/* Sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-[200] flex flex-col rounded-t-2xl"
-        style={{
-          maxHeight: '70dvh',
-          backgroundColor: 'var(--bg-elevated)',
-          animation: 'slide-up 0.25s ease',
-        }}
+        className="bottom-sheet flex flex-col"
+        style={{ maxHeight: '70dvh' }}
       >
-        {/* Handle — 36px 영역 */}
+        {/* Handle */}
         <div className="flex justify-center" style={{ height: '36px', paddingTop: '12px' }}>
-          <div className="h-1 w-10 rounded-full" style={{ backgroundColor: 'var(--border-bold)' }} />
+          <div className="bottom-sheet-handle" />
         </div>
 
         {/* Header */}

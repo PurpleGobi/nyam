@@ -63,6 +63,8 @@ export class SupabaseNotificationRepository implements NotificationRepository {
         body: notification.body,
         action_status: notification.actionStatus,
         actor_id: notification.actorId,
+        target_type: notification.targetType,
+        target_id: notification.targetId,
         bubble_id: notification.bubbleId,
       })
       .select()
@@ -110,6 +112,8 @@ function mapNotification(row: Record<string, unknown>): Notification {
     isRead: (row.is_read as boolean) ?? false,
     actionStatus: (row.action_status as Notification['actionStatus']) ?? null,
     actorId: (row.actor_id as string) ?? null,
+    targetType: (row.target_type as string) ?? null,
+    targetId: (row.target_id as string) ?? null,
     bubbleId: (row.bubble_id as string) ?? null,
     createdAt: row.created_at as string,
   }

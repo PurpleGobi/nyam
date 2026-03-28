@@ -49,8 +49,8 @@ export function JoinFlow({
   const isManualApprove = bubble.joinPolicy === 'manual_approve'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="w-full max-w-[430px] rounded-t-2xl pb-8" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+    <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
+      <div className="bottom-sheet w-full max-w-[430px] pb-8" style={{ position: 'relative' }}>
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
@@ -76,7 +76,7 @@ export function JoinFlow({
         </div>
 
         {/* 양방향 프리뷰: 버블 통계 */}
-        <div className="mx-4 rounded-xl p-3" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="card mx-4 rounded-xl p-3">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-[var(--text-hint)]"><Users size={13} className="mr-1 inline" />멤버 수</span>
@@ -114,7 +114,7 @@ export function JoinFlow({
         </div>
 
         {/* 가입 조건 */}
-        <div className="mx-4 mt-3 rounded-xl p-3" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="card mx-4 mt-3 rounded-xl p-3">
           <p className="mb-2 text-[12px] font-semibold text-[var(--text-sub)]">가입 조건</p>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-hint)]">

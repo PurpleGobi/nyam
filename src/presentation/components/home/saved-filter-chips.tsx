@@ -11,19 +11,14 @@ interface SavedFilterChipsProps {
 }
 
 export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onChipSelect }: SavedFilterChipsProps) {
-  const accentColor = accentClass === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const wineClass = accentClass === 'wine' ? 'wine' : ''
 
   return (
     <div className="flex gap-2 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: 'none' }}>
       <button
         type="button"
         onClick={() => onChipSelect(null)}
-        className="shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors"
-        style={{
-          backgroundColor: activeChipId === null ? accentColor : 'var(--bg-card)',
-          color: activeChipId === null ? '#FFFFFF' : 'var(--text-sub)',
-          border: `1px solid ${activeChipId === null ? accentColor : 'var(--border)'}`,
-        }}
+        className={`filter-chip ${activeChipId === null ? `active ${wineClass}` : ''}`}
       >
         전체
       </button>
@@ -32,12 +27,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
           key={chip.id}
           type="button"
           onClick={() => onChipSelect(chip.id === activeChipId ? null : chip.id)}
-          className="shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors"
-          style={{
-            backgroundColor: activeChipId === chip.id ? accentColor : 'var(--bg-card)',
-            color: activeChipId === chip.id ? '#FFFFFF' : 'var(--text-sub)',
-            border: `1px solid ${activeChipId === chip.id ? accentColor : 'var(--border)'}`,
-          }}
+          className={`filter-chip ${activeChipId === chip.id ? `active ${wineClass}` : ''}`}
         >
           {chip.name}
           {counts[chip.id] !== undefined && (

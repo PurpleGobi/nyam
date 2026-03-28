@@ -25,7 +25,7 @@ interface TasteIdentityCardProps {
 export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onSharePress }: TasteIdentityCardProps) {
   if (!tasteSummary && (!tasteTags || tasteTags.length === 0)) {
     return (
-      <div className="mx-4 rounded-xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div className="card mx-4 rounded-xl p-4">
         <p style={{ fontSize: '14px', color: 'var(--text-hint)', textAlign: 'center' }}>
           기록이 쌓이면 맛 정체성이 나타나요
         </p>
@@ -34,7 +34,7 @@ export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShar
   }
 
   return (
-    <div className="mx-4 rounded-xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+    <div className="card mx-4 rounded-xl p-4">
       {tasteSummary && (
         <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>
           {highlightKeywords(tasteSummary, tasteTags)}
@@ -45,8 +45,7 @@ export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShar
           {tasteTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full px-3 py-1"
-              style={{ fontSize: '12px', fontWeight: 500, backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-sub)' }}
+              className="tag rounded-full px-3 py-1"
             >
               {tag}
             </span>

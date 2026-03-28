@@ -27,6 +27,8 @@ export interface Notification {
   isRead: boolean
   actionStatus: ActionStatus
   actorId: string | null
+  targetType: string | null
+  targetId: string | null
   bubbleId: string | null
   createdAt: string
 }

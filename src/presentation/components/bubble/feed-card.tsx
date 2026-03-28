@@ -53,8 +53,7 @@ export function FeedCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full flex-col overflow-hidden rounded-xl text-left"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="card flex w-full flex-col overflow-hidden rounded-xl text-left"
     >
       {/* 사진 그리드 */}
       {photoUrls.length > 0 && (

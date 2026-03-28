@@ -17,8 +17,7 @@ export function StatSummaryCards({ cards }: StatSummaryCardsProps) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="flex flex-col items-center rounded-xl px-2 py-3"
-          style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          className="card flex flex-col items-center rounded-xl px-2 py-3"
         >
           <span style={{ fontSize: '18px', fontWeight: 800, color: card.color ?? 'var(--text)' }}>
             {card.value}

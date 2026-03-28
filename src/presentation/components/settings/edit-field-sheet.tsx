@@ -46,8 +46,7 @@ function EditFieldSheetInner({
   return (
     <>
       <div
-        className="fixed inset-0 z-[190]"
-        style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+        className="bottom-sheet-overlay"
         onClick={onClose}
       />
       <div
@@ -67,8 +66,7 @@ function EditFieldSheetInner({
           value={value}
           onChange={(e) => setValue(e.target.value.slice(0, maxLength))}
           placeholder={placeholder}
-          className="w-full rounded-lg px-3 py-2.5"
-          style={{ fontSize: '14px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none' }}
+          className="nyam-input"
         />
 
         <div className="mt-1 text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>

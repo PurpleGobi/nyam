@@ -55,10 +55,10 @@ export function BubblePreviewPopup({
   const isClosed = bubble.joinPolicy === 'closed'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
       <div
-        className="flex w-full max-w-[430px] flex-col rounded-t-2xl"
-        style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '75vh' }}
+        className="bottom-sheet flex w-full max-w-[430px] flex-col"
+        style={{ maxHeight: '75vh', position: 'relative' }}
       >
         {/* 핸들 + 닫기 */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">

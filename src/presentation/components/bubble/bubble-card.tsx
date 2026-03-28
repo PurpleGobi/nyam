@@ -17,8 +17,7 @@ export function BubbleCard({ bubble, role, isRecentlyActive = false, onClick }: 
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-xl p-4 text-left"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="card flex items-center gap-3 rounded-xl p-4 text-left"
     >
       {/* 아이콘 40×40 */}
       <div

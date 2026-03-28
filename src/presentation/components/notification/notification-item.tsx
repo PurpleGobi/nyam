@@ -17,7 +17,7 @@ export function NotificationItem({ notification, onPress, onAction }: Notificati
     <button
       type="button"
       onClick={() => onPress(n)}
-      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
+      className={`notif-item w-full text-left ${!n.isRead ? 'unread' : ''}`}
       style={{
         backgroundColor: n.isRead
           ? 'transparent'
@@ -25,20 +25,14 @@ export function NotificationItem({ notification, onPress, onAction }: Notificati
         borderBottom: '1px solid var(--border)',
       }}
     >
-      <div className="mt-0.5">
+      <div className="notif-icon mt-0.5">
         <NotificationIcon type={n.type} />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p style={{ fontSize: '13px', fontWeight: n.isRead ? 400 : 600, color: 'var(--text)' }}>
-          {n.title}
-        </p>
-        {n.body && (
-          <p className="mt-0.5" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>{n.body}</p>
-        )}
-        <p className="mt-0.5" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-          {formatTimeAgo(n.createdAt)}
-        </p>
+        <p className="notif-title">{n.title}</p>
+        {n.body && <p className="notif-body mt-0.5">{n.body}</p>}
+        <p className="notif-time mt-0.5">{formatTimeAgo(n.createdAt)}</p>
 
         <NotificationActions
           actionStatus={n.actionStatus}
@@ -47,12 +41,7 @@ export function NotificationItem({ notification, onPress, onAction }: Notificati
         />
       </div>
 
-      {!n.isRead && (
-        <div
-          className="mt-2 h-[7px] w-[7px] shrink-0 rounded-full"
-          style={{ backgroundColor: 'var(--brand)', border: '1.5px solid var(--bg)' }}
-        />
-      )}
+      {!n.isRead && <div className="notif-unread-dot mt-2" />}
     </button>
   )
 }

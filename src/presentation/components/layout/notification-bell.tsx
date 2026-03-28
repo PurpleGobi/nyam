@@ -10,13 +10,8 @@ interface NotificationBellProps {
 
 export function NotificationBell({ unreadCount, onClick }: NotificationBellProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="relative flex items-center justify-center rounded-full"
-      style={{ width: '34px', height: '34px' }}
-    >
-      <Bell size={20} style={{ color: 'var(--text)' }} />
+    <button type="button" onClick={onClick} className="icon-btn">
+      <Bell size={20} />
       <UnreadBadge count={unreadCount} />
     </button>
   )

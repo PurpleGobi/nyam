@@ -14,20 +14,11 @@ export function Toggle({ checked, onChange, disabled = false }: ToggleProps) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors"
+      className={`toggle${checked ? ' on' : ''}`}
       style={{
-        backgroundColor: checked ? 'var(--accent-food)' : 'var(--border-bold)',
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
       }}
-    >
-      <div
-        className="absolute top-[2px] h-[22px] w-[22px] rounded-full shadow-sm transition-transform"
-        style={{
-          backgroundColor: 'var(--bg-elevated)',
-          left: checked ? '20px' : '2px',
-        }}
-      />
-    </button>
+    />
   )
 }

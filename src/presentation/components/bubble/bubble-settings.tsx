@@ -125,8 +125,7 @@ export function BubbleSettings({
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
               placeholder="키워드 입력"
               maxLength={20}
-              className="flex-1 rounded-lg px-3 py-2 text-[13px] text-[var(--text)] outline-none"
-              style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+              className="nyam-input flex-1 text-[13px]"
             />
             <button
               type="button"
@@ -224,7 +223,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
         {icon}
         <span className="text-[14px] font-bold text-[var(--text)]">{title}</span>
       </div>
-      <div className="flex flex-col gap-2.5 rounded-xl p-3" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div className="card flex flex-col gap-2.5 rounded-xl p-3">
         {children}
       </div>
     </div>
@@ -241,8 +240,8 @@ function InputField({ label, value, onChange, maxLength, multiline }: { label: s
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(e.target.value)}
         maxLength={maxLength}
         rows={multiline ? 2 : undefined}
-        className="rounded-lg px-3 py-2 text-[13px] text-[var(--text)] outline-none"
-        style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)', resize: 'none' }}
+        className="nyam-input text-[13px]"
+        style={{ resize: 'none' }}
       />
     </div>
   )
@@ -260,8 +259,7 @@ function NumberField({ label, value, onChange, min, suffix, prefix }: { label: s
           value={value}
           onChange={(e) => onChange(Math.max(min, parseInt(e.target.value) || 0))}
           min={min}
-          className="w-16 rounded-lg px-2 py-1.5 text-center text-[13px] text-[var(--text)] outline-none"
-          style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+          className="nyam-input w-16 px-2 py-1.5 text-center text-[13px]"
         />
       </div>
     </div>
@@ -278,14 +276,9 @@ function ToggleRow({ label, value, onChange, description }: { label: string; val
       <button
         type="button"
         onClick={() => onChange(!value)}
-        className="h-6 w-10 rounded-full transition-colors"
-        style={{ backgroundColor: value ? 'var(--accent-social)' : 'var(--border)' }}
-      >
-        <div
-          className="h-5 w-5 rounded-full bg-[var(--bg-elevated)] transition-transform"
-          style={{ transform: value ? 'translateX(18px)' : 'translateX(2px)' }}
-        />
-      </button>
+        className={`toggle${value ? ' on' : ''}`}
+        style={value ? { background: 'var(--accent-social)' } : undefined}
+      />
     </div>
   )
 }

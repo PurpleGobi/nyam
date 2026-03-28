@@ -44,6 +44,8 @@ export function useXpAward() {
             body: `${scopeLabel} Lv.${levelUp.newLevel} ${levelUp.title} 달성!`,
             actionStatus: null,
             actorId: null,
+            targetType: null,
+            targetId: null,
             bubbleId: null,
           })
         }
