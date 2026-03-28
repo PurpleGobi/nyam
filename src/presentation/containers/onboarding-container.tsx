@@ -95,7 +95,7 @@ export function OnboardingContainer() {
   const stepIdx = STEP_INDEX[step]
 
   return (
-    <div className="relative flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="app-shell relative flex flex-col">
       <div style={{ padding: '54px 28px 0', flexShrink: 0 }}>
         <OnboardingProgress currentStep={stepIdx} totalSteps={3} />
       </div>

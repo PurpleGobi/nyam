@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { getGaugeColor } from '@/shared/utils/gauge-color'
 import { FollowingSourceBadge } from './following-source-badge'
 
 interface FeedItem {
@@ -29,27 +28,17 @@ interface FollowingFeedCardProps {
 }
 
 export function FollowingFeedCard({ item, onPress }: FollowingFeedCardProps) {
+  const scoreColor = item.targetType === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
+
   return (
     <button
       type="button"
       onClick={onPress}
-      className="flex w-full flex-col gap-2 rounded-xl p-3 text-left transition-colors active:scale-[0.98]"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="flex w-full flex-col gap-2 rounded-xl text-left transition-transform active:scale-[0.98]"
+      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', padding: '14px' }}
     >
+      {/* 소스 배지 + 시간 */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-            style={{ backgroundColor: item.authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-          >
-            {item.authorAvatar ? (
-              <Image src={item.authorAvatar} alt="" width={28} height={28} className="h-full w-full rounded-full object-cover" unoptimized />
-            ) : (
-              item.authorNickname.charAt(0)
-            )}
-          </div>
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{item.authorNickname}</span>
-        </div>
         <FollowingSourceBadge
           sourceType={item.sourceType}
           sourceName={item.sourceName}
@@ -57,34 +46,28 @@ export function FollowingFeedCard({ item, onPress }: FollowingFeedCardProps) {
           sourceAvatar={item.sourceAvatar}
           sourceAvatarColor={item.sourceAvatarColor}
         />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span
-          className="text-[14px] font-bold"
-          style={{ color: item.targetType === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)' }}
-        >
-          {item.targetName}
-        </span>
-        {item.satisfaction !== null && (
-          <div
-            className="flex h-6 w-6 items-center justify-center rounded-full"
-            style={{ backgroundColor: getGaugeColor(item.satisfaction) }}
-          >
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#FFFFFF' }}>{item.satisfaction}</span>
-          </div>
+        {item.visitDate && (
+          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{item.visitDate}</span>
         )}
       </div>
 
-      {/* 맞팔 소스만 한줄평 표시, 버블 소스는 이름+점수만 */}
+      {/* 식당/와인명 + 점수 */}
+      <div className="flex items-center justify-between">
+        <span className="text-[15px] font-[800]" style={{ color: 'var(--text)' }}>
+          {item.targetName}
+        </span>
+        {item.satisfaction !== null && (
+          <span className="text-[18px] font-[800]" style={{ color: scoreColor }}>
+            {item.satisfaction}
+          </span>
+        )}
+      </div>
+
+      {/* 한줄평 — 맞팔 소스만 표시, 1줄 클램프 */}
       {item.sourceType === 'user' && item.comment && (
-        <p className="line-clamp-2 text-[12px]" style={{ color: 'var(--text-sub)', lineHeight: 1.5 }}>
+        <p className="line-clamp-1 text-[12px]" style={{ color: 'var(--text-sub)' }}>
           {item.comment}
         </p>
-      )}
-
-      {item.visitDate && (
-        <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>{item.visitDate}</span>
       )}
 
       {/* 버블 소스: 가입 유도 CTA */}

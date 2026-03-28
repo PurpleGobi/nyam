@@ -108,10 +108,11 @@ export function useRestaurantDetail(
   }, [restaurantId, userId, repo])
 
   // 파생값 계산
-  const myAvgScore = myRecords.length > 0
+  const scoredRecords = myRecords.filter((r) => r.satisfaction !== null)
+  const myAvgScore = scoredRecords.length > 0
     ? Math.round(
-        myRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) /
-          myRecords.filter((r) => r.satisfaction !== null).length,
+        scoredRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) /
+          scoredRecords.length,
       )
     : null
 
@@ -125,10 +126,11 @@ export function useRestaurantDetail(
     ? calcNyamScore(restaurant)
     : null
 
-  const bubbleAvgScore = bubbleScores.length > 0
+  const scoredBubbles = bubbleScores.filter((b) => b.avgScore !== null)
+  const bubbleAvgScore = scoredBubbles.length > 0
     ? Math.round(
-        bubbleScores.reduce((sum, b) => sum + (b.avgScore ?? 0), 0) /
-          bubbleScores.filter((b) => b.avgScore !== null).length,
+        scoredBubbles.reduce((sum, b) => sum + (b.avgScore ?? 0), 0) /
+          scoredBubbles.length,
       )
     : null
 

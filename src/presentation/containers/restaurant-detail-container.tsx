@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Bell, Users, User } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
@@ -165,19 +164,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         variant="inner"
         title={FROM_LABELS[from] ?? '홈'}
         backHref={from === 'profile' ? '/profile' : from === 'bubble' ? '/bubbles' : '/'}
-        actions={
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => router.push('/bubbles')}>
-              <Users size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-            <button type="button">
-              <Bell size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-            <button type="button" onClick={() => router.push('/profile')}>
-              <User size={20} style={{ color: 'var(--text-sub)' }} />
-            </button>
-          </div>
-        }
       />
 
       {/* 스크롤 영역 */}

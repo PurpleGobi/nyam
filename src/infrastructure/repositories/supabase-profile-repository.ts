@@ -154,7 +154,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
     const { data: areas } = await this.supabase
-      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(city)')
+      .from('records').select('restaurant:restaurants!records_linked_restaurant_id_fkey(city)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const areaSet = new Set<string>()
@@ -181,7 +181,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getGenreDistribution(userId: string): Promise<BarChartItem[]> {
     const { data } = await this.supabase
-      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(genre)')
+      .from('records').select('restaurant:restaurants!records_linked_restaurant_id_fkey(genre)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const map = new Map<string, number>()
@@ -234,7 +234,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
   async getRestaurantMapMarkers(userId: string): Promise<MapMarker[]> {
     const { data } = await this.supabase
       .from('records')
-      .select('restaurant:restaurants!linked_restaurant_id_fkey(country, city, latitude, longitude)')
+      .select('restaurant:restaurants!records_linked_restaurant_id_fkey(country, city, latitude, longitude)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const map = new Map<string, { country: string; city: string; lat: number; lng: number; count: number }>()
@@ -330,7 +330,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getVarietyDistribution(userId: string): Promise<BarChartItem[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines!linked_wine_id_fkey(grape_variety)')
+      .from('records').select('wine:wines!records_linked_wine_id_fkey(grape_variety)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const map = new Map<string, number>()
@@ -386,7 +386,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getWineRegionMapData(userId: string): Promise<WineRegionMapData[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines!linked_wine_id_fkey(country, region, sub_region, wine_type)')
+      .from('records').select('wine:wines!records_linked_wine_id_fkey(country, region, sub_region, wine_type)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const countryMap = new Map<string, {
@@ -443,7 +443,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getWineTypeDistribution(userId: string): Promise<WineTypeDistribution[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines!linked_wine_id_fkey(wine_type)')
+      .from('records').select('wine:wines!records_linked_wine_id_fkey(wine_type)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const map = new Map<string, number>()
@@ -479,7 +479,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     // 1. 기록 조회
     let query = this.supabase
       .from('records')
-      .select('satisfaction, visit_date, scene, target_type, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, city), wine:wines!linked_wine_id_fkey(name, grape_variety, country)')
+      .select('satisfaction, visit_date, scene, target_type, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, city), wine:wines!records_linked_wine_id_fkey(name, grape_variety, country)')
       .eq('user_id', userId)
 
     if (targetFilter) {
@@ -563,7 +563,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     // 6. bubbles (사용자가 속한 버블 목록)
     const { data: memberData } = await this.supabase
       .from('bubble_members')
-      .select('bubble:bubbles(name, avatar_color)')
+      .select('bubble:bubbles(name, icon_bg_color)')
       .eq('user_id', userId)
 
     const bubbles: WrappedData['bubbles'] = (memberData ?? [])
@@ -571,7 +571,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         const bubble = m.bubble as unknown as Record<string, unknown> | null
         return {
           name: (bubble?.name as string) ?? '',
-          avatarColor: (bubble?.avatar_color as string) ?? '#7A9BAE',
+          avatarColor: (bubble?.icon_bg_color as string) ?? '#7A9BAE',
         }
       })
       .filter((b) => b.name.length > 0)
@@ -594,7 +594,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     const lastMonthStr = lastMonth.toISOString().slice(0, 7)
 
     const { data: prevRecords } = await this.supabase
-      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(city)')
+      .from('records').select('restaurant:restaurants!records_linked_restaurant_id_fkey(city)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
       .lt('created_at', `${thisMonth}-01`)
 
@@ -679,7 +679,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: records } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!linked_wine_id_fkey(name, type, region, photos)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
       .eq('user_id', userId).eq('status', 'rated')
       .eq('target_type', targetType)
       .order('satisfaction', { ascending: false })
@@ -707,7 +707,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: recentData } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!linked_wine_id_fkey(name, type, region, photos)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
       .eq('user_id', userId).eq('status', 'rated')
       .eq('target_type', targetType)
       .order('created_at', { ascending: false })

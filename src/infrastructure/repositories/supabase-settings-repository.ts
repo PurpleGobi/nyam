@@ -92,7 +92,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
   async getBubblePrivacyOverrides(userId: string): Promise<BubblePrivacyOverride[]> {
     const { data, error } = await this.supabase
       .from('bubble_members')
-      .select('bubble_id, visibility_override, bubble:bubbles(name, avatar_color)')
+      .select('bubble_id, visibility_override, bubble:bubbles(name, icon_bg_color)')
       .eq('user_id', userId)
 
     if (error) throw error
@@ -102,7 +102,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       return {
         bubbleId: r.bubble_id as string,
         bubbleName: (bubble?.name as string) ?? '',
-        bubbleAvatarColor: (bubble?.avatar_color as string) ?? null,
+        bubbleAvatarColor: (bubble?.icon_bg_color as string) ?? null,
         useDefault: r.visibility_override === null,
         visibilityOverride: r.visibility_override as VisibilityConfig | null,
       }

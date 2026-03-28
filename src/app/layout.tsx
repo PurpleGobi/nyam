@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className="font-sans bg-background text-foreground antialiased">
+      <body className="font-sans text-foreground antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>

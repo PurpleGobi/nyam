@@ -110,7 +110,7 @@ export function RestaurantRegisterStep({
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className="fixed-in-shell fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4" style={{ backgroundColor: 'var(--bg)' }}>
         <button
           type="button"
           onClick={onNext}

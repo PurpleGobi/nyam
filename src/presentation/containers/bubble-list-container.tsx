@@ -287,8 +287,8 @@ export function BubbleListContainer() {
       <button
         type="button"
         onClick={() => router.push('/bubbles?create=true')}
-        className="fixed bottom-7 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-90"
-        style={{ backgroundColor: 'var(--accent-social)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="fab-add z-50 flex items-center justify-center shadow-lg transition-transform active:scale-90"
+        style={{ backgroundColor: 'var(--accent-social)', marginBottom: 'env(safe-area-inset-bottom, 0px)', width: '56px', height: '56px', border: 'none' }}
       >
         <Plus size={28} color="#FFFFFF" />
       </button>

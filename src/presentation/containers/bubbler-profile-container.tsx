@@ -120,6 +120,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         {data.accessLevel === 'mutual' && (
           <RecentRecords
             records={data.recentRecords}
+            accentType={activeTab === 'restaurant' ? 'food' : 'wine'}
             onRecordPress={(id) => router.push(`/records/${id}`)}
           />
         )}

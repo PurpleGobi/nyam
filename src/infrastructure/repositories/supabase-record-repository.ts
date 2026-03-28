@@ -177,20 +177,20 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (restaurantIds.length > 0) {
       const { data: restaurants } = await this.supabase
         .from('restaurants')
-        .select('id, name, genre, area, photo_url')
+        .select('id, name, genre, area, photos')
         .in('id', restaurantIds)
       for (const r of restaurants ?? []) {
-        restaurantMap.set(r.id, r)
+        restaurantMap.set(r.id, { name: r.name, genre: r.genre, area: r.area, photo_url: r.photos?.[0] ?? null })
       }
     }
 
     if (wineIds.length > 0) {
       const { data: wines } = await this.supabase
         .from('wines')
-        .select('id, name, variety, region, photo_url')
+        .select('id, name, variety, region, photos')
         .in('id', wineIds)
       for (const w of wines ?? []) {
-        wineMap.set(w.id, w)
+        wineMap.set(w.id, { name: w.name, variety: w.variety, region: w.region, photo_url: w.photos?.[0] ?? null })
       }
     }
 

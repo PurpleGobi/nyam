@@ -50,7 +50,7 @@ function EditFieldSheetInner({
         onClick={onClose}
       />
       <div
-        className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl"
+        className="fixed-in-shell fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl"
         style={{ backgroundColor: 'var(--bg-card)', padding: '20px 24px 32px' }}
       >
         <div className="mb-4 flex items-center justify-between">

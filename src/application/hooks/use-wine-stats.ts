@@ -135,7 +135,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
       const { data: records, error: fetchError } = await supabase
         .from('records')
         .select(
-          'id, satisfaction, visit_date, purchase_price, wine:wines!linked_wine_id_fkey(name, country, region, variety, wine_type)'
+          'id, satisfaction, visit_date, purchase_price, wine:wines!records_linked_wine_id_fkey(name, country, region, variety, wine_type)'
         )
         .eq('user_id', userId)
         .eq('target_type', 'wine')

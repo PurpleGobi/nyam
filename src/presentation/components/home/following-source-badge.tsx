@@ -19,12 +19,9 @@ export function FollowingSourceBadge({
   sourceAvatarColor,
 }: FollowingSourceBadgeProps) {
   return (
-    <div
-      className="flex items-center gap-1 rounded-full px-2 py-0.5"
-      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-    >
+    <div className="flex items-center gap-1.5">
       {sourceType === 'bubble' ? (
-        <BubbleIcon icon={sourceIcon} size={10} />
+        <BubbleIcon icon={sourceIcon} size={16} />
       ) : (
         <div
           className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
@@ -38,7 +35,7 @@ export function FollowingSourceBadge({
         </div>
       )}
       <span
-        className="max-w-[60px] truncate text-[10px] font-medium"
+        className="max-w-[60px] truncate text-[11px] font-semibold"
         style={{ color: sourceType === 'bubble' ? 'var(--accent-social)' : 'var(--text-sub)' }}
       >
         {sourceName}
