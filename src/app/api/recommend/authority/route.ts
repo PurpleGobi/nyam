@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('restaurants')
     .select('id, name, genre, photo_url, michelin_stars, has_blue_ribbon, naver_rating, kakao_rating, google_rating')
-    .or('michelin_stars.gt.0,has_blue_ribbon.eq.true')
+    .or('michelin_stars.gt.0,has_blue_ribbon.eq.true,and(naver_rating.gte.4.3,kakao_rating.gte.4.0,google_rating.gte.4.2)')
     .limit(20)
 
   if (area) {

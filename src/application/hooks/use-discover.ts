@@ -6,7 +6,6 @@ import type { DiscoverCard, DiscoverArea } from '@/domain/entities/discover'
 import { DISCOVER_AREAS } from '@/domain/entities/discover'
 import { discoverRepo } from '@/shared/di/container'
 
-const DEFAULT_AREA: DiscoverArea = DISCOVER_AREAS[0]
 const PAGE_SIZE = 20
 
 function getKey(area: DiscoverArea) {
@@ -21,8 +20,13 @@ async function fetcher(key: string): Promise<{ cards: DiscoverCard[]; total: num
   return discoverRepo.getByArea(area, Number(page), PAGE_SIZE)
 }
 
-export function useDiscover() {
-  const [area, setAreaState] = useState<DiscoverArea>(DEFAULT_AREA)
+interface UseDiscoverOptions {
+  preferredAreas?: string[] | null
+}
+
+export function useDiscover(options?: UseDiscoverOptions) {
+  const defaultArea: DiscoverArea = (options?.preferredAreas?.[0] as DiscoverArea) ?? DISCOVER_AREAS[0]
+  const [area, setAreaState] = useState<DiscoverArea>(defaultArea)
 
   const { data, isLoading, isValidating, setSize } = useSWRInfinite(
     getKey(area),

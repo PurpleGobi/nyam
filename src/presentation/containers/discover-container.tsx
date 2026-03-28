@@ -7,9 +7,11 @@ import { AreaChips } from '@/presentation/components/discover/area-chips'
 import { DiscoverCard } from '@/presentation/components/discover/discover-card'
 import { DiscoverSearchBar } from '@/presentation/components/discover/discover-search-bar'
 import { useDiscover } from '@/application/hooks/use-discover'
+import { useSettings } from '@/application/hooks/use-settings'
 
 export function DiscoverContainer() {
   const router = useRouter()
+  const { settings } = useSettings()
   const { cards, area, setArea, isLoading, hasMore, loadMore, isEmpty } = useDiscover()
 
   // Infinite scroll observer

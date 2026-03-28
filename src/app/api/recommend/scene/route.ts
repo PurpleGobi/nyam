@@ -44,33 +44,51 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ cards: [] })
   }
 
-  const seen = new Set<string>()
-  const cards: RecommendationCard[] = []
+  // GROUP BY target_id + AVG(satisfaction)
+  const grouped = new Map<string, {
+    targetId: string
+    targetType: string
+    satisfactionSum: number
+    count: number
+    restaurant: { name: string; genre: string | null; photo_url: string | null } | null
+  }>()
 
   for (const r of records) {
-    if (seen.has(r.target_id)) continue
-    seen.add(r.target_id)
-
-    const restaurant = r.restaurants as unknown as { name: string; genre: string | null; photo_url: string | null } | null
-
-    cards.push({
-      id: `scene-${r.target_id}`,
-      targetId: r.target_id,
-      targetType: r.target_type as 'restaurant' | 'wine',
-      name: restaurant?.name ?? '',
-      meta: restaurant?.genre ?? '',
-      photoUrl: restaurant?.photo_url ?? null,
-      algorithm: 'scene',
-      source: 'ai',
-      reason: `${scene} · 만족도 ${r.satisfaction}%`,
-      normalizedScore: r.satisfaction ?? 0,
-      confidence: null,
-      likeCount: 0,
-      commentCount: 0,
-    })
-
-    if (cards.length >= 10) break
+    const existing = grouped.get(r.target_id)
+    if (existing) {
+      existing.satisfactionSum += (r.satisfaction ?? 0)
+      existing.count += 1
+    } else {
+      grouped.set(r.target_id, {
+        targetId: r.target_id,
+        targetType: r.target_type,
+        satisfactionSum: r.satisfaction ?? 0,
+        count: 1,
+        restaurant: r.restaurants as unknown as { name: string; genre: string | null; photo_url: string | null } | null,
+      })
+    }
   }
+
+  const scored = Array.from(grouped.values())
+    .map((g) => ({ ...g, avgScore: Math.round(g.satisfactionSum / g.count) }))
+    .sort((a, b) => b.avgScore - a.avgScore)
+    .slice(0, 10)
+
+  const cards: RecommendationCard[] = scored.map((g) => ({
+    id: `scene-${g.targetId}`,
+    targetId: g.targetId,
+    targetType: g.targetType as 'restaurant' | 'wine',
+    name: g.restaurant?.name ?? '',
+    meta: g.restaurant?.genre ?? '',
+    photoUrl: g.restaurant?.photo_url ?? null,
+    algorithm: 'scene',
+    source: 'ai',
+    reason: `${scene} · 평균 만족도 ${g.avgScore}%`,
+    normalizedScore: g.avgScore,
+    confidence: null,
+    likeCount: 0,
+    commentCount: 0,
+  }))
 
   const engagement = await fetchEngagementCounts(supabase, cards.map((c) => c.targetId), 'restaurant')
   for (const card of cards) {

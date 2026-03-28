@@ -36,6 +36,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       activeVerified: (data.active_verified as number) ?? 0,
       recordCount: (data.record_count as number) ?? 0,
       currentStreak: (data.current_streak as number) ?? 0,
+      preferredAreas: (data.preferred_areas as string[] | null) ?? null,
       createdAt: data.created_at as string,
     }
   }

@@ -37,16 +37,59 @@ export interface BubbleCandidate {
   isPrivateBubble: boolean
 }
 
+export interface SceneCandidate {
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  name: string
+  meta: string
+  photoUrl: string | null
+  avgSatisfaction: number
+  scene: string
+}
+
+export interface QuadrantCandidate {
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  name: string
+  meta: string
+  photoUrl: string | null
+  avgSatisfaction: number
+  axisX: number
+  axisY: number
+}
+
+export interface PairingCandidate {
+  targetId: string
+  name: string
+  meta: string
+  photoUrl: string | null
+  satisfaction: number
+  pairingCategories: string[]
+}
+
 /**
  * Recommendation Repository 인터페이스
  * infrastructure/repositories/supabase-recommendation-repository.ts에서 구현
  */
 export interface RecommendationRepository {
-  getRevisitCandidates(userId: string): Promise<RevisitCandidate[]>
+  getRevisitCandidates(userId: string, limit: number): Promise<RevisitCandidate[]>
 
-  getAuthorityCandidates(): Promise<AuthorityCandidate[]>
+  getSceneCandidates(userId: string, scene: string, limit: number): Promise<SceneCandidate[]>
 
-  getBubbleCandidates(userId: string): Promise<BubbleCandidate[]>
+  getQuadrantCandidates(userId: string, params: {
+    scene?: string
+    axisXMin: number
+    axisXMax: number
+    axisYMin: number
+    axisYMax: number
+    minSatisfaction: number
+  }, limit: number): Promise<QuadrantCandidate[]>
+
+  getAuthorityCandidates(area: string | null, limit: number): Promise<AuthorityCandidate[]>
+
+  getBubbleCandidates(userId: string, limit: number): Promise<BubbleCandidate[]>
+
+  getWinePairingCandidates(wineId: string): Promise<PairingCandidate[]>
 
   saveRecommendation(userId: string, card: RecommendationCard): Promise<void>
 

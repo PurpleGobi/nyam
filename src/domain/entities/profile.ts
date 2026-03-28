@@ -16,6 +16,7 @@ export interface UserProfile {
   activeVerified: number
   recordCount: number
   currentStreak: number
+  preferredAreas: string[] | null
   createdAt: string
 }
 

@@ -45,29 +45,24 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
         )}
 
         <div className="header-right">
-          {variant === 'main' ? (
-            <>
-              <button
-                type="button"
-                onClick={() => router.push('/bubbles')}
-                className="header-bubbles"
-              >
-                bubbles
-              </button>
-              <NotificationBell
-                unreadCount={unreadCount}
-                onClick={() => setNotifOpen(!notifOpen)}
-              />
-              {user && (
-                <AvatarDropdown
-                  nickname={user.nickname ?? '?'}
-                  avatarUrl={user.avatarUrl ?? null}
-                  avatarColor={null}
-                />
-              )}
-            </>
-          ) : (
-            actions
+          {actions}
+          <button
+            type="button"
+            onClick={() => router.push('/bubbles')}
+            className="header-bubbles"
+          >
+            bubbles
+          </button>
+          <NotificationBell
+            unreadCount={unreadCount}
+            onClick={() => setNotifOpen(!notifOpen)}
+          />
+          {user && (
+            <AvatarDropdown
+              nickname={user.nickname ?? '?'}
+              avatarUrl={user.avatarUrl ?? null}
+              avatarColor={null}
+            />
           )}
         </div>
       </header>

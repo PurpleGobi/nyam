@@ -105,7 +105,10 @@ export function HomeContainer() {
     conjunction, setConjunction,
     currentSort, setCurrentSort,
     searchQuery, setSearchQuery,
-  } = useHomeState()
+  } = useHomeState({
+    initialTab: user?.pref_home_tab && user.pref_home_tab !== 'last' ? user.pref_home_tab : undefined,
+    initialViewMode: user?.pref_view_mode && user.pref_view_mode !== 'last' ? user.pref_view_mode : undefined,
+  })
 
   const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
   const { records } = useRecordsWithTarget(user?.id ?? null, activeTab)
