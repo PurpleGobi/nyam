@@ -29,7 +29,7 @@ export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" style={{ padding: '16px 20px' }}>
       <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
         <Star size={14} style={{ color: 'var(--text-sub)' }} />
         {title ?? '강력 추천'}

@@ -1,10 +1,10 @@
 'use client'
 
-import { Utensils, Wine } from 'lucide-react'
 import type {
   RestaurantStats, WineStats, BarChartItem, ScoreDistribution,
   MonthlySpending, MapMarker, SceneVisit, WineRegionMapData, WineTypeDistribution,
 } from '@/domain/entities/profile'
+import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { StatSummaryCards } from '@/presentation/components/profile/stat-summary-cards'
 import { HorizontalBarChart } from '@/presentation/components/charts/horizontal-bar-chart'
 import { VerticalBarChart } from '@/presentation/components/charts/vertical-bar-chart'
@@ -14,9 +14,9 @@ import { VarietyToggle } from '@/presentation/components/profile/variety-toggle'
 
 type TabType = 'restaurant' | 'wine'
 
-const TABS: { key: TabType; label: string; icon: typeof Utensils }[] = [
-  { key: 'restaurant', label: '식당', icon: Utensils },
-  { key: 'wine', label: '와인', icon: Wine },
+const TABS: { key: TabType; label: string; variant: 'food' | 'wine' }[] = [
+  { key: 'restaurant', label: '식당', variant: 'food' },
+  { key: 'wine', label: '와인', variant: 'wine' },
 ]
 
 interface StatTabsProps {
@@ -39,6 +39,8 @@ interface StatTabsProps {
   // Variety toggle
   showAllVarieties: boolean
   onToggleVarieties: (showAll: boolean) => void
+  // Level section slot (경험치 & 레벨)
+  levelSlot?: React.ReactNode
 }
 
 export function StatTabs({
@@ -48,42 +50,15 @@ export function StatTabs({
   wineStats, wineVarieties, wineScoreDist,
   wineMonthlySpending, wineRegionMap, wineTypeDistribution,
   showAllVarieties, onToggleVarieties,
+  levelSlot,
 }: StatTabsProps) {
   return (
     <div className="mt-6">
-      {/* Tab bar — sticky + glassmorphism */}
-      <div
-        className="sticky top-0 z-10 mx-4 flex overflow-hidden rounded-xl"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--bg-elevated) 80%, transparent)',
-          border: '1px solid var(--border)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}
-      >
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => onTabChange(tab.key)}
-              className="flex flex-1 items-center justify-center gap-1.5 py-2.5 transition-colors"
-              style={{
-                backgroundColor: isActive
-                  ? tab.key === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
-                  : 'transparent',
-                color: isActive ? '#FFFFFF' : 'var(--text-sub)',
-                fontSize: '13px',
-                fontWeight: isActive ? 700 : 500,
-              }}
-            >
-              <tab.icon size={14} />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <StickyTabs
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+      />
 
       {/* Stats content */}
       <div className="mx-4 mt-3">
@@ -95,6 +70,7 @@ export function StatTabs({
             monthlySpending={restaurantMonthlySpending}
             mapMarkers={restaurantMapMarkers}
             scenes={restaurantScenes}
+            levelSlot={levelSlot}
           />
         )}
 
@@ -108,6 +84,7 @@ export function StatTabs({
             typeDistribution={wineTypeDistribution}
             showAllVarieties={showAllVarieties}
             onToggleVarieties={onToggleVarieties}
+            levelSlot={levelSlot}
           />
         )}
 
@@ -119,7 +96,7 @@ export function StatTabs({
 }
 
 function RestaurantPanel({
-  stats, genres, scoreDist, monthlySpending, mapMarkers, scenes,
+  stats, genres, scoreDist, monthlySpending, mapMarkers, scenes, levelSlot,
 }: {
   stats: RestaurantStats
   genres: BarChartItem[]
@@ -127,16 +104,20 @@ function RestaurantPanel({
   monthlySpending: MonthlySpending[]
   mapMarkers: MapMarker[]
   scenes: SceneVisit[]
+  levelSlot?: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-3">
       <StatSummaryCards
         cards={[
-          { label: '총 방문', value: stats.totalVisits, color: 'var(--accent-food)' },
-          { label: '평균 점수', value: stats.avgScore, color: 'var(--accent-food)' },
-          { label: '방문 지역', value: stats.visitedAreas, color: 'var(--accent-food)' },
+          { label: '총 방문', value: stats.totalVisits, trend: stats.thisMonthVisits ? `+${stats.thisMonthVisits} 이번 달` : undefined, color: 'var(--accent-food)' },
+          { label: '평균 점수', value: stats.avgScore, trend: stats.scoreDelta ? (stats.scoreDelta > 0 ? `+${stats.scoreDelta}` : `${stats.scoreDelta}`) : '-', color: 'var(--accent-food)' },
+          { label: '방문 지역', value: stats.visitedAreas, trend: stats.thisMonthNewAreas ? `+${stats.thisMonthNewAreas} 신규` : undefined, color: 'var(--accent-food)' },
         ]}
       />
+
+      {/* 경험치 & 레벨 */}
+      {levelSlot}
 
       {/* 식당 지도 */}
       <RestaurantMap markers={mapMarkers} />
@@ -184,7 +165,7 @@ function RestaurantPanel({
 
 function WinePanel({
   stats, varieties, scoreDist, monthlySpending, regionMap, typeDistribution,
-  showAllVarieties, onToggleVarieties,
+  showAllVarieties, onToggleVarieties, levelSlot,
 }: {
   stats: WineStats
   varieties: BarChartItem[]
@@ -194,6 +175,7 @@ function WinePanel({
   typeDistribution: WineTypeDistribution[]
   showAllVarieties: boolean
   onToggleVarieties: (showAll: boolean) => void
+  levelSlot?: React.ReactNode
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -204,6 +186,9 @@ function WinePanel({
           { label: '셀러 보유', value: stats.cellarCount, color: 'var(--accent-wine)' },
         ]}
       />
+
+      {/* 경험치 & 레벨 */}
+      {levelSlot}
 
       {/* 와인 산지 지도 */}
       <WineRegionMapSimple data={regionMap} />

@@ -38,16 +38,21 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      {/* 헤더 */}
+      {/* 헤더 (목업 .app-header: 좌=뒤로+라벨, 우=더보기) */}
       <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-0.5 py-1"
+          style={{ color: 'var(--text)' }}
+        >
+          <ChevronLeft size={22} style={{ color: 'var(--text-sub)' }} />
+          <span className="text-[16px] font-semibold leading-none">
+            {data.bubbleContext?.bubbleName ?? '뒤로'}
+          </span>
         </button>
-        <span className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-          {data.bubbleContext?.bubbleName ?? data.nickname}
-        </span>
         <button type="button" className="flex h-11 w-11 items-center justify-center">
-          <MoreHorizontal size={18} style={{ color: 'var(--text-sub)' }} />
+          <MoreHorizontal size={18} style={{ color: 'var(--text)' }} />
         </button>
       </nav>
 

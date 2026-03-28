@@ -457,7 +457,7 @@ export function HomeContainer() {
     <div className="content-feed flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader />
 
-      <div className="flex flex-1 flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col">
         {isGreetingVisible && (
           <div className="pt-2">
             <AiGreeting

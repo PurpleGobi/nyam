@@ -36,8 +36,11 @@ export function TasteProfile({ categories, scoreTendency, topRegions, accentType
   const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
   const accentLightColor = accentType === 'food' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)'
 
+  // 목업: 카테고리별 바 색상 차등 (1위=accent, 2위=social, 3위=positive, 나머지=border-bold)
+  const BAR_COLORS = [accentColor, 'var(--accent-social)', 'var(--positive)', 'var(--border-bold)', 'var(--border-bold)']
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" style={{ padding: '16px 20px' }}>
       <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
         <PieChart size={14} style={{ color: 'var(--text-sub)' }} />
         취향 프로필
@@ -47,7 +50,7 @@ export function TasteProfile({ categories, scoreTendency, topRegions, accentType
       {categories.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-[12px] font-semibold" style={{ color: 'var(--text-sub)' }}>카테고리 비중</span>
-          {categories.slice(0, 5).map((cat) => (
+          {categories.slice(0, 5).map((cat, idx) => (
             <div key={cat.name} className="flex items-center gap-2">
               <span className="w-[52px] shrink-0 text-[12px] font-semibold" style={{ color: 'var(--text)' }}>{cat.name}</span>
               <div className="relative h-[6px] flex-1 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--border)' }}>
@@ -55,7 +58,7 @@ export function TasteProfile({ categories, scoreTendency, topRegions, accentType
                   className="absolute left-0 top-0 h-full rounded-full"
                   style={{
                     width: `${Math.min(100, cat.percentage)}%`,
-                    backgroundColor: accentColor,
+                    backgroundColor: BAR_COLORS[idx] ?? 'var(--border-bold)',
                   }}
                 />
               </div>

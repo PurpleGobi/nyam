@@ -7,7 +7,6 @@ import { getLevel } from '@/domain/services/xp-calculator'
 import { xpRepo } from '@/shared/di/container'
 import type { UserExperience, Milestone } from '@/domain/entities/xp'
 import { ProfileHeader } from '@/presentation/components/profile/profile-header'
-import { TasteIdentityCard } from '@/presentation/components/profile/taste-identity-card'
 import { TotalLevelCard } from '@/presentation/components/profile/total-level-card'
 import { OverviewGrid } from '@/presentation/components/profile/overview-grid'
 import { ActivityHeatmap } from '@/presentation/components/profile/activity-heatmap'
@@ -111,15 +110,11 @@ export function ProfileContainer() {
     <div className="content-detail flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
       <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
 
-      {/* 프로필 헤더 */}
+      {/* 프로필 헤더 (2컬럼: 아바타+이름 | 미식 정체성 카드) */}
       <ProfileHeader
         profile={profile}
         level={levelInfo?.level ?? 1}
         levelColor={levelInfo?.color ?? '#7EAE8B'}
-      />
-
-      {/* 맛 정체성 카드 */}
-      <TasteIdentityCard
         tasteSummary={profile.tasteSummary}
         tasteTags={profile.tasteTags}
         recordCount={profile.recordCount}
@@ -155,35 +150,38 @@ export function ProfileContainer() {
 
       {recentXp && recentXp.length > 0 && <RecentXpList items={recentXp} />}
 
-      {/* Stat Tabs */}
-      <StatTabContainer />
-
-      {/* Level Section (mini tabs + level list) */}
-      {thresholds && thresholds.length > 0 && (
-        <div className="mx-4">
-          {/* Mini tabs */}
-          <div className="mb-3 flex gap-2">
-            {activeStatTab === 'food' ? (
-              <>
-                <MiniTab label="지역" active={foodMiniTab === 'region'} onClick={() => setFoodMiniTab('region')} />
-                <MiniTab label="장르" active={foodMiniTab === 'genre'} onClick={() => setFoodMiniTab('genre')} />
-              </>
-            ) : (
-              <>
-                <MiniTab label="산지" active={wineMiniTab === 'origin'} onClick={() => setWineMiniTab('origin')} accentColor="var(--accent-wine)" />
-                <MiniTab label="품종" active={wineMiniTab === 'grape'} onClick={() => setWineMiniTab('grape')} accentColor="var(--accent-wine)" />
-              </>
-            )}
-          </div>
-
-          <LevelList
-            experiences={currentLevelExperiences}
-            thresholds={thresholds}
-            category={activeStatTab === 'food' ? 'restaurant' : 'wine'}
-            onItemPress={handleLevelItemPress}
-          />
-        </div>
-      )}
+      {/* Stat Tabs + Level Section */}
+      <StatTabContainer
+        onTabChange={(tab) => setActiveStatTab(tab === 'restaurant' ? 'food' : 'wine')}
+        levelSlot={
+          thresholds && thresholds.length > 0 ? (
+            <div>
+              <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                경험치 & 레벨
+              </h3>
+              <div className="mb-3 flex gap-2">
+                {activeStatTab === 'food' ? (
+                  <>
+                    <MiniTab label="지역" active={foodMiniTab === 'region'} onClick={() => setFoodMiniTab('region')} />
+                    <MiniTab label="장르" active={foodMiniTab === 'genre'} onClick={() => setFoodMiniTab('genre')} />
+                  </>
+                ) : (
+                  <>
+                    <MiniTab label="산지" active={wineMiniTab === 'origin'} onClick={() => setWineMiniTab('origin')} accentColor="var(--accent-wine)" />
+                    <MiniTab label="품종" active={wineMiniTab === 'grape'} onClick={() => setWineMiniTab('grape')} accentColor="var(--accent-wine)" />
+                  </>
+                )}
+              </div>
+              <LevelList
+                experiences={currentLevelExperiences}
+                thresholds={thresholds}
+                category={activeStatTab === 'food' ? 'restaurant' : 'wine'}
+                onItemPress={handleLevelItemPress}
+              />
+            </div>
+          ) : null
+        }
+      />
 
       {/* Level Detail Sheet */}
       <LevelDetailSheet

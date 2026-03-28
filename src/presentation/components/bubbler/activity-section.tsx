@@ -54,7 +54,7 @@ export function ActivitySection({ heatmap, totalRecords, currentStreak, activeDu
   const heatmapTotal = totalRecords ?? heatmap.reduce((sum, c) => sum + c.intensity, 0)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" style={{ padding: '16px 20px' }}>
       <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
         <Activity size={14} style={{ color: 'var(--text-sub)' }} />
         활동

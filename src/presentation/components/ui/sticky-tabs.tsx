@@ -16,6 +16,11 @@ interface StickyTabsProps<T extends string> {
   rightSlot?: React.ReactNode
 }
 
+/**
+ * StickyTabs — 헤더 아래에 고정되는 필터 탭 바.
+ * position: sticky + top으로 .top-fixed 헤더 바로 아래에 붙음.
+ * 어디서 사용하든 sticky 동작 보장.
+ */
 export function StickyTabs<T extends string>({
   tabs,
   activeTab,
@@ -24,7 +29,15 @@ export function StickyTabs<T extends string>({
   rightSlot,
 }: StickyTabsProps<T>) {
   return (
-    <div className="content-tabs flex items-center px-4 pt-3">
+    <div
+      className="content-tabs flex items-center px-4 pt-3 pb-1"
+      style={{
+        position: 'sticky',
+        top: '46px', /* .top-fixed 헤더 높이 (padding 5+5 + content ~36) */
+        zIndex: 80,
+        backgroundColor: 'var(--bg)',
+      }}
+    >
       <div className="flex gap-2">
         {tabs.map((tab) => {
           const v = tab.variant ?? variant

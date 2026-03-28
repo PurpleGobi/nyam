@@ -82,35 +82,33 @@ export function ActivityHeatmap({ data, stats }: ActivityHeatmapProps) {
         </div>
       )}
 
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         {/* Day labels */}
-        <div className="flex flex-col gap-[3px] pr-1">
+        <div className="flex flex-col justify-between py-[1px]" style={{ width: '16px' }}>
           {DAY_LABELS.map((label, i) => (
-            <div
-              key={i}
-              className="flex h-[12px] w-[12px] items-center justify-center"
-            >
-              <span style={{ fontSize: '9px', color: 'var(--text-hint)' }}>{label}</span>
-            </div>
+            <span key={i} style={{ fontSize: '9px', color: 'var(--text-hint)', lineHeight: 1 }}>
+              {label}
+            </span>
           ))}
         </div>
 
         {/* Heatmap grid */}
-        <div className="flex flex-1 justify-between">
-          {grid.map((week, colIdx) => (
-            <div key={colIdx} className="flex flex-col gap-[3px]">
-              {week.map((cell, rowIdx) => (
-                <div
-                  key={rowIdx}
-                  className="h-[12px] w-[12px] rounded-[2px]"
-                  style={{
-                    backgroundColor: cell ? INTENSITY_COLORS[cell.intensity] : INTENSITY_COLORS[0],
-                  }}
-                  title={cell?.date ?? ''}
-                />
-              ))}
-            </div>
-          ))}
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(13, 1fr)', gap: '3px' }}>
+          {grid.map((week, colIdx) =>
+            week.map((cell, rowIdx) => (
+              <div
+                key={`${colIdx}-${rowIdx}`}
+                style={{
+                  aspectRatio: '1',
+                  borderRadius: '3px',
+                  backgroundColor: cell ? INTENSITY_COLORS[cell.intensity] : INTENSITY_COLORS[0],
+                  gridColumn: colIdx + 1,
+                  gridRow: rowIdx + 1,
+                }}
+                title={cell?.date ?? ''}
+              />
+            )),
+          )}
         </div>
       </div>
 
