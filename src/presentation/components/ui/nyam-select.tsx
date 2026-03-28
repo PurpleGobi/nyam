@@ -45,11 +45,11 @@ export function NyamSelect({ options, value, onChange, accentColor = 'var(--acce
         className={`nyam-select w-full ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''}`}
       >
         <span className="truncate">{selectedLabel}</span>
-        <ChevronDown size={14} className="nyam-select-arrow shrink-0" />
+        <ChevronDown size={12} className="nyam-select-arrow shrink-0" />
       </button>
 
       {isOpen && (
-        <div className="nyam-dropdown absolute right-0 top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto">
+        <div className="nyam-dropdown absolute right-0 top-full z-[100] mt-1 max-h-[200px] w-full overflow-y-auto">
           {options.map((option) => (
             <button
               key={option.value}

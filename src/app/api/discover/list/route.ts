@@ -20,9 +20,9 @@ export async function GET(request: NextRequest) {
 
   const offset = (page - 1) * limit
 
-  const { data: restaurants } = await supabase
+  const { data: restaurants, count } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, specialty, photos, nyam_score, naver_rating, kakao_rating, google_rating, michelin_stars, has_blue_ribbon, external_avg, record_count')
+    .select('id, name, genre, area, specialty, photos, nyam_score, naver_rating, kakao_rating, google_rating, michelin_stars, has_blue_ribbon, external_avg, record_count', { count: 'exact' })
     .eq('area', area)
     .order('nyam_score', { ascending: false, nullsFirst: false })
     .range(offset, offset + limit - 1)
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   }))
 
   return NextResponse.json(
-    { results },
+    { results, total: count ?? 0 },
     { headers: { 'Cache-Control': 'public, max-age=3600' } },
   )
 }

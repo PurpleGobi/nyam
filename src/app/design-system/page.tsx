@@ -286,16 +286,16 @@ export default function DesignSystemPage() {
 
         <Sub title="Card Actions" />
         <Row>
-          <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>가봤음</button>
-          <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>가보고싶음</button>
+          <button type="button" className="btn-card-action">가봤음</button>
+          <button type="button" className="btn-card-action">가보고싶음</button>
         </Row>
         <Row>
-          <button type="button" className="btn-card-action active-food" style={{ flex: 1, padding: '10px 0' }}>가봤음</button>
-          <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>가보고싶음</button>
+          <button type="button" className="btn-card-action active-food">가봤음</button>
+          <button type="button" className="btn-card-action">가보고싶음</button>
         </Row>
         <Row>
-          <button type="button" className="btn-card-action active-wine" style={{ flex: 1, padding: '10px 0' }}>맞아요</button>
-          <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>다른 와인이에요</button>
+          <button type="button" className="btn-card-action active-wine">맞아요</button>
+          <button type="button" className="btn-card-action">다른 와인이에요</button>
         </Row>
 
         <Sub title="Search Actions" />
@@ -307,8 +307,8 @@ export default function DesignSystemPage() {
 
         <Sub title="Social Login" />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '340px' }}>
-          <button type="button" className="btn-social kakao">카카오로 시작</button>
           <button type="button" className="btn-social google">Google로 시작</button>
+          <button type="button" className="btn-social kakao">카카오로 시작</button>
           <button type="button" className="btn-social apple">Apple로 시작</button>
           <button type="button" className="btn-social naver">네이버로 시작</button>
         </div>
@@ -328,8 +328,8 @@ export default function DesignSystemPage() {
             </div>
           </div>
           <div className="card-actions" style={{ marginTop: '12px' }}>
-            <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>가봤음</button>
-            <button type="button" className="btn-card-action" style={{ flex: 1, padding: '10px 0' }}>가보고싶음</button>
+            <button type="button" className="btn-card-action">가봤음</button>
+            <button type="button" className="btn-card-action">가보고싶음</button>
           </div>
         </NyamCard>
 

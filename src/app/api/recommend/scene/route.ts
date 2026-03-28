@@ -15,15 +15,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ cards: [] })
   }
 
-  const { data: records } = await supabase
+  // 사분면 필터 (optional, 설계 §2-3 quadrant)
+  const axisXMin = request.nextUrl.searchParams.get('axisXMin')
+  const axisXMax = request.nextUrl.searchParams.get('axisXMax')
+  const axisYMin = request.nextUrl.searchParams.get('axisYMin')
+  const axisYMax = request.nextUrl.searchParams.get('axisYMax')
+  const minSatisfaction = Number(request.nextUrl.searchParams.get('minSatisfaction') ?? 75)
+
+  let query = supabase
     .from('records')
-    .select('target_id, target_type, satisfaction, scene, restaurants(name, genre, photo_url)')
+    .select('target_id, target_type, satisfaction, scene, axis_x, axis_y, restaurants(name, genre, photo_url)')
     .eq('user_id', user.id)
     .eq('scene', scene)
     .not('satisfaction', 'is', null)
-    .gte('satisfaction', 75)
+    .gte('satisfaction', minSatisfaction)
     .order('satisfaction', { ascending: false })
     .limit(20)
+
+  if (axisXMin) query = query.gte('axis_x', Number(axisXMin))
+  if (axisXMax) query = query.lte('axis_x', Number(axisXMax))
+  if (axisYMin) query = query.gte('axis_y', Number(axisYMin))
+  if (axisYMax) query = query.lte('axis_y', Number(axisYMax))
+
+  const { data: records } = await query
 
   if (!records || records.length === 0) {
     return NextResponse.json({ cards: [] })

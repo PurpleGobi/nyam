@@ -37,13 +37,15 @@ export function useRecommendations(userId: string | null, recordCount: number): 
           // 5~19개 → 재방문 + 권위 + 버블
           endpoints = ['/api/recommend/revisit', '/api/recommend/authority', '/api/recommend/bubble']
         } else {
-          // 20+ → 전체 7종
+          // 20+ → 전체 7종 (wine-pairing은 주요 3카테고리 병렬 호출)
           endpoints = [
             '/api/recommend/revisit',
             '/api/recommend/authority',
             '/api/recommend/bubble',
             '/api/recommend/scene',
             '/api/recommend/wine-pairing?category=red_meat',
+            '/api/recommend/wine-pairing?category=seafood',
+            '/api/recommend/wine-pairing?category=cheese',
           ]
         }
 
@@ -56,9 +58,15 @@ export function useRecommendations(userId: string | null, recordCount: number): 
         if (cancelled) return
 
         const allCards: RecommendationCard[] = []
+        const seen = new Set<string>()
         for (const result of results) {
           if (result.status === 'fulfilled' && result.value.cards) {
-            allCards.push(...result.value.cards)
+            for (const card of result.value.cards) {
+              if (!seen.has(card.targetId)) {
+                seen.add(card.targetId)
+                allCards.push(card)
+              }
+            }
           }
         }
 

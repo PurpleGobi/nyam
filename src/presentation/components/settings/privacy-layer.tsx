@@ -37,13 +37,13 @@ export function PrivacyLayer({ visible, dotColor, title, note, children }: Priva
             className="h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: dotColor }}
           />
-          <span style={{ fontSize: '14px', color: 'var(--text)' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
             {title}
           </span>
         </div>
 
         {note && (
-          <p className="px-4 pb-2" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
+          <p className="px-4 pb-2" style={{ fontSize: '11px', fontStyle: 'italic', color: 'var(--text-hint)' }}>
             {note}
           </p>
         )}

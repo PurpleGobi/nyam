@@ -10,18 +10,24 @@ export function useDiscover() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
   const fetchCards = useCallback(async (selectedArea: DiscoverArea | null, pageNum: number = 1) => {
-    if (!selectedArea) { setCards([]); return }
+    if (!selectedArea) { setCards([]); setTotal(0); return }
     setIsLoading(true)
     try {
-      const data = await discoverRepo.getByArea(selectedArea, pageNum, 20)
+      const { cards: data, total: totalCount } = await discoverRepo.getByArea(selectedArea, pageNum, 20)
+      setTotal(totalCount)
       if (pageNum === 1) {
         setCards(data)
+        setHasMore(data.length < totalCount)
       } else {
-        setCards((prev) => [...prev, ...data])
+        setCards((prev) => {
+          const next = [...prev, ...data]
+          setHasMore(next.length < totalCount)
+          return next
+        })
       }
-      setHasMore(data.length === 20)
       setPage(pageNum)
     } finally {
       setIsLoading(false)

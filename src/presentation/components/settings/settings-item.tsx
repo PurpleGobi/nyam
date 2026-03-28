@@ -31,7 +31,7 @@ export function SettingsItem({
   return (
     <Wrapper
       {...wrapperProps}
-      className="flex w-full items-center gap-3 px-4 py-3 text-left"
+      className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
       style={{ borderBottom: '1px solid var(--border)' }}
     >
       {icon && (
@@ -60,7 +60,7 @@ export function SettingsItem({
             <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>{value}</span>
           )}
           {showChevron && (
-            <ChevronRight size={16} style={{ color: 'var(--text-hint)' }} />
+            <ChevronRight size={12} style={{ color: 'var(--text-hint)' }} />
           )}
         </div>
       )}

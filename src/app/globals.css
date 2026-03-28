@@ -642,9 +642,9 @@
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  padding: 10px 20px;
+  padding: 12px 20px;
   font-size: 14px;
 }
 
@@ -656,10 +656,13 @@
   background: none;
   border: none;
   text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-bold);
   color: var(--text-hint);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px 4px;
 }
 
 .btn-card-action {
@@ -669,11 +672,13 @@
   gap: 4px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
-  background: none;
+  background: var(--bg);
   color: var(--text-sub);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 0;
+  flex: 1;
+  text-align: center;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -704,7 +709,7 @@
   border: none;
   cursor: pointer;
   padding: 10px 16px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .btn-social {
@@ -1624,6 +1629,34 @@
   background: var(--bg-elevated);
   border-color: var(--border-bold);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* 버튼 다크모드 가시성 보정 */
+[data-theme="dark"] .btn-card-action {
+  background: var(--bg-card);
+  border-color: var(--border-bold);
+  color: var(--text-sub);
+}
+
+[data-theme="dark"] .btn-ghost {
+  background: var(--bg-card);
+  border-color: var(--border-bold);
+}
+
+[data-theme="dark"] .btn-primary:disabled {
+  background: var(--border-bold);
+  color: var(--text-hint);
+}
+
+[data-theme="dark"] .btn-social.google {
+  background: var(--bg-card);
+  border-color: var(--border-bold);
+  color: var(--text);
+}
+
+[data-theme="dark"] .btn-social.apple {
+  background: #2A2725;
+  border: 1px solid var(--border-bold);
 }
 
 [data-theme="dark"] .card.visited {

@@ -9,5 +9,5 @@ import type { DiscoverCard } from '@/domain/entities/discover'
  */
 export interface DiscoverRepository {
   /** 지역별 Discover 카드 목록 조회 (페이지네이션) */
-  getByArea(area: string, page: number, limit: number): Promise<DiscoverCard[]>
+  getByArea(area: string, page: number, limit: number): Promise<{ cards: DiscoverCard[]; total: number }>
 }

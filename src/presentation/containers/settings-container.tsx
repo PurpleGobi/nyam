@@ -434,10 +434,11 @@ export function SettingsContainer() {
         isOpen={activeBubbleSheet !== null}
         onClose={() => setActiveBubbleSheet(null)}
         bubble={activeBubbleSheet ? { id: activeBubbleSheet.bubbleId, name: activeBubbleSheet.bubbleName } : null}
-        defaultConfig={activeBubbleSheet?.visibilityOverride ?? settings.visibilityBubble}
-        onSave={(config) => {
+        defaultConfig={settings.visibilityBubble}
+        currentOverride={activeBubbleSheet?.visibilityOverride ?? null}
+        onSave={(override) => {
           if (!activeBubbleSheet) return
-          updateBubbleVisibility(activeBubbleSheet.bubbleId, config)
+          updateBubbleVisibility(activeBubbleSheet.bubbleId, override)
           setActiveBubbleSheet(null)
         }}
       />

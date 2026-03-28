@@ -98,8 +98,19 @@ export function HomeContainer() {
     searchQuery, setSearchQuery,
   } = useHomeState()
 
-  const { filters, counts, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
+  const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
   const { records } = useRecords(user?.id ?? null, activeTab)
+
+  // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
+  const counts = useMemo(() => {
+    const result: Record<string, number> = {}
+    for (const f of filters) {
+      result[f.id] = records.filter((r) =>
+        matchesAllRules(r as unknown as Record<string, unknown>, f.rules, 'and'),
+      ).length
+    }
+    return result
+  }, [filters, records])
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)

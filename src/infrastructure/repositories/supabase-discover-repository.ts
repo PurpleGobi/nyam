@@ -8,20 +8,20 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
     return createClient()
   }
 
-  async getByArea(area: string, page: number, limit: number): Promise<DiscoverCard[]> {
+  async getByArea(area: string, page: number, limit: number): Promise<{ cards: DiscoverCard[]; total: number }> {
     const from = (page - 1) * limit
     const to = from + limit - 1
 
-    const { data, error } = await this.supabase
+    const { data, error, count } = await this.supabase
       .from('restaurants')
-      .select('id, name, genre, area, specialty, photo_url, nyam_score, michelin_stars, blue_ribbon, naver_rating, kakao_rating, google_rating, external_avg, record_count')
+      .select('id, name, genre, area, specialty, photo_url, nyam_score, michelin_stars, blue_ribbon, naver_rating, kakao_rating, google_rating, external_avg, record_count', { count: 'exact' })
       .eq('area', area)
       .range(from, to)
       .order('nyam_score', { ascending: false, nullsFirst: false })
 
     if (error) throw new Error(`Discover 조회 실패: ${error.message}`)
 
-    return (data ?? []).map((row) => ({
+    const cards = (data ?? []).map((row) => ({
       id: row.id,
       name: row.name,
       genre: row.genre,
@@ -41,5 +41,7 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
       kakaoRating: row.kakao_rating ?? null,
       googleRating: row.google_rating ?? null,
     }))
+
+    return { cards, total: count ?? 0 }
   }
 }

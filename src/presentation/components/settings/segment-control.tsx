@@ -21,8 +21,8 @@ const PRIVACY_COLORS: Record<string, string> = {
 export function SegmentControl({ options, value, onChange, variant = 'default' }: SegmentControlProps) {
   return (
     <div
-      className="flex overflow-hidden rounded-lg"
-      style={{ backgroundColor: 'var(--bg-page)', border: '1px solid var(--border)' }}
+      className="flex rounded-lg p-0.5"
+      style={{ backgroundColor: 'var(--bg-page)' }}
     >
       {options.map((option) => {
         const isActive = value === option.value
@@ -34,12 +34,13 @@ export function SegmentControl({ options, value, onChange, variant = 'default' }
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className="flex-1 py-1.5 transition-colors"
+            className="flex-1 rounded-md py-2 px-3 text-center transition-all"
             style={{
               fontSize: '12px',
               fontWeight: isActive ? 700 : 500,
               backgroundColor: isActive ? activeColor : 'transparent',
               color: isActive ? '#FFFFFF' : 'var(--text-sub)',
+              transitionDuration: '0.2s',
             }}
           >
             {option.label}
