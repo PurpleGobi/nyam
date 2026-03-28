@@ -7,7 +7,7 @@ interface FabAddProps {
   onClick: () => void
 }
 
-export function FabAdd({ onClick }: FabAddProps) {
+export function FabAdd({ currentTab, onClick }: FabAddProps) {
   return (
     <button
       type="button"

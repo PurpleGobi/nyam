@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, MessageCircle, Bell, Users, User } from 'lucide-react'
+import { MessageCircle, Bell, Users, User } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
@@ -16,6 +16,7 @@ import { QuadrantDisplay } from '@/presentation/components/detail/quadrant-displ
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
 import { ConnectedItems } from '@/presentation/components/detail/connected-items'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
+import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
 
 interface RestaurantDetailContainerProps {
@@ -159,37 +160,24 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   return (
     <div className="relative min-h-dvh" style={{ backgroundColor: 'var(--bg)', paddingTop: '0px' }}>
       {/* 앱 헤더 (top-fixed) */}
-      <header
-        className="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4"
-        style={{
-          height: '56px',
-          backgroundColor: 'rgba(248,246,243,0.55)',
-          backdropFilter: 'blur(20px) saturate(1.5)',
-          boxShadow: '0 1px 12px rgba(0,0,0,0.08)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={handleBack}
-          className="flex items-center gap-1"
-        >
-          <ChevronLeft size={20} style={{ color: 'var(--text)' }} />
-          <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
-            {FROM_LABELS[from] ?? '홈'}
-          </span>
-        </button>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => router.push('/bubbles')}>
-            <Users size={20} style={{ color: 'var(--text-sub)' }} />
-          </button>
-          <button type="button">
-            <Bell size={20} style={{ color: 'var(--text-sub)' }} />
-          </button>
-          <button type="button" onClick={() => router.push('/profile')}>
-            <User size={20} style={{ color: 'var(--text-sub)' }} />
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        variant="inner"
+        title={FROM_LABELS[from] ?? '홈'}
+        backHref={from === 'profile' ? '/profile' : from === 'bubble' ? '/bubbles' : '/'}
+        actions={
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => router.push('/bubbles')}>
+              <Users size={20} style={{ color: 'var(--text-sub)' }} />
+            </button>
+            <button type="button">
+              <Bell size={20} style={{ color: 'var(--text-sub)' }} />
+            </button>
+            <button type="button" onClick={() => router.push('/profile')}>
+              <User size={20} style={{ color: 'var(--text-sub)' }} />
+            </button>
+          </div>
+        }
+      />
 
       {/* 스크롤 영역 */}
       <div style={{ paddingTop: '80px' }}>
