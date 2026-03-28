@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { XpCalculationResult, LevelThreshold } from '@/domain/entities/xp'
 import { useXpCalculation } from '@/application/hooks/use-xp-calculation'
+import { notificationRepo } from '@/shared/di/container'
 
 /**
  * 기록 저장 시 XP 지급 진입점.
@@ -24,12 +25,31 @@ export function useXpAward() {
   ): Promise<XpCalculationResult | null> => {
     setIsLoading(true)
     try {
-      return await processRecordXp(
+      const result = await processRecordXp(
         userId, record,
         restaurantArea, restaurantGenre,
         wineRegion, wineVariety,
         thresholds,
       )
+
+      if (result) {
+        for (const levelUp of result.levelUps) {
+          const scopeLabel = levelUp.scope === 'total' ? '종합'
+            : levelUp.scope === 'category' ? (levelUp.axisValue === 'restaurant' ? '식당' : '와인')
+            : levelUp.axisValue ?? ''
+          await notificationRepo.createNotification({
+            userId,
+            type: 'level_up',
+            title: '레벨 업!',
+            body: `${scopeLabel} Lv.${levelUp.newLevel} ${levelUp.title} 달성!`,
+            actionStatus: null,
+            actorId: null,
+            bubbleId: null,
+          })
+        }
+      }
+
+      return result
     } finally {
       setIsLoading(false)
     }

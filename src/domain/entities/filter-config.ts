@@ -1,40 +1,312 @@
 // src/domain/entities/filter-config.ts
 // R1: 외부 의존 0
+// SSOT: pages/06_HOME.md §3-1 (식당), §4-0 (와인)
 
-export type FilterAttributeType = 'text' | 'number' | 'boolean' | 'select'
+export type FilterAttributeType = 'select' | 'multi-select' | 'range' | 'text'
+
+export interface FilterAttributeOption {
+  value: string
+  label: string
+}
 
 export interface FilterAttribute {
   key: string
   label: string
   type: FilterAttributeType
-  options?: string[]
+  options?: FilterAttributeOption[]
 }
 
+// ─── 식당 필터 속성 (11종) ───
+
 export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
-  { key: 'name', label: '식당명', type: 'text' },
-  { key: 'genre', label: '장르', type: 'select', options: ['한식', '일식', '중식', '태국', '베트남', '인도', '이탈리안', '프렌치', '스페인', '지중해', '미국', '멕시칸', '카페', '바/주점', '베이커리', '기타'] },
-  { key: 'area', label: '지역', type: 'text' },
-  { key: 'price_range', label: '가격대', type: 'select', options: ['$', '$$', '$$$', '$$$$'] },
-  { key: 'satisfaction', label: '만족도', type: 'number' },
-  { key: 'scene', label: '씬', type: 'select', options: ['혼밥', '데이트', '가족', '회식', '접대', '모임', '일상', '특별한날'] },
-  { key: 'visit_date', label: '방문일', type: 'text' },
-  { key: 'michelin_stars', label: '미슐랭 별', type: 'number' },
-  { key: 'has_blue_ribbon', label: '블루리본', type: 'boolean' },
-  { key: 'total_price', label: '총 금액', type: 'number' },
-  { key: 'meal_time', label: '식사 시간대', type: 'select', options: ['아침', '점심', '저녁', '야식', '브런치', '간식'] },
+  {
+    key: 'status',
+    label: '상태',
+    type: 'select',
+    options: [
+      { value: 'visited', label: '방문' },
+      { value: 'wishlist', label: '찜' },
+      { value: 'recommended', label: '추천' },
+    ],
+  },
+  {
+    key: 'scene',
+    label: '상황',
+    type: 'select',
+    options: [
+      { value: 'solo', label: '혼밥' },
+      { value: 'romantic', label: '데이트' },
+      { value: 'friends', label: '친구' },
+      { value: 'family', label: '가족' },
+      { value: 'business', label: '회식' },
+      { value: 'drinks', label: '술자리' },
+    ],
+  },
+  {
+    key: 'genre',
+    label: '음식종류',
+    type: 'select',
+    options: [
+      { value: '한식', label: '한식' },
+      { value: '일식', label: '일식' },
+      { value: '중식', label: '중식' },
+      { value: '태국', label: '태국' },
+      { value: '베트남', label: '베트남' },
+      { value: '인도', label: '인도' },
+      { value: '이탈리안', label: '이탈리안' },
+      { value: '프렌치', label: '프렌치' },
+      { value: '스페인', label: '스페인' },
+      { value: '지중해', label: '지중해' },
+      { value: '미국', label: '미국' },
+      { value: '멕시칸', label: '멕시칸' },
+      { value: '카페', label: '카페' },
+      { value: '바/주점', label: '바/주점' },
+      { value: '베이커리', label: '베이커리' },
+      { value: '기타', label: '기타' },
+    ],
+  },
+  {
+    key: 'area',
+    label: '위치',
+    type: 'select',
+    options: [
+      { value: '강남', label: '강남' },
+      { value: '을지로', label: '을지로' },
+      { value: '청담', label: '청담' },
+      { value: '이태원', label: '이태원' },
+      { value: '홍대', label: '홍대' },
+      { value: '광화문', label: '광화문' },
+      { value: '성수', label: '성수' },
+      { value: '한남', label: '한남' },
+    ],
+  },
+  {
+    key: 'satisfaction',
+    label: '점수',
+    type: 'select',
+    options: [
+      { value: '90', label: '90+' },
+      { value: '80', label: '80~89' },
+      { value: '70', label: '70~79' },
+      { value: '69', label: '~69' },
+    ],
+  },
+  {
+    key: 'visit_date',
+    label: '시기',
+    type: 'select',
+    options: [
+      { value: '1w', label: '최근 1주' },
+      { value: '1m', label: '1개월' },
+      { value: '3m', label: '3개월' },
+      { value: '6m', label: '6개월' },
+      { value: '1y', label: '1년+' },
+    ],
+  },
+  {
+    key: 'companion_count',
+    label: '동반자',
+    type: 'select',
+    options: [
+      { value: '1', label: '혼자' },
+      { value: '2', label: '2인' },
+      { value: '3-4', label: '3~4인' },
+      { value: '5+', label: '5인+' },
+    ],
+  },
+  {
+    key: 'prestige',
+    label: '명성',
+    type: 'select',
+    options: [
+      { value: 'michelin_1', label: '미슐랭' },
+      { value: 'blue_ribbon', label: '블루리본' },
+      { value: 'tv', label: 'TV출연' },
+      { value: 'none', label: '수상없음' },
+    ],
+  },
+  {
+    key: 'menu_type',
+    label: '대표메뉴',
+    type: 'select',
+    options: [
+      { value: 'course', label: '코스' },
+      { value: 'single', label: '단품' },
+      { value: 'omakase', label: '오마카세' },
+      { value: 'buffet', label: '뷔페' },
+      { value: 'set', label: '세트' },
+    ],
+  },
+  {
+    key: 'price_range',
+    label: '가격대',
+    type: 'select',
+    options: [
+      { value: '1', label: '~2만' },
+      { value: '2', label: '2~5만' },
+      { value: '3', label: '5~10만' },
+      { value: '4', label: '10만+' },
+    ],
+  },
+  {
+    key: 'source',
+    label: '소스',
+    type: 'select',
+    options: [
+      { value: 'mine', label: '내 기록' },
+      { value: 'bubble', label: '버블' },
+      { value: 'mutual', label: '맞팔' },
+      { value: 'all', label: '전체' },
+    ],
+  },
 ]
 
+// ─── 와인 필터 속성 (12종) ───
+
 export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
-  { key: 'name', label: '와인명', type: 'text' },
-  { key: 'wine_type', label: '종류', type: 'select', options: ['레드', '화이트', '로제', '스파클링', '디저트', '주정강화', '오렌지'] },
-  { key: 'variety', label: '품종', type: 'text' },
-  { key: 'region', label: '지역', type: 'text' },
-  { key: 'country', label: '국가', type: 'text' },
-  { key: 'vintage', label: '빈티지', type: 'number' },
-  { key: 'satisfaction', label: '만족도', type: 'number' },
-  { key: 'aroma_labels', label: '아로마', type: 'text' },
-  { key: 'pairing_categories', label: '페어링', type: 'select', options: ['소고기', '돼지고기', '닭고기', '해산물', '파스타', '치즈', '디저트', '과일'] },
-  { key: 'purchase_price', label: '구매 가격', type: 'number' },
-  { key: 'body_level', label: '바디감', type: 'number' },
-  { key: 'acidity_level', label: '산도', type: 'number' },
+  {
+    key: 'wine_status',
+    label: '상태',
+    type: 'select',
+    options: [
+      { value: 'tasted', label: '시음' },
+      { value: 'wishlist', label: '찜' },
+      { value: 'cellar', label: '셀러' },
+    ],
+  },
+  {
+    key: 'wine_type',
+    label: '스타일',
+    type: 'select',
+    options: [
+      { value: 'red', label: 'Red' },
+      { value: 'white', label: 'White' },
+      { value: 'rose', label: 'Rosé' },
+      { value: 'sparkling', label: 'Sparkling' },
+      { value: 'orange', label: 'Orange' },
+      { value: 'dessert', label: 'Dessert' },
+      { value: 'fortified', label: 'Fortified' },
+    ],
+  },
+  {
+    key: 'variety',
+    label: '품종',
+    type: 'select',
+    options: [
+      { value: 'Cabernet Sauvignon', label: '카베르네 소비뇽' },
+      { value: 'Pinot Noir', label: '피노 누아' },
+      { value: 'Merlot', label: '메를로' },
+      { value: 'Syrah', label: '쉬라즈' },
+      { value: 'Chardonnay', label: '샤르도네' },
+      { value: 'Sauvignon Blanc', label: '소비뇽 블랑' },
+      { value: 'Riesling', label: '리슬링' },
+      { value: 'Nebbiolo', label: '네비올로' },
+    ],
+  },
+  {
+    key: 'country',
+    label: '산지',
+    type: 'select',
+    options: [
+      { value: 'France', label: 'France' },
+      { value: 'Italy', label: 'Italy' },
+      { value: 'USA', label: 'USA' },
+      { value: 'Spain', label: 'Spain' },
+      { value: 'Chile', label: 'Chile' },
+      { value: 'Australia', label: 'Australia' },
+      { value: 'New Zealand', label: 'NZ' },
+      { value: 'Argentina', label: 'Argentina' },
+    ],
+  },
+  {
+    key: 'vintage',
+    label: '빈티지',
+    type: 'select',
+    options: [
+      { value: '2024', label: '2024' },
+      { value: '2023', label: '2023' },
+      { value: '2022', label: '2022' },
+      { value: '2021', label: '2021' },
+      { value: '2020', label: '2020' },
+      { value: '2019', label: '2019' },
+      { value: 'before_2018', label: '2018 이전' },
+    ],
+  },
+  {
+    key: 'satisfaction',
+    label: '점수',
+    type: 'select',
+    options: [
+      { value: '90', label: '90+' },
+      { value: '80', label: '80~89' },
+      { value: '70', label: '70~79' },
+      { value: '69', label: '~69' },
+    ],
+  },
+  {
+    key: 'visit_date',
+    label: '시음시기',
+    type: 'select',
+    options: [
+      { value: '1w', label: '최근 1주' },
+      { value: '1m', label: '1개월' },
+      { value: '3m', label: '3개월' },
+      { value: '6m', label: '6개월' },
+      { value: '1y', label: '1년+' },
+    ],
+  },
+  {
+    key: 'pairing_categories',
+    label: '페어링',
+    type: 'select',
+    options: [
+      { value: 'red_meat', label: '적색육' },
+      { value: 'white_meat', label: '백색육' },
+      { value: 'seafood', label: '어패류' },
+      { value: 'cheese', label: '치즈' },
+      { value: 'vegetable', label: '채소' },
+      { value: 'dessert', label: '디저트' },
+    ],
+  },
+  {
+    key: 'purchase_price',
+    label: '가격대',
+    type: 'select',
+    options: [
+      { value: '30000', label: '~3만' },
+      { value: '70000', label: '3~7만' },
+      { value: '150000', label: '7~15만' },
+      { value: '150001', label: '15만+' },
+    ],
+  },
+  {
+    key: 'acidity_level',
+    label: '산미',
+    type: 'select',
+    options: [
+      { value: '1', label: '낮음' },
+      { value: '2', label: '중간' },
+      { value: '3', label: '높음' },
+    ],
+  },
+  {
+    key: 'sweetness_level',
+    label: '당도',
+    type: 'select',
+    options: [
+      { value: '1', label: '드라이' },
+      { value: '2', label: '오프드라이' },
+      { value: '3', label: '스위트' },
+    ],
+  },
+  {
+    key: 'complexity',
+    label: '복합도',
+    type: 'select',
+    options: [
+      { value: 'simple', label: '단순 (0~33)' },
+      { value: 'medium', label: '중간 (34~66)' },
+      { value: 'complex', label: '복합 (67~100)' },
+    ],
+  },
 ]

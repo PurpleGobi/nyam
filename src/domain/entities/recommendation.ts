@@ -5,6 +5,8 @@ export type RecommendationAlgorithm =
   | 'revisit' | 'scene' | 'quadrant' | 'bookmark'
   | 'authority' | 'bubble' | 'wine_pairing'
 
+export type RecommendationSource = 'ai' | 'bubble' | 'web'
+
 export interface RecommendationCard {
   id: string
   targetId: string
@@ -13,6 +15,7 @@ export interface RecommendationCard {
   meta: string
   photoUrl: string | null
   algorithm: RecommendationAlgorithm
+  source: RecommendationSource
   reason: string
   normalizedScore: number
   confidence: number | null

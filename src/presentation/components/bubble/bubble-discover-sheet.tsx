@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, TrendingUp, Sparkles, Clock } from 'lucide-react'
+import { X, Sparkles, MapPin, TrendingUp, Zap } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
@@ -9,20 +9,24 @@ interface BubbleDiscoverSheetProps {
   isOpen: boolean
   onClose: () => void
   recommended: Bubble[]
+  nearby: Bubble[]
   trending: Bubble[]
   newest: Bubble[]
   onSelectBubble: (bubble: Bubble) => void
+  tasteMatchMap?: Record<string, number>
 }
 
-type Tab = 'recommended' | 'trending' | 'new'
+type Tab = 'recommended' | 'nearby' | 'trending' | 'new'
 
 export function BubbleDiscoverSheet({
   isOpen,
   onClose,
   recommended,
+  nearby,
   trending,
   newest,
   onSelectBubble,
+  tasteMatchMap,
 }: BubbleDiscoverSheetProps) {
   const [activeTab, setActiveTab] = useState<Tab>('recommended')
 
@@ -30,17 +34,32 @@ export function BubbleDiscoverSheet({
 
   const tabs: { key: Tab; label: string; icon: typeof Sparkles }[] = [
     { key: 'recommended', label: '추천', icon: Sparkles },
+    { key: 'nearby', label: '근처', icon: MapPin },
     { key: 'trending', label: '인기', icon: TrendingUp },
-    { key: 'new', label: '최신', icon: Clock },
+    { key: 'new', label: '새로운', icon: Zap },
   ]
 
-  const currentList = activeTab === 'recommended' ? recommended : activeTab === 'trending' ? trending : newest
+  const listMap: Record<Tab, Bubble[]> = {
+    recommended,
+    nearby,
+    trending,
+    new: newest,
+  }
+
+  const labelMap: Record<Tab, string> = {
+    recommended: '추천',
+    nearby: '근처',
+    trending: '활발',
+    new: '새로운',
+  }
+
+  const currentList = listMap[activeTab]
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <div
         className="flex w-full max-w-[430px] flex-col rounded-t-2xl"
-        style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '75vh' }}
+        style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '80vh' }}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -75,28 +94,35 @@ export function BubbleDiscoverSheet({
             <p className="py-8 text-center text-[14px] text-[var(--text-hint)]">버블이 없습니다</p>
           ) : (
             <div className="flex flex-col gap-2 py-2">
-              {currentList.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => onSelectBubble(b)}
-                  className="flex items-center gap-3 rounded-xl p-3 text-left"
-                  style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                >
-                  <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+              {currentList.map((b) => {
+                const matchPct = tasteMatchMap?.[b.id]
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => onSelectBubble(b)}
+                    className="flex items-center gap-3 rounded-xl p-3 text-left"
+                    style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
                   >
-                    <BubbleIcon icon={b.icon} size={20} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-[var(--text)]">{b.name}</p>
-                    <p className="mt-0.5 text-[12px] text-[var(--text-hint)]">
-                      멤버 {b.memberCount}명 · 기록 {b.recordCount}개
-                    </p>
-                  </div>
-                </button>
-              ))}
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+                    >
+                      <BubbleIcon icon={b.icon} size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-[var(--text)]">{b.name}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--text-hint)]">
+                        멤버 {b.memberCount}명 · 기록 {b.recordCount}개
+                        {matchPct !== undefined && ` · 취향 ${matchPct}%`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[11px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+                      {labelMap[activeTab]}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

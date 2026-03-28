@@ -1,21 +1,35 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, UtensilsCrossed, Wine } from 'lucide-react'
+import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { RecommendationCard as CardType } from '@/domain/entities/recommendation'
+import { RecommendationSourceTag } from '@/presentation/components/home/recommendation-source-tag'
 
 interface RecommendationCardProps {
   card: CardType
+  onClick?: () => void
 }
 
-export function RecommendationCard({ card }: RecommendationCardProps) {
+export function RecommendationCard({ card, onClick }: RecommendationCardProps) {
   const router = useRouter()
   const prefix = card.targetType === 'restaurant' ? 'restaurants' : 'wines'
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick()
+    } else {
+      router.push(`/${prefix}/${card.targetId}?from=recommend`)
+    }
+  }
+
+  // 재방문 추천은 accent, 미방문은 hint (RECOMMENDATION.md §2)
+  const isRevisit = card.algorithm === 'revisit'
+  const scoreColor = isRevisit ? 'var(--accent-food)' : 'var(--text-hint)'
 
   return (
     <button
       type="button"
-      onClick={() => router.push(`/${prefix}/${card.targetId}`)}
+      onClick={handleClick}
       className="flex shrink-0 flex-col overflow-hidden rounded-xl"
       style={{ width: '160px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
@@ -32,16 +46,18 @@ export function RecommendationCard({ card }: RecommendationCardProps) {
             )}
           </div>
         )}
-        <span
-          className="absolute left-2 top-2 flex items-center gap-1 rounded-full px-2 py-0.5"
-          style={{ fontSize: '9px', fontWeight: 600, backgroundColor: 'rgba(0,0,0,0.5)', color: '#FFFFFF' }}
-        >
-          <Sparkles size={8} /> AI
+        <span className="absolute left-2 top-2">
+          <RecommendationSourceTag source={card.source} />
         </span>
       </div>
       <div className="p-2.5">
         <p className="truncate text-[13px] font-semibold text-[var(--text)]">{card.name}</p>
         <p className="mt-0.5 truncate text-[11px] text-[var(--text-sub)]">{card.meta}</p>
+        {card.normalizedScore > 0 && (
+          <p className="mt-0.5 text-[11px] font-semibold" style={{ color: scoreColor }}>
+            {Math.round(card.normalizedScore)}
+          </p>
+        )}
         <p className="mt-1 text-[10px] text-[var(--text-hint)]">{card.reason}</p>
       </div>
     </button>

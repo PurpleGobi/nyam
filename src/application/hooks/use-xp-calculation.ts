@@ -6,7 +6,7 @@ import type { XpCalculationResult, LevelThreshold, DetailAxisGain } from '@/doma
 import {
   calculateRecordXp, getRecordXpReason, calculateDetailAxisXp,
   getCategoryForAxisType, getLevel, isDuplicateScoreBlocked,
-  isDailyRecordCapReached, checkMilestoneReached,
+  isDailyRecordCapReached, checkMilestoneReached, BONUS_XP_MAP,
 } from '@/domain/services/xp-calculator'
 import { xpRepo } from '@/shared/di/container'
 
@@ -53,10 +53,12 @@ export function useXpCalculation() {
     const reason = getRecordXpReason(recordXp)
 
     // ── Step 2: 같은 식당/와인 점수 6개월 제한 ──
+    // 점수 XP(+3)만 차단. 사진/리뷰 콘텐츠 추가분은 정상 적립.
     if (recordXp >= 3) {
       const lastScore = await xpRepo.getLastScoreDate(userId, record.targetId)
       if (isDuplicateScoreBlocked(lastScore)) {
-        recordXp = 0
+        // 점수(+3)분 차감. 사진(+8→5), 풀기록(+18→15)은 콘텐츠 기여분 유지
+        recordXp = Math.max(0, recordXp - 3)
       }
     }
 
@@ -72,6 +74,24 @@ export function useXpCalculation() {
         xpAmount: recordXp,
         reason,
       })
+    }
+
+    // ── Step 3.5: 첫 기록 보너스 ──
+    if (recordXp > 0) {
+      const hasFirstRecord = await xpRepo.hasBonusBeenGranted(userId, 'first_record')
+      if (!hasFirstRecord) {
+        const bonus = BONUS_XP_MAP.first_record
+        await xpRepo.updateUserTotalXp(userId, bonus)
+        await xpRepo.createXpHistory({
+          userId,
+          recordId: record.id,
+          axisType: null,
+          axisValue: null,
+          xpAmount: bonus,
+          reason: 'bonus_first_record',
+        })
+        result.totalXpGain += bonus
+      }
     }
 
     // ── Step 4: 세부 축 XP 적립 ──
@@ -122,6 +142,14 @@ export function useXpCalculation() {
       const previousLevel = existing?.level ?? 1
 
       await xpRepo.upsertUserExperience(userId, 'category', catValue, xpDelta, levelInfo.level)
+      await xpRepo.createXpHistory({
+        userId,
+        recordId: record.id,
+        axisType: 'category',
+        axisValue: catValue,
+        xpAmount: xpDelta,
+        reason: 'category',
+      })
 
       result.categoryUpdates.push({ categoryValue: catValue as 'restaurant' | 'wine', newTotalXp: newXp })
 

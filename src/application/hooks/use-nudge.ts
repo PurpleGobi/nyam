@@ -2,13 +2,68 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { NudgeDisplay } from '@/domain/entities/nudge'
+import type { NudgeCandidate } from '@/domain/services/nudge-priority'
 import { selectTopNudge } from '@/domain/services/nudge-priority'
 import { nudgeRepo } from '@/shared/di/container'
 
-export function useNudge(userId: string | null) {
+/**
+ * 넛지 후보 생성 (Phase 1)
+ * - unrated: status='checked' 레코드 존재
+ * - time: 식사 후 시간대 (12:30~14:00, 19:00~21:00)
+ */
+function buildCandidates(
+  hasUnratedRecords: boolean,
+): NudgeCandidate[] {
+  const candidates: NudgeCandidate[] = []
+  const now = new Date()
+  const hour = now.getHours()
+  const min = now.getMinutes()
+  const timeVal = hour + min / 60
+
+  if (hasUnratedRecords) {
+    candidates.push({
+      type: 'unrated',
+      priority: 2,
+      data: {
+        targetId: null,
+        icon: 'star',
+        title: '미평가 기록',
+        subtitle: '평가를 완성해보세요',
+        actionLabel: '평가하기',
+        actionHref: '/home',
+      },
+    })
+  }
+
+  if ((timeVal >= 12.5 && timeVal < 14) || (timeVal >= 19 && timeVal < 21)) {
+    candidates.push({
+      type: 'time',
+      priority: 3,
+      data: {
+        targetId: null,
+        icon: 'utensils',
+        title: '식사 시간',
+        subtitle: '방금 먹은 거 기록해볼까요?',
+        actionLabel: '기록',
+        actionHref: '/record/new',
+      },
+    })
+  }
+
+  return candidates
+}
+
+interface UseNudgeParams {
+  userId: string | null
+  hasUnratedRecords: boolean
+}
+
+export function useNudge({ userId, hasUnratedRecords }: UseNudgeParams) {
   const [nudge, setNudge] = useState<NudgeDisplay | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const [isDismissing, setIsDismissing] = useState(false)
   const fetchedRef = useRef(false)
+  const nudgeIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!userId || fetchedRef.current) return
@@ -18,9 +73,15 @@ export function useNudge(userId: string | null) {
 
     async function load() {
       try {
-        const nudges = await nudgeRepo.getActiveNudge(userId as string)
+        const [fatigue, history] = await Promise.all([
+          nudgeRepo.getFatigue(userId as string),
+          nudgeRepo.getRecentHistory(userId as string, 24),
+        ])
+
         if (cancelled) return
-        const top = selectTopNudge(nudges)
+
+        const candidates = buildCandidates(hasUnratedRecords)
+        const top = selectTopNudge(candidates, fatigue, history)
         setNudge(top)
         setIsVisible(top !== null)
       } catch {
@@ -33,15 +94,35 @@ export function useNudge(userId: string | null) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, hasUnratedRecords])
+
+  /** 소멸 애니메이션 시작 (외부에서 호출 가능 — AI 인사 동기화용) */
+  const startDismiss = useCallback(() => {
+    if (!isVisible || isDismissing) return
+    setIsDismissing(true)
+    setTimeout(() => setIsVisible(false), 600)
+  }, [isVisible, isDismissing])
 
   const handleAction = useCallback(() => {
-    setIsVisible(false)
-  }, [])
+    setIsDismissing(true)
+    setTimeout(() => setIsVisible(false), 600)
+
+    if (nudgeIdRef.current && userId) {
+      nudgeRepo.updateStatus(nudgeIdRef.current, 'acted').catch(() => {})
+    }
+  }, [userId])
 
   const handleDismiss = useCallback(() => {
-    setIsVisible(false)
-  }, [])
+    setIsDismissing(true)
+    setTimeout(() => setIsVisible(false), 600)
 
-  return { nudge, isVisible, handleAction, handleDismiss }
+    if (userId) {
+      nudgeRepo.incrementFatigue(userId).catch(() => {})
+      if (nudgeIdRef.current) {
+        nudgeRepo.updateStatus(nudgeIdRef.current, 'dismissed').catch(() => {})
+      }
+    }
+  }, [userId])
+
+  return { nudge, isVisible, isDismissing, startDismiss, handleAction, handleDismiss }
 }

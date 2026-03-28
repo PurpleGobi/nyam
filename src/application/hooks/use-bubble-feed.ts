@@ -1,13 +1,48 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import type { BubbleShare } from '@/domain/entities/bubble'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { BubbleShare, BubbleContentVisibility, BubbleMemberRole } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
-export type FeedSortType = 'recent' | 'popular'
+export type FeedTargetFilter = 'all' | 'restaurant' | 'wine'
+export type FeedPeriodFilter = 'all' | 'week' | 'month' | '3months'
+export type FeedScoreFilter = 'all' | '90' | '80' | '70'
+export type FeedSortType = 'recent' | 'popular' | 'score' | 'member'
 
-export function useBubbleFeed(bubbleId: string) {
-  const [shares, setShares] = useState<BubbleShare[]>([])
+export interface FeedFilters {
+  targetType: FeedTargetFilter
+  period: FeedPeriodFilter
+  minScore: FeedScoreFilter
+  memberId: string | null
+}
+
+export interface FeedShareEnriched extends BubbleShare {
+  authorName?: string
+  authorAvatar?: string | null
+  authorAvatarColor?: string | null
+  authorLevel?: number
+  targetName?: string
+  targetType?: 'restaurant' | 'wine'
+  targetMeta?: string | null
+  satisfaction?: number | null
+  comment?: string | null
+  photoUrls?: string[]
+}
+
+const DEFAULT_FILTERS: FeedFilters = {
+  targetType: 'all',
+  period: 'all',
+  minScore: 'all',
+  memberId: null,
+}
+
+export function useBubbleFeed(
+  bubbleId: string,
+  myRole: BubbleMemberRole | null,
+  contentVisibility: BubbleContentVisibility,
+) {
+  const [shares, setShares] = useState<FeedShareEnriched[]>([])
+  const [filters, setFilters] = useState<FeedFilters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<FeedSortType>('recent')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -15,7 +50,7 @@ export function useBubbleFeed(bubbleId: string) {
     setIsLoading(true)
     try {
       const data = await bubbleRepo.getShares(bubbleId, 50)
-      setShares(data)
+      setShares(data as FeedShareEnriched[])
     } finally {
       setIsLoading(false)
     }
@@ -25,9 +60,71 @@ export function useBubbleFeed(bubbleId: string) {
     fetchShares()
   }, [fetchShares])
 
-  const sortedShares = sort === 'recent'
-    ? [...shares].sort((a, b) => new Date(b.sharedAt).getTime() - new Date(a.sharedAt).getTime())
-    : shares
+  // content_visibility 필터링 (비멤버)
+  const visibilityFiltered = useMemo(() => {
+    if (myRole !== null) return shares // 멤버는 전부 보임
 
-  return { shares: sortedShares, sort, setSort, isLoading, refetch: fetchShares }
+    return shares.map((s) => {
+      const filtered = { ...s }
+      // 비멤버: 사진 숨김
+      filtered.photoUrls = []
+      // rating_only: 한줄평도 숨김
+      if (contentVisibility === 'rating_only') {
+        filtered.comment = undefined
+      }
+      return filtered
+    })
+  }, [shares, myRole, contentVisibility])
+
+  // 필터 적용
+  const filtered = useMemo(() => {
+    let result = [...visibilityFiltered]
+
+    if (filters.targetType !== 'all') {
+      result = result.filter((s) => s.targetType === filters.targetType)
+    }
+
+    if (filters.memberId) {
+      result = result.filter((s) => s.sharedBy === filters.memberId)
+    }
+
+    if (filters.period !== 'all') {
+      const now = Date.now()
+      const msMap = { week: 7 * 86400000, month: 30 * 86400000, '3months': 90 * 86400000 }
+      const cutoff = now - msMap[filters.period]
+      result = result.filter((s) => new Date(s.sharedAt).getTime() >= cutoff)
+    }
+
+    if (filters.minScore !== 'all') {
+      const min = Number(filters.minScore)
+      result = result.filter((s) => (s.satisfaction ?? 0) >= min)
+    }
+
+    return result
+  }, [visibilityFiltered, filters])
+
+  // 정렬
+  const sorted = useMemo(() => {
+    const arr = [...filtered]
+    switch (sort) {
+      case 'recent':
+        return arr.sort((a, b) => new Date(b.sharedAt).getTime() - new Date(a.sharedAt).getTime())
+      case 'score':
+        return arr.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
+      case 'member':
+        return arr.sort((a, b) => (a.sharedBy ?? '').localeCompare(b.sharedBy ?? ''))
+      default:
+        return arr
+    }
+  }, [filtered, sort])
+
+  return {
+    shares: sorted,
+    filters,
+    setFilters,
+    sort,
+    setSort,
+    isLoading,
+    refetch: fetchShares,
+  }
 }

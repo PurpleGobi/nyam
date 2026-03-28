@@ -3,35 +3,79 @@
 import { useState, useCallback } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import type { CreateBubbleInput } from '@/domain/repositories/bubble-repository'
-import { bubbleRepo, xpRepo } from '@/shared/di/container'
+import { bubbleRepo } from '@/shared/di/container'
+import { useBonusXp } from '@/application/hooks/use-bonus-xp'
+
+export type InviteExpiry = '1d' | '7d' | '30d' | 'unlimited'
+
+export interface CreateBubbleFormInput {
+  name: string                    // 1~20자
+  description?: string            // 0~100자
+  visibility: 'private' | 'public'
+  joinPolicy?: 'closed' | 'manual_approve' | 'auto_approve' | 'open'
+  icon?: string                   // lucide 아이콘명
+  iconBgColor?: string            // hex
+  inviteExpiry?: InviteExpiry     // 기본 '30d'
+  createdBy: string
+}
+
+export interface CreateBubbleResult {
+  bubble: Bubble
+  inviteCode: string
+}
+
+function expiryToDate(expiry: InviteExpiry): string | null {
+  if (expiry === 'unlimited') return null
+  const days = expiry === '1d' ? 1 : expiry === '7d' ? 7 : 30
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+}
 
 export function useBubbleCreate() {
   const [isLoading, setIsLoading] = useState(false)
+  const { awardBonus } = useBonusXp()
 
-  const createBubble = useCallback(async (input: CreateBubbleInput): Promise<Bubble> => {
+  const createBubble = useCallback(async (input: CreateBubbleFormInput): Promise<CreateBubbleResult> => {
+    // 검증
+    const trimmedName = input.name.trim()
+    if (trimmedName.length < 1 || trimmedName.length > 20) {
+      throw new Error('버블 이름은 1~20자여야 합니다')
+    }
+    if (input.description && input.description.trim().length > 100) {
+      throw new Error('버블 설명은 100자 이내여야 합니다')
+    }
+
+    // private → invite_only 자동 매핑
+    const joinPolicy = input.visibility === 'private'
+      ? 'invite_only'
+      : (input.joinPolicy ?? 'manual_approve')
+
     setIsLoading(true)
     try {
-      const bubble = await bubbleRepo.create(input)
-
-      // 첫 버블 생성 보너스 XP (+5)
-      const existing = await bubbleRepo.findByUserId(input.createdBy)
-      if (existing.length <= 1) {
-        await xpRepo.createXpHistory({
-          userId: input.createdBy,
-          recordId: null,
-          axisType: null,
-          axisValue: null,
-          xpAmount: 5,
-          reason: 'bonus_first_bubble',
-        })
-        await xpRepo.updateUserTotalXp(input.createdBy, 5)
+      const repoInput: CreateBubbleInput = {
+        name: trimmedName,
+        description: input.description?.trim(),
+        visibility: input.visibility,
+        joinPolicy,
+        icon: input.icon,
+        iconBgColor: input.iconBgColor,
+        createdBy: input.createdBy,
       }
 
-      return bubble
+      const bubble = await bubbleRepo.create(repoInput)
+
+      // 초대 코드 생성
+      const expiry = input.inviteExpiry ?? '30d'
+      const expiresAt = expiryToDate(expiry)
+      const inviteCode = await bubbleRepo.generateInviteCode(bubble.id, expiresAt)
+
+      // XP 적립: bonus_first_bubble (+5, 첫 버블 생성 시만)
+      await awardBonus(input.createdBy, 'first_bubble')
+
+      return { bubble, inviteCode }
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [awardBonus])
 
   return { createBubble, isLoading }
 }

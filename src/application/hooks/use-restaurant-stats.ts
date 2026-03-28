@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getSupabaseClient } from '@/shared/di/container'
+import { SCENE_TAGS } from '@/domain/entities/scene'
 
 interface CityStats {
   name: string
+  country: string
   lat: number
   lng: number
   visitCount: number
@@ -28,7 +30,8 @@ interface MonthlyStats {
 }
 
 interface SceneStats {
-  name: string
+  scene: string
+  label: string
   count: number
   color: string
 }
@@ -39,11 +42,13 @@ interface RestaurantStatsResult {
   scoreBuckets: ScoreBucket[]
   monthlyStats: MonthlyStats[]
   sceneStats: SceneStats[]
+  totalSpending: number
+  totalRecordCount: number
   isLoading: boolean
   error: string | null
 }
 
-const SCORE_LABELS = ['~49', '50s', '60s', '70s', '80s', '90s+']
+const SCORE_LABELS = ['~49', '50s', '60s', '70s', '80s', '90s']
 
 function buildScoreBuckets(scores: number[]): ScoreBucket[] {
   const counts = [0, 0, 0, 0, 0, 0]
@@ -60,6 +65,10 @@ function buildScoreBuckets(scores: number[]): ScoreBucket[] {
   return SCORE_LABELS.map((label, i) => ({ label, count: counts[i] }))
 }
 
+const SCENE_MAP = Object.fromEntries(
+  SCENE_TAGS.map((t) => [t.value, t])
+)
+
 export function useRestaurantStats(userId: string | null): RestaurantStatsResult {
   const [cityStats, setCityStats] = useState<CityStats[]>([])
   const [genreStats, setGenreStats] = useState<GenreStats[]>([])
@@ -68,6 +77,8 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
   )
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([])
   const [sceneStats, setSceneStats] = useState<SceneStats[]>([])
+  const [totalSpending, setTotalSpending] = useState(0)
+  const [totalRecordCount, setTotalRecordCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -80,8 +91,10 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
       const supabase = getSupabaseClient()
 
       const { data: records, error: fetchError } = await supabase
-        .from('dining_records')
-        .select('id, satisfaction, visit_date, amount_spent, restaurant:restaurants(name, genre, city, latitude, longitude, scene)')
+        .from('records')
+        .select(
+          'id, satisfaction, visit_date, total_price, scene, restaurant:restaurants(name, genre, country, city, lat, lng)'
+        )
         .eq('user_id', userId)
         .eq('target_type', 'restaurant')
 
@@ -89,20 +102,24 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
 
       if (!records || records.length === 0) return
 
+      setTotalRecordCount(records.length)
+
       // City stats
       const cityMap = new Map<string, CityStats>()
       for (const r of records) {
         const rest = r.restaurant as unknown as Record<string, unknown> | null
         if (!rest?.city) continue
         const city = rest.city as string
+        const country = (rest.country as string) ?? '한국'
         const existing = cityMap.get(city)
         if (existing) {
           existing.visitCount++
         } else {
           cityMap.set(city, {
             name: city,
-            lat: (rest.latitude as number) ?? 37.5665,
-            lng: (rest.longitude as number) ?? 126.978,
+            country,
+            lat: (rest.lat as number) ?? 37.5665,
+            lng: (rest.lng as number) ?? 126.978,
             visitCount: 1,
           })
         }
@@ -128,7 +145,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
         .filter((s): s is number => s !== null)
       setScoreBuckets(buildScoreBuckets(scores))
 
-      // Monthly stats (last 6 months)
+      // Monthly stats (last 6 months) + total spending
       const now = new Date()
       const monthlyMap = new Map<string, { count: number; amount: number }>()
       const monthLabels: MonthlyStats[] = []
@@ -141,15 +158,20 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
         monthLabels.push({ label, count: 0, amount: 0, isCurrent: i === 0 })
       }
 
+      let spending = 0
       for (const r of records) {
+        const price = (r.total_price as number | null) ?? 0
+        spending += price
+
         if (!r.visit_date) continue
         const key = (r.visit_date as string).slice(0, 7)
         const entry = monthlyMap.get(key)
         if (entry) {
           entry.count++
-          entry.amount += (r.amount_spent as number) ?? 0
+          entry.amount += price
         }
       }
+      setTotalSpending(spending)
 
       const keys = Array.from(monthlyMap.keys())
       keys.forEach((key, idx) => {
@@ -161,29 +183,23 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
       })
       setMonthlyStats(monthLabels)
 
-      // Scene stats
+      // Scene stats — record.scene 기반, domain entity 색상 사용
       const sceneMap = new Map<string, number>()
       for (const r of records) {
-        const rest = r.restaurant as unknown as Record<string, unknown> | null
-        const scene = (rest?.scene as string) ?? '기타'
+        const scene = (r.scene as string | null) ?? 'etc'
         sceneMap.set(scene, (sceneMap.get(scene) ?? 0) + 1)
-      }
-      const sceneColors: Record<string, string> = {
-        '데이트': '#E8637A',
-        '회식': '#5B8DEF',
-        '가족': '#F4A940',
-        '혼밥': '#8B5CF6',
-        '친구': '#10B981',
-        '비즈니스': '#6B7280',
-        '기타': '#9CA3AF',
       }
       setSceneStats(
         Array.from(sceneMap.entries())
-          .map(([name, count]) => ({
-            name,
-            count,
-            color: sceneColors[name] ?? 'var(--text-hint)',
-          }))
+          .map(([scene, count]) => {
+            const meta = SCENE_MAP[scene]
+            return {
+              scene,
+              label: meta?.label ?? scene,
+              count,
+              color: meta?.hex ?? '#9CA3AF',
+            }
+          })
           .sort((a, b) => b.count - a.count)
       )
     } catch (err) {
@@ -197,5 +213,15 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
     fetchStats()
   }, [fetchStats])
 
-  return { cityStats, genreStats, scoreBuckets, monthlyStats, sceneStats, isLoading, error }
+  return {
+    cityStats,
+    genreStats,
+    scoreBuckets,
+    monthlyStats,
+    sceneStats,
+    totalSpending,
+    totalRecordCount,
+    isLoading,
+    error,
+  }
 }

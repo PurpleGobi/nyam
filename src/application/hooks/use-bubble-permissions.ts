@@ -12,11 +12,38 @@ const DEFAULT_PERMISSIONS: BubblePermissions = {
   canChangeRoles: false, canInvite: false,
 }
 
-export function useBubblePermissions(bubble: Bubble | null, myRole: BubbleMemberRole | null) {
-  const permissions = useMemo(() => {
-    if (!bubble || !myRole) return DEFAULT_PERMISSIONS
-    return calculatePermissions(myRole, bubble)
-  }, [bubble, myRole])
+export interface UseBubblePermissionsReturn {
+  permissions: BubblePermissions
+  myRole: BubbleMemberRole | null
+  isOwner: boolean
+  isAdmin: boolean
+  isMember: boolean
+  isFollower: boolean
+}
 
-  return permissions
+export function useBubblePermissions(
+  bubble: Bubble | null,
+  myRole: BubbleMemberRole | null,
+): UseBubblePermissionsReturn {
+  return useMemo(() => {
+    if (!bubble) {
+      return {
+        permissions: DEFAULT_PERMISSIONS,
+        myRole,
+        isOwner: false,
+        isAdmin: false,
+        isMember: false,
+        isFollower: false,
+      }
+    }
+
+    return {
+      permissions: calculatePermissions(myRole, bubble),
+      myRole,
+      isOwner: myRole === 'owner',
+      isAdmin: myRole === 'admin',
+      isMember: myRole === 'member',
+      isFollower: myRole === 'follower',
+    }
+  }, [bubble, myRole])
 }

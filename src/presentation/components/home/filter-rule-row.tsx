@@ -2,7 +2,7 @@
 
 import { Trash2 } from 'lucide-react'
 import type { FilterRule } from '@/domain/entities/saved-filter'
-import type { FilterAttribute } from '@/domain/entities/filter-config'
+import type { FilterAttribute, FilterAttributeType } from '@/domain/entities/filter-config'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 
 interface FilterRuleRowProps {
@@ -13,134 +13,98 @@ interface FilterRuleRowProps {
   onDelete: (index: number) => void
 }
 
-const TEXT_OPERATORS = [
-  { value: 'eq', label: '=' },
-  { value: 'neq', label: '!=' },
-  { value: 'contains', label: '포함' },
-  { value: 'not_contains', label: '미포함' },
-  { value: 'is_null', label: '비어있음' },
-  { value: 'is_not_null', label: '비어있지 않음' },
-]
-
-const NUMBER_OPERATORS = [
-  { value: 'eq', label: '=' },
-  { value: 'neq', label: '!=' },
-  { value: 'gt', label: '>' },
-  { value: 'gte', label: '>=' },
-  { value: 'lt', label: '<' },
-  { value: 'lte', label: '<=' },
-  { value: 'is_null', label: '비어있음' },
-  { value: 'is_not_null', label: '비어있지 않음' },
-]
-
-const BOOLEAN_OPERATORS = [
-  { value: 'eq', label: '=' },
-  { value: 'neq', label: '!=' },
-]
-
 const SELECT_OPERATORS = [
-  { value: 'eq', label: '=' },
-  { value: 'neq', label: '!=' },
-  { value: 'is_null', label: '비어있음' },
-  { value: 'is_not_null', label: '비어있지 않음' },
+  { value: 'eq', label: 'is' },
+  { value: 'neq', label: 'is not' },
 ]
 
-function getOperatorsForType(type: FilterAttribute['type']) {
-  switch (type) {
-    case 'text': return TEXT_OPERATORS
-    case 'number': return NUMBER_OPERATORS
-    case 'boolean': return BOOLEAN_OPERATORS
-    case 'select': return SELECT_OPERATORS
-  }
-}
+const TEXT_OPERATORS = [
+  { value: 'eq', label: 'is' },
+  { value: 'neq', label: 'is not' },
+  { value: 'contains', label: 'contains' },
+  { value: 'not_contains', label: 'does not contain' },
+]
 
-function isNullishOperator(op: string): boolean {
-  return op === 'is_null' || op === 'is_not_null'
+const RANGE_OPERATORS = [
+  { value: 'gte', label: '\u2265' },
+  { value: 'lt', label: '<' },
+]
+
+function getOperatorsForType(type: FilterAttributeType) {
+  switch (type) {
+    case 'select':
+    case 'multi-select':
+      return SELECT_OPERATORS
+    case 'range':
+      return RANGE_OPERATORS
+    case 'text':
+      return TEXT_OPERATORS
+  }
 }
 
 export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete }: FilterRuleRowProps) {
   const selectedAttr = attributes.find((a) => a.key === rule.attribute)
-  const operators = selectedAttr ? getOperatorsForType(selectedAttr.type) : TEXT_OPERATORS
-  const showValueInput = !isNullishOperator(rule.operator)
+  const operators = selectedAttr ? getOperatorsForType(selectedAttr.type) : SELECT_OPERATORS
 
   const handleAttributeChange = (key: string) => {
     const attr = attributes.find((a) => a.key === key)
-    const ops = attr ? getOperatorsForType(attr.type) : TEXT_OPERATORS
+    const ops = attr ? getOperatorsForType(attr.type) : SELECT_OPERATORS
+    const defaultValue = attr?.options?.[0]?.value ?? ''
     onUpdate(index, {
       ...rule,
       attribute: key,
       operator: ops[0].value as FilterRule['operator'],
-      value: attr?.type === 'boolean' ? true : '',
+      value: defaultValue,
     })
   }
 
   const handleOperatorChange = (op: string) => {
-    onUpdate(index, {
-      ...rule,
-      operator: op as FilterRule['operator'],
-      value: isNullishOperator(op) ? null : rule.value,
-    })
+    onUpdate(index, { ...rule, operator: op as FilterRule['operator'] })
   }
 
   const handleValueChange = (val: string) => {
-    let parsed: string | number | boolean = val
-    if (selectedAttr?.type === 'number' && val !== '') {
-      parsed = Number(val)
-    }
-    if (selectedAttr?.type === 'boolean') {
-      parsed = val === 'true'
-    }
-    onUpdate(index, { ...rule, value: parsed })
+    onUpdate(index, { ...rule, value: val })
   }
 
   return (
     <div className="flex items-center gap-2">
+      {/* 속성 드롭다운 */}
       <NyamSelect
         options={attributes.map((a) => ({ value: a.key, label: a.label }))}
         value={rule.attribute}
         onChange={handleAttributeChange}
       />
 
+      {/* 연산자 드롭다운 */}
       <NyamSelect
         options={operators}
         value={rule.operator}
         onChange={handleOperatorChange}
       />
 
-      {showValueInput && (
-        <>
-          {selectedAttr?.type === 'select' && selectedAttr.options ? (
-            <NyamSelect
-              options={selectedAttr.options.map((o) => ({ value: o, label: o }))}
-              value={String(rule.value ?? '')}
-              onChange={handleValueChange}
-            />
-          ) : selectedAttr?.type === 'boolean' ? (
-            <NyamSelect
-              options={[
-                { value: 'true', label: '예' },
-                { value: 'false', label: '아니오' },
-              ]}
-              value={String(rule.value ?? 'true')}
-              onChange={handleValueChange}
-            />
-          ) : (
-            <input
-              type={selectedAttr?.type === 'number' ? 'number' : 'text'}
-              value={String(rule.value ?? '')}
-              onChange={(e) => handleValueChange(e.target.value)}
-              placeholder="값 입력"
-              className="h-9 min-w-0 flex-1 rounded-[10px] px-3 text-[13px] outline-none transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-card)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-              }}
-            />
-          )}
-        </>
+      {/* 값 드롭다운/입력 */}
+      {selectedAttr?.options ? (
+        <NyamSelect
+          options={selectedAttr.options}
+          value={String(rule.value ?? '')}
+          onChange={handleValueChange}
+        />
+      ) : (
+        <input
+          type="text"
+          value={String(rule.value ?? '')}
+          onChange={(e) => handleValueChange(e.target.value)}
+          placeholder="값 입력"
+          className="h-9 min-w-0 flex-1 rounded-[10px] px-3 text-[13px] outline-none transition-colors"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
+          }}
+        />
       )}
 
+      {/* 삭제 버튼 */}
       <button
         type="button"
         onClick={() => onDelete(index)}

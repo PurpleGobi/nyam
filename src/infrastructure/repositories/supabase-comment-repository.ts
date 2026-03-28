@@ -1,9 +1,14 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { CommentRepository } from '@/domain/repositories/comment-repository'
-import type { Comment } from '@/domain/entities/comment'
+import type { Comment, CommentTargetType } from '@/domain/entities/comment'
 
 export class SupabaseCommentRepository implements CommentRepository {
   private get supabase() { return createClient() }
+
+  async getById(id: string): Promise<Comment | null> {
+    const { data } = await this.supabase.from('comments').select('*').eq('id', id).single()
+    return data ? mapComment(data as Record<string, unknown>) : null
+  }
 
   async getByTarget(targetType: string, targetId: string, bubbleId: string): Promise<Comment[]> {
     const { data } = await this.supabase
@@ -14,6 +19,16 @@ export class SupabaseCommentRepository implements CommentRepository {
       .eq('bubble_id', bubbleId)
       .order('created_at', { ascending: true })
     return (data ?? []).map(mapComment)
+  }
+
+  async getCountByTarget(targetType: string, targetId: string, bubbleId: string): Promise<number> {
+    const { count } = await this.supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('target_type', targetType)
+      .eq('target_id', targetId)
+      .eq('bubble_id', bubbleId)
+    return count ?? 0
   }
 
   async create(params: {
@@ -53,7 +68,7 @@ export class SupabaseCommentRepository implements CommentRepository {
 function mapComment(r: Record<string, unknown>): Comment {
   return {
     id: r.id as string,
-    targetType: r.target_type as 'record',
+    targetType: r.target_type as CommentTargetType,
     targetId: r.target_id as string,
     bubbleId: r.bubble_id as string | null,
     userId: r.user_id as string | null,

@@ -11,72 +11,123 @@ interface MonthlyChartProps {
   months: MonthData[]
   totalAmount: number
   accentColor: string
+  unit: string
 }
 
 function formatWon(value: number): string {
   if (value >= 10000) {
-    return `₩${(value / 10000).toFixed(1)}만`
+    return `${Math.round(value / 10000)}만`
   }
-  return `₩${value.toLocaleString('ko-KR')}`
+  if (value > 0) {
+    return `${(value / 1000).toFixed(0)}천`
+  }
+  return '-'
 }
 
-export function MonthlyChart({ months, totalAmount, accentColor }: MonthlyChartProps) {
+export function MonthlyChart({
+  months,
+  totalAmount,
+  accentColor,
+  unit,
+}: MonthlyChartProps) {
   const maxCount = Math.max(...months.map((m) => m.count), 1)
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Total amount */}
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[11px]" style={{ color: 'var(--text-sub)' }}>
-          6개월 합계
+    <div className="flex flex-col gap-[8px]">
+      {/* Total amount label */}
+      <div className="flex items-baseline gap-[6px]">
+        <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
+          월별 소비
         </span>
-        <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-          {formatWon(totalAmount)}
-        </span>
+        <small
+          className="rounded-[6px] px-[8px] py-[2px] text-[12px]"
+          style={{
+            fontWeight: 600,
+            color: accentColor,
+            backgroundColor: `color-mix(in srgb, ${accentColor} 12%, transparent)`,
+          }}
+        >
+          총 {formatWon(totalAmount)}
+        </small>
       </div>
 
       {/* Bar chart */}
-      <div className="flex items-end justify-between gap-1.5" style={{ height: 100 }}>
+      <div
+        className="flex items-end justify-between gap-[6px] px-[16px]"
+        style={{ height: 120 }}
+      >
         {months.map((month) => {
           const heightPercent = (month.count / maxCount) * 100
-          const barHeight = Math.max(heightPercent, 4)
+          const barHeight = Math.max(heightPercent, 2)
+          const opacity = 0.3 + (month.count / maxCount) * 0.7
+          const isLong = heightPercent > 40
 
           return (
-            <div key={month.label} className="flex flex-1 flex-col items-center gap-1.5">
-              {/* Count */}
-              <span
-                className="text-[10px] font-medium"
-                style={{ color: month.count > 0 ? 'var(--text)' : 'var(--text-hint)' }}
-              >
-                {month.count}
-              </span>
+            <div
+              key={month.label}
+              className="flex flex-1 flex-col items-center justify-end"
+              style={{ height: '100%' }}
+            >
+              {/* Count outside */}
+              {!isLong && month.count > 0 && (
+                <span
+                  className="mb-[2px] text-[10px]"
+                  style={{ fontWeight: 700, color: accentColor }}
+                >
+                  {month.count}
+                </span>
+              )}
 
-              {/* Bar */}
-              <div className="flex w-full flex-1 items-end justify-center">
-                <div
-                  className="w-full max-w-[36px] rounded-t transition-all duration-300"
-                  style={{
-                    height: `${barHeight}%`,
-                    backgroundColor: accentColor,
-                    opacity: month.isCurrent ? 1 : 0.6,
-                    border: month.isCurrent ? `1.5px solid ${accentColor}` : 'none',
-                  }}
-                />
-              </div>
-
-              {/* Month label */}
-              <span
-                className="text-[10px]"
+              <div
+                className="relative w-full rounded-t-[4px]"
                 style={{
-                  color: month.isCurrent ? 'var(--text)' : 'var(--text-hint)',
-                  fontWeight: month.isCurrent ? 600 : 400,
+                  height: `${barHeight}%`,
+                  minHeight: 2,
+                  backgroundColor: accentColor,
+                  opacity,
                 }}
               >
-                {month.label}
-              </span>
+                {isLong && month.count > 0 && (
+                  <span
+                    className="absolute top-[4px] w-full text-center text-[10px]"
+                    style={{ fontWeight: 800, color: '#fff' }}
+                  >
+                    {month.count}
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
+      </div>
+
+      {/* Month labels + amount badges */}
+      <div className="flex gap-[6px] px-[16px]">
+        {months.map((month) => (
+          <div key={month.label} className="flex flex-1 flex-col items-center gap-[2px]">
+            <span
+              className="text-[9px]"
+              style={{
+                color: month.isCurrent ? 'var(--text)' : 'var(--text-hint)',
+                fontWeight: month.isCurrent ? 600 : 400,
+              }}
+            >
+              {month.label}
+            </span>
+            <span
+              className="inline-block rounded-[4px] px-[4px] py-[1px] text-[8px]"
+              style={{
+                fontWeight: month.isCurrent ? 600 : 400,
+                backgroundColor: month.isCurrent
+                  ? `color-mix(in srgb, ${accentColor} 15%, transparent)`
+                  : 'var(--bg-page)',
+                color: month.isCurrent ? accentColor : 'var(--text-hint)',
+              }}
+            >
+              {month.amount > 0 ? formatWon(month.amount) : '-'}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

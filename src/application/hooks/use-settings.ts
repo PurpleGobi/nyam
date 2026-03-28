@@ -122,6 +122,26 @@ export function useSettings() {
     mutate(['bubble-overrides', userId])
   }, [userId, mutate])
 
+  // ── 계정 정보 수정 ──
+
+  const updateNickname = useCallback(async (nickname: string) => {
+    if (!userId || !settings) return
+    mutate(['settings', userId], { ...settings, nickname }, false)
+    await settingsRepo.updateNickname(userId, nickname)
+  }, [userId, settings, mutate])
+
+  const updateBio = useCallback(async (bio: string) => {
+    if (!userId || !settings) return
+    mutate(['settings', userId], { ...settings, bio }, false)
+    await settingsRepo.updateBio(userId, bio)
+  }, [userId, settings, mutate])
+
+  const updateDndTime = useCallback(async (start: string | null, end: string | null) => {
+    if (!userId || !settings) return
+    mutate(['settings', userId], { ...settings, dndStart: start, dndEnd: end }, false)
+    await settingsRepo.updateDndTime(userId, start, end)
+  }, [userId, settings, mutate])
+
   return {
     settings,
     bubbleOverrides,
@@ -136,5 +156,8 @@ export function useSettings() {
     updatePreference,
     requestDeletion,
     cancelDeletion,
+    updateNickname,
+    updateBio,
+    updateDndTime,
   }
 }

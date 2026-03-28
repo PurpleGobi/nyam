@@ -30,6 +30,9 @@ export interface Bubble {
   recordCount: number
   avgSatisfaction: number | null
   lastActivityAt: string | null
+  uniqueTargetCount: number
+  weeklyRecordCount: number
+  prevWeeklyRecordCount: number
   icon: string | null
   iconBgColor: string | null
   createdBy: string | null
@@ -39,12 +42,23 @@ export interface Bubble {
   updatedAt: string
 }
 
+/** 가시성 오버라이드 7개 키 (users.visibility_bubble과 동일 구조) */
+export interface VisibilityOverride {
+  score: boolean
+  comment: boolean
+  photos: boolean
+  level: boolean
+  quadrant: boolean
+  bubbles: boolean
+  price: boolean
+}
+
 export interface BubbleMember {
   bubbleId: string
   userId: string
   role: BubbleMemberRole
   status: BubbleMemberStatus
-  visibilityOverride: Record<string, boolean> | null
+  visibilityOverride: VisibilityOverride | null
   tasteMatchPct: number | null
   commonTargetCount: number
   avgSatisfaction: number | null
@@ -60,4 +74,26 @@ export interface BubbleShare {
   bubbleId: string
   sharedBy: string
   sharedAt: string
+}
+
+// ─── 공유 읽음 (bubble_share_reads 테이블) ───
+
+export interface BubbleShareRead {
+  shareId: string
+  userId: string
+  readAt: string
+}
+
+// ─── 랭킹 스냅샷 (bubble_ranking_snapshots 테이블) ───
+
+export type RankingTargetType = 'restaurant' | 'wine'
+
+export interface BubbleRankingSnapshot {
+  bubbleId: string
+  targetId: string
+  targetType: RankingTargetType
+  periodStart: string
+  rankPosition: number
+  avgSatisfaction: number | null
+  recordCount: number
 }

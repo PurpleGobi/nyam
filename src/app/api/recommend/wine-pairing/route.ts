@@ -46,12 +46,13 @@ export async function GET(request: NextRequest) {
       meta: wine?.region ?? '',
       photoUrl: wine?.photo_url ?? null,
       algorithm: 'wine_pairing',
+      source: 'ai',
       reason: `${category} 페어링 · 만족도 ${r.satisfaction}%`,
       normalizedScore: (r.satisfaction ?? 0) / 100,
       confidence: null,
     })
 
-    if (cards.length >= 5) break
+    if (cards.length >= 10) break
   }
 
   return NextResponse.json({ cards })

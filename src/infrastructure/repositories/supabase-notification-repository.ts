@@ -58,7 +58,7 @@ export class SupabaseNotificationRepository implements NotificationRepository {
       .from('notifications')
       .insert({
         user_id: notification.userId,
-        type: notification.type,
+        notification_type: notification.type,
         title: notification.title,
         body: notification.body,
         action_status: notification.actionStatus,
@@ -104,7 +104,7 @@ function mapNotification(row: Record<string, unknown>): Notification {
   return {
     id: row.id as string,
     userId: row.user_id as string,
-    type: row.type as Notification['type'],
+    type: (row.notification_type as Notification['type']),
     title: (row.title as string) ?? '',
     body: (row.body as string) ?? null,
     isRead: (row.is_read as boolean) ?? false,

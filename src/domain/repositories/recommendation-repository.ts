@@ -19,8 +19,11 @@ export interface AuthorityCandidate {
   name: string
   meta: string
   photoUrl: string | null
-  ratingCount: number
-  badges: string[]
+  naverRating: number | null
+  kakaoRating: number | null
+  googleRating: number | null
+  michelinStars: number | null
+  hasBlueRibbon: boolean
 }
 
 export interface BubbleCandidate {
@@ -31,6 +34,7 @@ export interface BubbleCandidate {
   photoUrl: string | null
   bubbleName: string
   avgSatisfaction: number
+  isPrivateBubble: boolean
 }
 
 /**

@@ -1,9 +1,8 @@
 'use client'
 
-import { MapPin } from 'lucide-react'
-
 interface CityData {
   name: string
+  country: string
   lat: number
   lng: number
   visitCount: number
@@ -16,8 +15,8 @@ interface WorldMapChartProps {
 }
 
 export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapChartProps) {
-  const svgWidth = 360
-  const svgHeight = 180
+  const svgWidth = 320
+  const svgHeight = 160
 
   function toSvgX(lng: number): number {
     return ((lng + 180) / 360) * svgWidth
@@ -29,93 +28,134 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Summary */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5">
-          <MapPin size={14} style={{ color: 'var(--accent-food)' }} />
-          <span className="text-[12px]" style={{ color: 'var(--text-sub)' }}>
-            {totalCountries}개국 · {totalPlaces}곳
-          </span>
-        </div>
+      {/* Summary label */}
+      <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
+        {totalCountries}개국 {totalPlaces}곳
       </div>
 
-      {/* SVG Map placeholder */}
+      {/* SVG Map */}
       <div
-        className="overflow-hidden rounded-lg"
-        style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+        className="overflow-hidden rounded-[14px]"
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          padding: 14,
+        }}
       >
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full"
           style={{ height: 'auto' }}
         >
-          {/* Background grid lines */}
-          {[0, 60, 120, 180, 240, 300, 360].map((x) => (
-            <line
-              key={`v-${x}`}
-              x1={x}
-              y1={0}
-              x2={x}
-              y2={svgHeight}
-              stroke="var(--border)"
-              strokeWidth={0.5}
-            />
-          ))}
-          {[0, 45, 90, 135, 180].map((y) => (
-            <line
-              key={`h-${y}`}
-              x1={0}
-              y1={y}
-              x2={svgWidth}
-              y2={y}
-              stroke="var(--border)"
-              strokeWidth={0.5}
-            />
-          ))}
+          {/* Simplified continent silhouettes */}
+          {/* North America */}
+          <path
+            d="M20,25 L65,15 L85,30 L80,55 L60,70 L45,65 L30,50 Z"
+            fill="var(--bg-page)"
+          />
+          {/* South America */}
+          <path
+            d="M60,75 L75,72 L85,90 L80,120 L65,135 L55,115 L50,90 Z"
+            fill="var(--bg-page)"
+          />
+          {/* Europe */}
+          <path
+            d="M140,20 L170,15 L175,30 L165,45 L150,45 L140,35 Z"
+            fill="var(--bg-page)"
+          />
+          {/* Africa */}
+          <path
+            d="M145,50 L175,48 L185,75 L175,110 L155,115 L140,95 L138,70 Z"
+            fill="var(--bg-page)"
+          />
+          {/* Asia */}
+          <path
+            d="M180,15 L260,10 L280,30 L270,55 L240,60 L210,50 L185,40 Z"
+            fill="var(--bg-page)"
+          />
+          {/* Oceania */}
+          <path
+            d="M250,90 L290,85 L300,100 L285,115 L255,110 Z"
+            fill="var(--bg-page)"
+          />
 
-          {/* City dots */}
+          {/* City markers */}
           {cities.map((city) => {
-            const r = Math.min(3 + city.visitCount * 1.5, 10)
+            const r = 3 + Math.min(city.visitCount, 6)
+            const cx = toSvgX(city.lng)
+            const cy = toSvgY(city.lat)
+
             return (
               <g key={`${city.name}-${city.lat}-${city.lng}`}>
                 <circle
-                  cx={toSvgX(city.lng)}
-                  cy={toSvgY(city.lat)}
+                  cx={cx}
+                  cy={cy}
                   r={r}
                   fill="var(--accent-food)"
-                  opacity={0.7}
+                  opacity={0.8}
                 />
-                <circle
-                  cx={toSvgX(city.lng)}
-                  cy={toSvgY(city.lat)}
-                  r={r + 3}
-                  fill="var(--accent-food)"
-                  opacity={0.15}
-                />
+                {/* Label inside marker for larger markers */}
+                {city.visitCount >= 3 && (
+                  <text
+                    x={cx}
+                    y={cy}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={8}
+                    fontWeight={700}
+                    fill="#fff"
+                  >
+                    {city.visitCount}
+                  </text>
+                )}
               </g>
             )
           })}
         </svg>
-      </div>
 
-      {/* City list */}
-      {cities.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {cities.slice(0, 8).map((city) => (
+        {/* Legend */}
+        <div
+          className="mt-[8px] flex justify-center gap-[12px]"
+          style={{ fontSize: 9, color: 'var(--text-hint)' }}
+        >
+          <span className="flex items-center gap-[3px]">
             <span
-              key={`${city.name}-${city.lat}-${city.lng}`}
-              className="rounded-full px-2.5 py-1 text-[11px]"
+              className="inline-block rounded-full"
               style={{
-                backgroundColor: 'var(--bg)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-sub)',
+                width: 6,
+                height: 6,
+                backgroundColor: 'var(--accent-food)',
+                opacity: 0.7,
               }}
-            >
-              {city.name} {city.visitCount}
-            </span>
-          ))}
+            />
+            1~2곳
+          </span>
+          <span className="flex items-center gap-[3px]">
+            <span
+              className="inline-block rounded-full"
+              style={{
+                width: 10,
+                height: 10,
+                backgroundColor: 'var(--accent-food)',
+                opacity: 0.8,
+              }}
+            />
+            3~5곳
+          </span>
+          <span className="flex items-center gap-[3px]">
+            <span
+              className="inline-block rounded-full"
+              style={{
+                width: 14,
+                height: 14,
+                backgroundColor: 'var(--accent-food)',
+                opacity: 0.9,
+              }}
+            />
+            6곳+
+          </span>
         </div>
-      )}
+      </div>
     </div>
   )
 }

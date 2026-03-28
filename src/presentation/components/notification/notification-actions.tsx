@@ -32,16 +32,16 @@ export function NotificationActions({ actionStatus, onAccept, onReject }: Notifi
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onAccept() }}
-        className="rounded-lg px-3 py-1 text-[12px] font-semibold"
-        style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+        className="rounded-md px-2.5 text-[11px] font-semibold"
+        style={{ backgroundColor: 'var(--text)', color: '#FFFFFF', paddingTop: '3px', paddingBottom: '3px' }}
       >
         수락
       </button>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onReject() }}
-        className="rounded-lg px-3 py-1 text-[12px] font-semibold"
-        style={{ border: '1px solid var(--border)', color: 'var(--text-sub)' }}
+        className="rounded-md px-2.5 text-[11px] font-semibold"
+        style={{ border: '1px solid var(--border)', color: 'var(--text-hint)', paddingTop: '3px', paddingBottom: '3px' }}
       >
         거절
       </button>

@@ -7,4 +7,6 @@ export interface ReactionRepository {
   getByTarget(targetType: string, targetId: string): Promise<Reaction[]>
   toggle(targetType: string, targetId: string, reactionType: ReactionType, userId: string): Promise<{ added: boolean }>
   getCountsByTarget(targetType: string, targetId: string): Promise<Record<ReactionType, number>>
+  getUserReactions(userId: string, targetType: string, targetIds: string[]): Promise<Reaction[]>
+  getDailySocialXpCount(userId: string, date: string): Promise<number>
 }

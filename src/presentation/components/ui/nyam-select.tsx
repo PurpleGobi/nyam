@@ -60,7 +60,7 @@ export function NyamSelect({ options, value, onChange }: NyamSelectProps) {
 
       {isOpen && (
         <div
-          className="absolute left-0 top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto rounded-[10px] py-1"
+          className="absolute right-0 top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto rounded-[10px] py-1"
           style={{
             backgroundColor: 'var(--bg-elevated)',
             border: '1px solid var(--border)',

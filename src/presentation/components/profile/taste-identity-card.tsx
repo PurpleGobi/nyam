@@ -1,6 +1,19 @@
 'use client'
 
+import { Fragment } from 'react'
 import { Share2, Sparkles } from 'lucide-react'
+
+function highlightKeywords(text: string, keywords: string[]): React.ReactNode {
+  if (!keywords || keywords.length === 0) return text
+  const pattern = keywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const regex = new RegExp(`(${pattern})`, 'g')
+  const parts = text.split(regex)
+  return parts.map((part, i) =>
+    keywords.includes(part)
+      ? <span key={i} style={{ fontWeight: 700, color: 'var(--accent-food)' }}>{part}</span>
+      : <Fragment key={i}>{part}</Fragment>,
+  )
+}
 
 interface TasteIdentityCardProps {
   tasteSummary: string | null
@@ -23,7 +36,9 @@ export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShar
   return (
     <div className="mx-4 rounded-xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       {tasteSummary && (
-        <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>{tasteSummary}</p>
+        <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>
+          {highlightKeywords(tasteSummary, tasteTags)}
+        </p>
       )}
       {tasteTags && tasteTags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">

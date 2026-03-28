@@ -1,7 +1,8 @@
 'use client'
 
 interface SceneData {
-  name: string
+  scene: string
+  label: string
   count: number
   color: string
 }
@@ -14,35 +15,35 @@ export function SceneChart({ scenes }: SceneChartProps) {
   const maxCount = Math.max(...scenes.map((s) => s.count), 1)
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-[8px]">
       {scenes.map((scene) => {
         const widthPercent = (scene.count / maxCount) * 100
+        const opacity = 0.4 + (scene.count / maxCount) * 0.6
 
         return (
-          <div key={scene.name} className="flex items-center gap-3">
+          <div key={scene.scene} className="flex items-center gap-[8px]">
             <span
-              className="w-[72px] shrink-0 text-right text-[12px]"
-              style={{ color: 'var(--text-sub)' }}
+              className="w-[78px] shrink-0 text-right text-[12px] font-semibold"
+              style={{ color: 'var(--text)' }}
             >
-              {scene.name}
+              {scene.label}
             </span>
-            <div className="relative h-[20px] flex-1">
+            <div
+              className="relative h-[16px] flex-1 overflow-hidden rounded-[3px]"
+              style={{ backgroundColor: 'var(--bg-page)' }}
+            >
               <div
-                className="absolute inset-0 rounded"
-                style={{ backgroundColor: 'var(--bg)' }}
-              />
-              <div
-                className="absolute inset-y-0 left-0 rounded transition-all duration-300"
+                className="absolute inset-y-0 left-0 rounded-[3px]"
                 style={{
                   width: `${widthPercent}%`,
                   backgroundColor: scene.color,
-                  opacity: 0.8,
+                  opacity,
                 }}
               />
             </div>
             <span
-              className="w-[28px] shrink-0 text-right text-[11px] font-medium"
-              style={{ color: 'var(--text)' }}
+              className="w-[20px] shrink-0 text-right text-[11px]"
+              style={{ fontWeight: 800, color: scene.color }}
             >
               {scene.count}
             </span>

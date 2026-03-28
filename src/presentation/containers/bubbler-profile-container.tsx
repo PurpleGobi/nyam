@@ -1,38 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
-import type { User } from '@/domain/entities/user'
+import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
-import { FollowButton } from '@/presentation/components/follow/follow-button'
-import { profileRepo } from '@/shared/di/container'
+import { useBubblerProfile } from '@/application/hooks/use-bubbler-profile'
+import { BubblerHero } from '@/presentation/components/bubbler/bubbler-hero'
+import { BubbleContextCard } from '@/presentation/components/bubbler/bubble-context-card'
+import { TasteProfile } from '@/presentation/components/bubbler/taste-profile'
+import { PicksGrid } from '@/presentation/components/bubbler/picks-grid'
+import { RecentRecords } from '@/presentation/components/bubbler/recent-records'
+import { ActivitySection } from '@/presentation/components/bubbler/activity-section'
 
 interface BubblerProfileContainerProps {
   userId: string
+  bubbleId?: string | null
 }
 
-export function BubblerProfileContainer({ userId }: BubblerProfileContainerProps) {
+export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProfileContainerProps) {
   const router = useRouter()
   const { user: authUser } = useAuth()
   const { accessLevel, isLoading: followLoading, toggleFollow } = useFollow(authUser?.id ?? null, userId)
-  const [profile, setProfile] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, isLoading } = useBubblerProfile(authUser?.id ?? null, userId, bubbleId)
 
-  useEffect(() => {
-    profileRepo.getUserProfile(userId).then((data) => {
-      setProfile({
-        id: data.id, nickname: data.nickname, handle: data.handle,
-        avatar_url: data.avatarUrl, avatar_color: data.avatarColor,
-        bio: data.bio, record_count: data.recordCount,
-        total_xp: data.totalXp, follower_count: 0, following_count: 0,
-      } as unknown as User)
-      setIsLoading(false)
-    }).catch(() => setIsLoading(false))
-  }, [userId])
-
-  if (isLoading || !profile) {
+  if (isLoading || !data) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
@@ -43,57 +34,82 @@ export function BubblerProfileContainer({ userId }: BubblerProfileContainerProps
   const isSelf = authUser?.id === userId
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+      {/* 헤더 */}
       <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
         <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
           <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
         </button>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{profile.nickname}</span>
-        <div className="w-11" />
+        <span className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>
+          {data.bubbleContext?.bubbleName ?? data.nickname}
+        </span>
+        <button type="button" className="flex h-11 w-11 items-center justify-center">
+          <MoreHorizontal size={18} style={{ color: 'var(--text-sub)' }} />
+        </button>
       </nav>
 
-      <div className="px-4 py-4">
-        <div className="flex items-center gap-4">
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-full"
-            style={{ backgroundColor: profile.avatar_color ?? 'var(--accent-social)' }}
-          >
-            <span style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF' }}>{profile.nickname[0]}</span>
-          </div>
-          <div className="flex-1">
-            <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{profile.nickname}</h1>
-            {profile.handle && <p style={{ fontSize: '13px', color: 'var(--text-hint)' }}>@{profile.handle}</p>}
-          </div>
-          {!isSelf && (
-            <FollowButton accessLevel={accessLevel} onToggle={toggleFollow} isLoading={followLoading} />
-          )}
+      <div className="flex flex-col gap-6 px-4 pb-8">
+        {/* 프로필 히어로 */}
+        <BubblerHero
+          nickname={data.nickname}
+          handle={data.handle}
+          avatarUrl={data.avatarUrl}
+          avatarColor={data.avatarColor}
+          level={data.level}
+          levelTitle={data.levelTitle}
+          accessLevel={data.accessLevel}
+          isOwnProfile={isSelf}
+          isFollowLoading={followLoading}
+          onToggleFollow={toggleFollow}
+        />
+
+        {/* 통계 */}
+        <div className="flex justify-center gap-8">
+          <StatItem label="기록" value={data.totalRecords} />
         </div>
 
-        {profile.bio && (
-          <p className="mt-3" style={{ fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.5 }}>{profile.bio}</p>
+        {/* 버블 컨텍스트 카드 */}
+        {data.bubbleContext && (
+          <BubbleContextCard
+            bubbleName={data.bubbleContext.bubbleName}
+            bubbleIcon={data.bubbleContext.bubbleIcon}
+            rank={data.bubbleContext.rank}
+            memberSince={data.bubbleContext.memberSince}
+            tasteMatchPct={data.bubbleContext.tasteMatchPct}
+          />
         )}
 
-        <div className="mt-4 flex gap-6">
-          <div className="text-center">
-            <p style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{profile.record_count}</p>
-            <p style={{ fontSize: '11px', color: 'var(--text-hint)' }}>기록</p>
-          </div>
-          <div className="text-center">
-            <p style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{profile.follower_count}</p>
-            <p style={{ fontSize: '11px', color: 'var(--text-hint)' }}>팔로워</p>
-          </div>
-          <div className="text-center">
-            <p style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{profile.following_count}</p>
-            <p style={{ fontSize: '11px', color: 'var(--text-hint)' }}>팔로잉</p>
-          </div>
-        </div>
-      </div>
+        {/* 취향 프로필 */}
+        <TasteProfile
+          categories={data.categories}
+          scoreTendency={{ avgSatisfaction: data.avgSatisfaction, totalRecords: data.totalRecords }}
+          topRegions={data.topRegions}
+        />
 
-      {accessLevel === 'none' && (
-        <div className="flex flex-col items-center py-12">
-          <p style={{ fontSize: '14px', color: 'var(--text-hint)' }}>팔로우하면 더 많은 정보를 볼 수 있어요</p>
-        </div>
-      )}
+        {/* 강력 추천 (Picks) */}
+        <PicksGrid
+          picks={data.topPicks}
+          onItemPress={(id, type) => router.push(type === 'restaurant' ? `/restaurants/${id}` : `/wines/${id}`)}
+        />
+
+        {/* 최근 기록 */}
+        <RecentRecords
+          records={data.recentRecords}
+          onRecordPress={(id) => router.push(`/records/${id}`)}
+        />
+
+        {/* 활동 히트맵 */}
+        <ActivitySection heatmap={data.heatmap} />
+      </div>
+    </div>
+  )
+}
+
+function StatItem({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="text-center">
+      <p className="text-[18px] font-bold" style={{ color: 'var(--text)' }}>{value}</p>
+      <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{label}</p>
     </div>
   )
 }

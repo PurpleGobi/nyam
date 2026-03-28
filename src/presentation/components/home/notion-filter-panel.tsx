@@ -28,7 +28,7 @@ export function NotionFilterPanel({
     const newRule: FilterRule = {
       attribute: firstAttr.key,
       operator: 'eq',
-      value: firstAttr.type === 'boolean' ? true : '',
+      value: firstAttr.options?.[0]?.value ?? '',
     }
     onRulesChange([...rules, newRule])
   }

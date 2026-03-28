@@ -18,6 +18,23 @@ const INTENSITY_COLORS: Record<HeatmapCell['intensity'], string> = {
 
 const DAY_LABELS = ['', '월', '', '수', '', '금', '']
 
+const MONTH_NAMES = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+
+function getMonthLabels(): string[] {
+  const labels: string[] = Array(13).fill('')
+  const now = new Date()
+  // 13 weeks = ~3 months. Show labels for recent 3 months at their approximate column
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const weeksAgo = Math.floor((now.getTime() - d.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    const col = 12 - weeksAgo
+    if (col >= 0 && col < 13) {
+      labels[col] = MONTH_NAMES[d.getMonth()]
+    }
+  }
+  return labels
+}
+
 export function ActivityHeatmap({ data, stats }: ActivityHeatmapProps) {
   // 13 weeks x 7 days grid
   const weeks = 13
@@ -94,6 +111,17 @@ export function ActivityHeatmap({ data, stats }: ActivityHeatmapProps) {
                 />
               ))}
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Month labels */}
+      <div className="mt-1 flex" style={{ paddingLeft: '20px' }}>
+        <div className="flex flex-1 justify-between">
+          {getMonthLabels().map((label, i) => (
+            <span key={i} style={{ fontSize: '9px', color: 'var(--text-hint)', width: `${100 / 13}%`, textAlign: 'center' }}>
+              {label}
+            </span>
           ))}
         </div>
       </div>

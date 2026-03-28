@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { bubbleRepo } from '@/shared/di/container'
+import { useSocialXp } from '@/application/hooks/use-social-xp'
+import { useBonusXp } from '@/application/hooks/use-bonus-xp'
 
 interface ShareableBubble {
   id: string
@@ -29,6 +31,8 @@ export function useShareRecord(
 ): UseShareRecordResult {
   const [availableBubbles, setAvailableBubbles] = useState<ShareableBubble[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const { awardSocialXp } = useSocialXp()
+  const { awardBonus } = useBonusXp()
 
   const sharedBubbles = availableBubbles.filter((b) => b.isShared).map((b) => b.id)
 
@@ -70,7 +74,9 @@ export function useShareRecord(
     setAvailableBubbles((prev) =>
       prev.map((b) => (b.id === bubbleId ? { ...b, isShared: true } : b)),
     )
-  }, [userId, recordId])
+    await awardSocialXp(userId, 'share')
+    await awardBonus(userId, 'first_share')
+  }, [userId, recordId, awardSocialXp, awardBonus])
 
   const unshareBubble = useCallback(async (bubbleId: string) => {
     if (!recordId) return

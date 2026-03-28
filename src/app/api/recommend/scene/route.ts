@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     .not('satisfaction', 'is', null)
     .gte('satisfaction', 75)
     .order('satisfaction', { ascending: false })
-    .limit(10)
+    .limit(20)
 
   if (!records || records.length === 0) {
     return NextResponse.json({ cards: [] })
@@ -46,12 +46,13 @@ export async function GET(request: NextRequest) {
       meta: restaurant?.genre ?? '',
       photoUrl: restaurant?.photo_url ?? null,
       algorithm: 'scene',
+      source: 'ai',
       reason: `${scene} · 만족도 ${r.satisfaction}%`,
       normalizedScore: (r.satisfaction ?? 0) / 100,
       confidence: null,
     })
 
-    if (cards.length >= 5) break
+    if (cards.length >= 10) break
   }
 
   return NextResponse.json({ cards })

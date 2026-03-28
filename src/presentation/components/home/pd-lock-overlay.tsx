@@ -18,22 +18,27 @@ export function PdLockOverlay({ minRecords, currentCount, children }: PdLockOver
   }
 
   return (
-    <div className="relative">
-      {/* Blurred content */}
+    <div className="relative rounded-xl">
+      {/* Blurred content preview */}
       <div className="pointer-events-none select-none" style={{ filter: 'blur(6px)' }}>
         {children}
       </div>
 
       {/* Lock overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-full"
-          style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+      <div
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[4px] rounded-xl"
+        style={{
+          background: 'rgba(248,246,243,0.85)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+        }}
+      >
+        <Lock size={20} style={{ color: 'var(--text-hint)' }} />
+        <p
+          className="text-[12px]"
+          style={{ fontWeight: 600, color: 'var(--text-hint)' }}
         >
-          <Lock size={18} style={{ color: 'var(--text-hint)' }} />
-        </div>
-        <p className="text-center text-[12px]" style={{ color: 'var(--text-sub)' }}>
-          {remaining}개 더 기록하면 열려요
+          기록 {remaining}개 더 남으면 열려요
         </p>
       </div>
     </div>

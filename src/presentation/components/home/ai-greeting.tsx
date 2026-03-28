@@ -1,64 +1,81 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import type { GreetingResult } from '@/domain/services/greeting-generator'
 
 interface AiGreetingProps {
-  title: string
-  description: string
+  greeting: GreetingResult
+  isDismissing: boolean
   onDismiss: () => void
-  onClick?: () => void
 }
 
-export function AiGreeting({ title, description, onDismiss, onClick }: AiGreetingProps) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [shouldRender, setShouldRender] = useState(true)
+/**
+ * AI 인사 컴포넌트
+ * - 위치: 앱 헤더 아래, 넛지 스트립 위
+ * - 서브텍스트: "● nyam AI · 나의 기록 기반"
+ * - AI dot: 5x5px, --positive (#7EAE8B), aiPulse 2s
+ * - 소멸: 5초 후 자동 (opacity + max-height fade, 0.6s cubic-bezier)
+ * - data-restaurant-id 있으면 탭 시 /restaurants/${restaurantId} 이동
+ */
+export function AiGreeting({ greeting, isDismissing }: AiGreetingProps) {
+  const router = useRouter()
 
-  const collapse = useCallback(() => {
-    setCollapsed(true)
-    setTimeout(() => {
-      setShouldRender(false)
-      onDismiss()
-    }, 600)
-  }, [onDismiss])
-
-  useEffect(() => {
-    const timer = setTimeout(collapse, 5000)
-    return () => clearTimeout(timer)
-  }, [collapse])
-
-  if (!shouldRender) return null
+  const handleClick = () => {
+    if (greeting.restaurantId) {
+      router.push(`/restaurants/${greeting.restaurantId}`)
+    }
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="mx-4 rounded-xl px-4 py-3 text-left"
+    <div
+      role={greeting.restaurantId ? 'button' : undefined}
+      tabIndex={greeting.restaurantId ? 0 : undefined}
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter') handleClick() }}
+      data-restaurant-id={greeting.restaurantId ?? undefined}
       style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        opacity: collapsed ? 0 : 1,
-        maxHeight: collapsed ? '0px' : '80px',
+        padding: isDismissing ? '0 20px' : '14px 20px 12px',
+        background: 'var(--bg)',
+        cursor: greeting.restaurantId ? 'pointer' : 'default',
+        maxHeight: isDismissing ? '0px' : '120px',
+        opacity: isDismissing ? 0 : 1,
         overflow: 'hidden',
-        transition: 'opacity 0.5s ease, max-height 0.5s ease',
+        transition: 'max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), padding 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease',
       }}
     >
-      <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.5 }}>
-        <strong>{title}</strong>
-        <br />
-        {description}
+      <p
+        style={{
+          fontSize: '15px',
+          fontWeight: 500,
+          color: 'var(--text)',
+          lineHeight: 1.55,
+          letterSpacing: '-0.2px',
+        }}
+      >
+        {greeting.message}
       </p>
-      <div className="mt-1 flex items-center gap-1">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          marginTop: '4px',
+          fontSize: '11px',
+          color: 'var(--text-hint)',
+        }}
+      >
         <span
+          className="animate-[aiPulse_2s_ease_infinite]"
           style={{
-            width: '6px',
-            height: '6px',
+            width: '5px',
+            height: '5px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-food), var(--accent-wine))',
+            background: 'var(--positive)',
             display: 'inline-block',
           }}
         />
-        <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>nyam AI · 나의 기록 기반</span>
+        nyam AI · 나의 기록 기반
       </div>
-    </button>
+    </div>
   )
 }

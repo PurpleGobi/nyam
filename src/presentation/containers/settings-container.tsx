@@ -19,6 +19,7 @@ import { PrivacySummary } from '@/presentation/components/settings/privacy-summa
 import { PrivacyNote } from '@/presentation/components/settings/privacy-note'
 import { BubblePrivacySheet } from '@/presentation/components/settings/bubble-privacy-sheet'
 import { DeleteAccountSheet } from '@/presentation/components/settings/delete-account-sheet'
+import { EditFieldSheet } from '@/presentation/components/settings/edit-field-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import type { VisibilityConfig, DeleteMode, BubblePrivacyOverride } from '@/domain/entities/settings'
 
@@ -117,10 +118,13 @@ export function SettingsContainer() {
     updateVisibilityPublic, updateVisibilityBubble,
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
+    updateNickname, updateBio, updateDndTime,
   } = useSettings()
 
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
+  const [editField, setEditField] = useState<'nickname' | 'bio' | null>(null)
+  const [dndSheetOpen, setDndSheetOpen] = useState(false)
 
   if (isLoading || !settings) {
     return (
@@ -155,8 +159,8 @@ export function SettingsContainer() {
         {/* ── 계정 ── */}
         <SettingsSection icon={<Pencil size={16} />} title="계정">
           <SettingsCard>
-            <SettingsItem icon={<Pencil size={16} />} label="닉네임" value={settings.nickname} showChevron />
-            <SettingsItem icon={<MessageSquare size={16} />} label="한줄 소개" value={settings.bio ?? '미설정'} showChevron />
+            <SettingsItem icon={<Pencil size={16} />} label="닉네임" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
+            <SettingsItem icon={<MessageSquare size={16} />} label="한줄 소개" value={settings.bio ?? '미설정'} showChevron onPress={() => setEditField('bio')} />
             <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron />
           </SettingsCard>
         </SettingsSection>
@@ -169,6 +173,7 @@ export function SettingsContainer() {
                 options={PRIVACY_PROFILE_OPTIONS}
                 value={settings.privacyProfile}
                 onChange={(v) => updatePrivacyProfile(v as 'public' | 'bubble_only' | 'private')}
+                variant="privacy"
               />
             </div>
 
@@ -291,6 +296,7 @@ export function SettingsContainer() {
               label="방해 금지"
               value={settings.dndStart ? `${settings.dndStart} ~ ${settings.dndEnd}` : '꺼짐'}
               showChevron
+              onPress={() => setDndSheetOpen(true)}
             />
           </SettingsCard>
         </SettingsSection>
@@ -406,6 +412,74 @@ export function SettingsContainer() {
           setDeleteSheetOpen(false)
         }}
       />
+
+      {/* Edit Field Sheet */}
+      <EditFieldSheet
+        isOpen={editField !== null}
+        title={editField === 'nickname' ? '닉네임 변경' : '한줄 소개 변경'}
+        initialValue={editField === 'nickname' ? (settings.nickname ?? '') : (settings.bio ?? '')}
+        placeholder={editField === 'nickname' ? '닉네임을 입력하세요' : '한줄 소개를 입력하세요'}
+        maxLength={editField === 'nickname' ? 20 : 50}
+        onSave={(value) => {
+          if (editField === 'nickname') updateNickname(value)
+          else updateBio(value)
+        }}
+        onClose={() => setEditField(null)}
+      />
+
+      {/* DND Sheet */}
+      {dndSheetOpen && (
+        <DndSheet
+          initialStart={settings.dndStart}
+          initialEnd={settings.dndEnd}
+          onSave={(start, end) => { updateDndTime(start, end); setDndSheetOpen(false) }}
+          onClose={() => setDndSheetOpen(false)}
+        />
+      )}
     </div>
+  )
+}
+
+function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
+  initialStart: string | null; initialEnd: string | null
+  onSave: (start: string | null, end: string | null) => void; onClose: () => void
+}) {
+  const [start, setStart] = useState(initialStart ?? '22:00')
+  const [end, setEnd] = useState(initialEnd ?? '08:00')
+  const [enabled, setEnabled] = useState(initialStart !== null)
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[190]" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl" style={{ backgroundColor: 'var(--bg-card)', padding: '20px 24px 32px' }}>
+        <div className="mb-4 flex items-center justify-between">
+          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>방해 금지 설정</span>
+          <Toggle checked={enabled} onChange={setEnabled} />
+        </div>
+
+        {enabled && (
+          <div className="flex items-center gap-3">
+            <label className="flex-1">
+              <span className="mb-1 block" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>시작</span>
+              <input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full rounded-lg px-3 py-2" style={{ fontSize: '14px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            </label>
+            <span style={{ fontSize: '14px', color: 'var(--text-hint)', marginTop: '18px' }}>~</span>
+            <label className="flex-1">
+              <span className="mb-1 block" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>종료</span>
+              <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="w-full rounded-lg px-3 py-2" style={{ fontSize: '14px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            </label>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSave(enabled ? start : null, enabled ? end : null)}
+          className="mt-5 w-full rounded-lg py-3"
+          style={{ fontSize: '14px', fontWeight: 700, backgroundColor: 'var(--text)', color: '#FFFFFF' }}
+        >
+          저장
+        </button>
+      </div>
+    </>
   )
 }

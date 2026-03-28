@@ -7,9 +7,10 @@ interface CommentInputProps {
   onSubmit: (content: string, isAnonymous: boolean) => void
   maxLength: number
   disabled?: boolean
+  disabledMessage?: string
 }
 
-export function CommentInput({ onSubmit, maxLength, disabled }: CommentInputProps) {
+export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage }: CommentInputProps) {
   const [content, setContent] = useState('')
   const [isAnonymous, setIsAnonymous] = useState(false)
 
@@ -21,6 +22,15 @@ export function CommentInput({ onSubmit, maxLength, disabled }: CommentInputProp
   }
 
   const remaining = maxLength - content.length
+  const cautionThreshold = 20  // 280자 이상 → caution
+  const dangerThreshold = 0    // 300자 → negative
+
+  const counterColor =
+    remaining <= dangerThreshold
+      ? 'var(--negative)'
+      : remaining <= cautionThreshold
+        ? 'var(--caution)'
+        : 'var(--text-hint)'
 
   return (
     <div className="flex flex-col gap-2" style={{ borderTop: '1px solid var(--border)' }}>
@@ -29,7 +39,7 @@ export function CommentInput({ onSubmit, maxLength, disabled }: CommentInputProp
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="댓글을 입력하세요"
+            placeholder={disabled && disabledMessage ? disabledMessage : '댓글을 입력하세요'}
             maxLength={maxLength}
             rows={2}
             disabled={disabled}
@@ -52,7 +62,8 @@ export function CommentInput({ onSubmit, maxLength, disabled }: CommentInputProp
         <button
           type="button"
           onClick={() => setIsAnonymous(!isAnonymous)}
-          className="flex items-center gap-1 text-[11px] font-semibold transition-colors"
+          disabled={disabled}
+          className="flex items-center gap-1 text-[11px] font-semibold transition-colors disabled:opacity-50"
           style={{ color: isAnonymous ? 'var(--accent-social)' : 'var(--text-hint)' }}
         >
           <EyeOff size={12} />
@@ -60,7 +71,7 @@ export function CommentInput({ onSubmit, maxLength, disabled }: CommentInputProp
         </button>
         <span
           className="text-[11px]"
-          style={{ color: remaining < 30 ? 'var(--negative)' : 'var(--text-hint)' }}
+          style={{ color: counterColor }}
         >
           {remaining}/{maxLength}
         </span>

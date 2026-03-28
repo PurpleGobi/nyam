@@ -4,14 +4,30 @@ import { useState, useCallback } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
+export type InviteExpiry = '1d' | '7d' | '30d' | 'unlimited'
+
+export interface InviteValidation {
+  valid: boolean
+  bubble: Bubble | null
+  expired: boolean
+}
+
+function expiryToDate(expiry: InviteExpiry): string | null {
+  if (expiry === 'unlimited') return null
+  const days = expiry === '1d' ? 1 : expiry === '7d' ? 7 : 30
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+}
+
 export function useInviteLink(bubbleId: string) {
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const generateLink = useCallback(async (): Promise<string> => {
+  /** 초대 링크 생성 (만료 옵션 지원) */
+  const generateLink = useCallback(async (expiry: InviteExpiry = '30d'): Promise<string> => {
     setIsLoading(true)
     try {
-      const code = await bubbleRepo.generateInviteCode(bubbleId)
+      const expiresAt = expiryToDate(expiry)
+      const code = await bubbleRepo.generateInviteCode(bubbleId, expiresAt)
       setInviteCode(code)
       return code
     } finally {
@@ -19,17 +35,26 @@ export function useInviteLink(bubbleId: string) {
     }
   }, [bubbleId])
 
-  const validateLink = useCallback(async (code: string): Promise<Bubble | null> => {
+  /** 초대 코드 유효성 검증 (상세 결과) */
+  const validateLink = useCallback(async (code: string): Promise<InviteValidation> => {
     setIsLoading(true)
     try {
-      const bubble = await bubbleRepo.findByInviteCode(code)
-      if (!bubble) return null
-      if (bubble.inviteExpiresAt && new Date(bubble.inviteExpiresAt) < new Date()) return null
-      return bubble
+      return await bubbleRepo.validateInviteCode(code)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  return { inviteCode, generateLink, validateLink, isLoading }
+  /** 클립보드 복사 */
+  const copyToClipboard = useCallback(async (code: string): Promise<boolean> => {
+    try {
+      const url = `${window.location.origin}/bubbles/invite/${code}`
+      await navigator.clipboard.writeText(url)
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
+  return { inviteCode, generateLink, validateLink, copyToClipboard, isLoading }
 }

@@ -8,8 +8,14 @@ interface HomeTabsProps {
   viewMode: ViewMode
   onTabChange: (tab: HomeTab) => void
   onViewCycle: () => void
+  onMapToggle: () => void
+  isMapOpen: boolean
   onFilterToggle: () => void
+  isFilterOpen: boolean
   onSortToggle: () => void
+  isSortOpen: boolean
+  onSearchToggle: () => void
+  isSearchOpen: boolean
 }
 
 const VIEW_ICONS: Record<ViewMode, typeof LayoutGrid> = {
@@ -20,7 +26,11 @@ const VIEW_ICONS: Record<ViewMode, typeof LayoutGrid> = {
 }
 
 export function HomeTabs({
-  activeTab, viewMode, onTabChange, onViewCycle, onFilterToggle, onSortToggle,
+  activeTab, viewMode, onTabChange, onViewCycle,
+  onMapToggle, isMapOpen,
+  onFilterToggle, isFilterOpen,
+  onSortToggle, isSortOpen,
+  onSearchToggle, isSearchOpen,
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
   const ViewIcon = VIEW_ICONS[viewMode]
@@ -73,20 +83,22 @@ export function HomeTabs({
         >
           <ViewIcon size={18} />
         </button>
-        <button
-          type="button"
-          onClick={() => {/* map toggle — S5 */}}
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: 'var(--text-sub)' }}
-          title="지도"
-        >
-          <Map size={18} />
-        </button>
+        {foodActive && (
+          <button
+            type="button"
+            onClick={onMapToggle}
+            className="flex h-8 w-8 items-center justify-center rounded-lg"
+            style={{ color: isMapOpen ? accentColor : 'var(--text-sub)' }}
+            title="지도"
+          >
+            <Map size={18} />
+          </button>
+        )}
         <button
           type="button"
           onClick={onFilterToggle}
           className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: 'var(--text-sub)' }}
+          style={{ color: isFilterOpen ? accentColor : 'var(--text-sub)' }}
           title="필터"
         >
           <SlidersHorizontal size={18} />
@@ -95,16 +107,16 @@ export function HomeTabs({
           type="button"
           onClick={onSortToggle}
           className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: 'var(--text-sub)' }}
+          style={{ color: isSortOpen ? accentColor : 'var(--text-sub)' }}
           title="정렬"
         >
           <ArrowUpDown size={18} />
         </button>
         <button
           type="button"
-          onClick={() => {/* search toggle — S5 */}}
+          onClick={onSearchToggle}
           className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ color: 'var(--text-sub)' }}
+          style={{ color: isSearchOpen ? accentColor : 'var(--text-sub)' }}
           title="검색"
         >
           <Search size={18} />

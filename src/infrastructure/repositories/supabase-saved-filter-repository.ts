@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { SavedFilterRepository } from '@/domain/repositories/saved-filter-repository'
-import type { SavedFilter, FilterRule } from '@/domain/entities/saved-filter'
+import type { SavedFilter, FilterRule, FilterTargetType, SortOption } from '@/domain/entities/saved-filter'
 
 export class SupabaseSavedFilterRepository implements SavedFilterRepository {
   private get supabase() { return createClient() }
@@ -42,8 +42,8 @@ export class SupabaseSavedFilterRepository implements SavedFilterRepository {
 function mapFilter(r: Record<string, unknown>): SavedFilter {
   return {
     id: r.id as string, userId: r.user_id as string, name: r.name as string,
-    targetType: r.target_type as string, contextId: r.context_id as string | null,
-    rules: r.rules as FilterRule[], sortBy: r.sort_by as string | null,
+    targetType: r.target_type as FilterTargetType, contextId: r.context_id as string | null,
+    rules: r.rules as FilterRule[], sortBy: r.sort_by as SortOption | null,
     orderIndex: r.order_index as number, createdAt: r.created_at as string,
   }
 }

@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleShare } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
 
 export class SupabaseBubbleRepository implements BubbleRepository {
   private get supabase() { return createClient() }
@@ -56,6 +56,26 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return (data ?? []) as unknown as BubbleMember[]
   }
 
+  async getMember(bubbleId: string, userId: string): Promise<BubbleMember | null> {
+    const { data } = await this.supabase
+      .from('bubble_members')
+      .select('*')
+      .eq('bubble_id', bubbleId)
+      .eq('user_id', userId)
+      .single()
+    return (data as unknown as BubbleMember) ?? null
+  }
+
+  async getPendingMembers(bubbleId: string): Promise<BubbleMember[]> {
+    const { data } = await this.supabase
+      .from('bubble_members')
+      .select('*')
+      .eq('bubble_id', bubbleId)
+      .eq('status', 'pending')
+      .order('joined_at', { ascending: true })
+    return (data ?? []) as unknown as BubbleMember[]
+  }
+
   async addMember(bubbleId: string, userId: string, role: string, status: string): Promise<BubbleMember> {
     const { data, error } = await this.supabase.from('bubble_members').insert({ bubble_id: bubbleId, user_id: userId, role, status }).select().single()
     if (error) throw new Error(`멤버 추가 실패: ${error.message}`)
@@ -85,6 +105,79 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     await this.supabase.from('bubble_shares').delete().eq('id', shareId)
   }
 
+  async markShareRead(shareId: string, userId: string): Promise<void> {
+    await this.supabase.from('bubble_share_reads').upsert(
+      { share_id: shareId, user_id: userId },
+      { onConflict: 'share_id,user_id' },
+    )
+  }
+
+  async getShareReads(shareId: string): Promise<BubbleShareRead[]> {
+    const { data } = await this.supabase.from('bubble_share_reads').select('*').eq('share_id', shareId)
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      shareId: r.share_id as string,
+      userId: r.user_id as string,
+      readAt: r.read_at as string,
+    }))
+  }
+
+  async getRankings(bubbleId: string, options: {
+    targetType: 'restaurant' | 'wine'
+    periodStart?: string
+    limit?: number
+  }): Promise<BubbleRankingSnapshot[]> {
+    let query = this.supabase.from('bubble_ranking_snapshots').select('*')
+      .eq('bubble_id', bubbleId)
+      .eq('target_type', options.targetType)
+      .order('rank_position', { ascending: true })
+    if (options.periodStart) query = query.eq('period_start', options.periodStart)
+    if (options.limit) query = query.limit(options.limit)
+    const { data } = await query
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      bubbleId: r.bubble_id as string,
+      targetId: r.target_id as string,
+      targetType: r.target_type as 'restaurant' | 'wine',
+      periodStart: r.period_start as string,
+      rankPosition: r.rank_position as number,
+      avgSatisfaction: r.avg_satisfaction as number | null,
+      recordCount: (r.record_count as number) ?? 0,
+    }))
+  }
+
+  async getPreviousRankings(bubbleId: string, targetType: 'restaurant' | 'wine', periodStart: string): Promise<BubbleRankingSnapshot[]> {
+    const { data } = await this.supabase.from('bubble_ranking_snapshots').select('*')
+      .eq('bubble_id', bubbleId)
+      .eq('target_type', targetType)
+      .eq('period_start', periodStart)
+      .order('rank_position', { ascending: true })
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      bubbleId: r.bubble_id as string,
+      targetId: r.target_id as string,
+      targetType: r.target_type as 'restaurant' | 'wine',
+      periodStart: r.period_start as string,
+      rankPosition: r.rank_position as number,
+      avgSatisfaction: r.avg_satisfaction as number | null,
+      recordCount: (r.record_count as number) ?? 0,
+    }))
+  }
+
+  async insertRankingSnapshots(snapshots: BubbleRankingSnapshot[]): Promise<void> {
+    if (snapshots.length === 0) return
+    const rows = snapshots.map((s) => ({
+      bubble_id: s.bubbleId,
+      target_id: s.targetId,
+      target_type: s.targetType,
+      period_start: s.periodStart,
+      rank_position: s.rankPosition,
+      avg_satisfaction: s.avgSatisfaction,
+      record_count: s.recordCount,
+    }))
+    const { error } = await this.supabase.from('bubble_ranking_snapshots').upsert(rows, {
+      onConflict: 'bubble_id,target_id,target_type,period_start',
+    })
+    if (error) throw new Error(`랭킹 스냅샷 저장 실패: ${error.message}`)
+  }
+
   async findByInviteCode(code: string): Promise<Bubble | null> {
     const { data } = await this.supabase.from('bubbles').select('*').eq('invite_code', code).single()
     return data as unknown as Bubble | null
@@ -94,6 +187,15 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase()
     await this.supabase.from('bubbles').update({ invite_code: code, invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }).eq('id', bubbleId)
     return code
+  }
+
+  async validateInviteCode(code: string): Promise<{ valid: boolean; bubble: Bubble | null; expired: boolean }> {
+    const bubble = await this.findByInviteCode(code)
+    if (!bubble) return { valid: false, bubble: null, expired: false }
+    if (bubble.inviteExpiresAt && new Date(bubble.inviteExpiresAt) < new Date()) {
+      return { valid: false, bubble, expired: true }
+    }
+    return { valid: true, bubble, expired: false }
   }
 
   // S8 추가 메서드

@@ -78,6 +78,7 @@ export async function GET() {
       meta: restaurant?.genre ?? '',
       photoUrl: restaurant?.photo_url ?? null,
       algorithm: 'revisit',
+      source: 'ai',
       reason: `만족도 ${Math.round(avgSat)}% · ${g.count}회 방문`,
       normalizedScore: score,
       confidence: null,
@@ -86,7 +87,7 @@ export async function GET() {
   }
 
   scored.sort((a, b) => b.score - a.score)
-  const cards: RecommendationCard[] = scored.slice(0, 5).map(({ score: _score, ...card }) => card)
+  const cards: RecommendationCard[] = scored.slice(0, 10).map(({ score: _score, ...card }) => card)
 
   return NextResponse.json({ cards })
 }

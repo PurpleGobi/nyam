@@ -5,6 +5,7 @@ import type { RecommendationCard } from '@/domain/entities/recommendation'
 
 interface UseRecommendationsResult {
   cards: RecommendationCard[]
+  isLoading: boolean
   totalCount: number
   coldStartMode: boolean
   dismiss: (cardId: string) => void
@@ -12,6 +13,7 @@ interface UseRecommendationsResult {
 
 export function useRecommendations(userId: string | null): UseRecommendationsResult {
   const [cards, setCards] = useState<RecommendationCard[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const [coldStartMode, setColdStartMode] = useState(false)
   const fetchedRef = useRef(false)
 
@@ -22,12 +24,29 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
     let cancelled = false
 
     async function load() {
+      setIsLoading(true)
+
       try {
-        const endpoints = [
-          '/api/recommend/revisit',
-          '/api/recommend/authority',
-          '/api/recommend/bubble',
-        ]
+        // 콜드스타트 판단: 사용자 기록 수 확인
+        const countRes = await fetch('/api/recommend/revisit')
+        const countData = await countRes.json() as { cards: RecommendationCard[] }
+        const revisitCards = countData.cards ?? []
+        const recordCount = revisitCards.length
+
+        if (cancelled) return
+
+        let endpoints: string[]
+        if (recordCount === 0) {
+          // < 5개 기록 → 권위만 (콜드스타트)
+          setColdStartMode(true)
+          endpoints = ['/api/recommend/authority']
+        } else if (recordCount < 5) {
+          // 5~19개 → 재방문 + 권위 + 버블
+          endpoints = ['/api/recommend/authority', '/api/recommend/bubble']
+        } else {
+          // 20+ → 전체
+          endpoints = ['/api/recommend/authority', '/api/recommend/bubble']
+        }
 
         const results = await Promise.allSettled(
           endpoints.map((ep) =>
@@ -37,7 +56,7 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
 
         if (cancelled) return
 
-        const allCards: RecommendationCard[] = []
+        const allCards: RecommendationCard[] = [...revisitCards]
         for (const result of results) {
           if (result.status === 'fulfilled' && result.value.cards) {
             allCards.push(...result.value.cards)
@@ -45,14 +64,11 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
         }
 
         allCards.sort((a, b) => b.normalizedScore - a.normalizedScore)
-
-        if (allCards.length === 0) {
-          setColdStartMode(true)
-        }
-
         setCards(allCards)
       } catch {
         setColdStartMode(true)
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
 
@@ -65,10 +81,17 @@ export function useRecommendations(userId: string | null): UseRecommendationsRes
 
   const dismiss = useCallback((cardId: string) => {
     setCards((prev) => prev.filter((c) => c.id !== cardId))
+    // 서버에 dismiss 전달
+    void fetch('/api/recommend/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: cardId }),
+    })
   }, [])
 
   return {
     cards,
+    isLoading,
     totalCount: cards.length,
     coldStartMode,
     dismiss,

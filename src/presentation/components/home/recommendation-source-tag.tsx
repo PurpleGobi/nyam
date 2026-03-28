@@ -1,17 +1,36 @@
 'use client'
 
 import { Sparkles, Users, Globe } from 'lucide-react'
-
-type RecommendationSource = 'ai' | 'bubble' | 'web'
+import type { RecommendationSource } from '@/domain/entities/recommendation'
 
 interface RecommendationSourceTagProps {
   source: RecommendationSource
 }
 
-const SOURCE_CONFIG: Record<RecommendationSource, { label: string; icon: typeof Sparkles }> = {
-  ai: { label: 'AI', icon: Sparkles },
-  bubble: { label: '버블', icon: Users },
-  web: { label: '외부', icon: Globe },
+const SOURCE_CONFIG: Record<RecommendationSource, {
+  label: string
+  icon: typeof Sparkles
+  bg: string
+  color: string
+}> = {
+  ai: {
+    label: 'AI',
+    icon: Sparkles,
+    bg: 'rgba(126,174,139,0.15)',
+    color: 'var(--positive)',
+  },
+  bubble: {
+    label: '버블',
+    icon: Users,
+    bg: 'rgba(122,155,174,0.15)',
+    color: 'var(--accent-social)',
+  },
+  web: {
+    label: '외부',
+    icon: Globe,
+    bg: 'var(--bg-page)',
+    color: 'var(--text-hint)',
+  },
 }
 
 export function RecommendationSourceTag({ source }: RecommendationSourceTagProps) {
@@ -24,9 +43,8 @@ export function RecommendationSourceTag({ source }: RecommendationSourceTagProps
       style={{
         fontSize: '10px',
         fontWeight: 600,
-        backgroundColor: 'var(--bg-elevated)',
-        color: 'var(--text-sub)',
-        border: '1px solid var(--border)',
+        backgroundColor: config.bg,
+        color: config.color,
       }}
     >
       <Icon size={10} />

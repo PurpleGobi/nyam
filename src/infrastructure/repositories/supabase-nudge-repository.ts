@@ -1,5 +1,5 @@
-import type { NudgeRepository, NudgeFatigue } from '@/domain/repositories/nudge-repository'
-import type { NudgeDisplay } from '@/domain/entities/nudge'
+import type { NudgeRepository } from '@/domain/repositories/nudge-repository'
+import type { Nudge, NudgeFatigue } from '@/domain/entities/nudge'
 import { createClient } from '@/infrastructure/supabase/client'
 
 export class SupabaseNudgeRepository implements NudgeRepository {
@@ -7,42 +7,26 @@ export class SupabaseNudgeRepository implements NudgeRepository {
     return createClient()
   }
 
-  async getActiveNudge(userId: string): Promise<NudgeDisplay[]> {
+  async getRecentHistory(userId: string, hours: number): Promise<Nudge[]> {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+
     const { data, error } = await this.supabase
       .from('nudge_history')
       .select('*')
       .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('priority', { ascending: true })
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
 
-    if (error) throw new Error(`넛지 조회 실패: ${error.message}`)
+    if (error) throw new Error(`넛지 이력 조회 실패: ${error.message}`)
 
     return (data ?? []).map((row) => ({
-      type: row.nudge_type,
-      icon: row.icon ?? '',
-      title: row.title ?? '',
-      subtitle: row.subtitle ?? '',
-      actionLabel: row.action_label ?? '',
-      actionHref: row.action_href ?? '',
+      id: row.id,
+      userId: row.user_id,
+      nudgeType: row.nudge_type,
+      targetId: row.target_id ?? null,
+      status: row.status,
+      createdAt: row.created_at,
     }))
-  }
-
-  async markAsActed(nudgeId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('nudge_history')
-      .update({ is_active: false, acted_at: new Date().toISOString() })
-      .eq('id', nudgeId)
-
-    if (error) throw new Error(`넛지 액션 처리 실패: ${error.message}`)
-  }
-
-  async dismiss(nudgeId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('nudge_history')
-      .update({ is_active: false, dismissed_at: new Date().toISOString() })
-      .eq('id', nudgeId)
-
-    if (error) throw new Error(`넛지 닫기 실패: ${error.message}`)
   }
 
   async getFatigue(userId: string): Promise<NudgeFatigue | null> {
@@ -59,8 +43,57 @@ export class SupabaseNudgeRepository implements NudgeRepository {
 
     return {
       userId: data.user_id,
-      dismissCount: data.dismiss_count,
-      lastDismissedAt: data.last_dismissed_at,
+      score: data.score,
+      lastNudgeAt: data.last_nudge_at ?? null,
+      pausedUntil: data.paused_until ?? null,
+    }
+  }
+
+  async createNudge(nudge: Omit<Nudge, 'id' | 'createdAt'>): Promise<void> {
+    const { error } = await this.supabase
+      .from('nudge_history')
+      .insert({
+        user_id: nudge.userId,
+        nudge_type: nudge.nudgeType,
+        target_id: nudge.targetId,
+        status: nudge.status,
+      })
+
+    if (error) throw new Error(`넛지 생성 실패: ${error.message}`)
+  }
+
+  async updateStatus(id: string, status: Nudge['status']): Promise<void> {
+    const { error } = await this.supabase
+      .from('nudge_history')
+      .update({ status })
+      .eq('id', id)
+
+    if (error) throw new Error(`넛지 상태 업데이트 실패: ${error.message}`)
+  }
+
+  async incrementFatigue(userId: string): Promise<void> {
+    const existing = await this.getFatigue(userId)
+
+    if (existing) {
+      const { error } = await this.supabase
+        .from('nudge_fatigue')
+        .update({
+          score: existing.score + 1,
+          last_nudge_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+
+      if (error) throw new Error(`넛지 피로도 증가 실패: ${error.message}`)
+    } else {
+      const { error } = await this.supabase
+        .from('nudge_fatigue')
+        .insert({
+          user_id: userId,
+          score: 1,
+          last_nudge_at: new Date().toISOString(),
+        })
+
+      if (error) throw new Error(`넛지 피로도 생성 실패: ${error.message}`)
     }
   }
 }

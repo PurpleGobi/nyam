@@ -50,6 +50,28 @@ export class SupabaseReactionRepository implements ReactionRepository {
     return { added: true }
   }
 
+  async getUserReactions(userId: string, targetType: string, targetIds: string[]): Promise<Reaction[]> {
+    if (targetIds.length === 0) return []
+    const { data } = await this.supabase
+      .from('reactions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('target_type', targetType)
+      .in('target_id', targetIds)
+    return (data ?? []).map(mapReaction)
+  }
+
+  async getDailySocialXpCount(userId: string, date: string): Promise<number> {
+    const { count } = await this.supabase
+      .from('xp_histories')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('reason', 'social_like')
+      .gte('created_at', `${date}T00:00:00`)
+      .lt('created_at', `${date}T23:59:59.999`)
+    return count ?? 0
+  }
+
   async getCountsByTarget(targetType: string, targetId: string): Promise<Record<ReactionType, number>> {
     const { data } = await this.supabase
       .from('reactions')

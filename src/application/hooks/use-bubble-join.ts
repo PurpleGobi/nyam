@@ -1,46 +1,79 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import type { BubbleMember } from '@/domain/entities/bubble'
-import { checkJoinEligibility, type UserJoinProfile } from '@/domain/services/bubble-join-service'
+import type { Bubble, BubbleMember } from '@/domain/entities/bubble'
+import { checkJoinEligibility, type JoinApplicantProfile, type JoinEligibility } from '@/domain/services/bubble-join-service'
 import { bubbleRepo } from '@/shared/di/container'
 
 export function useBubbleJoin() {
   const [isLoading, setIsLoading] = useState(false)
 
+  /** 가입 신청 (5종 정책별 분기) */
   const requestJoin = useCallback(async (
     bubbleId: string,
     userId: string,
-    userProfile: UserJoinProfile,
-  ): Promise<{ success: boolean; member?: BubbleMember; reason?: string }> => {
+    applicant: JoinApplicantProfile,
+    inviteCode?: string,
+  ): Promise<{ success: boolean; member?: BubbleMember; eligibility?: JoinEligibility }> => {
     setIsLoading(true)
     try {
       const bubble = await bubbleRepo.findById(bubbleId)
-      if (!bubble) return { success: false, reason: '버블을 찾을 수 없습니다' }
+      if (!bubble) return { success: false, eligibility: { eligible: false, reasons: ['버블을 찾을 수 없습니다'] } }
 
-      const eligibility = checkJoinEligibility(bubble, userProfile)
-      if (!eligibility.eligible) {
-        return { success: false, reason: eligibility.reason ?? undefined }
+      // invite_only: 초대 코드 검증
+      if (bubble.joinPolicy === 'invite_only' && inviteCode) {
+        const validation = await bubbleRepo.validateInviteCode(inviteCode)
+        if (!validation.valid) {
+          const reason = validation.expired ? '만료된 초대 링크입니다' : '유효하지 않은 초대 링크입니다'
+          return { success: false, eligibility: { eligible: false, reasons: [reason] } }
+        }
       }
 
-      const status = bubble.joinPolicy === 'auto_approve' || bubble.joinPolicy === 'open'
+      const eligibility = checkJoinEligibility(bubble, applicant, !!inviteCode)
+      if (!eligibility.eligible) {
+        return { success: false, eligibility }
+      }
+
+      // 정책별 status 결정
+      const status = bubble.joinPolicy === 'open' || bubble.joinPolicy === 'auto_approve'
         ? 'active'
         : 'pending'
 
       const member = await bubbleRepo.addMember(bubbleId, userId, 'member', status)
+      return { success: true, member, eligibility }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  /** closed 정책 버블 팔로우 (role='follower', status='active') */
+  const follow = useCallback(async (
+    bubbleId: string,
+    userId: string,
+  ): Promise<{ success: boolean; member?: BubbleMember }> => {
+    setIsLoading(true)
+    try {
+      const member = await bubbleRepo.addMember(bubbleId, userId, 'follower', 'active')
       return { success: true, member }
     } finally {
       setIsLoading(false)
     }
   }, [])
 
+  /** owner/admin이 pending 멤버 승인 */
   const approveMember = useCallback(async (bubbleId: string, userId: string): Promise<void> => {
     await bubbleRepo.updateMember(bubbleId, userId, { status: 'active' } as Partial<BubbleMember>)
   }, [])
 
+  /** owner/admin이 pending 멤버 거절 */
   const rejectMember = useCallback(async (bubbleId: string, userId: string): Promise<void> => {
     await bubbleRepo.updateMember(bubbleId, userId, { status: 'rejected' } as Partial<BubbleMember>)
   }, [])
 
-  return { requestJoin, approveMember, rejectMember, isLoading }
+  /** 본인 가입 신청 취소 */
+  const cancelJoin = useCallback(async (bubbleId: string, userId: string): Promise<void> => {
+    await bubbleRepo.removeMember(bubbleId, userId)
+  }, [])
+
+  return { requestJoin, follow, approveMember, rejectMember, cancelJoin, isLoading }
 }

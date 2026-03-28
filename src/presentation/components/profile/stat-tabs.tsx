@@ -166,6 +166,7 @@ function RestaurantPanel({
           }))}
           colorBase="var(--accent-food)"
           valueLabel="만"
+          totalLabel={`총 ${monthlySpending.reduce((sum, m) => sum + m.amount, 0)}만`}
         />
       )}
 
@@ -237,6 +238,7 @@ function WinePanel({
           }))}
           colorBase="var(--accent-wine)"
           valueLabel="병"
+          totalLabel={`총 ${monthlySpending.reduce((sum, m) => sum + (m.count ?? m.amount), 0)}병`}
         />
       )}
 

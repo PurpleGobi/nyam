@@ -8,46 +8,86 @@ interface Bucket {
 interface ScoreDistributionProps {
   buckets: Bucket[]
   accentColor: string
+  onBucketTap?: (label: string) => void
 }
 
-export function ScoreDistribution({ buckets, accentColor }: ScoreDistributionProps) {
+export function ScoreDistribution({
+  buckets,
+  accentColor,
+  onBucketTap,
+}: ScoreDistributionProps) {
   const maxCount = Math.max(...buckets.map((b) => b.count), 1)
 
   return (
-    <div className="flex items-end justify-between gap-1.5" style={{ height: 120 }}>
-      {buckets.map((bucket) => {
-        const heightPercent = (bucket.count / maxCount) * 100
-        const barHeight = Math.max(heightPercent, 4)
+    <div>
+      <div
+        className="flex items-end justify-between gap-[8px] px-[16px]"
+        style={{ height: 120 }}
+      >
+        {buckets.map((bucket) => {
+          const heightPercent = bucket.count > 0
+            ? (bucket.count / maxCount) * 100
+            : 0
+          const barHeight = Math.max(heightPercent, 2)
+          const opacity = bucket.count > 0
+            ? 0.3 + (bucket.count / maxCount) * 0.7
+            : 0.15
+          const isLong = heightPercent > 40
 
-        return (
-          <div key={bucket.label} className="flex flex-1 flex-col items-center gap-1.5">
-            {/* Count label */}
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: bucket.count > 0 ? 'var(--text)' : 'var(--text-hint)' }}
+          return (
+            <div
+              key={bucket.label}
+              className="flex flex-1 flex-col items-center justify-end"
+              style={{ height: '100%', cursor: onBucketTap ? 'pointer' : undefined }}
+              onClick={() => onBucketTap?.(bucket.label)}
             >
-              {bucket.count}
-            </span>
+              {/* Count outside (short bars) */}
+              {!isLong && bucket.count > 0 && (
+                <span
+                  className="mb-[2px] text-[10px]"
+                  style={{ fontWeight: 700, color: accentColor }}
+                >
+                  {bucket.count}
+                </span>
+              )}
 
-            {/* Bar */}
-            <div className="flex w-full flex-1 items-end justify-center">
+              {/* Bar */}
               <div
-                className="w-full max-w-[36px] rounded-t transition-all duration-300"
+                className="relative w-full rounded-t-[4px]"
                 style={{
                   height: `${barHeight}%`,
+                  minHeight: 2,
                   backgroundColor: accentColor,
-                  opacity: bucket.count > 0 ? 0.8 : 0.2,
+                  opacity,
                 }}
-              />
+              >
+                {/* Count inside (long bars) */}
+                {isLong && bucket.count > 0 && (
+                  <span
+                    className="absolute bottom-[4px] w-full text-center text-[10px]"
+                    style={{ fontWeight: 800, color: '#fff' }}
+                  >
+                    {bucket.count}
+                  </span>
+                )}
+              </div>
             </div>
+          )
+        })}
+      </div>
 
-            {/* Label */}
-            <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>
-              {bucket.label}
-            </span>
+      {/* Labels */}
+      <div className="flex gap-[8px] px-[16px] pt-[4px]">
+        {buckets.map((bucket) => (
+          <div
+            key={bucket.label}
+            className="flex-1 text-center text-[10px]"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            {bucket.label}
           </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }

@@ -165,8 +165,8 @@ export function ProfileContainer() {
               </>
             ) : (
               <>
-                <MiniTab label="산지" active={wineMiniTab === 'origin'} onClick={() => setWineMiniTab('origin')} />
-                <MiniTab label="품종" active={wineMiniTab === 'grape'} onClick={() => setWineMiniTab('grape')} />
+                <MiniTab label="산지" active={wineMiniTab === 'origin'} onClick={() => setWineMiniTab('origin')} accentColor="var(--accent-wine)" />
+                <MiniTab label="품종" active={wineMiniTab === 'grape'} onClick={() => setWineMiniTab('grape')} accentColor="var(--accent-wine)" />
               </>
             )}
           </div>
@@ -205,7 +205,7 @@ export function ProfileContainer() {
   )
 }
 
-function MiniTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function MiniTab({ label, active, onClick, accentColor = 'var(--accent-food)' }: { label: string; active: boolean; onClick: () => void; accentColor?: string }) {
   return (
     <button
       type="button"
@@ -214,7 +214,7 @@ function MiniTab({ label, active, onClick }: { label: string; active: boolean; o
       style={{
         fontSize: '12px',
         fontWeight: active ? 700 : 500,
-        backgroundColor: active ? 'var(--accent-food)' : 'var(--bg-card)',
+        backgroundColor: active ? accentColor : 'var(--bg-card)',
         color: active ? '#FFFFFF' : 'var(--text-sub)',
         border: active ? 'none' : '1px solid var(--border)',
       }}

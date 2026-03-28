@@ -1,39 +1,39 @@
 'use client'
 
-import { Users, BookOpen, Star, TrendingUp } from 'lucide-react'
+import { FileText, Star, TrendingUp, MapPin } from 'lucide-react'
 
 interface BubbleQuickStatsProps {
-  memberCount: number
   recordCount: number
   avgSatisfaction: number | null
-  weeklyShareCount: number
+  weeklyRecordCount: number
+  uniqueTargetCount: number
 }
 
-export function BubbleQuickStats({ memberCount, recordCount, avgSatisfaction, weeklyShareCount }: BubbleQuickStatsProps) {
+export function BubbleQuickStats({
+  recordCount,
+  avgSatisfaction,
+  weeklyRecordCount,
+  uniqueTargetCount,
+}: BubbleQuickStatsProps) {
   const stats = [
-    { icon: Users, label: '멤버', value: String(memberCount), color: 'var(--accent-social)' },
-    { icon: BookOpen, label: '기록', value: String(recordCount), color: 'var(--accent-food)' },
-    { icon: Star, label: '평균 만족도', value: avgSatisfaction?.toFixed(1) ?? '-', color: 'var(--accent-wine)' },
-    { icon: TrendingUp, label: '주간 공유', value: String(weeklyShareCount), color: 'var(--positive)' },
+    { icon: FileText, label: '총 기록', value: String(recordCount), color: 'var(--text-sub)' },
+    { icon: Star, label: '평균 점수', value: avgSatisfaction?.toFixed(1) ?? '-', color: 'var(--text-sub)' },
+    { icon: TrendingUp, label: '이번 주', value: String(weeklyRecordCount), color: 'var(--positive)' },
+    { icon: MapPin, label: '고유 장소', value: String(uniqueTargetCount), color: 'var(--text-sub)' },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-2 px-4">
+    <div className="flex gap-2 overflow-x-auto px-4 scrollbar-hide">
       {stats.map(({ icon: Icon, label, value, color }) => (
         <div
           key={label}
-          className="flex items-center gap-2.5 rounded-xl p-3"
+          className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5"
           style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
         >
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
-            style={{ backgroundColor: `${color}15` }}
-          >
-            <Icon size={16} style={{ color }} />
-          </div>
+          <Icon size={15} style={{ color }} />
           <div>
-            <p className="text-[15px] font-bold text-[var(--text)]">{value}</p>
-            <p className="text-[10px] text-[var(--text-hint)]">{label}</p>
+            <p className="text-[14px] font-bold" style={{ color: color === 'var(--positive)' ? color : 'var(--text)' }}>{value}</p>
+            <p className="text-[10px]" style={{ color: 'var(--text-hint)' }}>{label}</p>
           </div>
         </div>
       ))}

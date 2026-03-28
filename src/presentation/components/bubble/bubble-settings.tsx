@@ -1,89 +1,183 @@
 'use client'
 
 import { useState } from 'react'
-import { Lock, Globe, Users, Search, BarChart3, AlertTriangle } from 'lucide-react'
-import type { Bubble, BubbleVisibility, BubbleJoinPolicy } from '@/domain/entities/bubble'
+import { Info, ShieldCheck, Eye, Users, BarChart3, AlertTriangle } from 'lucide-react'
+import type { Bubble, BubbleContentVisibility, BubbleJoinPolicy } from '@/domain/entities/bubble'
 import { JoinPolicySelector } from '@/presentation/components/bubble/join-policy-selector'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
+import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
+import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
 
 interface BubbleSettingsProps {
   bubble: Bubble
   onSave: (updates: Partial<Bubble>) => void
   onDelete: () => void
   isLoading: boolean
+  // 멤버 관리
+  pendingMembers: PendingMemberInfo[]
+  onApproveJoin: (userId: string) => void
+  onRejectJoin: (userId: string) => void
+  onViewAllPending?: () => void
+  // 통계
+  stats: {
+    weeklyRecordCount: number
+    prevWeeklyRecordCount: number
+    weeklyChartData: number[]
+  }
 }
 
-export function BubbleSettings({ bubble, onSave, onDelete, isLoading }: BubbleSettingsProps) {
+export function BubbleSettings({
+  bubble, onSave, onDelete, isLoading,
+  pendingMembers, onApproveJoin, onRejectJoin, onViewAllPending,
+  stats,
+}: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
   const [description, setDescription] = useState(bubble.description ?? '')
-  const [visibility, setVisibility] = useState<BubbleVisibility>(bubble.visibility)
+  const [contentVisibility, setContentVisibility] = useState<BubbleContentVisibility>(bubble.contentVisibility)
   const [joinPolicy, setJoinPolicy] = useState<BubbleJoinPolicy>(bubble.joinPolicy)
   const [minRecords, setMinRecords] = useState(bubble.minRecords)
   const [minLevel, setMinLevel] = useState(bubble.minLevel)
   const [maxMembers, setMaxMembers] = useState(bubble.maxMembers)
   const [isSearchable, setIsSearchable] = useState(bubble.isSearchable)
+  const [searchKeywords, setSearchKeywords] = useState<string[]>(bubble.searchKeywords ?? [])
   const [allowComments, setAllowComments] = useState(bubble.allowComments)
+  const [allowExternalShare, setAllowExternalShare] = useState(bubble.allowExternalShare)
   const [showDanger, setShowDanger] = useState(false)
+  const [keywordInput, setKeywordInput] = useState('')
 
   const handleSave = () => {
     onSave({
       name: name.trim(),
       description: description.trim() || null,
-      visibility,
+      contentVisibility,
       joinPolicy,
       minRecords,
       minLevel,
       maxMembers,
       isSearchable,
+      searchKeywords: searchKeywords.length > 0 ? searchKeywords : null,
       allowComments,
+      allowExternalShare,
     })
+  }
+
+  const addKeyword = () => {
+    const kw = keywordInput.trim()
+    if (kw && !searchKeywords.includes(kw)) {
+      setSearchKeywords([...searchKeywords, kw])
+      setKeywordInput('')
+    }
+  }
+
+  const removeKeyword = (kw: string) => {
+    setSearchKeywords(searchKeywords.filter((k) => k !== kw))
   }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-4">
       {/* 1. 기본 정보 */}
-      <Section title="기본 정보" icon={<Globe size={16} style={{ color: 'var(--accent-social)' }} />}>
-        <InputField label="이름" value={name} onChange={setName} maxLength={30} />
+      <Section title="기본 정보" icon={<Info size={16} style={{ color: 'var(--accent-social)' }} />}>
+        <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
         <InputField label="설명" value={description} onChange={setDescription} maxLength={100} multiline />
-      </Section>
-
-      {/* 2. 가입 조건 */}
-      <Section title="가입 조건" icon={<Users size={16} style={{ color: 'var(--accent-social)' }} />}>
-        <NumberField label="최소 기록 수" value={minRecords} onChange={setMinRecords} min={0} />
-        <NumberField label="최소 레벨" value={minLevel} onChange={setMinLevel} min={0} />
-        <NumberField label="최대 멤버 (0=무제한)" value={maxMembers ?? 0} onChange={(v) => setMaxMembers(v === 0 ? null : v)} min={0} />
-        <JoinPolicySelector selected={joinPolicy} onChange={setJoinPolicy} />
-      </Section>
-
-      {/* 3. 검색 노출 */}
-      <Section title="검색" icon={<Search size={16} style={{ color: 'var(--accent-social)' }} />}>
-        <ToggleRow label="검색에 노출" value={isSearchable} onChange={setIsSearchable} />
-      </Section>
-
-      {/* 4. 공개 설정 */}
-      <Section title="공개 설정" icon={<Lock size={16} style={{ color: 'var(--accent-social)' }} />}>
-        <div className="flex gap-2">
-          {(['private', 'public'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setVisibility(v)}
-              className="flex-1 rounded-xl py-2.5 text-center text-[13px] font-semibold"
-              style={{
-                backgroundColor: visibility === v ? 'var(--accent-social)' : 'var(--bg)',
-                color: visibility === v ? '#FFFFFF' : 'var(--text-sub)',
-                border: `1px solid ${visibility === v ? 'var(--accent-social)' : 'var(--border)'}`,
-              }}
-            >
-              {v === 'private' ? '비공개' : '공개'}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1">
+          <span className="text-[12px] text-[var(--text-sub)]">유형</span>
+          <div className="flex gap-2">
+            {([
+              { value: 'rating_and_comment' as const, label: '양방향' },
+              { value: 'rating_only' as const, label: '일방향' },
+            ]).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setContentVisibility(value)}
+                className="flex-1 rounded-xl py-2.5 text-center text-[13px] font-semibold"
+                style={{
+                  backgroundColor: contentVisibility === value ? 'var(--accent-social)' : 'var(--bg)',
+                  color: contentVisibility === value ? '#FFFFFF' : 'var(--text-sub)',
+                  border: `1px solid ${contentVisibility === value ? 'var(--accent-social)' : 'var(--border)'}`,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </Section>
 
-      {/* 5. 멤버 & 통계 */}
-      <Section title="활동" icon={<BarChart3 size={16} style={{ color: 'var(--accent-social)' }} />}>
+      {/* 2. 가입 조건 */}
+      <Section title="가입 조건" icon={<ShieldCheck size={16} style={{ color: 'var(--accent-social)' }} />}>
+        <JoinPolicySelector selected={joinPolicy} onChange={setJoinPolicy} />
+        <NumberField label="최소 기록 수" value={minRecords} onChange={setMinRecords} min={0} suffix="개" />
+        <NumberField label="최소 레벨" value={minLevel} onChange={setMinLevel} min={0} suffix="Lv." prefix />
+        <NumberField label="최대 인원" value={maxMembers ?? 0} onChange={(v) => setMaxMembers(v === 0 ? null : v)} min={0} suffix="명" />
+      </Section>
+
+      {/* 3. 검색 노출 */}
+      <Section title="검색 노출" icon={<Eye size={16} style={{ color: 'var(--accent-social)' }} />}>
+        <ToggleRow label="탐색에 노출" value={isSearchable} onChange={setIsSearchable} description="다른 사용자가 버블 탐색에서 발견 가능" />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[12px] text-[var(--text-sub)]">검색 키워드</span>
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={keywordInput}
+              onChange={(e) => setKeywordInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+              placeholder="키워드 입력"
+              maxLength={20}
+              className="flex-1 rounded-lg px-3 py-2 text-[13px] text-[var(--text)] outline-none"
+              style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+            />
+            <button
+              type="button"
+              onClick={addKeyword}
+              disabled={!keywordInput.trim()}
+              className="rounded-lg px-3 py-2 text-[12px] font-semibold transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            >
+              추가
+            </button>
+          </div>
+          {searchKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {searchKeywords.map((kw) => (
+                <span
+                  key={kw}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px]"
+                  style={{ backgroundColor: 'var(--accent-social-light, rgba(99,102,241,0.1))', color: 'var(--accent-social)' }}
+                >
+                  {kw}
+                  <button type="button" onClick={() => removeKeyword(kw)} className="ml-0.5 text-[10px] opacity-60">✕</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         <ToggleRow label="댓글 허용" value={allowComments} onChange={setAllowComments} />
+        <ToggleRow label="외부 공유 허용" value={allowExternalShare} onChange={setAllowExternalShare} />
+      </Section>
+
+      {/* 4. 멤버 관리 */}
+      <Section title="멤버 관리" icon={<Users size={16} style={{ color: 'var(--accent-social)' }} />}>
+        <PendingApprovalList
+          members={pendingMembers}
+          onApprove={onApproveJoin}
+          onReject={onRejectJoin}
+          maxPreview={3}
+          onViewAll={onViewAllPending}
+        />
+      </Section>
+
+      {/* 5. 버블 통계 */}
+      <Section title="버블 통계" icon={<BarChart3 size={16} style={{ color: 'var(--accent-social)' }} />}>
+        <BubbleStatsCard
+          recordCount={bubble.recordCount}
+          memberCount={bubble.memberCount}
+          weeklyRecordCount={stats.weeklyRecordCount}
+          prevWeeklyRecordCount={stats.prevWeeklyRecordCount}
+          avgSatisfaction={bubble.avgSatisfaction}
+          weeklyChartData={stats.weeklyChartData}
+        />
       </Section>
 
       {/* 저장 */}
@@ -121,6 +215,8 @@ export function BubbleSettings({ bubble, onSave, onDelete, isLoading }: BubbleSe
   )
 }
 
+/* ── 내부 헬퍼 컴포넌트 ── */
+
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
@@ -152,26 +248,33 @@ function InputField({ label, value, onChange, maxLength, multiline }: { label: s
   )
 }
 
-function NumberField({ label, value, onChange, min }: { label: string; value: number; onChange: (v: number) => void; min: number }) {
+function NumberField({ label, value, onChange, min, suffix, prefix }: { label: string; value: number; onChange: (v: number) => void; min: number; suffix?: string; prefix?: boolean }) {
+  const display = prefix ? `${suffix}${value}` : `${value}${suffix ?? ''}`
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[12px] text-[var(--text-sub)]">{label}</span>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Math.max(min, parseInt(e.target.value) || 0))}
-        min={min}
-        className="w-20 rounded-lg px-2 py-1.5 text-center text-[13px] text-[var(--text)] outline-none"
-        style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
-      />
+      <span className="text-[13px] text-[var(--text)]">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-[13px] text-[var(--text-sub)]">{display}</span>
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(Math.max(min, parseInt(e.target.value) || 0))}
+          min={min}
+          className="w-16 rounded-lg px-2 py-1.5 text-center text-[13px] text-[var(--text)] outline-none"
+          style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+        />
+      </div>
     </div>
   )
 }
 
-function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+function ToggleRow({ label, value, onChange, description }: { label: string; value: boolean; onChange: (v: boolean) => void; description?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[12px] text-[var(--text-sub)]">{label}</span>
+      <div className="flex flex-col">
+        <span className="text-[13px] text-[var(--text)]">{label}</span>
+        {description && <span className="text-[11px] text-[var(--text-hint)]">{description}</span>}
+      </div>
       <button
         type="button"
         onClick={() => onChange(!value)}

@@ -9,7 +9,7 @@ interface SearchDropdownProps {
   placeholder?: string
 }
 
-export function SearchDropdown({ query, onQueryChange, onClear, placeholder = '검색...' }: SearchDropdownProps) {
+export function SearchDropdown({ query, onQueryChange, onClear, placeholder = '식당·와인 이름으로 검색' }: SearchDropdownProps) {
   return (
     <div
       className="mx-4 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5"

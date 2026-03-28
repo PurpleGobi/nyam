@@ -13,6 +13,8 @@ import { BubbleCreateStep } from '@/presentation/components/onboarding/bubble-cr
 import { BubbleExploreStep } from '@/presentation/components/onboarding/bubble-explore-step'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { FabForward } from '@/presentation/components/layout/fab-forward'
+import { useBonusXp } from '@/application/hooks/use-bonus-xp'
+import { useAuth } from '@/presentation/providers/auth-provider'
 
 type OnboardingStep = 'intro' | 'record' | 'bubble' | 'explore'
 
@@ -49,6 +51,8 @@ const SEED_RESTAURANTS: Record<string, Array<{ id: string; name: string; genre: 
 
 export function OnboardingContainer() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { awardBonus } = useBonusXp()
   const [step, setStep] = useState<OnboardingStep>('intro')
   const [history, setHistory] = useState<OnboardingStep[]>([])
 
@@ -144,7 +148,10 @@ export function OnboardingContainer() {
             userLevel={1}
             isLoading={false}
             onBubblePress={() => {}}
-            onComplete={() => router.push('/')}
+            onComplete={async () => {
+              if (user?.id) await awardBonus(user.id, 'onboard')
+              router.push('/')
+            }}
           />
         </StepLayout>
       )}

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown } from 'lucide-react'
+import { BarChart2 } from 'lucide-react'
 
 interface StatsToggleProps {
   isOpen: boolean
@@ -22,12 +22,10 @@ export function StatsToggle({ isOpen, onToggle, label }: StatsToggleProps) {
       <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
         {label}
       </span>
-      <ChevronDown
+      <BarChart2
         size={18}
-        className="transition-transform duration-200"
         style={{
-          color: 'var(--text-sub)',
-          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          color: isOpen ? 'var(--text)' : 'var(--text-sub)',
         }}
       />
     </button>
