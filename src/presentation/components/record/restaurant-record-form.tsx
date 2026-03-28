@@ -184,16 +184,8 @@ export function RestaurantRecordForm({
           onChange={(e) => setComment(e.target.value)}
           placeholder="이 식당을 한마디로?"
           rows={2}
-          className="w-full resize-none"
-          style={{
-            padding: '12px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)',
-            fontSize: '14px',
-            color: 'var(--text)',
-            backgroundColor: 'var(--bg-card)',
-            outline: 'none',
-          }}
+          className="nyam-input w-full resize-none"
+          style={{ backgroundColor: 'var(--bg-card)' }}
         />
         <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
           {comment.length}/200
@@ -243,16 +235,8 @@ export function RestaurantRecordForm({
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMenuTag() } }}
             placeholder="메뉴 이름 입력"
             maxLength={30}
-            className="flex-1"
-            style={{
-              padding: '8px 12px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-md)',
-              fontSize: '13px',
-              color: 'var(--text)',
-              backgroundColor: 'var(--bg-card)',
-              outline: 'none',
-            }}
+            className="nyam-input flex-1"
+            style={{ backgroundColor: 'var(--bg-card)', fontSize: '13px' }}
           />
           <button
             type="button"

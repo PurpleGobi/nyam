@@ -250,16 +250,8 @@ export function WineRecordForm({
           onChange={(e) => setComment(e.target.value)}
           placeholder="이 와인을 한마디로?"
           rows={2}
-          className="w-full resize-none"
-          style={{
-            padding: '12px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)',
-            fontSize: '14px',
-            color: 'var(--text)',
-            backgroundColor: 'var(--bg-card)',
-            outline: 'none',
-          }}
+          className="nyam-input w-full resize-none"
+          style={{ backgroundColor: 'var(--bg-card)' }}
         />
         <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
           {comment.length}/200
@@ -278,16 +270,8 @@ export function WineRecordForm({
             value={purchasePrice}
             onChange={(e) => setPurchasePrice(e.target.value)}
             placeholder="0"
-            className="flex-1"
-            style={{
-              padding: '10px 14px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-md)',
-              fontSize: '14px',
-              color: 'var(--text)',
-              backgroundColor: 'var(--bg-card)',
-              outline: 'none',
-            }}
+            className="nyam-input flex-1"
+            style={{ backgroundColor: 'var(--bg-card)' }}
           />
           <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>원</span>
         </div>
@@ -303,16 +287,8 @@ export function WineRecordForm({
           value={visitDate}
           onChange={(e) => setVisitDate(e.target.value)}
           max={new Date().toISOString().split('T')[0]}
-          className="w-full"
-          style={{
-            padding: '10px 14px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)',
-            fontSize: '14px',
-            color: 'var(--text)',
-            backgroundColor: 'var(--bg-card)',
-            outline: 'none',
-          }}
+          className="nyam-input w-full"
+          style={{ backgroundColor: 'var(--bg-card)' }}
         />
       </section>
 

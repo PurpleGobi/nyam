@@ -28,18 +28,7 @@ export function FoodPairingTags({ pairings }: FoodPairingTagsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {pairings.map((pairing) => (
-        <span
-          key={pairing}
-          style={{
-            padding: '5px 12px',
-            borderRadius: '20px',
-            backgroundColor: 'var(--accent-wine-light)',
-            border: '1px solid #DDD6E3',
-            color: 'var(--accent-wine)',
-            fontSize: '11px',
-            fontWeight: 500,
-          }}
-        >
+        <span key={pairing} className="tag wine">
           {PAIRING_LABELS[pairing] ?? pairing}
         </span>
       ))}

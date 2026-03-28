@@ -102,16 +102,8 @@ export function CompanionInput({ value, onChange, aiCompanions }: CompanionInput
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="이름 입력"
-            className="flex-1"
-            style={{
-              padding: '8px 12px',
-              border: '1px solid var(--border)',
-              borderRadius: '10px',
-              fontSize: '13px',
-              color: 'var(--text)',
-              backgroundColor: 'var(--bg-card)',
-              outline: 'none',
-            }}
+            className="nyam-input flex-1"
+            style={{ backgroundColor: 'var(--bg-card)', fontSize: '13px' }}
             autoFocus
           />
           <button

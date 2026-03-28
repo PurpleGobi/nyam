@@ -37,6 +37,11 @@ export function useBubbleRoles(bubbleId: string): UseBubbleRolesReturn {
   const transferOwnership = useCallback(async (newOwnerId: string, currentOwnerId: string): Promise<void> => {
     setIsLoading(true)
     try {
+      // 대상이 admin인지 확인 (admin에게만 이전 가능 — AUTH.md §2)
+      const target = await bubbleRepo.getMember(bubbleId, newOwnerId)
+      if (!target || target.role !== 'admin') {
+        throw new Error('소유권은 관리자(admin)에게만 이전할 수 있습니다')
+      }
       // 대상 → owner, 현재 owner → admin (원자적 트랜잭션은 서버 RPC로 개선 예정)
       await bubbleRepo.updateMember(bubbleId, newOwnerId, { role: 'owner' } as Partial<BubbleMember>)
       await bubbleRepo.updateMember(bubbleId, currentOwnerId, { role: 'admin' } as Partial<BubbleMember>)
