@@ -6,11 +6,15 @@ export interface DiscoverCard {
   name: string
   genre: string | null
   area: string | null
+  specialty: string | null
   photoUrl: string | null
   nyamScore: number | null
   compositeScore: number
   michelinStars: number | null
   hasBlueRibbon: boolean
+  naverRating: number | null
+  kakaoRating: number | null
+  googleRating: number | null
 }
 
 export const DISCOVER_AREAS = [

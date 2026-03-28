@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { BubbleMember } from '@/domain/entities/bubble'
-import { bubbleRepo } from '@/shared/di/container'
+import type { UserProfile } from '@/domain/entities/profile'
+import { bubbleRepo, profileRepo } from '@/shared/di/container'
+import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 export type MemberRoleFilter = 'all' | 'admin' | 'member'
 export type MemberMatchFilter = 'all' | '80' | '60'
@@ -17,6 +19,14 @@ export interface MemberFilters {
   follow: MemberFollowFilter
 }
 
+export interface EnrichedBubbleMember extends BubbleMember {
+  nickname: string
+  avatarUrl: string | null
+  avatarColor: string | null
+  level: number
+  levelTitle: string
+}
+
 const DEFAULT_FILTERS: MemberFilters = {
   role: 'all',
   minMatch: 'all',
@@ -25,7 +35,7 @@ const DEFAULT_FILTERS: MemberFilters = {
 }
 
 export function useBubbleMembers(bubbleId: string) {
-  const [members, setMembers] = useState<BubbleMember[]>([])
+  const [members, setMembers] = useState<EnrichedBubbleMember[]>([])
   const [filters, setFilters] = useState<MemberFilters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<MemberSortType>('match')
   const [isLoading, setIsLoading] = useState(true)
@@ -34,7 +44,25 @@ export function useBubbleMembers(bubbleId: string) {
     setIsLoading(true)
     try {
       const result = await bubbleRepo.getMembers(bubbleId)
-      setMembers(result.data)
+      // 유저 프로필 병렬 로딩
+      const profiles = await Promise.all(
+        result.data.map((m) =>
+          profileRepo.getUserProfile(m.userId).catch(() => null)
+        )
+      )
+      const enriched: EnrichedBubbleMember[] = result.data.map((m, i) => {
+        const p = profiles[i]
+        const level = p ? Math.max(1, Math.floor(p.totalXp / 100) + 1) : 1
+        return {
+          ...m,
+          nickname: p?.nickname ?? m.userId.substring(0, 6),
+          avatarUrl: p?.avatarUrl ?? null,
+          avatarColor: p?.avatarColor ?? null,
+          level,
+          levelTitle: getLevelTitle(level),
+        }
+      })
+      setMembers(enriched)
     } finally {
       setIsLoading(false)
     }
@@ -65,8 +93,8 @@ export function useBubbleMembers(bubbleId: string) {
     }
 
     if (filters.minLevel !== 'all') {
-      // 레벨 필터는 현재 BubbleMember에 레벨 필드가 없으므로 추후 확장
-      // 지금은 패스
+      const min = Number(filters.minLevel)
+      result = result.filter((m) => m.level >= min)
     }
 
     return result
@@ -81,7 +109,7 @@ export function useBubbleMembers(bubbleId: string) {
       case 'records':
         return arr.sort((a, b) => b.memberUniqueTargetCount - a.memberUniqueTargetCount)
       case 'level':
-        return arr.sort((a, b) => (b.avgSatisfaction ?? 0) - (a.avgSatisfaction ?? 0))
+        return arr.sort((a, b) => b.level - a.level)
       case 'activity':
         return arr.sort((a, b) => b.weeklyShareCount - a.weeklyShareCount)
       default:

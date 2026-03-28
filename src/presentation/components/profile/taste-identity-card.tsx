@@ -10,7 +10,7 @@ function highlightKeywords(text: string, keywords: string[]): React.ReactNode {
   const parts = text.split(regex)
   return parts.map((part, i) =>
     keywords.includes(part)
-      ? <span key={i} style={{ fontWeight: 700, color: 'var(--accent-food)' }}>{part}</span>
+      ? <span key={i} style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--accent-food)' }}>{part}</span>
       : <Fragment key={i}>{part}</Fragment>,
   )
 }
@@ -36,7 +36,10 @@ export function TasteIdentityCard({ tasteSummary, tasteTags, recordCount, onShar
   return (
     <div className="card mx-4 rounded-xl p-4">
       {tasteSummary && (
-        <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>
+        <p
+          className="line-clamp-3"
+          style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6, fontStyle: 'italic' }}
+        >
           {highlightKeywords(tasteSummary, tasteTags)}
         </p>
       )}

@@ -81,6 +81,30 @@ export function getRecordField(record: Record<string, unknown>, attrKey: string)
   return record[field]
 }
 
+/** prestige 복합 조건 매칭 */
+function matchPrestige(record: Record<string, unknown>, value: string): boolean {
+  const michelinStars = record.michelinStars as number | null | undefined
+  const hasBlueRibbon = record.hasBlueRibbon as boolean | undefined
+  const mediaAppearances = record.mediaAppearances as unknown[] | null | undefined
+
+  switch (value) {
+    case 'michelin_1':
+      return michelinStars != null && michelinStars > 0
+    case 'blue_ribbon':
+      return hasBlueRibbon === true
+    case 'tv':
+      return Array.isArray(mediaAppearances) && mediaAppearances.length > 0
+    case 'none':
+      return (
+        (michelinStars == null || michelinStars === 0) &&
+        hasBlueRibbon !== true &&
+        (!Array.isArray(mediaAppearances) || mediaAppearances.length === 0)
+      )
+    default:
+      return true
+  }
+}
+
 /**
  * 단일 FilterRule을 레코드에 대해 평가 (클라이언트 사이드)
  * 특수 속성은 범위/기간/복합 매칭, 일반 속성은 단순 비교
@@ -124,9 +148,10 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? inRange : !inRange
   }
 
-  // ── 특수 속성: prestige (레코드에 없는 restaurant 필드 → 스킵) ──
-  if (attribute === 'prestige') {
-    return true
+  // ── 특수 속성: prestige (미슐랭/블루리본/TV/없음) ──
+  if (attribute === 'prestige' && (operator === 'eq' || operator === 'neq')) {
+    const matches = matchPrestige(record, String(value))
+    return operator === 'eq' ? matches : !matches
   }
 
   // ── 일반 속성: 단순 비교 ──
