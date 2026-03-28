@@ -21,7 +21,7 @@ export function AvatarDropdown({ nickname, avatarUrl, avatarColor }: AvatarDropd
       <button
         type="button"
         onClick={toggle}
-        className="flex items-center justify-center rounded-full"
+        className="flex items-center justify-center overflow-hidden rounded-full"
         style={{
           width: '30px',
           height: '30px',
@@ -41,23 +41,24 @@ export function AvatarDropdown({ nickname, avatarUrl, avatarColor }: AvatarDropd
         <div
           className="absolute right-0 overflow-hidden"
           style={{
-            top: 'calc(100% + 6px)',
+            top: 'calc(100% + 8px)',
             minWidth: '120px',
             backgroundColor: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
             borderRadius: '10px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-            zIndex: 200,
+            boxShadow: '0 8px 28px rgba(0,0,0,0.12)',
+            zIndex: 90,
+            padding: '4px',
           }}
         >
           <button type="button" onClick={() => { close(); router.push('/profile') }}
-            className="flex w-full items-center text-left transition-colors active:bg-[var(--bg-page)]"
-            style={{ gap: '8px', padding: '10px 14px', fontSize: '13px', fontWeight: 500, color: 'var(--text)', borderBottom: '1px solid var(--border)' }}>
+            className="flex w-full items-center text-left transition-colors hover:bg-[var(--bg)]"
+            style={{ gap: '8px', padding: '10px 12px', fontSize: '13px', fontWeight: 500, color: 'var(--text)', borderRadius: '8px' }}>
             <User size={16} /> 프로필
           </button>
           <button type="button" onClick={() => { close(); router.push('/settings') }}
-            className="flex w-full items-center text-left transition-colors active:bg-[var(--bg-page)]"
-            style={{ gap: '8px', padding: '10px 14px', fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+            className="flex w-full items-center text-left transition-colors hover:bg-[var(--bg)]"
+            style={{ gap: '8px', padding: '10px 12px', fontSize: '13px', fontWeight: 500, color: 'var(--text)', borderRadius: '8px' }}>
             <Settings size={16} /> 설정
           </button>
         </div>

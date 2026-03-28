@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, ChevronLeft } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useNotifications } from '@/application/hooks/use-notifications'
 import { NotificationDropdown } from '@/presentation/components/notification/notification-dropdown'
-import { UnreadBadge } from '@/presentation/components/notification/unread-badge'
+import { NotificationBell } from '@/presentation/components/layout/notification-bell'
 import { AvatarDropdown } from '@/presentation/components/layout/avatar-dropdown'
 
 interface AppHeaderProps {
@@ -22,6 +22,14 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
   const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
   const [notifOpen, setNotifOpen] = useState(false)
 
+  const handleBack = () => {
+    if (backHref) {
+      router.push(backHref)
+    } else {
+      router.back()
+    }
+  }
+
   return (
     <>
       <header
@@ -34,9 +42,9 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
           boxShadow: '0 1px 12px rgba(0,0,0,0.08)',
         }}
       >
-        {variant === 'inner' && backHref ? (
+        {variant === 'inner' ? (
           <div className="flex items-center gap-1">
-            <button type="button" onClick={() => router.push(backHref)} className="flex h-11 w-11 items-center justify-center">
+            <button type="button" onClick={handleBack} className="flex h-11 w-11 items-center justify-center">
               <ChevronLeft size={20} style={{ color: 'var(--text)' }} />
             </button>
             {title && (
@@ -82,15 +90,10 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
               >
                 bubbles
               </button>
-              <button
-                type="button"
+              <NotificationBell
+                unreadCount={unreadCount}
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative flex items-center justify-center"
-                style={{ width: '34px', height: '34px' }}
-              >
-                <Bell size={20} style={{ color: 'var(--text)' }} />
-                <UnreadBadge count={unreadCount} />
-              </button>
+              />
               {user && (
                 <AvatarDropdown
                   nickname={user.nickname ?? '?'}

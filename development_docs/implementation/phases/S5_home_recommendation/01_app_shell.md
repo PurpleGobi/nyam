@@ -54,12 +54,10 @@ src/application/hooks/use-unread-count.ts                ← 미읽음 알림 �
 
 ```typescript
 interface AppHeaderProps {
-  variant: 'main' | 'inner';
-  // variant="main" 전용
-  onBubblesClick?: () => void;
+  variant?: 'main' | 'inner'; // default: 'main'
   // variant="inner" 전용
   title?: string;
-  backHref?: string;
+  backHref?: string; // 생략 시 router.back() fallback
   actions?: React.ReactNode;
 }
 ```
@@ -121,11 +119,11 @@ interface AppHeaderProps {
   font-family: 'Comfortaa', cursive;
   font-weight: 700;
   font-size: 13px;
-  color: #FF6038; /* --brand */
+  color: var(--brand); /* #FF6038 */
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0;
 }
 ```
 
@@ -188,7 +186,7 @@ interface NotificationBellProps {
 interface AvatarDropdownProps {
   nickname: string;
   avatarUrl: string | null;
-  avatarColor: string; // hex, 예: "#C17B5E"
+  avatarColor: string | null; // null 시 var(--accent-food) fallback
 }
 ```
 
@@ -323,6 +321,7 @@ interface FABAddProps {
 interface FABForwardProps {
   onClick: () => void;
   disabled?: boolean;
+  accentColor?: string; // default: 'var(--accent-food)', 와인 플로우 시 'var(--accent-wine)'
 }
 ```
 
@@ -357,15 +356,15 @@ interface FABForwardProps {
 
 ```typescript
 // src/presentation/hooks/use-dropdown.ts
-function useDropdown(): {
+function useDropdown(containerRef: React.RefObject<HTMLElement | null>): {
   isOpen: boolean;
   toggle: () => void;
   close: () => void;
-  ref: React.RefObject<HTMLDivElement>;
 }
 ```
 
-- `ref` 요소 외부 클릭 시 `close()` 자동 호출
+- 호출 측에서 `containerRef`를 생성하여 전달
+- `containerRef` 외부 클릭 시 `close()` 자동 호출
 - `Escape` 키 시 `close()` 호출
 
 ### 8. useUnreadCount 훅
@@ -397,11 +396,14 @@ function useUnreadCount(): {
 ## 데이터 흐름
 
 ```
-[사용자 세션] → useAuth() → { nickname, avatarUrl, avatarColor }
+[사용자 세션] → useAuth() → { user: AuthUser { id, email, nickname, avatarUrl, authProvider } }
                           → AppHeader → NotificationBell(unreadCount)
-                                      → AvatarDropdown(nickname, avatarUrl, avatarColor)
+                                      → AvatarDropdown(nickname, avatarUrl, avatarColor=null)
 
-[notifications 테이블] → useUnreadCount() → NotificationBell.unreadCount
+[notifications 테이블] → useNotifications() → { unreadCount, notifications, markAsRead, ... }
+                       → AppHeader 내부에서 NotificationBell + NotificationDropdown에 공급
+
+[useUnreadCount 훅] → 단독 사용 시 (AppHeader 외부에서 미읽음 수만 필요할 때)
 
 [FABAdd 탭] → currentTab 판별 → 기록 플로우 진입 (S3 카메라/검색)
 ```
