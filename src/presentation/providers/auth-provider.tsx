@@ -29,10 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const client = clientRef.current
 
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await client.auth.getSession()
-      if (initialSession) {
-        setSession(mapSupabaseSession(initialSession))
-        setUser(mapSupabaseUser(initialSession.user))
+      const { data: { user: verifiedUser } } = await client.auth.getUser()
+      if (verifiedUser) {
+        const { data: { session: currentSession } } = await client.auth.getSession()
+        if (currentSession) {
+          setSession(mapSupabaseSession(currentSession))
+          setUser(mapSupabaseUser(verifiedUser))
+        }
       }
       setIsLoading(false)
     }

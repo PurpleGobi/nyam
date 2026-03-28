@@ -31,7 +31,7 @@ import { ViewCycleButton } from '@/presentation/components/ui/view-cycle-button'
 import { IntroCard } from '@/presentation/components/ui/intro-card'
 import { LoadingState } from '@/presentation/components/ui/loading-state'
 import { NyamInput } from '@/presentation/components/ui/nyam-input'
-import { NotionFilterPanel } from '@/presentation/components/home/notion-filter-panel'
+import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
 import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
@@ -489,7 +489,7 @@ export default function DesignSystemPage() {
           {/* 필터 패널 (Notion 스타일) */}
           {filterActive && (
             <div style={{ marginTop: '10px' }}>
-              <NotionFilterPanel
+              <FilterSystem
                 rules={demoRules}
                 conjunction={demoConjunction}
                 attributes={RESTAURANT_FILTER_ATTRIBUTES}
@@ -498,6 +498,7 @@ export default function DesignSystemPage() {
                 chipName={chipName}
                 onChipNameChange={setChipName}
                 onSaveAsChip={(name) => {
+                  if (!name) return
                   const id = `chip-${Date.now()}`
                   setDemoChips([...demoChips, { id, name }])
                   setActiveChip(id)
