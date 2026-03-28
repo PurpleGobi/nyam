@@ -335,12 +335,15 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
 
     return (
-      (data as Array<{ id: string; name: string; genre: string | null; area: string | null; distance: number }>) ?? []
+      (data as Array<{ id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; distance: number }>) ?? []
     ).map((r) => ({
       id: r.id,
       name: r.name,
       genre: r.genre,
       area: r.area,
+      address: r.address ?? null,
+      lat: r.lat ?? null,
+      lng: r.lng ?? null,
       distance: r.distance,
       hasRecord: recordedIds.has(r.id),
     }))
