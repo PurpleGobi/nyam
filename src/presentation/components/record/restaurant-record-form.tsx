@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Utensils, Sparkles } from 'lucide-react'
+import { useState, useCallback, useRef } from 'react'
+import { Utensils, Sparkles, X } from 'lucide-react'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { RestaurantScene } from '@/domain/entities/scene'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
@@ -28,10 +28,11 @@ interface CreateRestaurantRecordInput {
   comment?: string
   companions?: string[]
   companionCount?: number
+  menuTags?: string[]
   totalPrice?: number
+  visitDate?: string
   linkedWineId?: string
   photoUrls?: string[]
-  visitDate?: string
 }
 
 interface RestaurantRecordFormProps {
@@ -51,9 +52,26 @@ export function RestaurantRecordForm({
   const [scene, setScene] = useState<RestaurantScene | null>(null)
   const [comment, setComment] = useState('')
   const [companions, setCompanions] = useState<string[]>([])
+  const [menuTags, setMenuTags] = useState<string[]>([])
+  const [menuTagInput, setMenuTagInput] = useState('')
   const [totalPrice, setTotalPrice] = useState('')
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0])
+  const menuTagInputRef = useRef<HTMLInputElement>(null)
 
   const isValid = quadrant.satisfaction >= 1 && scene !== null
+
+  const addMenuTag = useCallback(() => {
+    const trimmed = menuTagInput.trim()
+    if (trimmed && !menuTags.includes(trimmed)) {
+      setMenuTags((prev) => [...prev, trimmed])
+    }
+    setMenuTagInput('')
+    menuTagInputRef.current?.focus()
+  }, [menuTagInput, menuTags])
+
+  const removeMenuTag = useCallback((tag: string) => {
+    setMenuTags((prev) => prev.filter((t) => t !== tag))
+  }, [])
 
   const handleSave = useCallback(async () => {
     if (!isValid) return
@@ -69,10 +87,11 @@ export function RestaurantRecordForm({
       comment: comment || undefined,
       companions: companions.length > 0 ? companions : undefined,
       companionCount,
+      menuTags: menuTags.length > 0 ? menuTags : undefined,
       totalPrice: totalPrice ? Number(totalPrice) : undefined,
-      visitDate: new Date().toISOString().split('T')[0],
+      visitDate,
     })
-  }, [isValid, quadrant, scene, comment, companions, totalPrice, target.id, onSave])
+  }, [isValid, quadrant, scene, comment, companions, menuTags, totalPrice, visitDate, target.id, onSave])
 
   return (
     <div className="flex flex-col pb-24">
@@ -156,6 +175,62 @@ export function RestaurantRecordForm({
         <CompanionInput value={companions} onChange={setCompanions} />
       </section>
 
+      {/* 추천 메뉴 */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          추천 메뉴 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <div className="flex flex-wrap gap-1.5">
+          {menuTags.map((tag) => (
+            <span
+              key={tag}
+              className="flex items-center gap-1"
+              style={{
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                backgroundColor: 'color-mix(in srgb, var(--accent-food) 10%, transparent)',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--accent-food)',
+              }}
+            >
+              {tag}
+              <button type="button" onClick={() => removeMenuTag(tag)}>
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            ref={menuTagInputRef}
+            type="text"
+            value={menuTagInput}
+            onChange={(e) => setMenuTagInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMenuTag() } }}
+            placeholder="메뉴 이름 입력"
+            maxLength={30}
+            className="flex-1"
+            style={{
+              padding: '8px 12px',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              fontSize: '13px',
+              color: 'var(--text)',
+              backgroundColor: 'var(--bg-card)',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={addMenuTag}
+            style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-food)', padding: '8px' }}
+          >
+            추가
+          </button>
+        </div>
+      </section>
+
       {/* 가격 */}
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
@@ -181,6 +256,29 @@ export function RestaurantRecordForm({
           />
           <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>원</span>
         </div>
+      </section>
+
+      {/* 방문 날짜 */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          방문 날짜 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <input
+          type="date"
+          value={visitDate}
+          onChange={(e) => setVisitDate(e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          className="w-full"
+          style={{
+            padding: '10px 14px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)',
+            fontSize: '14px',
+            color: 'var(--text)',
+            backgroundColor: 'var(--bg-card)',
+            outline: 'none',
+          }}
+        />
       </section>
 
       {/* 같이 마신 와인 */}

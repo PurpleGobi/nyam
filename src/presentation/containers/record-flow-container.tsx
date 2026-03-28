@@ -64,6 +64,7 @@ function RecordFlowInner() {
           comment: formData.comment as string | undefined,
           companions: formData.companions as string[] | undefined,
           companionCount: formData.companionCount as number | undefined,
+          menuTags: formData.menuTags as string[] | undefined,
           totalPrice: formData.totalPrice as number | undefined,
           purchasePrice: formData.purchasePrice as number | undefined,
           linkedWineId: formData.linkedWineId as string | undefined,

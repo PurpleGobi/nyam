@@ -120,6 +120,11 @@ interface RestaurantRecordFormProps {
 
 **화면 구성 (위 → 아래 순서, 단일 스크롤):**
 
+<!-- 2026-03-28 설계 보완: #6 추천 메뉴, #8 방문 날짜 추가.
+     - menuTags: 00_IA.md Phase 2 항목이나 원래 테이블에서 누락. S4 기록 상세 표시 + S6 XP 가산에 소비됨.
+     - visitDate: 비카메라 경로(상세 FAB 등)에서 과거 방문 기록 불가 문제 해결. 카메라 경로는 S3에서 EXIF 자동 추출.
+     - mealTime: 추가하지 않음. 캘린더 뷰 보조 라벨 전용이고 EXIF 자동 추론(S3)으로 충분. created_at으로 대체 가능. -->
+
 | 순서 | 섹션 | 컴포넌트 | 필수 여부 |
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
@@ -127,8 +132,10 @@ interface RestaurantRecordFormProps {
 | 3 | 상황 태그 (6종 단일 선택) | `SceneTagSelector` | Phase 1 필수 |
 | 4 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
 | 5 | 동행자 | `CompanionInput` | Phase 2 선택 |
-| 6 | 가격 (1인) | `<input type="number">` + "원" suffix | Phase 2 선택 |
-| 7 | 같이 마신 와인 | 와인 연결 UI (인라인 검색 토글) | Phase 2 선택 |
+| 6 | 추천 메뉴 | 태그 입력 (`menuTags TEXT[]`, 사용자가 먹은 메뉴) | Phase 2 선택 |
+| 7 | 가격 (1인) | `<input type="number">` + "원" suffix | Phase 2 선택 |
+| 8 | 방문 날짜 | 날짜 선택 (기본값: 오늘, 과거 방문 변경 가능) | Phase 2 선택 |
+| 9 | 같이 마신 와인 | 와인 연결 UI (인라인 검색 토글) | Phase 2 선택 |
 
 **AI 인식 결과 헤더 (`rest-record-header`):**
 
@@ -170,6 +177,8 @@ interface WineRecordFormProps {
 
 **화면 구성 (위 → 아래 순서, 단일 스크롤):**
 
+<!-- 2026-03-28 설계 보완: #8 음용 날짜 추가. 카메라 경로는 S3 EXIF 자동, 비카메라 경로에서 수동 변경 가능. -->
+
 | 순서 | 섹션 | 컴포넌트 | 필수 여부 |
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
@@ -179,7 +188,8 @@ interface WineRecordFormProps {
 | 5 | 페어링 (WSET 8카테고리) | `PairingGrid` | Phase 1 필수 |
 | 6 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
 | 7 | 가격 (병) | `<input type="number">` + "원" suffix | Phase 2 선택 |
-| 8 | 어디서 마셨나요? (식당 연결) | 식당 연결 UI | Phase 2 선택 |
+| 8 | 음용 날짜 | 날짜 선택 (기본값: 오늘, 과거 음용 변경 가능) | Phase 2 선택 |
+| 9 | 어디서 마셨나요? (식당 연결) | 식당 연결 UI | Phase 2 선택 |
 
 **AI 인식 결과 헤더:**
 
@@ -358,10 +368,11 @@ interface CreateRestaurantRecordInput {
   comment?: string                  // 200자 이내
   companions?: string[]
   companionCount?: number
+  menuTags?: string[]               // 추천 메뉴 태그 (사용자가 먹은 메뉴, 예: ['A코스', '런치세트'])
   totalPrice?: number               // 1인 가격 (원)
+  visitDate?: string                // ISO date (기본값: 오늘). 비카메라 경로에서 과거 방문 기록용
   linkedWineId?: string
   photoUrls?: string[]
-  visitDate?: Date
 }
 
 interface CreateWineRecordInput {
@@ -380,9 +391,9 @@ interface CreateWineRecordInput {
   pairingCategories: string[]       // ['red_meat', 'cheese', ...]
   comment?: string                  // 200자 이내
   purchasePrice?: number            // 병 가격 (원)
+  visitDate?: string                // ISO date (기본값: 오늘)
   linkedRestaurantId?: string
   photoUrls?: string[]
-  visitDate?: Date
 }
 
 type CreateRecordInput = CreateRestaurantRecordInput | CreateWineRecordInput
@@ -530,7 +541,9 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
     │     │           ├── <SceneTagSelector> → scene
     │     │           ├── <textarea> → comment (선택)
     │     │           ├── <CompanionInput> → companions, companionCount (선택)
+    │     │           ├── 메뉴 태그 입력 → menuTags (선택)
     │     │           ├── <input number> → totalPrice (선택)
+    │     │           ├── <input date> → visitDate (선택, 기본값: 오늘)
     │     │           ├── 와인 연결 UI → linkedWineId (선택)
     │     │           └── <RecordSaveBar variant="food"> → handleSave()
     │     │
@@ -543,6 +556,7 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
     │                 ├── <PairingGrid> → pairingCategories
     │                 ├── <textarea> → comment (선택)
     │                 ├── <input number> → purchasePrice (선택)
+    │                 ├── <input date> → visitDate (선택, 기본값: 오늘)
     │                 ├── 식당 연결 UI → linkedRestaurantId (선택)
     │                 └── <RecordSaveBar variant="wine"> → handleSave()
     │

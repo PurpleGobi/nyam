@@ -74,6 +74,7 @@ export function WineRecordForm({
   const [pairingCustom, setPairingCustom] = useState('')
   const [comment, setComment] = useState('')
   const [purchasePrice, setPurchasePrice] = useState('')
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0])
   const isManualOverrideRef = useRef(false)
 
   const aromaRingCount = countActiveRings(aroma.regions)
@@ -114,9 +115,9 @@ export function WineRecordForm({
       pairingCategories,
       comment: comment || undefined,
       purchasePrice: purchasePrice ? Number(purchasePrice) : undefined,
-      visitDate: new Date().toISOString().split('T')[0],
+      visitDate,
     })
-  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, target.id, onSave])
+  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, visitDate, target.id, onSave])
 
   return (
     <div className="flex flex-col pb-24">
@@ -243,6 +244,29 @@ export function WineRecordForm({
           />
           <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>원</span>
         </div>
+      </section>
+
+      {/* 음용 날짜 */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          음용 날짜 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <input
+          type="date"
+          value={visitDate}
+          onChange={(e) => setVisitDate(e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          className="w-full"
+          style={{
+            padding: '10px 14px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)',
+            fontSize: '14px',
+            color: 'var(--text)',
+            backgroundColor: 'var(--bg-card)',
+            outline: 'none',
+          }}
+        />
       </section>
 
       {/* 어디서 마셨나요? (식당 연결) */}

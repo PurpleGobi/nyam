@@ -103,7 +103,7 @@ export function WineStructureEval({
         <div className="mt-0.5 flex justify-between" style={{ fontSize: '10px', color: 'var(--text-hint)', opacity: 0.6 }}>
           <span>산미 치우침</span>
           <span>조화</span>
-          <span>타닌/알코올</span>
+          <span>타닌/알코올 치우침</span>
         </div>
       </div>
     </div>
