@@ -17,7 +17,7 @@ export function BubbleInfoSheet({ isOpen, onClose, bubble }: BubbleInfoSheetProp
   return (
     <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
       <div
-        className="bottom-sheet w-full max-w-[430px] pb-8"
+        className="bottom-sheet w-full max-w-[480px] pb-8"
         style={{ maxHeight: '70vh', position: 'relative' }}
       >
         {/* 헤더 */}

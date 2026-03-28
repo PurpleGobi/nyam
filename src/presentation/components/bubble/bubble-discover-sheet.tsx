@@ -58,7 +58,7 @@ export function BubbleDiscoverSheet({
   return (
     <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
       <div
-        className="bottom-sheet flex w-full max-w-[430px] flex-col"
+        className="bottom-sheet flex w-full max-w-[480px] flex-col"
         style={{ maxHeight: '80vh', position: 'relative' }}
       >
         {/* 헤더 */}

@@ -12,7 +12,7 @@ export function LoginContainer() {
   }
 
   return (
-    <div className="app-shell flex flex-col items-center justify-center" style={{ padding: '60px 32px 40px' }}>
+    <div className="content-auth flex min-h-dvh flex-col items-center justify-center bg-background" style={{ padding: '60px 32px 40px' }}>
       <div style={{ height: '44px' }} />
 
       <h1

@@ -65,7 +65,7 @@ export function WrappedContainer() {
   }, [category])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* Navigation */}
       <nav className="flex items-center px-4" style={{ height: '44px' }}>
         <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">

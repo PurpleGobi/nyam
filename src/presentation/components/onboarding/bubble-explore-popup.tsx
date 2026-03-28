@@ -20,7 +20,7 @@ export function BubbleExplorePopup({ bubble, userLevel, isOpen, onClose, onJoin 
   return (
     <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }}>
       <div
-        className="bottom-sheet w-full max-w-[430px] pb-8"
+        className="bottom-sheet w-full max-w-[480px] pb-8"
         style={{ position: 'relative' }}
       >
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>

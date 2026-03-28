@@ -154,6 +154,13 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
+  // ── 가상 속성: status=following → source 필드로 매칭 ──
+  if (attribute === 'status' && String(value) === 'following') {
+    const source = record.source ?? record['source']
+    const matches = source === 'following'
+    return operator === 'eq' ? matches : !matches
+  }
+
   // ── 일반 속성: 단순 비교 ──
   const val = getRecordField(record, attribute)
   switch (operator) {

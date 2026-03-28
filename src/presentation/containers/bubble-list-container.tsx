@@ -142,7 +142,7 @@ export function BubbleListContainer() {
   const joinedCount = classified.filter((c) => c.role === 'joined').length
 
   return (
-    <div className="flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="content-feed flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
 
       <StickyTabs
@@ -219,7 +219,7 @@ export function BubbleListContainer() {
           </FilterChipGroup>
 
           {/* 버블 목록 */}
-          <div className="flex flex-col gap-3 px-4">
+          <div className="flex flex-col gap-3 px-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />

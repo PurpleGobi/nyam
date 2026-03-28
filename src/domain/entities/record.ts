@@ -237,6 +237,8 @@ export function createDefaultRecord(
  * 홈 화면 등에서 JOIN 결과로 사용
  * R1 준수: 외부 의존 없는 순수 타입
  */
+export type RecordSource = 'mine' | 'following' | 'bubble'
+
 export interface RecordWithTarget extends DiningRecord {
   /** 대상 이름 (restaurants.name 또는 wines.name) */
   targetName: string
@@ -246,6 +248,8 @@ export interface RecordWithTarget extends DiningRecord {
   targetArea: string | null
   /** 대상 대표 사진 URL */
   targetPhotoUrl: string | null
+  /** 가상 속성: 레코드 소스 (mine=내 기록, following=팔로잉 유저 기록) */
+  source?: RecordSource
 }
 
 // ─── 기록 생성 입력 타입 ───

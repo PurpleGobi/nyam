@@ -7,7 +7,7 @@ export default function MainLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="app-shell flex flex-col">
+      <div className="flex min-h-dvh flex-col bg-background">
         <main className="w-full flex-1">
           {children}
         </main>

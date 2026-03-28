@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Save, Layers } from 'lucide-react'
+import { Plus, X, Save, Layers, Trash2 } from 'lucide-react'
 import type { FilterRule } from '@/domain/entities/saved-filter'
 import type { FilterAttribute, FilterAttributeType } from '@/domain/entities/filter-config'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
@@ -61,6 +61,8 @@ export interface FilterSystemProps {
   chipName?: string
   onChipNameChange?: (name: string) => void
   onSaveAsChip?: (name?: string) => void
+  activeChipId?: string | null
+  onDeleteChip?: (chipId: string) => void
   accentColor?: string
 }
 
@@ -128,7 +130,7 @@ function FilterRuleRow({
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
         style={{ color: 'var(--text-hint)' }}
       >
-        <Trash2 size={15} />
+        <X size={15} />
       </button>
     </div>
   )
@@ -214,6 +216,8 @@ export function FilterSystem({
   chipName = '',
   onChipNameChange,
   onSaveAsChip,
+  activeChipId,
+  onDeleteChip,
   accentColor,
 }: FilterSystemProps) {
   const handleAddRule = () => {
@@ -227,10 +231,16 @@ export function FilterSystem({
     onRulesChange([...rules, newRule])
   }
 
+  const [subGroups, setSubGroups] = useState<FilterRule[][]>([])
+
   const handleAddGroup = () => {
-    // Phase 2: 그룹 중첩 지원 시 FilterGroup 구조로 확장
-    // 현재는 단순 규칙 추가와 동일하게 동작
-    handleAddRule()
+    const firstAttr = attributes[0]
+    if (!firstAttr) return
+    setSubGroups([...subGroups, [{
+      attribute: firstAttr.key,
+      operator: 'eq',
+      value: firstAttr.options?.[0]?.value ?? '',
+    }]])
   }
 
   const handleUpdateRule = (index: number, updated: FilterRule) => {
@@ -298,7 +308,81 @@ export function FilterSystem({
         ))}
       </div>
 
-      {/* 하단 액션: + 필터 추가 | 칩 이름 | 칩으로 저장 */}
+      {/* 서브 그룹 (AND 고정) */}
+      {subGroups.map((groupRules, gi) => (
+        <div
+          key={gi}
+          className="mt-2 rounded-lg p-3"
+          style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+        >
+          <div className="mb-1.5 flex items-center justify-between">
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-hint)', textTransform: 'uppercase' }}>
+              AND 그룹
+            </span>
+            <button
+              type="button"
+              onClick={() => setSubGroups(subGroups.filter((_, i) => i !== gi))}
+              style={{ color: 'var(--text-hint)' }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            {groupRules.map((rule, ri) => (
+              <div key={ri} className="flex items-center gap-2">
+                <div className="w-10 shrink-0 text-right">
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-hint)' }}>
+                    {ri === 0 ? 'Where' : 'AND'}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <FilterRuleRow
+                    index={ri}
+                    rule={rule}
+                    attributes={attributes}
+                    onUpdate={(idx, updated) => {
+                      const next = [...subGroups]
+                      next[gi] = [...next[gi]]
+                      next[gi][idx] = updated
+                      setSubGroups(next)
+                    }}
+                    onDelete={(idx) => {
+                      const next = [...subGroups]
+                      next[gi] = next[gi].filter((_, i) => i !== idx)
+                      if (next[gi].length === 0) {
+                        setSubGroups(next.filter((_, i) => i !== gi))
+                      } else {
+                        setSubGroups(next)
+                      }
+                    }}
+                    accentColor={accentColor}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const firstAttr = attributes[0]
+              if (!firstAttr) return
+              const next = [...subGroups]
+              next[gi] = [...next[gi], {
+                attribute: firstAttr.key,
+                operator: 'eq' as const,
+                value: firstAttr.options?.[0]?.value ?? '',
+              }]
+              setSubGroups(next)
+            }}
+            className="mt-2 flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            <Plus size={11} /> 조건 추가
+          </button>
+        </div>
+      ))}
+
+      {/* 하단 액션: + 필터 추가 | 칩 이름 | 삭제 | 저장 */}
       <div className="mt-3 flex items-center gap-2">
         <AddFilterDropdown
           onAddRule={handleAddRule}
@@ -316,7 +400,20 @@ export function FilterSystem({
           style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
         />
 
-        {/* 칩으로 저장 */}
+        {/* 삭제 (기존 칩 선택 시에만 표시) */}
+        {activeChipId && onDeleteChip && (
+          <button
+            type="button"
+            onClick={() => onDeleteChip(activeChipId)}
+            className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
+            style={{ color: 'var(--negative, #e55)' }}
+          >
+            <Trash2 size={12} />
+            삭제
+          </button>
+        )}
+
+        {/* 저장 */}
         <button
           type="button"
           onClick={() => { if (canSave) onSaveAsChip?.(chipName.trim()) }}
@@ -329,7 +426,7 @@ export function FilterSystem({
           }}
         >
           <Save size={12} />
-          칩으로 저장
+          저장
         </button>
       </div>
     </div>

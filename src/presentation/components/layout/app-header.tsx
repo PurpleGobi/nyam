@@ -32,7 +32,8 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
 
   return (
     <>
-      <header className="top-fixed app-header">
+      <header className="top-fixed">
+        <div className="app-header">
         {variant === 'inner' ? (
           <button type="button" onClick={handleBack} className="inner-back-btn">
             <ChevronLeft />
@@ -64,6 +65,7 @@ export function AppHeader({ variant = 'main', title, backHref, actions }: AppHea
               avatarColor={null}
             />
           )}
+        </div>
         </div>
       </header>
 

@@ -108,7 +108,7 @@ export function ProfileContainer() {
         : groupedExperiences?.wineVariety ?? []
 
   return (
-    <div className="flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
+    <div className="content-detail flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
       <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
 
       {/* 프로필 헤더 */}

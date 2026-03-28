@@ -39,7 +39,7 @@ export function BubbleCreateContainer() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader variant="inner" title="버블 만들기" backHref="/bubbles" />
       <BubbleCreateForm onSubmit={handleSubmit} isLoading={isLoading} />
     </div>

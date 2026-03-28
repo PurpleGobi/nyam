@@ -31,7 +31,7 @@ export function DiscoverContainer() {
   )
 
   return (
-    <div className="screen-slide-in-right flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-feed screen-slide-in-right flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* Header */}
       <nav
         className="sticky top-0 z-10 flex items-center border-b border-[var(--border)] bg-[var(--bg)] px-4"
@@ -56,7 +56,7 @@ export function DiscoverContainer() {
 
       {/* Card list */}
       {!isEmpty && (
-        <div className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex flex-col gap-3 px-4 py-3 md:grid md:grid-cols-2 md:gap-4 md:px-8">
           {cards.map((card) => (
             <DiscoverCard key={card.id} card={card} />
           ))}

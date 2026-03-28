@@ -75,7 +75,7 @@ export function BubblerHero({
               border: '2px solid var(--bg)',
             }}
           >
-            Lv.{level}
+            Lv.{level} {levelTitle}
           </div>
         </div>
 

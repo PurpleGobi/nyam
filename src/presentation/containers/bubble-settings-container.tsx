@@ -79,7 +79,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* 헤더 */}
       <nav className="flex items-center gap-2 px-4" style={{ height: '44px' }}>
         <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center">

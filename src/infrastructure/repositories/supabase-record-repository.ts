@@ -194,6 +194,30 @@ export class SupabaseRecordRepository implements RecordRepository {
       }
     }
 
+    // 팔로잉 유저들의 target_id 셋 조회 → source 태깅용
+    const followingTargetIds = new Set<string>()
+    const { data: followRows } = await this.supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', userId)
+      .eq('status', 'accepted')
+
+    if (followRows && followRows.length > 0) {
+      const followingUserIds = followRows.map((f) => f.following_id)
+      const allTargetIds = [...new Set(rows.map((r) => r.target_id))]
+      if (allTargetIds.length > 0) {
+        const { data: followingRecords } = await this.supabase
+          .from('records')
+          .select('target_id')
+          .in('user_id', followingUserIds)
+          .in('target_id', allTargetIds)
+          .eq('target_type', targetType ?? 'restaurant')
+        for (const fr of followingRecords ?? []) {
+          followingTargetIds.add(fr.target_id)
+        }
+      }
+    }
+
     return rows.map((row) => {
       const base = mapDbToRecord(row)
       const isRestaurant = row.target_type === 'restaurant'
@@ -205,6 +229,7 @@ export class SupabaseRecordRepository implements RecordRepository {
         targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
         targetArea: isRestaurant ? (restaurant?.area ?? null) : (wine?.region ?? null),
         targetPhotoUrl: (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
+        source: followingTargetIds.has(row.target_id) ? 'following' as const : 'mine' as const,
       }
     })
   }

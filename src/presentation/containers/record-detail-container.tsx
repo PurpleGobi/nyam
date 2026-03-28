@@ -131,7 +131,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
     .map((r) => ({ axisX: r.axisX!, axisY: r.axisY!, satisfaction: r.satisfaction ?? 50 }))
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* 고정 헤더 — glassmorphism */}
       <nav
         className="sticky top-0 z-40 flex items-center justify-between px-4"

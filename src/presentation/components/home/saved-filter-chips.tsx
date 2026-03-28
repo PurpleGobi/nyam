@@ -11,12 +11,13 @@ interface SavedFilterChipsProps {
   counts: Record<string, number>
   accentClass: 'food' | 'wine'
   onChipSelect: (chipId: string | null) => void
-  followingCount?: number
-  isFollowingActive?: boolean
-  onFollowingSelect?: () => void
+  recordPage?: number
+  recordTotalPages?: number
+  onRecordPagePrev?: () => void
+  onRecordPageNext?: () => void
 }
 
-export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onChipSelect, followingCount, isFollowingActive, onFollowingSelect }: SavedFilterChipsProps) {
+export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onChipSelect, recordPage, recordTotalPages, onRecordPagePrev, onRecordPageNext }: SavedFilterChipsProps) {
   const wineClass = accentClass === 'wine' ? 'wine' : ''
   const scrollRef = useRef<HTMLDivElement>(null)
   const [needsPager, setNeedsPager] = useState(false)
@@ -49,48 +50,40 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
     setCurrentPage((p) => Math.min(totalPages, p + 1))
   }
 
+  const showRecordPager = recordTotalPages != null && recordTotalPages > 1
+
   return (
     <div className="flex items-center px-4 py-2">
-      <FilterChipGroup ref={scrollRef} className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => onChipSelect(null)}
-          className={`filter-chip ${activeChipId === null && !isFollowingActive ? `active ${wineClass}` : ''}`}
-        >
-          전체
-        </button>
-        {chips.map((chip) => (
-          <button
-            key={chip.id}
-            type="button"
-            onClick={() => onChipSelect(chip.id === activeChipId ? null : chip.id)}
-            className={`filter-chip ${activeChipId === chip.id && !isFollowingActive ? `active ${wineClass}` : ''}`}
-          >
-            {chip.name}
-            {counts[chip.id] !== undefined && (
-              <span className="filter-chip-count">{counts[chip.id]}</span>
-            )}
-          </button>
-        ))}
-        {onFollowingSelect && (
+      <div className="relative min-w-0 flex-1">
+        <FilterChipGroup ref={scrollRef} className="min-w-0 flex-1" style={showRecordPager ? { maskImage: 'linear-gradient(to right, black calc(100% - 32px), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 32px), transparent)' } : undefined}>
           <button
             type="button"
-            onClick={onFollowingSelect}
-            className={`filter-chip ${isFollowingActive ? `active ${wineClass}` : ''}`}
+            onClick={() => onChipSelect(null)}
+            className={`filter-chip ${activeChipId === null ? `active ${wineClass}` : ''}`}
           >
-            팔로잉
-            {followingCount !== undefined && followingCount > 0 && (
-              <span className="filter-chip-count">{followingCount}</span>
-            )}
+            전체
           </button>
-        )}
-      </FilterChipGroup>
-      {needsPager && (
+          {chips.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => onChipSelect(chip.id === activeChipId ? null : chip.id)}
+              className={`filter-chip ${activeChipId === chip.id ? `active ${wineClass}` : ''}`}
+            >
+              {chip.name}
+              {counts[chip.id] !== undefined && (
+                <span className="filter-chip-count">{counts[chip.id]}</span>
+              )}
+            </button>
+          ))}
+        </FilterChipGroup>
+      </div>
+      {showRecordPager && onRecordPagePrev && onRecordPageNext && (
         <InlinePager
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={handlePrev}
-          onNext={handleNext}
+          currentPage={recordPage ?? 1}
+          totalPages={recordTotalPages ?? 1}
+          onPrev={onRecordPagePrev}
+          onNext={onRecordPageNext}
         />
       )}
     </div>

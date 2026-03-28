@@ -1,5 +1,7 @@
 'use client'
 
+import { PieChart } from 'lucide-react'
+
 interface CategoryStat {
   name: string
   percentage: number
@@ -36,7 +38,10 @@ export function TasteProfile({ categories, scoreTendency, topRegions, accentType
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>취향 프로필</h3>
+      <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
+        <PieChart size={14} style={{ color: 'var(--text-sub)' }} />
+        취향 프로필
+      </div>
 
       {/* 카테고리 비중 */}
       {categories.length > 0 && (

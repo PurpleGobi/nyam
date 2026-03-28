@@ -1,6 +1,6 @@
 'use client'
 
-import { Flame } from 'lucide-react'
+import { Activity, Flame } from 'lucide-react'
 import type { HeatmapCell } from '@/domain/entities/profile'
 
 interface ActivitySectionProps {
@@ -39,11 +39,26 @@ export function ActivitySection({ heatmap, totalRecords, currentStreak, activeDu
     grid.push(week)
   }
 
+  // 월 라벨 계산 (각 주의 첫 번째 날짜 기준으로 월이 바뀌면 표시)
+  const monthLabels: { label: string; col: number }[] = []
+  let lastMonth = -1
+  for (let wi = 0; wi < grid.length; wi++) {
+    const firstDate = new Date(grid[wi][0].date)
+    const m = firstDate.getMonth()
+    if (m !== lastMonth) {
+      monthLabels.push({ label: `${m + 1}월`, col: wi })
+      lastMonth = m
+    }
+  }
+
   const heatmapTotal = totalRecords ?? heatmap.reduce((sum, c) => sum + c.intensity, 0)
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>활동</h3>
+      <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
+        <Activity size={14} style={{ color: 'var(--text-sub)' }} />
+        활동
+      </div>
 
       {/* 3-chip 통계 */}
       <div className="flex gap-2">
@@ -84,6 +99,23 @@ export function ActivitySection({ heatmap, totalRecords, currentStreak, activeDu
             ))}
           </div>
         ))}
+      </div>
+
+      {/* 월 라벨 (목업 .hm-months) */}
+      <div className="flex" style={{ paddingLeft: '20px' }}>
+        {monthLabels.map((m, i) => {
+          const nextCol = i < monthLabels.length - 1 ? monthLabels[i + 1].col : WEEKS
+          const span = nextCol - m.col
+          return (
+            <span
+              key={m.label + m.col}
+              className="text-[9px]"
+              style={{ color: 'var(--text-hint)', width: `${(span / WEEKS) * 100}%` }}
+            >
+              {m.label}
+            </span>
+          )
+        })}
       </div>
 
       {/* 스트릭 배너 */}

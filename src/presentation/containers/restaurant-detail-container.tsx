@@ -158,7 +158,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   }
 
   return (
-    <div className="relative min-h-dvh" style={{ backgroundColor: 'var(--bg)', paddingTop: '0px' }}>
+    <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)', paddingTop: '0px' }}>
       {/* 앱 헤더 (top-fixed) */}
       <AppHeader
         variant="inner"

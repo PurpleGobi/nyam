@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { UtensilsCrossed, Wine } from 'lucide-react'
+import { Star, UtensilsCrossed, Wine } from 'lucide-react'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface PickItem {
@@ -30,7 +30,10 @@ export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>{title ?? '강력 추천'}</h3>
+      <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--text)' }}>
+        <Star size={14} style={{ color: 'var(--text-sub)' }} />
+        {title ?? '강력 추천'}
+      </div>
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
         {picks.slice(0, 6).map((item) => (
           <button

@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageCircle } from 'lucide-react'
+import { CircleDot, MessageCircle } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useUserBubbles } from '@/application/hooks/use-user-bubbles'
 import { useBubbleRecords } from '@/application/hooks/use-bubble-records'
@@ -27,7 +27,8 @@ export function BubbleRecordSection({ targetId, targetType }: BubbleRecordSectio
 
   return (
     <section style={{ padding: '16px 20px' }}>
-      <div className="mb-3.5">
+      <div className="mb-3.5 flex items-center gap-1.5">
+        <CircleDot size={14} style={{ color: 'var(--text-sub)' }} />
         <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           버블 기록
         </span>
@@ -61,9 +62,13 @@ export function BubbleRecordSection({ targetId, targetType }: BubbleRecordSectio
               />
             ))}
             {bubbleHasMore && (
-              <p className="py-2 text-center text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+              <button
+                type="button"
+                className="w-full py-2 text-center text-[13px] font-semibold"
+                style={{ color: 'var(--accent-social)' }}
+              >
                 더보기
-              </p>
+              </button>
             )}
           </div>
         </>

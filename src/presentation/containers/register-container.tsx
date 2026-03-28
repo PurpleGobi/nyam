@@ -55,7 +55,7 @@ function RegisterInner() {
   )
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <RecordNav
         title={targetType === 'wine' ? '와인 등록' : '식당 등록'}
         variant={targetType === 'wine' ? 'wine' : 'food'}

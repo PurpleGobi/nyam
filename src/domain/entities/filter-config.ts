@@ -27,6 +27,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: 'visited', label: '방문' },
       { value: 'wishlist', label: '찜' },
       { value: 'recommended', label: '추천' },
+      { value: 'following', label: '팔로잉' },
     ],
   },
   {
@@ -146,17 +147,6 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: '2', label: '2~5만' },
       { value: '3', label: '5~10만' },
       { value: '4', label: '10만+' },
-    ],
-  },
-  {
-    key: 'source',
-    label: '소스',
-    type: 'select',
-    options: [
-      { value: 'mine', label: '내 기록' },
-      { value: 'bubble', label: '버블' },
-      { value: 'mutual', label: '맞팔' },
-      { value: 'all', label: '전체' },
     ],
   },
 ]

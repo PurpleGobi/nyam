@@ -395,7 +395,7 @@ function RecordFlowInner() {
   } : undefined
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="content-detail flex min-h-dvh flex-col">
       <RecordNav
         title={isEditMode ? '기록 수정' : '기록'}
         variant={variant}

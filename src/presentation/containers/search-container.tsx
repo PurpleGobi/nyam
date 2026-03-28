@@ -134,7 +134,7 @@ function SearchInner() {
   }, [router, targetType, query])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <RecordNav
         title={targetType === 'wine' ? '와인 검색' : '식당 검색'}
         variant={targetType === 'wine' ? 'wine' : 'food'}

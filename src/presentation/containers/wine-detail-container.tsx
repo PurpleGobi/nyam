@@ -159,7 +159,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   ].filter(Boolean)
 
   return (
-    <div className="relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       {/* 앱 헤더 */}
       <AppHeader
         variant="inner"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
@@ -115,7 +115,7 @@ export function HomeContainer() {
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
 
-  const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
+  const { filters, createFilter, deleteFilter } = useSavedFilters(user?.id ?? null, activeTab)
   const { records } = useRecordsWithTarget(user?.id ?? null, activeTab)
 
   // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
@@ -226,10 +226,12 @@ export function HomeContainer() {
       const chip = filters.find((f) => f.id === chipId)
       if (chip) {
         setFilterRules(chip.rules)
+        setChipName(chip.name)
         if (chip.sortBy) setCurrentSort(chip.sortBy)
       }
     } else {
       setFilterRules([])
+      setChipName('')
     }
   }, [filters, setActiveChipId, setFilterRules, setCurrentSort])
 
@@ -257,38 +259,20 @@ export function HomeContainer() {
     return result
   }, [records, filterRules, conjunction, searchQuery, currentSort])
 
-  // 20건씩 무한 스크롤
-  const PAGE_SIZE = 20
-  const pageKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${activeChipId}`
-  const [scrollState, setScrollState] = useState({ key: pageKey, count: PAGE_SIZE })
-
-  // pageKey 변경 감지 → 리셋 (scrollState.key가 다르면 count를 PAGE_SIZE로)
-  const effectiveCount = scrollState.key === pageKey ? scrollState.count : PAGE_SIZE
-  const displayRecords = allDisplayRecords.slice(0, effectiveCount)
-  const hasMoreRecords = displayRecords.length < allDisplayRecords.length
-
-  const loadMoreSentinelRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (!node || !hasMoreRecords) return
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          setScrollState((prev) => ({ key: prev.key, count: prev.count + PAGE_SIZE }))
-          observer.disconnect()
-        }
-      })
-      observer.observe(node)
-    },
-    [hasMoreRecords],
+  // 페이지네이션: 카드 5개, 리스트 10개
+  const pageSize = viewMode === 'list' ? 10 : 5
+  const [currentRecordPage, setCurrentRecordPage] = useState(1)
+  const totalRecordPages = Math.max(1, Math.ceil(allDisplayRecords.length / pageSize))
+  const displayRecords = allDisplayRecords.slice(
+    (currentRecordPage - 1) * pageSize,
+    currentRecordPage * pageSize,
   )
 
-  // pageKey 변경 시 scrollState 동기화
-  const handlePageKeySync = useCallback(() => {
-    setScrollState({ key: pageKey, count: PAGE_SIZE })
-  }, [pageKey])
-  // eslint가 effect 내 setState를 싫어하므로 별도 sync
-  if (scrollState.key !== pageKey) {
-    handlePageKeySync()
-  }
+  // 필터/탭/뷰모드 변경 시 페이지 리셋
+  const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${activeChipId}-${viewMode}`
+  useEffect(() => {
+    setCurrentRecordPage(1)
+  }, [pageResetKey])
 
   // 캘린더 레코드
   const { days: calendarDays } = useCalendarRecords({
@@ -393,7 +377,7 @@ export function HomeContainer() {
     if (viewMode === 'list') {
       if (displayRecords.length === 0) return renderEmptyState()
       return (
-        <div className="pb-24">
+        <div className="content-detail pb-24">
           {displayRecords.map((record, i) => (
             <CompactListItem
               key={record.id}
@@ -410,15 +394,14 @@ export function HomeContainer() {
               }
             />
           ))}
-          {hasMoreRecords && <div ref={loadMoreSentinelRef} className="h-4" />}
-        </div>
+          </div>
       )
     }
 
     // 카드(card) 뷰 — 기본
     if (displayRecords.length === 0) return renderEmptyState()
     return (
-      <div className="flex flex-col gap-3 px-4 pb-24 pt-2">
+      <div className="flex flex-col gap-3 px-4 pb-24 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
         {displayRecords.map((record) =>
           activeTab === 'wine' ? (
             <WineCard
@@ -464,7 +447,6 @@ export function HomeContainer() {
             />
           ),
         )}
-        {hasMoreRecords && <div ref={loadMoreSentinelRef} className="h-4" />}
       </div>
     )
   }
@@ -472,7 +454,7 @@ export function HomeContainer() {
   const isCalendarMode = viewMode === 'calendar'
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-feed flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader />
 
       <div className="flex flex-1 flex-col overflow-y-auto">
@@ -514,7 +496,7 @@ export function HomeContainer() {
 
         {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
         {!isCalendarMode && isFilterOpen && (
-          <div className="px-4 pt-2">
+          <div className="px-4 pt-2 md:px-8">
             <FilterSystem
               rules={filterRules}
               conjunction={conjunction}
@@ -528,6 +510,13 @@ export function HomeContainer() {
                   handleSaveChip(name)
                   setChipName('')
                 }
+              }}
+              activeChipId={activeChipId}
+              onDeleteChip={(chipId) => {
+                deleteFilter(chipId)
+                setActiveChipId(null)
+                setFilterRules([])
+                setChipName('')
               }}
               accentColor={accentColor}
             />
@@ -562,9 +551,10 @@ export function HomeContainer() {
             counts={counts}
             accentClass={accentType}
             onChipSelect={handleChipSelect}
-            followingCount={followingFeed.totalCount}
-            isFollowingActive={isFollowingMode}
-            onFollowingSelect={handleFollowingSelect}
+            recordPage={currentRecordPage}
+            recordTotalPages={totalRecordPages}
+            onRecordPagePrev={() => setCurrentRecordPage((p) => Math.max(1, p - 1))}
+            onRecordPageNext={() => setCurrentRecordPage((p) => Math.min(totalRecordPages, p + 1))}
           />
         )}
 
@@ -581,7 +571,7 @@ export function HomeContainer() {
 
         {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
         {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
-          <div className="px-4 pt-2">
+          <div className="px-4 pt-2 md:px-8">
             <StatsToggle
               isOpen={isStatsOpen}
               onToggle={() => setIsStatsOpen(!isStatsOpen)}
@@ -671,7 +661,7 @@ export function HomeContainer() {
 
         {/* 추천 카드 */}
         {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
-          <div className="px-4 pb-2 pt-3">
+          <div className="px-4 pb-2 pt-3 md:px-8">
             <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {recommendationCards.map((card) => (

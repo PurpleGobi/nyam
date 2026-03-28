@@ -329,7 +329,7 @@ function AddFlowInner() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <RecordNav
         title={targetType === 'wine' ? '와인 추가' : '식당 추가'}
         variant={variant}

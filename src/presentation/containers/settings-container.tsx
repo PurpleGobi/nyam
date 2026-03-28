@@ -165,7 +165,7 @@ export function SettingsContainer() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
 
       <div className="flex-1 overflow-y-auto pb-20">
@@ -487,7 +487,7 @@ function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
   return (
     <>
       <div className="fixed inset-0 z-[190]" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={onClose} />
-      <div className="fixed-in-shell fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl" style={{ backgroundColor: 'var(--bg-card)', padding: '20px 24px 32px' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl" style={{ backgroundColor: 'var(--bg-card)', padding: '20px 24px 32px' }}>
         <div className="mb-4 flex items-center justify-between">
           <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>방해 금지 설정</span>
           <Toggle checked={enabled} onChange={setEnabled} />

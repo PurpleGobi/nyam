@@ -67,7 +67,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="content-auth flex min-h-dvh flex-col bg-[var(--bg)]">
       <nav className="flex items-center px-4" style={{ height: '44px' }}>
         <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
           <ChevronLeft size={22} style={{ color: 'var(--text)' }} />

@@ -214,6 +214,23 @@
    ============================================================ */
 
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 전역 스크롤바 숨김 */
+html, body, * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+::-webkit-scrollbar {
+  display: none;
+
   .text-display {
     font-size: 36px;
     font-weight: 800;
@@ -356,29 +373,27 @@
 }
 
 /* ============================================================
-   §11 RESPONSIVE APP SHELL
+   §11 RESPONSIVE LAYOUT
    SSOT: systems/DESIGN_SYSTEM.md §11
    ============================================================ */
 
-.app-shell {
-  max-width: 430px;
+/* 콘텐츠 max-width 래퍼 */
+.content-feed {
+  width: 100%;
+  max-width: 960px;
   margin: 0 auto;
-  min-height: 100dvh;
-  position: relative;
-  background: var(--bg);
 }
 
-@media (min-width: 768px) {
-  .app-shell {
-    box-shadow: 0 0 0 1px var(--border),
-                0 0 40px rgba(61, 56, 51, 0.06);
-  }
+.content-detail {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
-/* 앱 셸 내부 귀속 유틸리티 — fixed 요소의 left/right를 앱 셸 기준으로 */
-.fixed-in-shell {
-  left: max(0px, calc(50% - 430px / 2)) !important;
-  right: max(0px, calc(50% - 430px / 2)) !important;
+.content-auth {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 /* ============================================================
@@ -391,13 +406,14 @@
 .top-fixed {
   position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
   z-index: 90;
-  background: rgba(248, 246, 243, 0.55);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08);
+  background: rgba(248, 246, 243, 0.78);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
 }
 
 .app-header {
@@ -405,6 +421,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .app-header {
+    padding: 5px 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header {
+    padding: 5px 48px;
+  }
 }
 
 .header-right {
@@ -549,7 +579,7 @@
 .fab-back {
   position: fixed;
   bottom: 28px;
-  left: max(16px, calc(50% - 430px / 2 + 16px));
+  left: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 44px;
   height: 44px;
@@ -574,7 +604,7 @@
 .fab-add {
   position: fixed;
   bottom: 28px;
-  right: max(16px, calc(50% - 430px / 2 + 16px));
+  right: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 44px;
   height: 44px;
@@ -599,7 +629,7 @@
 .fab-forward {
   position: fixed;
   bottom: 28px;
-  right: max(16px, calc(50% - 430px / 2 + 16px));
+  right: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 44px;
   height: 44px;
@@ -1361,13 +1391,15 @@
 .bottom-sheet {
   position: fixed;
   bottom: 0;
-  left: max(0px, calc(50% - 430px / 2));
-  right: max(0px, calc(50% - 430px / 2));
+  left: 0;
+  right: 0;
   background: var(--bg-elevated);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--shadow-sheet);
   z-index: 30;
   max-height: 75%;
+  max-width: 480px;
+  margin: 0 auto;
   overflow-y: auto;
   animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -1657,25 +1689,15 @@
 }
 
 /* ============================================================
-   DARK MODE — APP SHELL (§11)
-   ============================================================ */
-
-@media (min-width: 768px) {
-  [data-theme="dark"] .app-shell {
-    box-shadow: 0 0 0 1px var(--border),
-                0 0 40px rgba(0, 0, 0, 0.2);
-  }
-}
-
-/* ============================================================
    DARK MODE — UI COMPONENTS (§10)
    ============================================================ */
 
 [data-theme="dark"] .top-fixed {
-  background: rgba(30, 28, 26, 0.88);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+  background: rgba(30, 28, 26, 0.82);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="dark"] .header-brand {

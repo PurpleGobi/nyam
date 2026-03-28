@@ -62,7 +62,7 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <div
-        className="flex w-full max-w-[430px] flex-col rounded-t-2xl"
+        className="flex w-full max-w-[480px] flex-col rounded-t-2xl"
         style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '70vh' }}
       >
         {/* 드래그 핸들 */}

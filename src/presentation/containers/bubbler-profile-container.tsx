@@ -37,7 +37,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
   const isSelf = authUser?.id === userId
 
   return (
-    <div className="flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       {/* 헤더 */}
       <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
         <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
