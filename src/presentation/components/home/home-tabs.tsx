@@ -19,10 +19,9 @@ interface HomeTabsProps {
 }
 
 const VIEW_ICONS: Record<ViewMode, typeof LayoutGrid> = {
-  detailed: LayoutGrid,
-  compact: List,
+  card: LayoutGrid,
+  list: List,
   calendar: CalendarDays,
-  map: Map,
 }
 
 export function HomeTabs({
@@ -37,7 +36,7 @@ export function HomeTabs({
   const tabType = foodActive ? 'food' : 'wine'
 
   return (
-    <div className="flex items-center px-4 pt-3">
+    <div className="content-tabs flex items-center px-4 pt-3">
       {/* 탭 — 밑줄 active 스타일 */}
       <div className="flex gap-0">
         <button
@@ -72,7 +71,7 @@ export function HomeTabs({
             <button
               type="button"
               onClick={onMapToggle}
-              className={`icon-button ${isMapOpen ? `active ${tabType}` : ''}`}
+              className={`icon-button ${isMapOpen ? 'active map' : ''}`}
               title="지도"
             >
               <Map size={18} />

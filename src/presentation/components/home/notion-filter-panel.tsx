@@ -57,10 +57,10 @@ export function NotionFilterPanel({
 
   return (
     <div
-      className="mx-4 rounded-xl p-4"
       style={{
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
+        padding: '12px 16px',
+        backgroundColor: 'var(--bg-card)',
+        borderBottom: '1px solid var(--border)',
       }}
     >
       {/* 규칙 목록 */}

@@ -15,9 +15,12 @@ import { RecentXpList } from '@/presentation/components/profile/recent-xp-list'
 import { StatTabContainer } from '@/presentation/containers/stat-tab-container'
 import { LevelList } from '@/presentation/components/profile/level-list'
 import { LevelDetailSheet } from '@/presentation/components/profile/level-detail-sheet'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { useReferrer } from '@/presentation/hooks/use-referrer'
 
 export function ProfileContainer() {
   const router = useRouter()
+  const { referrerPath, referrerName } = useReferrer()
   const { profile, experiences, recentXp, activitySummary, heatmapData, thresholds, isLoading } = useProfile()
 
   // 상태
@@ -89,7 +92,7 @@ export function ProfileContainer() {
   if (!profile) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <p style={{ color: 'var(--text-hint)' }}>로그인이 필요합니다</p>
+        <p style={{ color: 'var(--text-hint)' }}>프로필을 불러올 수 없습니다</p>
       </div>
     )
   }
@@ -106,6 +109,8 @@ export function ProfileContainer() {
 
   return (
     <div className="flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
+      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
+
       {/* 프로필 헤더 */}
       <ProfileHeader
         profile={profile}

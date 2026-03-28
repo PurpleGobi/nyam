@@ -4,7 +4,7 @@
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
 export type HomeTab = 'restaurant' | 'wine'
-export type ViewMode = 'detailed' | 'compact' | 'calendar' | 'map'
+export type ViewMode = 'card' | 'list' | 'calendar'
 
 export interface ViewModeState {
   filters: FilterRule[]
@@ -13,8 +13,8 @@ export interface ViewModeState {
 }
 
 export type ViewModeStateKey =
-  | 'restaurant_detailed' | 'restaurant_compact' | 'restaurant_calendar'
-  | 'wine_detailed' | 'wine_compact' | 'wine_calendar'
+  | 'restaurant_card' | 'restaurant_list' | 'restaurant_calendar'
+  | 'wine_card' | 'wine_list' | 'wine_calendar'
 
 export interface HomeState {
   activeTab: HomeTab
@@ -24,7 +24,7 @@ export interface HomeState {
   viewModeStates: Record<ViewModeStateKey, ViewModeState>
 }
 
-export const VIEW_MODE_CYCLE: ViewMode[] = ['detailed', 'compact', 'calendar']
+export const VIEW_MODE_CYCLE: ViewMode[] = ['card', 'list', 'calendar']
 
 export const DEFAULT_VIEW_MODE_STATE: ViewModeState = {
   filters: [],
@@ -34,6 +34,6 @@ export const DEFAULT_VIEW_MODE_STATE: ViewModeState = {
 
 export function makeViewModeStateKey(tab: HomeTab, mode: ViewMode): ViewModeStateKey {
   const t = tab
-  const m = mode === 'map' ? 'detailed' : mode
+  const m = mode
   return `${t}_${m}` as ViewModeStateKey
 }

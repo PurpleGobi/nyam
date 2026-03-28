@@ -165,7 +165,7 @@ export function HomeContainer() {
     isDismissing: isNudgeDismissing,
     handleAction: handleNudgeAction,
     handleDismiss: handleNudgeDismiss,
-  } = useNudge({ userId: user?.id ?? null, hasUnratedRecords })
+  } = useNudge({ userId: user?.id ?? null, hasUnratedRecords, hasRecentRecords: records.length > 0 })
 
   // 추천 카드
   const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
@@ -331,8 +331,8 @@ export function HomeContainer() {
       )
     }
 
-    // 리스트(compact) 뷰
-    if (viewMode === 'compact') {
+    // 리스트(list) 뷰
+    if (viewMode === 'list') {
       if (displayRecords.length === 0) return renderEmptyState()
       return (
         <div className="pb-24">
@@ -356,7 +356,7 @@ export function HomeContainer() {
       )
     }
 
-    // 카드(detailed) 뷰 — 기본
+    // 카드(card) 뷰 — 기본
     if (displayRecords.length === 0) return renderEmptyState()
     return (
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2">
@@ -462,6 +462,12 @@ export function HomeContainer() {
               onRulesChange={handleRulesChange}
               onConjunctionChange={setConjunction}
               onSaveAsChip={() => setIsSaveModalOpen(true)}
+              accentColor={accentColor}
+            />
+            <FilterChipSaveModal
+              isOpen={isSaveModalOpen}
+              onClose={() => setIsSaveModalOpen(false)}
+              onSave={handleSaveChip}
               accentColor={accentColor}
             />
           </div>
@@ -603,12 +609,6 @@ export function HomeContainer() {
 
       <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
 
-      <FilterChipSaveModal
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-        onSave={handleSaveChip}
-        accentColor={accentColor}
-      />
     </div>
   )
 }

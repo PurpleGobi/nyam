@@ -37,7 +37,7 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
 
 export function LoginButtons({ onLogin }: LoginButtonsProps) {
   return (
-    <div className="flex w-full max-w-[320px] flex-col gap-3">
+    <div className="mx-auto flex w-full max-w-[320px] flex-col gap-3">
       {SOCIAL_BUTTONS.map((btn) => (
         <button
           key={btn.provider}

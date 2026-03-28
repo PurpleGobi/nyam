@@ -30,7 +30,7 @@ export interface User {
   pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'recommended' | 'following'
   pref_wine_sub: 'last' | 'tasted' | 'wishlist' | 'cellar'
   pref_bubble_tab: 'last' | 'bubble' | 'bubbler'
-  pref_view_mode: 'last' | 'detailed' | 'compact' | 'calendar'
+  pref_view_mode: 'last' | 'card' | 'list' | 'calendar'
   pref_default_sort: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
   pref_record_input: 'camera' | 'search'
   pref_bubble_share: 'ask' | 'auto' | 'never'

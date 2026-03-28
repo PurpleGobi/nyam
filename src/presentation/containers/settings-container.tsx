@@ -21,6 +21,8 @@ import { BubblePrivacySheet } from '@/presentation/components/settings/bubble-pr
 import { DeleteAccountSheet } from '@/presentation/components/settings/delete-account-sheet'
 import { EditFieldSheet } from '@/presentation/components/settings/edit-field-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { useReferrer } from '@/presentation/hooks/use-referrer'
 import type { VisibilityConfig, DeleteMode, BubblePrivacyOverride } from '@/domain/entities/settings'
 
 const PRIVACY_PROFILE_OPTIONS = [
@@ -70,8 +72,8 @@ const BUBBLE_TAB_OPTIONS = [
 
 const VIEW_MODE_OPTIONS = [
   { value: 'last', label: '마지막 사용' },
-  { value: 'detailed', label: '상세' },
-  { value: 'compact', label: '간단' },
+  { value: 'card', label: '상세' },
+  { value: 'list', label: '간단' },
   { value: 'calendar', label: '캘린더' },
 ]
 
@@ -111,6 +113,7 @@ const VISIBILITY_FIELDS: { key: keyof VisibilityConfig; label: string }[] = [
 
 export function SettingsContainer() {
   const router = useRouter()
+  const { referrerName, referrerPath } = useReferrer()
   const { signOut } = useAuth()
   const {
     settings, bubbleOverrides, isLoading,
@@ -163,14 +166,7 @@ export function SettingsContainer() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* 헤더 */}
-      <nav className="flex items-center px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span className="flex-1 text-center" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>설정</span>
-        <div className="w-11" />
-      </nav>
+      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/profile'} />
 
       <div className="flex-1 overflow-y-auto pb-20">
         {/* ── 계정 ── */}

@@ -931,6 +931,10 @@
   color: var(--accent-wine);
 }
 
+.icon-button.active.map {
+  color: var(--accent-social);
+}
+
 .ds-filter-drawer {
   overflow: hidden;
   transition: max-height 0.3s ease;
@@ -1076,10 +1080,20 @@
   color: var(--text-hint);
 }
 
+/* ── 8-1. 콘텐츠 탭 바 (sticky) ── */
+
+.content-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1.5px solid var(--border);
+}
+
 /* ── 9. 필터 탭 (언더라인) ── */
 
 .filter-tab {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-hint);
   background: none;

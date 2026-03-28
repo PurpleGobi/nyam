@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import type { NudgeDisplay } from '@/domain/entities/nudge'
 import type { NudgeCandidate } from '@/domain/services/nudge-priority'
 import { selectTopNudge } from '@/domain/services/nudge-priority'
@@ -8,17 +9,35 @@ import { nudgeRepo } from '@/shared/di/container'
 
 /**
  * 넛지 후보 생성 (Phase 1)
+ * - photo: 최근 기록 기반 시뮬레이션 (Phase 1)
  * - unrated: status='checked' 레코드 존재
  * - time: 식사 후 시간대 (12:30~14:00, 19:00~21:00)
  */
 function buildCandidates(
   hasUnratedRecords: boolean,
+  hasRecentRecords: boolean,
 ): NudgeCandidate[] {
   const candidates: NudgeCandidate[] = []
   const now = new Date()
   const hour = now.getHours()
   const min = now.getMinutes()
   const timeVal = hour + min / 60
+
+  // Phase 1: 최근 기록 기반 사진 넛지 시뮬레이션
+  if (hasRecentRecords) {
+    candidates.push({
+      type: 'photo',
+      priority: 1,
+      data: {
+        targetId: null,
+        icon: 'camera',
+        title: '사진이 있으신가요?',
+        subtitle: '식사 사진으로 기록해보세요',
+        actionLabel: '기록',
+        actionHref: '/add?type=restaurant',
+      },
+    })
+  }
 
   if (hasUnratedRecords) {
     candidates.push({
@@ -56,9 +75,10 @@ function buildCandidates(
 interface UseNudgeParams {
   userId: string | null
   hasUnratedRecords: boolean
+  hasRecentRecords: boolean
 }
 
-export function useNudge({ userId, hasUnratedRecords }: UseNudgeParams) {
+export function useNudge({ userId, hasUnratedRecords, hasRecentRecords }: UseNudgeParams) {
   const [nudge, setNudge] = useState<NudgeDisplay | null>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isDismissing, setIsDismissing] = useState(false)
@@ -80,7 +100,7 @@ export function useNudge({ userId, hasUnratedRecords }: UseNudgeParams) {
 
         if (cancelled) return
 
-        const candidates = buildCandidates(hasUnratedRecords)
+        const candidates = buildCandidates(hasUnratedRecords, hasRecentRecords)
         const top = selectTopNudge(candidates, fatigue, history)
         setNudge(top)
         setIsVisible(top !== null)
@@ -94,7 +114,7 @@ export function useNudge({ userId, hasUnratedRecords }: UseNudgeParams) {
     return () => {
       cancelled = true
     }
-  }, [userId, hasUnratedRecords])
+  }, [userId, hasUnratedRecords, hasRecentRecords])
 
   /** 소멸 애니메이션 시작 (외부에서 호출 가능 — AI 인사 동기화용) */
   const startDismiss = useCallback(() => {
@@ -103,14 +123,20 @@ export function useNudge({ userId, hasUnratedRecords }: UseNudgeParams) {
     setTimeout(() => setIsVisible(false), 600)
   }, [isVisible, isDismissing])
 
+  const router = useRouter()
+
   const handleAction = useCallback(() => {
     setIsDismissing(true)
     setTimeout(() => setIsVisible(false), 600)
 
+    if (nudge?.actionHref) {
+      router.push(nudge.actionHref)
+    }
+
     if (nudgeIdRef.current && userId) {
       nudgeRepo.updateStatus(nudgeIdRef.current, 'acted').catch(() => {})
     }
-  }, [userId])
+  }, [userId, nudge, router])
 
   const handleDismiss = useCallback(() => {
     setIsDismissing(true)

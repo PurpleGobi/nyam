@@ -7,11 +7,11 @@ import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
 function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> {
   return {
-    restaurant_detailed: { ...DEFAULT_VIEW_MODE_STATE },
-    restaurant_compact: { ...DEFAULT_VIEW_MODE_STATE },
+    restaurant_card: { ...DEFAULT_VIEW_MODE_STATE },
+    restaurant_list: { ...DEFAULT_VIEW_MODE_STATE },
     restaurant_calendar: { ...DEFAULT_VIEW_MODE_STATE },
-    wine_detailed: { ...DEFAULT_VIEW_MODE_STATE },
-    wine_compact: { ...DEFAULT_VIEW_MODE_STATE },
+    wine_card: { ...DEFAULT_VIEW_MODE_STATE },
+    wine_list: { ...DEFAULT_VIEW_MODE_STATE },
     wine_calendar: { ...DEFAULT_VIEW_MODE_STATE },
   }
 }
@@ -23,7 +23,7 @@ interface UseHomeStateOptions {
 
 export function useHomeState(options?: UseHomeStateOptions) {
   const [activeTab, setActiveTab] = useState<HomeTab>(options?.initialTab ?? 'restaurant')
-  const [viewMode, setViewMode] = useState<ViewMode>(options?.initialViewMode ?? 'detailed')
+  const [viewMode, setViewMode] = useState<ViewMode>(options?.initialViewMode ?? 'card')
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [activeChipId, setActiveChipId] = useState<string | null>(null)
   const [isFilterOpen, setIsFilterOpen] = useState(false)

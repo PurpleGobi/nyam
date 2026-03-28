@@ -93,7 +93,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
       const { data: records, error: fetchError } = await supabase
         .from('records')
         .select(
-          'id, satisfaction, visit_date, total_price, scene, restaurant:restaurants(name, genre, country, city, lat, lng)'
+          'id, satisfaction, visit_date, total_price, scene, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, country, city, lat, lng)'
         )
         .eq('user_id', userId)
         .eq('target_type', 'restaurant')

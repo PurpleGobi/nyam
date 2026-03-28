@@ -72,6 +72,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   const { bubbles: userBubbles, bubbleIds: userBubbleIds } = useUserBubbles(user?.id ?? null)
   const {
     records: bubbleRecords,
+    hasMore: bubbleHasMore,
     selectedBubbleId,
     setSelectedBubbleId,
   } = useBubbleRecords(wineId, 'wine', userBubbleIds)
@@ -361,23 +362,28 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                 accentType="wine"
               />
               <div className="mt-3 flex flex-col gap-2">
-                {bubbleRecords.slice(0, 5).map((r) => (
+                {bubbleRecords.map((r) => (
                   <BubbleRecordCard
                     key={r.shareId}
                     authorNickname={r.authorNickname}
                     authorAvatar={r.authorAvatar}
                     authorAvatarColor={r.authorAvatarColor}
+                    authorLevel={r.authorLevel}
+                    authorLevelTitle={r.authorLevelTitle}
                     bubbleName={r.bubbleName}
                     satisfaction={r.satisfaction}
                     comment={r.comment}
+                    scene={r.scene}
                     visitDate={r.visitDate}
+                    likeCount={r.likeCount}
+                    commentCount={r.commentCount}
                     isMember={r.isMember}
                     contentVisibility={r.contentVisibility}
                   />
                 ))}
-                {bubbleRecords.length > 5 && (
-                  <p className="text-center text-[12px]" style={{ color: 'var(--accent-social)' }}>
-                    +{bubbleRecords.length - 5}개 더보기
+                {bubbleHasMore && (
+                  <p className="py-2 text-center text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+                    더보기
                   </p>
                 )}
               </div>

@@ -38,12 +38,17 @@ export interface BubbleFeedItem {
   targetType?: 'restaurant' | 'wine'
   satisfaction?: number | null
   comment?: string | null
+  scene?: string | null
   visitDate?: string | null
   sharedAt: string
 }
 
 export interface BubbleShareForTarget extends BubbleFeedItem {
   contentVisibility?: 'rating_only' | 'rating_and_comment'
+  authorLevel?: number
+  authorLevelTitle?: string
+  likeCount?: number
+  commentCount?: number
 }
 
 export interface UserBubbleMembership {

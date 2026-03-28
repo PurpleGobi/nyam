@@ -1,6 +1,8 @@
 // src/domain/services/greeting-generator.ts
 // R1: 외부 의존 0
 
+import { SCENE_TAGS } from '@/domain/entities/scene'
+
 /** GreetingGenerator 입력 컨텍스트 */
 export interface GreetingContext {
   currentHour: number
@@ -65,8 +67,9 @@ export function generateGreeting(context: GreetingContext): GreetingResult {
   // 저녁 (15~21): 상황 제안
   if (currentHour >= 15 && currentHour < 21) {
     if (latest.scene && latest.satisfaction >= 70) {
+      const sceneLabel = SCENE_TAGS.find((t) => t.value === latest.scene)?.label ?? latest.scene
       return {
-        message: `${latest.scene}라면 ${latest.restaurantName} 다시 가셔도`,
+        message: `${sceneLabel}라면 ${latest.restaurantName} 다시 가셔도`,
         restaurantId: latest.restaurantId,
       }
     }

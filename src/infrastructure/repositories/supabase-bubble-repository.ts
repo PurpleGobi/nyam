@@ -1,6 +1,7 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
 import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride } from '@/domain/entities/bubble'
+import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
 
@@ -431,19 +432,31 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (bubbleIds.length === 0) return []
     const { data } = await this.supabase
       .from('bubble_shares')
-      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, comment, visit_date, users(nickname, avatar_url, avatar_color))')
+      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, comment, scene, visit_date, users(nickname, avatar_url, avatar_color, total_xp))')
       .in('bubble_id', bubbleIds)
       .order('shared_at', { ascending: false })
-    return (data ?? []).filter((s: Record<string, unknown>) => {
+    const filtered = (data ?? []).filter((s: Record<string, unknown>) => {
       const rec = s.records as Record<string, unknown> | null
       return rec && (rec as Record<string, unknown>).target_type === targetType
-    }).map((s: Record<string, unknown>) => {
+    })
+
+    // 리액션/댓글 카운트 배치 조회
+    const recordIds = filtered.map((s: Record<string, unknown>) => s.record_id as string)
+    const [likeCounts, commentCounts] = await Promise.all([
+      this.getReactionCountsBatch(recordIds),
+      this.getCommentCountsBatch(recordIds),
+    ])
+
+    return filtered.map((s: Record<string, unknown>) => {
       const bubble = s.bubbles as Record<string, unknown> | null
       const rec = s.records as Record<string, unknown> | null
       const user = rec?.users as Record<string, unknown> | null
+      const totalXp = (user?.total_xp as number) ?? 0
+      const level = Math.max(1, Math.floor(totalXp / 100) + 1)
+      const recordId = s.record_id as string
       return {
         id: s.id as string,
-        recordId: s.record_id as string,
+        recordId,
         bubbleId: s.bubble_id as string,
         bubbleName: (bubble?.name as string) ?? '',
         bubbleIcon: (bubble?.icon as string) ?? null,
@@ -451,13 +464,49 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,
+        authorLevel: level,
+        authorLevelTitle: getLevelTitle(level),
         satisfaction: (rec?.satisfaction as number) ?? null,
         comment: (rec?.comment as string) ?? null,
+        scene: (rec?.scene as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
         sharedAt: s.shared_at as string,
         contentVisibility: (bubble?.content_visibility as 'rating_only' | 'rating_and_comment') ?? 'rating_and_comment',
+        likeCount: likeCounts.get(recordId) ?? 0,
+        commentCount: commentCounts.get(recordId) ?? 0,
       }
     })
+  }
+
+  private async getReactionCountsBatch(recordIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>()
+    if (recordIds.length === 0) return counts
+    const { data } = await this.supabase
+      .from('reactions')
+      .select('target_id, reaction_type')
+      .eq('target_type', 'record')
+      .eq('reaction_type', 'like')
+      .in('target_id', recordIds)
+    for (const row of data ?? []) {
+      const id = row.target_id as string
+      counts.set(id, (counts.get(id) ?? 0) + 1)
+    }
+    return counts
+  }
+
+  private async getCommentCountsBatch(recordIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>()
+    if (recordIds.length === 0) return counts
+    const { data } = await this.supabase
+      .from('comments')
+      .select('target_id')
+      .eq('target_type', 'record')
+      .in('target_id', recordIds)
+    for (const row of data ?? []) {
+      const id = row.target_id as string
+      counts.set(id, (counts.get(id) ?? 0) + 1)
+    }
+    return counts
   }
 
   async getFeedFromBubbles(userId: string): Promise<BubbleFeedItem[]> {

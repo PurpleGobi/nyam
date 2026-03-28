@@ -78,7 +78,7 @@ export function DiscoverContainer() {
           </p>
           <button
             type="button"
-            onClick={() => router.push('/search')}
+            onClick={() => router.push('/add?type=restaurant')}
             className="mt-4 flex items-center gap-1 text-[14px] font-semibold"
             style={{ color: 'var(--accent-food)' }}
           >

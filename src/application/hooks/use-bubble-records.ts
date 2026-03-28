@@ -13,9 +13,14 @@ interface BubbleRecordItem {
   authorNickname: string
   authorAvatar: string | null
   authorAvatarColor: string | null
+  authorLevel: number
+  authorLevelTitle: string
   satisfaction: number | null
   comment: string | null
+  scene: string | null
   visitDate: string | null
+  likeCount: number
+  commentCount: number
   sharedAt: string
   contentVisibility: 'rating_only' | 'rating_and_comment'
   /** 현재 뷰어가 해당 버블 멤버인지 */
@@ -25,6 +30,7 @@ interface BubbleRecordItem {
 interface UseBubbleRecordsResult {
   records: BubbleRecordItem[]
   isLoading: boolean
+  hasMore: boolean
   selectedBubbleId: string | null
   setSelectedBubbleId: (id: string | null) => void
   refresh: () => void
@@ -53,9 +59,14 @@ export function useBubbleRecords(
         authorNickname: s.authorNickname ?? '',
         authorAvatar: s.authorAvatar ?? null,
         authorAvatarColor: s.authorAvatarColor ?? null,
+        authorLevel: s.authorLevel ?? 1,
+        authorLevelTitle: s.authorLevelTitle ?? '',
         satisfaction: s.satisfaction ?? null,
         comment: s.comment ?? null,
+        scene: s.scene ?? null,
         visitDate: s.visitDate ?? null,
+        likeCount: s.likeCount ?? 0,
+        commentCount: s.commentCount ?? 0,
         sharedAt: s.sharedAt,
         contentVisibility: s.contentVisibility ?? 'rating_and_comment',
         isMember: userBubbleIds.includes(s.bubbleId),
@@ -75,8 +86,9 @@ export function useBubbleRecords(
     : records
 
   return {
-    records: filtered,
+    records: filtered.slice(0, 5),
     isLoading,
+    hasMore: filtered.length > 5,
     selectedBubbleId,
     setSelectedBubbleId,
     refresh: fetch,

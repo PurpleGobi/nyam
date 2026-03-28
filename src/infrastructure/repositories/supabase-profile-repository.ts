@@ -153,7 +153,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
     const { data: areas } = await this.supabase
-      .from('records').select('restaurant:restaurants(city)')
+      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(city)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const areaSet = new Set<string>()
@@ -180,7 +180,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getGenreDistribution(userId: string): Promise<BarChartItem[]> {
     const { data } = await this.supabase
-      .from('records').select('restaurant:restaurants(genre)')
+      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(genre)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const map = new Map<string, number>()
@@ -233,7 +233,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
   async getRestaurantMapMarkers(userId: string): Promise<MapMarker[]> {
     const { data } = await this.supabase
       .from('records')
-      .select('restaurant:restaurants(country, city, latitude, longitude)')
+      .select('restaurant:restaurants!linked_restaurant_id_fkey(country, city, latitude, longitude)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const map = new Map<string, { country: string; city: string; lat: number; lng: number; count: number }>()
@@ -329,7 +329,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getVarietyDistribution(userId: string): Promise<BarChartItem[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines(grape_variety)')
+      .from('records').select('wine:wines!linked_wine_id_fkey(grape_variety)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const map = new Map<string, number>()
@@ -385,7 +385,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getWineRegionMapData(userId: string): Promise<WineRegionMapData[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines(country, region, sub_region, wine_type)')
+      .from('records').select('wine:wines!linked_wine_id_fkey(country, region, sub_region, wine_type)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const countryMap = new Map<string, {
@@ -442,7 +442,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getWineTypeDistribution(userId: string): Promise<WineTypeDistribution[]> {
     const { data } = await this.supabase
-      .from('records').select('wine:wines(wine_type)')
+      .from('records').select('wine:wines!linked_wine_id_fkey(wine_type)')
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const map = new Map<string, number>()
@@ -478,7 +478,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     // 1. 기록 조회
     let query = this.supabase
       .from('records')
-      .select('satisfaction, visit_date, scene, target_type, restaurant:restaurants(name, genre, city), wine:wines(name, grape_variety, country)')
+      .select('satisfaction, visit_date, scene, target_type, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, city), wine:wines!linked_wine_id_fkey(name, grape_variety, country)')
       .eq('user_id', userId)
 
     if (targetFilter) {
@@ -593,7 +593,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     const lastMonthStr = lastMonth.toISOString().slice(0, 7)
 
     const { data: prevRecords } = await this.supabase
-      .from('records').select('restaurant:restaurants(city)')
+      .from('records').select('restaurant:restaurants!linked_restaurant_id_fkey(city)')
       .eq('user_id', userId).eq('target_type', 'restaurant')
       .lt('created_at', `${thisMonth}-01`)
 
@@ -678,7 +678,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: records } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants(name, genre, photos), wine:wines(name, photos)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name, genre, photos), wine:wines!linked_wine_id_fkey(name, photos)')
       .eq('user_id', userId).eq('status', 'rated')
       .order('satisfaction', { ascending: false })
       .limit(20)
@@ -699,7 +699,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: recentData } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants(name), wine:wines(name)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, restaurant:restaurants!linked_restaurant_id_fkey(name), wine:wines!linked_wine_id_fkey(name)')
       .eq('user_id', userId).eq('status', 'rated')
       .order('created_at', { ascending: false })
       .limit(10)
