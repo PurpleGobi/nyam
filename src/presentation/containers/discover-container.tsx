@@ -7,12 +7,14 @@ import { AreaChips } from '@/presentation/components/discover/area-chips'
 import { DiscoverCard } from '@/presentation/components/discover/discover-card'
 import { DiscoverSearchBar } from '@/presentation/components/discover/discover-search-bar'
 import { useDiscover } from '@/application/hooks/use-discover'
-import { useSettings } from '@/application/hooks/use-settings'
+import { useProfile } from '@/application/hooks/use-profile'
 
 export function DiscoverContainer() {
   const router = useRouter()
-  const { settings } = useSettings()
-  const { cards, area, setArea, isLoading, hasMore, loadMore, isEmpty } = useDiscover()
+  const { profile } = useProfile()
+  const { cards, area, setArea, isLoading, hasMore, loadMore, isEmpty } = useDiscover({
+    preferredAreas: profile?.preferredAreas,
+  })
 
   // Infinite scroll observer
   const observer = useRef<IntersectionObserver | null>(null)
@@ -29,7 +31,7 @@ export function DiscoverContainer() {
   )
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="screen-slide-in-right flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* Header */}
       <nav
         className="sticky top-0 z-10 flex items-center border-b border-[var(--border)] bg-[var(--bg)] px-4"

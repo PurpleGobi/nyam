@@ -509,7 +509,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return counts
   }
 
-  async getFeedFromBubbles(userId: string): Promise<BubbleFeedItem[]> {
+  async getFeedFromBubbles(userId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleFeedItem[]> {
     const memberships = await this.getUserBubbles(userId)
     if (memberships.length === 0) return []
     const bubbleIds = memberships.map((m) => m.bubbleId)
@@ -520,13 +520,13 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .neq('shared_by', userId)
       .order('shared_at', { ascending: false })
       .limit(50)
-    return (data ?? []).map((s: Record<string, unknown>) => {
+    const items = (data ?? []).map((s: Record<string, unknown>) => {
       const bubble = s.bubbles as Record<string, unknown> | null
       const rec = s.records as Record<string, unknown> | null
       const user = rec?.users as Record<string, unknown> | null
       const rest = rec?.restaurants as Record<string, unknown> | null
       const wine = rec?.wines as Record<string, unknown> | null
-      const targetType = (rec?.target_type as string) ?? 'restaurant'
+      const recTargetType = (rec?.target_type as string) ?? 'restaurant'
       return {
         id: s.id as string,
         recordId: s.record_id as string,
@@ -537,34 +537,42 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,
-        targetName: targetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
-        targetType: targetType as 'restaurant' | 'wine',
+        targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
+        targetType: recTargetType as 'restaurant' | 'wine',
         satisfaction: (rec?.satisfaction as number) ?? null,
         comment: (rec?.comment as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
         sharedAt: s.shared_at as string,
       }
     })
+    if (targetType) {
+      return items.filter((item) => item.targetType === targetType)
+    }
+    return items
   }
 
-  async getRecentRecordsByUsers(userIds: string[]): Promise<MutualRecordItem[]> {
+  async getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]> {
     if (userIds.length === 0) return []
-    const { data } = await this.supabase
+    let query = this.supabase
       .from('records')
       .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name)')
       .in('user_id', userIds)
       .eq('status', 'rated')
+    if (targetType) {
+      query = query.eq('target_type', targetType)
+    }
+    const { data } = await query
       .order('created_at', { ascending: false })
       .limit(50)
     return (data ?? []).map((r: Record<string, unknown>) => {
       const user = r.users as Record<string, unknown> | null
       const rest = r.restaurants as Record<string, unknown> | null
       const wine = r.wines as Record<string, unknown> | null
-      const targetType = (r.target_type as string) ?? 'restaurant'
+      const recTargetType = (r.target_type as string) ?? 'restaurant'
       return {
         recordId: r.id as string,
-        targetName: targetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
-        targetType: targetType as 'restaurant' | 'wine',
+        targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
+        targetType: recTargetType as 'restaurant' | 'wine',
         satisfaction: (r.satisfaction as number) ?? null,
         comment: (r.comment as string) ?? null,
         visitDate: (r.visit_date as string) ?? null,

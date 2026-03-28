@@ -1711,3 +1711,23 @@
   background: #2E2A1E;
   border-color: #5A4A2A;
 }
+
+/* ── 화면 전환 애니메이션 (Home ↔ Discover) ── */
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.screen-slide-in-right {
+  animation: slide-in-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

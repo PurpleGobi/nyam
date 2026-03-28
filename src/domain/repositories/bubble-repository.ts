@@ -130,8 +130,8 @@ export interface BubbleRepository {
 
   // S8 추가 메서드
   getSharesForTarget(targetId: string, targetType: string, bubbleIds: string[]): Promise<BubbleShareForTarget[]>
-  getFeedFromBubbles(userId: string): Promise<BubbleFeedItem[]>
-  getRecentRecordsByUsers(userIds: string[]): Promise<MutualRecordItem[]>
+  getFeedFromBubbles(userId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleFeedItem[]>
+  getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]>
   getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
   getRecordShares(recordId: string): Promise<BubbleShare[]>
   shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare>

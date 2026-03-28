@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { bubbleRepo, followRepo } from '@/shared/di/container'
 
 interface FeedItem {
@@ -24,25 +24,31 @@ interface FeedItem {
 
 type SourceFilter = 'all' | 'bubble' | 'mutual'
 
+interface UseFollowingFeedOptions {
+  userId: string | null
+  targetType: 'restaurant' | 'wine'
+}
+
 interface UseFollowingFeedResult {
   items: FeedItem[]
   isLoading: boolean
   refresh: () => void
   sourceFilter: SourceFilter
   setSourceFilter: (f: SourceFilter) => void
+  totalCount: number
 }
 
-export function useFollowingFeed(userId: string | null): UseFollowingFeedResult {
+export function useFollowingFeed({ userId, targetType }: UseFollowingFeedOptions): UseFollowingFeedResult {
   const [allItems, setAllItems] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
-  const fetch = useCallback(async () => {
+  const fetchFeed = useCallback(async () => {
     if (!userId) return
     setIsLoading(true)
     try {
       const [bubbleShares, mutualFollows] = await Promise.all([
-        bubbleRepo.getFeedFromBubbles(userId),
+        bubbleRepo.getFeedFromBubbles(userId, targetType),
         followRepo.getFollowing(userId),
       ])
 
@@ -68,7 +74,7 @@ export function useFollowingFeed(userId: string | null): UseFollowingFeedResult 
       const mutualUserIds = mutualFollows.map((f) => f.followingId)
       let mutualFeedItems: FeedItem[] = []
       if (mutualUserIds.length > 0) {
-        const mutualRecords = await bubbleRepo.getRecentRecordsByUsers(mutualUserIds)
+        const mutualRecords = await bubbleRepo.getRecentRecordsByUsers(mutualUserIds, targetType)
         mutualFeedItems = mutualRecords.map((r) => ({
           id: `mutual-${r.recordId}`,
           recordId: r.recordId,
@@ -96,15 +102,18 @@ export function useFollowingFeed(userId: string | null): UseFollowingFeedResult 
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, targetType])
 
   useEffect(() => {
-    fetch()
-  }, [fetch])
+    fetchFeed()
+  }, [fetchFeed])
 
-  const items = sourceFilter === 'all'
-    ? allItems
-    : allItems.filter((item) => (sourceFilter === 'bubble' ? item.sourceType === 'bubble' : item.sourceType === 'user'))
+  const items = useMemo(() => {
+    if (sourceFilter === 'all') return allItems
+    return allItems.filter((item) =>
+      sourceFilter === 'bubble' ? item.sourceType === 'bubble' : item.sourceType === 'user',
+    )
+  }, [allItems, sourceFilter])
 
-  return { items, isLoading, refresh: fetch, sourceFilter, setSourceFilter }
+  return { items, isLoading, refresh: fetchFeed, sourceFilter, setSourceFilter, totalCount: allItems.length }
 }

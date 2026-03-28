@@ -10,9 +10,12 @@ interface SavedFilterChipsProps {
   counts: Record<string, number>
   accentClass: 'food' | 'wine'
   onChipSelect: (chipId: string | null) => void
+  followingCount?: number
+  isFollowingActive?: boolean
+  onFollowingSelect?: () => void
 }
 
-export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onChipSelect }: SavedFilterChipsProps) {
+export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onChipSelect, followingCount, isFollowingActive, onFollowingSelect }: SavedFilterChipsProps) {
   const wineClass = accentClass === 'wine' ? 'wine' : ''
   const scrollRef = useRef<HTMLDivElement>(null)
   const [needsPager, setNeedsPager] = useState(false)
@@ -51,7 +54,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
         <button
           type="button"
           onClick={() => onChipSelect(null)}
-          className={`filter-chip ${activeChipId === null ? `active ${wineClass}` : ''}`}
+          className={`filter-chip ${activeChipId === null && !isFollowingActive ? `active ${wineClass}` : ''}`}
         >
           전체
         </button>
@@ -60,7 +63,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
             key={chip.id}
             type="button"
             onClick={() => onChipSelect(chip.id === activeChipId ? null : chip.id)}
-            className={`filter-chip ${activeChipId === chip.id ? `active ${wineClass}` : ''}`}
+            className={`filter-chip ${activeChipId === chip.id && !isFollowingActive ? `active ${wineClass}` : ''}`}
           >
             {chip.name}
             {counts[chip.id] !== undefined && (
@@ -68,6 +71,18 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
             )}
           </button>
         ))}
+        {onFollowingSelect && (
+          <button
+            type="button"
+            onClick={onFollowingSelect}
+            className={`filter-chip ${isFollowingActive ? `active ${wineClass}` : ''}`}
+          >
+            팔로잉
+            {followingCount !== undefined && followingCount > 0 && (
+              <span className="ml-1 opacity-70">{followingCount}</span>
+            )}
+          </button>
+        )}
       </div>
       {needsPager && (
         <InlinePager

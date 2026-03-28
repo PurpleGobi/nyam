@@ -166,7 +166,7 @@ export function SettingsContainer() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
-      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/profile'} />
+      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
 
       <div className="flex-1 overflow-y-auto pb-20">
         {/* ── 계정 ── */}

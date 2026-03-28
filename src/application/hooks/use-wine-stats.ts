@@ -31,11 +31,18 @@ interface MonthlyStats {
   isCurrent: boolean
 }
 
+interface WineTypeStats {
+  type: string
+  label: string
+  count: number
+}
+
 interface WineStatsResult {
   countryStats: CountryStats[]
   varietalStats: VarietalStats[]
   scoreBuckets: ScoreBucket[]
   monthlyStats: MonthlyStats[]
+  wineTypeStats: WineTypeStats[]
   totalSpending: number
   totalRecordCount: number
   isLoading: boolean
@@ -113,6 +120,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([])
   const [totalSpending, setTotalSpending] = useState(0)
   const [totalRecordCount, setTotalRecordCount] = useState(0)
+  const [wineTypeStats, setWineTypeStats] = useState<WineTypeStats[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -138,27 +146,45 @@ export function useWineStats(userId: string | null): WineStatsResult {
 
       setTotalRecordCount(records.length)
 
-      // Country stats with wine type dots
+      // Country stats with wine type dots + region data
       const countryMap = new Map<
         string,
-        { count: number; dots: Map<string, number> }
+        { count: number; dots: Map<string, number>; regions: Map<string, { count: number; dots: Map<string, number> }> }
       >()
       for (const r of records) {
         const wine = r.wine as unknown as Record<string, unknown> | null
         const country = (wine?.country as string) ?? '기타'
+        const region = (wine?.region as string) ?? null
         const wineType = (wine?.wine_type as string) ?? 'red'
         const existing = countryMap.get(country)
         if (existing) {
           existing.count++
           existing.dots.set(wineType, (existing.dots.get(wineType) ?? 0) + 1)
+          if (region) {
+            const regionEntry = existing.regions.get(region)
+            if (regionEntry) {
+              regionEntry.count++
+              regionEntry.dots.set(wineType, (regionEntry.dots.get(wineType) ?? 0) + 1)
+            } else {
+              const regionDots = new Map<string, number>()
+              regionDots.set(wineType, 1)
+              existing.regions.set(region, { count: 1, dots: regionDots })
+            }
+          }
         } else {
           const dots = new Map<string, number>()
           dots.set(wineType, 1)
-          countryMap.set(country, { count: 1, dots })
+          const regions = new Map<string, { count: number; dots: Map<string, number> }>()
+          if (region) {
+            const regionDots = new Map<string, number>()
+            regionDots.set(wineType, 1)
+            regions.set(region, { count: 1, dots: regionDots })
+          }
+          countryMap.set(country, { count: 1, dots, regions })
         }
       }
       setCountryStats(
-        Array.from(countryMap.entries()).map(([name, { count, dots }]) => ({
+        Array.from(countryMap.entries()).map(([name, { count, dots, regions }]) => ({
           name,
           visitCount: count,
           lat: COUNTRY_COORDS[name]?.lat ?? 0,
@@ -167,6 +193,14 @@ export function useWineStats(userId: string | null): WineStatsResult {
           dots: Array.from(dots.entries()).map(([type, cnt]) => ({
             type,
             count: cnt,
+          })),
+          regions: Array.from(regions.entries()).map(([regionName, regionData]) => ({
+            name: regionName,
+            visitCount: regionData.count,
+            dots: Array.from(regionData.dots.entries()).map(([type, cnt]) => ({
+              type,
+              count: cnt,
+            })),
           })),
         }))
       )
@@ -240,6 +274,29 @@ export function useWineStats(userId: string | null): WineStatsResult {
       })
       setMonthlyStats(monthLabels)
 
+      // Wine type stats
+      const WINE_TYPE_LABELS: Record<string, string> = {
+        red: '레드',
+        white: '화이트',
+        rose: '로제',
+        sparkling: '스파클링',
+      }
+      const typeMap = new Map<string, number>()
+      for (const r of records) {
+        const wine = r.wine as unknown as Record<string, unknown> | null
+        const wineType = (wine?.wine_type as string) ?? 'red'
+        typeMap.set(wineType, (typeMap.get(wineType) ?? 0) + 1)
+      }
+      setWineTypeStats(
+        Array.from(typeMap.entries())
+          .map(([type, count]) => ({
+            type,
+            label: WINE_TYPE_LABELS[type] ?? type,
+            count,
+          }))
+          .sort((a, b) => b.count - a.count)
+      )
+
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '와인 통계 조회에 실패했습니다'
@@ -258,6 +315,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
     varietalStats,
     scoreBuckets,
     monthlyStats,
+    wineTypeStats,
     totalSpending,
     totalRecordCount,
     isLoading,

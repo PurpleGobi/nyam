@@ -17,6 +17,7 @@ import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useNudge } from '@/application/hooks/use-nudge'
 import { useRecommendations } from '@/application/hooks/use-recommendations'
+import { useSettings } from '@/application/hooks/use-settings'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -42,8 +43,11 @@ import { MonthlyChart } from '@/presentation/components/home/monthly-chart'
 import { SceneChart } from '@/presentation/components/home/scene-chart'
 import { WineRegionMap } from '@/presentation/components/home/wine-region-map'
 import { VarietalChart } from '@/presentation/components/home/varietal-chart'
+import { WineTypeChart } from '@/presentation/components/home/wine-type-chart'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
+import { FollowingFeed } from '@/presentation/components/home/following-feed'
+import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
 function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
@@ -94,6 +98,7 @@ const MEAL_TIME_LABELS: Record<string, string> = {
 export function HomeContainer() {
   const { user } = useAuth()
   const router = useRouter()
+  const { settings } = useSettings()
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     isMapOpen, toggleMap,
@@ -106,8 +111,8 @@ export function HomeContainer() {
     currentSort, setCurrentSort,
     searchQuery, setSearchQuery,
   } = useHomeState({
-    initialTab: user?.pref_home_tab && user.pref_home_tab !== 'last' ? user.pref_home_tab : undefined,
-    initialViewMode: user?.pref_view_mode && user.pref_view_mode !== 'last' ? user.pref_view_mode : undefined,
+    initialTab: settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined,
+    initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
 
   const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
@@ -173,6 +178,21 @@ export function HomeContainer() {
   // 추천 카드
   const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
 
+  // 팔로잉 피드
+  const [isFollowingMode, setIsFollowingMode] = useState(false)
+  const followingFeed = useFollowingFeed({
+    userId: user?.id ?? null,
+    targetType: activeTab,
+  })
+
+  const handleFollowingSelect = useCallback(() => {
+    setIsFollowingMode((prev) => !prev)
+    if (!isFollowingMode) {
+      setActiveChipId(null)
+      setFilterRules([])
+    }
+  }, [isFollowingMode, setActiveChipId, setFilterRules])
+
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
@@ -199,6 +219,7 @@ export function HomeContainer() {
   }, [restaurantStats.cityStats])
 
   const handleChipSelect = useCallback((chipId: string | null) => {
+    setIsFollowingMode(false)
     setActiveChipId(chipId)
     if (chipId) {
       const chip = filters.find((f) => f.id === chipId)
@@ -227,13 +248,46 @@ export function HomeContainer() {
   }, [createFilter, filterRules, currentSort])
 
   // 필터/소팅/검색 적용된 레코드
-  const displayRecords = useMemo(() => {
+  const allDisplayRecords = useMemo(() => {
     let result = records
     result = applyFilterRules(result, filterRules, conjunction)
     result = searchRecords(result, searchQuery)
     result = sortRecords(result, currentSort)
     return result
   }, [records, filterRules, conjunction, searchQuery, currentSort])
+
+  // 20건씩 무한 스크롤
+  const PAGE_SIZE = 20
+  const pageKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${activeChipId}`
+  const [scrollState, setScrollState] = useState({ key: pageKey, count: PAGE_SIZE })
+
+  // pageKey 변경 감지 → 리셋 (scrollState.key가 다르면 count를 PAGE_SIZE로)
+  const effectiveCount = scrollState.key === pageKey ? scrollState.count : PAGE_SIZE
+  const displayRecords = allDisplayRecords.slice(0, effectiveCount)
+  const hasMoreRecords = displayRecords.length < allDisplayRecords.length
+
+  const loadMoreSentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || !hasMoreRecords) return
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          setScrollState((prev) => ({ key: prev.key, count: prev.count + PAGE_SIZE }))
+          observer.disconnect()
+        }
+      })
+      observer.observe(node)
+    },
+    [hasMoreRecords],
+  )
+
+  // pageKey 변경 시 scrollState 동기화
+  const handlePageKeySync = useCallback(() => {
+    setScrollState({ key: pageKey, count: PAGE_SIZE })
+  }, [pageKey])
+  // eslint가 effect 내 setState를 싫어하므로 별도 sync
+  if (scrollState.key !== pageKey) {
+    handlePageKeySync()
+  }
 
   // 캘린더 레코드
   const { days: calendarDays } = useCalendarRecords({
@@ -355,6 +409,7 @@ export function HomeContainer() {
               }
             />
           ))}
+          {hasMoreRecords && <div ref={loadMoreSentinelRef} className="h-4" />}
         </div>
       )
     }
@@ -408,6 +463,7 @@ export function HomeContainer() {
             />
           ),
         )}
+        {hasMoreRecords && <div ref={loadMoreSentinelRef} className="h-4" />}
       </div>
     )
   }
@@ -504,11 +560,25 @@ export function HomeContainer() {
             counts={counts}
             accentClass={accentType}
             onChipSelect={handleChipSelect}
+            followingCount={followingFeed.totalCount}
+            isFollowingActive={isFollowingMode}
+            onFollowingSelect={handleFollowingSelect}
+          />
+        )}
+
+        {/* 팔로잉 피드 */}
+        {isFollowingMode && (
+          <FollowingFeed
+            items={followingFeed.items}
+            isLoading={followingFeed.isLoading}
+            onItemPress={(recordId) => router.push(`/records/${recordId}`)}
+            sourceFilter={followingFeed.sourceFilter}
+            onSourceFilterChange={followingFeed.setSourceFilter}
           />
         )}
 
         {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
+        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2">
             <StatsToggle
               isOpen={isStatsOpen}
@@ -580,12 +650,15 @@ export function HomeContainer() {
                     </PdLockOverlay>
 
                     <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount}>
-                      <MonthlyChart
-                        months={wineStats.monthlyStats}
-                        totalAmount={wineStats.totalSpending}
-                        accentColor="var(--accent-wine)"
-                        unit="병"
-                      />
+                      <div className="flex flex-col gap-5">
+                        <MonthlyChart
+                          months={wineStats.monthlyStats}
+                          totalAmount={wineStats.totalSpending}
+                          accentColor="var(--accent-wine)"
+                          unit="병"
+                        />
+                        <WineTypeChart types={wineStats.wineTypeStats} />
+                      </div>
                     </PdLockOverlay>
                   </>
                 )}
@@ -595,7 +668,7 @@ export function HomeContainer() {
         )}
 
         {/* 추천 카드 */}
-        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
+        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
           <div className="px-4 pb-2 pt-3">
             <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -606,8 +679,8 @@ export function HomeContainer() {
           </div>
         )}
 
-        {/* 뷰 모드별 콘텐츠 */}
-        {renderContent()}
+        {/* 뷰 모드별 콘텐츠 — 팔로잉 모드에서는 숨김 */}
+        {!isFollowingMode && renderContent()}
       </div>
 
       <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
