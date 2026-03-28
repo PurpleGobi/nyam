@@ -1,5 +1,5 @@
 import type { RecordRepository } from '@/domain/repositories/record-repository'
-import type { DiningRecord, CreateRecordInput, RecordTargetType } from '@/domain/entities/record'
+import type { DiningRecord, CreateRecordInput, RecordTargetType, RecordWithTarget } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { Database } from '@/infrastructure/supabase/types'
 import { createClient } from '@/infrastructure/supabase/client'
@@ -149,6 +149,37 @@ export class SupabaseRecordRepository implements RecordRepository {
     const { data, error } = await query
     if (error) throw new Error(`Records 조회 실패: ${error.message}`)
     return data.map(mapDbToRecord)
+  }
+
+  async findByUserIdWithTarget(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
+    let query = this.supabase
+      .from('records')
+      .select('*, restaurants(name, genre, area, photo_url), wines(name, variety, region, photo_url)')
+      .eq('user_id', userId)
+      .order('visit_date', { ascending: false })
+
+    if (targetType) {
+      query = query.eq('target_type', targetType)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
+
+    return data.map((row: RecordRow & {
+      restaurants: { name: string; genre: string | null; area: string | null; photo_url: string | null } | null
+      wines: { name: string; variety: string | null; region: string | null; photo_url: string | null } | null
+    }) => {
+      const base = mapDbToRecord(row)
+      const isRestaurant = row.target_type === 'restaurant'
+      const target = isRestaurant ? row.restaurants : row.wines
+      return {
+        ...base,
+        targetName: target?.name ?? '',
+        targetMeta: isRestaurant ? (row.restaurants?.genre ?? null) : (row.wines?.variety ?? null),
+        targetArea: isRestaurant ? (row.restaurants?.area ?? null) : (row.wines?.region ?? null),
+        targetPhotoUrl: target?.photo_url ?? null,
+      }
+    })
   }
 
   async findByUserAndTarget(userId: string, targetId: string): Promise<DiningRecord[]> {

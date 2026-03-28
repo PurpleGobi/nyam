@@ -1672,14 +1672,15 @@
 }
 
 [data-theme="dark"] .btn-social.google {
-  background: var(--bg-card);
+  background: var(--bg-elevated);
   border-color: var(--border-bold);
   color: var(--text);
 }
 
 [data-theme="dark"] .btn-social.apple {
-  background: #2A2725;
+  background: #1A1816;
   border: 1px solid var(--border-bold);
+  color: #E0DDD9;
 }
 
 [data-theme="dark"] .card.visited {

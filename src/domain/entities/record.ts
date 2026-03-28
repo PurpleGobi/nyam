@@ -230,6 +230,24 @@ export function createDefaultRecord(
   }
 }
 
+// ─── 대상(식당/와인) 정보 포함 기록 ───
+
+/**
+ * DiningRecord + 대상(식당/와인) 메타데이터
+ * 홈 화면 등에서 JOIN 결과로 사용
+ * R1 준수: 외부 의존 없는 순수 타입
+ */
+export interface RecordWithTarget extends DiningRecord {
+  /** 대상 이름 (restaurants.name 또는 wines.name) */
+  targetName: string
+  /** 대상 장르/품종 (restaurants.genre 또는 wines.variety) */
+  targetMeta: string | null
+  /** 대상 지역 (restaurants.area 또는 wines.region) */
+  targetArea: string | null
+  /** 대상 대표 사진 URL */
+  targetPhotoUrl: string | null
+}
+
 // ─── 기록 생성 입력 타입 ───
 
 /**

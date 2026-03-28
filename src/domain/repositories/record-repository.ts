@@ -2,7 +2,7 @@
 // R1: domain 인터페이스 — 외부 의존 0
 // infrastructure에서 implements로 구현
 
-import type { DiningRecord, RecordTargetType, CreateRecordInput } from '@/domain/entities/record'
+import type { DiningRecord, RecordTargetType, CreateRecordInput, RecordWithTarget } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 /**
@@ -22,6 +22,12 @@ export interface RecordRepository {
    * visit_date DESC 정렬 (최신순)
    */
   findByUserId(userId: string, targetType?: RecordTargetType): Promise<DiningRecord[]>
+
+  /**
+   * 사용자 기록 + 대상(식당/와인) 메타데이터 JOIN 조회
+   * 홈 화면 카드에서 이름/사진/장르 표시용
+   */
+  findByUserIdWithTarget(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]>
 
   /**
    * 사용자의 특정 대상(식당/와인)에 대한 기록 목록 조회
