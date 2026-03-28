@@ -91,6 +91,11 @@ export default function DesignSystemPage() {
   const [segmentVal, setSegmentVal] = useState('public')
   const [selectVal, setSelectVal] = useState('latest')
   const [activeChip, setActiveChip] = useState<string | null>('all')
+  const [demoChips, setDemoChips] = useState([
+    { id: 'all', name: '광화문 맛집' },
+    { id: 'solo', name: '혼밥 85+' },
+  ])
+  const [chipName, setChipName] = useState('광화문 맛집')
   const [activeTab, setActiveTab] = useState<'food' | 'wine'>('food')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
@@ -465,10 +470,43 @@ export default function DesignSystemPage() {
             <IconButton icon={Search} active={searchActive} onClick={() => { setSearchActive(!searchActive); setFilterActive(false); setSortActive(false) }} />
           </div>
 
-          {/* 필터칩 */}
-          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
-            <FilterChip active={activeChip === 'all'} onClick={() => setActiveChip('all')}>광화문 맛집</FilterChip>
-            <FilterChip active={activeChip === 'solo'} onClick={() => setActiveChip('solo')}>혼밥 85+</FilterChip>
+          {/* 필터칩 + 이름 입력 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              {demoChips.map((chip) => (
+                <FilterChip
+                  key={chip.id}
+                  active={activeChip === chip.id}
+                  onClick={() => {
+                    setActiveChip(chip.id)
+                    setChipName(chip.name)
+                  }}
+                >
+                  {chip.name}
+                </FilterChip>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={chipName}
+              onChange={(e) => setChipName(e.target.value)}
+              placeholder="필터칩 이름..."
+              className="nyam-input"
+              style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
+            />
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!chipName.trim() || demoChips.some((c) => c.name === chipName.trim())}
+              onClick={() => {
+                const id = `chip-${Date.now()}`
+                setDemoChips([...demoChips, { id, name: chipName.trim() }])
+                setActiveChip(id)
+              }}
+              style={{ padding: '5px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
+            >
+              생성
+            </button>
           </div>
 
           {/* 필터 패널 (Notion 스타일) */}

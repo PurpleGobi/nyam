@@ -37,7 +37,7 @@ function buildCandidates(
 
   if ((timeVal >= 12.5 && timeVal < 14) || (timeVal >= 19 && timeVal < 21)) {
     candidates.push({
-      type: 'time',
+      type: 'meal_time',
       priority: 3,
       data: {
         targetId: null,

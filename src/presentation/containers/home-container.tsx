@@ -42,11 +42,8 @@ import { MonthlyChart } from '@/presentation/components/home/monthly-chart'
 import { SceneChart } from '@/presentation/components/home/scene-chart'
 import { WineRegionMap } from '@/presentation/components/home/wine-region-map'
 import { VarietalChart } from '@/presentation/components/home/varietal-chart'
-import { WineTypeChart } from '@/presentation/components/home/wine-type-chart'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
-import { FollowingFeed } from '@/presentation/components/home/following-feed'
-import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
 function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
@@ -110,9 +107,8 @@ export function HomeContainer() {
     searchQuery, setSearchQuery,
   } = useHomeState()
 
-  const recordTab = activeTab === 'following' ? 'restaurant' : activeTab
-  const { filters, createFilter } = useSavedFilters(user?.id ?? null, recordTab)
-  const { records } = useRecordsWithTarget(user?.id ?? null, recordTab)
+  const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
+  const { records } = useRecordsWithTarget(user?.id ?? null, activeTab)
 
   // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
   const counts = useMemo(() => {
@@ -173,14 +169,6 @@ export function HomeContainer() {
 
   // 추천 카드
   const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
-
-  // 팔로잉 피드
-  const {
-    items: followingItems, isLoading: isFollowingLoading,
-    sourceFilter, setSourceFilter,
-  } = useFollowingFeed(
-    activeTab === 'following' ? (user?.id ?? null) : null,
-  )
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isStatsOpen, setIsStatsOpen] = useState(false)
@@ -299,19 +287,6 @@ export function HomeContainer() {
 
   // 뷰 모드별 콘텐츠
   const renderContent = () => {
-    // 팔로잉 피드
-    if (activeTab === 'following') {
-      return (
-        <FollowingFeed
-          items={followingItems}
-          isLoading={isFollowingLoading}
-          onItemPress={(recordId) => router.push(`/records/${recordId}`)}
-          sourceFilter={sourceFilter}
-          onSourceFilterChange={setSourceFilter}
-        />
-      )
-    }
-
     // 지도 뷰 (식당 전용, 별도 토글)
     if (isMapOpen && activeTab === 'restaurant') {
       if (mapRecords.length === 0) return renderEmptyState()
@@ -435,7 +410,6 @@ export function HomeContainer() {
   }
 
   const isCalendarMode = viewMode === 'calendar'
-  const isFollowingMode = activeTab === 'following'
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
@@ -479,7 +453,7 @@ export function HomeContainer() {
         />
 
         {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !isFollowingMode && isFilterOpen && (
+        {!isCalendarMode && isFilterOpen && (
           <div className="pt-2">
             <NotionFilterPanel
               rules={filterRules}
@@ -493,7 +467,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        {!isCalendarMode && !isFollowingMode && isSortOpen && (
+        {!isCalendarMode && isSortOpen && (
           <div className="relative">
             <SortDropdown
               currentSort={currentSort}
@@ -503,7 +477,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        {!isCalendarMode && !isFollowingMode && isSearchOpen && (
+        {!isCalendarMode && isSearchOpen && (
           <div className="relative">
             <SearchDropdown
               query={searchQuery}
@@ -514,7 +488,7 @@ export function HomeContainer() {
         )}
 
         {/* 저장 필터 칩 — 캘린더/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !isFollowingMode && (
+        {!isCalendarMode && (
           <SavedFilterChips
             chips={filters}
             activeChipId={activeChipId}
@@ -525,7 +499,7 @@ export function HomeContainer() {
         )}
 
         {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
+        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2">
             <StatsToggle
               isOpen={isStatsOpen}
@@ -596,13 +570,6 @@ export function HomeContainer() {
                       </div>
                     </PdLockOverlay>
 
-                    {wineStats.wineTypeStats.length > 0 && (
-                      <div>
-                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>와인 타입</p>
-                        <WineTypeChart types={wineStats.wineTypeStats} />
-                      </div>
-                    )}
-
                     <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount}>
                       <MonthlyChart
                         months={wineStats.monthlyStats}
@@ -619,7 +586,7 @@ export function HomeContainer() {
         )}
 
         {/* 추천 카드 */}
-        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
+        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
           <div className="px-4 pb-2 pt-3">
             <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -634,7 +601,7 @@ export function HomeContainer() {
         {renderContent()}
       </div>
 
-      <FabAdd currentTab={activeTab === 'following' ? 'restaurant' : activeTab} onClick={() => router.push(`/add?type=${activeTab === 'following' ? 'restaurant' : activeTab}`)} />
+      <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
 
       <FilterChipSaveModal
         isOpen={isSaveModalOpen}

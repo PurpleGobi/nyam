@@ -31,19 +31,11 @@ interface MonthlyStats {
   isCurrent: boolean
 }
 
-interface WineTypeStats {
-  type: string
-  label: string
-  count: number
-  color: string
-}
-
 interface WineStatsResult {
   countryStats: CountryStats[]
   varietalStats: VarietalStats[]
   scoreBuckets: ScoreBucket[]
   monthlyStats: MonthlyStats[]
-  wineTypeStats: WineTypeStats[]
   totalSpending: number
   totalRecordCount: number
   isLoading: boolean
@@ -65,16 +57,6 @@ function buildScoreBuckets(scores: number[]): ScoreBucket[] {
   }
 
   return SCORE_LABELS.map((label, i) => ({ label, count: counts[i] }))
-}
-
-const WINE_TYPE_META: Record<string, { label: string; color: string }> = {
-  red: { label: '레드', color: '#722F37' },
-  white: { label: '화이트', color: '#D4C98A' },
-  rose: { label: '로제', color: '#E8A0B0' },
-  sparkling: { label: '스파클링', color: '#C8D8A0' },
-  orange: { label: '오렌지', color: '#E08040' },
-  fortified: { label: '주정강화', color: '#704214' },
-  dessert: { label: '디저트', color: '#B8860B' },
 }
 
 /** 설계 문서 bodyOrder 순 (얇은→두꺼운) 20종 */
@@ -129,7 +111,6 @@ export function useWineStats(userId: string | null): WineStatsResult {
     SCORE_LABELS.map((label) => ({ label, count: 0 }))
   )
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([])
-  const [wineTypeStats, setWineTypeStats] = useState<WineTypeStats[]>([])
   const [totalSpending, setTotalSpending] = useState(0)
   const [totalRecordCount, setTotalRecordCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -259,23 +240,6 @@ export function useWineStats(userId: string | null): WineStatsResult {
       })
       setMonthlyStats(monthLabels)
 
-      // Wine type stats
-      const typeMap = new Map<string, number>()
-      for (const r of records) {
-        const wine = r.wine as unknown as Record<string, unknown> | null
-        const wineType = (wine?.wine_type as string) ?? 'red'
-        typeMap.set(wineType, (typeMap.get(wineType) ?? 0) + 1)
-      }
-      setWineTypeStats(
-        Array.from(typeMap.entries())
-          .map(([type, count]) => ({
-            type,
-            label: WINE_TYPE_META[type]?.label ?? type,
-            count,
-            color: WINE_TYPE_META[type]?.color ?? 'var(--text-hint)',
-          }))
-          .sort((a, b) => b.count - a.count)
-      )
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '와인 통계 조회에 실패했습니다'
@@ -294,7 +258,6 @@ export function useWineStats(userId: string | null): WineStatsResult {
     varietalStats,
     scoreBuckets,
     monthlyStats,
-    wineTypeStats,
     totalSpending,
     totalRecordCount,
     isLoading,

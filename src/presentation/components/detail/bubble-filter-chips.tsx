@@ -14,10 +14,14 @@ interface BubbleFilterChipsProps {
   bubbles: BubbleChipItem[]
   selectedId: string | null
   onSelect: (id: string | null) => void
+  accentType?: 'food' | 'wine'
 }
 
-export function BubbleFilterChips({ bubbles, selectedId, onSelect }: BubbleFilterChipsProps) {
+export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 'food' }: BubbleFilterChipsProps) {
   if (bubbles.length === 0) return null
+
+  const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const accentLightColor = accentType === 'food' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)'
 
   return (
     <div className="flex gap-2 overflow-x-auto py-1 scrollbar-none">
@@ -26,9 +30,9 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect }: BubbleFilte
         onClick={() => onSelect(null)}
         className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
         style={{
-          backgroundColor: selectedId === null ? 'var(--accent-social)' : 'var(--bg-card)',
-          color: selectedId === null ? '#FFFFFF' : 'var(--text-sub)',
-          border: selectedId === null ? 'none' : '1px solid var(--border)',
+          backgroundColor: selectedId === null ? accentLightColor : 'var(--bg-card)',
+          color: selectedId === null ? accentColor : 'var(--text-sub)',
+          border: selectedId === null ? `1.5px solid ${accentColor}` : '1px solid var(--border)',
         }}
       >
         전체
@@ -42,9 +46,9 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect }: BubbleFilte
             onClick={() => onSelect(isActive ? null : b.id)}
             className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
             style={{
-              backgroundColor: isActive ? 'var(--accent-social)' : 'var(--bg-card)',
-              color: isActive ? '#FFFFFF' : 'var(--text-sub)',
-              border: isActive ? 'none' : '1px solid var(--border)',
+              backgroundColor: isActive ? accentLightColor : 'var(--bg-card)',
+              color: isActive ? accentColor : 'var(--text-sub)',
+              border: isActive ? `1.5px solid ${accentColor}` : '1px solid var(--border)',
             }}
           >
             <BubbleIcon icon={b.icon} size={11} />

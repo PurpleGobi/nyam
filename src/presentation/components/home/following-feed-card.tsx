@@ -76,7 +76,8 @@ export function FollowingFeedCard({ item, onPress }: FollowingFeedCardProps) {
         )}
       </div>
 
-      {item.comment && (
+      {/* 맞팔 소스만 한줄평 표시, 버블 소스는 이름+점수만 */}
+      {item.sourceType === 'user' && item.comment && (
         <p className="line-clamp-2 text-[12px]" style={{ color: 'var(--text-sub)', lineHeight: 1.5 }}>
           {item.comment}
         </p>
@@ -84,6 +85,13 @@ export function FollowingFeedCard({ item, onPress }: FollowingFeedCardProps) {
 
       {item.visitDate && (
         <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>{item.visitDate}</span>
+      )}
+
+      {/* 버블 소스: 가입 유도 CTA */}
+      {item.sourceType === 'bubble' && (
+        <span className="text-[11px]" style={{ color: 'var(--accent-social)' }}>
+          버블에 가입하면 더 볼 수 있어요
+        </span>
       )}
     </button>
   )

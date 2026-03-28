@@ -21,10 +21,10 @@ export interface NudgeCandidate {
  * Phase 1 우선순위: photo(1) > unrated(2) > time(3)
  * 낮을수록 우선
  */
-const PRIORITY_MAP: Partial<Record<NudgeType, number>> = {
+const PRIORITY_MAP: Record<NudgeType, number> = {
   photo: 1,
   unrated: 2,
-  time: 3,
+  meal_time: 3,
 }
 
 /**

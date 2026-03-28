@@ -2,10 +2,10 @@
 // R1: 외부 의존 0
 
 /**
- * DATA_MODEL.md §5 nudge_history.nudge_type
- * Phase 1: photo, unrated, time 만 활성 사용
+ * 설계 §6 nudge_history.nudge_type
+ * Phase 1: photo, unrated, meal_time
  */
-export type NudgeType = 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
+export type NudgeType = 'photo' | 'unrated' | 'meal_time'
 
 /** nudge_history.status */
 export type NudgeStatus = 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'

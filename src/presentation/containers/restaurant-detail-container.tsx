@@ -331,6 +331,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
                 bubbles={userBubbles}
                 selectedId={selectedBubbleId}
                 onSelect={setSelectedBubbleId}
+                accentType="food"
               />
               <div className="mt-3 flex flex-col gap-2">
                 {bubbleRecords.slice(0, 5).map((r) => (

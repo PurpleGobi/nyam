@@ -358,6 +358,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                 bubbles={userBubbles}
                 selectedId={selectedBubbleId}
                 onSelect={setSelectedBubbleId}
+                accentType="wine"
               />
               <div className="mt-3 flex flex-col gap-2">
                 {bubbleRecords.slice(0, 5).map((r) => (

@@ -983,7 +983,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string | null
-          nudge_type: 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
+          nudge_type: 'photo' | 'unrated' | 'meal_time'
           target_id: string | null
           status: 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
           created_at: string
@@ -991,7 +991,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id?: string | null
-          nudge_type: 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
+          nudge_type: 'photo' | 'unrated' | 'meal_time'
           target_id?: string | null
           status: 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
           created_at?: string

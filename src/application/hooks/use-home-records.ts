@@ -87,7 +87,7 @@ export function useHomeRecords(params: {
     if (!userId) return
     setIsLoading(true)
     try {
-      const targetType: RecordTargetType = tab === 'following' ? 'restaurant' : tab
+      const targetType: RecordTargetType = tab
       const data = await recordRepo.findByUserId(userId, targetType)
       setAllRecords(data)
       setPage(1)

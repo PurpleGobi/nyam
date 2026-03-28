@@ -23,7 +23,7 @@ export function useCalendarRecords(params: {
     if (!userId) return
     setIsLoading(true)
     try {
-      const targetType: RecordTargetType = tab === 'following' ? 'restaurant' : tab
+      const targetType: RecordTargetType = tab
       const records = await recordRepo.findByUserIdWithTarget(userId, targetType)
 
       const monthStr = `${year}-${String(month).padStart(2, '0')}`

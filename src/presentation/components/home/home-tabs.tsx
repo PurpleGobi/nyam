@@ -33,7 +33,6 @@ export function HomeTabs({
   onSearchToggle, isSearchOpen,
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
-  const isFollowing = activeTab === 'following'
   const ViewIcon = VIEW_ICONS[viewMode]
   const tabType = foodActive ? 'food' : 'wine'
 
@@ -55,20 +54,12 @@ export function HomeTabs({
         >
           와인
         </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('following')}
-          className={`filter-tab ${activeTab === 'following' ? 'active social' : ''}`}
-        >
-          팔로잉
-        </button>
       </div>
 
       <div className="flex-1" />
 
-      {/* 우측 아이콘들 — 팔로잉 탭에서는 숨김 */}
-      {!isFollowing && (
-        <div className="flex items-center gap-0.5">
+      {/* 우측 아이콘들 */}
+      <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={onViewCycle}
@@ -111,8 +102,7 @@ export function HomeTabs({
           >
             <Search size={18} />
           </button>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

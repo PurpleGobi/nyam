@@ -3,7 +3,7 @@
 
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
-export type HomeTab = 'restaurant' | 'wine' | 'following'
+export type HomeTab = 'restaurant' | 'wine'
 export type ViewMode = 'detailed' | 'compact' | 'calendar' | 'map'
 
 export interface ViewModeState {
@@ -33,7 +33,7 @@ export const DEFAULT_VIEW_MODE_STATE: ViewModeState = {
 }
 
 export function makeViewModeStateKey(tab: HomeTab, mode: ViewMode): ViewModeStateKey {
-  const t = tab === 'following' ? 'restaurant' : tab
+  const t = tab
   const m = mode === 'map' ? 'detailed' : mode
   return `${t}_${m}` as ViewModeStateKey
 }

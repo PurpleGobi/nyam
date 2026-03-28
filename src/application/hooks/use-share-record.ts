@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { bubbleRepo } from '@/shared/di/container'
+import { bubbleRepo, settingsRepo } from '@/shared/di/container'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 import { useBonusXp } from '@/application/hooks/use-bonus-xp'
 
