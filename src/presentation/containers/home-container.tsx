@@ -48,7 +48,7 @@ import { RecommendationCard } from '@/presentation/components/home/recommendatio
 import { FollowingFeed } from '@/presentation/components/home/following-feed'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
-function sortRecords(records: DiningRecord[], sort: SortOption): DiningRecord[] {
+function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
   switch (sort) {
     case 'latest':
@@ -58,19 +58,29 @@ function sortRecords(records: DiningRecord[], sort: SortOption): DiningRecord[] 
     case 'score_low':
       return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
-      return sorted.sort((a, b) => a.targetId.localeCompare(b.targetId))
-    case 'visit_count':
-      return sorted.sort((a, b) => (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt))
+      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
+    case 'visit_count': {
+      // targetId별 방문 횟수 집계 후 내림차순 정렬
+      const visitCounts = new Map<string, number>()
+      for (const r of records) {
+        visitCounts.set(r.targetId, (visitCounts.get(r.targetId) ?? 0) + 1)
+      }
+      return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
+    }
   }
 }
 
-function searchRecords(records: DiningRecord[], query: string): DiningRecord[] {
+function searchRecords(records: RecordWithTarget[], query: string): RecordWithTarget[] {
   if (!query.trim()) return records
   const q = query.trim().toLowerCase()
-  return records.filter((r) => r.targetId.toLowerCase().includes(q))
+  return records.filter((r) =>
+    r.targetName.toLowerCase().includes(q)
+    || (r.targetMeta ?? '').toLowerCase().includes(q)
+    || (r.targetArea ?? '').toLowerCase().includes(q),
+  )
 }
 
-function applyFilterRules(records: DiningRecord[], rules: FilterRule[], conjunction: 'and' | 'or'): DiningRecord[] {
+function applyFilterRules(records: RecordWithTarget[], rules: FilterRule[], conjunction: 'and' | 'or'): RecordWithTarget[] {
   if (rules.length === 0) return records
   return records.filter((record) =>
     matchesAllRules(record as unknown as Record<string, unknown>, rules, conjunction),
@@ -102,7 +112,7 @@ export function HomeContainer() {
 
   const recordTab = activeTab === 'following' ? 'restaurant' : activeTab
   const { filters, createFilter } = useSavedFilters(user?.id ?? null, recordTab)
-  const { records } = useRecords(user?.id ?? null, recordTab)
+  const { records } = useRecordsWithTarget(user?.id ?? null, recordTab)
 
   // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
   const counts = useMemo(() => {
@@ -124,7 +134,7 @@ export function HomeContainer() {
       .filter((r) => r.targetType === 'restaurant' && r.visitDate)
       .slice(0, 5)
       .map((r) => ({
-        restaurantName: r.targetId,
+        restaurantName: r.targetName,
         restaurantId: r.targetId,
         satisfaction: r.satisfaction ?? 0,
         visitDate: r.visitDate ?? '',
@@ -257,9 +267,9 @@ export function HomeContainer() {
     if (activeTab !== 'restaurant') return []
     return displayRecords.map((r) => ({
       restaurantId: r.targetId,
-      name: r.targetId,
-      genre: '',
-      area: '',
+      name: r.targetName,
+      genre: r.targetMeta ?? '',
+      area: r.targetArea ?? '',
       lat: 0,
       lng: 0,
       score: r.satisfaction,
@@ -328,7 +338,7 @@ export function HomeContainer() {
               date={selectedDateLabel}
               records={selectedDayRecords.map((r) => ({
                 mealTime: MEAL_TIME_LABELS[r.mealTime ?? ''] ?? '',
-                name: r.targetId,
+                name: r.targetName,
                 score: r.satisfaction,
                 id: r.id,
                 targetType: r.targetType,
