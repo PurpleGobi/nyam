@@ -29,13 +29,23 @@ export class SupabaseSavedFilterRepository implements SavedFilterRepository {
     await this.supabase.from('saved_filters').delete().eq('id', filterId)
   }
 
-  async getRecordCount(userId: string, targetType: string): Promise<number> {
+  async getRecordCount(userId: string, targetType: string, _rules: FilterRule[]): Promise<number> {
     const { count } = await this.supabase
       .from('records')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('target_type', targetType)
     return count ?? 0
+  }
+
+  async reorder(ids: string[]): Promise<void> {
+    const updates = ids.map((id, index) =>
+      this.supabase
+        .from('saved_filters')
+        .update({ order_index: index })
+        .eq('id', id)
+    )
+    await Promise.all(updates)
   }
 }
 

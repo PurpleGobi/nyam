@@ -8,4 +8,5 @@ export interface SavedFilterRepository {
   create(params: { userId: string; name: string; targetType: string; rules: FilterRule[]; sortBy?: string }): Promise<SavedFilter>
   delete(filterId: string): Promise<void>
   getRecordCount(userId: string, targetType: string, rules: FilterRule[]): Promise<number>
+  reorder(ids: string[]): Promise<void>
 }

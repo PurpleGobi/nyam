@@ -6,7 +6,7 @@ interface DiscoverSearchBarProps {
   placeholder?: string
 }
 
-export function DiscoverSearchBar({ placeholder = '식당 이름으로 검색' }: DiscoverSearchBarProps) {
+export function DiscoverSearchBar({ placeholder = '식당, 동네, 장르 검색' }: DiscoverSearchBarProps) {
   return (
     <div className="mx-4 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
       <Search size={18} className="shrink-0 text-[var(--text-hint)]" />

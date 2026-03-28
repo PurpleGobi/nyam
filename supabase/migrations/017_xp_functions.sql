@@ -57,29 +57,26 @@ END;
 $$;
 
 -- 4. 활성 XP 갱신 함수 (크론용)
--- active_xp = 최근 6개월 기록의 xp_amount 합산 (record_* reason만)
+-- active_xp = 최근 6개월 기록의 record_quality_xp 합산
 -- active_verified = 최근 6개월 EXIF 검증 기록 수
+-- SSOT: XP_SYSTEM.md, 01_xp_engine.md §4
 CREATE OR REPLACE FUNCTION refresh_active_xp()
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  UPDATE users u
-  SET
-    active_xp = COALESCE(sub.sum_xp, 0),
-    active_verified = COALESCE(sub.verified_count, 0),
-    updated_at = NOW()
-  FROM (
-    SELECT
-      xh.user_id,
-      SUM(xh.xp_amount) AS sum_xp,
-      COUNT(DISTINCT CASE WHEN r.is_exif_verified = TRUE THEN r.id END) AS verified_count
-    FROM xp_histories xh
-    LEFT JOIN records r ON r.id = xh.record_id
-    WHERE xh.created_at >= NOW() - INTERVAL '6 months'
-      AND xh.reason IN ('record_name', 'record_score', 'record_photo', 'record_full')
-    GROUP BY xh.user_id
-  ) sub
-  WHERE u.id = sub.user_id;
+  UPDATE users SET
+    active_xp = COALESCE((
+      SELECT SUM(record_quality_xp) FROM records
+      WHERE records.user_id = users.id
+        AND records.created_at > NOW() - INTERVAL '6 months'
+    ), 0),
+    active_verified = COALESCE((
+      SELECT COUNT(*) FROM records
+      WHERE records.user_id = users.id
+        AND records.is_exif_verified = true
+        AND records.created_at > NOW() - INTERVAL '6 months'
+    ), 0),
+    updated_at = NOW();
 END;
 $$;

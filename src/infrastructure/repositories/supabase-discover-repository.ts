@@ -14,7 +14,7 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
 
     const { data, error } = await this.supabase
       .from('restaurants')
-      .select('id, name, genre, area, photo_url, nyam_score, michelin_stars, blue_ribbon, external_avg, record_count')
+      .select('id, name, genre, area, specialty, photo_url, nyam_score, michelin_stars, blue_ribbon, naver_rating, kakao_rating, google_rating, external_avg, record_count')
       .eq('area', area)
       .range(from, to)
       .order('nyam_score', { ascending: false, nullsFirst: false })
@@ -26,6 +26,7 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
       name: row.name,
       genre: row.genre,
       area: row.area,
+      specialty: row.specialty ?? null,
       photoUrl: row.photo_url,
       nyamScore: row.nyam_score,
       compositeScore: calculateCompositeScore(
@@ -36,6 +37,9 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
       ),
       michelinStars: row.michelin_stars,
       hasBlueRibbon: row.blue_ribbon ?? false,
+      naverRating: row.naver_rating ?? null,
+      kakaoRating: row.kakao_rating ?? null,
+      googleRating: row.google_rating ?? null,
     }))
   }
 }

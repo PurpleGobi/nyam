@@ -163,7 +163,7 @@ export function SettingsContainer() {
           <SettingsCard>
             <SettingsItem icon={<Pencil size={16} />} label="닉네임" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
             <SettingsItem icon={<MessageSquare size={16} />} label="한줄 소개" value={settings.bio ?? '미설정'} showChevron onPress={() => setEditField('bio')} />
-            <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron />
+            <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron onPress={() => setEditField('avatar')} />
           </SettingsCard>
         </SettingsSection>
 
@@ -388,8 +388,8 @@ export function SettingsContainer() {
         {/* ── 정보 ── */}
         <SettingsSection icon={<Info size={16} />} title="정보">
           <SettingsCard>
-            <SettingsItem icon={<ScrollText size={16} />} label="이용약관" showChevron />
-            <SettingsItem icon={<Shield size={16} />} label="개인정보처리방침" showChevron />
+            <SettingsItem icon={<ScrollText size={16} />} label="이용약관" showChevron onPress={() => router.push('/terms')} />
+            <SettingsItem icon={<Shield size={16} />} label="개인정보처리방침" showChevron onPress={() => router.push('/privacy')} />
             <SettingsItem icon={<Info size={16} />} label="버전" value="1.0.0" />
           </SettingsCard>
         </SettingsSection>
@@ -457,7 +457,7 @@ function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
   initialStart: string | null; initialEnd: string | null
   onSave: (start: string | null, end: string | null) => void; onClose: () => void
 }) {
-  const [start, setStart] = useState(initialStart ?? '22:00')
+  const [start, setStart] = useState(initialStart ?? '23:00')
   const [end, setEnd] = useState(initialEnd ?? '08:00')
   const [enabled, setEnabled] = useState(initialStart !== null)
 

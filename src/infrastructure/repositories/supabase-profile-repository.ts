@@ -173,8 +173,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
       avgScore,
       visitedAreas: areaSet.size,
       thisMonthVisits: thisMonthVisits ?? 0,
-      thisMonthNewAreas: 0,
-      scoreDelta: 0,
+      thisMonthNewAreas: await this.getThisMonthNewAreas(userId, thisMonth, areaSet),
+      scoreDelta: await this.getScoreDelta(userId, 'restaurant'),
     }
   }
 
@@ -271,13 +271,14 @@ export class SupabaseProfileRepository implements ProfileRepository {
     }
 
     const SCENE_COLORS: Record<string, string> = {
-      date: 'var(--accent-wine)', family: 'var(--accent-food)',
-      business: 'var(--accent-social)', solo: 'var(--text-sub)',
-      friends: 'var(--brand)', celebration: 'var(--caution)',
+      solo: '#7A9BAE', romantic: '#B8879B',
+      friends: '#7EAE8B', family: '#C9A96E',
+      business: '#8B7396', drinks: '#B87272',
     }
     const SCENE_LABELS: Record<string, string> = {
-      date: '데이트', family: '가족', business: '비즈니스',
-      solo: '혼밥', friends: '친구', celebration: '축하',
+      solo: '혼밥', romantic: '데이트',
+      friends: '친구', family: '가족',
+      business: '회식/접대', drinks: '술자리',
     }
 
     return Array.from(map.entries())
@@ -321,8 +322,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
       avgScore,
       cellarCount: cellarCount ?? 0,
       thisMonthTastings: thisMonthTastings ?? 0,
-      thisMonthNewCellar: 0,
-      scoreDelta: 0,
+      thisMonthNewCellar: await this.getThisMonthNewCellar(userId, thisMonth),
+      scoreDelta: await this.getScoreDelta(userId, 'wine'),
     }
   }
 

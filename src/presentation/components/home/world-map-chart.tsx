@@ -113,7 +113,7 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
           })}
         </svg>
 
-        {/* Legend */}
+        {/* Legend — sizes match marker formula: r = 3 + min(visitCount, 6) */}
         <div
           className="mt-[8px] flex justify-center gap-[12px]"
           style={{ fontSize: 9, color: 'var(--text-hint)' }}
@@ -122,10 +122,10 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
             <span
               className="inline-block rounded-full"
               style={{
-                width: 6,
-                height: 6,
+                width: 8,
+                height: 8,
                 backgroundColor: 'var(--accent-food)',
-                opacity: 0.7,
+                opacity: 0.8,
               }}
             />
             1~2곳
@@ -134,8 +134,8 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
             <span
               className="inline-block rounded-full"
               style={{
-                width: 10,
-                height: 10,
+                width: 12,
+                height: 12,
                 backgroundColor: 'var(--accent-food)',
                 opacity: 0.8,
               }}
@@ -146,10 +146,10 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
             <span
               className="inline-block rounded-full"
               style={{
-                width: 14,
-                height: 14,
+                width: 18,
+                height: 18,
                 backgroundColor: 'var(--accent-food)',
-                opacity: 0.9,
+                opacity: 0.8,
               }}
             />
             6곳+
