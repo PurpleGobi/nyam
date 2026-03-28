@@ -45,6 +45,8 @@ import { VarietalChart } from '@/presentation/components/home/varietal-chart'
 import { WineTypeChart } from '@/presentation/components/home/wine-type-chart'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
+import { FollowingFeed } from '@/presentation/components/home/following-feed'
+import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
 function sortRecords(records: DiningRecord[], sort: SortOption): DiningRecord[] {
   const sorted = [...records]
@@ -98,8 +100,9 @@ export function HomeContainer() {
     searchQuery, setSearchQuery,
   } = useHomeState()
 
-  const { filters, createFilter } = useSavedFilters(user?.id ?? null, activeTab)
-  const { records } = useRecords(user?.id ?? null, activeTab)
+  const recordTab = activeTab === 'following' ? 'restaurant' : activeTab
+  const { filters, createFilter } = useSavedFilters(user?.id ?? null, recordTab)
+  const { records } = useRecords(user?.id ?? null, recordTab)
 
   // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
   const counts = useMemo(() => {
@@ -160,6 +163,11 @@ export function HomeContainer() {
 
   // 추천 카드
   const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
+
+  // 팔로잉 피드
+  const { items: followingItems, isLoading: isFollowingLoading } = useFollowingFeed(
+    activeTab === 'following' ? (user?.id ?? null) : null,
+  )
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isStatsOpen, setIsStatsOpen] = useState(false)
@@ -278,6 +286,17 @@ export function HomeContainer() {
 
   // 뷰 모드별 콘텐츠
   const renderContent = () => {
+    // 팔로잉 피드
+    if (activeTab === 'following') {
+      return (
+        <FollowingFeed
+          items={followingItems}
+          isLoading={isFollowingLoading}
+          onItemPress={(recordId) => router.push(`/records/${recordId}`)}
+        />
+      )
+    }
+
     // 지도 뷰 (식당 전용, 별도 토글)
     if (isMapOpen && activeTab === 'restaurant') {
       if (mapRecords.length === 0) return renderEmptyState()

@@ -2,10 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MessageCircle, Bell, Users, User } from 'lucide-react'
+import { Bell, Users, User } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
+import { useBubbleRecords } from '@/application/hooks/use-bubble-records'
+import { useUserBubbles } from '@/application/hooks/use-user-bubbles'
 import { wineRepo, wishlistRepo } from '@/shared/di/container'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -15,6 +17,8 @@ import { RecordTimeline } from '@/presentation/components/detail/record-timeline
 import { QuadrantDisplay } from '@/presentation/components/detail/quadrant-display'
 import { ConnectedItems } from '@/presentation/components/detail/connected-items'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
+import { BubbleFilterChips } from '@/presentation/components/detail/bubble-filter-chips'
+import { BubbleRecordCard } from '@/presentation/components/detail/bubble-record-card'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { WineTypeChip } from '@/presentation/components/detail/wine-type-chip'
 import { WineFactsTable } from '@/presentation/components/detail/wine-facts-table'
@@ -64,6 +68,13 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
     bubbleCount,
     viewMode,
   } = useWineDetail(wineId, user?.id ?? null, wineRepo)
+
+  const { bubbles: userBubbles, bubbleIds: userBubbleIds } = useUserBubbles(user?.id ?? null)
+  const {
+    records: bubbleRecords,
+    selectedBubbleId,
+    setSelectedBubbleId,
+  } = useBubbleRecords(wineId, 'wine', userBubbleIds)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null,
@@ -334,22 +345,50 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
           </>
         )}
 
-        {/* L9: 버블 기록 — S4에서는 빈 상태만 */}
+        {/* L9: 버블 멤버 기록 */}
         <section style={{ padding: '16px 20px' }}>
           <div className="mb-3.5">
             <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
               버블 기록
             </span>
           </div>
-          <div className="text-center" style={{ padding: '40px 20px' }}>
-            <MessageCircle size={28} style={{ color: 'var(--text-hint)', margin: '0 auto 8px' }} />
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-sub)' }}>
-              아직 버블 기록이 없어요
-            </p>
-            <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
-              버블에서 이 와인에 대한 이야기를 나눠보세요
-            </p>
-          </div>
+          {bubbleRecords.length > 0 ? (
+            <>
+              <BubbleFilterChips
+                bubbles={userBubbles}
+                selectedId={selectedBubbleId}
+                onSelect={setSelectedBubbleId}
+              />
+              <div className="mt-3 flex flex-col gap-2">
+                {bubbleRecords.slice(0, 5).map((r) => (
+                  <BubbleRecordCard
+                    key={r.shareId}
+                    authorNickname={r.authorNickname}
+                    authorAvatar={r.authorAvatar}
+                    authorAvatarColor={r.authorAvatarColor}
+                    bubbleName={r.bubbleName}
+                    satisfaction={r.satisfaction}
+                    comment={r.comment}
+                    visitDate={r.visitDate}
+                  />
+                ))}
+                {bubbleRecords.length > 5 && (
+                  <p className="text-center text-[12px]" style={{ color: 'var(--accent-social)' }}>
+                    +{bubbleRecords.length - 5}개 더보기
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center" style={{ padding: '40px 20px' }}>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-sub)' }}>
+                아직 버블 기록이 없어요
+              </p>
+              <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
+                버블에서 이 와인에 대한 이야기를 나눠보세요
+              </p>
+            </div>
+          )}
         </section>
 
         {/* 하단 spacer */}
