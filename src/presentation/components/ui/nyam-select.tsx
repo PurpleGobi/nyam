@@ -12,9 +12,10 @@ interface NyamSelectProps {
   options: NyamSelectOption[]
   value: string
   onChange: (value: string) => void
+  accentColor?: string
 }
 
-export function NyamSelect({ options, value, onChange }: NyamSelectProps) {
+export function NyamSelect({ options, value, onChange, accentColor = 'var(--accent-food)' }: NyamSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -74,7 +75,7 @@ export function NyamSelect({ options, value, onChange }: NyamSelectProps) {
               onClick={() => handleSelect(option.value)}
               className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
               style={{
-                color: option.value === value ? 'var(--accent-food)' : 'var(--text)',
+                color: option.value === value ? accentColor : 'var(--text)',
                 backgroundColor: option.value === value ? 'var(--bg-card)' : 'transparent',
               }}
             >

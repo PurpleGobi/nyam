@@ -12,6 +12,9 @@ export interface XpRepository {
   getUserExperiencesByAxisType(userId: string, axisType: AxisType): Promise<UserExperience[]>
   getUserExperience(userId: string, axisType: AxisType, axisValue: string): Promise<UserExperience | null>
 
+  // ── 종합 XP 조회 ──
+  getUserTotalXp(userId: string): Promise<number>
+
   // ── 경험치 갱신 ──
   upsertUserExperience(userId: string, axisType: AxisType, axisValue: string, xpDelta: number, newLevel: number): Promise<UserExperience>
   updateUserTotalXp(userId: string, xpDelta: number): Promise<void>
@@ -39,6 +42,9 @@ export interface XpRepository {
 
   // ── 보너스 ──
   hasBonusBeenGranted(userId: string, bonusType: BonusType): Promise<boolean>
+
+  // ── 기록 XP 저장 ──
+  updateRecordQualityXp(recordId: string, xp: number): Promise<void>
 
   // ── 통계 조회 (프로필용) ──
   getUniqueCount(userId: string, axisType: AxisType, axisValue: string): Promise<number>

@@ -22,11 +22,12 @@ export function useXp(userId: string | null) {
       xpRepo.getUserExperiences(userId),
       xpRepo.getLevelThresholds(),
       xpRepo.getRecentXpHistories(userId, 20),
-    ]).then(([exp, thresh, recent]) => {
+      xpRepo.getUserTotalXp(userId),
+    ]).then(([exp, thresh, recent, userTotalXp]) => {
       setExperiences(exp)
       setThresholds(thresh)
       setRecentXp(recent)
-      setTotalXp(exp.reduce((sum, e) => sum + e.totalXp, 0))
+      setTotalXp(userTotalXp)
       setIsLoading(false)
     })
   }, [userId])
@@ -37,15 +38,16 @@ export function useXp(userId: string | null) {
 
   const refetch = useCallback(async () => {
     if (!userId) return
-    const [exp, thresh, recent] = await Promise.all([
+    const [exp, thresh, recent, userTotalXp] = await Promise.all([
       xpRepo.getUserExperiences(userId),
       xpRepo.getLevelThresholds(),
       xpRepo.getRecentXpHistories(userId, 20),
+      xpRepo.getUserTotalXp(userId),
     ])
     setExperiences(exp)
     setThresholds(thresh)
     setRecentXp(recent)
-    setTotalXp(exp.reduce((sum, e) => sum + e.totalXp, 0))
+    setTotalXp(userTotalXp)
   }, [userId])
 
   return { experiences, recentXp, thresholds, totalXp, levelInfo, isLoading, refetch }

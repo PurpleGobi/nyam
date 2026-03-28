@@ -43,6 +43,18 @@ export class SupabaseXpRepository implements XpRepository {
     return data ? mapUserExperience(data) : null
   }
 
+  // ── 종합 XP 조회 ──
+
+  async getUserTotalXp(userId: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('total_xp')
+      .eq('id', userId)
+      .single()
+    if (error) throw error
+    return (data?.total_xp as number) ?? 0
+  }
+
   // ── 경험치 갱신 ──
 
   async upsertUserExperience(
@@ -249,6 +261,16 @@ export class SupabaseXpRepository implements XpRepository {
       .eq('reason', reasonMap[bonusType])
     if (error) throw error
     return (count ?? 0) > 0
+  }
+
+  // ── 기록 XP 저장 ──
+
+  async updateRecordQualityXp(recordId: string, xp: number): Promise<void> {
+    const { error } = await this.supabase
+      .from('records')
+      .update({ record_quality_xp: xp })
+      .eq('id', recordId)
+    if (error) throw error
   }
 
   // ── 통계 조회 ──

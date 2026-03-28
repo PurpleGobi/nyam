@@ -50,7 +50,6 @@ export function useXpCalculation() {
 
     // ── Step 1: 기록 품질 → XP 산출 ──
     let recordXp = calculateRecordXp(record)
-    const reason = getRecordXpReason(recordXp)
 
     // ── Step 2: 같은 식당/와인 점수 6개월 제한 ──
     // 점수 XP(+3)만 차단. 사진/리뷰 콘텐츠 추가분은 정상 적립.
@@ -61,6 +60,12 @@ export function useXpCalculation() {
         recordXp = Math.max(0, recordXp - 3)
       }
     }
+
+    // 차감 후 최종 XP 기준으로 reason 산출
+    const reason = getRecordXpReason(recordXp)
+
+    // ── Step 2.5: record_quality_xp 저장 ──
+    await xpRepo.updateRecordQualityXp(record.id, recordXp)
 
     // ── Step 3: 종합 XP 적립 ──
     if (recordXp > 0) {

@@ -7,9 +7,10 @@ interface FilterChipSaveModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (name: string) => void
+  accentColor?: string
 }
 
-export function FilterChipSaveModal({ isOpen, onClose, onSave }: FilterChipSaveModalProps) {
+export function FilterChipSaveModal({ isOpen, onClose, onSave, accentColor = 'var(--accent-food)' }: FilterChipSaveModalProps) {
   const [name, setName] = useState('')
 
   if (!isOpen) return null
@@ -70,7 +71,7 @@ export function FilterChipSaveModal({ isOpen, onClose, onSave }: FilterChipSaveM
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="칩 이름을 입력하세요"
+          placeholder="필터칩 이름 입력..."
           autoFocus
           maxLength={20}
           className="mb-4 h-11 w-full rounded-[10px] px-3.5 text-[14px] outline-none transition-colors"
@@ -88,7 +89,7 @@ export function FilterChipSaveModal({ isOpen, onClose, onSave }: FilterChipSaveM
           disabled={name.trim().length === 0}
           className="h-11 w-full rounded-[10px] text-[14px] font-semibold transition-colors"
           style={{
-            backgroundColor: name.trim().length > 0 ? 'var(--accent-food)' : 'var(--bg-card)',
+            backgroundColor: name.trim().length > 0 ? accentColor : 'var(--bg-card)',
             color: name.trim().length > 0 ? '#FFFFFF' : 'var(--text-hint)',
             cursor: name.trim().length > 0 ? 'pointer' : 'not-allowed',
           }}

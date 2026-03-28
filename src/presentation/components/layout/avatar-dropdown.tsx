@@ -2,29 +2,32 @@
 
 import { useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Settings, LogOut } from 'lucide-react'
+import { User, Settings } from 'lucide-react'
 import { useDropdown } from '@/presentation/hooks/use-dropdown'
 
 interface AvatarDropdownProps {
   nickname: string
   avatarUrl: string | null
   avatarColor: string | null
-  onSignOut: () => void
 }
 
-export function AvatarDropdown({ nickname, avatarUrl, avatarColor, onSignOut }: AvatarDropdownProps) {
+export function AvatarDropdown({ nickname, avatarUrl, avatarColor }: AvatarDropdownProps) {
   const router = useRouter()
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const { isOpen, toggle, close } = useDropdown(triggerRef)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { isOpen, toggle, close } = useDropdown(containerRef)
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
-        ref={triggerRef}
         type="button"
         onClick={toggle}
-        className="flex h-8 w-8 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarColor ?? 'var(--accent-food)' }}
+        className="flex items-center justify-center rounded-full"
+        style={{
+          width: '30px',
+          height: '30px',
+          backgroundColor: avatarColor ?? 'var(--accent-food)',
+          flexShrink: 0,
+        }}
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -35,27 +38,29 @@ export function AvatarDropdown({ nickname, avatarUrl, avatarColor, onSignOut }: 
       </button>
 
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={close} />
-          <div
-            className="absolute right-0 top-full z-50 mt-2 w-[180px] overflow-hidden rounded-xl"
-            style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}
-          >
-            <button type="button" onClick={() => { close(); router.push('/profile') }}
-              className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13px] text-[var(--text)] transition-colors hover:bg-[var(--bg)]">
-              <User size={16} style={{ color: 'var(--text-sub)' }} /> 프로필
-            </button>
-            <button type="button" onClick={() => { close(); router.push('/settings') }}
-              className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13px] text-[var(--text)] transition-colors hover:bg-[var(--bg)]">
-              <Settings size={16} style={{ color: 'var(--text-sub)' }} /> 설정
-            </button>
-            <div style={{ height: '1px', backgroundColor: 'var(--border)' }} />
-            <button type="button" onClick={() => { close(); onSignOut() }}
-              className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13px] text-[var(--negative)] transition-colors hover:bg-[var(--bg)]">
-              <LogOut size={16} /> 로그아웃
-            </button>
-          </div>
-        </>
+        <div
+          className="absolute right-0 overflow-hidden"
+          style={{
+            top: 'calc(100% + 6px)',
+            minWidth: '120px',
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: '10px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+            zIndex: 200,
+          }}
+        >
+          <button type="button" onClick={() => { close(); router.push('/profile') }}
+            className="flex w-full items-center text-left transition-colors active:bg-[var(--bg-page)]"
+            style={{ gap: '8px', padding: '10px 14px', fontSize: '13px', fontWeight: 500, color: 'var(--text)', borderBottom: '1px solid var(--border)' }}>
+            <User size={16} /> 프로필
+          </button>
+          <button type="button" onClick={() => { close(); router.push('/settings') }}
+            className="flex w-full items-center text-left transition-colors active:bg-[var(--bg-page)]"
+            style={{ gap: '8px', padding: '10px 14px', fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+            <Settings size={16} /> 설정
+          </button>
+        </div>
       )}
     </div>
   )

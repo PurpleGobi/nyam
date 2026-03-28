@@ -8,11 +8,11 @@ export function useUnreadCount() {
   const { user } = useAuth()
   const userId = user?.id ?? null
 
-  const { data: count } = useSWR(
+  const { data: count, isLoading } = useSWR(
     userId ? ['unread-count', userId] : null,
     ([, id]) => notificationRepo.getUnreadCount(id),
     { refreshInterval: 30000 },
   )
 
-  return { count: count ?? 0 }
+  return { count: count ?? 0, isLoading }
 }

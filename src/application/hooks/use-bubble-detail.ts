@@ -15,11 +15,11 @@ export function useBubbleDetail(bubbleId: string, userId: string | null) {
     Promise.all([
       bubbleRepo.findById(bubbleId),
       bubbleRepo.getMembers(bubbleId),
-    ]).then(([b, members]) => {
+    ]).then(([b, result]) => {
       if (cancelled) return
       setBubble(b)
       if (userId) {
-        const me = members.find((m) => m.userId === userId && m.status === 'active')
+        const me = result.data.find((m) => m.userId === userId && m.status === 'active')
         setMyRole(me?.role ?? null)
         setTasteMatch(me?.tasteMatchPct ?? null)
       }

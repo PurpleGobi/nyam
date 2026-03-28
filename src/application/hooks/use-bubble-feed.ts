@@ -49,8 +49,8 @@ export function useBubbleFeed(
   const fetchShares = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await bubbleRepo.getShares(bubbleId, 50)
-      setShares(data as FeedShareEnriched[])
+      const result = await bubbleRepo.getShares(bubbleId, { limit: 50 })
+      setShares(result.data as FeedShareEnriched[])
     } finally {
       setIsLoading(false)
     }

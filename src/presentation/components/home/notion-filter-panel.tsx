@@ -12,6 +12,7 @@ interface NotionFilterPanelProps {
   onRulesChange: (rules: FilterRule[]) => void
   onConjunctionChange: (conjunction: 'and' | 'or') => void
   onSaveAsChip: () => void
+  accentColor?: string
 }
 
 export function NotionFilterPanel({
@@ -21,6 +22,7 @@ export function NotionFilterPanel({
   onRulesChange,
   onConjunctionChange,
   onSaveAsChip,
+  accentColor,
 }: NotionFilterPanelProps) {
   const handleAddRule = () => {
     const firstAttr = attributes[0]
@@ -91,6 +93,7 @@ export function NotionFilterPanel({
                 attributes={attributes}
                 onUpdate={handleUpdateRule}
                 onDelete={handleDeleteRule}
+                accentColor={accentColor}
               />
             </div>
           </div>

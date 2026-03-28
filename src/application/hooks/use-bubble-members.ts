@@ -33,8 +33,8 @@ export function useBubbleMembers(bubbleId: string) {
   const fetchMembers = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await bubbleRepo.getMembers(bubbleId)
-      setMembers(data)
+      const result = await bubbleRepo.getMembers(bubbleId)
+      setMembers(result.data)
     } finally {
       setIsLoading(false)
     }

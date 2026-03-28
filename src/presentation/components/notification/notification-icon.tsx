@@ -2,6 +2,7 @@
 
 import {
   Trophy, CircleDot, CircleCheck, UserPlus, UserCheck, Bell,
+  Mail, FilePlus, Heart, MessageCircle,
 } from 'lucide-react'
 import type { NotificationType } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
@@ -12,6 +13,11 @@ const ICON_MAP: Record<string, typeof Bell> = {
   'circle-check': CircleCheck,
   'user-plus': UserPlus,
   'user-check': UserCheck,
+  'mail': Mail,
+  'file-plus': FilePlus,
+  'user-plus-2': UserPlus,
+  'heart': Heart,
+  'message-circle': MessageCircle,
 }
 
 interface NotificationIconProps {

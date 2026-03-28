@@ -474,6 +474,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
   async getWrappedData(userId: string, category: WrappedCategory): Promise<WrappedData> {
     const targetFilter = category === 'all' ? undefined : category
 
+    // 1. 기록 조회
     let query = this.supabase
       .from('records')
       .select('satisfaction, visit_date, scene, target_type, restaurant:restaurants(name, genre, city), wine:wines(name, grape_variety, country)')
@@ -486,21 +487,64 @@ export class SupabaseProfileRepository implements ProfileRepository {
     const { data: records } = await query
     const items = records ?? []
 
+    // 2. stats 집계
     const stats: { label: string; value: string }[] = [
       { label: '총 기록', value: `${items.length}개` },
     ]
-
-    const tags: string[] = []
-    const topItems: WrappedData['topItems'] = []
 
     const scores = items.map((r) => r.satisfaction as number | null).filter((s): s is number => s !== null && s > 0)
     if (scores.length > 0) {
       stats.push({ label: '평균 만족도', value: `${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` })
     }
 
+    // 유저 정보 (taste_tags, total_xp, current_streak)
     const { data: user } = await this.supabase
-      .from('users').select('total_xp, current_streak').eq('id', userId).single()
+      .from('users')
+      .select('taste_tags, total_xp, current_streak')
+      .eq('id', userId)
+      .single()
 
+    if (user?.total_xp) {
+      stats.push({ label: '총 XP', value: `${user.total_xp as number}` })
+    }
+    if (user?.current_streak && (user.current_streak as number) > 0) {
+      stats.push({ label: '연속 기록', value: `${user.current_streak as number}일` })
+    }
+
+    // 식당/와인 카운트 (all 카테고리일 때 세분화)
+    if (category === 'all' && items.length > 0) {
+      const restCount = items.filter((r) => r.target_type === 'restaurant').length
+      const wineCount = items.filter((r) => r.target_type === 'wine').length
+      if (restCount > 0) stats.push({ label: '식당 방문', value: `${restCount}곳` })
+      if (wineCount > 0) stats.push({ label: '와인 시음', value: `${wineCount}잔` })
+    }
+
+    // 3. tags (users.taste_tags)
+    const tags: string[] = (user?.taste_tags as string[]) ?? []
+
+    // 4. topItems (만족도 상위 6개)
+    const topItems: WrappedData['topItems'] = []
+    const scored = items
+      .filter((r) => r.satisfaction !== null && (r.satisfaction as number) > 0)
+      .sort((a, b) => (b.satisfaction as number) - (a.satisfaction as number))
+      .slice(0, 6)
+
+    scored.forEach((r, i) => {
+      const restaurant = r.restaurant as unknown as Record<string, unknown> | null
+      const wine = r.wine as unknown as Record<string, unknown> | null
+      const name = (restaurant?.name as string) ?? (wine?.name as string) ?? '알 수 없음'
+      const meta = r.target_type === 'restaurant'
+        ? (restaurant?.genre as string) ?? ''
+        : (wine?.grape_variety as string) ?? ''
+      topItems.push({
+        rank: i + 1,
+        name,
+        meta,
+        score: r.satisfaction as number,
+      })
+    })
+
+    // 5. level (최고 XP 축)
     const { data: xpData } = await this.supabase
       .from('user_experiences').select('axis_type, axis_value, level, total_xp')
       .eq('user_id', userId)
@@ -514,13 +558,29 @@ export class SupabaseProfileRepository implements ProfileRepository {
       axisLabel: (topExp?.axis_value as string) ?? '',
     }
 
+    // 6. bubbles (사용자가 속한 버블 목록)
+    const { data: memberData } = await this.supabase
+      .from('bubble_members')
+      .select('bubble:bubbles(name, avatar_color)')
+      .eq('user_id', userId)
+
+    const bubbles: WrappedData['bubbles'] = (memberData ?? [])
+      .map((m) => {
+        const bubble = m.bubble as unknown as Record<string, unknown> | null
+        return {
+          name: (bubble?.name as string) ?? '',
+          avatarColor: (bubble?.avatar_color as string) ?? '#7A9BAE',
+        }
+      })
+      .filter((b) => b.name.length > 0)
+
     return {
       category,
       stats,
       tags,
       level: levelData,
       topItems,
-      bubbles: [],
+      bubbles,
     }
   }
 

@@ -13,8 +13,8 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
   const fetchComments = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await commentRepo.getByTarget(targetType, targetId, bubbleId)
-      setComments(data)
+      const result = await commentRepo.getByTarget(targetType, targetId, bubbleId)
+      setComments(result.data)
     } finally {
       setIsLoading(false)
     }

@@ -47,6 +47,7 @@ export function NotificationDropdown({
       if (config.navigationTarget === 'profile') router.push('/profile')
       else if (config.navigationTarget === 'bubble_detail' && n.bubbleId) router.push(`/bubbles/${n.bubbleId}`)
       else if (config.navigationTarget === 'actor_profile' && n.actorId) router.push(`/bubbler/${n.actorId}`)
+      else if (config.navigationTarget === 'record_detail' && n.bubbleId) router.push(`/bubbles/${n.bubbleId}`)
     }
     onClose()
   }

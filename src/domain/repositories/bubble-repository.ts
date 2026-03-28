@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -69,18 +69,39 @@ export interface BubbleRepository {
   create(input: CreateBubbleInput): Promise<Bubble>
   findById(id: string): Promise<Bubble | null>
   findByUserId(userId: string): Promise<Bubble[]>
-  findPublic(limit: number): Promise<Bubble[]>
+  findPublic(options?: {
+    search?: string
+    focusType?: string
+    area?: string
+    sortBy?: 'latest' | 'members' | 'records' | 'activity'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Bubble[]; total: number }>
   update(id: string, data: Partial<Bubble>): Promise<Bubble>
   delete(id: string): Promise<void>
 
-  getMembers(bubbleId: string): Promise<BubbleMember[]>
+  getMembers(bubbleId: string, options?: {
+    role?: BubbleMemberRole
+    status?: BubbleMemberStatus
+    sortBy?: 'taste_match' | 'records' | 'level' | 'recent'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleMember[]; total: number }>
   getMember(bubbleId: string, userId: string): Promise<BubbleMember | null>
   getPendingMembers(bubbleId: string): Promise<BubbleMember[]>
   addMember(bubbleId: string, userId: string, role: string, status: string): Promise<BubbleMember>
   updateMember(bubbleId: string, userId: string, data: Partial<BubbleMember>): Promise<void>
   removeMember(bubbleId: string, userId: string): Promise<void>
 
-  getShares(bubbleId: string, limit: number): Promise<BubbleShare[]>
+  getShares(bubbleId: string, options?: {
+    targetType?: 'restaurant' | 'wine'
+    sharedBy?: string
+    period?: 'week' | 'month' | '3months' | 'all'
+    minSatisfaction?: number
+    sortBy?: 'newest' | 'reactions' | 'score' | 'member'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleShare[]; total: number }>
   addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare>
   removeShare(shareId: string): Promise<void>
 
@@ -97,6 +118,7 @@ export interface BubbleRepository {
 
   findByInviteCode(code: string): Promise<Bubble | null>
   generateInviteCode(bubbleId: string, expiresAt?: string | null): Promise<string>
+
   validateInviteCode(code: string): Promise<{ valid: boolean; bubble: Bubble | null; expired: boolean }>
 
   // S8 추가 메서드

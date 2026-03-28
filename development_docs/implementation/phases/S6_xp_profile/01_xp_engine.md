@@ -920,17 +920,19 @@ export function useXpCalculation() {
 
     // ── Step 1: 기록 품질 → XP 산출 ──
     let recordXp = calculateRecordXp(record);
-    const reason = getRecordXpReason(recordXp);
 
     // ── Step 2: 같은 식당/와인 점수 6개월 제한 ──
+    // 점수 XP(+3)만 차감. 사진/리뷰 콘텐츠 추가분은 정상 적립.
+    // 예: 풀기록(18) - 점수분(3) = 15, 사진기록(8) - 3 = 5, 점수만(3) - 3 = 0
     if (recordXp >= 3) {
       const lastScore = await xpRepo.getLastScoreDate(userId, record.targetId);
       if (isDuplicateScoreBlocked(lastScore)) {
-        // 점수 XP 차단, 사진/풀 기록의 추가분만 부여
-        // 재방문 시 점수 XP(+3)는 중복 차단, 사진/리뷰 콘텐츠 추가분은 정상 부여
-        recordXp = 0;
+        recordXp = Math.max(0, recordXp - 3);
       }
     }
+
+    // 차감 후 최종 XP 기준으로 reason 산출
+    const reason = getRecordXpReason(recordXp);
 
     // ── Step 3: 종합 XP 적립 ──
     if (recordXp > 0) {

@@ -11,6 +11,7 @@ interface FilterRuleRowProps {
   attributes: FilterAttribute[]
   onUpdate: (index: number, updated: FilterRule) => void
   onDelete: (index: number) => void
+  accentColor?: string
 }
 
 const SELECT_OPERATORS = [
@@ -42,7 +43,7 @@ function getOperatorsForType(type: FilterAttributeType) {
   }
 }
 
-export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete }: FilterRuleRowProps) {
+export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete, accentColor }: FilterRuleRowProps) {
   const selectedAttr = attributes.find((a) => a.key === rule.attribute)
   const operators = selectedAttr ? getOperatorsForType(selectedAttr.type) : SELECT_OPERATORS
 
@@ -73,6 +74,7 @@ export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete }: F
         options={attributes.map((a) => ({ value: a.key, label: a.label }))}
         value={rule.attribute}
         onChange={handleAttributeChange}
+        accentColor={accentColor}
       />
 
       {/* 연산자 드롭다운 */}
@@ -80,6 +82,7 @@ export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete }: F
         options={operators}
         value={rule.operator}
         onChange={handleOperatorChange}
+        accentColor={accentColor}
       />
 
       {/* 값 드롭다운/입력 */}
@@ -88,6 +91,7 @@ export function FilterRuleRow({ index, rule, attributes, onUpdate, onDelete }: F
           options={selectedAttr.options}
           value={String(rule.value ?? '')}
           onChange={handleValueChange}
+          accentColor={accentColor}
         />
       ) : (
         <input

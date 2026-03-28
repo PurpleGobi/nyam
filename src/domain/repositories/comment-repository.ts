@@ -5,7 +5,10 @@ import type { Comment } from '@/domain/entities/comment'
 
 export interface CommentRepository {
   getById(id: string): Promise<Comment | null>
-  getByTarget(targetType: string, targetId: string, bubbleId: string): Promise<Comment[]>
+  getByTarget(targetType: string, targetId: string, bubbleId: string, options?: {
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Comment[]; total: number }>
   getCountByTarget(targetType: string, targetId: string, bubbleId: string): Promise<number>
   create(params: { targetType: string; targetId: string; bubbleId: string; userId: string; content: string; isAnonymous: boolean }): Promise<Comment>
   delete(commentId: string, userId: string): Promise<void>

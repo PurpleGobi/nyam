@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { NudgeDisplay } from '@/domain/entities/nudge'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { DiningRecord } from '@/domain/entities/record'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRecords } from '@/application/hooks/use-records'
 import { useHomeState } from '@/application/hooks/use-home-state'
 import { useSavedFilters } from '@/application/hooks/use-saved-filters'
+import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -18,6 +21,12 @@ import { AiGreeting } from '@/presentation/components/home/ai-greeting'
 import { NudgeStrip } from '@/presentation/components/home/nudge-strip'
 import { HomeTabs } from '@/presentation/components/home/home-tabs'
 import { RecordCard } from '@/presentation/components/home/record-card'
+import { WineCard } from '@/presentation/components/home/wine-card'
+import { CompactListItem } from '@/presentation/components/home/compact-list-item'
+import { CalendarView } from '@/presentation/components/home/calendar-view'
+import { CalendarDayDetail } from '@/presentation/components/home/calendar-day-detail'
+import { MapView } from '@/presentation/components/home/map-view'
+import type { MapRecord } from '@/presentation/components/home/map-view'
 import { SavedFilterChips } from '@/presentation/components/home/saved-filter-chips'
 import { NotionFilterPanel } from '@/presentation/components/home/notion-filter-panel'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
@@ -72,25 +81,21 @@ function searchRecords(records: DiningRecord[], query: string): DiningRecord[] {
 
 function applyFilterRules(records: DiningRecord[], rules: FilterRule[], conjunction: 'and' | 'or'): DiningRecord[] {
   if (rules.length === 0) return records
-  return records.filter((record) => {
-    const results = rules.map((rule) => {
-      const val = (record as unknown as Record<string, unknown>)[rule.attribute]
-      switch (rule.operator) {
-        case 'eq': return String(val) === String(rule.value)
-        case 'neq': return String(val) !== String(rule.value)
-        case 'contains': return String(val ?? '').toLowerCase().includes(String(rule.value).toLowerCase())
-        case 'not_contains': return !String(val ?? '').toLowerCase().includes(String(rule.value).toLowerCase())
-        case 'gte': return Number(val) >= Number(rule.value)
-        case 'lt': return Number(val) < Number(rule.value)
-        default: return true
-      }
-    })
-    return conjunction === 'and' ? results.every(Boolean) : results.some(Boolean)
-  })
+  return records.filter((record) =>
+    matchesAllRules(record as unknown as Record<string, unknown>, rules, conjunction),
+  )
+}
+
+const MEAL_TIME_LABELS: Record<string, string> = {
+  breakfast: '아침',
+  lunch: '점심',
+  dinner: '저녁',
+  snack: '간식',
 }
 
 export function HomeContainer() {
   const { user } = useAuth()
+  const router = useRouter()
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     isMapOpen, toggleMap,
@@ -123,6 +128,12 @@ export function HomeContainer() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
+  // 캘린더 상태
+  const now = new Date()
+  const [calYear, setCalYear] = useState(now.getFullYear())
+  const [calMonth, setCalMonth] = useState(now.getMonth() + 1)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
   const greeting = useMemo(() => getTimeGreeting(), [])
 
   const filterAttributes = activeTab === 'restaurant'
@@ -130,6 +141,7 @@ export function HomeContainer() {
     : WINE_FILTER_ATTRIBUTES
 
   const accentType = activeTab === 'restaurant' ? 'food' as const : 'wine' as const
+  const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   const canShowStats = activeTab === 'restaurant'
     ? restaurantStats.totalRecordCount >= 5
@@ -168,6 +180,7 @@ export function HomeContainer() {
     setIsSaveModalOpen(false)
   }, [createFilter, filterRules, currentSort])
 
+  // 필터/소팅/검색 적용된 레코드
   const displayRecords = useMemo(() => {
     let result = records
     result = applyFilterRules(result, filterRules, conjunction)
@@ -175,6 +188,185 @@ export function HomeContainer() {
     result = sortRecords(result, currentSort)
     return result
   }, [records, filterRules, conjunction, searchQuery, currentSort])
+
+  // 캘린더 레코드
+  const { days: calendarDays } = useCalendarRecords({
+    userId: user?.id ?? null,
+    tab: activeTab,
+    year: calYear,
+    month: calMonth,
+  })
+
+  // 캘린더 선택 날짜의 상세 기록
+  const selectedDayRecords = useMemo(() => {
+    if (!selectedDate) return []
+    return displayRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
+  }, [displayRecords, selectedDate])
+
+  const selectedDateLabel = useMemo(() => {
+    if (!selectedDate) return ''
+    const d = new Date(selectedDate)
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+    return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`
+  }, [selectedDate])
+
+  // 맵 레코드 (식당 전용)
+  const mapRecords: MapRecord[] = useMemo(() => {
+    if (activeTab !== 'restaurant') return []
+    return displayRecords.map((r) => ({
+      restaurantId: r.targetId,
+      name: r.targetId,
+      genre: '',
+      area: '',
+      lat: 0,
+      lng: 0,
+      score: r.satisfaction,
+      distanceKm: null,
+    }))
+  }, [displayRecords, activeTab])
+
+  // 빈 상태
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center py-16">
+      {activeTab === 'restaurant' ? (
+        <UtensilsCrossed size={48} style={{ color: 'var(--text-hint)' }} />
+      ) : (
+        <Wine size={48} style={{ color: 'var(--text-hint)' }} />
+      )}
+      <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
+        {activeTab === 'restaurant' ? '첫 식당을 기록해보세요' : '첫 와인을 기록해보세요'}
+      </p>
+      <p className="mt-1 text-[13px] text-[var(--text-hint)]">
+        +버튼을 눌러 시작하세요
+      </p>
+    </div>
+  )
+
+  // 뷰 모드별 콘텐츠
+  const renderContent = () => {
+    // 지도 뷰 (식당 전용, 별도 토글)
+    if (isMapOpen && activeTab === 'restaurant') {
+      if (mapRecords.length === 0) return renderEmptyState()
+      return (
+        <div className="pb-24">
+          <MapView
+            records={mapRecords}
+            onPinClick={(id) => router.push(`/restaurants/${id}`)}
+          />
+        </div>
+      )
+    }
+
+    // 캘린더 뷰
+    if (viewMode === 'calendar') {
+      return (
+        <div className="pb-24">
+          <CalendarView
+            year={calYear}
+            month={calMonth}
+            records={calendarDays}
+            onMonthChange={(y, m) => { setCalYear(y); setCalMonth(m); setSelectedDate(null) }}
+            onDaySelect={setSelectedDate}
+            selectedDate={selectedDate}
+            accentType={activeTab}
+          />
+          {selectedDate && selectedDayRecords.length > 0 && (
+            <CalendarDayDetail
+              date={selectedDateLabel}
+              records={selectedDayRecords.map((r) => ({
+                mealTime: MEAL_TIME_LABELS[r.mealTime ?? ''] ?? '',
+                name: r.targetId,
+                score: r.satisfaction,
+                id: r.id,
+                targetType: r.targetType,
+                targetId: r.targetId,
+              }))}
+              accentType={activeTab}
+            />
+          )}
+        </div>
+      )
+    }
+
+    // 리스트(compact) 뷰
+    if (viewMode === 'compact') {
+      if (displayRecords.length === 0) return renderEmptyState()
+      return (
+        <div className="pb-24">
+          {displayRecords.map((record, i) => (
+            <CompactListItem
+              key={record.id}
+              rank={i + 1}
+              thumbnailUrl={null}
+              name={record.targetId}
+              meta={record.visitDate ?? ''}
+              score={record.satisfaction}
+              accentType={activeTab}
+              onClick={() =>
+                router.push(
+                  `/${record.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${record.targetId}`,
+                )
+              }
+            />
+          ))}
+        </div>
+      )
+    }
+
+    // 카드(detailed) 뷰 — 기본
+    if (displayRecords.length === 0) return renderEmptyState()
+    return (
+      <div className="flex flex-col gap-3 px-4 pb-24 pt-2">
+        {displayRecords.map((record) =>
+          activeTab === 'wine' ? (
+            <WineCard
+              key={record.id}
+              id={record.id}
+              wine={{
+                id: record.targetId,
+                name: record.targetId,
+                wineType: '',
+                variety: null,
+                region: null,
+                photoUrl: null,
+              }}
+              myRecord={{
+                satisfaction: record.satisfaction,
+                axisX: record.axisX,
+                axisY: record.axisY,
+                visitDate: record.visitDate,
+                wineStatus: record.wineStatus ?? 'tasted',
+                purchasePrice: record.purchasePrice,
+              }}
+            />
+          ) : (
+            <RecordCard
+              key={record.id}
+              id={record.id}
+              targetId={record.targetId}
+              targetType={record.targetType}
+              name={record.targetId}
+              meta={record.visitDate ?? ''}
+              photoUrl={null}
+              satisfaction={record.satisfaction}
+              axisX={record.axisX}
+              axisY={record.axisY}
+              status={record.status}
+              sources={[
+                {
+                  type: 'me',
+                  label: '나',
+                  detail: `${record.satisfaction ?? '-'} · ${record.visitDate ?? ''}`,
+                },
+              ]}
+            />
+          ),
+        )}
+      </div>
+    )
+  }
+
+  const isCalendarMode = viewMode === 'calendar'
 
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--bg)]">
@@ -217,7 +409,8 @@ export function HomeContainer() {
           isSearchOpen={isSearchOpen}
         />
 
-        {isFilterOpen && (
+        {/* 필터/소팅/검색 패널 — 캘린더 모드에서는 숨김 */}
+        {!isCalendarMode && isFilterOpen && (
           <div className="pt-2">
             <NotionFilterPanel
               rules={filterRules}
@@ -226,11 +419,12 @@ export function HomeContainer() {
               onRulesChange={handleRulesChange}
               onConjunctionChange={setConjunction}
               onSaveAsChip={() => setIsSaveModalOpen(true)}
+              accentColor={accentColor}
             />
           </div>
         )}
 
-        {isSortOpen && (
+        {!isCalendarMode && isSortOpen && (
           <div className="pt-2">
             <SortDropdown
               currentSort={currentSort}
@@ -240,7 +434,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        {isSearchOpen && (
+        {!isCalendarMode && isSearchOpen && (
           <div className="pt-2">
             <SearchDropdown
               query={searchQuery}
@@ -250,16 +444,19 @@ export function HomeContainer() {
           </div>
         )}
 
-        <SavedFilterChips
-          chips={filters}
-          activeChipId={activeChipId}
-          counts={counts}
-          accentClass={accentType}
-          onChipSelect={handleChipSelect}
-        />
+        {/* 저장 필터 칩 — 캘린더 모드에서는 숨김 */}
+        {!isCalendarMode && (
+          <SavedFilterChips
+            chips={filters}
+            activeChipId={activeChipId}
+            counts={counts}
+            accentClass={accentType}
+            onChipSelect={handleChipSelect}
+          />
+        )}
 
-        {/* 통계 패널 */}
-        {canShowStats && (
+        {/* 통계 패널 — 캘린더/지도 모드에서는 숨김 */}
+        {!isCalendarMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2">
             <StatsToggle
               isOpen={isStatsOpen}
@@ -352,48 +549,17 @@ export function HomeContainer() {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 px-4 pb-24 pt-2">
-          {displayRecords.length === 0 ? (
-            <div className="flex flex-col items-center py-16">
-              {activeTab === 'restaurant' ? (
-                <UtensilsCrossed size={48} style={{ color: 'var(--text-hint)' }} />
-              ) : (
-                <Wine size={48} style={{ color: 'var(--text-hint)' }} />
-              )}
-              <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
-                {activeTab === 'restaurant' ? '첫 식당을 기록해보세요' : '첫 와인을 기록해보세요'}
-              </p>
-              <p className="mt-1 text-[13px] text-[var(--text-hint)]">
-                +버튼을 눌러 시작하세요
-              </p>
-            </div>
-          ) : (
-            displayRecords.map((record) => (
-              <RecordCard
-                key={record.id}
-                id={record.id}
-                targetId={record.targetId}
-                targetType={record.targetType}
-                name={record.targetId}
-                meta={record.visitDate ?? ''}
-                photoUrl={null}
-                satisfaction={record.satisfaction}
-                axisX={null}
-                axisY={null}
-                status="rated"
-                sources={[{ type: 'me', label: '나', detail: `${record.satisfaction ?? '-'} · ${record.visitDate ?? ''}` }]}
-              />
-            ))
-          )}
-        </div>
+        {/* 뷰 모드별 콘텐츠 */}
+        {renderContent()}
       </div>
 
-      <FabAdd currentTab={activeTab} />
+      <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
 
       <FilterChipSaveModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
         onSave={handleSaveChip}
+        accentColor={accentColor}
       />
     </div>
   )

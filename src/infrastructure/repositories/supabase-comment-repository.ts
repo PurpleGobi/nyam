@@ -10,15 +10,25 @@ export class SupabaseCommentRepository implements CommentRepository {
     return data ? mapComment(data as Record<string, unknown>) : null
   }
 
-  async getByTarget(targetType: string, targetId: string, bubbleId: string): Promise<Comment[]> {
-    const { data } = await this.supabase
+  async getByTarget(targetType: string, targetId: string, bubbleId: string, options?: {
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Comment[]; total: number }> {
+    let query = this.supabase
       .from('comments')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('target_type', targetType)
       .eq('target_id', targetId)
       .eq('bubble_id', bubbleId)
       .order('created_at', { ascending: true })
-    return (data ?? []).map(mapComment)
+
+    if (options?.limit) {
+      const offset = options.offset ?? 0
+      query = query.range(offset, offset + options.limit - 1)
+    }
+
+    const { data, count } = await query
+    return { data: (data ?? []).map(mapComment), total: count ?? 0 }
   }
 
   async getCountByTarget(targetType: string, targetId: string, bubbleId: string): Promise<number> {

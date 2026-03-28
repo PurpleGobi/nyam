@@ -2,17 +2,50 @@ import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
 import type { Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
 
+const BUBBLE_FIELD_MAP: Record<string, string> = {
+  focusType: 'focus_type', contentVisibility: 'content_visibility',
+  allowComments: 'allow_comments', allowExternalShare: 'allow_external_share',
+  joinPolicy: 'join_policy', minRecords: 'min_records', minLevel: 'min_level',
+  maxMembers: 'max_members', isSearchable: 'is_searchable', searchKeywords: 'search_keywords',
+  iconBgColor: 'icon_bg_color', createdBy: 'created_by', inviteCode: 'invite_code',
+  inviteExpiresAt: 'invite_expires_at', followerCount: 'follower_count',
+  memberCount: 'member_count', recordCount: 'record_count', avgSatisfaction: 'avg_satisfaction',
+  lastActivityAt: 'last_activity_at', uniqueTargetCount: 'unique_target_count',
+  weeklyRecordCount: 'weekly_record_count', prevWeeklyRecordCount: 'prev_weekly_record_count',
+  createdAt: 'created_at', updatedAt: 'updated_at',
+}
+
+function toBubbleRow(data: Record<string, unknown>): Record<string, unknown> {
+  const row: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'id') continue
+    row[BUBBLE_FIELD_MAP[key] ?? key] = value
+  }
+  return row
+}
+
 export class SupabaseBubbleRepository implements BubbleRepository {
   private get supabase() { return createClient() }
 
   async create(input: CreateBubbleInput): Promise<Bubble> {
     const { data, error } = await this.supabase.from('bubbles').insert({
-      name: input.name, description: input.description ?? null,
-      focus_type: input.focusType ?? 'all', visibility: input.visibility ?? 'private',
+      name: input.name,
+      description: input.description ?? null,
+      focus_type: input.focusType ?? 'all',
+      area: input.area ?? null,
+      visibility: input.visibility ?? 'private',
+      content_visibility: input.contentVisibility ?? 'rating_and_comment',
+      allow_comments: input.allowComments ?? true,
+      allow_external_share: input.allowExternalShare ?? false,
       join_policy: input.joinPolicy ?? 'invite_only',
-      min_records: input.minRecords ?? 0, min_level: input.minLevel ?? 0,
+      min_records: input.minRecords ?? 0,
+      min_level: input.minLevel ?? 0,
       max_members: input.maxMembers ?? null,
-      icon: input.icon ?? null, icon_bg_color: input.iconBgColor ?? null,
+      rules: input.rules ?? null,
+      is_searchable: input.isSearchable ?? true,
+      search_keywords: input.searchKeywords ?? null,
+      icon: input.icon ?? null,
+      icon_bg_color: input.iconBgColor ?? null,
       created_by: input.createdBy,
     }).select().single()
     if (error) throw new Error(`Bubble 생성 실패: ${error.message}`)
@@ -35,13 +68,42 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return (bubbles ?? []) as unknown as Bubble[]
   }
 
-  async findPublic(limit: number): Promise<Bubble[]> {
-    const { data } = await this.supabase.from('bubbles').select('*').eq('visibility', 'public').eq('is_searchable', true).limit(limit)
-    return (data ?? []) as unknown as Bubble[]
+  async findPublic(options?: {
+    search?: string
+    focusType?: string
+    area?: string
+    sortBy?: 'latest' | 'members' | 'records' | 'activity'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Bubble[]; total: number }> {
+    const limit = options?.limit ?? 20
+    const offset = options?.offset ?? 0
+    let query = this.supabase.from('bubbles').select('*', { count: 'exact' })
+      .eq('visibility', 'public').eq('is_searchable', true)
+
+    if (options?.search) {
+      const term = `%${options.search}%`
+      query = query.or(`name.ilike.${term},description.ilike.${term}`)
+    }
+    if (options?.focusType) query = query.eq('focus_type', options.focusType)
+    if (options?.area) query = query.ilike('area', `%${options.area}%`)
+
+    switch (options?.sortBy) {
+      case 'members': query = query.order('member_count', { ascending: false }); break
+      case 'records': query = query.order('record_count', { ascending: false }); break
+      case 'activity': query = query.order('last_activity_at', { ascending: false, nullsFirst: false }); break
+      default: query = query.order('created_at', { ascending: false })
+    }
+
+    query = query.range(offset, offset + limit - 1)
+    const { data, count } = await query
+    return { data: (data ?? []) as unknown as Bubble[], total: count ?? 0 }
   }
 
   async update(id: string, updates: Partial<Bubble>): Promise<Bubble> {
-    const { data, error } = await this.supabase.from('bubbles').update({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>).eq('id', id).select().single()
+    const row = toBubbleRow(updates as Record<string, unknown>)
+    row.updated_at = new Date().toISOString()
+    const { data, error } = await this.supabase.from('bubbles').update(row).eq('id', id).select().single()
     if (error) throw new Error(`Bubble 수정 실패: ${error.message}`)
     return data as unknown as Bubble
   }
@@ -51,9 +113,34 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (error) throw new Error(`Bubble 삭제 실패: ${error.message}`)
   }
 
-  async getMembers(bubbleId: string): Promise<BubbleMember[]> {
-    const { data } = await this.supabase.from('bubble_members').select('*').eq('bubble_id', bubbleId)
-    return (data ?? []) as unknown as BubbleMember[]
+  async getMembers(bubbleId: string, options?: {
+    role?: string
+    status?: string
+    sortBy?: 'taste_match' | 'records' | 'level' | 'recent'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleMember[]; total: number }> {
+    let query = this.supabase.from('bubble_members').select('*', { count: 'exact' })
+      .eq('bubble_id', bubbleId)
+
+    if (options?.role) query = query.eq('role', options.role)
+    if (options?.status) query = query.eq('status', options.status)
+
+    switch (options?.sortBy) {
+      case 'taste_match': query = query.order('taste_match_pct', { ascending: false, nullsFirst: false }); break
+      case 'records': query = query.order('member_unique_target_count', { ascending: false }); break
+      case 'level': query = query.order('avg_satisfaction', { ascending: false, nullsFirst: false }); break
+      case 'recent': query = query.order('joined_at', { ascending: false }); break
+      default: query = query.order('joined_at', { ascending: true })
+    }
+
+    if (options?.limit) {
+      const offset = options.offset ?? 0
+      query = query.range(offset, offset + options.limit - 1)
+    }
+
+    const { data, count } = await query
+    return { data: (data ?? []) as unknown as BubbleMember[], total: count ?? 0 }
   }
 
   async getMember(bubbleId: string, userId: string): Promise<BubbleMember | null> {
@@ -90,9 +177,37 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     await this.supabase.from('bubble_members').delete().eq('bubble_id', bubbleId).eq('user_id', userId)
   }
 
-  async getShares(bubbleId: string, limit: number): Promise<BubbleShare[]> {
-    const { data } = await this.supabase.from('bubble_shares').select('*').eq('bubble_id', bubbleId).order('shared_at', { ascending: false }).limit(limit)
-    return (data ?? []) as unknown as BubbleShare[]
+  async getShares(bubbleId: string, options?: {
+    targetType?: 'restaurant' | 'wine'
+    sharedBy?: string
+    period?: 'week' | 'month' | '3months' | 'all'
+    minSatisfaction?: number
+    sortBy?: 'newest' | 'reactions' | 'score' | 'member'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleShare[]; total: number }> {
+    const limit = options?.limit ?? 50
+    const offset = options?.offset ?? 0
+    let query = this.supabase.from('bubble_shares').select('*', { count: 'exact' })
+      .eq('bubble_id', bubbleId)
+
+    if (options?.sharedBy) query = query.eq('shared_by', options.sharedBy)
+
+    if (options?.period && options.period !== 'all') {
+      const msMap = { week: 7 * 86400000, month: 30 * 86400000, '3months': 90 * 86400000 }
+      const cutoff = new Date(Date.now() - msMap[options.period]).toISOString()
+      query = query.gte('shared_at', cutoff)
+    }
+
+    switch (options?.sortBy) {
+      case 'score': query = query.order('shared_at', { ascending: false }); break
+      case 'member': query = query.order('shared_by', { ascending: true }); break
+      default: query = query.order('shared_at', { ascending: false })
+    }
+
+    query = query.range(offset, offset + limit - 1)
+    const { data, count } = await query
+    return { data: (data ?? []) as unknown as BubbleShare[], total: count ?? 0 }
   }
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare> {
@@ -183,9 +298,10 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return data as unknown as Bubble | null
   }
 
-  async generateInviteCode(bubbleId: string): Promise<string> {
+  async generateInviteCode(bubbleId: string, expiresAt?: string | null): Promise<string> {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase()
-    await this.supabase.from('bubbles').update({ invite_code: code, invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }).eq('id', bubbleId)
+    const expiry = expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    await this.supabase.from('bubbles').update({ invite_code: code, invite_expires_at: expiry }).eq('id', bubbleId)
     return code
   }
 

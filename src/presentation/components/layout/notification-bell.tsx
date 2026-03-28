@@ -13,9 +13,10 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
     <button
       type="button"
       onClick={onClick}
-      className="relative flex h-10 w-10 items-center justify-center"
+      className="relative flex items-center justify-center rounded-full"
+      style={{ width: '34px', height: '34px' }}
     >
-      <Bell size={20} style={{ color: 'var(--text-sub)' }} />
+      <Bell size={20} style={{ color: 'var(--text)' }} />
       <UnreadBadge count={unreadCount} />
     </button>
   )
