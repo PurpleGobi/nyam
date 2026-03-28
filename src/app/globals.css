@@ -1173,8 +1173,8 @@ html, body, * {
   color: var(--text-hint);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 4px;
+  border-bottom: 3px solid transparent;
+  padding: 10px 6px 8px;
   cursor: pointer;
   transition: all 0.15s;
 }
