@@ -42,7 +42,9 @@ export interface BubbleFeedItem {
   sharedAt: string
 }
 
-export interface BubbleShareForTarget extends BubbleFeedItem {}
+export interface BubbleShareForTarget extends BubbleFeedItem {
+  contentVisibility?: 'rating_only' | 'rating_and_comment'
+}
 
 export interface UserBubbleMembership {
   bubbleId: string

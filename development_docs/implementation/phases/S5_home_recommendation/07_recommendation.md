@@ -330,7 +330,44 @@ WSET 8-카테고리 그리드:
 - records.pairing_categories에 저장
 - 와인 상세 페이지에서 읽기 전용 태그 표시
 
-### 5. 콜드스타트 임계값
+### 5. 추천 알고리즘 7종 개요
+
+7종 알고리즘은 **호출 방식**에 따라 두 그룹으로 나뉜다.
+
+#### 자동 호출 (기본 병합 대상) — 3종
+
+홈 추천 영역 진입 시 `useRecommendations` 훅이 **자동으로 병렬 호출**하여 병합 정렬한다.
+
+| # | 알고리즘 | API | 점수 계산 | 소스 태그 |
+|---|---------|-----|----------|----------|
+| 1 | **재방문** | `/api/recommend/revisit` | 60% 만족도 + 30% 오래 안 감 + 10% 재방문 보너스 | AI |
+| 2 | **권위** | `/api/recommend/authority` | 외부 평점 정규화 + 미슐랭/블루리본 가산 | 웹 |
+| 3 | **버블** | `/api/recommend/bubble` | 멤버 만족도 × (1 + log₁₀(평가 멤버 수)) | 버블 (private이면 AI) |
+
+#### 온디맨드 호출 (사용자 액션 시) — 4종
+
+사용자가 **특정 조건을 지정하거나 특정 화면에 진입할 때** 개별적으로 호출된다.
+기본 병합에 포함하지 않는 이유: 필수 파라미터(scene, 좌표 범위, 카테고리 등)가 없으면 의미 있는 결과를 반환할 수 없기 때문.
+
+| # | 알고리즘 | API | 호출 시점 | Phase |
+|---|---------|-----|----------|-------|
+| 4 | **상황별** | `/api/recommend/scene?scene=romantic` | 사용자가 상황 필터(데이트, 접대 등)를 선택할 때 | Phase 1 |
+| 5 | **사분면** | `/api/recommend/scene?scene=...&axisXMin=...` | 사용자가 사분면 범위를 지정할 때 (상황별 API에 쿼리 파라미터 추가) | Phase 1 |
+| 6 | **찜 리마인드** | (지역 푸시) | 찜한 식당 근처에 위치할 때 (geofence 기반) | **Phase 2** |
+| 7 | **와인 페어링** | `/api/recommend/wine-pairing?category=seafood` | 와인 기록에서 음식 페어링 카테고리를 선택할 때 | Phase 1 |
+
+### 6. 콜드스타트 임계값
+
+기록 수에 따라 **자동 호출 3종**의 활성화 범위가 달라진다.
+온디맨드 4종은 조건 충족 시 기록 수와 무관하게 호출 가능.
+
+| 기록 수 | 자동 호출 범위 | 설명 |
+|---------|-------------|------|
+| **< 5개** | 권위만 | 콜드스타트 — 내 데이터 부족, 외부 권위 데이터로 보완 |
+| **5~19개** | 재방문 + 권위 + 버블 | 내 기록 기반 재방문 추천 시작 |
+| **20+** | 재방문 + 권위 + 버블 (동일) + 온디맨드 4종 모두 사용 가능 | 충분한 데이터 — 상황별/사분면 필터도 의미 있는 결과 반환 가능 |
+
+각 추천 타입별 최소 데이터 요구량:
 
 | 추천 타입 | 최소 (노출 시작) | 충분 (정상 작동) |
 |----------|-----------------|-----------------|
@@ -338,24 +375,21 @@ WSET 8-카테고리 그리드:
 | 상황별 | 상황 2종, 각 3개 | 각 10개 |
 | 버블 | 가입 버블 1개, 멤버 기록 5+ | 버블 3+, 기록 30+ |
 
-- `기록 < 5개` → 권위 추천만 노출 (콜드스타트 모드)
-- `기록 5~19개` → 재방문 + 권위 + 버블
-- `기록 20+` → 전체 7종
-
-### 6. 추천순 정렬 (병합)
+### 7. 추천순 정렬 (병합)
 
 ```
-추천 필터칩 진입 시:
+추천 영역 진입 시 (자동 호출 3종):
 1. revisit API → normalizedScore (§2-1 ORDER BY 공식 정규화)
 2. authority API → normalizedScore (외부 평점 평균 정규화 + 뱃지 가산)
 3. bubble API → normalizedScore (멤버 만족도 * (1 + log(평가 멤버 수)))
-4. RecommendationService.mergeRecommendations() → 통합 리스트
-5. 동점 시 최신 데이터 우선
+4. 중복 제거 (targetId 기준)
+5. mergeRecommendations() → normalizedScore DESC 통합 정렬
+6. 동점 시 최신 데이터 우선
 ```
 
 캐싱: 30분 TTL, 위치 변경 시 무효화.
 
-### 7. RecommendationCard 컴포넌트
+### 8. RecommendationCard 컴포넌트
 
 ```typescript
 interface RecommendationCardProps {
@@ -371,7 +405,7 @@ interface RecommendationCardProps {
 - AI 카드: 개인화 메시지 필수 (reason 필드)
 - 인게이지먼트: ♡ + 💬 표시
 
-### 8. RecommendationSourceTag 컴포넌트
+### 9. RecommendationSourceTag 컴포넌트
 
 ```typescript
 interface RecommendationSourceTagProps {
@@ -386,7 +420,7 @@ interface RecommendationSourceTagProps {
 | `bubble` | `rgba(122,155,174,0.15)` | `--accent-social` (#7A9BAE) | "**박소연** 91 · 을지로 프렌치 최고" |
 | `web` | `var(--bg-page)` | `--text-hint` (#B5AFA8) | "N4.4 K4.2 G4.3" |
 
-### 9. useRecommendations 훅
+### 10. useRecommendations 훅
 
 ```typescript
 // src/application/hooks/use-recommendations.ts
@@ -450,7 +484,7 @@ function useRecommendations(): {
 □ 권위: 미슐랭/블루리본 우선 → 외부 평점 상위 → Nyam 전체 평균
 □ 버블: satisfaction >= 80, 내 방문 제외, private → AI 태그
 □ 와인 페어링: WSET 8-카테고리 매핑 정확
-□ 콜드스타트: < 5개 권위만, 5~19개 재방문+권위+버블, 20+ 전체
+□ 콜드스타트: < 5개 권위만, 5~19개 재방문+권위+버블, 20+ 동일 3종 자동 + 온디맨드 4종 사용 가능
 □ 병합 정렬: normalizedScore DESC, 동점 시 최신 우선
 □ AI 태그: rgba(126,174,139,0.15) 배경, --positive 텍스트
 □ 버블 태그: rgba(122,155,174,0.15) 배경, --accent-social 텍스트

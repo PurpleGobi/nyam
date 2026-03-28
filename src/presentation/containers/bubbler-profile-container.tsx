@@ -121,6 +121,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
             categories={data.categories}
             scoreTendency={{ avgSatisfaction: data.avgSatisfaction, totalRecords: data.totalRecords }}
             topRegions={data.topRegions}
+            accentType={activeTab === 'restaurant' ? 'food' : 'wine'}
           />
         )}
 

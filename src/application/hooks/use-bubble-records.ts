@@ -17,6 +17,9 @@ interface BubbleRecordItem {
   comment: string | null
   visitDate: string | null
   sharedAt: string
+  contentVisibility: 'rating_only' | 'rating_and_comment'
+  /** 현재 뷰어가 해당 버블 멤버인지 */
+  isMember: boolean
 }
 
 interface UseBubbleRecordsResult {
@@ -54,6 +57,8 @@ export function useBubbleRecords(
         comment: s.comment ?? null,
         visitDate: s.visitDate ?? null,
         sharedAt: s.sharedAt,
+        contentVisibility: s.contentVisibility ?? 'rating_and_comment',
+        isMember: userBubbleIds.includes(s.bubbleId),
       }))
       setRecords(items)
     } finally {

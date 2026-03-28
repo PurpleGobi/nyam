@@ -343,6 +343,8 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
                     satisfaction={r.satisfaction}
                     comment={r.comment}
                     visitDate={r.visitDate}
+                    isMember={r.isMember}
+                    contentVisibility={r.contentVisibility}
                   />
                 ))}
                 {bubbleRecords.length > 5 && (

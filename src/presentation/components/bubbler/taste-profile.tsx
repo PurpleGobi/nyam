@@ -14,6 +14,7 @@ interface TasteProfileProps {
   categories: CategoryStat[]
   scoreTendency: ScoreTendency
   topRegions: string[]
+  accentType: 'food' | 'wine'
 }
 
 function getScoreTendencyLabel(avg: number): string {
@@ -25,10 +26,13 @@ function getScoreTendencyLabel(avg: number): string {
   return '까다로운 편'
 }
 
-export function TasteProfile({ categories, scoreTendency, topRegions }: TasteProfileProps) {
+export function TasteProfile({ categories, scoreTendency, topRegions, accentType }: TasteProfileProps) {
   const tendencyPct = scoreTendency.avgSatisfaction > 0
     ? Math.min(100, Math.max(0, scoreTendency.avgSatisfaction))
     : 50
+
+  const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const accentLightColor = accentType === 'food' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)'
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,7 +50,7 @@ export function TasteProfile({ categories, scoreTendency, topRegions }: TastePro
                   className="absolute left-0 top-0 h-full rounded-full"
                   style={{
                     width: `${Math.min(100, cat.percentage)}%`,
-                    backgroundColor: 'var(--accent-food)',
+                    backgroundColor: accentColor,
                   }}
                 />
               </div>
@@ -87,22 +91,6 @@ export function TasteProfile({ categories, scoreTendency, topRegions }: TastePro
         </div>
       )}
 
-      {/* 기존 통계 */}
-      <div className="flex gap-6">
-        <div>
-          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>평균 만족도</span>
-          <p className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
-            {scoreTendency.avgSatisfaction > 0 ? scoreTendency.avgSatisfaction.toFixed(0) : '-'}
-          </p>
-        </div>
-        <div>
-          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>총 기록</span>
-          <p className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
-            {scoreTendency.totalRecords}
-          </p>
-        </div>
-      </div>
-
       {/* 주요 지역 */}
       {topRegions.length > 0 && (
         <div>
@@ -113,8 +101,8 @@ export function TasteProfile({ categories, scoreTendency, topRegions }: TastePro
                 key={region}
                 className="rounded-full px-2.5 py-1 text-[11px] font-medium"
                 style={{
-                  backgroundColor: i === 0 ? 'var(--accent-food-light)' : 'var(--bg-elevated)',
-                  color: i === 0 ? 'var(--accent-food)' : 'var(--text-sub)',
+                  backgroundColor: i === 0 ? accentLightColor : 'var(--bg-section)',
+                  color: i === 0 ? accentColor : 'var(--text-sub)',
                   border: i === 0 ? 'none' : '1px solid var(--border)',
                 }}
               >

@@ -370,6 +370,8 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                     satisfaction={r.satisfaction}
                     comment={r.comment}
                     visitDate={r.visitDate}
+                    isMember={r.isMember}
+                    contentVisibility={r.contentVisibility}
                   />
                 ))}
                 {bubbleRecords.length > 5 && (

@@ -74,18 +74,25 @@ export function BubblerHero({
 
       <span className="mt-1 text-[12px] font-medium" style={{ color: levelColor }}>{levelTitle}</span>
 
-      {/* 취향 태그 */}
+      {/* 취향 태그 — 앞쪽 3개 highlight */}
       {tasteTags && tasteTags.length > 0 && (
-        <div className="mt-2 flex flex-wrap justify-center gap-1">
-          {tasteTags.slice(0, 5).map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full px-2 py-0.5 text-[11px]"
-              style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-sub)' }}
-            >
-              {tag}
-            </span>
-          ))}
+        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+          {tasteTags.slice(0, 5).map((tag, i) => {
+            const isHighlight = i < 3
+            return (
+              <span
+                key={tag}
+                className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                style={{
+                  backgroundColor: isHighlight ? 'var(--accent-food-light)' : 'var(--bg-section)',
+                  color: isHighlight ? 'var(--accent-food)' : 'var(--text-sub)',
+                  border: isHighlight ? 'none' : '1px solid var(--border)',
+                }}
+              >
+                {tag}
+              </span>
+            )
+          })}
         </div>
       )}
 

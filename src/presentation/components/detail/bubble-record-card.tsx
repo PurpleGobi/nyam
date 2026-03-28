@@ -11,6 +11,10 @@ interface BubbleRecordCardProps {
   satisfaction: number | null
   comment: string | null
   visitDate: string | null
+  /** 현재 뷰어가 해당 버블 멤버인지 */
+  isMember: boolean
+  /** 버블의 콘텐츠 가시성 설정 */
+  contentVisibility: 'rating_only' | 'rating_and_comment'
   onPress?: () => void
 }
 
@@ -22,8 +26,16 @@ export function BubbleRecordCard({
   satisfaction,
   comment,
   visitDate,
+  isMember,
+  contentVisibility,
   onPress,
 }: BubbleRecordCardProps) {
+  // 멤버: 모든 필드 표시
+  // 비멤버 + rating_only: 아바타 + 이름 + 점수만
+  // 비멤버 + rating_and_comment: 아바타 + 이름 + 점수 + 한줄평
+  const showComment = isMember || contentVisibility === 'rating_and_comment'
+  const showVisitDate = isMember
+
   return (
     <button
       type="button"
@@ -32,11 +44,11 @@ export function BubbleRecordCard({
       style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
       <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
         style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
       >
         {authorAvatar ? (
-          <Image src={authorAvatar} alt="" width={36} height={36} className="h-full w-full rounded-full object-cover" unoptimized />
+          <Image src={authorAvatar} alt="" width={32} height={32} className="h-full w-full rounded-full object-cover" unoptimized />
         ) : (
           authorNickname.charAt(0)
         )}
@@ -44,16 +56,16 @@ export function BubbleRecordCard({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{authorNickname}</span>
-          <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>{bubbleName}</span>
+          <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>{authorNickname}</span>
+          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{bubbleName}</span>
         </div>
-        {comment && (
-          <p className="mt-1 line-clamp-2 text-[12px]" style={{ color: 'var(--text-sub)', lineHeight: 1.5 }}>
+        {showComment && comment && (
+          <p className="mt-1 line-clamp-1 text-[12px]" style={{ color: 'var(--text-sub)', lineHeight: 1.5 }}>
             {comment}
           </p>
         )}
-        {visitDate && (
-          <span className="mt-1 block text-[10px]" style={{ color: 'var(--text-hint)' }}>{visitDate}</span>
+        {showVisitDate && visitDate && (
+          <span className="mt-1 block text-[11px]" style={{ color: 'var(--text-hint)' }}>{visitDate}</span>
         )}
       </div>
 

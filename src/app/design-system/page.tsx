@@ -31,6 +31,11 @@ import { ViewCycleButton } from '@/presentation/components/ui/view-cycle-button'
 import { IntroCard } from '@/presentation/components/ui/intro-card'
 import { LoadingState } from '@/presentation/components/ui/loading-state'
 import { NyamInput } from '@/presentation/components/ui/nyam-input'
+import { NotionFilterPanel } from '@/presentation/components/home/notion-filter-panel'
+import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
+import { SearchDropdown } from '@/presentation/components/home/search-dropdown'
+import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { LayoutGrid, List } from 'lucide-react'
 
 /* ── 섹션 래퍼 (프로토타입 .section 스타일) ── */
@@ -91,7 +96,14 @@ export default function DesignSystemPage() {
   const [toastVisible, setToastVisible] = useState(false)
   const [filterActive, setFilterActive] = useState(false)
   const [sortActive, setSortActive] = useState(false)
+  const [searchActive, setSearchActive] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [demoRules, setDemoRules] = useState<FilterRule[]>([
+    { attribute: 'scene', operator: 'eq', value: 'solo' },
+  ])
+  const [demoConjunction, setDemoConjunction] = useState<'and' | 'or'>('and')
+  const [demoSort, setDemoSort] = useState<SortOption>('latest')
+  const [demoSearch, setDemoSearch] = useState('')
 
   const toggleDark = () => {
     const next = !darkMode
@@ -442,19 +454,59 @@ export default function DesignSystemPage() {
 
       {/* ── 7-B. Filter / Sort System ── */}
       <Section title="7-B. Filter / Sort System">
-        <Note>필터 버튼 → Notion 스타일 필터 패널 · 소팅 버튼 → 드롭다운 · 검색 버튼 → 검색 입력 드롭다운. 세 버튼 나란히 배치, 상호 배타.</Note>
+        <Note>필터 버튼 → Notion 스타일 필터 패널 · 소팅 버튼 → 드롭다운 · 검색 버튼 → 검색 입력 드롭다운. 세 버튼 나란히 배치, 상호 배타. 아래 아이콘을 클릭하여 테스트.</Note>
 
-        {/* 아이콘 버튼 + 필터칩 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+        {/* 인터랙티브 데모 */}
+        <div style={{ marginTop: '16px', maxWidth: '420px' }}>
+          {/* 아이콘 버튼 행 */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-            <IconButton icon={SlidersHorizontal} active={filterActive} onClick={() => { setFilterActive(!filterActive); setSortActive(false) }} />
-            <IconButton icon={ArrowUpDown} active={sortActive} onClick={() => { setSortActive(!sortActive); setFilterActive(false) }} />
-            <IconButton icon={Search} />
+            <IconButton icon={SlidersHorizontal} active={filterActive} onClick={() => { setFilterActive(!filterActive); setSortActive(false); setSearchActive(false) }} />
+            <IconButton icon={ArrowUpDown} active={sortActive} onClick={() => { setSortActive(!sortActive); setFilterActive(false); setSearchActive(false) }} />
+            <IconButton icon={Search} active={searchActive} onClick={() => { setSearchActive(!searchActive); setFilterActive(false); setSortActive(false) }} />
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+
+          {/* 필터칩 */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
             <FilterChip active={activeChip === 'all'} onClick={() => setActiveChip('all')}>광화문 맛집</FilterChip>
             <FilterChip active={activeChip === 'solo'} onClick={() => setActiveChip('solo')}>혼밥 85+</FilterChip>
           </div>
+
+          {/* 필터 패널 (Notion 스타일) */}
+          {filterActive && (
+            <div style={{ marginTop: '10px' }}>
+              <NotionFilterPanel
+                rules={demoRules}
+                conjunction={demoConjunction}
+                attributes={RESTAURANT_FILTER_ATTRIBUTES}
+                onRulesChange={setDemoRules}
+                onConjunctionChange={setDemoConjunction}
+                onSaveAsChip={() => setToastVisible(true)}
+                accentColor="var(--accent-food)"
+              />
+            </div>
+          )}
+
+          {/* 소팅 드롭다운 */}
+          {sortActive && (
+            <div style={{ marginTop: '10px', position: 'relative' }}>
+              <SortDropdown
+                currentSort={demoSort}
+                onSortChange={(s) => { setDemoSort(s); setSortActive(false) }}
+                accentType="food"
+              />
+            </div>
+          )}
+
+          {/* 검색 드롭다운 */}
+          {searchActive && (
+            <div style={{ marginTop: '10px' }}>
+              <SearchDropdown
+                query={demoSearch}
+                onQueryChange={setDemoSearch}
+                onClear={() => setDemoSearch('')}
+              />
+            </div>
+          )}
         </div>
 
         {/* States */}

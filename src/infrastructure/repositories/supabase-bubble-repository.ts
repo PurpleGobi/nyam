@@ -431,7 +431,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (bubbleIds.length === 0) return []
     const { data } = await this.supabase
       .from('bubble_shares')
-      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon), records(target_type, satisfaction, comment, visit_date, users(nickname, avatar_url, avatar_color))')
+      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, comment, visit_date, users(nickname, avatar_url, avatar_color))')
       .in('bubble_id', bubbleIds)
       .order('shared_at', { ascending: false })
     return (data ?? []).filter((s: Record<string, unknown>) => {
@@ -455,6 +455,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         comment: (rec?.comment as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
         sharedAt: s.shared_at as string,
+        contentVisibility: (bubble?.content_visibility as 'rating_only' | 'rating_and_comment') ?? 'rating_and_comment',
       }
     })
   }
