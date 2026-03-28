@@ -22,15 +22,20 @@ interface FeedItem {
   createdAt: string
 }
 
+type SourceFilter = 'all' | 'bubble' | 'mutual'
+
 interface UseFollowingFeedResult {
   items: FeedItem[]
   isLoading: boolean
   refresh: () => void
+  sourceFilter: SourceFilter
+  setSourceFilter: (f: SourceFilter) => void
 }
 
 export function useFollowingFeed(userId: string | null): UseFollowingFeedResult {
-  const [items, setItems] = useState<FeedItem[]>([])
+  const [allItems, setAllItems] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
   const fetch = useCallback(async () => {
     if (!userId) return
@@ -87,7 +92,7 @@ export function useFollowingFeed(userId: string | null): UseFollowingFeedResult 
       const merged = [...bubbleFeedItems, ...mutualFeedItems]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-      setItems(merged)
+      setAllItems(merged)
     } finally {
       setIsLoading(false)
     }
@@ -97,5 +102,9 @@ export function useFollowingFeed(userId: string | null): UseFollowingFeedResult 
     fetch()
   }, [fetch])
 
-  return { items, isLoading, refresh: fetch }
+  const items = sourceFilter === 'all'
+    ? allItems
+    : allItems.filter((item) => (sourceFilter === 'bubble' ? item.sourceType === 'bubble' : item.sourceType === 'user'))
+
+  return { items, isLoading, refresh: fetch, sourceFilter, setSourceFilter }
 }

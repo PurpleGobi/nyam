@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
     hasBlueRibbon: r.has_blue_ribbon,
   }))
 
+  // 설계 스펙: compositeScore DESC 정렬
+  results.sort((a, b) => b.compositeScore - a.compositeScore)
+
   return NextResponse.json(
     { results, total: count ?? 0 },
     { headers: { 'Cache-Control': 'public, max-age=3600' } },

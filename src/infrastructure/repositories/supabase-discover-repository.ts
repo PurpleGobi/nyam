@@ -42,6 +42,9 @@ export class SupabaseDiscoverRepository implements DiscoverRepository {
       googleRating: row.google_rating ?? null,
     }))
 
+    // 설계 스펙: compositeScore DESC 정렬 (DB에서는 nyam_score로 근사 정렬 후 JS에서 재정렬)
+    cards.sort((a, b) => b.compositeScore - a.compositeScore)
+
     return { cards, total: count ?? 0 }
   }
 }

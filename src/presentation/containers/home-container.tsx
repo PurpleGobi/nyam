@@ -175,7 +175,10 @@ export function HomeContainer() {
   const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
 
   // 팔로잉 피드
-  const { items: followingItems, isLoading: isFollowingLoading } = useFollowingFeed(
+  const {
+    items: followingItems, isLoading: isFollowingLoading,
+    sourceFilter, setSourceFilter,
+  } = useFollowingFeed(
     activeTab === 'following' ? (user?.id ?? null) : null,
   )
 
@@ -303,6 +306,8 @@ export function HomeContainer() {
           items={followingItems}
           isLoading={isFollowingLoading}
           onItemPress={(recordId) => router.push(`/records/${recordId}`)}
+          sourceFilter={sourceFilter}
+          onSourceFilterChange={setSourceFilter}
         />
       )
     }
@@ -360,9 +365,9 @@ export function HomeContainer() {
             <CompactListItem
               key={record.id}
               rank={i + 1}
-              thumbnailUrl={null}
-              name={record.targetId}
-              meta={record.visitDate ?? ''}
+              thumbnailUrl={record.targetPhotoUrl}
+              name={record.targetName}
+              meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
               score={record.satisfaction}
               accentType={activeTab}
               onClick={() =>
@@ -387,11 +392,11 @@ export function HomeContainer() {
               id={record.id}
               wine={{
                 id: record.targetId,
-                name: record.targetId,
+                name: record.targetName,
                 wineType: '',
-                variety: null,
-                region: null,
-                photoUrl: null,
+                variety: record.targetMeta ?? null,
+                region: record.targetArea ?? null,
+                photoUrl: record.targetPhotoUrl,
               }}
               myRecord={{
                 satisfaction: record.satisfaction,
@@ -408,9 +413,9 @@ export function HomeContainer() {
               id={record.id}
               targetId={record.targetId}
               targetType={record.targetType}
-              name={record.targetId}
-              meta={record.visitDate ?? ''}
-              photoUrl={null}
+              name={record.targetName}
+              meta={[record.targetMeta, record.targetArea, record.visitDate].filter(Boolean).join(' · ')}
+              photoUrl={record.targetPhotoUrl}
               satisfaction={record.satisfaction}
               axisX={record.axisX}
               axisY={record.axisY}
@@ -489,7 +494,7 @@ export function HomeContainer() {
         )}
 
         {!isCalendarMode && !isFollowingMode && isSortOpen && (
-          <div className="pt-2">
+          <div className="relative">
             <SortDropdown
               currentSort={currentSort}
               onSortChange={handleSortChange}
@@ -499,7 +504,7 @@ export function HomeContainer() {
         )}
 
         {!isCalendarMode && !isFollowingMode && isSearchOpen && (
-          <div className="pt-2">
+          <div className="relative">
             <SearchDropdown
               query={searchQuery}
               onQueryChange={setSearchQuery}

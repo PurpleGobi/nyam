@@ -55,11 +55,17 @@ interface BubblerProfileData {
   recentRecords: RecentRecordItem[]
   heatmap: HeatmapCell[]
   bubbleContext: BubbleContext | null
+  currentStreak: number
+  activeDuration: string
 }
+
+type ProfileTab = 'restaurant' | 'wine'
 
 interface UseBubblerProfileResult {
   data: BubblerProfileData | null
   isLoading: boolean
+  activeTab: ProfileTab
+  setActiveTab: (tab: ProfileTab) => void
 }
 
 export function useBubblerProfile(
@@ -69,6 +75,7 @@ export function useBubblerProfile(
 ): UseBubblerProfileResult {
   const [data, setData] = useState<BubblerProfileData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<ProfileTab>('restaurant')
 
   useEffect(() => {
     if (!targetUserId) return
@@ -111,6 +118,8 @@ export function useBubblerProfile(
           recentRecords: profile.recentRecords ?? [],
           heatmap: profile.heatmap ?? [],
           bubbleContext: profile.bubbleContext ?? null,
+          currentStreak: profile.currentStreak ?? 0,
+          activeDuration: profile.activeDuration ?? '-',
         })
       } finally {
         setIsLoading(false)
@@ -120,5 +129,5 @@ export function useBubblerProfile(
     fetchProfile()
   }, [currentUserId, targetUserId, bubbleId])
 
-  return { data, isLoading }
+  return { data, isLoading, activeTab, setActiveTab }
 }

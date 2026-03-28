@@ -22,42 +22,70 @@ interface FeedItem {
   createdAt: string
 }
 
+type SourceFilter = 'all' | 'bubble' | 'mutual'
+
 interface FollowingFeedProps {
   items: FeedItem[]
   isLoading: boolean
   onItemPress: (recordId: string) => void
+  sourceFilter: SourceFilter
+  onSourceFilterChange: (f: SourceFilter) => void
 }
 
-export function FollowingFeed({ items, isLoading, onItemPress }: FollowingFeedProps) {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-3 px-4 py-6">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-xl" style={{ backgroundColor: 'var(--bg-card)' }} />
-        ))}
-      </div>
-    )
-  }
+const SOURCE_FILTERS: { value: SourceFilter; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'bubble', label: '버블' },
+  { value: 'mutual', label: '맞팔' },
+]
 
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center px-4 py-16">
-        <Inbox size={40} style={{ color: 'var(--text-hint)' }} />
-        <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text-sub)' }}>
-          아직 피드가 없어요
-        </p>
-        <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>
-          버블에 가입하거나 다른 유저를 팔로우해보세요
-        </p>
-      </div>
-    )
-  }
-
+export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onSourceFilterChange }: FollowingFeedProps) {
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
-      {items.map((item) => (
-        <FollowingFeedCard key={item.id} item={item} onPress={() => onItemPress(item.recordId)} />
-      ))}
+    <div className="flex flex-col">
+      {/* 소스 필터칩 */}
+      <div className="flex gap-2 px-4 py-2">
+        {SOURCE_FILTERS.map((f) => {
+          const isActive = sourceFilter === f.value
+          return (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => onSourceFilterChange(f.value)}
+              className="rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
+              style={{
+                backgroundColor: isActive ? 'var(--accent-social)' : 'var(--bg-card)',
+                color: isActive ? '#FFFFFF' : 'var(--text-sub)',
+                border: isActive ? 'none' : '1px solid var(--border)',
+              }}
+            >
+              {f.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-3 px-4 py-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-xl" style={{ backgroundColor: 'var(--bg-card)' }} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-4 py-16">
+          <Inbox size={40} style={{ color: 'var(--text-hint)' }} />
+          <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text-sub)' }}>
+            아직 피드가 없어요
+          </p>
+          <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>
+            버블에 가입하거나 다른 유저를 팔로우해보세요
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 px-4 py-3">
+          {items.map((item) => (
+            <FollowingFeedCard key={item.id} item={item} onPress={() => onItemPress(item.recordId)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

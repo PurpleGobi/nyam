@@ -50,7 +50,7 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
   const [showDropdown, setShowDropdown] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
 
-  const { availableBubbles, shareToBubble } = useShareRecord(user?.id ?? null, recordId)
+  const { availableBubbles, shareToBubbles } = useShareRecord(user?.id ?? null, recordId)
   const [isScrolled, setIsScrolled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -384,16 +384,8 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
       <ShareToBubbleSheet
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}
-        bubbles={availableBubbles.map((b) => ({
-          id: b.id,
-          name: b.name,
-          icon: b.icon,
-          iconBgColor: b.iconBgColor,
-          isAlreadyShared: b.isShared,
-        }))}
-        onShare={async (bubbleId) => {
-          await shareToBubble(bubbleId)
-        }}
+        bubbles={availableBubbles}
+        onShareMultiple={shareToBubbles}
       />
 
       {/* 삭제 실패 시 에러 토스트 */}

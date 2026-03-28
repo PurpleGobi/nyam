@@ -59,7 +59,7 @@ function RecordFlowInner() {
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
 
-  const { availableBubbles, shareToBubble } = useShareRecord(
+  const { availableBubbles, shareToBubbles } = useShareRecord(
     user?.id ?? null,
     state.savedRecordId,
   )
@@ -306,16 +306,8 @@ function RecordFlowInner() {
         <ShareToBubbleSheet
           isOpen={showShareSheet}
           onClose={() => setShowShareSheet(false)}
-          bubbles={availableBubbles.map((b) => ({
-            id: b.id,
-            name: b.name,
-            icon: b.icon,
-            iconBgColor: b.iconBgColor,
-            isAlreadyShared: b.isShared,
-          }))}
-          onShare={async (bubbleId) => {
-            await shareToBubble(bubbleId)
-          }}
+          bubbles={availableBubbles}
+          onShareMultiple={shareToBubbles}
         />
       </>
     )

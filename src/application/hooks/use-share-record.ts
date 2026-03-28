@@ -19,6 +19,7 @@ interface UseShareRecordResult {
   sharedBubbles: string[]
   availableBubbles: ShareableBubble[]
   shareToBubble: (bubbleId: string) => Promise<void>
+  shareToBubbles: (bubbleIds: string[]) => Promise<void>
   unshareBubble: (bubbleId: string) => Promise<void>
   canShare: boolean
   blockReason: string | null
@@ -78,6 +79,20 @@ export function useShareRecord(
     await awardBonus(userId, 'first_share')
   }, [userId, recordId, awardSocialXp, awardBonus])
 
+  const shareToBubbles = useCallback(async (bubbleIds: string[]) => {
+    if (!userId || !recordId) return
+    for (const bubbleId of bubbleIds) {
+      await bubbleRepo.shareRecord(recordId, bubbleId, userId)
+      await awardSocialXp(userId, 'share')
+    }
+    if (bubbleIds.length > 0) {
+      await awardBonus(userId, 'first_share')
+    }
+    setAvailableBubbles((prev) =>
+      prev.map((b) => (bubbleIds.includes(b.id) ? { ...b, isShared: true } : b)),
+    )
+  }, [userId, recordId, awardSocialXp, awardBonus])
+
   const unshareBubble = useCallback(async (bubbleId: string) => {
     if (!recordId) return
     await bubbleRepo.unshareRecord(recordId, bubbleId)
@@ -89,5 +104,5 @@ export function useShareRecord(
   const canShare = availableBubbles.some((b) => b.canShare)
   const blockReason = canShare ? null : '공유 가능한 버블이 없습니다'
 
-  return { sharedBubbles, availableBubbles, shareToBubble, unshareBubble, canShare, blockReason, isLoading }
+  return { sharedBubbles, availableBubbles, shareToBubble, shareToBubbles, unshareBubble, canShare, blockReason, isLoading }
 }

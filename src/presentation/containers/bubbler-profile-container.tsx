@@ -23,7 +23,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
   const { user: authUser } = useAuth()
   const { accessLevel, isLoading: followLoading, toggleFollow } = useFollow(authUser?.id ?? null, userId)
   const { counts } = useFollowList(userId)
-  const { data, isLoading } = useBubblerProfile(authUser?.id ?? null, userId, bubbleId)
+  const { data, isLoading, activeTab, setActiveTab } = useBubblerProfile(authUser?.id ?? null, userId, bubbleId)
 
   if (isLoading || !data) {
     return (
@@ -76,6 +76,33 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
             </>
           )}
         </div>
+
+        {/* Sticky Tabs (식당/와인) — follow+ */}
+        {data.accessLevel !== 'none' && (
+          <div
+            className="sticky top-0 z-10 flex"
+            style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
+          >
+            {(['restaurant', 'wine'] as const).map((tab) => {
+              const isActive = activeTab === tab
+              const accentColor = tab === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className="flex-1 py-3 text-center text-[14px] font-semibold transition-colors"
+                  style={{
+                    color: isActive ? accentColor : 'var(--text-hint)',
+                    borderBottom: isActive ? `2px solid ${accentColor}` : '2px solid transparent',
+                  }}
+                >
+                  {tab === 'restaurant' ? '식당' : '와인'}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* 버블 컨텍스트 카드 — follow+ */}
         {data.accessLevel !== 'none' && data.bubbleContext && (

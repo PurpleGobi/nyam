@@ -9,25 +9,32 @@ interface FollowButtonProps {
   isLoading: boolean
 }
 
-const CONFIG: Record<AccessLevel, { label: string; icon: typeof UserPlus; filled: boolean }> = {
-  none: { label: '팔로우', icon: UserPlus, filled: true },
-  follow: { label: '팔로잉', icon: UserCheck, filled: false },
-  mutual: { label: '맞팔로우', icon: Users, filled: false },
+const CONFIG: Record<AccessLevel, { label: string; icon: typeof UserPlus; variant: 'cta' | 'muted' | 'positive' }> = {
+  none: { label: '팔로우', icon: UserPlus, variant: 'cta' },
+  follow: { label: '팔로잉', icon: UserCheck, variant: 'muted' },
+  mutual: { label: '맞팔로우', icon: Users, variant: 'positive' },
+}
+
+const VARIANT_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  cta: { bg: 'var(--accent-social)', color: '#FFFFFF', border: 'none' },
+  muted: { bg: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' },
+  positive: { bg: 'var(--positive)', color: '#FFFFFF', border: 'none' },
 }
 
 export function FollowButton({ accessLevel, onToggle, isLoading }: FollowButtonProps) {
-  const { label, icon: Icon, filled } = CONFIG[accessLevel]
+  const { label, icon: Icon, variant } = CONFIG[accessLevel]
+  const style = VARIANT_STYLES[variant]
 
   return (
     <button
       type="button"
       onClick={onToggle}
       disabled={isLoading}
-      className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50"
+      className="flex items-center gap-1.5 rounded-[10px] px-4 py-[9px] text-[13px] font-bold transition-opacity active:opacity-75 disabled:opacity-50"
       style={{
-        backgroundColor: filled ? 'var(--accent-social)' : 'transparent',
-        color: filled ? '#FFFFFF' : 'var(--accent-social)',
-        border: filled ? 'none' : '1.5px solid var(--accent-social)',
+        backgroundColor: style.bg,
+        color: style.color,
+        border: style.border,
       }}
     >
       <Icon size={14} />

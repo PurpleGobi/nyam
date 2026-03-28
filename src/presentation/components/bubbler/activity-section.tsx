@@ -1,23 +1,27 @@
 'use client'
 
+import { Flame } from 'lucide-react'
 import type { HeatmapCell } from '@/domain/entities/profile'
 
 interface ActivitySectionProps {
   heatmap: HeatmapCell[]
+  totalRecords?: number
+  currentStreak?: number
+  activeDuration?: string
 }
 
 const INTENSITY_COLORS: Record<number, string> = {
   0: 'var(--border)',
-  1: 'var(--accent-food-light)',
-  2: 'var(--accent-food)',
-  3: 'var(--accent-food-dark, var(--accent-food))',
-  4: 'var(--accent-food-darker, var(--accent-food))',
+  1: 'rgba(122,155,174,0.25)',
+  2: 'rgba(122,155,174,0.5)',
+  3: 'rgba(122,155,174,0.8)',
+  4: 'var(--accent-social)',
 }
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일']
 const WEEKS = 13
 
-export function ActivitySection({ heatmap }: ActivitySectionProps) {
+export function ActivitySection({ heatmap, totalRecords, currentStreak, activeDuration }: ActivitySectionProps) {
   const cellMap = new Map(heatmap.map((c) => [c.date, c.intensity]))
 
   const today = new Date()
@@ -35,17 +39,31 @@ export function ActivitySection({ heatmap }: ActivitySectionProps) {
     grid.push(week)
   }
 
-  const totalRecords = heatmap.reduce((sum, c) => sum + c.intensity, 0)
+  const heatmapTotal = totalRecords ?? heatmap.reduce((sum, c) => sum + c.intensity, 0)
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>활동</h3>
-        <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
-          최근 13주 · {totalRecords}건
-        </span>
+      <h3 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>활동</h3>
+
+      {/* 3-chip 통계 */}
+      <div className="flex gap-2">
+        <div className="flex flex-1 flex-col items-center rounded-xl py-2" style={{ backgroundColor: 'var(--bg-section)' }}>
+          <span className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>{heatmapTotal}</span>
+          <span className="text-[9px]" style={{ color: 'var(--text-sub)' }}>총 기록</span>
+        </div>
+        <div className="flex flex-1 flex-col items-center rounded-xl py-2" style={{ backgroundColor: 'var(--bg-section)' }}>
+          <span className="text-[16px] font-bold" style={{ color: currentStreak && currentStreak > 0 ? 'var(--caution)' : 'var(--text)' }}>
+            {currentStreak ?? 0}주
+          </span>
+          <span className="text-[9px]" style={{ color: 'var(--text-sub)' }}>연속 기록</span>
+        </div>
+        <div className="flex flex-1 flex-col items-center rounded-xl py-2" style={{ backgroundColor: 'var(--bg-section)' }}>
+          <span className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>{activeDuration ?? '-'}</span>
+          <span className="text-[9px]" style={{ color: 'var(--text-sub)' }}>활동 기간</span>
+        </div>
       </div>
 
+      {/* 히트맵 */}
       <div className="flex gap-0.5 overflow-x-auto">
         <div className="mr-1 flex flex-col gap-0.5">
           {DAYS.map((day) => (
@@ -67,6 +85,22 @@ export function ActivitySection({ heatmap }: ActivitySectionProps) {
           </div>
         ))}
       </div>
+
+      {/* 스트릭 배너 */}
+      {currentStreak != null && currentStreak > 0 && (
+        <div
+          className="flex items-center gap-2 rounded-xl px-3 py-2"
+          style={{
+            background: 'linear-gradient(90deg, rgba(201,169,110,0.12), transparent)',
+            borderLeft: '3px solid var(--caution)',
+          }}
+        >
+          <Flame size={14} style={{ color: 'var(--caution)' }} />
+          <span className="text-[12px]" style={{ color: 'var(--text)' }}>
+            <strong style={{ color: 'var(--caution)' }}>{currentStreak}주</strong> 연속 기록 중!
+          </span>
+        </div>
+      )}
     </div>
   )
 }

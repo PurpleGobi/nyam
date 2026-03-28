@@ -658,16 +658,23 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     if (!user) return null
 
-    const { data: xpData } = await this.supabase
-      .from('user_experiences')
-      .select('level')
-      .eq('user_id', userId)
-      .order('level', { ascending: false })
-      .limit(1)
+    const [{ data: xpData }, { data: streakUser }, heatmap] = await Promise.all([
+      this.supabase.from('user_experiences').select('level').eq('user_id', userId).order('level', { ascending: false }).limit(1),
+      this.supabase.from('users').select('current_streak, created_at').eq('id', userId).single(),
+      this.getHeatmapData(userId, 13),
+    ])
 
     const level = (xpData?.[0]?.level as number) ?? 1
+    const currentStreak = (streakUser?.current_streak as number) ?? 0
 
-    const heatmap = await this.getHeatmapData(userId, 13)
+    // 활동 기간 계산
+    const createdAt = streakUser?.created_at as string | null
+    let activeDuration = '-'
+    if (createdAt) {
+      const diffMs = Date.now() - new Date(createdAt).getTime()
+      const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30))
+      activeDuration = months < 1 ? '1개월 미만' : `${months}개월`
+    }
 
     const { data: records } = await this.supabase
       .from('records')
@@ -783,6 +790,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
       recentRecords,
       heatmap,
       bubbleContext,
+      currentStreak,
+      activeDuration,
     }
   }
 }

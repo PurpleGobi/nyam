@@ -24,6 +24,8 @@ export interface BubblerProfileData {
   recentRecords?: { id: string; targetName: string; targetType: 'restaurant' | 'wine'; satisfaction: number | null; comment: string | null; visitDate: string | null }[]
   heatmap?: HeatmapCell[]
   bubbleContext?: { bubbleId: string; bubbleName: string; bubbleIcon: string | null; rank: number | null; memberSince: string; tasteMatchPct: number | null } | null
+  currentStreak?: number
+  activeDuration?: string
 }
 
 export interface ProfileRepository {

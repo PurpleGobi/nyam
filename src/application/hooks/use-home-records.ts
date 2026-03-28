@@ -51,9 +51,14 @@ function applySort(records: DiningRecord[], sort: SortOption): DiningRecord[] {
     case 'score_low':
       return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
-      return sorted.sort((a, b) => a.targetId.localeCompare(b.targetId))
-    case 'visit_count':
-      return sorted.sort((a, b) => (b.visitDate ?? '').localeCompare(a.visitDate ?? ''))
+      return sorted.sort((a, b) => a.targetId.localeCompare(b.targetId)) // TODO: targetName 필요 (RecordWithTarget 전환 시 수정)
+    case 'visit_count': {
+      const visitCounts = new Map<string, number>()
+      for (const r of records) {
+        visitCounts.set(r.targetId, (visitCounts.get(r.targetId) ?? 0) + 1)
+      }
+      return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
+    }
     default:
       return sorted
   }

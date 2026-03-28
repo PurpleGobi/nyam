@@ -14,7 +14,7 @@ export function SavedFilterChips({ chips, activeChipId, counts, accentClass, onC
   const wineClass = accentClass === 'wine' ? 'wine' : ''
 
   return (
-    <div className="flex gap-2 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: 'none' }}>
+    <div className="flex gap-2 overflow-x-auto px-4 pb-2 pt-2" style={{ scrollbarWidth: 'none' }}>
       <button
         type="button"
         onClick={() => onChipSelect(null)}
