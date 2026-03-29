@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { SearchResult, NearbyRestaurant } from '@/domain/entities/search'
+import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
 import type { RecordTargetType } from '@/domain/entities/record'
 import { useSearch } from '@/application/hooks/use-search'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -73,6 +74,10 @@ function SearchInner() {
     setQuery,
     screenState,
     results,
+    aiCandidates,
+    isAiSearching,
+    isSelectingAi,
+    selectAiCandidate,
     recentSearches,
     addRecentSearch,
     clearRecentSearches,
@@ -166,6 +171,26 @@ function SearchInner() {
     [setQuery],
   )
 
+  const handleSelectAiCandidate = useCallback(
+    async (candidate: WineSearchCandidate) => {
+      addRecentSearch(query)
+      const wine = await selectAiCandidate(candidate)
+      if (!wine) {
+        setToast('와인 정보를 가져오지 못했습니다')
+        return
+      }
+      const meta = [
+        candidate.wineType,
+        candidate.region,
+        candidate.vintage,
+      ].filter(Boolean).join(' · ')
+      router.push(
+        `/record?type=wine&targetId=${wine.id}&name=${encodeURIComponent(wine.name)}&meta=${encodeURIComponent(meta)}&from=search`,
+      )
+    },
+    [router, addRecentSearch, query, selectAiCandidate],
+  )
+
   const handleRegister = useCallback(() => {
     router.push(`/register?type=${targetType}&name=${encodeURIComponent(query)}`)
   }, [router, targetType, query])
@@ -243,6 +268,10 @@ function SearchInner() {
         variant={variant}
         onSelect={handleSelect}
         onRegister={handleRegister}
+        aiCandidates={aiCandidates}
+        isAiSearching={isAiSearching}
+        isSelectingAi={isSelectingAi}
+        onSelectAiCandidate={handleSelectAiCandidate}
       />
     </div>
   )

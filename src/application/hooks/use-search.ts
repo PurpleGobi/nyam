@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { SearchResult, SearchScreenState, RecentSearch } from '@/domain/entities/search'
+import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
 import { debounce } from '@/shared/utils/debounce'
 
 const DEBOUNCE_MS = 300
@@ -19,9 +20,13 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
   const [query, setQueryState] = useState('')
   const [screenState, setScreenState] = useState<SearchScreenState>('idle')
   const [results, setResults] = useState<SearchResult[]>([])
+  const [aiCandidates, setAiCandidates] = useState<WineSearchCandidate[]>([])
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [isAiSearching, setIsAiSearching] = useState(false)
+  const [isSelectingAi, setIsSelectingAi] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const aiAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     try {
@@ -64,16 +69,42 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
         const data = await response.json()
         const searchResults: SearchResult[] = data.results ?? []
 
-        if (searchResults.length === 0) {
-          setScreenState('empty')
-        } else {
-          setScreenState('results')
-        }
         setResults(searchResults)
+
+        // 와인 검색: DB 결과가 3개 미만이면 AI 검색 자동 트리거
+        if (targetType === 'wine' && searchResults.length < 3) {
+          setScreenState(searchResults.length > 0 ? 'results' : 'searching')
+          setIsAiSearching(true)
+          aiAbortRef.current?.abort()
+          const aiController = new AbortController()
+          aiAbortRef.current = aiController
+          try {
+            const aiRes = await fetch('/api/wines/search-ai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: q }),
+              signal: aiController.signal,
+            })
+            const aiData = await aiRes.json()
+            if (aiData.success) {
+              setAiCandidates(aiData.candidates ?? [])
+            }
+          } catch (aiErr) {
+            if (aiErr instanceof DOMException && aiErr.name === 'AbortError') return
+          } finally {
+            setIsAiSearching(false)
+          }
+          // AI 결과까지 합쳐서 최종 상태 결정
+          setScreenState(searchResults.length > 0 ? 'results' : 'results')
+        } else {
+          setAiCandidates([])
+          setScreenState(searchResults.length === 0 ? 'empty' : 'results')
+        }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
         setScreenState('empty')
         setResults([])
+        setAiCandidates([])
       } finally {
         setIsSearching(false)
       }
@@ -92,9 +123,11 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
       if (q.length === 0) {
         setScreenState('idle')
         setResults([])
+        setAiCandidates([])
       } else if (q.length < MIN_QUERY_LENGTH) {
         setScreenState('idle')
         setResults([])
+        setAiCandidates([])
       } else {
         setScreenState('typing')
         debouncedSearch(q)
@@ -134,12 +167,41 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
     }
   }, [targetType])
 
+  // AI 후보 선택 → 상세 조회 + DB 저장 → 기록 가능한 wine 반환
+  const selectAiCandidate = useCallback(
+    async (candidate: WineSearchCandidate): Promise<{ id: string; name: string } | null> => {
+      setIsSelectingAi(true)
+      try {
+        const res = await fetch('/api/wines/detail-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: candidate.name,
+            producer: candidate.producer,
+            vintage: candidate.vintage,
+          }),
+        })
+        const data = await res.json()
+        if (data.success && data.wine) {
+          return { id: data.wine.id, name: data.wine.name }
+        }
+        return null
+      } finally {
+        setIsSelectingAi(false)
+      }
+    },
+    [],
+  )
+
   const reset = useCallback(() => {
     setQueryState('')
     setScreenState('idle')
     setResults([])
+    setAiCandidates([])
     setIsSearching(false)
+    setIsAiSearching(false)
     abortRef.current?.abort()
+    aiAbortRef.current?.abort()
   }, [])
 
   return {
@@ -147,8 +209,12 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
     setQuery,
     screenState,
     results,
-    recentSearches,
+    aiCandidates,
     isSearching,
+    isAiSearching,
+    isSelectingAi,
+    selectAiCandidate,
+    recentSearches,
     executeSearch,
     addRecentSearch,
     clearRecentSearches,
