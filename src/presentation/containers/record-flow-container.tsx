@@ -92,6 +92,10 @@ function RecordFlowInner() {
   const prefBubbleShare = settings?.prefBubbleShare ?? 'ask'
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
   const [recentCompanions, setRecentCompanions] = useState<string[]>([])
+  const [wineData, setWineData] = useState<{
+    wineType?: string; region?: string; country?: string
+    variety?: string; producer?: string; vintage?: number
+  } | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
 
@@ -168,6 +172,37 @@ function RecordFlowInner() {
     loadRecord()
     return () => { cancelled = true }
   }, [editRecordId, initExistingPhotos])
+
+  // 와인 타입일 때 wines 테이블에서 메타 자동 채움
+  useEffect(() => {
+    if (targetType !== 'wine' || !state.targetId) return
+    let cancelled = false
+    async function loadWine() {
+      try {
+        const wine = await wineRepo.findById(state.targetId)
+        if (cancelled || !wine) return
+        // 품종: variety가 있으면 그대로, 없으면 grape_varieties에서 비중 최고 선택
+        let bestVariety = wine.variety ?? undefined
+        if (!bestVariety && wine.grapeVarieties.length > 0) {
+          const sorted = [...wine.grapeVarieties].sort((a, b) => b.pct - a.pct)
+          bestVariety = sorted[0].name
+        }
+
+        setWineData({
+          wineType: wine.wineType,
+          region: wine.region ?? undefined,
+          country: wine.country ?? undefined,
+          variety: bestVariety,
+          producer: wine.producer ?? undefined,
+          vintage: wine.vintage ?? undefined,
+        })
+      } catch {
+        // 조회 실패 시 URL param 폴백
+      }
+    }
+    loadWine()
+    return () => { cancelled = true }
+  }, [targetType, state.targetId])
 
   // 이전 기록 참조 점 로드
   const userId = user?.id
@@ -592,15 +627,16 @@ function RecordFlowInner() {
           target={{
             id: state.targetId,
             name: state.targetName,
-            wineType: state.targetMeta.split(' · ')[0],
-            region: state.targetMeta.split(' · ')[1],
-            country: state.targetMeta.split(' · ')[2],
-            vintage: (() => {
+            wineType: wineData?.wineType ?? state.targetMeta.split(' · ')[0],
+            region: wineData?.region ?? state.targetMeta.split(' · ')[1],
+            country: wineData?.country ?? state.targetMeta.split(' · ')[2],
+            vintage: wineData?.vintage ?? (() => {
               const v = searchParams.get('vintage')
               return v ? Number(v) : undefined
             })(),
-            variety: searchParams.get('variety') ?? undefined,
-            producer: searchParams.get('producer') ?? undefined,
+            variety: wineData?.variety ?? searchParams.get('variety') ?? undefined,
+            producer: wineData?.producer ?? searchParams.get('producer') ?? undefined,
+            isAiRecognized: !!wineData,
           }}
           referenceRecords={referenceRecords}
           initialData={wineInitial}
