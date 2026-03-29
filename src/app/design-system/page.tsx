@@ -223,13 +223,37 @@ export default function DesignSystemPage() {
           <Swatch color="var(--caution)" name="caution" hex="#C9A96E" />
           <Swatch color="var(--negative)" name="negative" hex="#B87272" />
         </Row>
-        <Sub title="Satisfaction Gauge" />
+        <Sub title="Rating Gauge — Food (음식 퀄리티)" />
         <Row>
-          <Swatch color="var(--gauge-1)" name="0~20" hex="#C4B5A8" />
-          <Swatch color="var(--gauge-2)" name="21~40" hex="#B0ADA4" />
-          <Swatch color="var(--gauge-3)" name="41~60" hex="#9FA5A3" />
-          <Swatch color="var(--gauge-4)" name="61~80" hex="#889DAB" />
-          <Swatch color="var(--gauge-5)" name="81~100" hex="#7A9BAE" />
+          <Swatch color="#C4B5A8" name="0~20" hex="#C4B5A8" />
+          <Swatch color="#C8907A" name="21~40" hex="#C8907A" />
+          <Swatch color="#C17B5E" name="41~60" hex="#C17B5E" />
+          <Swatch color="#B5603A" name="61~80" hex="#B5603A" />
+          <Swatch color="#A83E1A" name="81~100" hex="#A83E1A" />
+        </Row>
+        <Sub title="Rating Gauge — Experience (경험 가치)" />
+        <Row>
+          <Swatch color="#B5B0BA" name="0~20" hex="#B5B0BA" />
+          <Swatch color="#A08DA8" name="21~40" hex="#A08DA8" />
+          <Swatch color="#8B7396" name="41~60" hex="#8B7396" />
+          <Swatch color="#7A5A8E" name="61~80" hex="#7A5A8E" />
+          <Swatch color="#6B3FA0" name="81~100" hex="#6B3FA0" />
+        </Row>
+        <Sub title="Rating Gauge — Total (총점)" />
+        <Row>
+          <Swatch color="#C4BCA8" name="0~20" hex="#C4BCA8" />
+          <Swatch color="#D4B85C" name="21~40" hex="#D4B85C" />
+          <Swatch color="#E0A820" name="41~60" hex="#E0A820" />
+          <Swatch color="#D49215" name="61~80" hex="#D49215" />
+          <Swatch color="#C87A0A" name="81~100" hex="#C87A0A" />
+        </Row>
+        <Sub title="Rating Gauge — Wine Total (와인 총점)" />
+        <Row>
+          <Swatch color="#D8D0E0" name="0~20" hex="#D8D0E0" />
+          <Swatch color="#D0B0E8" name="21~40" hex="#D0B0E8" />
+          <Swatch color="#C090E0" name="41~60" hex="#C090E0" />
+          <Swatch color="#B070D8" name="61~80" hex="#B070D8" />
+          <Swatch color="#A050D0" name="81~100" hex="#A050D0" />
         </Row>
         <Sub title="Scene Tags" />
         <Row>
@@ -373,7 +397,7 @@ export default function DesignSystemPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
             <div className="satisfaction-gauge" style={{ flex: 1 }}>
-              <div className="satisfaction-gauge-fill" style={{ width: '78%', backgroundColor: 'var(--gauge-4)' }} />
+              <div className="satisfaction-gauge-fill" style={{ width: '78%', backgroundColor: '#D49215' }} />
               <div className="satisfaction-gauge-label">78</div>
             </div>
             <button type="button" style={{ color: 'var(--text-hint)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
@@ -393,7 +417,7 @@ export default function DesignSystemPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
             <div className="satisfaction-gauge" style={{ flex: 1 }}>
-              <div className="satisfaction-gauge-fill" style={{ width: '75%', backgroundColor: 'var(--gauge-4)' }} />
+              <div className="satisfaction-gauge-fill" style={{ width: '75%', backgroundColor: '#B070D8' }} />
               <div className="satisfaction-gauge-label">75</div>
             </div>
             <button type="button" style={{ color: 'var(--text-hint)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
@@ -425,11 +449,11 @@ export default function DesignSystemPage() {
             { score: 92, label: '92 — Best' },
           ].map(({ score, label }) => {
             const gaugeColors = [
-              { max: 20, color: 'var(--gauge-1)' },
-              { max: 40, color: 'var(--gauge-2)' },
-              { max: 60, color: 'var(--gauge-3)' },
-              { max: 80, color: 'var(--gauge-4)' },
-              { max: 100, color: 'var(--gauge-5)' },
+              { max: 20, color: '#C4BCA8' },
+              { max: 40, color: '#D4B85C' },
+              { max: 60, color: '#E0A820' },
+              { max: 80, color: '#D49215' },
+              { max: 100, color: '#C87A0A' },
             ]
             const color = (gaugeColors.find((g) => score <= g.max) ?? gaugeColors[4]).color
             return (

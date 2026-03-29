@@ -27,11 +27,12 @@
   --color-positive: var(--positive);
   --color-caution: var(--caution);
   --color-negative: var(--negative);
-  --color-gauge-1: var(--gauge-1);
-  --color-gauge-2: var(--gauge-2);
-  --color-gauge-3: var(--gauge-3);
-  --color-gauge-4: var(--gauge-4);
-  --color-gauge-5: var(--gauge-5);
+  --color-gauge-food-min: var(--gauge-food-min);
+  --color-gauge-food-max: var(--gauge-food-max);
+  --color-gauge-exp-min: var(--gauge-exp-min);
+  --color-gauge-exp-max: var(--gauge-exp-max);
+  --color-gauge-total-min: var(--gauge-total-min);
+  --color-gauge-total-max: var(--gauge-total-max);
   --radius-xs: var(--r-xs);
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);
@@ -87,14 +88,20 @@
   --caution: #C9A96E;
   --negative: #B87272;
 
-  /* ── §1 만족도 게이지 (5단계) ── */
-  --gauge-worst: #C4B5A8;
-  --gauge-best: #7A9BAE;
-  --gauge-1: #C4B5A8;
-  --gauge-2: #B0ADA4;
-  --gauge-3: #9FA5A3;
-  --gauge-4: #889DAB;
-  --gauge-5: #7A9BAE;
+  /* ── §1 만족도 게이지 (채널 기반) ── */
+  /* 실제 색상은 shared/utils/gauge-color.ts에서 채널별로 관리 */
+  /* food: #C4B5A8 → #A83E1A (coral 계열) */
+  /* experience: #B5B0BA → #6B3FA0 (보라 계열) */
+  /* total: #C4BCA8 → #C87A0A (골드 계열) */
+  /* wine-total: #D8D0E0 → #A050D0 (밝은 보라 계열) */
+  --gauge-food-min: #C4B5A8;
+  --gauge-food-max: #A83E1A;
+  --gauge-exp-min: #B5B0BA;
+  --gauge-exp-max: #6B3FA0;
+  --gauge-total-min: #C4BCA8;
+  --gauge-total-max: #C87A0A;
+  --gauge-wine-min: #D8D0E0;
+  --gauge-wine-max: #A050D0;
 
   /* ── §1 상황 태그 색상 ── */
   --scene-solo: #7A9BAE;
