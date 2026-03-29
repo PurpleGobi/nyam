@@ -1,6 +1,6 @@
 'use client'
 
-import { Users } from 'lucide-react'
+import { Users, Lock, Globe } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
@@ -52,10 +52,17 @@ export function BubbleCard({ bubble, role, isRecentlyActive = false, onClick }: 
         </div>
       </div>
 
-      {/* Activity dot */}
-      {isRecentlyActive && (
-        <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-      )}
+      {/* 공개/비공개 + Activity dot */}
+      <div className="flex shrink-0 flex-col items-center gap-1.5">
+        {bubble.visibility === 'private' ? (
+          <Lock size={14} style={{ color: 'var(--text-hint)' }} />
+        ) : (
+          <Globe size={14} style={{ color: 'var(--text-hint)' }} />
+        )}
+        {isRecentlyActive && (
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
+        )}
+      </div>
     </button>
   )
 }

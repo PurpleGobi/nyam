@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { AppHeader } from '@/presentation/components/layout/app-header'
 import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings'
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
@@ -81,12 +81,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* 헤더 */}
-      <nav className="flex items-center gap-2 px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
-        </button>
-        <span className="text-[15px] font-bold text-[var(--text)]">버블 설정</span>
-      </nav>
+      <AppHeader variant="inner" title="버블 설정" />
 
       <div className="flex-1 overflow-y-auto">
         <BubbleSettings

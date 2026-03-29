@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Eye, List, UtensilsCrossed, Wine, SlidersHorizontal } from 'lucide-react'
+import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -23,6 +23,7 @@ import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import { MemberGrid } from '@/presentation/components/bubble/member-grid'
 import { MemberListView } from '@/presentation/components/bubble/member-list-view'
 import { CommentSheetContainer } from '@/presentation/containers/comment-sheet-container'
+import { AppHeader } from '@/presentation/components/layout/app-header'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import type { RankingTargetType, BubbleMemberRole, BubbleContentVisibility } from '@/domain/entities/bubble'
@@ -56,13 +57,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       {/* 헤더 */}
-      <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
-        </button>
-        <span className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>버블</span>
-        <div className="w-11" />
-      </nav>
+      <AppHeader variant="inner" title="버블" />
 
       {/* 히어로 */}
       <BubbleHero

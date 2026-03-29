@@ -120,7 +120,9 @@ export function HomeContainer() {
   })
 
   const { filters, createFilter, deleteFilter } = useSavedFilters(user?.id ?? null, activeTab)
-  const { records } = useRecordsWithTarget(user?.id ?? null, activeTab)
+  const { records: restaurantRecords } = useRecordsWithTarget(user?.id ?? null, 'restaurant')
+  const { records: wineRecords } = useRecordsWithTarget(user?.id ?? null, 'wine')
+  const records = activeTab === 'wine' ? wineRecords : restaurantRecords
 
   // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
   const counts = useMemo(() => {
