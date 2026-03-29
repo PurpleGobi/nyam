@@ -1,11 +1,17 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Lock, Globe, ImagePlus, X } from 'lucide-react'
-import type { BubbleJoinPolicy, BubbleVisibility } from '@/domain/entities/bubble'
+import { Lock, Globe, ImagePlus, X, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
+import type { BubbleJoinPolicy, BubbleVisibility, VisibilityOverride } from '@/domain/entities/bubble'
+import type { PrivacyRecords } from '@/domain/entities/user'
 import type { InviteExpiry } from '@/application/hooks/use-bubble-create'
 import { JoinPolicySelector } from '@/presentation/components/bubble/join-policy-selector'
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
+
+export interface BubblePrivacySettings {
+  privacyRecords: PrivacyRecords
+  visibilityOverride: VisibilityOverride | null
+}
 
 interface BubbleCreateFormProps {
   onSubmit: (data: {
@@ -16,9 +22,33 @@ interface BubbleCreateFormProps {
     icon: string
     iconBgColor: string
     inviteExpiry: InviteExpiry
+    minRecords: number
+    minLevel: number
+    maxMembers: number | null
+    privacy: BubblePrivacySettings
   }) => void
   onUploadPhoto: (file: File) => Promise<string>
   isLoading: boolean
+}
+
+const VISIBILITY_FIELD_LABELS: { key: keyof VisibilityOverride; label: string }[] = [
+  { key: 'score', label: '점수 (만족도)' },
+  { key: 'comment', label: '한줄평' },
+  { key: 'photos', label: '사진' },
+  { key: 'level', label: '레벨 뱃지' },
+  { key: 'quadrant', label: '맛 사분면' },
+  { key: 'bubbles', label: '소속 버블 목록' },
+  { key: 'price', label: '가격 정보' },
+]
+
+const ALL_VISIBLE: VisibilityOverride = {
+  score: true, comment: true, photos: true,
+  level: true, quadrant: true, bubbles: true, price: true,
+}
+
+const PARTIAL_DEFAULT: VisibilityOverride = {
+  score: true, comment: true, photos: true,
+  level: true, quadrant: false, bubbles: false, price: false,
 }
 
 const COLOR_OPTIONS = [
@@ -39,10 +69,18 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   const [description, setDescription] = useState('')
   const [visibility, setVisibility] = useState<BubbleVisibility>('public')
   const [joinPolicy, setJoinPolicy] = useState<BubbleJoinPolicy>('manual_approve')
+  const [minRecords, setMinRecords] = useState(0)
+  const [minLevel, setMinLevel] = useState(0)
+  const [maxMembers, setMaxMembers] = useState<number | null>(null)
   const [selectedIcon, setSelectedIcon] = useState('utensils-crossed')
   const [selectedColor, setSelectedColor] = useState('#F97316')
   const [inviteExpiry, setInviteExpiry] = useState<InviteExpiry>('30d')
   const [showIconPicker, setShowIconPicker] = useState(false)
+  // 공개 설정
+  const [privacyRecords, setPrivacyRecords] = useState<PrivacyRecords>('shared_only')
+  const [infoScope, setInfoScope] = useState<'all' | 'partial'>('all')
+  const [visibilityFields, setVisibilityFields] = useState<VisibilityOverride>({ ...ALL_VISIBLE })
+  const [showFieldDetail, setShowFieldDetail] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -96,8 +134,14 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const buildPrivacy = (): BubblePrivacySettings => ({
+    privacyRecords,
+    visibilityOverride: infoScope === 'all' ? null : visibilityFields,
+  })
+
   const handleSubmit = async () => {
     if (!name.trim()) return
+    const privacy = buildPrivacy()
     // 업로드 실패 상태에서 submit → 재시도
     if (pendingFile) {
       setIsUploading(true)
@@ -114,6 +158,10 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
           icon: publicUrl,
           iconBgColor: '#6B7280',
           inviteExpiry,
+          minRecords,
+          minLevel,
+          maxMembers,
+          privacy,
         })
       } catch {
         setUploadError(true)
@@ -130,6 +178,10 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
       icon: selectedIcon,
       iconBgColor: isPhoto ? '#6B7280' : selectedColor,
       inviteExpiry,
+      minRecords,
+      minLevel,
+      maxMembers,
+      privacy,
     })
   }
 
@@ -336,8 +388,167 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-semibold text-[var(--text)]">가입 정책</label>
           <JoinPolicySelector selected={joinPolicy} onChange={setJoinPolicy} />
+
+          {/* 자동 승인 시 가입 조건 */}
+          {joinPolicy === 'auto_approve' && (
+            <div className="mt-1 flex gap-2">
+              <div className="flex flex-1 flex-col gap-1">
+                <span className="text-[11px] font-medium text-[var(--text-hint)]">최소 기록</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={minRecords || ''}
+                    onChange={(e) => setMinRecords(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    min={0}
+                    className="nyam-input w-full py-2 pr-7 text-center text-[13px]"
+                  />
+                  {minRecords > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-hint)]">개</span>}
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col gap-1">
+                <span className="text-[11px] font-medium text-[var(--text-hint)]">최소 레벨</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={minLevel || ''}
+                    onChange={(e) => setMinLevel(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="0"
+                    min={0}
+                    className="nyam-input w-full py-2 pr-7 text-center text-[13px]"
+                  />
+                  {minLevel > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-hint)]">Lv</span>}
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col gap-1">
+                <span className="text-[11px] font-medium text-[var(--text-hint)]">최대 인원</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={maxMembers ?? ''}
+                    onChange={(e) => { const v = parseInt(e.target.value) || 0; setMaxMembers(v === 0 ? null : v) }}
+                    placeholder="무제한"
+                    min={0}
+                    className="nyam-input w-full py-2 pr-7 text-center text-[13px]"
+                  />
+                  {maxMembers && maxMembers > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-hint)]">명</span>}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {/* ── 내 목록 공개 설정 ── */}
+      <div className="flex flex-col gap-3">
+        <label className="text-[13px] font-semibold text-[var(--text)]">내 식당·와인 목록 공개</label>
+        <p className="text-[11px] text-[var(--text-hint)]" style={{ marginTop: -8 }}>
+          동반자, 개인 메모 등 개인정보는 항상 비공개입니다.
+        </p>
+
+        {/* 1. 공개목록의 범위 */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-medium text-[var(--text-sub)]">공개 목록의 범위</span>
+          <div className="flex gap-2">
+            {([
+              { value: 'all' as const, label: '모두 공개', icon: Eye, desc: '내 모든 기록이\n버블에 공개' },
+              { value: 'shared_only' as const, label: '부분 공개', icon: EyeOff, desc: '공유한 기록만\n버블에 공개' },
+            ]).map(({ value, label, icon: VIcon, desc }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPrivacyRecords(value)}
+                className="flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 transition-colors"
+                style={{
+                  backgroundColor: privacyRecords === value ? 'var(--accent-social)' : 'var(--bg-card)',
+                  color: privacyRecords === value ? '#FFFFFF' : 'var(--text-sub)',
+                  border: `1.5px solid ${privacyRecords === value ? 'var(--accent-social)' : 'var(--border)'}`,
+                }}
+              >
+                <VIcon size={18} />
+                <span className="text-[12px] font-semibold">{label}</span>
+                <span className="whitespace-pre-line text-center text-[10px] opacity-70">{desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. 정보공개의 범위 */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-medium text-[var(--text-sub)]">정보 공개의 범위</span>
+          <div className="flex gap-2">
+            {([
+              { value: 'all' as const, label: '모두 공개', desc: '점수·한줄평·사진\n레벨 등 전체 공개' },
+              { value: 'partial' as const, label: '부분 공개', desc: '공개할 정보를\n직접 선택' },
+            ]).map(({ value, label, desc }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setInfoScope(value)
+                  if (value === 'all') {
+                    setVisibilityFields({ ...ALL_VISIBLE })
+                    setShowFieldDetail(false)
+                  } else {
+                    setVisibilityFields({ ...PARTIAL_DEFAULT })
+                    setShowFieldDetail(true)
+                  }
+                }}
+                className="flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 transition-colors"
+                style={{
+                  backgroundColor: infoScope === value ? 'var(--accent-social)' : 'var(--bg-card)',
+                  color: infoScope === value ? '#FFFFFF' : 'var(--text-sub)',
+                  border: `1.5px solid ${infoScope === value ? 'var(--accent-social)' : 'var(--border)'}`,
+                }}
+              >
+                {value === 'all' ? <Eye size={18} /> : <EyeOff size={18} />}
+                <span className="text-[12px] font-semibold">{label}</span>
+                <span className="whitespace-pre-line text-center text-[10px] opacity-70">{desc}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* 부분 공개 시 필드 토글 */}
+          {infoScope === 'partial' && (
+            <div className="mt-1">
+              <button
+                type="button"
+                onClick={() => setShowFieldDetail(!showFieldDetail)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[12px] font-medium"
+                style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+              >
+                <span>공개 항목 설정 ({VISIBILITY_FIELD_LABELS.filter(f => visibilityFields[f.key]).length}/{VISIBILITY_FIELD_LABELS.length})</span>
+                {showFieldDetail ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+
+              {showFieldDetail && (
+                <div className="mt-1.5 flex flex-col gap-0.5 rounded-xl p-2" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  {VISIBILITY_FIELD_LABELS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setVisibilityFields((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors"
+                      style={{ backgroundColor: visibilityFields[key] ? 'var(--accent-social-light)' : 'transparent' }}
+                    >
+                      <span className="text-[13px]" style={{ color: 'var(--text)' }}>{label}</span>
+                      <div
+                        className="flex h-5 w-9 items-center rounded-full px-0.5 transition-colors"
+                        style={{ backgroundColor: visibilityFields[key] ? 'var(--accent-social)' : 'var(--border)' }}
+                      >
+                        <div
+                          className="h-4 w-4 rounded-full bg-white transition-transform"
+                          style={{ transform: visibilityFields[key] ? 'translateX(14px)' : 'translateX(0)' }}
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 생성 버튼 */}
       <button

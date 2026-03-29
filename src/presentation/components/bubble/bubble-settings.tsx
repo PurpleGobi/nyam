@@ -107,9 +107,11 @@ export function BubbleSettings({
       {/* 2. 가입 조건 */}
       <Section title="가입 조건" icon={<ShieldCheck size={16} style={{ color: 'var(--accent-social)' }} />}>
         <JoinPolicySelector selected={joinPolicy} onChange={setJoinPolicy} />
-        <NumberField label="최소 기록 수" value={minRecords} onChange={setMinRecords} min={0} suffix="개" />
-        <NumberField label="최소 레벨" value={minLevel} onChange={setMinLevel} min={0} suffix="Lv." prefix />
-        <NumberField label="최대 인원" value={maxMembers ?? 0} onChange={(v) => setMaxMembers(v === 0 ? null : v)} min={0} suffix="명" />
+        <div className="flex gap-2">
+          <CompactNumberField label="최소 기록" value={minRecords} onChange={setMinRecords} min={0} suffix="개" />
+          <CompactNumberField label="최소 레벨" value={minLevel} onChange={setMinLevel} min={0} suffix="Lv" />
+          <CompactNumberField label="최대 인원" value={maxMembers ?? 0} onChange={(v) => setMaxMembers(v === 0 ? null : v)} min={0} suffix="명" placeholder="무제한" />
+        </div>
       </Section>
 
       {/* 3. 검색 노출 */}
@@ -261,6 +263,28 @@ function NumberField({ label, value, onChange, min, suffix, prefix }: { label: s
           min={min}
           className="nyam-input w-16 px-2 py-1.5 text-center text-[13px]"
         />
+      </div>
+    </div>
+  )
+}
+
+function CompactNumberField({ label, value, onChange, min, suffix, placeholder }: { label: string; value: number; onChange: (v: number) => void; min: number; suffix?: string; placeholder?: string }) {
+  const displayValue = value === 0 && placeholder ? '' : String(value)
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      <span className="text-[11px] font-medium text-[var(--text-hint)]">{label}</span>
+      <div className="relative">
+        <input
+          type="number"
+          value={displayValue}
+          onChange={(e) => onChange(Math.max(min, parseInt(e.target.value) || 0))}
+          placeholder={placeholder ?? '0'}
+          min={min}
+          className="nyam-input w-full py-2 pr-8 text-center text-[13px]"
+        />
+        {suffix && (value > 0 || !placeholder) && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-hint)]">{suffix}</span>
+        )}
       </div>
     </div>
   )

@@ -16,6 +16,9 @@ export interface CreateBubbleFormInput {
   icon?: string                   // lucide 아이콘명
   iconBgColor?: string            // hex
   inviteExpiry?: InviteExpiry     // 기본 '30d'
+  minRecords?: number
+  minLevel?: number
+  maxMembers?: number
   createdBy: string
 }
 
@@ -58,6 +61,9 @@ export function useBubbleCreate() {
         joinPolicy,
         icon: input.icon,
         iconBgColor: input.iconBgColor,
+        minRecords: input.minRecords,
+        minLevel: input.minLevel,
+        maxMembers: input.maxMembers,
         createdBy: input.createdBy,
       }
 

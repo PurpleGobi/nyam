@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
+import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
 import { AppHeader } from '@/presentation/components/layout/app-header'
-import { uploadBubbleIcon } from '@/shared/di/container'
+import { uploadBubbleIcon, settingsRepo, bubbleRepo } from '@/shared/di/container'
 
 export function BubbleCreateContainer() {
   const router = useRouter()
@@ -21,6 +22,10 @@ export function BubbleCreateContainer() {
     icon: string
     iconBgColor: string
     inviteExpiry: '1d' | '7d' | '30d' | 'unlimited'
+    minRecords: number
+    minLevel: number
+    maxMembers: number | null
+    privacy: BubblePrivacySettings
   }) => {
     if (!user) return
     try {
@@ -32,9 +37,22 @@ export function BubbleCreateContainer() {
         icon: data.icon,
         iconBgColor: data.iconBgColor,
         inviteExpiry: data.inviteExpiry,
+        minRecords: data.minRecords,
+        minLevel: data.minLevel,
+        maxMembers: data.maxMembers ?? undefined,
         createdBy: user.id,
       })
-      router.push(`/bubbles/${result.bubble.id}`)
+
+      // 공개목록 범위 → users.privacy_records (전체 버블 공통)
+      await settingsRepo.updatePrivacyRecords(user.id, data.privacy.privacyRecords)
+
+      // 정보공개 범위 → bubble_members.visibility_override (이 버블 개별)
+      // null = 모두 공개 (기본값), JSONB = 부분 공개
+      await bubbleRepo.updateMember(result.bubble.id, user.id, {
+        visibilityOverride: data.privacy.visibilityOverride,
+      })
+
+      router.replace(`/bubbles/${result.bubble.id}`)
     } catch {
       // 에러 처리는 상위에서
     }
