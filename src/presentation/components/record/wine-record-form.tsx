@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Wine, Sparkles } from 'lucide-react'
+import { Wine, Sparkles, Lock } from 'lucide-react'
 import type { AromaSelection, AromaRing } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import type { PairingCategory } from '@/domain/entities/record'
@@ -10,6 +10,7 @@ import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
 import { PairingGrid } from '@/presentation/components/record/pairing-grid'
+import { CompanionInput } from '@/presentation/components/record/companion-input'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
 import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
@@ -20,6 +21,9 @@ interface WineTarget {
   name: string
   wineType?: string
   region?: string
+  country?: string
+  variety?: string
+  producer?: string
   vintage?: number
   isAiRecognized?: boolean
 }
@@ -40,6 +44,9 @@ interface CreateWineRecordInput {
   pairingCategories: string[]
   comment?: string
   purchasePrice?: number
+  companions?: string[]
+  companionCount?: number
+  privateNote?: string
   linkedRestaurantId?: string
   photoUrls?: string[]
   visitDate?: string
@@ -58,6 +65,8 @@ interface WineInitialData {
   pairingCategories: string[] | null
   comment: string | null
   purchasePrice: number | null
+  companions: string[] | null
+  privateNote: string | null
   visitDate: string | null
 }
 
@@ -69,6 +78,7 @@ interface WineRecordFormProps {
   onSave: (data: CreateWineRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
+  recentCompanions?: string[]
   onDelete?: () => void
   isDeleting?: boolean
 }
@@ -91,6 +101,7 @@ export function WineRecordForm({
   onSave,
   isLoading,
   photoSlot,
+  recentCompanions,
   onDelete,
   isDeleting,
 }: WineRecordFormProps) {
@@ -123,6 +134,8 @@ export function WineRecordForm({
   const [visitDate, setVisitDate] = useState(
     initialData?.visitDate ?? new Date().toISOString().split('T')[0],
   )
+  const [companions, setCompanions] = useState<string[]>(initialData?.companions ?? [])
+  const [privateNote, setPrivateNote] = useState(initialData?.privateNote ?? '')
   const [linkedRestaurant, setLinkedRestaurant] = useState<LinkSearchResult | null>(null)
   const [showLinkSheet, setShowLinkSheet] = useState(false)
   const isManualOverrideRef = useRef(false)
@@ -161,10 +174,13 @@ export function WineRecordForm({
       pairingCategories,
       comment: comment || undefined,
       purchasePrice: purchasePrice ? Number(purchasePrice) : undefined,
+      companions: companions.length > 0 ? companions : undefined,
+      companionCount: companions.length > 0 ? Math.min(companions.length + 1, 5) : undefined,
+      privateNote: privateNote || undefined,
       visitDate,
       linkedRestaurantId: linkedRestaurant?.id,
     })
-  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, visitDate, target.id, onSave, linkedRestaurant])
+  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
 
   return (
     <div className="flex flex-col pb-24">
@@ -184,10 +200,16 @@ export function WineRecordForm({
         <div className="flex flex-col">
           <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
             {target.name}
+            {target.vintage ? ` ${target.vintage}` : ''}
           </span>
           <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
-            {[target.wineType, target.region, target.vintage].filter(Boolean).join(' · ')}
+            {[target.wineType, target.country, target.region].filter(Boolean).join(' · ')}
           </span>
+          {(target.variety || target.producer) && (
+            <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
+              {[target.variety, target.producer].filter(Boolean).join(' · ')}
+            </span>
+          )}
           {target.isAiRecognized && (
             <span className="mt-0.5 flex items-center gap-1" style={{ fontSize: '10px', color: 'var(--accent-wine)' }}>
               <Sparkles size={10} />
@@ -328,6 +350,46 @@ export function WineRecordForm({
             <span>⊕</span> 식당 검색
           </button>
         )}
+      </section>
+
+      {/* ─── 비공개 영역 구분선 ─── */}
+      <div className="mx-4 my-2 flex items-center gap-2">
+        <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--border)' }} />
+        <span className="flex items-center gap-1" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>
+          <Lock size={12} />
+          나만 보는 기록
+        </span>
+        <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--border)' }} />
+      </div>
+      <p className="px-4 pb-2" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+        아래 내용은 버블·프로필·검색에 공개되지 않습니다
+      </p>
+
+      {/* 동행자 (비공개) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          누구와 함께? <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <CompanionInput value={companions} onChange={setCompanions} recentCompanions={recentCompanions} />
+      </section>
+
+      {/* 개인 메모 (비공개) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          개인 메모 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <textarea
+          maxLength={500}
+          value={privateNote}
+          onChange={(e) => setPrivateNote(e.target.value)}
+          placeholder="바디감, 셀러 보관 메모, 기억하고 싶은 것들..."
+          rows={3}
+          className="nyam-input w-full resize-none"
+          style={{ backgroundColor: 'var(--bg-card)' }}
+        />
+        <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+          {privateNote.length}/500
+        </span>
       </section>
 
       <LinkSearchSheet

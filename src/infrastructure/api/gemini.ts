@@ -311,6 +311,7 @@ export interface WineSearchCandidate {
   region: string | null
   country: string | null
   confidence: number
+  labelImageUrl: string | null
 }
 
 export async function searchWineByName(query: string): Promise<WineSearchCandidate[]> {
@@ -330,6 +331,7 @@ export async function searchWineByName(query: string): Promise<WineSearchCandida
     region: (item.region as string) ?? null,
     country: (item.country as string) ?? null,
     confidence: (item.confidence as number) ?? 0,
+    labelImageUrl: null, // search-ai route에서 이미지 검색 후 채움
   }))
 }
 

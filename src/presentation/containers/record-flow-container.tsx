@@ -11,7 +11,7 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
-import { photoRepo, recordRepo, xpRepo, wishlistRepo } from '@/shared/di/container'
+import { photoRepo, recordRepo, xpRepo, wishlistRepo, imageService } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -40,7 +40,7 @@ function RecordFlowInner() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
-  const { photos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
+  const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const entryPath = (searchParams.get('from') ?? 'camera') as AddFlowEntryPath
@@ -111,7 +111,7 @@ function RecordFlowInner() {
 
   const isEditMode = !!editRecordId
 
-  // 수정 모드: 기존 기록 데이터 로드
+  // 수정 모드: 기존 기록 + 사진 로드
   useEffect(() => {
     if (!editRecordId) return
     let cancelled = false
@@ -119,7 +119,10 @@ function RecordFlowInner() {
 
     async function loadRecord() {
       try {
-        const record = await recordRepo.findById(recordIdToLoad)
+        const [record, existingPhotos] = await Promise.all([
+          recordRepo.findById(recordIdToLoad),
+          photoRepo.getPhotosByRecordId(recordIdToLoad),
+        ])
         if (cancelled || !record) return
         setEditingRecord(record)
         setState((prev) => ({
@@ -127,13 +130,24 @@ function RecordFlowInner() {
           targetId: record.targetId,
           targetType: record.targetType,
         }))
+        // 기존 사진을 PhotoPicker에 표시
+        if (existingPhotos.length > 0) {
+          initExistingPhotos(
+            existingPhotos.map((p) => ({
+              id: p.id,
+              url: p.url,
+              orderIndex: p.orderIndex,
+              isPublic: p.isPublic,
+            })),
+          )
+        }
       } finally {
         if (!cancelled) setIsEditLoading(false)
       }
     }
     loadRecord()
     return () => { cancelled = true }
-  }, [editRecordId])
+  }, [editRecordId, initExistingPhotos])
 
   // 이전 기록 참조 점 로드
   const userId = user?.id
@@ -259,6 +273,44 @@ function RecordFlowInner() {
             linkedRestaurantId: formData.linkedRestaurantId as string | undefined,
           }
           savedRecord = await recordRepo.update(editRecordId, updateData)
+
+          // 수정 모드에서도 사진 변경 처리
+          try {
+            const existingPhotos = await photoRepo.getPhotosByRecordId(editRecordId)
+            const existingIds = new Set(existingPhotos.map((p) => p.id))
+            const currentIds = new Set(photos.map((p) => p.id))
+
+            // 삭제된 사진 처리
+            for (const ep of existingPhotos) {
+              if (!currentIds.has(ep.id)) {
+                await photoRepo.deletePhoto(ep.id)
+              }
+            }
+
+            // 새로 추가된 사진 업로드 (status가 pending인 것)
+            const newPhotos = photos.filter((p) => !existingIds.has(p.id) && p.status !== 'uploaded')
+            if (newPhotos.length > 0 && user) {
+              for (const np of newPhotos) {
+                const blob = await imageService.resizeImage(np.file)
+                const url = await imageService.uploadImage(user.id, editRecordId, blob, np.id)
+                await photoRepo.savePhotos(editRecordId, [{ url, orderIndex: np.orderIndex, isPublic: np.isPublic }])
+              }
+            }
+
+            // 기존 사진 중 크롭 편집된 사진 (id가 동일하지만 status가 pending으로 변경된 것)
+            const editedPhotos = photos.filter((p) => existingIds.has(p.id) && p.status === 'pending')
+            if (editedPhotos.length > 0 && user) {
+              for (const ep of editedPhotos) {
+                // 기존 삭제 → 새로 업로드
+                await photoRepo.deletePhoto(ep.id)
+                const blob = await imageService.resizeImage(ep.file)
+                const url = await imageService.uploadImage(user.id, editRecordId, blob, ep.id)
+                await photoRepo.savePhotos(editRecordId, [{ url, orderIndex: ep.orderIndex, isPublic: ep.isPublic }])
+              }
+            }
+          } catch {
+            setPhotoError('사진 수정에 실패했습니다.')
+          }
         } else {
           // 신규 모드: INSERT
           let hasExifGps = false
@@ -432,7 +484,7 @@ function RecordFlowInner() {
   const variant = state.targetType === 'wine' ? 'wine' : 'food'
   const saveLabel = isEditMode ? '수정 완료' : '기록 완료'
 
-  const photoPickerSlot = !isEditMode ? (
+  const photoPickerSlot = (
     <PhotoPicker
       photos={photos}
       onAddFiles={addFiles}
@@ -443,7 +495,7 @@ function RecordFlowInner() {
       isMaxReached={photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS}
       theme={state.targetType === 'wine' ? 'wine' : 'food'}
     />
-  ) : null
+  )
 
   // 수정 모드 초기 데이터 빌드
   const restaurantInitial = editingRecord && editingRecord.targetType === 'restaurant' ? {
@@ -472,6 +524,8 @@ function RecordFlowInner() {
     pairingCategories: editingRecord.pairingCategories as string[] | null,
     comment: editingRecord.comment,
     purchasePrice: editingRecord.purchasePrice,
+    companions: editingRecord.companions,
+    privateNote: editingRecord.privateNote,
     visitDate: editingRecord.visitDate,
   } : undefined
 
@@ -510,6 +564,13 @@ function RecordFlowInner() {
             name: state.targetName,
             wineType: state.targetMeta.split(' · ')[0],
             region: state.targetMeta.split(' · ')[1],
+            country: state.targetMeta.split(' · ')[2],
+            vintage: (() => {
+              const v = searchParams.get('vintage')
+              return v ? Number(v) : undefined
+            })(),
+            variety: searchParams.get('variety') ?? undefined,
+            producer: searchParams.get('producer') ?? undefined,
           }}
           referenceRecords={referenceRecords}
           initialData={wineInitial}
@@ -517,9 +578,9 @@ function RecordFlowInner() {
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}
           isLoading={isLoading}
           photoSlot={photoPickerSlot}
+          recentCompanions={recentCompanions}
           onDelete={isEditMode ? () => setShowDeleteConfirm(true) : undefined}
           isDeleting={isDeleting}
-
         />
       )}
 

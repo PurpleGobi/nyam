@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import { searchWineByName } from '@/infrastructure/api/gemini'
 import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
+import { searchWineLabelImages } from '@/infrastructure/api/google-image-search'
 
 export interface WineSearchAIResponse {
   success: boolean
@@ -26,7 +27,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<WineSearc
 
   try {
     const candidates = await searchWineByName(query)
-    return NextResponse.json({ success: true, candidates })
+
+    // 와인 라벨 이미지 병렬 검색 (실패해도 후보 목록은 반환)
+    const wineNames = candidates.map((c) => c.name)
+    const imageMap = await searchWineLabelImages(wineNames)
+
+    const candidatesWithImages = candidates.map((c) => ({
+      ...c,
+      labelImageUrl: imageMap.get(c.name) ?? null,
+    }))
+
+    return NextResponse.json({ success: true, candidates: candidatesWithImages })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
     return NextResponse.json({ success: false, candidates: [], error: message }, { status: 500 })

@@ -157,9 +157,14 @@ function SearchInner() {
         }
       }
 
-      router.push(
-        `/record?type=${result.type}&targetId=${targetId}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent(meta)}&from=search`,
-      )
+      let recordUrl = `/record?type=${result.type}&targetId=${targetId}&name=${encodeURIComponent(result.name)}&meta=${encodeURIComponent(meta)}&from=search`
+
+      if (result.type === 'wine') {
+        if (result.vintage) recordUrl += `&vintage=${result.vintage}`
+        if (result.producer) recordUrl += `&producer=${encodeURIComponent(result.producer)}`
+      }
+
+      router.push(recordUrl)
     },
     [router, addRecentSearch, query],
   )
@@ -182,11 +187,12 @@ function SearchInner() {
       const meta = [
         candidate.wineType,
         candidate.region,
-        candidate.vintage,
+        candidate.country,
       ].filter(Boolean).join(' · ')
-      router.push(
-        `/record?type=wine&targetId=${wine.id}&name=${encodeURIComponent(wine.name)}&meta=${encodeURIComponent(meta)}&from=search`,
-      )
+      let recordUrl = `/record?type=wine&targetId=${wine.id}&name=${encodeURIComponent(wine.name)}&meta=${encodeURIComponent(meta)}&from=search`
+      if (candidate.vintage) recordUrl += `&vintage=${candidate.vintage}`
+      if (candidate.producer) recordUrl += `&producer=${encodeURIComponent(candidate.producer)}`
+      router.push(recordUrl)
     },
     [router, addRecentSearch, query, selectAiCandidate],
   )

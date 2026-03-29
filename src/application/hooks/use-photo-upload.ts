@@ -8,6 +8,8 @@ import { imageService } from '@/shared/di/container'
 interface UsePhotoUploadReturn {
   photos: PendingPhoto[]
   addFiles: (files: File[]) => void
+  /** 편집 모드: 기존 업로드된 사진을 PendingPhoto 상태로 초기화 */
+  initExistingPhotos: (existing: { id: string; url: string; orderIndex: number; isPublic: boolean }[]) => void
   removePhoto: (photoId: string) => Promise<void>
   replacePhoto: (photoId: string, newFile: File) => void
   togglePublic: (photoId: string) => void
@@ -23,6 +25,24 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
   const [error, setError] = useState<string | null>(null)
 
   const isMaxReached = photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS
+
+  const initExistingPhotos = useCallback(
+    (existing: { id: string; url: string; orderIndex: number; isPublic: boolean }[]) => {
+      // 기존 사진을 'uploaded' 상태의 PendingPhoto로 변환
+      // file은 빈 Blob (리사이즈 불필요 — 이미 업로드됨)
+      const mapped: PendingPhoto[] = existing.map((p) => ({
+        id: p.id,
+        file: new File([], 'existing.webp', { type: 'image/webp' }),
+        previewUrl: p.url,
+        orderIndex: p.orderIndex,
+        status: 'uploaded' as const,
+        uploadedUrl: p.url,
+        isPublic: p.isPublic,
+      }))
+      setPhotos(mapped)
+    },
+    [],
+  )
 
   const addFiles = useCallback(
     (files: File[]) => {
@@ -136,5 +156,5 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     [photos],
   )
 
-  return { photos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading, error, isMaxReached }
+  return { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading, error, isMaxReached }
 }

@@ -108,9 +108,21 @@ export function SearchResults({
                       onClick={() => onSelectAiCandidate?.(candidate)}
                       className="flex w-full items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--accent-wine-light)]"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-wine-light)]">
-                        <Sparkles size={16} className="text-[var(--accent-wine)]" />
-                      </div>
+                      {candidate.labelImageUrl ? (
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[var(--accent-wine-light)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={candidate.labelImageUrl}
+                            alt={candidate.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-wine-light)]">
+                          <Sparkles size={16} className="text-[var(--accent-wine)]" />
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1 text-left">
                         <p className="truncate text-[14px] font-semibold text-[var(--text)]">
                           {candidate.nameKo ?? candidate.name}
