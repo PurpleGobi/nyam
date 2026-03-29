@@ -64,14 +64,22 @@ function RecordFlowInner() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [genreHint, setGenreHint] = useState<string | null>(null)
+  const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
 
-  // sessionStorage에서 장르 대분류 힌트 읽기
+  // sessionStorage에서 장르 힌트 + 추가 정보 읽기
   useEffect(() => {
     try {
       const hint = sessionStorage.getItem('nyam_genre_hint')
       if (hint) {
         setGenreHint(hint)
         sessionStorage.removeItem('nyam_genre_hint')
+      }
+    } catch {}
+    try {
+      const extra = sessionStorage.getItem('nyam_record_extra')
+      if (extra) {
+        setRecordExtra(JSON.parse(extra))
+        sessionStorage.removeItem('nyam_record_extra')
       }
     } catch {}
   }, [])
@@ -444,6 +452,9 @@ function RecordFlowInner() {
             name: state.targetName,
             genre: aiPrefill?.genre ?? state.targetMeta.split(' · ')[0],
             area: state.targetMeta.split(' · ')[1],
+            address: recordExtra?.address,
+            categoryPath: recordExtra?.categoryPath,
+            distance: recordExtra?.distance,
           }}
           genreHint={genreHint ?? aiPrefill?.genre}
           referenceRecords={referenceRecords}

@@ -10,11 +10,15 @@ export interface SearchResultBase {
 export interface RestaurantSearchResult extends SearchResultBase {
   type: 'restaurant'
   genre: string | null
+  genreDisplay: string | null
+  categoryPath: string | null
   area: string | null
   address: string | null
   distance: number | null
   lat: number | null
   lng: number | null
+  phone: string | null
+  kakaoMapUrl: string | null
 }
 
 export interface WineSearchResult extends SearchResultBase {
@@ -40,6 +44,7 @@ export interface NearbyRestaurant {
   id: string
   name: string
   genre: string | null
+  categoryPath: string | null
   area: string | null
   address: string | null
   lat: number | null

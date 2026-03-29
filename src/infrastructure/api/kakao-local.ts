@@ -8,7 +8,10 @@ export interface KakaoLocalResult {
   lng: number
   phone: string | null
   category: string | null
+  categoryDetail: string | null
   kakaoId: string
+  kakaoMapUrl: string | null
+  distance: number | null
 }
 
 export async function searchKakaoLocal(
@@ -44,6 +47,9 @@ export async function searchKakaoLocal(
     lng: Number(d.x),
     phone: d.phone || null,
     category: d.category_group_name || null,
+    categoryDetail: d.category_name || null,
     kakaoId: d.id,
+    kakaoMapUrl: d.place_url || null,
+    distance: d.distance ? Number(d.distance) : null,
   }))
 }

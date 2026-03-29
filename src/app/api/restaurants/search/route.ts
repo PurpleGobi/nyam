@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   // ── Step 1: Nyam DB 검색 ──
   const { data: restaurants } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, address, lat, lng')
+    .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url')
     .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
     .limit(20)
 
@@ -45,10 +45,14 @@ export async function GET(request: NextRequest) {
     type: 'restaurant' as const,
     name: r.name,
     genre: r.genre,
+    genreDisplay: r.genre,
+    categoryPath: null,
     area: r.area,
     address: r.address,
     lat: r.lat,
     lng: r.lng,
+    phone: r.phone,
+    kakaoMapUrl: r.kakao_map_url,
     distance: lat && lng && r.lat && r.lng
       ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
@@ -77,8 +81,11 @@ export async function GET(request: NextRequest) {
     lat: number | null
     lng: number | null
     genre: string | null
+    genreDisplay: string | null
+    categoryPath: string | null
     area: string | null
     phone: string | null
+    kakaoMapUrl: string | null
     externalId: string
     externalIds: Record<string, string>
   }
@@ -86,9 +93,15 @@ export async function GET(request: NextRequest) {
 
   if (kakaoResult.status === 'fulfilled') {
     for (const item of kakaoResult.value) {
+      const mapped = mapKakaoCategoryDetail(item.categoryDetail)
+      const fallback = item.category ? mapKakaoCategory(item.category) : null
       externals.push({
         name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: item.category ? mapKakaoCategory(item.category) : null, area: extractArea(item.address), phone: item.phone,
+        genre: mapped?.genre ?? fallback ?? '기타',
+        genreDisplay: mapped?.display ?? fallback ?? '기타',
+        categoryPath: item.categoryDetail,
+        area: extractArea(item.address), phone: item.phone,
+        kakaoMapUrl: item.kakaoMapUrl,
         externalId: `kakao_${item.kakaoId}`, externalIds: { kakao: item.kakaoId },
       })
     }
@@ -97,7 +110,10 @@ export async function GET(request: NextRequest) {
     for (const item of naverResult.value) {
       externals.push({
         name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: item.category ? mapNaverCategory(item.category) : null, area: extractArea(item.address), phone: item.phone ?? null,
+        genre: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
+        genreDisplay: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
+        categoryPath: item.category ?? null,
+        area: extractArea(item.address), phone: item.phone ?? null, kakaoMapUrl: null,
         externalId: `naver_${item.naverId ?? item.name}`,
         externalIds: item.naverId ? { naver: item.naverId } : {},
       })
@@ -107,7 +123,7 @@ export async function GET(request: NextRequest) {
     for (const item of googleResult.value) {
       externals.push({
         name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: null, area: extractArea(item.address), phone: null,
+        genre: '기타', genreDisplay: '기타', categoryPath: null, area: extractArea(item.address), phone: null, kakaoMapUrl: null,
         externalId: `google_${item.googlePlaceId}`, externalIds: { google: item.googlePlaceId },
       })
     }
@@ -127,10 +143,14 @@ export async function GET(request: NextRequest) {
     type: 'restaurant' as const,
     name: ext.name,
     genre: ext.genre,
+    genreDisplay: ext.genreDisplay,
+    categoryPath: ext.categoryPath,
     area: ext.area,
     address: ext.address,
     lat: ext.lat,
     lng: ext.lng,
+    phone: ext.phone,
+    kakaoMapUrl: ext.kakaoMapUrl,
     distance: latNum && lngNum && ext.lat && ext.lng
       ? haversineDistance(latNum, lngNum, ext.lat, ext.lng)
       : null,
@@ -146,6 +166,7 @@ export async function GET(request: NextRequest) {
     lat: ext.lat,
     lng: ext.lng,
     phone: ext.phone,
+    kakaoMapUrl: ext.kakaoMapUrl,
     externalIds: ext.externalIds,
   }))
 
@@ -155,18 +176,9 @@ export async function GET(request: NextRequest) {
   })
 }
 
-/** 결과 정렬: Nyam DB(기록 있음) 우선 → 거리순 → 이름순 */
+/** 결과 정렬: 거리순 → 이름순 */
 function sortResults(results: RestaurantSearchResult[]): RestaurantSearchResult[] {
   return [...results].sort((a, b) => {
-    // 기록 있는 항목 우선
-    if (a.hasRecord && !b.hasRecord) return -1
-    if (!a.hasRecord && b.hasRecord) return 1
-    // Nyam DB(id가 ext_ 아닌) 우선
-    const aIsNyam = !a.id.startsWith('ext_') && !a.id.startsWith('kakao_') && !a.id.startsWith('naver_') && !a.id.startsWith('google_')
-    const bIsNyam = !b.id.startsWith('ext_') && !b.id.startsWith('kakao_') && !b.id.startsWith('naver_') && !b.id.startsWith('google_')
-    if (aIsNyam && !bIsNyam) return -1
-    if (!aIsNyam && bIsNyam) return 1
-    // 거리순
     if (a.distance !== null && b.distance !== null) return a.distance - b.distance
     if (a.distance !== null) return -1
     if (b.distance !== null) return 1
@@ -186,7 +198,96 @@ function extractArea(address: string | null): string | null {
   return parts.length >= 3 ? parts[parts.length - 1] : null
 }
 
-/** 카카오 카테고리 → 장르 매핑 */
+/** 카카오 카테고리 → SSOT 매핑 테이블 */
+const KAKAO_TO_SSOT: Record<string, string> = {
+  '한식': '한식',
+  '일식': '일식',
+  '중식': '중식',
+  '분식': '한식',
+  '양식': '이탈리안',
+  '이탈리안': '이탈리안',
+  '프랑스음식': '프렌치',
+  '프렌치': '프렌치',
+  '스페인음식': '스페인',
+  '지중해음식': '지중해',
+  '태국음식': '태국',
+  '베트남음식': '베트남',
+  '인도음식': '인도',
+  '아시아음식': '베트남',
+  '동남아음식': '태국',
+  '멕시칸': '멕시칸',
+  '남미음식': '멕시칸',
+  '미국음식': '미국',
+  '패스트푸드': '미국',
+  '햄버거': '미국',
+  '치킨': '한식',
+  '피자': '이탈리안',
+  '카페': '카페',
+  '디저트': '베이커리',
+  '베이커리': '베이커리',
+  '제과': '베이커리',
+  '떡카페': '카페',
+  '아이스크림': '기타',
+  '술집': '바/주점',
+  '호프': '바/주점',
+  '와인바': '바/주점',
+  '칵테일바': '바/주점',
+  '이자카야': '바/주점',
+  '뷔페': '기타',
+  '족발,보쌈': '한식',
+  '국수': '한식',
+  '죽': '한식',
+  '고기,구이': '한식',
+  '찜,탕,찌개': '한식',
+  '해물,생선': '한식',
+  '샐러드': '기타',
+  '샌드위치': '미국',
+  '스테이크,립': '미국',
+  '브런치': '카페',
+  '국밥': '한식',
+  '곱창,막창': '한식',
+  '닭갈비': '한식',
+  '돈까스': '일식',
+  '라멘': '일식',
+  '우동': '일식',
+  '초밥': '일식',
+  '오므라이스': '일식',
+  '덮밥': '일식',
+  '커리': '인도',
+  '쌀국수': '베트남',
+  '타코': '멕시칸',
+  '파스타': '이탈리안',
+}
+
+/** 카카오 세분류(category_name) → { genre: SSOT장르, display: "대분류 > 세분류" } */
+function mapKakaoCategoryDetail(categoryDetail: string | null): { genre: string; display: string } | null {
+  if (!categoryDetail) return null
+  // "음식점 > 한식 > 냉면" → ["음식점", "한식", "냉면"]
+  const parts = categoryDetail.split('>').map((s) => s.trim())
+  // "음식점"(parts[0]) 제외하고 나머지에서 SSOT 매칭 탐색
+  const subParts = parts.slice(1)
+  if (subParts.length === 0) return null
+
+  // 가장 구체적인 레벨부터 → 상위로 올라가며 SSOT 매칭
+  for (let i = subParts.length - 1; i >= 0; i--) {
+    // "제과,베이커리" 같은 콤마 합성어 → 각각 분리해서 매칭
+    const tokens = subParts[i].split(',').map((s) => s.trim())
+    for (const token of tokens) {
+      const mapped = KAKAO_TO_SSOT[token]
+      if (mapped) {
+        const lastPart = subParts[subParts.length - 1]
+        const display = mapped !== lastPart ? `${mapped} > ${lastPart}` : mapped
+        return { genre: mapped, display }
+      }
+    }
+  }
+
+  // 어떤 레벨에서도 매칭 안 됨 → 마지막 세분류 표시
+  const lastPart = subParts[subParts.length - 1]
+  return { genre: '기타', display: `기타 > ${lastPart}` }
+}
+
+/** 카카오 대분류(category_group_name) → 장르 매핑 (폴백) */
 function mapKakaoCategory(category: string): string | null {
   const map: Record<string, string> = {
     '음식점': '한식',

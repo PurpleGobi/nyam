@@ -281,7 +281,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
   async search(query: string, userId: string): Promise<RestaurantSearchResult[]> {
     const { data, error } = await this.supabase
       .from('restaurants')
-      .select('id, name, genre, area, address, lat, lng')
+      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url')
       .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
       .limit(20)
 
@@ -304,10 +304,14 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       type: 'restaurant' as const,
       name: r.name,
       genre: r.genre,
+      genreDisplay: r.genre,
+      categoryPath: null,
       area: r.area,
       address: r.address,
       lat: r.lat,
       lng: r.lng,
+      phone: r.phone ?? null,
+      kakaoMapUrl: r.kakao_map_url ?? null,
       distance: null,
       hasRecord: recordedIds.has(r.id),
     }))
@@ -342,6 +346,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       genre: r.genre,
       area: r.area,
       address: r.address ?? null,
+      categoryPath: null,
       lat: r.lat ?? null,
       lng: r.lng ?? null,
       distance: r.distance,

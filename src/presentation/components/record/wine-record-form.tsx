@@ -132,10 +132,10 @@ export function WineRecordForm({
     aroma.labels.length > 0 &&
     pairingCategories.length > 0
 
-  const handleQuadrantChange = useCallback((val: { x: number; y: number; satisfaction: number }) => {
+  const handleQuadrantChange = useCallback((val: { x: number; y: number; satisfaction?: number }) => {
     isManualOverrideRef.current = true
-    setQuadrant(val)
-  }, [])
+    setQuadrant({ x: val.x, y: val.y, satisfaction: val.satisfaction ?? quadrant.satisfaction })
+  }, [quadrant.satisfaction])
 
   const handleAutoScoreChange = useCallback((score: number) => {
     setAutoScore(score)

@@ -83,7 +83,7 @@ function SearchInner() {
       addRecentSearch(query)
       const meta =
         result.type === 'restaurant'
-          ? [result.genre, result.area].filter(Boolean).join(' · ')
+          ? [result.genreDisplay, result.area].filter(Boolean).join(' · ')
           : [result.wineType, result.region, result.vintage].filter(Boolean).join(' · ')
 
       // 기록 있음 → 토스트 + 상세 페이지 이동
@@ -101,6 +101,11 @@ function SearchInner() {
       // 외부 API 결과 선택 → DB에 자동 INSERT
       const isExternal = targetId.startsWith('kakao_') || targetId.startsWith('naver_') || targetId.startsWith('google_')
       if (isExternal && result.type === 'restaurant') {
+        const externalIds: Record<string, string> = {}
+        if (targetId.startsWith('kakao_')) externalIds.kakao = targetId.replace('kakao_', '')
+        else if (targetId.startsWith('naver_')) externalIds.naver = targetId.replace('naver_', '')
+        else if (targetId.startsWith('google_')) externalIds.google = targetId.replace('google_', '')
+
         const res = await fetch('/api/restaurants', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -111,6 +116,9 @@ function SearchInner() {
             genre: result.genre,
             lat: result.lat,
             lng: result.lng,
+            phone: result.phone,
+            kakaoMapUrl: result.kakaoMapUrl,
+            externalIds,
           }),
         })
         const data = await res.json()
@@ -119,6 +127,29 @@ function SearchInner() {
           return
         }
         targetId = data.id
+        // 기존 식당에서 반환된 genre가 있으면 사용
+        if (data.genre && !result.genre) {
+          result = { ...result, genre: data.genre }
+        }
+      }
+
+      // genre 힌트를 sessionStorage에 저장 (기록 폼에서 프리필)
+      if (result.type === 'restaurant') {
+        if (result.genre) {
+          try { sessionStorage.setItem('nyam_genre_hint', result.genre) } catch {}
+        }
+        // 기록 폼에 표시할 추가 정보
+        const extra: Record<string, string> = {}
+        if (result.categoryPath) extra.categoryPath = result.categoryPath
+        if (result.address) extra.address = result.address
+        if (result.distance !== null) {
+          extra.distance = result.distance < 1000
+            ? `${Math.round(result.distance)}m`
+            : `${(result.distance / 1000).toFixed(1)}km`
+        }
+        if (Object.keys(extra).length > 0) {
+          try { sessionStorage.setItem('nyam_record_extra', JSON.stringify(extra)) } catch {}
+        }
       }
 
       router.push(
@@ -159,7 +190,7 @@ function SearchInner() {
           onChange={setQuery}
           placeholder={targetType === 'wine' ? '와인 이름으로 검색' : '식당 이름으로 검색'}
           variant={variant}
-          autoFocus
+          autoFocus={false}
           recentSearches={recentSearches}
           onRecentSelect={handleRecentSelect}
           onRecentClear={clearRecentSearches}
@@ -187,11 +218,15 @@ function SearchInner() {
                     type: 'restaurant',
                     name: r.name,
                     genre: r.genre,
+                    genreDisplay: r.genre,
+                    categoryPath: r.categoryPath,
                     area: r.area,
                     address: r.address,
                     distance: r.distance,
                     lat: r.lat,
                     lng: r.lng,
+                    phone: null,
+                    kakaoMapUrl: null,
                     hasRecord: r.hasRecord,
                   })
                 }

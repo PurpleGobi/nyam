@@ -49,7 +49,7 @@ export function RecordSaveBar({ variant, onSave, isLoading, disabled = false, la
         <button
           type="button"
           onClick={onSave}
-          disabled={disabled || isLoading}
+          disabled={isLoading}
           className="flex flex-1 items-center justify-center transition-opacity"
           style={{
             height: '48px',
@@ -59,7 +59,7 @@ export function RecordSaveBar({ variant, onSave, isLoading, disabled = false, la
             fontSize: '15px',
             fontWeight: 700,
             opacity: disabled || isLoading ? 0.5 : 1,
-            cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
           }}
         >
           {isLoading ? <Loader2 size={20} className="animate-spin" /> : label}

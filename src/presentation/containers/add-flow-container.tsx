@@ -75,13 +75,15 @@ function AddFlowInner() {
     )
   }, [targetType])
 
-  const fetchNearby = useCallback((keyword: string) => {
+  const [nearbyRadius, setNearbyRadius] = useState(500)
+
+  const fetchNearby = useCallback((keyword: string, radius: number = 500) => {
     if (!gps) return
     setNearbyLoading(true)
     const params = new URLSearchParams({
       lat: String(gps.latitude),
       lng: String(gps.longitude),
-      radius: '500',
+      radius: String(radius),
     })
     if (keyword) params.set('keyword', keyword)
     fetch(`/api/restaurants/nearby?${params}`)
@@ -505,9 +507,14 @@ function AddFlowInner() {
               restaurants={nearbyRestaurants}
               isLoading={nearbyLoading}
               genre={nearbyGenre}
+              radius={nearbyRadius}
               onGenreChange={(g) => {
                 setNearbyGenre(g)
-                fetchNearby(g)
+                fetchNearby(g, nearbyRadius)
+              }}
+              onRadiusChange={(r) => {
+                setNearbyRadius(r)
+                fetchNearby(nearbyGenre, r)
               }}
               onSelect={async (restaurantId) => {
                 const r = nearbyRestaurants.find((n) => n.id === restaurantId)

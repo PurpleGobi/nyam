@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Utensils, Sparkles, X } from 'lucide-react'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { RestaurantScene } from '@/domain/entities/scene'
 import type { RestaurantGenre } from '@/domain/entities/restaurant'
-import { GENRE_MAJOR_CATEGORIES, ALL_GENRES } from '@/domain/entities/restaurant'
+import { ALL_GENRES } from '@/domain/entities/restaurant'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
 import { SceneTagSelector } from '@/presentation/components/record/scene-tag-selector'
 import { CompanionInput } from '@/presentation/components/record/companion-input'
@@ -18,6 +18,8 @@ interface RestaurantTarget {
   name: string
   genre?: string
   area?: string
+  address?: string
+  categoryPath?: string
   distance?: string
   isAiRecognized?: boolean
 }
@@ -81,18 +83,13 @@ export function RestaurantRecordForm({
     (target.genre as RestaurantGenre) ?? null,
   )
 
-  const suggestedGenres = useMemo<RestaurantGenre[]>(() => {
-    if (genreHint && GENRE_MAJOR_CATEGORIES[genreHint]) {
-      return GENRE_MAJOR_CATEGORIES[genreHint]
-    }
-    return ALL_GENRES
-  }, [genreHint])
+  const suggestedGenres = ALL_GENRES
 
   const [quadrant, setQuadrant] = useState({
     x: initialData?.axisX ?? 50,
     y: initialData?.axisY ?? 50,
-    satisfaction: initialData?.satisfaction ?? 50,
   })
+  const [quadrantTouched, setQuadrantTouched] = useState(!!initialData?.axisX)
   const [scene, setScene] = useState<RestaurantScene | null>(
     (initialData?.scene as RestaurantScene) ?? null,
   )
@@ -106,9 +103,17 @@ export function RestaurantRecordForm({
   )
   const [linkedWine, setLinkedWine] = useState<LinkSearchResult | null>(null)
   const [showLinkSheet, setShowLinkSheet] = useState(false)
+  const [saveHint, setSaveHint] = useState(false)
   const menuTagInputRef = useRef<HTMLInputElement>(null)
+  const quadrantSectionRef = useRef<HTMLElement>(null)
 
-  const isValid = quadrant.satisfaction >= 1 && scene !== null
+  const isValid = quadrantTouched
+
+  const handleQuadrantChange = useCallback((val: { x: number; y: number }) => {
+    setQuadrant(val)
+    setQuadrantTouched(true)
+    setSaveHint(false)
+  }, [])
 
   const addMenuTag = useCallback(() => {
     const trimmed = menuTagInput.trim()
@@ -133,7 +138,7 @@ export function RestaurantRecordForm({
       genre: selectedGenre ?? undefined,
       axisX: quadrant.x,
       axisY: quadrant.y,
-      satisfaction: quadrant.satisfaction,
+      satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
       scene: scene as string,
       comment: comment || undefined,
       companions: companions.length > 0 ? companions : undefined,
@@ -160,12 +165,17 @@ export function RestaurantRecordForm({
         >
           <Utensils size={20} style={{ color: 'var(--accent-food)' }} />
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
             {target.name}
           </span>
+          {target.categoryPath && (
+            <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
+              {target.categoryPath}
+            </span>
+          )}
           <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
-            {[target.genre, target.area, target.distance].filter(Boolean).join(' · ')}
+            {[target.address ?? target.area, target.distance].filter(Boolean).join(' · ')}
           </span>
           {target.isAiRecognized && (
             <span className="mt-0.5 flex items-center gap-1" style={{ fontSize: '10px', color: 'var(--accent-food)' }}>
@@ -207,11 +217,11 @@ export function RestaurantRecordForm({
       )}
 
       {/* 사분면 */}
-      <section className="px-4 py-4">
+      <section ref={quadrantSectionRef} className="relative px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 곳이었나요?
         </h3>
-        <QuadrantInput type="restaurant" value={quadrant} onChange={setQuadrant} referencePoints={referenceRecords} />
+        <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} />
       </section>
 
       {/* 상황 태그 */}
@@ -388,7 +398,17 @@ export function RestaurantRecordForm({
       {/* 저장 바 */}
       <RecordSaveBar
         variant="food"
-        onSave={handleSave}
+        onSave={() => {
+          if (!isValid) {
+            quadrantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            setTimeout(() => {
+              setSaveHint(true)
+              setTimeout(() => setSaveHint(false), 3000)
+            }, 400)
+            return
+          }
+          handleSave()
+        }}
         isLoading={isLoading}
         disabled={!isValid}
         label={saveLabel}

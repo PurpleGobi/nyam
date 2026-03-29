@@ -28,7 +28,7 @@ export function SearchResultItem({ result, onSelect }: SearchResultItemProps) {
 
   const subtitle =
     result.type === 'restaurant'
-      ? [result.genre, result.area].filter(Boolean).join(' · ')
+      ? [result.genreDisplay, result.area].filter(Boolean).join(' · ')
       : [
           result.wineType ? (wineTypeMap[result.wineType] ?? result.wineType) : null,
           result.country,
