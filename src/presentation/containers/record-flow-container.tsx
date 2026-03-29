@@ -11,7 +11,7 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
-import { photoRepo, recordRepo, xpRepo, wishlistRepo, imageService } from '@/shared/di/container'
+import { photoRepo, recordRepo, xpRepo, wishlistRepo, imageService, restaurantRepo, wineRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -111,7 +111,7 @@ function RecordFlowInner() {
 
   const isEditMode = !!editRecordId
 
-  // 수정 모드: 기존 기록 + 사진 로드
+  // 수정 모드: 기존 기록 + 사진 + 대상(식당/와인) 정보 로드
   useEffect(() => {
     if (!editRecordId) return
     let cancelled = false
@@ -125,10 +125,30 @@ function RecordFlowInner() {
         ])
         if (cancelled || !record) return
         setEditingRecord(record)
+
+        // 대상(식당/와인) 정보 로드 → target.genre, state.targetName/Meta 반영
+        let targetName = ''
+        let targetMeta = ''
+        if (record.targetType === 'restaurant') {
+          const restaurant = await restaurantRepo.findById(record.targetId)
+          if (restaurant) {
+            targetName = restaurant.name
+            targetMeta = [restaurant.genre, restaurant.area].filter(Boolean).join(' · ')
+          }
+        } else {
+          const wine = await wineRepo.findById(record.targetId)
+          if (wine) {
+            targetName = wine.name
+            targetMeta = [wine.wineType, wine.region, wine.country].filter(Boolean).join(' · ')
+          }
+        }
+
         setState((prev) => ({
           ...prev,
           targetId: record.targetId,
           targetType: record.targetType,
+          targetName: targetName || prev.targetName,
+          targetMeta: targetMeta || prev.targetMeta,
         }))
         // 기존 사진을 PhotoPicker에 표시
         if (existingPhotos.length > 0) {
@@ -274,42 +294,41 @@ function RecordFlowInner() {
           }
           savedRecord = await recordRepo.update(editRecordId, updateData)
 
-          // 수정 모드에서도 사진 변경 처리
-          try {
-            const existingPhotos = await photoRepo.getPhotosByRecordId(editRecordId)
-            const existingIds = new Set(existingPhotos.map((p) => p.id))
-            const currentIds = new Set(photos.map((p) => p.id))
+          // 수정 모드 사진 처리
+          const dbPhotos = await photoRepo.getPhotosByRecordId(editRecordId)
+          const dbIds = new Set(dbPhotos.map((p) => p.id))
+          const currentIds = new Set(photos.map((p) => p.id))
 
-            // 삭제된 사진 처리
-            for (const ep of existingPhotos) {
-              if (!currentIds.has(ep.id)) {
-                await photoRepo.deletePhoto(ep.id)
+          // 1. 유저가 삭제한 기존 사진 → DB + Storage 삭제
+          for (const dp of dbPhotos) {
+            if (!currentIds.has(dp.id)) {
+              await imageService.deleteImage(dp.url).catch(() => {})
+              await photoRepo.deletePhoto(dp.id)
+            }
+          }
+
+          // 2. 크롭 편집된 기존 사진 → 기존 Storage/DB 삭제
+          for (const p of photos) {
+            if (dbIds.has(p.id) && p.status === 'pending') {
+              const dbPhoto = dbPhotos.find((dp) => dp.id === p.id)
+              if (dbPhoto) {
+                await imageService.deleteImage(dbPhoto.url).catch(() => {})
+                await photoRepo.deletePhoto(p.id)
               }
             }
+          }
 
-            // 새로 추가된 사진 업로드 (status가 pending인 것)
-            const newPhotos = photos.filter((p) => !existingIds.has(p.id) && p.status !== 'uploaded')
-            if (newPhotos.length > 0 && user) {
-              for (const np of newPhotos) {
-                const blob = await imageService.resizeImage(np.file)
-                const url = await imageService.uploadImage(user.id, editRecordId, blob, np.id)
-                await photoRepo.savePhotos(editRecordId, [{ url, orderIndex: np.orderIndex, isPublic: np.isPublic }])
-              }
+          // 3. pending 사진 업로드 (uploadAll — 신규 등록과 동일 경로)
+          const hasPending = photos.some((p) => p.status === 'pending')
+          if (hasPending) {
+            const uploadResults = await uploadAll(user.id, editRecordId)
+            // uploadAll은 이미 uploaded인 것도 포함하여 전체를 반환
+            // DB에 이미 있는 URL은 제외하고 새로 업로드된 것만 저장
+            const existingUrls = new Set(dbPhotos.map((p) => p.url))
+            const newResults = uploadResults.filter((r) => !existingUrls.has(r.url))
+            if (newResults.length > 0) {
+              await photoRepo.savePhotos(editRecordId, newResults)
             }
-
-            // 기존 사진 중 크롭 편집된 사진 (id가 동일하지만 status가 pending으로 변경된 것)
-            const editedPhotos = photos.filter((p) => existingIds.has(p.id) && p.status === 'pending')
-            if (editedPhotos.length > 0 && user) {
-              for (const ep of editedPhotos) {
-                // 기존 삭제 → 새로 업로드
-                await photoRepo.deletePhoto(ep.id)
-                const blob = await imageService.resizeImage(ep.file)
-                const url = await imageService.uploadImage(user.id, editRecordId, blob, ep.id)
-                await photoRepo.savePhotos(editRecordId, [{ url, orderIndex: ep.orderIndex, isPublic: ep.isPublic }])
-              }
-            }
-          } catch {
-            setPhotoError('사진 수정에 실패했습니다.')
           }
         } else {
           // 신규 모드: INSERT
@@ -376,6 +395,16 @@ function RecordFlowInner() {
             }).catch(() => {})
           }
 
+          // 와인 메타 업데이트 (빈티지, 산지, 품종)
+          if (formData.wineMetaUpdate && formData.targetType === 'wine') {
+            const meta = formData.wineMetaUpdate as { vintage: number | null; region: string | null; country: string | null; variety: string | null }
+            fetch('/api/wines', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: formData.targetId, ...meta }),
+            }).catch(() => {})
+          }
+
           // 사진 업로드 (신규 모드에서만)
           if (photos.length > 0) {
             try {
@@ -389,9 +418,10 @@ function RecordFlowInner() {
           }
         }
 
-        // 수정 완료 후 네비게이션: from=record_detail → 기록 상세로 복귀
-        if (isEditMode && entryPath === 'record_detail') {
-          router.replace(`/records/${savedRecord.id}`)
+        // 수정 완료 후 → 식당/와인 상세 페이지로 이동
+        if (isEditMode) {
+          const prefix = state.targetType === 'wine' ? 'wines' : 'restaurants'
+          router.replace(`/${prefix}/${state.targetId}`)
           return
         }
 

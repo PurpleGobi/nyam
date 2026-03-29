@@ -55,3 +55,40 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ id: data.id, name: data.name, type: 'wine', isExisting: false }, { status: 201 })
 }
+
+export async function PATCH(request: NextRequest) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const { id, vintage, region, country, variety } = body
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID_REQUIRED' }, { status: 400 })
+  }
+
+  const updateData: Record<string, unknown> = {}
+  if (vintage !== undefined) updateData.vintage = vintage
+  if (region !== undefined) updateData.region = region
+  if (country !== undefined) updateData.country = country
+  if (variety !== undefined) updateData.variety = variety
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ success: true })
+  }
+
+  const { error } = await supabase
+    .from('wines')
+    .update(updateData)
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}

@@ -113,7 +113,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
       {/* 바게이지(좌) + 사분면(우) */}
       <div className="flex w-full items-stretch gap-4">
         {/* 좌측: 바 게이지 2개 + 총점 */}
-        <div className="relative flex flex-col items-center gap-3" style={{ width: '96px' }}>
+        <div className="relative flex flex-col items-center gap-3" style={{ width: '96px', zIndex: 5 }}>
           <div className="flex w-full flex-1 gap-1.5">
             <VerticalGauge
               label={labels.xLabel}
@@ -208,13 +208,13 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             {/* 축 라벨 */}
             <span
               className="absolute"
-              style={{ bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}
+              style={{ bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)', zIndex: 2 }}
             >
               {labels.xAxis}
             </span>
             <span
               className="absolute"
-              style={{ left: '14px', top: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}
+              style={{ left: '14px', top: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)', zIndex: 2 }}
             >
               {labels.yAxis}
             </span>

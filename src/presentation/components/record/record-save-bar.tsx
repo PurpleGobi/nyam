@@ -24,6 +24,7 @@ export function RecordSaveBar({ variant, onSave, isLoading, disabled = false, la
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         backgroundColor: 'var(--bg)',
         borderTop: '1px solid var(--border)',
+        zIndex: 20,
       }}
     >
       <div className="flex items-center gap-3">

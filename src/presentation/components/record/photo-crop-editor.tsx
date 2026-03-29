@@ -57,6 +57,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
     }
 
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       imgRef.current = img
       setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
@@ -295,6 +296,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
             <img
               src={imageUrl}
               alt=""
+              crossOrigin="anonymous"
               draggable={false}
               style={{
                 width: `${displayW}px`,

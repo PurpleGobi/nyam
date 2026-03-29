@@ -36,6 +36,7 @@ import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { SearchDropdown } from '@/presentation/components/ui/search-dropdown'
 import { RatingInput } from '@/presentation/components/record/rating-input'
+import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { LayoutGrid, List } from 'lucide-react'
@@ -1225,6 +1226,34 @@ export default function DesignSystemPage() {
           <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-hint)' }}>
             현재 값: 구조·완성도 {wineRatingValue.x} · 즐거움·감성 {wineRatingValue.y} · 총점 {Math.round((wineRatingValue.x + wineRatingValue.y) / 2)}
           </div>
+        </div>
+      </Section>
+
+      {/* ── §21. Record Save Bar ── */}
+      <Section title="21. Record Save Bar">
+        <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
+          기록 완료 버튼. sticky bottom으로 하단 고정, z-index: 20으로<br />
+          사분면·바 게이지 등 다른 요소 위에 항상 표시.
+        </p>
+        <Sub title="Food — Active" />
+        <div style={{ position: 'relative', height: '72px' }}>
+          <RecordSaveBar variant="food" onSave={() => {}} isLoading={false} label="기록 완료" />
+        </div>
+        <Sub title="Food — Disabled" />
+        <div style={{ position: 'relative', height: '72px' }}>
+          <RecordSaveBar variant="food" onSave={() => {}} isLoading={false} disabled label="기록 완료" />
+        </div>
+        <Sub title="Wine — Active" />
+        <div style={{ position: 'relative', height: '72px' }}>
+          <RecordSaveBar variant="wine" onSave={() => {}} isLoading={false} label="기록 완료" />
+        </div>
+        <Sub title="Food — Loading" />
+        <div style={{ position: 'relative', height: '72px' }}>
+          <RecordSaveBar variant="food" onSave={() => {}} isLoading label="기록 완료" />
+        </div>
+        <Sub title="Food — With Delete (Edit Mode)" />
+        <div style={{ position: 'relative', height: '72px' }}>
+          <RecordSaveBar variant="food" onSave={() => {}} isLoading={false} label="수정 완료" onDelete={() => {}} />
         </div>
       </Section>
     </div>

@@ -14,7 +14,12 @@ import { CompanionInput } from '@/presentation/components/record/companion-input
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
 import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
+import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { AROMA_SECTORS } from '@/shared/constants/aroma-sectors'
+import {
+  WINE_COUNTRIES, WINE_REGIONS, WINE_TYPES,
+  WINE_VARIETIES_BY_TYPE, ITALIAN_VARIETIES,
+} from '@/shared/constants/wine-meta'
 
 interface WineTarget {
   id: string
@@ -31,6 +36,13 @@ interface WineTarget {
 interface CreateWineRecordInput {
   targetId: string
   targetType: 'wine'
+  // 와인 메타 (wines 테이블 업데이트용)
+  wineMetaUpdate?: {
+    vintage: number | null
+    region: string | null
+    country: string | null
+    variety: string | null
+  }
   axisX: number
   axisY: number
   satisfaction: number
@@ -105,6 +117,14 @@ export function WineRecordForm({
   onDelete,
   isDeleting,
 }: WineRecordFormProps) {
+  // 와인 메타 (자동 채움 + 수정 가능)
+  const [vintage, setVintage] = useState(target.vintage ? String(target.vintage) : '')
+  const [region, setRegion] = useState(target.region ?? '')
+  const [country, setCountry] = useState(target.country ?? '')
+  const [variety, setVariety] = useState(target.variety ?? '')
+  // 와인 타입 (SSOT wine_type)
+  const [wineType, setWineType] = useState(target.wineType ?? '')
+
   const [quadrant, setQuadrant] = useState({
     x: initialData?.axisX ?? 50,
     y: initialData?.axisY ?? 50,
@@ -161,6 +181,12 @@ export function WineRecordForm({
     await onSave({
       targetId: target.id,
       targetType: 'wine',
+      wineMetaUpdate: {
+        vintage: vintage ? Number(vintage) : null,
+        region: region || null,
+        country: country || null,
+        variety: variety || null,
+      },
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
@@ -180,7 +206,7 @@ export function WineRecordForm({
       visitDate,
       linkedRestaurantId: linkedRestaurant?.id,
     })
-  }, [isValid, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
+  }, [isValid, vintage, region, country, variety, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
 
   return (
     <div className="flex flex-col pb-24">
@@ -218,6 +244,91 @@ export function WineRecordForm({
           )}
         </div>
       </div>
+
+      {/* 와인 정보 (자동 채움 + 수정 가능) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          와인 정보
+          <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>
+            {target.isAiRecognized ? 'AI 자동입력 · 수정 가능' : '선택'}
+          </span>
+        </h3>
+        <div className="flex flex-col gap-3">
+          {/* 빈티지 */}
+          <div className="flex items-center gap-3">
+            <label className="w-14 shrink-0 text-[13px] font-medium" style={{ color: 'var(--text-sub)' }}>빈티지</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={vintage}
+              onChange={(e) => setVintage(e.target.value)}
+              placeholder="예: 2020"
+              min={1900}
+              max={new Date().getFullYear()}
+              className="nyam-input flex-1"
+              style={{ backgroundColor: 'var(--bg-card)' }}
+            />
+          </div>
+          {/* 국가 · 산지 */}
+          <div className="flex items-center gap-3">
+            <label className="w-14 shrink-0 text-[13px] font-medium" style={{ color: 'var(--text-sub)' }}>산지</label>
+            <div className="relative flex flex-1 gap-2">
+              <NyamSelect
+                value={country}
+                onChange={(v) => {
+                  setCountry(v)
+                  const regions = WINE_REGIONS[v]
+                  if (regions && !regions.includes(region)) setRegion('')
+                }}
+                options={WINE_COUNTRIES.map((c) => ({ value: c, label: c }))}
+                placeholder="국가"
+                accentColor="var(--accent-wine)"
+              />
+              <NyamSelect
+                value={region}
+                onChange={setRegion}
+                options={(WINE_REGIONS[country] ?? []).map((r) => ({ value: r, label: r }))}
+                placeholder="지역"
+                disabled={!country}
+                accentColor="var(--accent-wine)"
+              />
+            </div>
+          </div>
+          {/* 품종: 와인 타입 → 품종 2단계 */}
+          <div className="flex items-center gap-3">
+            <label className="w-14 shrink-0 text-[13px] font-medium" style={{ color: 'var(--text-sub)' }}>품종</label>
+            <div className="relative flex flex-1 gap-2">
+              <NyamSelect
+                value={wineType}
+                onChange={(v) => {
+                  setWineType(v)
+                  const varieties = WINE_VARIETIES_BY_TYPE[v]
+                  if (varieties && !varieties.includes(variety)) setVariety('')
+                }}
+                options={WINE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                placeholder="타입"
+                accentColor="var(--accent-wine)"
+              />
+              <NyamSelect
+                value={variety}
+                onChange={setVariety}
+                options={(() => {
+                  const all = WINE_VARIETIES_BY_TYPE[wineType] ?? []
+                  const normal = all.filter((v) => !ITALIAN_VARIETIES.has(v))
+                  const italian = all.filter((v) => ITALIAN_VARIETIES.has(v))
+                  return [
+                    ...normal.map((v) => ({ value: v, label: v })),
+                    ...italian.map((v) => ({ value: v, label: `${v}  ·  IT` })),
+                  ]
+                })()}
+                placeholder="품종"
+                disabled={!wineType}
+                accentColor="var(--accent-wine)"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 사진 */}
       {photoSlot && (

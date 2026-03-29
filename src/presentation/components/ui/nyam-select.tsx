@@ -12,14 +12,17 @@ interface NyamSelectProps {
   options: NyamSelectOption[]
   value: string
   onChange: (value: string) => void
+  placeholder?: string
+  disabled?: boolean
   accentColor?: string
 }
 
-export function NyamSelect({ options, value, onChange, accentColor = 'var(--accent-food)' }: NyamSelectProps) {
+export function NyamSelect({ options, value, onChange, placeholder, disabled = false, accentColor = 'var(--accent-food)' }: NyamSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? value
+  const matched = options.find((o) => o.value === value)
+  const selectedLabel = matched ? matched.label : (value || placeholder || '')
   const isWine = accentColor === 'var(--accent-wine)'
 
   useEffect(() => {
@@ -41,10 +44,11 @@ export function NyamSelect({ options, value, onChange, accentColor = 'var(--acce
     <div ref={containerRef} className="nyam-select-wrap min-w-0 flex-1">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`nyam-select w-full ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`nyam-select w-full ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''} ${disabled ? 'disabled' : ''}`}
+        style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
       >
-        <span className="truncate">{selectedLabel}</span>
+        <span className="truncate" style={!value && placeholder ? { color: 'var(--text-hint)' } : undefined}>{selectedLabel}</span>
         <ChevronDown size={12} className="nyam-select-arrow shrink-0" />
       </button>
 
