@@ -49,7 +49,7 @@ export function NyamSelect({ options, value, onChange, accentColor = 'var(--acce
       </button>
 
       {isOpen && (
-        <div className="nyam-dropdown absolute right-0 top-full z-[100] mt-1 max-h-[200px] w-full overflow-y-auto">
+        <div className="nyam-dropdown absolute right-0 top-full z-[100] mt-1 w-full" style={{ maxHeight: '280px', overflowY: 'auto' }}>
           {options.map((option) => (
             <button
               key={option.value}

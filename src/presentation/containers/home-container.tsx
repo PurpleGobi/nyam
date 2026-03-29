@@ -199,6 +199,17 @@ export function HomeContainer() {
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [chipName, setChipName] = useState('')
+
+  // 필터 열 때 항상 빈 상태로 초기화
+  const handleFilterToggle = useCallback(() => {
+    if (!isFilterOpen) {
+      setFilterRules([])
+      setConjunction('and')
+      setChipName('')
+      setActiveChipId(null)
+    }
+    toggleFilter()
+  }, [isFilterOpen, toggleFilter, setFilterRules, setConjunction, setActiveChipId])
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
   // 캘린더 상태
@@ -491,11 +502,11 @@ export function HomeContainer() {
           onViewCycle={cycleViewMode}
           onMapToggle={toggleMap}
           isMapOpen={isMapOpen}
-          onFilterToggle={toggleFilter}
+          onFilterToggle={handleFilterToggle}
           isFilterOpen={isFilterOpen}
           onSortToggle={toggleSort}
           isSortOpen={isSortOpen}
-          onSearchToggle={toggleSearch}
+          onSearchToggle={() => router.push('/discover')}
           isSearchOpen={isSearchOpen}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -527,6 +538,7 @@ export function HomeContainer() {
                 setChipName('')
               }}
               accentColor={accentColor}
+              onClose={handleFilterToggle}
             />
           </div>
         )}

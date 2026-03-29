@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
@@ -148,6 +148,17 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   const nyamSubText = 'Vivino+WS'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
 
+  // 히어로 사진: wine.photos/labelImage 우선, 없으면 recordPhotos에서 추출
+  const heroPhotos = useMemo(() => {
+    if (wine.photos.length > 0) return wine.photos
+    if (wine.labelImageUrl) return [wine.labelImageUrl]
+    const urls: string[] = []
+    recordPhotos.forEach((photos) => {
+      for (const p of photos) urls.push(p.url)
+    })
+    return urls
+  }, [wine.photos, wine.labelImageUrl, recordPhotos])
+
   // 서브 텍스트: 생산자 · 빈티지
   const subParts = [wine.producer, wine.vintage].filter(Boolean)
 
@@ -170,12 +181,12 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
       <div>
         {/* L1: 히어로 캐러셀 */}
         <HeroCarousel
-          photos={wine.photos.length > 0 ? wine.photos : (wine.labelImageUrl ? [wine.labelImageUrl] : [])}
+          photos={heroPhotos}
           fallbackIcon="wine"
           thumbnail={{
             icon: 'wine',
             name: wine.name,
-            backgroundUrl: wine.labelImageUrl ?? wine.photos[0] ?? null,
+            backgroundUrl: heroPhotos[0] ?? null,
             orientation: 'vertical',
           }}
           isWishlisted={isWishlisted}

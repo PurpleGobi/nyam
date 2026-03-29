@@ -7,6 +7,7 @@ export interface GooglePlacesResult {
   lat: number | null
   lng: number | null
   rating: number | null
+  userRatingCount: number | null
   googlePlaceId: string
 }
 
@@ -29,7 +30,11 @@ export async function searchGooglePlaces(
 
   const response = await fetch(`https://places.googleapis.com/v1/places:searchText`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount',
+    },
     body: JSON.stringify(body),
   })
 
@@ -45,6 +50,7 @@ export async function searchGooglePlaces(
       lat: loc?.latitude ?? null,
       lng: loc?.longitude ?? null,
       rating: (p.rating as number) ?? null,
+      userRatingCount: (p.userRatingCount as number) ?? null,
       googlePlaceId: (p.id as string) ?? '',
     }
   })

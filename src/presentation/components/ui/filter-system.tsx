@@ -64,6 +64,7 @@ export interface FilterSystemProps {
   activeChipId?: string | null
   onDeleteChip?: (chipId: string) => void
   accentColor?: string
+  onClose?: () => void
 }
 
 // ─── 필터 규칙 행 ───
@@ -219,6 +220,7 @@ export function FilterSystem({
   activeChipId,
   onDeleteChip,
   accentColor,
+  onClose,
 }: FilterSystemProps) {
   const handleAddRule = () => {
     const firstAttr = attributes[0]
@@ -383,7 +385,7 @@ export function FilterSystem({
       ))}
 
       {/* 하단 액션: + 필터 추가 | 칩 이름 | 삭제 | 저장 */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className={`${rules.length > 0 || subGroups.length > 0 ? 'mt-3' : ''} flex items-center gap-2`}>
         <AddFilterDropdown
           onAddRule={handleAddRule}
           onAddGroup={handleAddGroup}
@@ -413,21 +415,27 @@ export function FilterSystem({
           </button>
         )}
 
-        {/* 저장 */}
-        <button
-          type="button"
-          onClick={() => { if (canSave) onSaveAsChip?.(chipName.trim()) }}
-          disabled={!canSave}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
-          style={{
-            color: canSave ? 'var(--text-sub)' : 'var(--text-hint)',
-            opacity: canSave ? 1 : 0.5,
-            cursor: canSave ? 'pointer' : 'not-allowed',
-          }}
-        >
-          <Save size={12} />
-          저장
-        </button>
+        {/* 저장 / 닫기 */}
+        {canSave ? (
+          <button
+            type="button"
+            onClick={() => onSaveAsChip?.(chipName.trim())}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
+            style={{ color: 'var(--text-sub)' }}
+          >
+            <Save size={12} />
+            저장
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex shrink-0 items-center justify-center rounded-lg p-1.5 transition-colors"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
     </div>
   )

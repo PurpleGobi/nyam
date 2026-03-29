@@ -224,6 +224,7 @@ export function BubbleListContainer() {
             onRulesChange={(rules) => { setFilterRules(rules); setPage(1) }}
             onConjunctionChange={setFilterConjunction}
             accentColor="var(--accent-social)"
+            onClose={toggleFilter}
           />
         </div>
       )}

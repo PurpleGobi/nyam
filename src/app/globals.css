@@ -1136,7 +1136,7 @@ html, body, * {
   border-radius: var(--r-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   padding: 4px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .nyam-dropdown-item {

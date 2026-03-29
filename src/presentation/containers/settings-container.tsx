@@ -53,7 +53,6 @@ const RESTAURANT_SUB_OPTIONS = [
   { value: 'last', label: '마지막 사용' },
   { value: 'visited', label: '방문' },
   { value: 'wishlist', label: '찜' },
-  { value: 'recommended', label: '추천' },
   { value: 'following', label: '팔로잉' },
 ]
 

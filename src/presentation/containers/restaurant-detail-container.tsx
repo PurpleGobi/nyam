@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
@@ -149,11 +149,22 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   const nyamSubText = '웹+명성'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
 
+  // 히어로 사진: restaurant.photos 우선, 없으면 recordPhotos에서 추출
+  const heroPhotos = useMemo(() => {
+    const base = restaurant.photos ?? []
+    if (base.length > 0) return base
+    const urls: string[] = []
+    recordPhotos.forEach((photos) => {
+      for (const p of photos) urls.push(p.url)
+    })
+    return urls
+  }, [restaurant.photos, recordPhotos])
+
   // 히어로 썸네일
   const heroThumbnail = {
     icon: 'utensils',
     name: restaurant.name,
-    backgroundUrl: restaurant.photos?.[0] ?? null,
+    backgroundUrl: heroPhotos[0] ?? null,
     orientation: 'horizontal' as const,
   }
 
@@ -170,7 +181,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       <div>
         {/* L1: 히어로 캐러셀 */}
         <HeroCarousel
-          photos={restaurant.photos ?? []}
+          photos={heroPhotos}
           fallbackIcon="restaurant"
           thumbnail={heroThumbnail}
           isWishlisted={isWishlisted}

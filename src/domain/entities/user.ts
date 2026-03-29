@@ -27,7 +27,7 @@ export interface User {
   dnd_end: string | null
   pref_landing: 'last' | 'home' | 'bubbles' | 'profile'
   pref_home_tab: 'last' | 'restaurant' | 'wine'
-  pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'recommended' | 'following'
+  pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'following'
   pref_wine_sub: 'last' | 'tasted' | 'wishlist' | 'cellar'
   pref_bubble_tab: 'last' | 'bubble' | 'bubbler'
   pref_view_mode: 'last' | 'card' | 'list' | 'calendar'
