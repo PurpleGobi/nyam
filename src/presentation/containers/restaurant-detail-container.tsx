@@ -130,6 +130,18 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     [router],
   )
 
+  // 히어로 사진: restaurant.photos 우선, 없으면 recordPhotos에서 추출
+  const heroPhotos = useMemo(() => {
+    if (!restaurant) return []
+    const base = restaurant.photos ?? []
+    if (base.length > 0) return base
+    const urls: string[] = []
+    recordPhotos.forEach((photos) => {
+      for (const p of photos) urls.push(p.url)
+    })
+    return urls
+  }, [restaurant, recordPhotos])
+
   // 로딩
   if (isLoading || !restaurant) {
     return (
@@ -148,17 +160,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   const mySubText = visitCount > 0 ? `${visitCount}회 방문` : '미방문'
   const nyamSubText = '웹+명성'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
-
-  // 히어로 사진: restaurant.photos 우선, 없으면 recordPhotos에서 추출
-  const heroPhotos = useMemo(() => {
-    const base = restaurant.photos ?? []
-    if (base.length > 0) return base
-    const urls: string[] = []
-    recordPhotos.forEach((photos) => {
-      for (const p of photos) urls.push(p.url)
-    })
-    return urls
-  }, [restaurant.photos, recordPhotos])
 
   // 히어로 썸네일
   const heroThumbnail = {

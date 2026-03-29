@@ -687,7 +687,7 @@ export function HomeContainer() {
         {!isFollowingMode && renderContent()}
       </div>
 
-      <FabAdd currentTab={activeTab} onClick={() => router.push(`/add?type=${activeTab}`)} />
+      <FabAdd variant={activeTab === 'wine' ? 'wine' : 'food'} onClick={() => router.push(`/add?type=${activeTab}`)} />
 
     </div>
   )

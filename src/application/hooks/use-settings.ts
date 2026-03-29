@@ -139,7 +139,7 @@ export function useSettings() {
   const updateAvatar = useCallback(async (file: File) => {
     if (!userId || !settings) return
     const ext = file.name.split('.').pop() ?? 'jpg'
-    const path = `avatars/${userId}.${ext}`
+    const path = `profiles/${userId}.${ext}`
     const { createClient } = await import('@/infrastructure/supabase/client')
     const supabase = createClient()
     const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })

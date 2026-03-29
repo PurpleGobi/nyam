@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Users, User, Compass, SlidersHorizontal, ArrowUpDown, Search, X } from 'lucide-react'
+import { Users, User, Compass, SlidersHorizontal, ArrowUpDown, Search, X } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
@@ -34,7 +35,15 @@ export function BubbleListContainer() {
   const [now] = useState(() => Date.now())
   const { bubbles, isLoading } = useBubbleList(user?.id ?? null)
 
-  const [contentTab, setContentTab] = useState<ContentTab>('bubbles')
+  const [contentTab, _setContentTab] = useState<ContentTab>(() => {
+    if (typeof window === 'undefined') return 'bubbles'
+    const stored = sessionStorage.getItem('nyam_bubble_tab')
+    return stored === 'bubbles' || stored === 'bubblers' ? stored : 'bubbles'
+  })
+  const setContentTab = (tab: ContentTab) => {
+    _setContentTab(tab)
+    sessionStorage.setItem('nyam_bubble_tab', tab)
+  }
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [sortBy, setSortBy] = useState<BubbleSortOption>('activity')
   const [bubblerFilter, setBubblerFilter] = useState<BubblerFilter>('all')
@@ -342,14 +351,7 @@ export function BubbleListContainer() {
       )}
 
       {/* FAB */}
-      <button
-        type="button"
-        onClick={() => router.push('/bubbles?create=true')}
-        className="fab-add z-50 flex items-center justify-center shadow-lg transition-transform active:scale-90"
-        style={{ backgroundColor: 'var(--accent-social)', marginBottom: 'env(safe-area-inset-bottom, 0px)', width: '56px', height: '56px', border: 'none' }}
-      >
-        <Plus size={28} color="#FFFFFF" />
-      </button>
+      <FabAdd variant="social" onClick={() => router.push('/bubbles/create')} />
     </div>
   )
 }

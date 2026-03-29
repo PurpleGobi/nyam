@@ -1,10 +1,12 @@
 'use client'
 
+import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import { AppHeader } from '@/presentation/components/layout/app-header'
+import { uploadBubbleIcon } from '@/shared/di/container'
 
 export function BubbleCreateContainer() {
   const router = useRouter()
@@ -38,10 +40,15 @@ export function BubbleCreateContainer() {
     }
   }
 
+  const handleUploadPhoto = useCallback(async (file: File): Promise<string> => {
+    if (!user) throw new Error('Not authenticated')
+    return uploadBubbleIcon(file, user.id)
+  }, [user])
+
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader variant="inner" title="버블 만들기" backHref="/bubbles" />
-      <BubbleCreateForm onSubmit={handleSubmit} isLoading={isLoading} />
+      <BubbleCreateForm onSubmit={handleSubmit} onUploadPhoto={handleUploadPhoto} isLoading={isLoading} />
     </div>
   )
 }

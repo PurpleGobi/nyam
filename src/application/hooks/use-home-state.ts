@@ -5,6 +5,21 @@ import type { HomeTab, ViewMode, ViewModeState, ViewModeStateKey } from '@/domai
 import { VIEW_MODE_CYCLE, DEFAULT_VIEW_MODE_STATE, makeViewModeStateKey } from '@/domain/entities/home-state'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
+const TAB_STORAGE_KEY = 'nyam_home_tab'
+const VIEW_STORAGE_KEY = 'nyam_home_view'
+
+function getStoredTab(): HomeTab | null {
+  if (typeof window === 'undefined') return null
+  const v = sessionStorage.getItem(TAB_STORAGE_KEY)
+  return v === 'restaurant' || v === 'wine' ? v : null
+}
+
+function getStoredViewMode(): ViewMode | null {
+  if (typeof window === 'undefined') return null
+  const v = sessionStorage.getItem(VIEW_STORAGE_KEY)
+  return v === 'card' || v === 'list' || v === 'calendar' ? v : null
+}
+
 function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> {
   return {
     restaurant_card: { ...DEFAULT_VIEW_MODE_STATE },
@@ -22,8 +37,18 @@ interface UseHomeStateOptions {
 }
 
 export function useHomeState(options?: UseHomeStateOptions) {
-  const [activeTab, setActiveTab] = useState<HomeTab>(options?.initialTab ?? 'restaurant')
-  const [viewMode, setViewMode] = useState<ViewMode>(options?.initialViewMode ?? 'card')
+  const [activeTab, _setActiveTab] = useState<HomeTab>(options?.initialTab ?? getStoredTab() ?? 'restaurant')
+  const [viewMode, _setViewMode] = useState<ViewMode>(options?.initialViewMode ?? getStoredViewMode() ?? 'card')
+
+  const setActiveTab = useCallback((tab: HomeTab) => {
+    _setActiveTab(tab)
+    sessionStorage.setItem(TAB_STORAGE_KEY, tab)
+  }, [])
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    _setViewMode(mode)
+    sessionStorage.setItem(VIEW_STORAGE_KEY, mode)
+  }, [])
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [activeChipId, setActiveChipId] = useState<string | null>(null)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -57,9 +82,10 @@ export function useHomeState(options?: UseHomeStateOptions) {
   }, [activeTab, viewMode])
 
   const cycleViewMode = useCallback(() => {
-    setViewMode((prev) => {
-      const idx = VIEW_MODE_CYCLE.indexOf(prev)
-      return VIEW_MODE_CYCLE[(idx + 1) % VIEW_MODE_CYCLE.length]
+    _setViewMode((prev) => {
+      const next = VIEW_MODE_CYCLE[(VIEW_MODE_CYCLE.indexOf(prev) + 1) % VIEW_MODE_CYCLE.length]
+      sessionStorage.setItem(VIEW_STORAGE_KEY, next)
+      return next
     })
   }, [])
 

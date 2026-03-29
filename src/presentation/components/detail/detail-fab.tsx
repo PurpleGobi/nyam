@@ -1,13 +1,15 @@
 'use client'
 
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
+import { FabAdd } from '@/presentation/components/layout/fab-add'
 
 interface DetailFabProps {
   onBack: () => void
   onAdd: () => void
+  variant?: 'food' | 'wine'
 }
 
-export function DetailFab({ onBack, onAdd }: DetailFabProps) {
+export function DetailFab({ onBack, onAdd, variant = 'food' }: DetailFabProps) {
   return (
     <>
       {/* 뒤로 FAB — 좌하단 */}
@@ -20,13 +22,7 @@ export function DetailFab({ onBack, onAdd }: DetailFabProps) {
       </button>
 
       {/* 추가 FAB — 우하단 */}
-      <button
-        type="button"
-        onClick={onAdd}
-        className="fab-add"
-      >
-        <Plus size={22} style={{ color: 'var(--text)' }} />
-      </button>
+      <FabAdd variant={variant} onClick={onAdd} />
     </>
   )
 }

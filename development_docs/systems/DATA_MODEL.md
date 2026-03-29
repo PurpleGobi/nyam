@@ -750,25 +750,92 @@ CREATE INDEX idx_ai_rec_expires ON ai_recommendations(expires_at) WHERE NOT is_d
 > 03_profile 와인 통계 탭의 "품종" 차트가 껍질 두께 순서(얇음→두꺼움)로 정렬됨.
 > wines.body_level은 개별 와인의 바디감이지 품종 자체의 표준 특성이 아니므로,
 > 품종별 기본 특성 참조 테이블이 필요함.
+> **WSET Level 2 + Level 3 전체 커버리지 기준 (55종)**
 
 ```sql
 CREATE TABLE grape_variety_profiles (
   name VARCHAR(100) PRIMARY KEY,         -- 품종명 (영문 기준: 'Cabernet Sauvignon', 'Pinot Noir' 등)
   name_ko VARCHAR(100) NOT NULL,         -- 한글명 ('카베르네 소비뇽', '피노 누아')
-  body_order INT NOT NULL,               -- 껍질 두께 순서 (1=가장 얇음, 20=가장 두꺼움) — 차트 정렬 기준
+  body_order INT NOT NULL,               -- 바디 순서 (1=가장 가벼움) — 차트 정렬 기준
   category VARCHAR(10) NOT NULL,         -- 'red' | 'white' — 레드/화이트 구분
   typical_body INT,                      -- 전형적 바디감 1~5 (참고용)
   typical_acidity INT,                   -- 전형적 산미 1~3 (참고용)
   typical_tannin INT                     -- 전형적 타닌 1~5 (참고용, 레드 전용)
 );
 
--- 03_profile 목업 기준 정렬 순서 (seed 데이터):
--- body_order 1: 뮈스카(white) → 2: 리슬링(white) → 3: 소비뇽 블랑(white)
--- → 4: 피노 그리(white) → 5: 피노 누아(red) → 6: 가메(red) → 7: 바르베라(red)
--- → 8: 샤르도네(white) → 9: 그르나슈(red) → 10: 메를로(red) → 11: 산지오베제(red)
--- → 12: 비오니에(white) → 13: 템프라니요(red) → 14: 쉬라즈(red) → 15: 네비올로(red)
--- → 16: 말벡(red) → 17: 카베르네 소비뇽(red) → 18: 무르베드르(red) → 19: 타나(red)
--- → 20: 프티 베르도(red)
+-- ═══════════════════════════════════════════════════════
+-- WSET L2+L3 완전 커버리지 seed 데이터 (55종)
+-- 품종 자동 입력이므로 필터에서도 전체 노출
+-- ═══════════════════════════════════════════════════════
+
+-- ── WHITE (23종, body_order 1~23: 라이트→풀바디) ──
+-- 1: Muscat (뮈스카) — L2 Principal, Alsace/Piedmont
+-- 2: Glera (글레라) — L2 Regional, Veneto (Prosecco)
+-- 3: Cortese (코르테제) — L2 Regional, Piedmont (Gavi)
+-- 4: Melon de Bourgogne (멜롱 드 부르고뉴) — L3, Loire (Muscadet)
+-- 5: Trebbiano (트레비아노) — L2 Regional, Central Italy
+-- 6: Albarino (알바리뇨) — L2 Regional, Spain (Rias Baixas)
+-- 7: Riesling (리슬링) — L2 Principal
+-- 8: Pinot Grigio (피노 그리) — L2 Principal
+-- 9: Sauvignon Blanc (소비뇽 블랑) — L2 Principal
+-- 10: Gruner Veltliner (그뤼너 벨트리너) — L3, Austria
+-- 11: Garganega (가르가네가) — L2 Regional, Veneto (Soave)
+-- 12: Verdicchio (베르디키오) — L3, Marche
+-- 13: Vermentino (베르멘티노) — L2/L3, Sardinia/Liguria
+-- 14: Assyrtiko (아시르티코) — L3, Greece (Santorini)
+-- 15: Arneis (아르네이스) — L3, Piedmont (Roero)
+-- 16: Friulano (프리울라노) — L3, Friuli
+-- 17: Furmint (푸르민트) — L2 Principal, Hungary (Tokaj)
+-- 18: Falanghina (팔랑기나) — L3, Campania
+-- 19: Fiano (피아노) — L3, Campania
+-- 20: Greco (그레코) — L3, Campania
+-- 21: Chenin Blanc (슈냉 블랑) — L2 Principal, Loire/South Africa
+-- 22: Semillon (세미용) — L2 Principal, Bordeaux/Hunter Valley
+-- 23: Gewurztraminer (게뷔르츠트라미너) — L2 Principal, Alsace
+-- 24: Marsanne (마르산느) — L3, N. Rhone
+-- 25: Roussanne (루산느) — L3, N. Rhone
+-- 26: Viognier (비오니에) — L2 Principal, N. Rhone
+-- 27: Chardonnay (샤르도네) — L2 Principal (climate-dependent)
+-- 28: Torrontes (토론테스) — L3, Argentina (Salta)
+-- 29: Grillo (그릴로) — L3, Sicily
+-- 30: Carricante (카리칸테) — L3, Sicily (Etna)
+-- 31: Pecorino (페코리노) — L3, Abruzzo/Marche
+-- 32: Vernaccia (베르나차) — L3, Tuscany (San Gimignano)
+-- 33: Catarratto (카타라토) — L3, Sicily
+
+-- ── RED (32종, body_order 34~65: 라이트→풀바디) ──
+-- 34: Schiava (스키아바) — L3, Alto Adige
+-- 35: Frappato (프라파토) — L3, Sicily
+-- 36: Gamay (가메) — L2 Principal, Beaujolais
+-- 37: Dolcetto (돌체토) — L2 Regional, Piedmont
+-- 38: Cinsault (생소) — L3, S. Rhone/Languedoc
+-- 39: Pinot Noir (피노 누아) — L2 Principal
+-- 40: Corvina (코르비나) — L2 Regional, Veneto (Amarone)
+-- 41: Nerello Mascalese (네렐로 마스칼레제) — L3, Sicily (Etna)
+-- 42: Lambrusco (람브루스코) — L3, Emilia-Romagna
+-- 43: Barbera (바르베라) — L2 Regional, Piedmont
+-- 44: Cabernet Franc (카베르네 프랑) — L3, Loire/Bordeaux
+-- 45: Grenache (그르나슈) — L2 Principal, S. Rhone/Spain
+-- 46: Carignan (카리냥) — L3, Languedoc
+-- 47: Sangiovese (산지오베제) — L2 Regional, Tuscany
+-- 48: Tempranillo (템프라니요) — L2 Principal, Rioja
+-- 49: Merlot (메를로) — L2 Principal
+-- 50: Montepulciano (몬테풀치아노) — L2 Regional, Abruzzo
+-- 51: Nero d'Avola (네로 다볼라) — L2 Regional, Sicily
+-- 52: Carmenere (카르메네르) — L2 Regional, Chile
+-- 53: Pinotage (피노타주) — L2 Regional, South Africa
+-- 54: Zinfandel (진판델) — L2 Regional, USA/Puglia (=Primitivo)
+-- 55: Negroamaro (네그로아마로) — L3, Puglia
+-- 56: Syrah (쉬라즈) — L2 Principal
+-- 57: Nebbiolo (네비올로) — L2 Regional, Piedmont
+-- 58: Malbec (말벡) — L2 Principal, Argentina
+-- 59: Cabernet Sauvignon (카베르네 소비뇽) — L2 Principal
+-- 60: Mourvedre (무르베드르) — L3, S. Rhone/Bandol
+-- 61: Aglianico (알리아니코) — L3, Campania
+-- 62: Sagrantino (사그란티노) — L3, Umbria
+-- 63: Touriga Nacional (투리가 나시오날) — L3, Portugal (Douro)
+-- 64: Tannat (타나) — L3, SW France/Uruguay
+-- 65: Petit Verdot (프티 베르도) — L3, Bordeaux
 ```
 
 ---

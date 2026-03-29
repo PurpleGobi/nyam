@@ -134,6 +134,18 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
     [router],
   )
 
+  // 히어로 사진: wine.photos/labelImage 우선, 없으면 recordPhotos에서 추출
+  const heroPhotos = useMemo(() => {
+    if (!wine) return []
+    if (wine.photos.length > 0) return wine.photos
+    if (wine.labelImageUrl) return [wine.labelImageUrl]
+    const urls: string[] = []
+    recordPhotos.forEach((photos) => {
+      for (const p of photos) urls.push(p.url)
+    })
+    return urls
+  }, [wine, recordPhotos])
+
   // 로딩
   if (isLoading || !wine) {
     return (
@@ -147,17 +159,6 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   const mySubText = tastingCount > 0 ? `${tastingCount}회 시음` : '미시음'
   const nyamSubText = 'Vivino+WS'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
-
-  // 히어로 사진: wine.photos/labelImage 우선, 없으면 recordPhotos에서 추출
-  const heroPhotos = useMemo(() => {
-    if (wine.photos.length > 0) return wine.photos
-    if (wine.labelImageUrl) return [wine.labelImageUrl]
-    const urls: string[] = []
-    recordPhotos.forEach((photos) => {
-      for (const p of photos) urls.push(p.url)
-    })
-    return urls
-  }, [wine.photos, wine.labelImageUrl, recordPhotos])
 
   // 서브 텍스트: 생산자 · 빈티지
   const subParts = [wine.producer, wine.vintage].filter(Boolean)
@@ -340,7 +341,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
       </div>
 
       {/* FAB */}
-      <DetailFab onBack={handleBack} onAdd={handleAdd} />
+      <DetailFab onBack={handleBack} onAdd={handleAdd} variant="wine" />
     </div>
   )
 }
