@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
 import { useFollowList } from '@/application/hooks/use-follow-list'
@@ -13,6 +12,8 @@ import { PicksGrid } from '@/presentation/components/bubbler/picks-grid'
 import { RecentRecords } from '@/presentation/components/bubbler/recent-records'
 import { ActivitySection } from '@/presentation/components/bubbler/activity-section'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 
 interface BubblerProfileContainerProps {
   userId: string
@@ -38,23 +39,8 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      {/* 헤더 (목업 .app-header: 좌=뒤로+라벨, 우=더보기) */}
-      <nav className="flex items-center justify-between px-4" style={{ height: '44px' }}>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-0.5 py-1"
-          style={{ color: 'var(--text)' }}
-        >
-          <ChevronLeft size={22} style={{ color: 'var(--text-sub)' }} />
-          <span className="text-[16px] font-semibold leading-none">
-            {data.bubbleContext?.bubbleName ?? '뒤로'}
-          </span>
-        </button>
-        <button type="button" className="flex h-11 w-11 items-center justify-center">
-          <MoreHorizontal size={18} style={{ color: 'var(--text)' }} />
-        </button>
-      </nav>
+      <AppHeader />
+      <FabBack />
 
       <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* 프로필 히어로 — 통계 포함 (목업 기준 가로 배치) */}

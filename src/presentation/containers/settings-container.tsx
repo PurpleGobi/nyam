@@ -22,7 +22,7 @@ import { DeleteAccountSheet } from '@/presentation/components/settings/delete-ac
 import { EditFieldSheet } from '@/presentation/components/settings/edit-field-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { AppHeader } from '@/presentation/components/layout/app-header'
-import { useReferrer } from '@/presentation/hooks/use-referrer'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import type { VisibilityConfig, DeleteMode, BubblePrivacyOverride } from '@/domain/entities/settings'
 
 const PRIVACY_PROFILE_OPTIONS = [
@@ -112,7 +112,6 @@ const VISIBILITY_FIELDS: { key: keyof VisibilityConfig; label: string }[] = [
 
 export function SettingsContainer() {
   const router = useRouter()
-  const { referrerName, referrerPath } = useReferrer()
   const { signOut } = useAuth()
   const {
     settings, bubbleOverrides, isLoading,
@@ -165,7 +164,8 @@ export function SettingsContainer() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
+      <AppHeader />
+      <FabBack />
 
       <div className="flex-1 overflow-y-auto pb-20">
         {/* ── 계정 ── */}

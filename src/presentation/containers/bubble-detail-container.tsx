@@ -24,6 +24,7 @@ import { MemberGrid } from '@/presentation/components/bubble/member-grid'
 import { MemberListView } from '@/presentation/components/bubble/member-list-view'
 import { CommentSheetContainer } from '@/presentation/containers/comment-sheet-container'
 import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import type { RankingTargetType, BubbleMemberRole, BubbleContentVisibility } from '@/domain/entities/bubble'
@@ -57,7 +58,8 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       {/* 헤더 */}
-      <AppHeader variant="inner" title="버블" />
+      <AppHeader />
+      <FabBack />
 
       {/* 히어로 */}
       <BubbleHero
@@ -130,7 +132,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
             bubbleId={bubbleId}
             viewMode={memberViewMode}
             currentUserId={user?.id ?? null}
-            onMemberClick={(userId) => router.push(`/bubbles/${bubbleId}/members/${userId}`)}
+            onMemberClick={(userId) => router.push(`/users/${userId}?bubble=${bubbleId}`)}
           />
         )}
       </div>

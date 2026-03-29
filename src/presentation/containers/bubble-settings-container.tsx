@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings'
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
@@ -81,7 +82,8 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* 헤더 */}
-      <AppHeader variant="inner" title="버블 설정" />
+      <AppHeader />
+      <FabBack />
 
       <div className="flex-1 overflow-y-auto">
         <BubbleSettings

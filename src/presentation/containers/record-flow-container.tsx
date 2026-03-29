@@ -13,7 +13,8 @@ import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
 import { photoRepo, recordRepo, xpRepo, wishlistRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
-import { RecordNav } from '@/presentation/components/record/record-nav'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { RecordSuccess } from '@/presentation/components/record/record-success'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
@@ -432,12 +433,8 @@ function RecordFlowInner() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col">
-      <RecordNav
-        title={isEditMode ? '기록 수정' : '기록'}
-        variant={variant}
-        onBack={handleBack}
-        onClose={handleClose}
-      />
+      <AppHeader />
+      <FabBack onClick={handleBack} />
 
       {state.targetType === 'restaurant' ? (
         <RestaurantRecordForm

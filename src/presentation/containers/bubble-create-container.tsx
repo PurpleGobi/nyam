@@ -7,6 +7,7 @@ import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
 import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { uploadBubbleIcon, settingsRepo, bubbleRepo } from '@/shared/di/container'
 
 export function BubbleCreateContainer() {
@@ -65,7 +66,8 @@ export function BubbleCreateContainer() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      <AppHeader variant="inner" title="버블 만들기" backHref="/bubbles" />
+      <AppHeader />
+      <FabBack />
       <BubbleCreateForm onSubmit={handleSubmit} onUploadPhoto={handleUploadPhoto} isLoading={isLoading} />
     </div>
   )

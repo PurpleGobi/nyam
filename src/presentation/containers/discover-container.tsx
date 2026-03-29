@@ -11,6 +11,8 @@ import { wishlistRepo } from '@/shared/di/container'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import type { ScoreBreakdown } from '@/domain/services/discover-scoring'
 import { formatBreakdownText } from '@/domain/services/discover-scoring'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 
 // ─── Types ───
 
@@ -264,13 +266,8 @@ export function DiscoverContainer() {
 
   return (
     <div className="content-feed flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* Header */}
-      <nav className="sticky top-0 z-10 flex items-center gap-3 px-4" style={{ height: '48px', backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-10 w-10 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
-        </button>
-        <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>탐색</h1>
-      </nav>
+      <AppHeader />
+      <FabBack />
 
       {/* §1 지역 */}
       <section className="px-4 pt-4 pb-2">

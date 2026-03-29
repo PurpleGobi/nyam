@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam — Schema &times; User Journey Map</title>
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #1a1a1f;
+    --surface2: #242429;
+    --border: #2e2e35;
+    --text: #e4e4e7;
+    --text2: #a0a0ab;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --blue: #60a5fa;
+    --green: #4ade80;
+    --purple: #c084fc;
+    --pink: #f472b6;
+    --red: #f87171;
+    --yellow: #facc15;
+    --cyan: #22d3ee;
+    --wine: #8B7396;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text2); font-size: 0.875rem; margin-bottom: 2rem; }
+
+  /* ── Nav Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tab {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text2);
+    white-space: nowrap;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+  }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active { color: var(--bg); background: var(--accent); font-weight: 600; }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Journey Section ── */
+  .journey {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .journey-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+  }
+  .journey-header:hover .journey-title { color: var(--accent2); }
+  .journey-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .badge-d0 { background: var(--accent); color: var(--bg); }
+  .badge-d1 { background: var(--blue); color: var(--bg); }
+  .badge-d2 { background: var(--purple); color: var(--bg); }
+  .badge-modal { background: var(--pink); color: var(--bg); }
+  .badge-ind { background: var(--text2); color: var(--bg); }
+
+  .journey-title { font-size: 1rem; font-weight: 600; }
+  .journey-route { font-size: 0.75rem; color: var(--text2); font-family: 'SF Mono', monospace; }
+  .journey-parent { font-size: 0.7rem; color: var(--text2); margin-left: auto; }
+
+  .journey-body { display: none; }
+  .journey.open .journey-body { display: block; }
+  .journey.open .chevron { transform: rotate(90deg); }
+  .chevron {
+    color: var(--text2);
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    margin-left: auto;
+  }
+
+  /* ── Table Pills ── */
+  .tables-used {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .pill:hover { transform: scale(1.05); }
+  .pill-r { background: rgba(96,165,250,0.15); color: var(--blue); border-color: rgba(96,165,250,0.3); }
+  .pill-c { background: rgba(74,222,128,0.15); color: var(--green); border-color: rgba(74,222,128,0.3); }
+  .pill-u { background: rgba(250,204,21,0.15); color: var(--yellow); border-color: rgba(250,204,21,0.3); }
+  .pill-d { background: rgba(248,113,113,0.15); color: var(--red); border-color: rgba(248,113,113,0.3); }
+
+  /* ── Op Table ── */
+  .op-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .op-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    color: var(--text2);
+    font-weight: 500;
+    font-size: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .op-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  .op-table tr:last-child td { border-bottom: none; }
+  .op-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .op-read { background: rgba(96,165,250,0.2); color: var(--blue); }
+  .op-create { background: rgba(74,222,128,0.2); color: var(--green); }
+  .op-update { background: rgba(250,204,21,0.2); color: var(--yellow); }
+  .op-delete { background: rgba(248,113,113,0.2); color: var(--red); }
+
+  /* ── Schema Panel ── */
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+  }
+  .schema-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+  .schema-card:hover { border-color: var(--accent); }
+  .schema-card h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-bottom: 0.125rem;
+  }
+  .schema-card .desc { font-size: 0.75rem; color: var(--text2); margin-bottom: 0.75rem; }
+  .schema-card .col-list { list-style: none; }
+  .schema-card .col-list li {
+    font-size: 0.75rem;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    gap: 0.5rem;
+  }
+  .schema-card .col-list li:last-child { border: none; }
+  .col-name { color: var(--accent2); font-family: 'SF Mono', monospace; font-weight: 500; min-width: 140px; }
+  .col-type { color: var(--text2); }
+  .col-pk { color: var(--yellow); font-size: 0.625rem; font-weight: 700; }
+  .col-fk { color: var(--purple); font-size: 0.625rem; font-weight: 700; }
+
+  .schema-category {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 1.5rem 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .schema-category:first-child { margin-top: 0; }
+
+  /* ── Matrix Panel ── */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix {
+    border-collapse: collapse;
+    font-size: 0.6875rem;
+    min-width: 900px;
+  }
+  .matrix th, .matrix td {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .matrix th {
+    background: var(--surface2);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .matrix th:first-child, .matrix td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 5;
+    font-weight: 500;
+    min-width: 120px;
+  }
+  .matrix th:first-child { z-index: 15; background: var(--surface2); }
+  .matrix td.has-op { font-weight: 600; }
+  .matrix .c { color: var(--green); }
+  .matrix .r { color: var(--blue); }
+  .matrix .u { color: var(--yellow); }
+  .matrix .d { color: var(--red); }
+
+  /* ── ER Diagram ── */
+  .er-section { margin-bottom: 2rem; }
+  .er-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 0.75rem;
+  }
+  .er-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .er-group h4 { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--accent2); }
+  .er-rel {
+    font-size: 0.75rem;
+    font-family: 'SF Mono', monospace;
+    padding: 4px 0;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .er-rel .tbl { color: var(--accent); font-weight: 500; }
+  .er-rel .card { color: var(--purple); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-radius: 10px;
+    font-size: 0.75rem;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+  }
+
+  /* ── Highlight ── */
+  .highlight { background: rgba(249,115,22,0.1) !important; border-color: var(--accent) !important; }
+
+  /* ── Stats ── */
+  .stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 120px;
+  }
+  .stat-num { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--text2); }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .schema-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1><span>Nyam</span> Schema &times; Journey Map</h1>
+<p class="subtitle">25 Tables &middot; 20 Routes &middot; User Journey별 DB 오퍼레이션 맵</p>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-num">25</div><div class="stat-label">Tables</div></div>
+  <div class="stat-card"><div class="stat-num">13</div><div class="stat-label">Stack Pages</div></div>
+  <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Modal Pages</div></div>
+  <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">Independent</div></div>
+  <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Triggers</div></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" role="tablist">
+  <button class="tab active" data-panel="journey" role="tab">User Journey</button>
+  <button class="tab" data-panel="matrix" role="tab">CRUD Matrix</button>
+  <button class="tab" data-panel="schema" role="tab">Schema Cards</button>
+  <button class="tab" data-panel="er" role="tab">Relationships</button>
+</div>
+
+<!-- ========== JOURNEY PANEL ========== -->
+<div id="journey" class="panel active">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> D0 (바닥)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> D1 (Stack)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> D2 (Stack)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div> Modal</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--text2)"></div> Independent</div>
+    <div class="legend-item"><span class="op-badge op-read">R</span> Read</div>
+    <div class="legend-item"><span class="op-badge op-create">C</span> Create</div>
+    <div class="legend-item"><span class="op-badge op-update">U</span> Update</div>
+    <div class="legend-item"><span class="op-badge op-delete">D</span> Delete</div>
+  </div>
+
+  <!-- Independent Flows -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Independent Flows</h2>
+
+  <div class="journey" data-route="/auth/login">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-ind">IN</span>
+      <div><div class="journey-title">로그인</div><div class="journey-route">/auth/login</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">auth.users C</span>
+        <span class="pill pill-c">users C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>단계</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>OAuth 인증</td><td>auth.users</td><td><span class="op-badge op-read">R</span> provider 확인</td></tr>
+        <tr><td>신규 가입</td><td>auth.users, users</td><td><span class="op-badge op-create">C</span> 유저 생성</td></tr>
+        <tr><td>기존 유저</td><td>users</td><td><span class="op-badge op-read">R</span> 프로필 로드 → 홈</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/onboarding">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-ind">IN</span>
+      <div><div class="journey-title">온보딩</div><div class="journey-route">/onboarding → /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">xp_histories C</span>
+        <span class="pill pill-u">users U</span>
+      </div>
+      <table class="op-table">
+        <tr><th>단계</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>인트로 ~ 탐색</td><td>—</td><td>하드코딩 시드 데이터 (DB 없음)</td></tr>
+        <tr><td>완료 보너스</td><td>xp_histories</td><td><span class="op-badge op-create">C</span> bonus_onboard XP</td></tr>
+        <tr><td>XP 반영</td><td>users</td><td><span class="op-badge op-update">U</span> total_xp 증가</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/bubbles/invite/[code]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-ind">IN</span>
+      <div><div class="journey-title">초대 랜딩</div><div class="journey-route">/bubbles/invite/[code]</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">bubbles R</span>
+        <span class="pill pill-c">bubble_members C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>단계</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>초대 코드 확인</td><td>bubbles</td><td><span class="op-badge op-read">R</span> invite_code 매칭</td></tr>
+        <tr><td>가입 처리</td><td>bubble_members</td><td><span class="op-badge op-create">C</span> 멤버 추가 (status=pending|active)</td></tr>
+        <tr><td>카운트 갱신</td><td>bubbles</td><td><span class="op-badge op-update">U</span> member_count (trigger)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D0 -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin:1.5rem 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em">D0 — 바닥 (뒤로가기 종착점)</h2>
+
+  <div class="journey" data-route="/">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d0">D0</span>
+      <div><div class="journey-title">홈</div><div class="journey-route">/</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">saved_filters R</span>
+        <span class="pill pill-r">ai_recommendations R</span>
+        <span class="pill pill-r">follows R</span>
+        <span class="pill pill-r">users R</span>
+        <span class="pill pill-r">wishlists R</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>메인 피드</td><td>records → restaurants / wines</td><td><span class="op-badge op-read">R</span> 탭 + 필터별 기록 조회 (JOIN)</td></tr>
+        <tr><td>필터 칩</td><td>saved_filters</td><td><span class="op-badge op-read">R</span> 저장된 필터 로드</td></tr>
+        <tr><td>AI 인사</td><td>records</td><td><span class="op-badge op-read">R</span> 최근 5개 기록 → 인사말 생성</td></tr>
+        <tr><td>넛지 스트립</td><td>records</td><td><span class="op-badge op-read">R</span> status='checked' (미평가)</td></tr>
+        <tr><td>통계 패널</td><td>records, user_experiences</td><td><span class="op-badge op-read">R</span> 집계 통계</td></tr>
+        <tr><td>추천 카드</td><td>ai_recommendations → restaurants / wines</td><td><span class="op-badge op-read">R</span> 추천 목록</td></tr>
+        <tr><td>팔로잉 피드</td><td>follows → records</td><td><span class="op-badge op-read">R</span> 팔로우 유저 기록</td></tr>
+        <tr><td>캘린더 뷰</td><td>records</td><td><span class="op-badge op-read">R</span> 날짜별 그룹</td></tr>
+        <tr><td>지도 뷰</td><td>records → restaurants</td><td><span class="op-badge op-read">R</span> 좌표 데이터</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/bubbles">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d0">D0</span>
+      <div><div class="journey-title">버블 목록</div><div class="journey-route">/bubbles</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">bubbles R</span>
+        <span class="pill pill-r">bubble_members R</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>내 버블 리스트</td><td>bubbles, bubble_members</td><td><span class="op-badge op-read">R</span> 가입 버블 + 통계 (member_count, record_count)</td></tr>
+        <tr><td>공개 버블 탐색</td><td>bubbles</td><td><span class="op-badge op-read">R</span> visibility='public'</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D1 홈 계열 -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin:1.5rem 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em">D1 — 홈 계열</h2>
+
+  <div class="journey" data-route="/discover">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">디스커버</div><div class="journey-route">/discover ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">ai_recommendations R</span>
+        <span class="pill pill-c">wishlists C</span>
+        <span class="pill pill-c">restaurants C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>지역/장르 필터</td><td>restaurants</td><td><span class="op-badge op-read">R</span> 집계 검색</td></tr>
+        <tr><td>AI 랭킹</td><td>restaurants, records</td><td><span class="op-badge op-read">R</span> 상위 30개 AI 스코어링</td></tr>
+        <tr><td>AI 추천</td><td>ai_recommendations</td><td><span class="op-badge op-read">R</span> 자연어 추천</td></tr>
+        <tr><td>찜 토글</td><td>wishlists</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span> INSERT / DELETE</td></tr>
+        <tr><td>기록 시작</td><td>restaurants</td><td><span class="op-badge op-create">C</span> 외부 API → INSERT (필요 시)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/search">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">검색</div><div class="journey-route">/search ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-c">restaurants C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>근처 식당 (GPS)</td><td>restaurants</td><td><span class="op-badge op-read">R</span> 외부 API (카카오/네이버/구글)</td></tr>
+        <tr><td>텍스트 검색</td><td>restaurants, wines</td><td><span class="op-badge op-read">R</span> DB + 외부 API 통합 검색</td></tr>
+        <tr><td>기존 기록 확인</td><td>records</td><td><span class="op-badge op-read">R</span> target_id 매칭</td></tr>
+        <tr><td>외부 결과 등록</td><td>restaurants</td><td><span class="op-badge op-create">C</span> INSERT (auto-register)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/add">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">추가 플로우 (카메라/AI)</div><div class="journey-route">/add ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">restaurants C</span>
+        <span class="pill pill-c">wines C</span>
+        <span class="pill pill-c">records C</span>
+        <span class="pill pill-c">record_photos C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>단계</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>카메라 촬영</td><td>—</td><td>GPS 읽기 + Vision AI 분석</td></tr>
+        <tr><td>매칭 확정</td><td>restaurants / wines</td><td><span class="op-badge op-create">C</span> INSERT (외부 API 결과)</td></tr>
+        <tr><td>체크인 기록</td><td>records</td><td><span class="op-badge op-create">C</span> status='checked'</td></tr>
+        <tr><td>사진 업로드</td><td>record_photos + Storage</td><td><span class="op-badge op-create">C</span> 이미지 업로드</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/record">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">기록 작성 (사분면 + 평가)</div><div class="journey-route">/record ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">records C</span>
+        <span class="pill pill-c">record_photos C</span>
+        <span class="pill pill-c">xp_histories C</span>
+        <span class="pill pill-u">users U</span>
+        <span class="pill pill-u">user_experiences U</span>
+        <span class="pill pill-u">wishlists U</span>
+        <span class="pill pill-c">bubble_shares C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>사분면 입력</td><td>records</td><td><span class="op-badge op-create">C</span> axis_x, axis_y, satisfaction</td></tr>
+        <tr><td>코멘트/씬/메뉴</td><td>records</td><td><span class="op-badge op-create">C</span> comment, scene, menu_tags</td></tr>
+        <tr><td>아로마 (와인)</td><td>records</td><td><span class="op-badge op-create">C</span> aroma_regions, aroma_labels</td></tr>
+        <tr><td>사진 첨부</td><td>record_photos</td><td><span class="op-badge op-create">C</span> 이미지 업로드</td></tr>
+        <tr><td>저장</td><td>records</td><td><span class="op-badge op-create">C</span> status='rated'</td></tr>
+        <tr><td>XP 지급</td><td>xp_histories, users, user_experiences</td><td><span class="op-badge op-create">C</span><span class="op-badge op-update">U</span> XP 적립 + 레벨 갱신</td></tr>
+        <tr><td>찜 갱신</td><td>wishlists</td><td><span class="op-badge op-update">U</span> is_visited=true</td></tr>
+        <tr><td>버블 공유</td><td>bubble_shares</td><td><span class="op-badge op-create">C</span> 자동/수동 공유</td></tr>
+        <tr><td>카운트 트리거</td><td>users, bubbles</td><td><span class="op-badge op-update">U</span> record_count +1 (trigger)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/register">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">식당·와인 등록</div><div class="journey-route">/register ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">restaurants C</span>
+        <span class="pill pill-c">wines C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>식당 수동 등록</td><td>restaurants</td><td><span class="op-badge op-create">C</span> INSERT (이름, 주소, 장르)</td></tr>
+        <tr><td>와인 수동 등록</td><td>wines</td><td><span class="op-badge op-create">C</span> INSERT (이름, 타입, 품종)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/restaurants/[id]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">식당 상세</div><div class="journey-route">/restaurants/[id] ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">record_photos R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">wishlists R</span>
+        <span class="pill pill-r">bubble_ranking_snapshots R</span>
+        <span class="pill pill-c">wishlists C</span>
+        <span class="pill pill-d">wishlists D</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>히어로 + 정보</td><td>restaurants</td><td><span class="op-badge op-read">R</span> 상세 정보 전체</td></tr>
+        <tr><td>내 기록 타임라인</td><td>records, record_photos</td><td><span class="op-badge op-read">R</span> 방문 기록 + 사진</td></tr>
+        <tr><td>사분면 참조점</td><td>records</td><td><span class="op-badge op-read">R</span> 다른 식당 기록 (비교용 점)</td></tr>
+        <tr><td>버블 스코어</td><td>bubble_ranking_snapshots</td><td><span class="op-badge op-read">R</span> 버블별 평균 만족도</td></tr>
+        <tr><td>연결 와인</td><td>records → wines</td><td><span class="op-badge op-read">R</span> linked_wine_id JOIN</td></tr>
+        <tr><td>찜 토글</td><td>wishlists</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/wines/[id]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">와인 상세</div><div class="journey-route">/wines/[id] ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">grape_variety_profiles R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">record_photos R</span>
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wishlists R</span>
+        <span class="pill pill-c">wishlists C</span>
+        <span class="pill pill-d">wishlists D</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>히어로 + 정보</td><td>wines, grape_variety_profiles</td><td><span class="op-badge op-read">R</span> 와인 상세 + 품종 레퍼런스</td></tr>
+        <tr><td>내 기록 타임라인</td><td>records, record_photos</td><td><span class="op-badge op-read">R</span> 테이스팅 기록</td></tr>
+        <tr><td>아로마 팔레트</td><td>records</td><td><span class="op-badge op-read">R</span> aroma_regions, aroma_labels</td></tr>
+        <tr><td>연결 식당</td><td>records → restaurants</td><td><span class="op-badge op-read">R</span> linked_restaurant_id JOIN</td></tr>
+        <tr><td>찜 토글</td><td>wishlists</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/records/[id]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">기록 상세</div><div class="journey-route">/records/[id] ← /</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">record_photos R</span>
+        <span class="pill pill-r">xp_histories R</span>
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-u">records U</span>
+        <span class="pill pill-d">records D</span>
+        <span class="pill pill-c">bubble_shares C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>기록 로드</td><td>records, record_photos</td><td><span class="op-badge op-read">R</span> 전체 필드 + 사진</td></tr>
+        <tr><td>XP 이력</td><td>xp_histories</td><td><span class="op-badge op-read">R</span> 이 기록으로 받은 XP</td></tr>
+        <tr><td>대상 정보</td><td>restaurants / wines</td><td><span class="op-badge op-read">R</span> 타겟 상세</td></tr>
+        <tr><td>수정</td><td>records</td><td><span class="op-badge op-update">U</span> 필드 업데이트</td></tr>
+        <tr><td>삭제</td><td>records, record_photos, xp_histories, users</td><td><span class="op-badge op-delete">D</span> CASCADE + XP 차감</td></tr>
+        <tr><td>버블 공유</td><td>bubble_shares</td><td><span class="op-badge op-create">C</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D1 버블 계열 -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin:1.5rem 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em">D1 — 버블 계열</h2>
+
+  <div class="journey" data-route="/bubbles/[id]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">버블 상세</div><div class="journey-route">/bubbles/[id] ← /bubbles</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">bubbles R</span>
+        <span class="pill pill-r">bubble_members R</span>
+        <span class="pill pill-r">bubble_shares R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">record_photos R</span>
+        <span class="pill pill-r">reactions R</span>
+        <span class="pill pill-r">comments R</span>
+        <span class="pill pill-r">bubble_ranking_snapshots R</span>
+        <span class="pill pill-c">reactions C</span>
+        <span class="pill pill-c">comments C</span>
+        <span class="pill pill-c">bubble_share_reads C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>탭</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>피드</td><td>bubble_shares → records → restaurants/wines, record_photos</td><td><span class="op-badge op-read">R</span> 공유 기록 타임라인</td></tr>
+        <tr><td>랭킹</td><td>bubble_ranking_snapshots</td><td><span class="op-badge op-read">R</span> 식당/와인 랭킹</td></tr>
+        <tr><td>멤버</td><td>bubble_members</td><td><span class="op-badge op-read">R</span> 역할 + taste_match</td></tr>
+        <tr><td>리액션</td><td>reactions</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span> 좋아요/이모지 토글</td></tr>
+        <tr><td>댓글</td><td>comments</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span></td></tr>
+        <tr><td>읽음 처리</td><td>bubble_share_reads</td><td><span class="op-badge op-create">C</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/bubbles/create">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d1">D1</span>
+      <div><div class="journey-title">버블 생성</div><div class="journey-route">/bubbles/create ← /bubbles</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-c">bubbles C</span>
+        <span class="pill pill-c">bubble_members C</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>버블 생성</td><td>bubbles</td><td><span class="op-badge op-create">C</span> INSERT (이름, 설명, 정책)</td></tr>
+        <tr><td>오너 등록</td><td>bubble_members</td><td><span class="op-badge op-create">C</span> role='owner'</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D2 -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin:1.5rem 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em">D2</h2>
+
+  <div class="journey" data-route="/bubbles/[id]/settings">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-d2">D2</span>
+      <div><div class="journey-title">버블 설정</div><div class="journey-route">/bubbles/[id]/settings ← /bubbles/[id]</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">bubbles R</span>
+        <span class="pill pill-u">bubbles U</span>
+        <span class="pill pill-r">bubble_members R</span>
+        <span class="pill pill-u">bubble_members U</span>
+        <span class="pill pill-d">bubble_members D</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>설정 로드</td><td>bubbles, bubble_members</td><td><span class="op-badge op-read">R</span></td></tr>
+        <tr><td>설정 변경</td><td>bubbles</td><td><span class="op-badge op-update">U</span> 이름, 정책, 가시성 등</td></tr>
+        <tr><td>역할 변경</td><td>bubble_members</td><td><span class="op-badge op-update">U</span> role 변경</td></tr>
+        <tr><td>멤버 추방</td><td>bubble_members</td><td><span class="op-badge op-delete">D</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <h2 style="font-size:0.875rem;color:var(--text2);margin:1.5rem 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em">Modal (스택 밖, replace)</h2>
+
+  <div class="journey" data-route="/profile">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-modal">M</span>
+      <div><div class="journey-title">내 프로필</div><div class="journey-route">/profile</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">users R</span>
+        <span class="pill pill-r">user_experiences R</span>
+        <span class="pill pill-r">xp_histories R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">level_thresholds R</span>
+        <span class="pill pill-r">milestones R</span>
+        <span class="pill pill-r">follows R</span>
+        <span class="pill pill-r">bubbles R</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>프로필 헤더</td><td>users</td><td><span class="op-badge op-read">R</span> 아바타, 닉네임, 레벨</td></tr>
+        <tr><td>맛 정체성</td><td>users</td><td><span class="op-badge op-read">R</span> taste_tags, taste_summary</td></tr>
+        <tr><td>레벨 카드</td><td>users, level_thresholds</td><td><span class="op-badge op-read">R</span> total_xp → 레벨 계산</td></tr>
+        <tr><td>활동 그리드</td><td>records, xp_histories</td><td><span class="op-badge op-read">R</span> 방문수, 테이스팅수, 평균</td></tr>
+        <tr><td>경험 축</td><td>user_experiences</td><td><span class="op-badge op-read">R</span> 지역/장르/품종별 레벨</td></tr>
+        <tr><td>히트맵</td><td>records</td><td><span class="op-badge op-read">R</span> 날짜별 기록 밀도</td></tr>
+        <tr><td>팔로우/팔로워</td><td>follows</td><td><span class="op-badge op-read">R</span> 카운트 + 목록</td></tr>
+        <tr><td>소속 버블</td><td>bubbles, bubble_members</td><td><span class="op-badge op-read">R</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/profile/wrapped">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-modal">M</span>
+      <div><div class="journey-title">연간 래핑</div><div class="journey-route">/profile/wrapped</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">restaurants R</span>
+        <span class="pill pill-r">wines R</span>
+        <span class="pill pill-r">xp_histories R</span>
+        <span class="pill pill-r">user_experiences R</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>연간 통계</td><td>records, restaurants, wines</td><td><span class="op-badge op-read">R</span> 올해 기록 집계</td></tr>
+        <tr><td>성장 그래프</td><td>xp_histories</td><td><span class="op-badge op-read">R</span> 월별 XP 추이</td></tr>
+        <tr><td>Top 장르/지역</td><td>user_experiences</td><td><span class="op-badge op-read">R</span> 축별 최고값</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/settings">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-modal">M</span>
+      <div><div class="journey-title">설정</div><div class="journey-route">/settings</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">users R</span>
+        <span class="pill pill-u">users U</span>
+      </div>
+      <table class="op-table">
+        <tr><th>기능</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>설정 로드</td><td>users</td><td><span class="op-badge op-read">R</span> pref_*, notify_*, privacy_*, visibility_*</td></tr>
+        <tr><td>설정 저장</td><td>users</td><td><span class="op-badge op-update">U</span></td></tr>
+        <tr><td>계정 삭제 요청</td><td>users</td><td><span class="op-badge op-update">U</span> deleted_at, delete_mode</td></tr>
+        <tr><td>로그아웃</td><td>auth.users</td><td>세션 종료</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="journey" data-route="/users/[id]">
+    <div class="journey-header" onclick="toggleJourney(this)">
+      <span class="journey-badge badge-modal">M</span>
+      <div><div class="journey-title">유저 프로필</div><div class="journey-route">/users/[id]?bubble=xxx</div></div>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="journey-body">
+      <div class="tables-used">
+        <span class="pill pill-r">users R</span>
+        <span class="pill pill-r">records R</span>
+        <span class="pill pill-r">user_experiences R</span>
+        <span class="pill pill-r">bubble_members R</span>
+        <span class="pill pill-r">follows R</span>
+        <span class="pill pill-c">follows C</span>
+        <span class="pill pill-d">follows D</span>
+      </div>
+      <table class="op-table">
+        <tr><th>섹션</th><th>테이블</th><th>오퍼레이션</th></tr>
+        <tr><td>프로필 정보</td><td>users</td><td><span class="op-badge op-read">R</span> 공개 프로필 (RLS 필터)</td></tr>
+        <tr><td>공개 기록</td><td>records</td><td><span class="op-badge op-read">R</span> privacy 설정에 따라 필터</td></tr>
+        <tr><td>경험 축</td><td>user_experiences</td><td><span class="op-badge op-read">R</span> 공개 축 정보</td></tr>
+        <tr><td>버블 내 기여 (?bubble)</td><td>bubble_members</td><td><span class="op-badge op-read">R</span> taste_match, 기여도</td></tr>
+        <tr><td>팔로우</td><td>follows</td><td><span class="op-badge op-create">C</span><span class="op-badge op-delete">D</span> 팔로우/언팔</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MATRIX PANEL ========== -->
+<div id="matrix" class="panel">
+  <p style="font-size:0.8125rem;color:var(--text2);margin-bottom:1rem">각 페이지에서 어떤 테이블에 어떤 CRUD 오퍼레이션이 발생하는지 한눈에 비교</p>
+  <div class="matrix-wrap">
+    <table class="matrix" id="crudMatrix"></table>
+  </div>
+</div>
+
+<!-- ========== SCHEMA PANEL ========== -->
+<div id="schema" class="panel">
+  <p style="font-size:0.8125rem;color:var(--text2);margin-bottom:1rem">25개 테이블 스키마 요약 (주요 컬럼만)</p>
+
+  <div class="schema-category">Core Data</div>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <h3>users</h3>
+      <div class="desc">유저 프로필, 설정, XP, 프라이버시</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">nickname, handle</span><span class="col-type">VARCHAR</span></li>
+        <li><span class="col-name">avatar_url, avatar_color</span><span class="col-type">TEXT</span></li>
+        <li><span class="col-name">taste_summary, taste_tags</span><span class="col-type">TEXT, TEXT[]</span></li>
+        <li><span class="col-name">privacy_profile</span><span class="col-type">public|bubble_only|private</span></li>
+        <li><span class="col-name">privacy_records</span><span class="col-type">all|shared_only</span></li>
+        <li><span class="col-name">visibility_public, _bubble</span><span class="col-type">JSONB (토글맵)</span></li>
+        <li><span class="col-name">pref_* (8개)</span><span class="col-type">VARCHAR (설정값)</span></li>
+        <li><span class="col-name">notify_* (4개)</span><span class="col-type">BOOLEAN</span></li>
+        <li><span class="col-name">total_xp, active_xp</span><span class="col-type">INT</span></li>
+        <li><span class="col-name">record_count, follower_count</span><span class="col-type">INT (비정규화)</span></li>
+        <li><span class="col-name">auth_provider, auth_provider_id</span><span class="col-type">VARCHAR</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>restaurants</h3>
+      <div class="desc">식당 마스터 데이터</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></li>
+        <li><span class="col-name">country, city, area, district</span><span class="col-type">VARCHAR (지역)</span></li>
+        <li><span class="col-name">genre</span><span class="col-type">16종 CHECK</span></li>
+        <li><span class="col-name">price_range</span><span class="col-type">1~4 (만원 단위)</span></li>
+        <li><span class="col-name">lat, lng</span><span class="col-type">DOUBLE (PostGIS)</span></li>
+        <li><span class="col-name">photos, menus, hours</span><span class="col-type">TEXT[], JSONB</span></li>
+        <li><span class="col-name">michelin_stars, has_blue_ribbon</span><span class="col-type">INT, BOOL</span></li>
+        <li><span class="col-name">nyam_score</span><span class="col-type">DECIMAL(4,1)</span></li>
+        <li><span class="col-name">external_ids</span><span class="col-type">JSONB (카카오/네이버/구글)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>wines</h3>
+      <div class="desc">와인 마스터 데이터</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">name, producer</span><span class="col-type">VARCHAR</span></li>
+        <li><span class="col-name">region, sub_region, country</span><span class="col-type">VARCHAR</span></li>
+        <li><span class="col-name">wine_type</span><span class="col-type">red|white|rose|sparkling|...</span></li>
+        <li><span class="col-name">variety, grape_varieties</span><span class="col-type">VARCHAR, JSONB</span></li>
+        <li><span class="col-name">vintage, abv</span><span class="col-type">INT, DECIMAL</span></li>
+        <li><span class="col-name">body/acidity/sweetness_level</span><span class="col-type">INT (1~5 / 1~3)</span></li>
+        <li><span class="col-name">food_pairings</span><span class="col-type">TEXT[]</span></li>
+        <li><span class="col-name">vivino_rating, critic_scores</span><span class="col-type">DECIMAL, JSONB</span></li>
+        <li><span class="col-name">nyam_score</span><span class="col-type">DECIMAL(4,1)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>records</h3>
+      <div class="desc">기록 (식당 방문 + 와인 테이스팅)</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">target_id, target_type</span><span class="col-type">UUID, restaurant|wine</span></li>
+        <li><span class="col-name">status</span><span class="col-type">checked|rated|draft</span></li>
+        <li><span class="col-name">axis_x, axis_y</span><span class="col-type">DECIMAL (사분면)</span></li>
+        <li><span class="col-name">satisfaction</span><span class="col-type">INT 1~100 (점 크기)</span></li>
+        <li><span class="col-name">scene</span><span class="col-type">solo|romantic|friends|...</span></li>
+        <li><span class="col-name">aroma_regions, aroma_labels</span><span class="col-type">JSONB, TEXT[] (와인)</span></li>
+        <li><span class="col-name">complexity, finish, balance</span><span class="col-type">INT/DECIMAL (와인)</span></li>
+        <li><span class="col-name">comment, menu_tags, tips</span><span class="col-type">VARCHAR, TEXT[]</span></li>
+        <li><span class="col-name">total_price / purchase_price</span><span class="col-type">INT (KRW)</span></li>
+        <li><span class="col-name">visit_date, meal_time</span><span class="col-type">DATE, VARCHAR</span></li>
+        <li><span class="col-name">is_exif_verified</span><span class="col-type">BOOL (GPS 검증)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>record_photos</h3>
+      <div class="desc">기록 사진</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">record_id <span class="col-fk">FK</span></span><span class="col-type">→ records (CASCADE)</span></li>
+        <li><span class="col-name">url</span><span class="col-type">TEXT</span></li>
+        <li><span class="col-name">order_index</span><span class="col-type">INT</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>grape_variety_profiles</h3>
+      <div class="desc">포도 품종 레퍼런스 (20종)</div>
+      <ul class="col-list">
+        <li><span class="col-name">name <span class="col-pk">PK</span></span><span class="col-type">VARCHAR</span></li>
+        <li><span class="col-name">name_ko</span><span class="col-type">VARCHAR (한국어)</span></li>
+        <li><span class="col-name">category</span><span class="col-type">red|white</span></li>
+        <li><span class="col-name">typical_body/acidity/tannin</span><span class="col-type">INT</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="schema-category">Social & Bubbles</div>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <h3>bubbles</h3>
+      <div class="desc">버블 (신뢰 기반 그룹)</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">name, description</span><span class="col-type">VARCHAR</span></li>
+        <li><span class="col-name">visibility</span><span class="col-type">private|public</span></li>
+        <li><span class="col-name">join_policy</span><span class="col-type">invite_only|closed|manual|auto|open</span></li>
+        <li><span class="col-name">min_records, min_level</span><span class="col-type">INT (가입 조건)</span></li>
+        <li><span class="col-name">member_count, record_count</span><span class="col-type">INT (비정규화)</span></li>
+        <li><span class="col-name">invite_code</span><span class="col-type">VARCHAR UNIQUE</span></li>
+        <li><span class="col-name">created_by <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>bubble_members</h3>
+      <div class="desc">버블 멤버십</div>
+      <ul class="col-list">
+        <li><span class="col-name">(bubble_id, user_id) <span class="col-pk">PK</span></span><span class="col-type">복합키</span></li>
+        <li><span class="col-name">role</span><span class="col-type">owner|admin|member|follower</span></li>
+        <li><span class="col-name">status</span><span class="col-type">pending|active|rejected</span></li>
+        <li><span class="col-name">taste_match_pct</span><span class="col-type">DECIMAL (크론 계산)</span></li>
+        <li><span class="col-name">badge_label</span><span class="col-type">VARCHAR (뱃지)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>bubble_shares</h3>
+      <div class="desc">기록 → 버블 공유</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">record_id <span class="col-fk">FK</span></span><span class="col-type">→ records</span></li>
+        <li><span class="col-name">bubble_id <span class="col-fk">FK</span></span><span class="col-type">→ bubbles</span></li>
+        <li><span class="col-name">shared_by <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">UNIQUE(record_id, bubble_id)</span><span class="col-type">중복 방지</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>follows</h3>
+      <div class="desc">팔로우 관계</div>
+      <ul class="col-list">
+        <li><span class="col-name">(follower_id, following_id) <span class="col-pk">PK</span></span><span class="col-type">복합키</span></li>
+        <li><span class="col-name">status</span><span class="col-type">pending|accepted|rejected</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>comments</h3>
+      <div class="desc">버블 내 댓글</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">target_id, bubble_id <span class="col-fk">FK</span></span><span class="col-type">→ records, bubbles</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">content</span><span class="col-type">VARCHAR(300)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>reactions</h3>
+      <div class="desc">리액션 (기록/댓글)</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">target_type</span><span class="col-type">record|comment</span></li>
+        <li><span class="col-name">reaction_type</span><span class="col-type">like|bookmark|want|check|fire</span></li>
+        <li><span class="col-name">UNIQUE(target, reaction, user)</span><span class="col-type">중복 방지</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>bubble_share_reads</h3>
+      <div class="desc">피드 읽음 추적</div>
+      <ul class="col-list">
+        <li><span class="col-name">(share_id, user_id) <span class="col-pk">PK</span></span><span class="col-type">복합키</span></li>
+        <li><span class="col-name">read_at</span><span class="col-type">TIMESTAMPTZ</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>bubble_ranking_snapshots</h3>
+      <div class="desc">주간 랭킹 캐시</div>
+      <ul class="col-list">
+        <li><span class="col-name">(bubble, target, type, period) <span class="col-pk">PK</span></span><span class="col-type">복합키</span></li>
+        <li><span class="col-name">rank_position</span><span class="col-type">INT</span></li>
+        <li><span class="col-name">avg_satisfaction</span><span class="col-type">DECIMAL</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="schema-category">XP & Gamification</div>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <h3>user_experiences</h3>
+      <div class="desc">축별 XP + 레벨</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">axis_type</span><span class="col-type">category|area|genre|wine_variety|wine_region</span></li>
+        <li><span class="col-name">axis_value</span><span class="col-type">VARCHAR (한식, 을지로, ...)</span></li>
+        <li><span class="col-name">total_xp, level</span><span class="col-type">INT</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>xp_histories</h3>
+      <div class="desc">XP 지급 로그</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">record_id <span class="col-fk">FK</span></span><span class="col-type">→ records (nullable)</span></li>
+        <li><span class="col-name">reason</span><span class="col-type">15종 CHECK</span></li>
+        <li><span class="col-name">xp_amount</span><span class="col-type">INT</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>level_thresholds</h3>
+      <div class="desc">레벨 테이블 (L1~L99)</div>
+      <ul class="col-list">
+        <li><span class="col-name">level <span class="col-pk">PK</span></span><span class="col-type">INT (1~99)</span></li>
+        <li><span class="col-name">required_xp</span><span class="col-type">INT (지수 곡선)</span></li>
+        <li><span class="col-name">title</span><span class="col-type">입문자 → 식도락 마스터</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>milestones + user_milestones</h3>
+      <div class="desc">업적 정의 + 달성 기록</div>
+      <ul class="col-list">
+        <li><span class="col-name">milestones.id <span class="col-pk">PK</span></span><span class="col-type">업적 정의 (축, 임계값, XP)</span></li>
+        <li><span class="col-name">user_milestones (user, milestone, axis) <span class="col-pk">PK</span></span><span class="col-type">달성 기록</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="schema-category">Discovery & Notifications</div>
+  <div class="schema-grid">
+    <div class="schema-card">
+      <h3>wishlists</h3>
+      <div class="desc">찜 목록</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users</span></li>
+        <li><span class="col-name">target_id, target_type</span><span class="col-type">restaurant|wine</span></li>
+        <li><span class="col-name">source</span><span class="col-type">direct|bubble|ai|web</span></li>
+        <li><span class="col-name">is_visited</span><span class="col-type">BOOL</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>saved_filters</h3>
+      <div class="desc">저장된 필터 프리셋</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">target_type</span><span class="col-type">restaurant|wine|bubble|...</span></li>
+        <li><span class="col-name">rules</span><span class="col-type">JSONB (필터 규칙)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>ai_recommendations</h3>
+      <div class="desc">AI 추천</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">target_id, target_type</span><span class="col-type">restaurant|wine</span></li>
+        <li><span class="col-name">reason, algorithm</span><span class="col-type">TEXT, VARCHAR</span></li>
+        <li><span class="col-name">confidence</span><span class="col-type">DECIMAL (0~1)</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>notifications</h3>
+      <div class="desc">알림</div>
+      <ul class="col-list">
+        <li><span class="col-name">id <span class="col-pk">PK</span></span><span class="col-type">UUID</span></li>
+        <li><span class="col-name">user_id <span class="col-fk">FK</span></span><span class="col-type">→ users (수신자)</span></li>
+        <li><span class="col-name">notification_type</span><span class="col-type">11종</span></li>
+        <li><span class="col-name">actor_id <span class="col-fk">FK</span></span><span class="col-type">→ users (발생자)</span></li>
+        <li><span class="col-name">is_read, action_status</span><span class="col-type">BOOL, pending|accepted|rejected</span></li>
+      </ul>
+    </div>
+    <div class="schema-card">
+      <h3>nudge_history + nudge_fatigue</h3>
+      <div class="desc">넛지 로그 + 피로도</div>
+      <ul class="col-list">
+        <li><span class="col-name">nudge_history.id <span class="col-pk">PK</span></span><span class="col-type">넛지 발송 기록</span></li>
+        <li><span class="col-name">nudge_type</span><span class="col-type">location|time|photo|unrated|...</span></li>
+        <li><span class="col-name">nudge_fatigue.user_id <span class="col-pk">PK</span></span><span class="col-type">피로도 점수 + 일시정지</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ER PANEL ========== -->
+<div id="er" class="panel">
+  <p style="font-size:0.8125rem;color:var(--text2);margin-bottom:1.5rem">테이블 간 Foreign Key 관계 + Trigger로 유지되는 비정규화 카운트</p>
+
+  <div class="er-group">
+    <h4>users 중심</h4>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">records</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">wishlists</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">user_experiences</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">xp_histories</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">saved_filters</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">ai_recommendations</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">bubbles</span> (created_by)</div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">bubble_members</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">follows</span> (양방향)</div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">notifications</span> (user_id + actor_id)</div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">nudge_history</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── 1</span> <span class="tbl">nudge_fatigue</span></div>
+    <div class="er-rel"><span class="tbl">users</span> <span class="card">1 ── N</span> <span class="tbl">user_milestones</span></div>
+  </div>
+
+  <div class="er-group">
+    <h4>records 중심</h4>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">N ── 1</span> <span class="tbl">users</span></div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">N ── 1</span> <span class="tbl">restaurants</span> (target_type='restaurant')</div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">N ── 1</span> <span class="tbl">wines</span> (target_type='wine')</div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">1 ── N</span> <span class="tbl">record_photos</span> (CASCADE)</div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">1 ── N</span> <span class="tbl">bubble_shares</span></div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">1 ── N</span> <span class="tbl">comments</span></div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">1 ── N</span> <span class="tbl">reactions</span></div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">1 ── N</span> <span class="tbl">xp_histories</span></div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">N ── 1</span> <span class="tbl">restaurants</span> (linked_restaurant_id)</div>
+    <div class="er-rel"><span class="tbl">records</span> <span class="card">N ── 1</span> <span class="tbl">wines</span> (linked_wine_id)</div>
+  </div>
+
+  <div class="er-group">
+    <h4>bubbles 중심</h4>
+    <div class="er-rel"><span class="tbl">bubbles</span> <span class="card">1 ── N</span> <span class="tbl">bubble_members</span></div>
+    <div class="er-rel"><span class="tbl">bubbles</span> <span class="card">1 ── N</span> <span class="tbl">bubble_shares</span></div>
+    <div class="er-rel"><span class="tbl">bubbles</span> <span class="card">1 ── N</span> <span class="tbl">comments</span></div>
+    <div class="er-rel"><span class="tbl">bubbles</span> <span class="card">1 ── N</span> <span class="tbl">notifications</span></div>
+    <div class="er-rel"><span class="tbl">bubbles</span> <span class="card">1 ── N</span> <span class="tbl">bubble_ranking_snapshots</span></div>
+    <div class="er-rel"><span class="tbl">bubble_shares</span> <span class="card">1 ── N</span> <span class="tbl">bubble_share_reads</span></div>
+  </div>
+
+  <div class="er-group">
+    <h4>Trigger 비정규화</h4>
+    <div class="er-rel">records INSERT/DELETE → <span class="tbl">users</span>.record_count ±1</div>
+    <div class="er-rel">follows INSERT/UPDATE/DELETE → <span class="tbl">users</span>.follower_count, following_count ±1</div>
+    <div class="er-rel">bubble_members INSERT/UPDATE/DELETE → <span class="tbl">bubbles</span>.member_count, follower_count ±1</div>
+    <div class="er-rel">bubble_shares INSERT/DELETE → <span class="tbl">bubbles</span>.record_count ±1, last_activity_at</div>
+    <div class="er-rel" style="color:var(--yellow)">CRON: refresh_active_xp() → users.active_xp, active_verified (6개월 기준)</div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+    tab.classList.add('active')
+    document.getElementById(tab.dataset.panel).classList.add('active')
+  })
+})
+
+// ── Journey accordion ──
+function toggleJourney(header) {
+  header.closest('.journey').classList.toggle('open')
+}
+
+// ── CRUD Matrix generation ──
+const pages = [
+  { name: '홈', route: '/' },
+  { name: '버블 목록', route: '/bubbles' },
+  { name: '디스커버', route: '/discover' },
+  { name: '검색', route: '/search' },
+  { name: '추가 (카메라)', route: '/add' },
+  { name: '기록 작성', route: '/record' },
+  { name: '등록', route: '/register' },
+  { name: '식당 상세', route: '/restaurants/[id]' },
+  { name: '와인 상세', route: '/wines/[id]' },
+  { name: '기록 상세', route: '/records/[id]' },
+  { name: '버블 상세', route: '/bubbles/[id]' },
+  { name: '버블 생성', route: '/bubbles/create' },
+  { name: '버블 설정', route: '/bubbles/[id]/settings' },
+  { name: '프로필', route: '/profile' },
+  { name: '래핑', route: '/profile/wrapped' },
+  { name: '설정', route: '/settings' },
+  { name: '유저 프로필', route: '/users/[id]' },
+  { name: '로그인', route: '/auth/login' },
+  { name: '온보딩', route: '/onboarding' },
+  { name: '초대', route: '/bubbles/invite/[code]' },
+]
+
+const tables = [
+  'users','restaurants','wines','records','record_photos',
+  'grape_variety_profiles','bubbles','bubble_members','bubble_shares',
+  'bubble_share_reads','bubble_ranking_snapshots','comments','reactions',
+  'follows','user_experiences','xp_histories','level_thresholds',
+  'milestones','user_milestones','notifications','nudge_history',
+  'nudge_fatigue','wishlists','saved_filters','ai_recommendations'
+]
+
+// C R U D per page per table
+const ops = {
+  '/':                      { records:'R', restaurants:'R', wines:'R', saved_filters:'R', ai_recommendations:'R', follows:'R', users:'R', wishlists:'R', user_experiences:'R' },
+  '/bubbles':               { bubbles:'R', bubble_members:'R' },
+  '/discover':              { restaurants:'RC', ai_recommendations:'R', wishlists:'CD', records:'R' },
+  '/search':                { restaurants:'RC', wines:'R', records:'R' },
+  '/add':                   { restaurants:'C', wines:'C', records:'C', record_photos:'C' },
+  '/record':                { records:'C', record_photos:'C', xp_histories:'C', users:'U', user_experiences:'U', wishlists:'U', bubble_shares:'C', bubbles:'U' },
+  '/register':              { restaurants:'C', wines:'C' },
+  '/restaurants/[id]':      { restaurants:'R', records:'R', record_photos:'R', wines:'R', wishlists:'RCD', bubble_ranking_snapshots:'R' },
+  '/wines/[id]':            { wines:'R', grape_variety_profiles:'R', records:'R', record_photos:'R', restaurants:'R', wishlists:'RCD' },
+  '/records/[id]':          { records:'RUD', record_photos:'R', xp_histories:'R', restaurants:'R', wines:'R', bubble_shares:'C', users:'U' },
+  '/bubbles/[id]':          { bubbles:'R', bubble_members:'R', bubble_shares:'R', records:'R', restaurants:'R', wines:'R', record_photos:'R', reactions:'RCD', comments:'RCD', bubble_ranking_snapshots:'R', bubble_share_reads:'C' },
+  '/bubbles/create':        { bubbles:'C', bubble_members:'C' },
+  '/bubbles/[id]/settings': { bubbles:'RU', bubble_members:'RUD' },
+  '/profile':               { users:'R', user_experiences:'R', xp_histories:'R', records:'R', level_thresholds:'R', milestones:'R', follows:'R', bubbles:'R', bubble_members:'R' },
+  '/profile/wrapped':       { records:'R', restaurants:'R', wines:'R', xp_histories:'R', user_experiences:'R' },
+  '/settings':              { users:'RU' },
+  '/users/[id]':            { users:'R', records:'R', user_experiences:'R', bubble_members:'R', follows:'RCD' },
+  '/auth/login':            { users:'RC' },
+  '/onboarding':            { xp_histories:'C', users:'U' },
+  '/bubbles/invite/[code]': { bubbles:'RU', bubble_members:'C' },
+}
+
+function buildMatrix() {
+  const t = document.getElementById('crudMatrix')
+  let html = '<thead><tr><th>Table \\ Page</th>'
+  pages.forEach(p => { html += `<th title="${p.route}">${p.name}</th>` })
+  html += '</tr></thead><tbody>'
+
+  tables.forEach(tbl => {
+    html += `<tr><td>${tbl}</td>`
+    pages.forEach(p => {
+      const o = ops[p.route]?.[tbl] || ''
+      if (o) {
+        let colored = ''
+        for (const ch of o) {
+          const cls = ch === 'C' ? 'c' : ch === 'R' ? 'r' : ch === 'U' ? 'u' : 'd'
+          colored += `<span class="${cls}">${ch}</span>`
+        }
+        html += `<td class="has-op">${colored}</td>`
+      } else {
+        html += '<td style="color:#333">·</td>'
+      }
+    })
+    html += '</tr>'
+  })
+  html += '</tbody>'
+  t.innerHTML = html
+}
+buildMatrix()
+</script>
+
+</body>
+</html>

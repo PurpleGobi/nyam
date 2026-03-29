@@ -15,11 +15,10 @@ import { StatTabContainer } from '@/presentation/containers/stat-tab-container'
 import { LevelList } from '@/presentation/components/profile/level-list'
 import { LevelDetailSheet } from '@/presentation/components/profile/level-detail-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
-import { useReferrer } from '@/presentation/hooks/use-referrer'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 
 export function ProfileContainer() {
   const router = useRouter()
-  const { referrerPath, referrerName } = useReferrer()
   const { profile, experiences, recentXp, activitySummary, heatmapData, thresholds, isLoading } = useProfile()
 
   // 상태
@@ -108,7 +107,8 @@ export function ProfileContainer() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col gap-4 bg-[var(--bg)] pb-20">
-      <AppHeader variant="inner" title={referrerName} backHref={referrerPath ?? '/'} />
+      <AppHeader />
+      <FabBack />
 
       {/* 프로필 헤더 (2컬럼: 아바타+이름 | 미식 정체성 카드) */}
       <ProfileHeader

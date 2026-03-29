@@ -11,7 +11,8 @@ import { useCameraCapture } from '@/application/hooks/use-camera-capture'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { photoRepo, imageService } from '@/shared/di/container'
 import { parseExifFromBase64 } from '@/shared/utils/exif-parser'
-import { RecordNav } from '@/presentation/components/record/record-nav'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { AIResultDisplay } from '@/presentation/components/camera/ai-result-display'
 import { WineConfirmCard } from '@/presentation/components/camera/wine-confirm-card'
@@ -390,12 +391,8 @@ function AddFlowInner() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      <RecordNav
-        title={targetType === 'wine' ? '와인 추가' : '식당 추가'}
-        variant={variant}
-        onBack={goBack}
-        onClose={() => router.push('/')}
-      />
+      <AppHeader />
+      <FabBack onClick={goBack} />
 
       {step === 'camera' && (
         <CameraCapture

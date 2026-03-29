@@ -2,13 +2,15 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Shield, SlidersHorizontal, Download, Share2 } from 'lucide-react'
+import { Shield, SlidersHorizontal, Download, Share2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useWrapped } from '@/application/hooks/use-wrapped'
 import { useSettings } from '@/application/hooks/use-settings'
 import { WrappedCard } from '@/presentation/components/profile/wrapped-card'
 import { GaugeSlider } from '@/presentation/components/profile/gauge-slider'
 import type { WrappedCategory } from '@/domain/entities/profile'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 
 const FILTER_TABS: { key: WrappedCategory; label: string }[] = [
   { key: 'all', label: '전체' },
@@ -66,16 +68,8 @@ export function WrappedContainer() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* Navigation */}
-      <nav className="flex items-center px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
-        </button>
-        <span className="flex-1 text-center" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          Wrapped
-        </span>
-        <div className="w-11" />
-      </nav>
+      <AppHeader />
+      <FabBack />
 
       {/* Filter tabs */}
       <div className="flex gap-2 px-4 py-3">

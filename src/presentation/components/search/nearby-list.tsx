@@ -13,21 +13,47 @@ export const NEARBY_GENRE_FILTERS = [
   { value: '카페', label: '카페/바' },
 ] as const
 
+export const NEARBY_RADIUS_OPTIONS = [
+  { value: 100, label: '100m' },
+  { value: 250, label: '250m' },
+  { value: 500, label: '500m' },
+  { value: 1000, label: '1km' },
+  { value: 2000, label: '2km' },
+] as const
+
 interface NearbyListProps {
   restaurants: NearbyRestaurant[]
   isLoading: boolean
   genre: string
+  radius: number
   onGenreChange: (genre: string) => void
+  onRadiusChange: (radius: number) => void
   onSelect: (restaurantId: string) => void
   onRegister?: () => void
 }
 
-export function NearbyList({ restaurants, isLoading, genre, onGenreChange, onSelect, onRegister }: NearbyListProps) {
+export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChange, onRadiusChange, onSelect, onRegister }: NearbyListProps) {
   return (
     <div className="px-4 py-3">
       <div className="mb-2 flex items-center gap-1.5 px-1">
         <MapPin size={14} className="text-[var(--text-sub)]" />
         <span className="text-[14px] text-[var(--text-sub)]">근처 식당</span>
+        <div className="ml-auto flex gap-1">
+          {NEARBY_RADIUS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onRadiusChange(opt.value)}
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                radius === opt.value
+                  ? 'bg-[var(--accent-food)] text-white'
+                  : 'border border-[var(--border)] text-[var(--text-hint)]'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mb-3 flex gap-2 overflow-x-auto px-1 scrollbar-hide">

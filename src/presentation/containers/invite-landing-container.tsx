@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, ChevronLeft } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { bubbleRepo } from '@/shared/di/container'
 import type { Bubble } from '@/domain/entities/bubble'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 
 interface InviteLandingContainerProps {
   inviteCode: string
@@ -68,13 +70,8 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
 
   return (
     <div className="content-auth flex min-h-dvh flex-col bg-[var(--bg)]">
-      <nav className="flex items-center px-4" style={{ height: '44px' }}>
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
-        </button>
-        <span className="flex-1 text-center text-[15px] font-bold" style={{ color: 'var(--text)' }}>초대</span>
-        <div className="w-11" />
-      </nav>
+      <AppHeader />
+      <FabBack />
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6">
         <div

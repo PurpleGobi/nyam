@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
@@ -23,17 +23,6 @@ interface RestaurantDetailContainerProps {
   restaurantId: string
 }
 
-/** ?from= 경로 매핑 */
-const FROM_LABELS: Record<string, string> = {
-  home: '홈',
-  profile: '프로필',
-  bubble: '버블',
-  search: '검색',
-  recommend: '추천',
-  record: '기록',
-  camera: '카메라',
-  detail: '상세',
-}
 
 function Divider() {
   return <div style={{ height: '8px', backgroundColor: '#F0EDE8' }} />
@@ -41,8 +30,6 @@ function Divider() {
 
 export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailContainerProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const from = searchParams.get('from') ?? 'home'
   const { user } = useAuth()
   const [bubbleExpanded, setBubbleExpanded] = useState(false)
 
@@ -170,13 +157,9 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   }
 
   return (
-    <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)', paddingTop: '0px' }}>
+    <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       {/* 앱 헤더 (top-fixed) */}
-      <AppHeader
-        variant="inner"
-        title={FROM_LABELS[from] ?? '홈'}
-        backHref={from === 'profile' ? '/profile' : from === 'bubble' ? '/bubbles' : '/'}
-      />
+      <AppHeader />
 
       {/* 스크롤 영역 */}
       <div>

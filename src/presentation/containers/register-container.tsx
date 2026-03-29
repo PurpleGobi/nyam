@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType } from '@/domain/entities/record'
 import type { CreateRestaurantInput, CreateWineInput } from '@/domain/entities/register'
 import { useRegister } from '@/application/hooks/use-register'
-import { RecordNav } from '@/presentation/components/record/record-nav'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { RestaurantRegisterForm } from '@/presentation/components/register/restaurant-register-form'
 import { WineRegisterForm } from '@/presentation/components/register/wine-register-form'
 
@@ -56,12 +57,8 @@ function RegisterInner() {
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      <RecordNav
-        title={targetType === 'wine' ? '와인 등록' : '식당 등록'}
-        variant={targetType === 'wine' ? 'wine' : 'food'}
-        onBack={() => router.back()}
-        onClose={() => router.push('/')}
-      />
+      <AppHeader />
+      <FabBack />
 
       {error && (
         <div className="mx-4 mt-2 rounded-lg bg-[color-mix(in_srgb,var(--negative)_10%,transparent)] px-4 py-2.5 text-[13px] text-[var(--negative)]">

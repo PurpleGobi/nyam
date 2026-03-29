@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, MoreHorizontal, Edit2, Trash2, Share2 } from 'lucide-react'
+import { MoreHorizontal, Edit2, Trash2, Share2 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRecordDetail } from '@/application/hooks/use-record-detail'
 import { recordRepo, restaurantRepo, wineRepo, xpRepo, wishlistRepo } from '@/shared/di/container'
@@ -14,6 +14,8 @@ import { PairingDisplay } from '@/presentation/components/record/pairing-display
 import { RecordPracticalInfo } from '@/presentation/components/record/record-practical-info'
 import { XpEarnedSection } from '@/presentation/components/record/xp-earned-section'
 import { RecordActions } from '@/presentation/components/record/record-actions'
+import { AppHeader } from '@/presentation/components/layout/app-header'
+import { FabBack } from '@/presentation/components/layout/fab-back'
 import { WineFactsTable } from '@/presentation/components/detail/wine-facts-table'
 import { WineTypeChip } from '@/presentation/components/detail/wine-type-chip'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
@@ -56,18 +58,8 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
   const [showShareSheet, setShowShareSheet] = useState(false)
 
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, recordId)
-  const [isScrolled, setIsScrolled] = useState(false)
   const [privacyToast, setPrivacyToast] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // 스크롤 시 헤더 glassmorphism
-  useEffect(() => {
-    function onScroll() {
-      setIsScrolled(window.scrollY > 60)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   // 드롭다운 외부 클릭 닫기
   useEffect(() => {
@@ -136,81 +128,58 @@ export function RecordDetailContainer({ recordId }: RecordDetailContainerProps) 
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* 고정 헤더 — glassmorphism */}
-      <nav
-        className="sticky top-0 z-40 flex items-center justify-between px-4"
-        style={{
-          height: '44px',
-          backgroundColor: isScrolled ? 'rgba(248,246,243,0.55)' : 'var(--bg)',
-          backdropFilter: isScrolled ? 'blur(20px)' : undefined,
-          WebkitBackdropFilter: isScrolled ? 'blur(20px)' : undefined,
-          transition: 'background-color 200ms ease',
-        }}
-      >
-        <button type="button" onClick={() => router.back()} className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft size={22} style={{ color: 'var(--text)' }} />
+      <AppHeader />
+      <FabBack />
+
+      {/* 더보기 드롭다운 (우상단 고정) */}
+      <div className="fixed right-4 z-40" style={{ top: '52px' }} ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setShowDropdown(!showDropdown)}
+          className="flex h-11 w-11 items-center justify-center rounded-full"
+          style={{ backgroundColor: 'var(--bg-card)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        >
+          <MoreHorizontal size={20} style={{ color: 'var(--text)' }} />
         </button>
-
-        {/* 스크롤 시 대상명 표시 */}
-        {isScrolled && targetInfo && (
-          <span
-            className="truncate px-2"
-            style={{ fontSize: '15px', fontWeight: 700, color: accentColor, maxWidth: '200px' }}
+        {showDropdown && (
+          <div
+            className="absolute right-0 top-12 z-50 w-40 rounded-xl py-1"
+            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
           >
-            {targetInfo.name}
-          </span>
-        )}
-        {!isScrolled && <div />}
-
-        {/* 더보기 드롭다운 */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="flex h-11 w-11 items-center justify-center"
-          >
-            <MoreHorizontal size={22} style={{ color: 'var(--text)' }} />
-          </button>
-          {showDropdown && (
-            <div
-              className="absolute right-0 top-11 z-50 w-40 rounded-xl py-1"
-              style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="flex w-full items-center gap-2 px-4 py-2.5"
+              style={{ fontSize: '14px', color: 'var(--text)' }}
             >
-              <button
-                type="button"
-                onClick={handleEdit}
-                className="flex w-full items-center gap-2 px-4 py-2.5"
-                style={{ fontSize: '14px', color: 'var(--text)' }}
-              >
-                <Edit2 size={16} /> 수정
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDropdown(false)
-                  if (!canShare) {
-                    setPrivacyToast(true)
-                  } else {
-                    setShowShareSheet(true)
-                  }
-                }}
-                className="flex w-full items-center gap-2 px-4 py-2.5"
-                style={{ fontSize: '14px', color: 'var(--text)' }}
-              >
-                <Share2 size={16} /> 버블에 공유
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowDropdown(false); setShowDeleteConfirm(true) }}
-                className="flex w-full items-center gap-2 px-4 py-2.5"
-                style={{ fontSize: '14px', color: 'var(--negative)' }}
-              >
-                <Trash2 size={16} /> 삭제
-              </button>
-            </div>
-          )}
-        </div>
-      </nav>
+              <Edit2 size={16} /> 수정
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDropdown(false)
+                if (!canShare) {
+                  setPrivacyToast(true)
+                } else {
+                  setShowShareSheet(true)
+                }
+              }}
+              className="flex w-full items-center gap-2 px-4 py-2.5"
+              style={{ fontSize: '14px', color: 'var(--text)' }}
+            >
+              <Share2 size={16} /> 버블에 공유
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowDropdown(false); setShowDeleteConfirm(true) }}
+              className="flex w-full items-center gap-2 px-4 py-2.5"
+              style={{ fontSize: '14px', color: 'var(--negative)' }}
+            >
+              <Trash2 size={16} /> 삭제
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-6 px-4 py-4">
         {/* 대상명 + 방문 정보 + 와인 상세 */}
