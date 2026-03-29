@@ -55,6 +55,7 @@ declare namespace kakao.maps {
     constructor(options: CustomOverlayOptions)
     setMap(map: Map | null): void
     getPosition(): LatLng
+    setZIndex(zIndex: number): void
   }
 
   interface CustomOverlayOptions {

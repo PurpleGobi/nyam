@@ -355,7 +355,7 @@ export function HomeContainer() {
         <div className="pb-24">
           <MapView
             records={mapRecords}
-            onPinClick={(id) => router.push(`/restaurants/${id}`)}
+            onNavigate={(id) => router.push(`/restaurants/${id}`)}
           />
         </div>
       )

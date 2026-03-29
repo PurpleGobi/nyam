@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { MapPinned } from 'lucide-react'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
 
@@ -18,7 +18,7 @@ export interface MapRecord {
 
 interface MapViewProps {
   records: MapRecord[]
-  onPinClick: (restaurantId: string) => void
+  onNavigate: (restaurantId: string) => void
 }
 
 const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY
@@ -57,34 +57,80 @@ function loadKakaoSdk(): Promise<void> {
   })
 }
 
-/** 커스텀 오버레이 HTML 생성 */
-function createPinHtml(score: number | null): string {
+/** 커스텀 오버레이 HTML 생성
+ *  꼭지점(tip)은 border-radius 50% 50% 50% 0 의 좌하단.
+ *  transform-origin을 그 꼭지점에 고정하여 scale 시 tip 위치 불변.
+ */
+function createPinHtml(score: number | null, selected: boolean, name?: string): string {
   const label = score != null ? String(score) : '·'
-  return `<div style="
-    width:32px;height:32px;border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    background:var(--accent-food);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer;
-  "><span style="
-    transform:rotate(45deg);
-    font-size:11px;font-weight:700;color:#fff;
-  ">${label}</span></div>`
+  const bg = selected ? '#c0392b' : 'var(--accent-food)'
+  const scale = selected ? 'scale(1.45)' : 'scale(1)'
+  const fontSize = selected ? 13 : 11
+  const shadow = selected
+    ? '0 4px 14px rgba(0,0,0,0.45)'
+    : '0 2px 6px rgba(0,0,0,0.25)'
+  const nameTag = selected && name
+    ? `<div style="
+        position:absolute;top:100%;left:0;transform:translateX(-50%);
+        margin-top:4px;white-space:nowrap;
+        padding:2px 8px;border-radius:6px;
+        background:rgba(0,0,0,0.75);
+        font-size:11px;font-weight:600;color:#fff;
+        pointer-events:none;
+      ">${name}</div>`
+    : ''
+  return `<div style="position:relative;">
+    <div style="
+      width:32px;height:32px;border-radius:50% 50% 50% 0;
+      transform-origin:0% 100%;
+      transform:rotate(-45deg) ${scale};
+      background:${bg};
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:${shadow};cursor:pointer;
+      transition:all 0.2s ease;
+    "><span style="
+      transform:rotate(45deg);
+      font-size:${fontSize}px;font-weight:700;color:#fff;
+    ">${label}</span></div>
+    ${nameTag}
+  </div>`
 }
 
 // 서울 시청 기본 좌표
 const DEFAULT_LAT = 37.5665
 const DEFAULT_LNG = 126.978
 
-export function MapView({ records, onPinClick }: MapViewProps) {
+export function MapView({ records, onNavigate }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
-  const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([])
+  const overlaysRef = useRef<{ overlay: kakao.maps.CustomOverlay; el: HTMLDivElement; id: string }[]>([])
+
   const [sdkReady, setSdkReady] = useState(false)
   const [sdkError, setSdkError] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // 좌표가 있는 레코드만 필터
-  const geoRecords = records.filter((r) => r.lat !== 0 && r.lng !== 0)
+  // ref로 콜백 안정화 — 클로저 갱신은 되지만 참조는 불변
+  const onNavigateRef = useRef(onNavigate)
+  onNavigateRef.current = onNavigate
+  const selectedIdRef = useRef(selectedId)
+  selectedIdRef.current = selectedId
+
+  // 좌표가 있는 레코드만 (참조 안정화)
+  const geoRecordIds = records.filter((r) => r.lat !== 0 && r.lng !== 0).map((r) => r.restaurantId).join(',')
+  const geoRecords = useMemo(
+    () => records.filter((r) => r.lat !== 0 && r.lng !== 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [geoRecordIds],
+  )
+
+  /** 핀/카드 클릭 핸들러: 첫 클릭 → 선택, 재클릭 → 네비게이트 */
+  const handleSelect = useCallback((restaurantId: string) => {
+    if (selectedIdRef.current === restaurantId) {
+      onNavigateRef.current(restaurantId)
+    } else {
+      setSelectedId(restaurantId)
+    }
+  }, [])
 
   // SDK 로드
   useEffect(() => {
@@ -97,11 +143,10 @@ export function MapView({ records, onPinClick }: MapViewProps) {
       .catch(() => setSdkError(true))
   }, [])
 
-  // 맵 초기화 + 오버레이
-  const initMap = useCallback(() => {
+  // 맵 초기화 + 오버레이 (geoRecords·handleSelect 참조 안정)
+  useEffect(() => {
     if (!sdkReady || !containerRef.current) return
 
-    // 센터 좌표 결정
     let centerLat = DEFAULT_LAT
     let centerLng = DEFAULT_LNG
 
@@ -115,7 +160,7 @@ export function MapView({ records, onPinClick }: MapViewProps) {
     mapRef.current = map
 
     // 기존 오버레이 제거
-    overlaysRef.current.forEach((o) => o.setMap(null))
+    overlaysRef.current.forEach((o) => o.overlay.setMap(null))
     overlaysRef.current = []
 
     if (geoRecords.length === 0) return
@@ -127,8 +172,8 @@ export function MapView({ records, onPinClick }: MapViewProps) {
       bounds.extend(position)
 
       const el = document.createElement('div')
-      el.innerHTML = createPinHtml(record.score)
-      el.addEventListener('click', () => onPinClick(record.restaurantId))
+      el.innerHTML = createPinHtml(record.score, false, record.name)
+      el.onclick = () => handleSelect(record.restaurantId)
 
       const overlay = new kakao.maps.CustomOverlay({
         position,
@@ -137,17 +182,26 @@ export function MapView({ records, onPinClick }: MapViewProps) {
         clickable: true,
       })
       overlay.setMap(map)
-      overlaysRef.current.push(overlay)
+      overlaysRef.current.push({ overlay, el, id: record.restaurantId })
     })
 
     if (geoRecords.length > 1) {
       map.setBounds(bounds, 50, 50, 50, 50)
     }
-  }, [sdkReady, geoRecords, onPinClick])
+  }, [sdkReady, geoRecords, handleSelect])
 
+  // 선택 상태 변경 시 핀 비주얼 업데이트 + z-index + 목록 스크롤
   useEffect(() => {
-    initMap()
-  }, [initMap])
+    const recordMap = new Map(geoRecords.map((r) => [r.restaurantId, r]))
+    for (const item of overlaysRef.current) {
+      const record = recordMap.get(item.id)
+      if (!record) continue
+      const isSelected = item.id === selectedId
+      item.el.innerHTML = createPinHtml(record.score, isSelected, record.name)
+      // onclick은 재할당하지 않음 — initMap에서 한 번만 등록
+      item.overlay.setZIndex(isSelected ? 100 : 1)
+    }
+  }, [selectedId, geoRecords])
 
   // SDK 에러 또는 키 미설정 → 폴백
   if (sdkError || !KAKAO_JS_KEY) {
@@ -168,7 +222,7 @@ export function MapView({ records, onPinClick }: MapViewProps) {
             </span>
           </div>
         </div>
-        {renderList(records, onPinClick)}
+        <MapList records={records} selectedId={selectedId} onSelect={handleSelect} />
       </div>
     )
   }
@@ -183,15 +237,20 @@ export function MapView({ records, onPinClick }: MapViewProps) {
           backgroundColor: 'var(--bg-elevated)',
         }}
       />
-      {renderList(records, onPinClick)}
+      <MapList records={records} selectedId={selectedId} onSelect={handleSelect} />
     </div>
   )
 }
 
-function renderList(
-  records: MapRecord[],
-  onPinClick: (restaurantId: string) => void,
-) {
+function MapList({
+  records,
+  selectedId,
+  onSelect,
+}: {
+  records: MapRecord[]
+  selectedId: string | null
+  onSelect: (restaurantId: string) => void
+}) {
   return (
     <div className="pt-3">
       <p
@@ -201,16 +260,26 @@ function renderList(
         지도에 표시된 {records.length}곳
       </p>
       {records.map((record, i) => (
-        <CompactListItem
+        <div
           key={record.restaurantId}
-          rank={i + 1}
-          thumbnailUrl={record.thumbnailUrl ?? null}
-          name={record.name}
-          meta={`${record.genre} · ${record.area}${record.distanceKm != null ? ` · ${record.distanceKm}km` : ''}`}
-          score={record.score}
-          accentType="restaurant"
-          onClick={() => onPinClick(record.restaurantId)}
-        />
+          data-restaurant-id={record.restaurantId}
+          className="px-4"
+          style={{
+            backgroundColor: selectedId === record.restaurantId ? 'var(--bg-elevated)' : 'transparent',
+            borderLeft: selectedId === record.restaurantId ? '3px solid var(--accent-food)' : '3px solid transparent',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <CompactListItem
+            rank={i + 1}
+            thumbnailUrl={record.thumbnailUrl ?? null}
+            name={record.name}
+            meta={`${record.genre} · ${record.area}${record.distanceKm != null ? ` · ${record.distanceKm}km` : ''}`}
+            score={record.score}
+            accentType="restaurant"
+            onClick={() => onSelect(record.restaurantId)}
+          />
+        </div>
       ))}
     </div>
   )
