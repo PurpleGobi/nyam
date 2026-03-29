@@ -3,19 +3,19 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Grape } from 'lucide-react'
+import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { wineRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
-import { QuadrantDisplay } from '@/presentation/components/detail/quadrant-display'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
+import { RatingInput } from '@/presentation/components/record/rating-input'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { WineTypeChip } from '@/presentation/components/detail/wine-type-chip'
 import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
-import { RecordActionSheet } from '@/presentation/components/record/record-action-sheet'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { Toast } from '@/presentation/components/ui/toast'
@@ -45,7 +45,6 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
-  const [showActionSheet, setShowActionSheet] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -69,22 +68,16 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, selectedRecordId)
 
   // ─── 기록 액션 ───
-  const handleRecordAction = useCallback((recordId: string) => {
-    setSelectedRecordId(recordId)
-    setShowActionSheet(true)
-  }, [])
-
   const handleRecordEdit = useCallback(() => {
-    if (!selectedRecordId) return
-    setShowActionSheet(false)
+    const rid = selectedRecordId ?? myRecords[0]?.id
+    if (!rid) return
     const meta = [wine?.wineType ? WINE_TYPE_LABELS[wine.wineType] : null, wine?.region].filter(Boolean).join(' · ')
     router.push(
-      `/record?type=wine&targetId=${wineId}&name=${encodeURIComponent(wine?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${selectedRecordId}&from=detail`,
+      `/record?type=wine&targetId=${wineId}&name=${encodeURIComponent(wine?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${rid}&from=detail`,
     )
-  }, [selectedRecordId, wine, wineId, router])
+  }, [selectedRecordId, myRecords, wine, wineId, router])
 
   const handleRecordShare = useCallback(() => {
-    setShowActionSheet(false)
     if (!canShare) {
       setToastMsg(blockReason ?? '비공개 프로필은 공유할 수 없습니다')
     } else {
@@ -405,18 +398,19 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
 
           {tastingCount > 0 && (
             <div className="flex flex-col gap-6">
-              {/* 사분면 */}
+              {/* 사분면 — 기록 폼과 동일 컴포넌트 */}
               {currentDot && (
-                <QuadrantDisplay
-                  currentName={wine.name}
-                  currentDot={currentDot}
-                  refDots={[...allRecordDots, ...quadrantRefs]}
-                  accentColor="--accent-wine"
-                  xAxisLabels={['구조·완성도 ↓', '구조·완성도 ↑']}
-                  yAxisLabels={['즐거움·감성 ↓', '즐거움·감성 ↑']}
-                  isVisible
-                  sectionTitle=""
-                  sectionMeta=""
+                <RatingInput
+                  type="wine"
+                  value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
+                  onChange={() => {}}
+                  referencePoints={[...allRecordDots, ...quadrantRefs].map((d) => ({
+                    x: d.avgAxisX,
+                    y: d.avgAxisY,
+                    satisfaction: d.avgSatisfaction,
+                    name: d.targetName,
+                    score: d.avgSatisfaction,
+                  }))}
                 />
               )}
 
@@ -477,7 +471,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                   <button
                     type="button"
                     key={record.id}
-                    onClick={() => handleRecordAction(record.id)}
+                    onClick={() => { setSelectedRecordId(record.id); handleRecordEdit() }}
                     className="flex w-full items-start gap-3 rounded-xl p-3 text-left"
                     style={{ backgroundColor: 'var(--bg-card)' }}
                   >
@@ -526,15 +520,17 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
         <div style={{ height: '80px' }} />
       </div>
 
+      {/* FAB + 액션 버튼 — 같은 높이 */}
       <DetailFab onBack={handleBack} onAdd={handleAdd} variant="wine" />
 
-      <RecordActionSheet
-        isOpen={showActionSheet}
-        onClose={() => { setShowActionSheet(false); setSelectedRecordId(null) }}
-        onEdit={handleRecordEdit}
-        onShare={handleRecordShare}
-        onDelete={() => { setShowActionSheet(false); setShowDeleteConfirm(true) }}
-      />
+      {myRecords.length > 0 && (
+        <FabActions
+          variant="wine"
+          onEdit={handleRecordEdit}
+          onShare={handleRecordShare}
+          onDelete={() => { setSelectedRecordId(myRecords[0]?.id ?? null); setShowDeleteConfirm(true) }}
+        />
+      )}
       <DeleteConfirmModal
         isOpen={showDeleteConfirm}
         isDeleting={isDeleting}

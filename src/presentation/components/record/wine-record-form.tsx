@@ -65,9 +65,9 @@ interface CreateWineRecordInput {
 }
 
 interface WineInitialData {
-  axisX: number
-  axisY: number
-  satisfaction: number
+  axisX: number | null
+  axisY: number | null
+  satisfaction: number | null
   aromaRegions: Record<string, unknown> | null
   aromaLabels: string[] | null
   aromaColor: string | null
@@ -342,7 +342,7 @@ export function WineRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 와인이었나요?
         </h3>
-        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} />
+        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
       </section>
 
       {/* 아로마 팔레트 */}

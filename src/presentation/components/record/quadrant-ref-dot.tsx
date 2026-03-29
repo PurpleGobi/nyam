@@ -1,7 +1,7 @@
 'use client'
 
-import { getRefDotSize } from '@/domain/entities/quadrant'
-import { getGaugeColor } from '@/shared/utils/gauge-color'
+import { useState, useCallback } from 'react'
+import type { GaugeChannel } from '@/shared/utils/gauge-color'
 
 interface QuadrantRefDotProps {
   x: number
@@ -9,11 +9,20 @@ interface QuadrantRefDotProps {
   satisfaction: number
   name: string
   score: number
+  channel?: GaugeChannel
 }
 
-export function QuadrantRefDot({ x, y, satisfaction, name, score }: QuadrantRefDotProps) {
-  const size = getRefDotSize(satisfaction)
-  const color = getGaugeColor(satisfaction)
+const DOT_SIZE = 20
+
+export function QuadrantRefDot({ x, y, satisfaction, name }: QuadrantRefDotProps) {
+  const [active, setActive] = useState(false)
+  const totalScore = satisfaction
+  const baseOpacity = 0.15 + (totalScore / 100) * 0.45
+
+  const handleTap = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    setActive((prev) => !prev)
+  }, [])
 
   return (
     <div
@@ -22,45 +31,40 @@ export function QuadrantRefDot({ x, y, satisfaction, name, score }: QuadrantRefD
         left: `${x}%`,
         bottom: `${y}%`,
         transform: 'translate(-50%, 50%)',
-        opacity: 0.3,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        zIndex: 1,
+        zIndex: active ? 20 : 1,
+        cursor: 'pointer',
       }}
+      onPointerDown={handleTap}
     >
+      {/* 참조 dot — 그레이스케일, 탭 시 진해짐 */}
       <div
         style={{
-          width: `${size}px`,
-          height: `${size}px`,
+          width: `${DOT_SIZE}px`,
+          height: `${DOT_SIZE}px`,
           borderRadius: '50%',
-          backgroundColor: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          backgroundColor: `rgba(120, 113, 108, ${active ? 0.85 : baseOpacity})`,
+          boxShadow: active
+            ? '0 0 8px 3px rgba(120, 113, 108, 0.4)'
+            : `0 0 6px 2px rgba(120, 113, 108, ${0.05 + (totalScore / 100) * 0.15})`,
+          transition: 'background-color 0.15s, box-shadow 0.15s',
         }}
-      >
-        <span
-          style={{
-            fontSize: '9px',
-            fontWeight: 700,
-            color: '#FFFFFF',
-            lineHeight: 1,
-          }}
-        >
-          {score}
-        </span>
-      </div>
+      />
       <span
         style={{
-          fontSize: '9px',
-          color: 'var(--text-hint)',
+          fontSize: active ? '10px' : '8px',
+          fontWeight: active ? 700 : 400,
+          color: active ? 'var(--text)' : 'var(--text-hint)',
           marginTop: '2px',
           whiteSpace: 'nowrap',
-          maxWidth: '48px',
+          maxWidth: active ? '120px' : '48px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
+          opacity: active ? 1 : 0.5,
+          transition: 'all 0.15s',
         }}
       >
         {name}

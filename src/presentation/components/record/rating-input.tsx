@@ -32,9 +32,10 @@ interface RatingInputProps {
     score: number
   }>
   showHint?: boolean
+  hideDot?: boolean
 }
 
-export function RatingInput({ type, value, onChange, referencePoints, showHint }: RatingInputProps) {
+export function RatingInput({ type, value, onChange, referencePoints, showHint, hideDot }: RatingInputProps) {
   return (
     <QuadrantInput
       type={type}
@@ -42,6 +43,7 @@ export function RatingInput({ type, value, onChange, referencePoints, showHint }
       onChange={onChange}
       referencePoints={referencePoints}
       showHint={showHint}
+      hideDot={hideDot}
     />
   )
 }

@@ -72,27 +72,28 @@ export function useRestaurantDetail(
 
         if (!userId) return
 
-        // 2. 내 기록 + 버블 점수 (병렬)
-        const [records, bubbles] = await Promise.all([
+        // 2. 내 기록 + 버블 점수 (각각 독립)
+        const [recordsResult, bubblesResult] = await Promise.allSettled([
           repo.findMyRecords(restaurantId, userId),
           repo.findBubbleScores(restaurantId, userId),
         ])
         if (cancelled) return
+        const records = recordsResult.status === 'fulfilled' ? recordsResult.value : []
         setMyRecords(records)
-        setBubbleScores(bubbles)
+        if (bubblesResult.status === 'fulfilled') setBubbleScores(bubblesResult.value)
 
-        // 3. 기록이 있을 때만: 사진, 사분면, 연결 와인 (병렬)
+        // 3. 기록이 있을 때만: 사진, 사분면, 연결 와인 (각각 독립 실행)
         if (records.length > 0) {
           const recordIds = records.map((rec) => rec.id)
-          const [photos, refs, wines] = await Promise.all([
+          const [photosResult, refsResult, winesResult] = await Promise.allSettled([
             repo.findRecordPhotos(recordIds),
             repo.findQuadrantRefs(userId, restaurantId),
             repo.findLinkedWines(restaurantId, userId),
           ])
           if (cancelled) return
-          setRecordPhotos(photos)
-          setQuadrantRefs(refs)
-          setLinkedWines(wines)
+          if (photosResult.status === 'fulfilled') setRecordPhotos(photosResult.value)
+          if (refsResult.status === 'fulfilled') setQuadrantRefs(refsResult.value)
+          if (winesResult.status === 'fulfilled') setLinkedWines(winesResult.value)
         }
       } catch (e) {
         if (!cancelled) {

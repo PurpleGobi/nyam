@@ -585,7 +585,7 @@ html, body, * {
 
 .fab-back {
   position: fixed;
-  bottom: 28px;
+  bottom: 34px;
   left: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 44px;
@@ -631,6 +631,44 @@ html, body, * {
 
 .fab-add:active {
   transform: scale(0.9);
+}
+
+.fab-actions {
+  position: fixed;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* fab-back(44px) 좌측 + fab-add(56px) 우측 공간 확보 */
+  width: calc(100% - 68px - 80px);
+  max-width: 600px;
+}
+
+.fab-action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 9999px;
+  border: 1px solid;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.fab-action-btn:active {
+  transform: scale(0.95);
 }
 
 .fab-forward {

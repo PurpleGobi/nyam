@@ -122,7 +122,7 @@ export class SupabaseWineRepository implements WineRepository {
       .eq('target_id', wineId)
       .eq('user_id', userId)
       .eq('target_type', 'wine')
-      .order('visit_date', { ascending: false, nullsFirst: false })
+      .order('latest_visit_date', { ascending: false, nullsFirst: false })
 
     if (error) throw new Error(`기록 조회 실패: ${error.message}`)
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
@@ -155,28 +155,30 @@ export class SupabaseWineRepository implements WineRepository {
     return result
   }
 
-  // axis_x = 구조·완성도, axis_y = 즐거움·감성, satisfaction = (axisX + axisY) / 2
+  // visits JSONB에서 axisX/axisY/satisfaction 추출
   async findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]> {
     const { data, error } = await this.supabase
       .from('records')
-      .select('target_id, axis_x, axis_y, satisfaction')
+      .select('target_id, visits')
       .eq('user_id', userId)
       .eq('target_type', 'wine')
       .neq('target_id', excludeId)
-      .not('axis_x', 'is', null)
-      .not('axis_y', 'is', null)
-      .not('satisfaction', 'is', null)
+      .gt('visit_count', 0)
 
     if (error) throw new Error(`사분면 참조 조회 실패: ${error.message}`)
 
     const grouped = new Map<string, { sumX: number; sumY: number; sumS: number; count: number }>()
     for (const row of data ?? []) {
-      const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
-      g.sumX += Number(row.axis_x)
-      g.sumY += Number(row.axis_y)
-      g.sumS += row.satisfaction as number
-      g.count += 1
-      grouped.set(row.target_id, g)
+      const visits = (row.visits as Array<Record<string, unknown>>) ?? []
+      for (const v of visits) {
+        if (v.axisX == null || v.axisY == null || v.satisfaction == null) continue
+        const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
+        g.sumX += Number(v.axisX)
+        g.sumY += Number(v.axisY)
+        g.sumS += Number(v.satisfaction)
+        g.count += 1
+        grouped.set(row.target_id, g)
+      }
     }
 
     const targetIds = Array.from(grouped.keys()).slice(0, 12)

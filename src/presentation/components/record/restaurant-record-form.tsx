@@ -44,9 +44,9 @@ interface CreateRestaurantRecordInput {
 }
 
 interface RestaurantInitialData {
-  axisX: number
-  axisY: number
-  satisfaction: number
+  axisX: number | null
+  axisY: number | null
+  satisfaction: number | null
   scene: string | null
   comment: string | null
   companions: string[] | null
@@ -250,7 +250,7 @@ export function RestaurantRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 곳이었나요?
         </h3>
-        <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} />
+        <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
       </section>
 
       {/* 상황 태그 */}

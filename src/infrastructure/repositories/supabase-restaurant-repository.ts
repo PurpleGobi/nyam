@@ -116,7 +116,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       .eq('target_id', restaurantId)
       .eq('user_id', userId)
       .eq('target_type', 'restaurant')
-      .order('visit_date', { ascending: false, nullsFirst: false })
+      .order('latest_visit_date', { ascending: false, nullsFirst: false })
 
     if (error) throw new Error(`기록 조회 실패: ${error.message}`)
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
@@ -151,28 +151,30 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
 
   async findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]> {
     // 내가 리뷰한 다른 식당들의 평균 좌표 (최대 12개)
-    // axis_x = 음식 퀄리티, axis_y = 경험 가치, satisfaction = (axisX + axisY) / 2
+    // visits JSONB에서 axisX/axisY/satisfaction 추출
     const { data, error } = await this.supabase
       .from('records')
-      .select('target_id, axis_x, axis_y, satisfaction')
+      .select('target_id, visits')
       .eq('user_id', userId)
       .eq('target_type', 'restaurant')
       .neq('target_id', excludeId)
-      .not('axis_x', 'is', null)
-      .not('axis_y', 'is', null)
-      .not('satisfaction', 'is', null)
+      .gt('visit_count', 0)
 
     if (error) throw new Error(`사분면 참조 조회 실패: ${error.message}`)
 
-    // target_id별 평균 집계
+    // target_id별 평균 집계 (visits 배열에서 추출)
     const grouped = new Map<string, { sumX: number; sumY: number; sumS: number; count: number }>()
     for (const row of data ?? []) {
-      const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
-      g.sumX += Number(row.axis_x)
-      g.sumY += Number(row.axis_y)
-      g.sumS += row.satisfaction as number
-      g.count += 1
-      grouped.set(row.target_id, g)
+      const visits = (row.visits as Array<Record<string, unknown>>) ?? []
+      for (const v of visits) {
+        if (v.axisX == null || v.axisY == null || v.satisfaction == null) continue
+        const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
+        g.sumX += Number(v.axisX)
+        g.sumY += Number(v.axisY)
+        g.sumS += Number(v.satisfaction)
+        g.count += 1
+        grouped.set(row.target_id, g)
+      }
     }
 
     // 식당명 조회

@@ -588,9 +588,9 @@ function RecordFlowInner() {
   // 수정 모드 초기 데이터 빌드 — visit-level fields from visits[0]
   const editLatestVisit = editingRecord?.visits[0] ?? null
   const restaurantInitial = editingRecord && editingRecord.targetType === 'restaurant' ? {
-    axisX: editLatestVisit?.axisX ?? 50,
-    axisY: editLatestVisit?.axisY ?? 50,
-    satisfaction: editLatestVisit?.satisfaction ?? 50,
+    axisX: editLatestVisit?.axisX ?? null,
+    axisY: editLatestVisit?.axisY ?? null,
+    satisfaction: editLatestVisit?.satisfaction ?? null,
     scene: editLatestVisit?.scene ?? null,
     comment: editLatestVisit?.comment ?? null,
     companions: editLatestVisit?.companions ?? null,
@@ -601,9 +601,9 @@ function RecordFlowInner() {
   } : undefined
 
   const wineInitial = editingRecord && editingRecord.targetType === 'wine' ? {
-    axisX: editLatestVisit?.axisX ?? 50,
-    axisY: editLatestVisit?.axisY ?? 50,
-    satisfaction: editLatestVisit?.satisfaction ?? 50,
+    axisX: editLatestVisit?.axisX ?? null,
+    axisY: editLatestVisit?.axisY ?? null,
+    satisfaction: editLatestVisit?.satisfaction ?? null,
     aromaRegions: editLatestVisit?.aromaRegions ?? null,
     aromaLabels: editLatestVisit?.aromaLabels ?? null,
     aromaColor: editLatestVisit?.aromaColor ?? null,
@@ -625,7 +625,7 @@ function RecordFlowInner() {
 
       {state.targetType === 'restaurant' ? (
         <RestaurantRecordForm
-          key={aiPrefill ? 'prefilled' : 'default'}
+          key={editRecordId ?? (aiPrefill ? 'prefilled' : 'default')}
           target={{
             id: state.targetId,
             name: state.targetName,
@@ -636,8 +636,8 @@ function RecordFlowInner() {
             distance: recordExtra?.distance,
           }}
           genreHint={genreHint ?? aiPrefill?.genre}
-          referenceRecords={referenceRecords}
-          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: 50, axisY: 50, satisfaction: 50, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: null } : undefined)}
+          referenceRecords={isEditMode ? [] : referenceRecords}
+          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: null, axisY: null, satisfaction: null, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: null } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
           isLoading={isLoading}
@@ -662,7 +662,7 @@ function RecordFlowInner() {
             producer: wineData?.producer ?? searchParams.get('producer') ?? undefined,
             isAiRecognized: !!wineData,
           }}
-          referenceRecords={referenceRecords}
+          referenceRecords={isEditMode ? [] : referenceRecords}
           initialData={wineInitial}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}

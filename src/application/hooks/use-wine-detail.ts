@@ -65,26 +65,22 @@ export function useWineDetail(
         const records = await repo.findMyRecords(wineId, userId)
         setMyRecords(records)
 
-        // 3. 기록별 사진
+        // 3. 기록별 사진 + 사분면 + 연결식당 + 버블 (각각 독립 실행)
         if (records.length > 0) {
-          const photos = await repo.findRecordPhotos(records.map((r) => r.id))
-          setRecordPhotos(photos)
+          const [photosRes, refsRes, linkedRes, scoresRes] = await Promise.allSettled([
+            repo.findRecordPhotos(records.map((r) => r.id)),
+            repo.findQuadrantRefs(userId, wineId),
+            repo.findLinkedRestaurants(wineId, userId),
+            repo.findBubbleScores(wineId, userId),
+          ])
+          if (photosRes.status === 'fulfilled') setRecordPhotos(photosRes.value)
+          if (refsRes.status === 'fulfilled') setQuadrantRefs(refsRes.value)
+          if (linkedRes.status === 'fulfilled') setLinkedRestaurants(linkedRes.value)
+          if (scoresRes.status === 'fulfilled') setBubbleScores(scoresRes.value)
+        } else {
+          const scores = await repo.findBubbleScores(wineId, userId)
+          setBubbleScores(scores)
         }
-
-        // 4. 사분면 참조 (리뷰 2건+ 시에만)
-        const recordsWithAxis = records.filter((r) => r.visits[0]?.axisX !== null && r.visits[0]?.axisY !== null)
-        if (recordsWithAxis.length >= 2) {
-          const refs = await repo.findQuadrantRefs(userId, wineId)
-          setQuadrantRefs(refs)
-        }
-
-        // 5. 연결된 식당
-        const linked = await repo.findLinkedRestaurants(wineId, userId)
-        setLinkedRestaurants(linked)
-
-        // 6. 버블 점수
-        const scores = await repo.findBubbleScores(wineId, userId)
-        setBubbleScores(scores)
       } catch (e) {
         setError(e instanceof Error ? e.message : '데이터 로딩 실패')
       } finally {

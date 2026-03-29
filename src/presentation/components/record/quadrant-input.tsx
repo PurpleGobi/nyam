@@ -17,6 +17,8 @@ interface QuadrantInputProps {
     score: number
   }>
   showHint?: boolean
+  /** true면 현재 dot 숨김 (터치 전 상태) */
+  hideDot?: boolean
 }
 
 const DOT_SIZE = 20
@@ -57,7 +59,7 @@ const PRICE_LEVELS = [
   { value: 3, label: '고가' },
 ] as const
 
-export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false }: QuadrantInputProps) {
+export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false }: QuadrantInputProps) {
   const quadrantRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -219,7 +221,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               {labels.yAxis}
             </span>
 
-            {/* 참조 점 */}
+            {/* 참조 점 — 메인 dot과 동일 채널 색상 */}
             {referencePoints.slice(0, 12).map((point, i) => (
               <QuadrantRefDot
                 key={i}
@@ -228,11 +230,12 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 satisfaction={point.satisfaction}
                 name={point.name}
                 score={point.score}
+                channel={type === 'wine' ? 'wine-total' : 'total'}
               />
             ))}
 
-            {/* 현재 점 — 고정 크기, solid */}
-            <div
+            {/* 현재 점 — 고정 크기, solid, hideDot이면 숨김 */}
+            {!hideDot && <div
               style={{
                 position: 'absolute',
                 left: `clamp(${DOT_SIZE / 2}px, ${value.x}%, calc(100% - ${DOT_SIZE / 2}px))`,
@@ -248,7 +251,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 touchAction: 'none',
                 zIndex: 10,
               }}
-            />
+            />}
           </div>
         </div>
       </div>
@@ -263,6 +266,13 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
 
 /* ── 사분면 영역 라벨 ── */
 
+const QUADRANT_COLORS: Record<string, string> = {
+  'top-right':    '#8B7355',   // 따뜻한 브라운 — 둘 다 좋은
+  'top-left':     '#7A9BAE',   // 차분한 블루 — 경험은 좋은
+  'bottom-right': '#A08B6E',   // 머스타드 — 맛은 좋은
+  'bottom-left':  '#9E9490',   // 뉴트럴 그레이 — 아쉬운
+}
+
 function QuadrantLabel({ quadrant, text }: { quadrant: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; text: string }) {
   const base: React.CSSProperties = {
     position: 'absolute',
@@ -274,8 +284,8 @@ function QuadrantLabel({ quadrant, text }: { quadrant: 'top-left' | 'top-right' 
     fontSize: '13px',
     fontWeight: 600,
     lineHeight: 1.4,
-    color: 'var(--text-hint)',
-    opacity: 0.4,
+    color: QUADRANT_COLORS[quadrant],
+    opacity: 0.45,
     whiteSpace: 'pre-line',
     textAlign: 'center',
     pointerEvents: 'none',

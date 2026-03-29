@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Share2, Trash2 } from 'lucide-react'
+import { FabActions } from '@/presentation/components/layout/fab-actions'
+import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
@@ -13,7 +14,6 @@ import { ScoreCards } from '@/presentation/components/detail/score-cards'
 import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { BadgeRow } from '@/presentation/components/detail/badge-row'
 import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
-import { QuadrantDisplay } from '@/presentation/components/detail/quadrant-display'
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
 import { ConnectedItems } from '@/presentation/components/detail/connected-items'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
@@ -98,7 +98,11 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       }
     : null
 
-  const quadrantVisible = viewMode === 'my_records' && currentDot !== null && quadrantRefs.length >= 1
+  // 평균 가격
+  const visitsWithPrice = myRecords.flatMap((r) => r.visits.filter((v) => v.totalPrice !== null))
+  const avgPrice = visitsWithPrice.length > 0
+    ? Math.round(visitsWithPrice.reduce((s, v) => s + v.totalPrice!, 0) / visitsWithPrice.length)
+    : null
 
   const connectedWineItems = linkedWines.map((w) => ({
     id: w.wineId,
@@ -279,19 +283,43 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
 
         <Divider />
 
-        <QuadrantDisplay
-          currentName={restaurant.name}
-          currentDot={currentDot}
-          refDots={quadrantRefs}
-          accentColor="--accent-food"
-          xAxisLabels={['음식 퀄리티 ↓', '음식 퀄리티 ↑']}
-          yAxisLabels={['경험 가치 ↓', '경험 가치 ↑']}
-          isVisible={quadrantVisible}
-          sectionTitle="내 식당 지도"
-          sectionMeta="리뷰한 식당 중 위치"
-        />
+        {/* ─── 나의 평가: 사분면 + 바 게이지 (기록 폼과 동일 컴포넌트) ─── */}
+        {viewMode === 'my_records' && currentDot && (
+          <>
+            <section style={{ padding: '16px 20px' }}>
+              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                나의 평가
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
+                  {visitCount}회 방문 평균
+                </span>
+              </h3>
+              <RatingInput
+                type="restaurant"
+                value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
+                onChange={() => {}}
+                referencePoints={quadrantRefs.map((d) => ({
+                  x: d.avgAxisX,
+                  y: d.avgAxisY,
+                  satisfaction: d.avgSatisfaction,
+                  name: d.targetName,
+                  score: d.avgSatisfaction,
+                }))}
+              />
 
-        {quadrantVisible && <Divider />}
+              {/* 1인 평균 가격 */}
+              {avgPrice !== null && (
+                <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--bg-card)' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>1인 평균 가격</span>
+                  <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-food)', marginTop: '2px' }}>
+                    {avgPrice >= 10000 ? `${Math.round(avgPrice / 10000)}만원` : `${avgPrice.toLocaleString()}원`}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <Divider />
+          </>
+        )}
 
         <RestaurantInfo
           address={restaurant.address}
@@ -324,62 +352,16 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />
       </div>
 
-      {/* FAB */}
+      {/* FAB + 액션 버튼 — 같은 높이 */}
       <DetailFab onBack={handleBack} onAdd={handleAdd} />
 
-      {/* ─── 하단 고정 액션 바 (기록 있을 때만) ─── */}
       {myRecords.length > 0 && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-center gap-3 px-5 pb-6 pt-3"
-          style={{
-            background: 'linear-gradient(to top, var(--bg) 70%, transparent)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleEdit}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3"
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#FFFFFF',
-              backgroundColor: 'var(--accent-food)',
-            }}
-          >
-            <Pencil size={14} />
-            수정
-          </button>
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex items-center justify-center gap-1.5 rounded-xl px-5 py-3"
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--text-sub)',
-              backgroundColor: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <Share2 size={14} />
-            공유
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center justify-center gap-1.5 rounded-xl px-5 py-3"
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--negative)',
-              backgroundColor: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <Trash2 size={14} />
-            삭제
-          </button>
-        </div>
+        <FabActions
+          variant="food"
+          onEdit={handleEdit}
+          onShare={handleShare}
+          onDelete={() => setShowDeleteConfirm(true)}
+        />
       )}
 
       <DeleteConfirmModal
