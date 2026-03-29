@@ -60,8 +60,16 @@ export function isSpecialAttribute(attr: string): boolean {
  * 레코드의 필드 값을 추출하는 헬퍼
  * camelCase 필드명과 snake_case 속성 key를 매핑
  */
+/** Fields that now live inside visits[0] (latest visit) */
+const VISIT_FIELDS = new Set([
+  'companionCount', 'purchasePrice', 'mealTime', 'totalPrice',
+  'aromaLabels', 'scene', 'comment', 'tips', 'companions',
+  'aromaRegions', 'aromaColor', 'complexity', 'finish', 'balance',
+  'autoScore', 'hasExifGps', 'isExifVerified', 'axisX', 'axisY',
+])
+
 const FIELD_MAP: Record<string, string> = {
-  visit_date: 'visitDate',
+  visit_date: 'latestVisitDate',
   companion_count: 'companionCount',
   wine_status: 'wineStatus',
   wine_type: 'wineType',
@@ -78,7 +86,18 @@ const FIELD_MAP: Record<string, string> = {
 }
 
 export function getRecordField(record: Record<string, unknown>, attrKey: string): unknown {
+  // satisfaction → use avgSatisfaction (denormalized cache)
+  if (attrKey === 'satisfaction') return record['avgSatisfaction']
+
   const field = FIELD_MAP[attrKey] ?? attrKey
+
+  // For visit-level fields, extract from visits[0]
+  if (VISIT_FIELDS.has(field)) {
+    const visits = record['visits'] as Record<string, unknown>[] | undefined
+    const latest = visits?.[0]
+    return latest?.[field]
+  }
+
   return record[field]
 }
 
@@ -115,7 +134,7 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
 
   // ── 특수 속성: satisfaction 범위 ──
   if (attribute === 'satisfaction' && (operator === 'eq' || operator === 'neq')) {
-    const score = Number(record.satisfaction ?? 0)
+    const score = Number(record.avgSatisfaction ?? 0)
     const [min, max] = satisfactionRange(String(value))
     const inRange = score >= min && score < max
     return operator === 'eq' ? inRange : !inRange
@@ -123,7 +142,7 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
 
   // ── 특수 속성: visit_date 기간 ──
   if (attribute === 'visit_date' && (operator === 'eq' || operator === 'neq')) {
-    const visitDate = record.visitDate as string | null
+    const visitDate = record.latestVisitDate as string | null
     if (!visitDate) return operator === 'neq'
     const days = periodToDays(String(value))
     if (days === null) return true
@@ -135,7 +154,8 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
 
   // ── 특수 속성: companion_count 범위 ──
   if (attribute === 'companion_count' && (operator === 'eq' || operator === 'neq')) {
-    const count = Number(record.companionCount ?? 0)
+    const visits = record.visits as Record<string, unknown>[] | undefined
+    const count = Number(visits?.[0]?.companionCount ?? 0)
     const [min, max] = companionRange(String(value))
     const inRange = count >= min && count <= max
     return operator === 'eq' ? inRange : !inRange
@@ -143,7 +163,8 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
 
   // ── 특수 속성: complexity 범위 ──
   if (attribute === 'complexity' && (operator === 'eq' || operator === 'neq')) {
-    const score = Number(record.complexity ?? 0)
+    const visits = record.visits as Record<string, unknown>[] | undefined
+    const score = Number(visits?.[0]?.complexity ?? 0)
     const [min, max] = complexityRange(String(value))
     const inRange = score >= min && score <= max
     return operator === 'eq' ? inRange : !inRange

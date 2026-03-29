@@ -34,7 +34,7 @@ function satisfactionFilter(value: string, negate: boolean): string {
     '69': [0, 70],
   }
   const [min, max] = ranges[value] ?? [0, 101]
-  const cond = `and=(satisfaction=gte.${min},satisfaction=lt.${max})`
+  const cond = `and=(avg_satisfaction=gte.${min},avg_satisfaction=lt.${max})`
   return negate ? `not.${cond}` : cond
 }
 
@@ -46,10 +46,10 @@ function visitDateFilter(value: string, negate: boolean): string {
   if (!days) return ''
   // '1y' = "1년+" → 365일 이상 전
   if (value === '1y') {
-    const cond = `visit_date=lt.now()-interval'${days}d'`
+    const cond = `latest_visit_date=lt.now()-interval'${days}d'`
     return negate ? `not.(${cond})` : cond
   }
-  const cond = `visit_date=gte.now()-interval'${days}d'`
+  const cond = `latest_visit_date=gte.now()-interval'${days}d'`
   return negate ? `not.(${cond})` : cond
 }
 

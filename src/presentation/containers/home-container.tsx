@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget } from '@/domain/entities/record'
@@ -26,42 +27,43 @@ import { HomeTabs } from '@/presentation/components/home/home-tabs'
 import { RecordCard } from '@/presentation/components/home/record-card'
 import { WineCard } from '@/presentation/components/home/wine-card'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
-import { CalendarView } from '@/presentation/components/home/calendar-view'
-import { CalendarDayDetail } from '@/presentation/components/home/calendar-day-detail'
-import { MapView } from '@/presentation/components/home/map-view'
 import type { MapRecord } from '@/presentation/components/home/map-view'
 import { SavedFilterChips } from '@/presentation/components/home/saved-filter-chips'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-// FilterChipSaveModal은 FilterSystem 내장으로 대체
 import { StatsToggle } from '@/presentation/components/home/stats-toggle'
-import { WorldMapChart } from '@/presentation/components/home/world-map-chart'
-import { GenreChart } from '@/presentation/components/home/genre-chart'
-import { ScoreDistribution } from '@/presentation/components/home/score-distribution'
-import { MonthlyChart } from '@/presentation/components/home/monthly-chart'
-import { SceneChart } from '@/presentation/components/home/scene-chart'
-import { WineRegionMap } from '@/presentation/components/home/wine-region-map'
-import { VarietalChart } from '@/presentation/components/home/varietal-chart'
-import { WineTypeChart } from '@/presentation/components/home/wine-type-chart'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
-import { FollowingFeed } from '@/presentation/components/home/following-feed'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
+
+// --- Heavy components: lazy-loaded (only fetched when actually rendered) ---
+const CalendarView = dynamic(() => import('@/presentation/components/home/calendar-view').then(m => ({ default: m.CalendarView })), { ssr: false })
+const CalendarDayDetail = dynamic(() => import('@/presentation/components/home/calendar-day-detail').then(m => ({ default: m.CalendarDayDetail })), { ssr: false })
+const MapView = dynamic(() => import('@/presentation/components/home/map-view').then(m => ({ default: m.MapView })), { ssr: false })
+const FollowingFeed = dynamic(() => import('@/presentation/components/home/following-feed').then(m => ({ default: m.FollowingFeed })), { ssr: false })
+const WorldMapChart = dynamic(() => import('@/presentation/components/home/world-map-chart').then(m => ({ default: m.WorldMapChart })), { ssr: false })
+const GenreChart = dynamic(() => import('@/presentation/components/home/genre-chart').then(m => ({ default: m.GenreChart })), { ssr: false })
+const ScoreDistribution = dynamic(() => import('@/presentation/components/home/score-distribution').then(m => ({ default: m.ScoreDistribution })), { ssr: false })
+const MonthlyChart = dynamic(() => import('@/presentation/components/home/monthly-chart').then(m => ({ default: m.MonthlyChart })), { ssr: false })
+const SceneChart = dynamic(() => import('@/presentation/components/home/scene-chart').then(m => ({ default: m.SceneChart })), { ssr: false })
+const WineRegionMap = dynamic(() => import('@/presentation/components/home/wine-region-map').then(m => ({ default: m.WineRegionMap })), { ssr: false })
+const VarietalChart = dynamic(() => import('@/presentation/components/home/varietal-chart').then(m => ({ default: m.VarietalChart })), { ssr: false })
+const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-type-chart').then(m => ({ default: m.WineTypeChart })), { ssr: false })
 
 function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
   switch (sort) {
     case 'latest':
       return sorted.sort((a, b) => {
-        const dateA = a.visitDate ?? ''
-        const dateB = b.visitDate ?? ''
+        const dateA = a.latestVisitDate ?? ''
+        const dateB = b.latestVisitDate ?? ''
         if (dateA !== dateB) return dateB.localeCompare(dateA)
         return b.createdAt.localeCompare(a.createdAt)
       })
     case 'score_high':
-      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
+      return sorted.sort((a, b) => (b.avgSatisfaction ?? 0) - (a.avgSatisfaction ?? 0))
     case 'score_low':
-      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
+      return sorted.sort((a, b) => (a.avgSatisfaction ?? 0) - (b.avgSatisfaction ?? 0))
     case 'name':
       return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count': {
@@ -141,15 +143,15 @@ export function HomeContainer() {
   // AI 인사말 — greeting-generator 기반
   const recentRecordsForGreeting = useMemo(() => {
     return records
-      .filter((r) => r.targetType === 'restaurant' && r.visitDate)
+      .filter((r) => r.targetType === 'restaurant' && r.latestVisitDate)
       .slice(0, 5)
       .map((r) => ({
         restaurantName: r.targetName,
         restaurantId: r.targetId,
-        satisfaction: r.satisfaction ?? 0,
-        visitDate: r.visitDate ?? '',
+        satisfaction: r.avgSatisfaction ?? 0,
+        visitDate: r.latestVisitDate ?? '',
         area: '',
-        scene: r.scene ?? null,
+        scene: r.visits[0]?.scene ?? null,
       }))
   }, [records])
 
@@ -157,7 +159,7 @@ export function HomeContainer() {
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
     const cutoff = oneWeekAgo.toISOString().slice(0, 10)
-    return records.filter((r) => (r.visitDate ?? r.createdAt) >= cutoff).length
+    return records.filter((r) => (r.latestVisitDate ?? r.createdAt) >= cutoff).length
   }, [records])
 
   const {
@@ -302,7 +304,7 @@ export function HomeContainer() {
   // 캘린더 선택 날짜의 상세 기록
   const selectedDayRecords = useMemo(() => {
     if (!selectedDate) return []
-    return displayRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
+    return displayRecords.filter((r) => r.latestVisitDate?.startsWith(selectedDate))
   }, [displayRecords, selectedDate])
 
   const selectedDateLabel = useMemo(() => {
@@ -322,7 +324,7 @@ export function HomeContainer() {
       area: r.targetArea ?? '',
       lat: r.targetLat ?? 0,
       lng: r.targetLng ?? 0,
-      score: r.satisfaction,
+      score: r.avgSatisfaction,
       distanceKm: null,
     }))
   }, [displayRecords, activeTab])
@@ -376,9 +378,9 @@ export function HomeContainer() {
             <CalendarDayDetail
               date={selectedDateLabel}
               records={selectedDayRecords.map((r) => ({
-                mealTime: MEAL_TIME_LABELS[r.mealTime ?? ''] ?? '',
+                mealTime: MEAL_TIME_LABELS[r.visits[0]?.mealTime ?? ''] ?? '',
                 name: r.targetName,
-                score: r.satisfaction,
+                score: r.avgSatisfaction,
                 id: r.id,
                 targetType: r.targetType,
                 targetId: r.targetId,
@@ -401,8 +403,8 @@ export function HomeContainer() {
               rank={i + 1}
               thumbnailUrl={record.targetPhotoUrl}
               name={record.targetName}
-              meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
-              score={record.satisfaction}
+              meta={[record.targetMeta, record.latestVisitDate].filter(Boolean).join(' · ')}
+              score={record.avgSatisfaction}
               accentType={activeTab}
               onClick={() =>
                 router.push(
@@ -433,12 +435,12 @@ export function HomeContainer() {
                 photoUrl: record.targetPhotoUrl,
               }}
               myRecord={{
-                satisfaction: record.satisfaction,
-                axisX: record.axisX,
-                axisY: record.axisY,
-                visitDate: record.visitDate,
+                satisfaction: record.avgSatisfaction,
+                axisX: record.visits[0]?.axisX ?? null,
+                axisY: record.visits[0]?.axisY ?? null,
+                visitDate: record.latestVisitDate,
                 wineStatus: record.wineStatus ?? 'tasted',
-                purchasePrice: record.purchasePrice,
+                purchasePrice: record.visits[0]?.purchasePrice ?? null,
               }}
             />
           ) : (
@@ -448,17 +450,17 @@ export function HomeContainer() {
               targetId={record.targetId}
               targetType={record.targetType}
               name={record.targetName}
-              meta={[record.targetMeta, record.targetArea, record.visitDate].filter(Boolean).join(' · ')}
+              meta={[record.targetMeta, record.targetArea, record.latestVisitDate].filter(Boolean).join(' · ')}
               photoUrl={record.targetPhotoUrl}
-              satisfaction={record.satisfaction}
-              axisX={record.axisX}
-              axisY={record.axisY}
+              satisfaction={record.avgSatisfaction}
+              axisX={record.visits[0]?.axisX ?? null}
+              axisY={record.visits[0]?.axisY ?? null}
               status={record.status}
               sources={[
                 {
                   type: 'me',
                   label: '나',
-                  detail: `${record.satisfaction ?? '-'} · ${record.visitDate ?? ''}`,
+                  detail: `${record.avgSatisfaction ?? '-'} · ${record.latestVisitDate ?? ''}`,
                 },
               ]}
             />
@@ -577,7 +579,10 @@ export function HomeContainer() {
           <FollowingFeed
             items={followingFeed.items}
             isLoading={followingFeed.isLoading}
-            onItemPress={(recordId) => router.push(`/records/${recordId}`)}
+            onItemPress={(targetId, targetType) => {
+              if (targetType === 'wine') router.push(`/wines/${targetId}`)
+              else router.push(`/restaurants/${targetId}`)
+            }}
             sourceFilter={followingFeed.sourceFilter}
             onSourceFilterChange={followingFeed.setSourceFilter}
           />

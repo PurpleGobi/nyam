@@ -52,7 +52,7 @@ export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
             >
               {item.thumbnailUrl ? (
                 <>
-                  <Image src={item.thumbnailUrl} alt="" fill className="rounded-xl object-cover" sizes="82px" unoptimized />
+                  <Image src={item.thumbnailUrl} alt="" fill className="rounded-xl object-cover" sizes="82px" />
                   <div className="absolute inset-0 rounded-xl" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)' }} />
                 </>
               ) : item.targetType === 'restaurant' ? (

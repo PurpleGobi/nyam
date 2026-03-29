@@ -93,7 +93,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
       const { data: records, error: fetchError } = await supabase
         .from('records')
         .select(
-          'id, satisfaction, visit_date, total_price, scene, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, country, city, lat, lng)'
+          'id, avg_satisfaction, latest_visit_date, visits, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, country, city, lat, lng)'
         )
         .eq('user_id', userId)
         .eq('target_type', 'restaurant')
@@ -141,7 +141,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
 
       // Score distribution
       const scores = records
-        .map((r) => r.satisfaction as number | null)
+        .map((r) => r.avg_satisfaction as number | null)
         .filter((s): s is number => s !== null)
       setScoreBuckets(buildScoreBuckets(scores))
 
@@ -158,17 +158,23 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
         monthLabels.push({ label, count: 0, amount: 0, isCurrent: i === 0 })
       }
 
+      // Extract visit-level data from visits JSONB
       let spending = 0
       for (const r of records) {
-        const price = (r.total_price as number | null) ?? 0
-        spending += price
+        const visits = (r.visits as Array<Record<string, unknown>>) ?? []
+        for (const v of visits) {
+          const price = (v.totalPrice as number | null) ?? 0
+          spending += price
+        }
 
-        if (!r.visit_date) continue
-        const key = (r.visit_date as string).slice(0, 7)
+        const visitDate = r.latest_visit_date as string | null
+        if (!visitDate) continue
+        const key = visitDate.slice(0, 7)
         const entry = monthlyMap.get(key)
         if (entry) {
           entry.count++
-          entry.amount += price
+          const latestPrice = (visits[0]?.totalPrice as number | null) ?? 0
+          entry.amount += latestPrice
         }
       }
       setTotalSpending(spending)
@@ -183,10 +189,11 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
       })
       setMonthlyStats(monthLabels)
 
-      // Scene stats — record.scene 기반, domain entity 색상 사용
+      // Scene stats — visit[0].scene 기반, domain entity 색상 사용
       const sceneMap = new Map<string, number>()
       for (const r of records) {
-        const scene = (r.scene as string | null) ?? 'etc'
+        const visits = (r.visits as Array<Record<string, unknown>>) ?? []
+        const scene = (visits[0]?.scene as string | null) ?? 'etc'
         sceneMap.set(scene, (sceneMap.get(scene) ?? 0) + 1)
       }
       setSceneStats(

@@ -26,7 +26,6 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/search':                    { depth: 1, parent: '/',            type: 'stack' },
   '/restaurants/[id]':          { depth: 1, parent: '/',            type: 'stack' },
   '/wines/[id]':                { depth: 1, parent: '/',            type: 'stack' },
-  '/records/[id]':              { depth: 1, parent: '/',            type: 'stack' },
   '/add':                       { depth: 1, parent: '/',            type: 'stack' },
   '/record':                    { depth: 1, parent: '/',            type: 'stack' },
   '/register':                  { depth: 1, parent: '/',            type: 'stack' },

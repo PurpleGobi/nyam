@@ -271,7 +271,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       // records JOIN으로 targetType/minSatisfaction 서버측 필터링
       let query = this.supabase
         .from('bubble_shares')
-        .select('*, records!inner(target_type, satisfaction)', { count: 'exact' })
+        .select('*, records!inner(target_type, avg_satisfaction)', { count: 'exact' })
         .eq('bubble_id', bubbleId)
 
       if (options?.sharedBy) query = query.eq('shared_by', options.sharedBy)
@@ -530,6 +530,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       return {
         id: s.id as string,
         recordId: s.record_id as string,
+        targetId: (rec?.target_id as string) ?? '',
         bubbleId: s.bubble_id as string,
         bubbleName: (bubble?.name as string) ?? '',
         bubbleIcon: (bubble?.icon as string) ?? null,
@@ -539,9 +540,9 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         authorAvatarColor: (user?.avatar_color as string) ?? null,
         targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
         targetType: recTargetType as 'restaurant' | 'wine',
-        satisfaction: (rec?.satisfaction as number) ?? null,
-        comment: (rec?.comment as string) ?? null,
-        visitDate: (rec?.visit_date as string) ?? null,
+        satisfaction: (rec?.avg_satisfaction as number) ?? null,
+        comment: ((rec?.visits as Array<Record<string, unknown>>)?.[0]?.comment as string) ?? null,
+        visitDate: (rec?.latest_visit_date as string) ?? null,
         sharedAt: s.shared_at as string,
       }
     })
@@ -555,7 +556,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (userIds.length === 0) return []
     let query = this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name)')
+      .select('id, target_id, target_type, avg_satisfaction, visits, latest_visit_date, created_at, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name)')
       .in('user_id', userIds)
       .eq('status', 'rated')
     if (targetType) {
@@ -571,11 +572,12 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       const recTargetType = (r.target_type as string) ?? 'restaurant'
       return {
         recordId: r.id as string,
+        targetId: (r.target_id as string) ?? '',
         targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
         targetType: recTargetType as 'restaurant' | 'wine',
-        satisfaction: (r.satisfaction as number) ?? null,
-        comment: (r.comment as string) ?? null,
-        visitDate: (r.visit_date as string) ?? null,
+        satisfaction: (r.avg_satisfaction as number) ?? null,
+        comment: ((r.visits as Array<Record<string, unknown>>)?.[0]?.comment as string) ?? null,
+        visitDate: (r.latest_visit_date as string) ?? null,
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,

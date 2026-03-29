@@ -59,7 +59,7 @@ export function BubbleRecordCard({
         style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
       >
         {authorAvatar ? (
-          <Image src={authorAvatar} alt="" width={32} height={32} className="h-full w-full rounded-full object-cover" unoptimized />
+          <Image src={authorAvatar} alt="" width={32} height={32} className="h-full w-full rounded-full object-cover" />
         ) : (
           authorNickname.charAt(0)
         )}

@@ -73,7 +73,7 @@ export function RecordCard({
     >
       <div className="relative w-[46%] shrink-0">
         {photoUrl ? (
-          <Image src={photoUrl} alt="" fill className="object-cover" sizes="46vw" unoptimized />
+          <Image src={photoUrl} alt="" fill className="object-cover" sizes="46vw" />
         ) : isUnrated ? (
           <div
             className="flex h-full w-full items-center justify-center"

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, SlidersHorizontal, Download, Share2 } from 'lucide-react'
-import { toPng } from 'html-to-image'
+// html-to-image is heavy (~50KB) — lazy-load only when user triggers save/share
 import { useWrapped } from '@/application/hooks/use-wrapped'
 import { useSettings } from '@/application/hooks/use-settings'
 import { WrappedCard } from '@/presentation/components/profile/wrapped-card'
@@ -35,6 +35,7 @@ export function WrappedContainer() {
   const handleSave = useCallback(async () => {
     if (!cardRef.current) return
     try {
+      const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2 })
       const link = document.createElement('a')
       link.download = `nyam-wrapped-${category}.png`
@@ -48,6 +49,7 @@ export function WrappedContainer() {
   const handleShare = useCallback(async () => {
     if (!cardRef.current) return
     try {
+      const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2 })
       const res = await fetch(dataUrl)
       const blob = await res.blob()

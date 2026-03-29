@@ -62,7 +62,7 @@ export function MemberGrid({ members, onMemberClick, onFollowToggle }: MemberGri
             style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
           >
             {m.avatarUrl ? (
-              <Image src={m.avatarUrl} alt="" width={48} height={48} className="h-full w-full rounded-full object-cover" unoptimized />
+              <Image src={m.avatarUrl} alt="" width={48} height={48} className="h-full w-full rounded-full object-cover" />
             ) : (
               m.nickname.charAt(0)
             )}

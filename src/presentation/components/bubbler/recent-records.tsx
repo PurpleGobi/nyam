@@ -73,7 +73,6 @@ export function RecentRecords({ records, accentType, onRecordPress, onViewAll }:
                   width={44}
                   height={44}
                   className="h-full w-full object-cover"
-                  unoptimized
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-[16px]" style={{ color: 'var(--text-hint)' }}>

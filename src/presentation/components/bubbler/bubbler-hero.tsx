@@ -60,7 +60,7 @@ export function BubblerHero({
             }}
           >
             {avatarUrl ? (
-              <Image src={avatarUrl} alt="" width={72} height={72} className="h-full w-full rounded-full object-cover" unoptimized />
+              <Image src={avatarUrl} alt="" width={72} height={72} className="h-full w-full rounded-full object-cover" />
             ) : (
               nickname.charAt(0)
             )}

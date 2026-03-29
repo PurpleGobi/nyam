@@ -178,7 +178,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   if (photos.length === 1) {
     return (
       <div className="relative aspect-video w-full">
-        <Image src={photos[0]} alt="" fill className="object-cover" sizes="100vw" unoptimized />
+        <Image src={photos[0]} alt="" fill className="object-cover" sizes="100vw" />
       </div>
     )
   }
@@ -187,7 +187,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
       <div className="flex gap-0.5" style={{ aspectRatio: '16/9' }}>
         {photos.map((url, i) => (
           <div key={i} className="relative flex-1">
-            <Image src={url} alt="" fill className="object-cover" sizes="50vw" unoptimized />
+            <Image src={url} alt="" fill className="object-cover" sizes="50vw" />
           </div>
         ))}
       </div>
@@ -197,15 +197,15 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   return (
     <div className="flex gap-0.5" style={{ aspectRatio: '16/9' }}>
       <div className="relative flex-1">
-        <Image src={photos[0]} alt="" fill className="object-cover" sizes="67vw" unoptimized />
+        <Image src={photos[0]} alt="" fill className="object-cover" sizes="67vw" />
       </div>
       <div className="flex w-1/3 flex-col gap-0.5">
         <div className="relative flex-1">
-          <Image src={photos[1]} alt="" fill className="object-cover" sizes="33vw" unoptimized />
+          <Image src={photos[1]} alt="" fill className="object-cover" sizes="33vw" />
         </div>
         {photos[2] && (
           <div className="relative flex-1">
-            <Image src={photos[2]} alt="" fill className="object-cover" sizes="33vw" unoptimized />
+            <Image src={photos[2]} alt="" fill className="object-cover" sizes="33vw" />
           </div>
         )}
       </div>

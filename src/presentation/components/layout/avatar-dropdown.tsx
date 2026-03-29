@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, Settings } from 'lucide-react'
+import Image from 'next/image'
 import { useDropdown } from '@/presentation/hooks/use-dropdown'
 
 interface AvatarDropdownProps {
@@ -25,8 +26,7 @@ export function AvatarDropdown({ nickname, avatarUrl, avatarColor }: AvatarDropd
         style={avatarColor ? { backgroundColor: avatarColor } : undefined}
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={avatarUrl} alt="" width={32} height={32} className="h-full w-full object-cover" />
         ) : (
           <span>{nickname[0]}</span>
         )}

@@ -9,7 +9,7 @@ export type AddFlowStep =
   | 'record'
   | 'success'
 
-export type AddFlowEntryPath = 'camera' | 'search' | 'detail_fab' | 'nudge' | 'recommend' | 'detail' | 'record_detail'
+export type AddFlowEntryPath = 'camera' | 'search' | 'detail_fab' | 'nudge' | 'recommend' | 'detail'
 
 export interface AddFlowTarget {
   id: string

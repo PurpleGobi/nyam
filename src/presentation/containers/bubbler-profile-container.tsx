@@ -112,7 +112,12 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           <RecentRecords
             records={data.recentRecords}
             accentType={activeTab === 'restaurant' ? 'food' : 'wine'}
-            onRecordPress={(id) => router.push(`/records/${id}`)}
+            onRecordPress={(id) => {
+              // 기록 상세 페이지 삭제 → 해당 식당/와인 상세로 이동
+              const record = data.recentRecords.find((r) => r.id === id)
+              if (record?.targetType === 'wine') router.push(`/wines/${record.targetId}`)
+              else if (record?.targetId) router.push(`/restaurants/${record.targetId}`)
+            }}
           />
         )}
 

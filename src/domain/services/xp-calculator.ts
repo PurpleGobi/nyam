@@ -23,13 +23,14 @@ import type {
  * | + 풀 기록         | +18 |
  */
 export function calculateRecordXp(record: DiningRecord): number {
-  const hasScore = record.satisfaction !== null && record.satisfaction !== undefined
-  const hasPhoto = record.hasExifGps === true && record.isExifVerified === true
+  const latest = record.visits[0] ?? null
+  const hasScore = latest?.satisfaction !== null && latest?.satisfaction !== undefined
+  const hasPhoto = latest?.hasExifGps === true && latest?.isExifVerified === true
   const hasFullReview =
     hasScore &&
     hasPhoto &&
-    !!record.comment &&
-    record.comment.length > 0 &&
+    !!latest?.comment &&
+    latest.comment.length > 0 &&
     record.menuTags !== null &&
     record.menuTags !== undefined &&
     record.menuTags.length > 0

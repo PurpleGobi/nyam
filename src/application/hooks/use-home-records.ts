@@ -45,11 +45,11 @@ function applySort(records: DiningRecord[], sort: SortOption): DiningRecord[] {
   const sorted = [...records]
   switch (sort) {
     case 'latest':
-      return sorted.sort((a, b) => (b.visitDate ?? '').localeCompare(a.visitDate ?? ''))
+      return sorted.sort((a, b) => (b.latestVisitDate ?? '').localeCompare(a.latestVisitDate ?? ''))
     case 'score_high':
-      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
+      return sorted.sort((a, b) => (b.avgSatisfaction ?? 0) - (a.avgSatisfaction ?? 0))
     case 'score_low':
-      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
+      return sorted.sort((a, b) => (a.avgSatisfaction ?? 0) - (b.avgSatisfaction ?? 0))
     case 'name':
       return sorted.sort((a, b) => a.targetId.localeCompare(b.targetId)) // TODO: targetName 필요 (RecordWithTarget 전환 시 수정)
     case 'visit_count': {

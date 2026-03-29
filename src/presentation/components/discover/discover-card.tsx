@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { UtensilsCrossed } from 'lucide-react'
 import type { DiscoverCard as CardType } from '@/domain/entities/discover'
 
@@ -23,8 +24,7 @@ export function DiscoverCard({ card }: DiscoverCardProps) {
       {/* Photo */}
       <div className="relative h-[140px] w-full" style={{ backgroundColor: 'var(--bg)' }}>
         {card.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.photoUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={card.photoUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <UtensilsCrossed size={32} style={{ color: 'var(--text-hint)' }} />

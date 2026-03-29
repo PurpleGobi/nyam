@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { UtensilsCrossed, Wine, Heart, MessageCircle } from 'lucide-react'
 import type { RecommendationCard as CardType } from '@/domain/entities/recommendation'
 import { RecommendationSourceTag } from '@/presentation/components/home/recommendation-source-tag'
@@ -35,8 +36,7 @@ export function RecommendationCard({ card, onClick }: RecommendationCardProps) {
     >
       <div className="relative h-24 w-full" style={{ backgroundColor: 'var(--bg)' }}>
         {card.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.photoUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={card.photoUrl} alt="" fill className="object-cover" sizes="160px" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             {card.targetType === 'restaurant' ? (

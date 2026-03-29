@@ -14,11 +14,11 @@ export async function GET() {
 
   const { data: records } = await supabase
     .from('records')
-    .select('target_id, target_type, satisfaction, visit_date')
+    .select('target_id, target_type, avg_satisfaction, latest_visit_date')
     .eq('user_id', user.id)
-    .not('satisfaction', 'is', null)
-    .gte('satisfaction', 80)
-    .order('visit_date', { ascending: false })
+    .not('avg_satisfaction', 'is', null)
+    .gte('avg_satisfaction', 80)
+    .order('latest_visit_date', { ascending: false })
 
   if (!records || records.length === 0) {
     return NextResponse.json({ cards: [] })
@@ -35,18 +35,18 @@ export async function GET() {
   for (const r of records) {
     const existing = grouped.get(r.target_id)
     if (existing) {
-      existing.totalSat += r.satisfaction ?? 0
+      existing.totalSat += r.avg_satisfaction ?? 0
       existing.count += 1
-      if (r.visit_date && r.visit_date > existing.lastVisit) {
-        existing.lastVisit = r.visit_date
+      if (r.latest_visit_date && r.latest_visit_date > existing.lastVisit) {
+        existing.lastVisit = r.latest_visit_date
       }
     } else {
       grouped.set(r.target_id, {
         targetId: r.target_id,
         targetType: r.target_type,
-        totalSat: r.satisfaction ?? 0,
+        totalSat: r.avg_satisfaction ?? 0,
         count: 1,
-        lastVisit: r.visit_date ?? '',
+        lastVisit: r.latest_visit_date ?? '',
       })
     }
   }

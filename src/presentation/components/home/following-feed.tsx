@@ -7,6 +7,7 @@ import { FollowingFeedCard } from './following-feed-card'
 interface FeedItem {
   id: string
   recordId: string
+  targetId: string
   targetName: string
   targetType: 'restaurant' | 'wine'
   satisfaction: number | null
@@ -28,7 +29,7 @@ type SourceFilter = 'all' | 'bubble' | 'mutual'
 interface FollowingFeedProps {
   items: FeedItem[]
   isLoading: boolean
-  onItemPress: (recordId: string) => void
+  onItemPress: (targetId: string, targetType: 'restaurant' | 'wine') => void
   sourceFilter: SourceFilter
   onSourceFilterChange: (f: SourceFilter) => void
 }
@@ -90,7 +91,7 @@ export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onS
       ) : (
         <div className="flex flex-col gap-3 px-4 py-3">
           {items.map((item) => (
-            <FollowingFeedCard key={item.id} item={item} onPress={() => onItemPress(item.recordId)} />
+            <FollowingFeedCard key={item.id} item={item} onPress={() => onItemPress(item.targetId, item.targetType)} />
           ))}
         </div>
       )}

@@ -58,7 +58,7 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
     >
       <div className="relative w-[46%] shrink-0">
         {wine.photoUrl ? (
-          <Image src={wine.photoUrl} alt="" fill className="object-cover" sizes="46vw" unoptimized />
+          <Image src={wine.photoUrl} alt="" fill className="object-cover" sizes="46vw" />
         ) : (
           <div
             className="flex h-full w-full items-center justify-center"

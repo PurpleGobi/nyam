@@ -28,7 +28,7 @@ export function FollowingSourceBadge({
           style={{ backgroundColor: sourceAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
         >
           {sourceAvatar ? (
-            <Image src={sourceAvatar} alt="" width={16} height={16} className="h-full w-full rounded-full object-cover" unoptimized />
+            <Image src={sourceAvatar} alt="" width={16} height={16} className="h-full w-full rounded-full object-cover" />
           ) : (
             sourceName.charAt(0)
           )}

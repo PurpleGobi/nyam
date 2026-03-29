@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
 
   const { data: records } = await supabase
     .from('records')
-    .select('target_id, satisfaction, pairing_categories, wines(name, region, photo_url)')
+    .select('target_id, avg_satisfaction, pairing_categories, wines(name, region, photo_url)')
     .eq('user_id', user.id)
     .eq('target_type', 'wine')
-    .not('satisfaction', 'is', null)
+    .not('avg_satisfaction', 'is', null)
     .contains('pairing_categories', [category])
-    .order('satisfaction', { ascending: false })
+    .order('avg_satisfaction', { ascending: false })
     .limit(20)
 
   if (!records || records.length === 0) {
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       photoUrl: wine?.photo_url ?? null,
       algorithm: 'wine_pairing',
       source: 'ai',
-      reason: `${category} 페어링 · 만족도 ${r.satisfaction}%`,
-      normalizedScore: r.satisfaction ?? 0,
+      reason: `${category} 페어링 · 만족도 ${r.avg_satisfaction}%`,
+      normalizedScore: r.avg_satisfaction ?? 0,
       confidence: null,
       likeCount: 0,
       commentCount: 0,

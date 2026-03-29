@@ -52,12 +52,12 @@ export async function GET() {
   // 멤버들의 고평가 기록
   const { data: records } = await supabase
     .from('records')
-    .select('target_id, target_type, satisfaction, user_id, restaurants(name, genre, photo_url)')
+    .select('target_id, target_type, avg_satisfaction, user_id, restaurants(name, genre, photo_url)')
     .in('user_id', userIds)
     .eq('target_type', 'restaurant')
-    .not('satisfaction', 'is', null)
-    .gte('satisfaction', 80)
-    .order('satisfaction', { ascending: false })
+    .not('avg_satisfaction', 'is', null)
+    .gte('avg_satisfaction', 80)
+    .order('avg_satisfaction', { ascending: false })
     .limit(30)
 
   if (!records || records.length === 0) {
@@ -90,7 +90,7 @@ export async function GET() {
     const existing = grouped.get(r.target_id)
     if (existing) {
       if (!existing.memberIds.has(r.user_id)) {
-        existing.totalSat += r.satisfaction ?? 0
+        existing.totalSat += r.avg_satisfaction ?? 0
         existing.memberCount += 1
         existing.memberIds.add(r.user_id)
       }
@@ -100,7 +100,7 @@ export async function GET() {
       grouped.set(r.target_id, {
         targetId: r.target_id,
         targetType: r.target_type,
-        totalSat: r.satisfaction ?? 0,
+        totalSat: r.avg_satisfaction ?? 0,
         memberCount: 1,
         memberIds: new Set([r.user_id]),
         restaurant,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Lock, Globe, ImagePlus, X, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
 import type { BubbleJoinPolicy, BubbleVisibility, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PrivacyRecords } from '@/domain/entities/user'
@@ -200,7 +201,7 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
           }}
         >
           {isPhoto ? (
-            <img src={photoPreview ?? selectedIcon} alt="icon" className="h-full w-full object-cover" />
+            <Image src={photoPreview ?? selectedIcon} alt="icon" width={64} height={64} className="h-full w-full object-cover" />
           ) : (
             <BubbleIcon icon={selectedIcon} size={30} />
           )}

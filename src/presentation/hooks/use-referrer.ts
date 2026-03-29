@@ -18,7 +18,7 @@ function getPageName(path: string): string {
   if (PAGE_NAMES[path]) return PAGE_NAMES[path]
   if (path.startsWith('/restaurants/')) return '식당 상세'
   if (path.startsWith('/wines/')) return '와인 상세'
-  if (path.startsWith('/records/')) return '기록 상세'
+
   if (path.match(/^\/bubbles\/[^/]+$/)) return '버블'
   if (path.startsWith('/users/')) return '프로필'
   return '이전'

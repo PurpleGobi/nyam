@@ -1,118 +1,102 @@
 import type { RecordRepository } from '@/domain/repositories/record-repository'
-import type { DiningRecord, CreateRecordInput, RecordTargetType, RecordWithTarget } from '@/domain/entities/record'
+import type { DiningRecord, CreateRecordInput, AddVisitInput, RecordTargetType, RecordWithTarget, RecordVisit } from '@/domain/entities/record'
+import { calcAvgSatisfaction } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
-import type { Database } from '@/infrastructure/supabase/types'
 import { createClient } from '@/infrastructure/supabase/client'
 
-type RecordRow = Database['public']['Tables']['records']['Row']
-type PhotoRow = Database['public']['Tables']['record_photos']['Row']
+// ─── DB → Domain 매핑 ───
 
-/**
- * DB → DiningRecord 매핑.
- * 사분면 축 의미:
- *   식당: axisX = 음식 퀄리티, axisY = 경험 가치
- *   와인: axisX = 구조·완성도, axisY = 즐거움·감성
- * satisfaction = (axisX + axisY) / 2 로 자동 산출
- */
-function mapDbToRecord(row: RecordRow): DiningRecord {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDbToRecord(row: any): DiningRecord {
+  const rawVisits = (row.visits ?? []) as Record<string, unknown>[]
+  const visits: RecordVisit[] = rawVisits.map(mapRawVisit)
+
   return {
     id: row.id,
     userId: row.user_id,
     targetId: row.target_id,
     targetType: row.target_type,
     status: row.status,
-    wineStatus: row.wine_status,
-    cameraMode: row.camera_mode,
+    wineStatus: row.wine_status ?? null,
+    cameraMode: row.camera_mode ?? null,
     ocrData: row.ocr_data as Record<string, unknown> | null,
-    axisX: row.axis_x ? Number(row.axis_x) : null,
-    axisY: row.axis_y ? Number(row.axis_y) : null,
-    satisfaction: row.satisfaction,
-    scene: row.scene,
-    aromaRegions: row.aroma_regions as Record<string, unknown> | null,
-    aromaLabels: row.aroma_labels,
-    aromaColor: row.aroma_color,
-    complexity: row.complexity,
-    finish: row.finish ? Number(row.finish) : null,
-    balance: row.balance ? Number(row.balance) : null,
-    autoScore: row.auto_score,
-    comment: row.comment,
-    menuTags: row.menu_tags,
-    pairingCategories: row.pairing_categories as DiningRecord['pairingCategories'],
-    tips: row.tips,
-    companions: row.companions,
-    companionCount: row.companion_count,
-    privateNote: (row as Record<string, unknown>).private_note as string ?? null,
-    totalPrice: row.total_price,
-    purchasePrice: row.purchase_price,
-    visitDate: row.visit_date,
-    mealTime: row.meal_time as DiningRecord['mealTime'],
-    linkedRestaurantId: row.linked_restaurant_id,
-    linkedWineId: row.linked_wine_id,
-    hasExifGps: row.has_exif_gps,
-    isExifVerified: row.is_exif_verified,
-    recordQualityXp: row.record_quality_xp,
-    scoreUpdatedAt: row.score_updated_at,
+    menuTags: row.menu_tags ?? null,
+    pairingCategories: row.pairing_categories ?? null,
+    linkedRestaurantId: row.linked_restaurant_id ?? null,
+    linkedWineId: row.linked_wine_id ?? null,
+    visits,
+    visitCount: row.visit_count ?? visits.length,
+    latestVisitDate: row.latest_visit_date ?? null,
+    avgSatisfaction: row.avg_satisfaction ? Number(row.avg_satisfaction) : null,
+    recordQualityXp: row.record_quality_xp ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
 
-type RecordInsert = Database['public']['Tables']['records']['Insert']
-
-/**
- * CreateRecordInput → DB Insert 매핑.
- * axis_x/axis_y: 사분면 좌표 (1-100)
- * satisfaction: (axis_x + axis_y) / 2 로 산출된 종합 만족도
- */
-function mapRecordToDb(input: CreateRecordInput): RecordInsert & { private_note?: string | null } {
+function mapRawVisit(v: Record<string, unknown>): RecordVisit {
   return {
-    user_id: input.userId,
-    target_id: input.targetId,
-    target_type: input.targetType,
-    status: input.status,
-    wine_status: (input.wineStatus ?? null) as RecordInsert['wine_status'],
-    camera_mode: (input.cameraMode ?? null) as RecordInsert['camera_mode'],
-    axis_x: input.axisX ?? null,
-    axis_y: input.axisY ?? null,
-    satisfaction: input.satisfaction ?? null,
-    scene: (input.scene ?? null) as RecordInsert['scene'],
-    aroma_regions: (input.aromaRegions ?? null) as RecordInsert['aroma_regions'],
-    aroma_labels: input.aromaLabels ?? null,
-    aroma_color: input.aromaColor ?? null,
-    complexity: input.complexity ?? null,
-    finish: input.finish ?? null,
-    balance: input.balance ?? null,
-    auto_score: input.autoScore ?? null,
-    comment: input.comment ?? null,
-    menu_tags: input.menuTags ?? null,
-    pairing_categories: input.pairingCategories ?? null,
-    tips: input.tips ?? null,
-    companions: input.companions ?? null,
-    companion_count: input.companionCount ?? null,
-    private_note: input.privateNote ?? null,
-    total_price: input.totalPrice ?? null,
-    purchase_price: input.purchasePrice ?? null,
-    visit_date: input.visitDate ?? new Date().toISOString().split('T')[0],
-    meal_time: (input.mealTime ?? null) as RecordInsert['meal_time'],
-    linked_restaurant_id: input.linkedRestaurantId ?? null,
-    linked_wine_id: input.linkedWineId ?? null,
-    has_exif_gps: input.hasExifGps ?? false,
-    is_exif_verified: input.isExifVerified ?? false,
-    ocr_data: null,
-    record_quality_xp: 0,
-    score_updated_at: null,
+    date: (v.date as string) ?? new Date().toISOString().split('T')[0],
+    axisX: v.axisX != null ? Number(v.axisX) : null,
+    axisY: v.axisY != null ? Number(v.axisY) : null,
+    satisfaction: v.satisfaction != null ? Number(v.satisfaction) : null,
+    comment: (v.comment as string) ?? null,
+    tips: (v.tips as string) ?? null,
+    scene: (v.scene as string) ?? null,
+    mealTime: (v.mealTime as RecordVisit['mealTime']) ?? null,
+    companions: (v.companions as string[]) ?? null,
+    companionCount: v.companionCount != null ? Number(v.companionCount) : null,
+    totalPrice: v.totalPrice != null ? Number(v.totalPrice) : null,
+    purchasePrice: v.purchasePrice != null ? Number(v.purchasePrice) : null,
+    aromaRegions: (v.aromaRegions as Record<string, unknown>) ?? null,
+    aromaLabels: (v.aromaLabels as string[]) ?? null,
+    aromaColor: (v.aromaColor as string) ?? null,
+    complexity: v.complexity != null ? Number(v.complexity) : null,
+    finish: v.finish != null ? Number(v.finish) : null,
+    balance: v.balance != null ? Number(v.balance) : null,
+    autoScore: v.autoScore != null ? Number(v.autoScore) : null,
+    hasExifGps: (v.hasExifGps as boolean) ?? false,
+    isExifVerified: (v.isExifVerified as boolean) ?? false,
   }
 }
 
-function mapDbToPhoto(row: PhotoRow): RecordPhoto {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDbToPhoto(row: any): RecordPhoto {
   return {
     id: row.id,
     recordId: row.record_id,
     url: row.url,
     orderIndex: row.order_index,
-    isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
+    isPublic: row.is_public ?? false,
     createdAt: row.created_at,
   }
+}
+
+// ─── Domain → DB Insert 매핑 ───
+
+function visitToJsonb(visit: RecordVisit): Record<string, unknown> {
+  const obj: Record<string, unknown> = { date: visit.date }
+  if (visit.axisX != null) obj.axisX = visit.axisX
+  if (visit.axisY != null) obj.axisY = visit.axisY
+  if (visit.satisfaction != null) obj.satisfaction = visit.satisfaction
+  if (visit.comment != null) obj.comment = visit.comment
+  if (visit.tips != null) obj.tips = visit.tips
+  if (visit.scene != null) obj.scene = visit.scene
+  if (visit.mealTime != null) obj.mealTime = visit.mealTime
+  if (visit.companions != null) obj.companions = visit.companions
+  if (visit.companionCount != null) obj.companionCount = visit.companionCount
+  if (visit.totalPrice != null) obj.totalPrice = visit.totalPrice
+  if (visit.purchasePrice != null) obj.purchasePrice = visit.purchasePrice
+  if (visit.aromaRegions != null) obj.aromaRegions = visit.aromaRegions
+  if (visit.aromaLabels != null) obj.aromaLabels = visit.aromaLabels
+  if (visit.aromaColor != null) obj.aromaColor = visit.aromaColor
+  if (visit.complexity != null) obj.complexity = visit.complexity
+  if (visit.finish != null) obj.finish = visit.finish
+  if (visit.balance != null) obj.balance = visit.balance
+  if (visit.autoScore != null) obj.autoScore = visit.autoScore
+  if (visit.hasExifGps) obj.hasExifGps = true
+  if (visit.isExifVerified) obj.isExifVerified = true
+  return obj
 }
 
 export class SupabaseRecordRepository implements RecordRepository {
@@ -121,10 +105,29 @@ export class SupabaseRecordRepository implements RecordRepository {
   }
 
   async create(input: CreateRecordInput): Promise<DiningRecord> {
-    const dbData = mapRecordToDb(input)
+    const visits = [visitToJsonb(input.visit)]
+    const avgSat = input.visit.satisfaction
+
     const { data, error } = await this.supabase
       .from('records')
-      .insert(dbData)
+      .insert({
+        user_id: input.userId,
+        target_id: input.targetId,
+        target_type: input.targetType,
+        status: input.status,
+        wine_status: input.wineStatus ?? null,
+        camera_mode: input.cameraMode ?? null,
+        ocr_data: null,
+        menu_tags: input.menuTags ?? null,
+        pairing_categories: input.pairingCategories ?? null,
+        linked_restaurant_id: input.linkedRestaurantId ?? null,
+        linked_wine_id: input.linkedWineId ?? null,
+        visits,
+        visit_count: 1,
+        latest_visit_date: input.visit.date,
+        avg_satisfaction: avgSat,
+        record_quality_xp: 0,
+      })
       .select()
       .single()
 
@@ -133,6 +136,33 @@ export class SupabaseRecordRepository implements RecordRepository {
       if (error.code === '23505') throw new Error('이미 존재하는 기록입니다')
       throw new Error(`Record 생성 실패: ${error.message}`)
     }
+    return mapDbToRecord(data)
+  }
+
+  async addVisit(input: AddVisitInput): Promise<DiningRecord> {
+    // 기존 record를 먼저 로드
+    const existing = await this.findById(input.recordId)
+    if (!existing) throw new Error('기록을 찾을 수 없습니다')
+
+    const newVisits = [input.visit, ...existing.visits]
+    newVisits.sort((a, b) => b.date.localeCompare(a.date))
+    const avg = calcAvgSatisfaction(newVisits)
+
+    const { data, error } = await this.supabase
+      .from('records')
+      .update({
+        visits: newVisits.map(visitToJsonb),
+        visit_count: newVisits.length,
+        latest_visit_date: newVisits[0].date,
+        avg_satisfaction: avg,
+        status: 'rated',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.recordId)
+      .select()
+      .single()
+
+    if (error) throw new Error(`방문 추가 실패: ${error.message}`)
     return mapDbToRecord(data)
   }
 
@@ -155,7 +185,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       .from('records')
       .select()
       .eq('user_id', userId)
-      .order('visit_date', { ascending: false })
+      .order('latest_visit_date', { ascending: false })
 
     if (targetType) {
       query = query.eq('target_type', targetType)
@@ -171,7 +201,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       .from('records')
       .select('*')
       .eq('user_id', userId)
-      .order('visit_date', { ascending: false })
+      .order('latest_visit_date', { ascending: false })
 
     if (targetType) {
       query = query.eq('target_type', targetType)
@@ -180,9 +210,9 @@ export class SupabaseRecordRepository implements RecordRepository {
     const { data, error } = await query
     if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
 
-    const rows = data as RecordRow[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = data as any[]
 
-    // target_id로 식당/와인 정보를 별도 조회
     const restaurantIds = [...new Set(rows.filter((r) => r.target_type === 'restaurant').map((r) => r.target_id))]
     const wineIds = [...new Set(rows.filter((r) => r.target_type === 'wine').map((r) => r.target_id))]
 
@@ -223,7 +253,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       }
     }
 
-    // record_photos에서 각 레코드의 첫 번째 사진 조회
+    // record_photos
     const recordIds = rows.map((r) => r.id)
     const recordPhotoMap = new Map<string, string>()
     if (recordIds.length > 0) {
@@ -239,7 +269,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       }
     }
 
-    // 팔로잉 유저들의 target_id 셋 조회 → source 태깅용
+    // source 태깅
     const followingTargetIds = new Set<string>()
     const { data: followRows } = await this.supabase
       .from('follows')
@@ -277,7 +307,6 @@ export class SupabaseRecordRepository implements RecordRepository {
         targetLat: isRestaurant ? (restaurant?.lat ?? null) : null,
         targetLng: isRestaurant ? (restaurant?.lng ?? null) : null,
         source: followingTargetIds.has(row.target_id) ? 'following' as const : 'mine' as const,
-        // 필터용 대상 속성
         genre: restaurant?.genre ?? null,
         area: restaurant?.area ?? null,
         priceRange: restaurant?.price_range ?? null,
@@ -299,7 +328,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       .select()
       .eq('user_id', userId)
       .eq('target_id', targetId)
-      .order('visit_date', { ascending: false })
+      .order('latest_visit_date', { ascending: false })
 
     if (error) throw new Error(`Records 조회 실패: ${error.message}`)
     return data.map(mapDbToRecord)
@@ -307,32 +336,18 @@ export class SupabaseRecordRepository implements RecordRepository {
 
   async update(id: string, data: Partial<DiningRecord>): Promise<DiningRecord> {
     const updateData: Record<string, unknown> = {}
-    if (data.satisfaction !== undefined) updateData.satisfaction = data.satisfaction
-    if (data.axisX !== undefined) updateData.axis_x = data.axisX
-    if (data.axisY !== undefined) updateData.axis_y = data.axisY
-    if (data.scene !== undefined) updateData.scene = data.scene
-    if (data.comment !== undefined) updateData.comment = data.comment
     if (data.status !== undefined) updateData.status = data.status
-    if (data.companions !== undefined) updateData.companions = data.companions
-    if (data.companionCount !== undefined) updateData.companion_count = data.companionCount
-    if (data.privateNote !== undefined) updateData.private_note = data.privateNote
-    if (data.totalPrice !== undefined) updateData.total_price = data.totalPrice
-    if (data.purchasePrice !== undefined) updateData.purchase_price = data.purchasePrice
-    if (data.aromaRegions !== undefined) updateData.aroma_regions = data.aromaRegions
-    if (data.aromaLabels !== undefined) updateData.aroma_labels = data.aromaLabels
-    if (data.aromaColor !== undefined) updateData.aroma_color = data.aromaColor
-    if (data.complexity !== undefined) updateData.complexity = data.complexity
-    if (data.finish !== undefined) updateData.finish = data.finish
-    if (data.balance !== undefined) updateData.balance = data.balance
-    if (data.autoScore !== undefined) updateData.auto_score = data.autoScore
-    if (data.pairingCategories !== undefined) updateData.pairing_categories = data.pairingCategories
+    if (data.wineStatus !== undefined) updateData.wine_status = data.wineStatus
     if (data.menuTags !== undefined) updateData.menu_tags = data.menuTags
-    if (data.tips !== undefined) updateData.tips = data.tips
+    if (data.pairingCategories !== undefined) updateData.pairing_categories = data.pairingCategories
     if (data.linkedWineId !== undefined) updateData.linked_wine_id = data.linkedWineId
     if (data.linkedRestaurantId !== undefined) updateData.linked_restaurant_id = data.linkedRestaurantId
-    if (data.mealTime !== undefined) updateData.meal_time = data.mealTime
-    if (data.visitDate !== undefined) updateData.visit_date = data.visitDate
-    if (data.wineStatus !== undefined) updateData.wine_status = data.wineStatus
+    if (data.visits !== undefined) {
+      updateData.visits = data.visits.map(visitToJsonb)
+      updateData.visit_count = data.visits.length
+      updateData.latest_visit_date = data.visits[0]?.date ?? null
+      updateData.avg_satisfaction = calcAvgSatisfaction(data.visits)
+    }
     updateData.updated_at = new Date().toISOString()
 
     const { data: updated, error } = await this.supabase

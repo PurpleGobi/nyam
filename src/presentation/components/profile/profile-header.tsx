@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import type { UserProfile } from '@/domain/entities/profile'
 
 interface ProfileHeaderProps {
@@ -24,8 +25,7 @@ export function ProfileHeader({ profile, level, levelColor, tasteSummary, tasteT
               style={{ backgroundColor: profile.avatarColor ?? 'var(--accent-food)' }}
             >
               {profile.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                <Image src={profile.avatarUrl} alt="" width={64} height={64} className="h-full w-full rounded-full object-cover" />
               ) : (
                 <span style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF' }}>
                   {profile.nickname[0]}

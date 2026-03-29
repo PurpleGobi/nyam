@@ -60,7 +60,6 @@ export function PendingApprovalList({ members, onApprove, onReject, maxPreview =
               width={36}
               height={36}
               className="h-9 w-9 shrink-0 rounded-full object-cover"
-              unoptimized
             />
           ) : (
             <div

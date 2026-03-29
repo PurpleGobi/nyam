@@ -2,7 +2,7 @@
 // R1: domain 인터페이스 — 외부 의존 0
 // infrastructure에서 implements로 구현
 
-import type { DiningRecord, RecordTargetType, CreateRecordInput, RecordWithTarget } from '@/domain/entities/record'
+import type { DiningRecord, RecordTargetType, CreateRecordInput, AddVisitInput, RecordWithTarget } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 /**
@@ -14,6 +14,9 @@ export interface RecordRepository {
   // ─── 기록 CRUD ───
 
   create(input: CreateRecordInput): Promise<DiningRecord>
+
+  /** 기존 기록에 새 방문 추가 */
+  addVisit(input: AddVisitInput): Promise<DiningRecord>
 
   findById(id: string): Promise<DiningRecord | null>
 

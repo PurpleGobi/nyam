@@ -23,28 +23,39 @@ export async function GET(request: NextRequest) {
   const axisYMax = request.nextUrl.searchParams.get('axisYMax')
   const minSatisfaction = Number(request.nextUrl.searchParams.get('minSatisfaction') ?? 75)
 
-  let query = supabase
+  // Query records with visits JSONB — filter by scene and satisfaction in application layer
+  const { data: records } = await supabase
     .from('records')
-    .select('target_id, target_type, satisfaction, scene, axis_x, axis_y, restaurants(name, genre, photo_url)')
+    .select('target_id, target_type, visits, avg_satisfaction, restaurants(name, genre, photo_url)')
     .eq('user_id', user.id)
-    .eq('scene', scene)
-    .not('satisfaction', 'is', null)
-    .gte('satisfaction', minSatisfaction)
-    .order('satisfaction', { ascending: false })
-    .limit(20)
-
-  if (axisXMin) query = query.gte('axis_x', Number(axisXMin))
-  if (axisXMax) query = query.lte('axis_x', Number(axisXMax))
-  if (axisYMin) query = query.gte('axis_y', Number(axisYMin))
-  if (axisYMax) query = query.lte('axis_y', Number(axisYMax))
-
-  const { data: records } = await query
+    .not('avg_satisfaction', 'is', null)
+    .gte('avg_satisfaction', minSatisfaction)
+    .order('avg_satisfaction', { ascending: false })
+    .limit(100)
 
   if (!records || records.length === 0) {
     return NextResponse.json({ cards: [] })
   }
 
-  // GROUP BY target_id + AVG(satisfaction)
+  // Filter by scene from visits JSONB + apply quadrant filters
+  type VisitRow = { scene?: string; axisX?: number; axisY?: number; satisfaction?: number }
+  const filteredRecords = records.filter((r) => {
+    const visits = (r.visits as VisitRow[] | null) ?? []
+    return visits.some((v) => {
+      if (v.scene !== scene) return false
+      if (axisXMin && (v.axisX ?? 0) < Number(axisXMin)) return false
+      if (axisXMax && (v.axisX ?? 100) > Number(axisXMax)) return false
+      if (axisYMin && (v.axisY ?? 0) < Number(axisYMin)) return false
+      if (axisYMax && (v.axisY ?? 100) > Number(axisYMax)) return false
+      return true
+    })
+  }).slice(0, 20)
+
+  if (filteredRecords.length === 0) {
+    return NextResponse.json({ cards: [] })
+  }
+
+  // GROUP BY target_id + AVG(avg_satisfaction)
   const grouped = new Map<string, {
     targetId: string
     targetType: string
@@ -53,16 +64,16 @@ export async function GET(request: NextRequest) {
     restaurant: { name: string; genre: string | null; photo_url: string | null } | null
   }>()
 
-  for (const r of records) {
+  for (const r of filteredRecords) {
     const existing = grouped.get(r.target_id)
     if (existing) {
-      existing.satisfactionSum += (r.satisfaction ?? 0)
+      existing.satisfactionSum += (r.avg_satisfaction ?? 0)
       existing.count += 1
     } else {
       grouped.set(r.target_id, {
         targetId: r.target_id,
         targetType: r.target_type,
-        satisfactionSum: r.satisfaction ?? 0,
+        satisfactionSum: r.avg_satisfaction ?? 0,
         count: 1,
         restaurant: r.restaurants as unknown as { name: string; genre: string | null; photo_url: string | null } | null,
       })

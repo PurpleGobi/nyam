@@ -72,7 +72,7 @@ export function useWineDetail(
         }
 
         // 4. 사분면 참조 (리뷰 2건+ 시에만)
-        const recordsWithAxis = records.filter((r) => r.axisX !== null && r.axisY !== null)
+        const recordsWithAxis = records.filter((r) => r.visits[0]?.axisX !== null && r.visits[0]?.axisY !== null)
         if (recordsWithAxis.length >= 2) {
           const refs = await repo.findQuadrantRefs(userId, wineId)
           setQuadrantRefs(refs)
@@ -96,13 +96,13 @@ export function useWineDetail(
 
   // 파생값 계산
   const myAvgScore = myRecords.length > 0
-    ? Math.round(myRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / myRecords.length)
+    ? Math.round(myRecords.reduce((sum, r) => sum + (r.avgSatisfaction ?? 0), 0) / myRecords.length)
     : null
 
-  const tastingCount = myRecords.length
+  const tastingCount = myRecords.reduce((sum, r) => sum + r.visitCount, 0)
 
   const latestTastingDate = myRecords.length > 0
-    ? (myRecords[0].visitDate ?? myRecords[0].createdAt.split('T')[0])
+    ? (myRecords[0].latestVisitDate ?? myRecords[0].createdAt.split('T')[0])
     : null
 
   const nyamScoreBreakdown: WineNyamScoreBreakdown | null = wine?.nyamScore != null

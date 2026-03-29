@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
@@ -50,8 +51,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
             className="shrink-0 overflow-hidden rounded-lg"
             style={{ height: '192px', width: '192px' }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt="" className="h-full w-full object-cover" />
+            <Image src={photo.url} alt="" width={192} height={192} className="h-full w-full object-cover" />
           </button>
         ))}
       </div>
@@ -103,12 +103,14 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
             className="flex items-center justify-center overflow-auto"
             style={{ touchAction: 'pinch-zoom', maxHeight: '80vh', maxWidth: '90vw' }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={photos[fullscreenIndex].url}
               alt=""
+              width={1200}
+              height={900}
               className="max-h-[80vh] max-w-[90vw] object-contain"
-              style={{ touchAction: 'pinch-zoom' }}
+              style={{ touchAction: 'pinch-zoom', width: 'auto', height: 'auto' }}
+              sizes="90vw"
             />
           </div>
 

@@ -6,6 +6,7 @@ import { bubbleRepo, followRepo } from '@/shared/di/container'
 interface FeedItem {
   id: string
   recordId: string
+  targetId: string
   targetName: string
   targetType: 'restaurant' | 'wine'
   satisfaction: number | null
@@ -55,6 +56,7 @@ export function useFollowingFeed({ userId, targetType }: UseFollowingFeedOptions
       const bubbleFeedItems: FeedItem[] = bubbleShares.map((s) => ({
         id: `bubble-${s.id}`,
         recordId: s.recordId,
+        targetId: s.targetId ?? '',
         targetName: s.targetName ?? '',
         targetType: s.targetType ?? 'restaurant',
         satisfaction: s.satisfaction ?? null,
@@ -78,6 +80,7 @@ export function useFollowingFeed({ userId, targetType }: UseFollowingFeedOptions
         mutualFeedItems = mutualRecords.map((r) => ({
           id: `mutual-${r.recordId}`,
           recordId: r.recordId,
+          targetId: r.targetId ?? '',
           targetName: r.targetName ?? '',
           targetType: r.targetType ?? 'restaurant',
           satisfaction: r.satisfaction ?? null,

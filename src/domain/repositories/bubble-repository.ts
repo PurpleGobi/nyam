@@ -27,6 +27,7 @@ export interface CreateBubbleInput {
 export interface BubbleFeedItem {
   id: string
   recordId: string
+  targetId?: string
   bubbleId: string
   bubbleName?: string
   bubbleIcon?: string
@@ -61,6 +62,7 @@ export interface UserBubbleMembership {
 
 export interface MutualRecordItem {
   recordId: string
+  targetId?: string
   targetName?: string
   targetType?: 'restaurant' | 'wine'
   satisfaction?: number | null

@@ -247,8 +247,16 @@ function AddFlowInner() {
                 targetType: 'wine',
                 status: 'checked',
                 wineStatus: 'tasted',
-                hasExifGps: exif.hasGps,
-                isExifVerified: false,
+                visit: {
+                  date: new Date().toISOString().split('T')[0],
+                  axisX: null, axisY: null, satisfaction: null,
+                  comment: null, tips: null, scene: null, mealTime: null,
+                  companions: null, companionCount: null,
+                  totalPrice: null, purchasePrice: null,
+                  aromaRegions: null, aromaLabels: null, aromaColor: null,
+                  complexity: null, finish: null, balance: null, autoScore: null,
+                  hasExifGps: exif.hasGps, isExifVerified: false,
+                },
               })
               await uploadCapturedPhoto(record.id)
               pushStep('success')
@@ -343,8 +351,16 @@ function AddFlowInner() {
           targetType: 'wine',
           status: 'checked',
           wineStatus: 'tasted',
-          hasExifGps: exif.hasGps,
-          isExifVerified: false,
+          visit: {
+            date: new Date().toISOString().split('T')[0],
+            axisX: null, axisY: null, satisfaction: null,
+            comment: null, tips: null, scene: null, mealTime: null,
+            companions: null, companionCount: null,
+            totalPrice: null, purchasePrice: null,
+            aromaRegions: null, aromaLabels: null, aromaColor: null,
+            complexity: null, finish: null, balance: null, autoScore: null,
+            hasExifGps: exif.hasGps, isExifVerified: false,
+          },
         })
         await uploadCapturedPhoto(record.id)
         pushStep('success')

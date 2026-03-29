@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Wine, MapPin } from 'lucide-react'
+import { Search, Wine, MapPin, FileText } from 'lucide-react'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
@@ -39,7 +39,7 @@ interface RecordTimelineProps {
   emptyIcon: keyof typeof EMPTY_ICONS
   emptyTitle: string
   emptyDescription: string
-  onRecordTap: (recordId: string) => void
+  onRecordTap?: (recordId: string) => void
   targetType?: 'restaurant' | 'wine'
   /** 와인 기록: linkedRestaurantId → 식당명 맵 */
   linkedRestaurantNames?: Map<string, string>
@@ -105,19 +105,19 @@ export function RecordTimeline({
           />
 
           {records.map((record, i) => {
-            const dotColor = record.scene
-              ? (sceneColors[record.scene] ?? `var(${accentColor})`)
+            const latestVisit = record.visits[0] ?? null
+            const dotColor = latestVisit?.scene
+              ? (sceneColors[latestVisit.scene] ?? `var(${accentColor})`)
               : `var(${accentColor})`
             const photos = recordPhotos.get(record.id) ?? []
-            const displayDate = record.visitDate ?? record.createdAt.split('T')[0]
+            const displayDate = record.latestVisitDate ?? record.createdAt.split('T')[0]
 
             return (
-              <button
+              <div
                 key={record.id}
-                type="button"
-                onClick={() => onRecordTap(record.id)}
                 className="relative w-full text-left"
                 style={{ marginBottom: i < records.length - 1 ? '18px' : 0 }}
+                onClick={() => onRecordTap?.(record.id)}
               >
                 {/* 타임라인 dot */}
                 <div
@@ -133,35 +133,40 @@ export function RecordTimeline({
                   }}
                 />
 
-                {/* 날짜 + 상황 칩 */}
+                {/* 날짜 + 상황 칩 + 점수 */}
                 <div className="flex items-center gap-1.5">
                   <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
                     {displayDate}
                   </span>
-                  {record.scene && (
+                  {latestVisit?.scene && (
                     <span
                       className="tag-chip"
                       style={{ backgroundColor: dotColor }}
                     >
-                      {record.scene}
+                      {latestVisit.scene}
                     </span>
                   )}
+                  <span className="ml-auto" style={{ fontSize: '13px', fontWeight: 700, color: dotColor }}>
+                    {record.avgSatisfaction ?? '—'}점
+                  </span>
                 </div>
 
-                {/* 점수 + 한줄평 */}
-                <div className="mt-1 flex items-baseline gap-1.5">
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: dotColor }}>
-                    {record.satisfaction ?? '—'}점
-                  </span>
-                  {record.comment && (
-                    <span
-                      className="truncate"
-                      style={{ fontSize: '12px', color: 'var(--text-sub)' }}
-                    >
-                      &ldquo;{record.comment}&rdquo;
-                    </span>
-                  )}
-                </div>
+                {/* 한줄평 */}
+                {latestVisit?.comment && (
+                  <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-sub)', fontStyle: 'italic' }}>
+                    &ldquo;{latestVisit.comment}&rdquo;
+                  </p>
+                )}
+
+                {/* 개인메모 (비공개) */}
+                {latestVisit?.tips && (
+                  <div className="mt-1 flex items-start gap-1">
+                    <FileText size={11} className="mt-0.5 shrink-0" style={{ color: 'var(--text-hint)' }} />
+                    <p className="line-clamp-2" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+                      {latestVisit.tips}
+                    </p>
+                  </div>
+                )}
 
                 {/* 와인 기록: 연결 식당 표시 */}
                 {isWine && record.linkedRestaurantId && (
@@ -195,7 +200,7 @@ export function RecordTimeline({
                     ))}
                   </div>
                 )}
-              </button>
+              </div>
             )
           })}
         </div>
