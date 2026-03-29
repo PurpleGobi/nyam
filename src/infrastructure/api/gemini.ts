@@ -54,7 +54,7 @@ async function callGeminiVision(request: GeminiVisionRequest): Promise<GeminiVis
   return { text, confidence: data.candidates?.[0]?.avgLogProbs ?? 0 }
 }
 
-function safeJsonParse(text: string): Record<string, unknown> {
+function safeJsonParse(text: string): Record<string, unknown> | Record<string, unknown>[] {
   // Gemini가 ```json ... ``` 블록으로 감싸는 경우 대응
   const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim()
   try {
@@ -97,7 +97,7 @@ export async function recognizeRestaurant(imageBase64: string): Promise<Restaura
 
   let parsed: Record<string, unknown>
   try {
-    parsed = safeJsonParse(response.text)
+    parsed = safeJsonParse(response.text) as Record<string, unknown>
   } catch {
     // JSON 파싱 실패 → 텍스트에서 힌트 추출 시도
     const text = response.text.toLowerCase()
@@ -207,7 +207,7 @@ export interface WineLabelRecognition {
 
 export async function recognizeWineLabel(imageBase64: string): Promise<WineLabelRecognition> {
   const response = await callGeminiVision({ imageBase64, prompt: WINE_LABEL_PROMPT })
-  const parsed = safeJsonParse(response.text)
+  const parsed = safeJsonParse(response.text) as Record<string, unknown>
 
   if (parsed.error === 'not_wine_label') {
     throw new Error('NOT_WINE_LABEL')
@@ -221,6 +221,176 @@ export async function recognizeWineLabel(imageBase64: string): Promise<WineLabel
     wineName: (parsed.wine_name as string) ?? null,
     producer: (parsed.producer as string) ?? null,
     vintage: parsed.vintage ? Number(parsed.vintage) : null,
+    region: (parsed.region as string) ?? null,
+    subRegion: (parsed.sub_region as string) ?? null,
+    country: (parsed.country as string) ?? null,
+    wineType: (parsed.wine_type as string) ?? null,
+    variety: (parsed.variety as string) ?? null,
+    grapeVarieties,
+    abv: parsed.abv ? Number(parsed.abv) : null,
+    classification: (parsed.classification as string) ?? null,
+    bodyLevel: parsed.body_level ? Number(parsed.body_level) : null,
+    acidityLevel: parsed.acidity_level ? Number(parsed.acidity_level) : null,
+    sweetnessLevel: parsed.sweetness_level ? Number(parsed.sweetness_level) : null,
+    foodPairings: Array.isArray(parsed.food_pairings) ? (parsed.food_pairings as string[]) : null,
+    servingTemp: (parsed.serving_temp as string) ?? null,
+    decanting: (parsed.decanting as string) ?? null,
+    referencePrice: parsed.reference_price ? Number(parsed.reference_price) : null,
+    drinkingWindowStart: parsed.drinking_window_start ? Number(parsed.drinking_window_start) : null,
+    drinkingWindowEnd: parsed.drinking_window_end ? Number(parsed.drinking_window_end) : null,
+    vivinoRating: parsed.vivino_rating ? Number(parsed.vivino_rating) : null,
+    tastingNotes: (parsed.tasting_notes as string) ?? null,
+    confidence: (parsed.confidence as number) ?? 0,
+  }
+}
+
+// ─── 와인 이름 검색 (LLM, 이미지 없이 텍스트만) ───
+
+const GEMINI_TEXT_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+
+async function callGeminiText(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured')
+  }
+
+  const response = await fetch(`${GEMINI_TEXT_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 4096,
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+}
+
+const WINE_SEARCH_PROMPT = (query: string) => `당신은 와인 전문 소믈리에입니다. 사용자가 입력한 와인 검색어를 보고, 가장 가능성 높은 와인 후보를 최대 5개 추천해주세요.
+
+검색어: "${query}"
+
+규칙:
+- 검색어가 와인 이름의 일부, 생산자, 지역, 품종 등 어떤 단서든 활용하세요.
+- 한국에서 접할 수 있는 와인을 우선하세요.
+- 한글 검색어도 영문 와인명으로 매칭하세요 (예: "오퍼스" → "Opus One").
+- 각 후보의 정식 영문 이름을 반드시 포함하세요.
+- 검색어와 전혀 관련 없는 와인은 포함하지 마세요.
+
+JSON 배열로만 응답:
+[
+  {
+    "name": "와인 정식 이름 (영문)",
+    "name_ko": "와인 한국어 이름 (없으면 null)",
+    "producer": "생산자/와이너리",
+    "vintage": null,
+    "wine_type": "red/white/rose/sparkling/orange/fortified/dessert",
+    "region": "산지",
+    "country": "국가",
+    "confidence": 0.0~1.0
+  }
+]
+
+와인과 무관한 검색어면 빈 배열 []로 응답.`
+
+export interface WineSearchCandidate {
+  name: string
+  nameKo: string | null
+  producer: string | null
+  vintage: number | null
+  wineType: string
+  region: string | null
+  country: string | null
+  confidence: number
+}
+
+export async function searchWineByName(query: string): Promise<WineSearchCandidate[]> {
+  const text = await callGeminiText(WINE_SEARCH_PROMPT(query))
+  const parsed = safeJsonParse(text)
+
+  // 배열이 바로 올 수도, 객체 안에 있을 수도
+  const arr = Array.isArray(parsed) ? parsed : (parsed as Record<string, unknown>)
+  if (!Array.isArray(arr)) return []
+
+  return arr.map((item: Record<string, unknown>) => ({
+    name: (item.name as string) ?? '',
+    nameKo: (item.name_ko as string) ?? null,
+    producer: (item.producer as string) ?? null,
+    vintage: item.vintage ? Number(item.vintage) : null,
+    wineType: (item.wine_type as string) ?? 'red',
+    region: (item.region as string) ?? null,
+    country: (item.country as string) ?? null,
+    confidence: (item.confidence as number) ?? 0,
+  }))
+}
+
+const WINE_DETAIL_PROMPT = (name: string, producer: string | null, vintage: number | null) => {
+  let desc = `"${name}"`
+  if (producer) desc += ` by ${producer}`
+  if (vintage) desc += ` (${vintage})`
+  return `당신은 와인 전문 소믈리에이자 데이터 분석가입니다. 다음 와인에 대한 상세 정보를 제공해주세요.
+
+와인: ${desc}
+
+규칙:
+- 해당 와인에 대해 알려진 정보를 최대한 정확하게 제공하세요.
+- 가격은 한국 소매 기준 원화(KRW)로 추정하세요.
+- vivino_rating은 Vivino에서의 일반적인 평점을 추정하세요.
+- 확실하지 않아도 최선의 추측을 해주세요.
+
+JSON으로만 응답:
+{
+  "wine_name": "${name}",
+  "producer": "생산자/와이너리 이름 (없으면 null)",
+  "vintage": ${vintage ?? 'null'},
+  "region": "산지 (예: Bordeaux, Napa Valley)",
+  "sub_region": "세부 산지 (없으면 null)",
+  "country": "국가",
+  "wine_type": "red/white/rose/sparkling/orange/fortified/dessert 중 하나",
+  "variety": "주요 포도 품종",
+  "grape_varieties": [{"name": "품종명", "pct": 비율(0~100)}],
+  "abv": 알코올 도수(숫자, 없으면 null),
+  "classification": "등급 (없으면 null)",
+  "body_level": 바디감(1~5),
+  "acidity_level": 산도(1~5),
+  "sweetness_level": 당도(1~5),
+  "food_pairings": ["추천 음식 페어링 3~5개"],
+  "serving_temp": "적정 서빙 온도",
+  "decanting": "디캔팅 추천 (없으면 null)",
+  "reference_price": 한국 소매 추정가(원화 숫자),
+  "drinking_window_start": 음용 시작 연도(없으면 null),
+  "drinking_window_end": 음용 마감 연도(없으면 null),
+  "vivino_rating": Vivino 추정 평점(소수점 1자리, 없으면 null),
+  "tasting_notes": "간단한 테이스팅 노트 (1~2문장, 한국어)",
+  "confidence": 0.0~1.0
+}`
+}
+
+export async function getWineDetailByName(
+  name: string,
+  producer: string | null,
+  vintage: number | null,
+): Promise<WineLabelRecognition> {
+  const text = await callGeminiText(WINE_DETAIL_PROMPT(name, producer, vintage))
+  const parsed = safeJsonParse(text) as Record<string, unknown>
+
+  const grapeVarieties = Array.isArray(parsed.grape_varieties)
+    ? (parsed.grape_varieties as Array<{ name: string; pct: number }>)
+    : null
+
+  return {
+    wineName: (parsed.wine_name as string) ?? name,
+    producer: (parsed.producer as string) ?? producer,
+    vintage: parsed.vintage ? Number(parsed.vintage) : vintage,
     region: (parsed.region as string) ?? null,
     subRegion: (parsed.sub_region as string) ?? null,
     country: (parsed.country as string) ?? null,
@@ -261,7 +431,7 @@ export interface ShelfRecognition {
 
 export async function recognizeWineShelf(imageBase64: string): Promise<ShelfRecognition> {
   const response = await callGeminiVision({ imageBase64, prompt: WINE_SHELF_PROMPT })
-  const parsed = safeJsonParse(response.text)
+  const parsed = safeJsonParse(response.text) as Record<string, unknown>
   return { wines: (parsed.wines as ShelfRecognition['wines']) ?? [] }
 }
 
@@ -284,7 +454,7 @@ export interface ReceiptRecognition {
 
 export async function recognizeWineReceipt(imageBase64: string): Promise<ReceiptRecognition> {
   const response = await callGeminiVision({ imageBase64, prompt: WINE_RECEIPT_PROMPT })
-  const parsed = safeJsonParse(response.text)
+  const parsed = safeJsonParse(response.text) as Record<string, unknown>
   return {
     items: (parsed.items as ReceiptRecognition['items']) ?? [],
     total: (parsed.total as number) ?? null,
