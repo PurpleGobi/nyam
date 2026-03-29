@@ -122,7 +122,7 @@ CREATE TABLE restaurants (
   district VARCHAR(50),            -- 구 (종로구, 강남구 등) — 국내 식당 전용
   genre VARCHAR(30),               -- CHECK: 한식/일식/중식/태국/베트남/인도/이탈리안/프렌치/스페인/지중해/미국/멕시칸/카페/바/주점/베이커리/기타
                                   -- 6대분류: 동아시아(한식,일식,중식) / 동남아·남아시아(태국,베트남,인도) / 유럽(이탈리안,프렌치,스페인,지중해) / 아메리카(미국,멕시칸) / 음료·디저트(카페,바/주점,베이커리) / 기타
-  price_range INT,                 -- 1~4 (₩~₩₩₩₩)
+  price_range INT,                 -- 1~3 (저가/중간/고가)
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
   phone VARCHAR(20),
@@ -152,7 +152,7 @@ CREATE TABLE restaurants (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 가격대 필터 매핑: price_range 1=~2만, 2=2~5만, 3=5~10만, 4=10만+
+-- 가격대 필터 매핑: price_range 1=저가, 2=중간, 3=고가
 
 CREATE INDEX idx_restaurants_area ON restaurants(area);
 CREATE INDEX idx_restaurants_country_city ON restaurants(country, city);  -- 세계지도 드릴다운
@@ -238,9 +238,9 @@ CREATE TABLE records (
                                    -- receipt: {"items":[{"name":"...", "price":..., "qty":1}], "total":...}
 
   -- 사분면 (본 기록은 필수, 온보딩 기록은 NULL 허용)
-  axis_x DECIMAL(5,2),             -- 0~100 (식당: 가격%, 와인: 산미%)
-  axis_y DECIMAL(5,2),             -- 0~100 (식당: 분위기%, 와인: 바디%)
-  satisfaction INT,                 -- 1~100 (점 크기)
+  axis_x DECIMAL(5,2),             -- 0~100 (식당: 음식 퀄리티, 와인: 구조·완성도)
+  axis_y DECIMAL(5,2),             -- 0~100 (식당: 경험 가치, 와인: 즐거움·감성)
+  satisfaction INT,                 -- 1~100 computed as (axis_x + axis_y) / 2
   scene VARCHAR(20),               -- 상황 태그
 
   -- 와인 전용
