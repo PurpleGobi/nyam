@@ -40,7 +40,7 @@ function RecordFlowInner() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
-  const { photos, addFiles, removePhoto, uploadAll, isUploading } = usePhotoUpload()
+  const { photos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const entryPath = (searchParams.get('from') ?? 'camera') as AddFlowEntryPath
@@ -91,6 +91,7 @@ function RecordFlowInner() {
   const { settings } = useSettings()
   const prefBubbleShare = settings?.prefBubbleShare ?? 'ask'
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
+  const [recentCompanions, setRecentCompanions] = useState<string[]>([])
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
 
@@ -163,6 +164,36 @@ function RecordFlowInner() {
     return () => { cancelled = true }
   }, [userId, state.targetId, editRecordId])
 
+  // 최근 동행자 목록 로드 (전체 기록에서 추출)
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+
+    async function loadRecentCompanions() {
+      try {
+        const records = await recordRepo.findByUserId(userId!)
+        if (cancelled) return
+        const freq = new Map<string, number>()
+        for (const r of records) {
+          if (r.companions) {
+            for (const name of r.companions) {
+              freq.set(name, (freq.get(name) ?? 0) + 1)
+            }
+          }
+        }
+        const sorted = [...freq.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([name]) => name)
+          .slice(0, 10)
+        setRecentCompanions(sorted)
+      } catch {
+        // 최근 동행자 로드 실패 시 무시
+      }
+    }
+    loadRecentCompanions()
+    return () => { cancelled = true }
+  }, [userId])
+
   // sessionStorage에서 촬영 이미지를 읽어 자동 첨부
   const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
 
@@ -211,6 +242,7 @@ function RecordFlowInner() {
             comment: (formData.comment as string) ?? null,
             companions: (formData.companions as string[]) ?? null,
             companionCount: formData.companionCount as number | undefined,
+            privateNote: (formData.privateNote as string) ?? null,
             menuTags: (formData.menuTags as string[]) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
@@ -264,6 +296,7 @@ function RecordFlowInner() {
             comment: formData.comment as string | undefined,
             companions: formData.companions as string[] | undefined,
             companionCount: formData.companionCount as number | undefined,
+            privateNote: formData.privateNote as string | undefined,
             menuTags: formData.menuTags as string[] | undefined,
             totalPrice: formData.totalPrice as number | undefined,
             purchasePrice: formData.purchasePrice as number | undefined,
@@ -404,6 +437,8 @@ function RecordFlowInner() {
       photos={photos}
       onAddFiles={addFiles}
       onRemovePhoto={removePhoto}
+      onReplacePhoto={replacePhoto}
+      onTogglePublic={togglePublic}
       isUploading={isUploading}
       isMaxReached={photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS}
       theme={state.targetType === 'wine' ? 'wine' : 'food'}
@@ -418,6 +453,7 @@ function RecordFlowInner() {
     scene: editingRecord.scene,
     comment: editingRecord.comment,
     companions: editingRecord.companions,
+    privateNote: editingRecord.privateNote,
     menuTags: editingRecord.menuTags,
     totalPrice: editingRecord.totalPrice,
     visitDate: editingRecord.visitDate,
@@ -458,14 +494,14 @@ function RecordFlowInner() {
           }}
           genreHint={genreHint ?? aiPrefill?.genre}
           referenceRecords={referenceRecords}
-          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: 50, axisY: 50, satisfaction: 50, scene: null, comment: null, companions: null, totalPrice: null, visitDate: null } : undefined)}
+          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: 50, axisY: 50, satisfaction: 50, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: null } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
           isLoading={isLoading}
           photoSlot={photoPickerSlot}
+          recentCompanions={recentCompanions}
           onDelete={isEditMode ? () => setShowDeleteConfirm(true) : undefined}
           isDeleting={isDeleting}
-
         />
       ) : (
         <WineRecordForm

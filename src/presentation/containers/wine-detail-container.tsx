@@ -252,8 +252,8 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
           currentDot={currentDot}
           refDots={quadrantRefs}
           accentColor="--accent-wine"
-          xAxisLabels={['산미 낮음', '산미 높음']}
-          yAxisLabels={['Light Body', 'Full Body']}
+          xAxisLabels={['구조·완성도 ↓', '구조·완성도 ↑']}
+          yAxisLabels={['즐거움·감성 ↓', '즐거움·감성 ↑']}
           isVisible={quadrantVisible}
           sectionTitle="내 와인 지도"
           sectionMeta=""

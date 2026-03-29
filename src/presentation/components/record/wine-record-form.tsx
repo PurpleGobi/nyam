@@ -97,8 +97,10 @@ export function WineRecordForm({
   const [quadrant, setQuadrant] = useState({
     x: initialData?.axisX ?? 50,
     y: initialData?.axisY ?? 50,
-    satisfaction: initialData?.satisfaction ?? 50,
   })
+  const [quadrantTouched, setQuadrantTouched] = useState(!!initialData?.axisX)
+  const [saveHint, setSaveHint] = useState(false)
+  const quadrantSectionRef = useRef<HTMLElement>(null)
   const [aroma, setAroma] = useState<AromaSelection>({
     regions: (initialData?.aromaRegions as AromaSelection['regions']) ?? {},
     labels: initialData?.aromaLabels ?? [],
@@ -127,21 +129,17 @@ export function WineRecordForm({
 
   const aromaRingCount = countActiveRings(aroma.regions)
 
-  const isValid =
-    quadrant.satisfaction >= 1 &&
-    aroma.labels.length > 0 &&
-    pairingCategories.length > 0
+  const isValid = quadrantTouched
 
   const handleQuadrantChange = useCallback((val: { x: number; y: number; satisfaction?: number }) => {
     isManualOverrideRef.current = true
-    setQuadrant({ x: val.x, y: val.y, satisfaction: val.satisfaction ?? quadrant.satisfaction })
-  }, [quadrant.satisfaction])
+    setQuadrant({ x: val.x, y: val.y })
+    setQuadrantTouched(true)
+    setSaveHint(false)
+  }, [])
 
   const handleAutoScoreChange = useCallback((score: number) => {
     setAutoScore(score)
-    if (!isManualOverrideRef.current) {
-      setQuadrant((prev) => ({ ...prev, satisfaction: score }))
-    }
   }, [])
 
   const handleSave = useCallback(async () => {
@@ -152,7 +150,7 @@ export function WineRecordForm({
       targetType: 'wine',
       axisX: quadrant.x,
       axisY: quadrant.y,
-      satisfaction: quadrant.satisfaction,
+      satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
       aromaRegions: aroma.regions as Record<string, unknown>,
       aromaLabels: aroma.labels,
       aromaColor: aroma.color,
@@ -207,11 +205,11 @@ export function WineRecordForm({
       )}
 
       {/* 사분면 */}
-      <section className="px-4 py-4">
+      <section ref={quadrantSectionRef} className="relative px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 와인이었나요?
         </h3>
-        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} />
+        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} />
       </section>
 
       {/* 아로마 팔레트 */}
@@ -342,7 +340,17 @@ export function WineRecordForm({
       {/* 저장 바 */}
       <RecordSaveBar
         variant="wine"
-        onSave={handleSave}
+        onSave={() => {
+          if (!isValid) {
+            quadrantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            setTimeout(() => {
+              setSaveHint(true)
+              setTimeout(() => setSaveHint(false), 3000)
+            }, 400)
+            return
+          }
+          handleSave()
+        }}
         isLoading={isLoading}
         disabled={!isValid}
         label={saveLabel}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Utensils, Sparkles, X } from 'lucide-react'
+import { Utensils, Sparkles, X, Lock } from 'lucide-react'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { RestaurantScene } from '@/domain/entities/scene'
 import type { RestaurantGenre } from '@/domain/entities/restaurant'
@@ -35,6 +35,7 @@ interface CreateRestaurantRecordInput {
   comment?: string
   companions?: string[]
   companionCount?: number
+  privateNote?: string
   menuTags?: string[]
   totalPrice?: number
   visitDate?: string
@@ -49,6 +50,7 @@ interface RestaurantInitialData {
   scene: string | null
   comment: string | null
   companions: string[] | null
+  privateNote: string | null
   menuTags: string[] | null
   totalPrice: number | null
   visitDate: string | null
@@ -63,6 +65,7 @@ interface RestaurantRecordFormProps {
   onSave: (data: CreateRestaurantRecordInput) => Promise<void>
   isLoading: boolean
   photoSlot?: React.ReactNode
+  recentCompanions?: string[]
   onDelete?: () => void
   isDeleting?: boolean
 }
@@ -76,6 +79,7 @@ export function RestaurantRecordForm({
   onSave,
   isLoading,
   photoSlot,
+  recentCompanions,
   onDelete,
   isDeleting,
 }: RestaurantRecordFormProps) {
@@ -95,6 +99,7 @@ export function RestaurantRecordForm({
   )
   const [comment, setComment] = useState(initialData?.comment ?? '')
   const [companions, setCompanions] = useState<string[]>(initialData?.companions ?? [])
+  const [privateNote, setPrivateNote] = useState(initialData?.privateNote ?? '')
   const [menuTags, setMenuTags] = useState<string[]>(initialData?.menuTags ?? [])
   const [menuTagInput, setMenuTagInput] = useState('')
   const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice ? String(initialData.totalPrice) : '')
@@ -143,12 +148,13 @@ export function RestaurantRecordForm({
       comment: comment || undefined,
       companions: companions.length > 0 ? companions : undefined,
       companionCount,
+      privateNote: privateNote || undefined,
       menuTags: menuTags.length > 0 ? menuTags : undefined,
       totalPrice: totalPrice ? Number(totalPrice) : undefined,
       visitDate,
       linkedWineId: linkedWine?.id,
     })
-  }, [isValid, quadrant, scene, comment, companions, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine])
+  }, [isValid, quadrant, scene, comment, companions, privateNote, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine, selectedGenre])
 
   return (
     <div className="flex flex-col pb-24">
@@ -186,6 +192,29 @@ export function RestaurantRecordForm({
         </div>
       </div>
 
+      {/* 방문 날짜 (최상단) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          방문 날짜
+        </h3>
+        <input
+          type="date"
+          value={visitDate}
+          onChange={(e) => setVisitDate(e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          className="w-full"
+          style={{
+            padding: '10px 14px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)',
+            fontSize: '14px',
+            color: 'var(--text)',
+            backgroundColor: 'var(--bg-card)',
+            outline: 'none',
+          }}
+        />
+      </section>
+
       {/* 음식 종류 */}
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
@@ -209,7 +238,7 @@ export function RestaurantRecordForm({
         </div>
       </section>
 
-      {/* 사진 */}
+      {/* 사진 (기본 비공개) */}
       {photoSlot && (
         <section className="px-4 py-4">
           {photoSlot}
@@ -249,14 +278,6 @@ export function RestaurantRecordForm({
         <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
           {comment.length}/200
         </span>
-      </section>
-
-      {/* 동행자 */}
-      <section className="px-4 py-4">
-        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          누구와 함께? <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택 · 비공개 · 사진 인식</span>
-        </h3>
-        <CompanionInput value={companions} onChange={setCompanions} />
       </section>
 
       {/* 추천 메뉴 */}
@@ -334,29 +355,6 @@ export function RestaurantRecordForm({
         </div>
       </section>
 
-      {/* 방문 날짜 */}
-      <section className="px-4 py-4">
-        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          방문 날짜 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
-        </h3>
-        <input
-          type="date"
-          value={visitDate}
-          onChange={(e) => setVisitDate(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
-          className="w-full"
-          style={{
-            padding: '10px 14px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)',
-            fontSize: '14px',
-            color: 'var(--text)',
-            backgroundColor: 'var(--bg-card)',
-            outline: 'none',
-          }}
-        />
-      </section>
-
       {/* 같이 마신 와인 */}
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
@@ -386,6 +384,46 @@ export function RestaurantRecordForm({
             <span>⊕</span> 와인 검색
           </button>
         )}
+      </section>
+
+      {/* ─── 비공개 영역 구분선 ─── */}
+      <div className="mx-4 my-2 flex items-center gap-2">
+        <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--border)' }} />
+        <span className="flex items-center gap-1" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>
+          <Lock size={12} />
+          나만 보는 기록
+        </span>
+        <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--border)' }} />
+      </div>
+      <p className="px-4 pb-2" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+        아래 내용은 버블·프로필·검색에 공개되지 않습니다
+      </p>
+
+      {/* 동행자 (비공개) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          누구와 함께? <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <CompanionInput value={companions} onChange={setCompanions} recentCompanions={recentCompanions} />
+      </section>
+
+      {/* 개인 메모 (비공개) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          개인 메모 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+        </h3>
+        <textarea
+          maxLength={500}
+          value={privateNote}
+          onChange={(e) => setPrivateNote(e.target.value)}
+          placeholder="가격, 분위기, 기억하고 싶은 것들..."
+          rows={3}
+          className="nyam-input w-full resize-none"
+          style={{ backgroundColor: 'var(--bg-card)' }}
+        />
+        <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+          {privateNote.length}/500
+        </span>
       </section>
 
       <LinkSearchSheet

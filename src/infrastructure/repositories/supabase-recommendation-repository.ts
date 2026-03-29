@@ -214,6 +214,12 @@ export class SupabaseRecommendationRepository implements RecommendationRepositor
       .slice(0, limit)
   }
 
+  /**
+   * 사분면 기반 추천 후보 조회.
+   * 식당: axisX = 음식 퀄리티, axisY = 경험 가치
+   * 와인: axisX = 구조·완성도, axisY = 즐거움·감성
+   * satisfaction = (axisX + axisY) / 2
+   */
   async getQuadrantCandidates(userId: string, params: {
     scene?: string
     axisXMin: number

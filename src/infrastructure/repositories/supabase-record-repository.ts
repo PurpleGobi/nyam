@@ -7,6 +7,13 @@ import { createClient } from '@/infrastructure/supabase/client'
 type RecordRow = Database['public']['Tables']['records']['Row']
 type PhotoRow = Database['public']['Tables']['record_photos']['Row']
 
+/**
+ * DB → DiningRecord 매핑.
+ * 사분면 축 의미:
+ *   식당: axisX = 음식 퀄리티, axisY = 경험 가치
+ *   와인: axisX = 구조·완성도, axisY = 즐거움·감성
+ * satisfaction = (axisX + axisY) / 2 로 자동 산출
+ */
 function mapDbToRecord(row: RecordRow): DiningRecord {
   return {
     id: row.id,
@@ -34,6 +41,7 @@ function mapDbToRecord(row: RecordRow): DiningRecord {
     tips: row.tips,
     companions: row.companions,
     companionCount: row.companion_count,
+    privateNote: (row as Record<string, unknown>).private_note as string ?? null,
     totalPrice: row.total_price,
     purchasePrice: row.purchase_price,
     visitDate: row.visit_date,
@@ -51,7 +59,12 @@ function mapDbToRecord(row: RecordRow): DiningRecord {
 
 type RecordInsert = Database['public']['Tables']['records']['Insert']
 
-function mapRecordToDb(input: CreateRecordInput): RecordInsert {
+/**
+ * CreateRecordInput → DB Insert 매핑.
+ * axis_x/axis_y: 사분면 좌표 (1-100)
+ * satisfaction: (axis_x + axis_y) / 2 로 산출된 종합 만족도
+ */
+function mapRecordToDb(input: CreateRecordInput): RecordInsert & { private_note?: string | null } {
   return {
     user_id: input.userId,
     target_id: input.targetId,
@@ -76,6 +89,7 @@ function mapRecordToDb(input: CreateRecordInput): RecordInsert {
     tips: input.tips ?? null,
     companions: input.companions ?? null,
     companion_count: input.companionCount ?? null,
+    private_note: input.privateNote ?? null,
     total_price: input.totalPrice ?? null,
     purchase_price: input.purchasePrice ?? null,
     visit_date: input.visitDate ?? new Date().toISOString().split('T')[0],
@@ -96,6 +110,7 @@ function mapDbToPhoto(row: PhotoRow): RecordPhoto {
     recordId: row.record_id,
     url: row.url,
     orderIndex: row.order_index,
+    isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
     createdAt: row.created_at,
   }
 }
@@ -300,6 +315,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (data.status !== undefined) updateData.status = data.status
     if (data.companions !== undefined) updateData.companions = data.companions
     if (data.companionCount !== undefined) updateData.companion_count = data.companionCount
+    if (data.privateNote !== undefined) updateData.private_note = data.privateNote
     if (data.totalPrice !== undefined) updateData.total_price = data.totalPrice
     if (data.purchasePrice !== undefined) updateData.purchase_price = data.purchasePrice
     if (data.aromaRegions !== undefined) updateData.aroma_regions = data.aromaRegions

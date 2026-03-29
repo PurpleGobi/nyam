@@ -7,13 +7,14 @@
  *   default: food와 동일 (하위 호환)
  */
 
-export type GaugeChannel = 'food' | 'experience' | 'total' | 'default'
+export type GaugeChannel = 'food' | 'experience' | 'total' | 'wine-total' | 'default'
 
 const CHANNEL_STEPS: Record<GaugeChannel, string[]> = {
-  food:       ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
-  experience: ['#B5B0BA', '#A08DA8', '#8B7396', '#7A5A8E', '#6B3FA0'],
-  total:      ['#C4BCA8', '#D4B85C', '#E0A820', '#D49215', '#C87A0A'],
-  default:    ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
+  food:         ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
+  experience:   ['#B5B0BA', '#A08DA8', '#8B7396', '#7A5A8E', '#6B3FA0'],
+  total:        ['#C4BCA8', '#D4B85C', '#E0A820', '#D49215', '#C87A0A'],
+  'wine-total': ['#D8D0E0', '#D0B0E8', '#C090E0', '#B070D8', '#A050D0'],
+  default:      ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
 }
 
 export const GAUGE_COLORS = {

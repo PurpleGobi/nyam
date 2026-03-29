@@ -27,7 +27,7 @@ function getThemeStyles(accentColor: string) {
     dotShadow: isWine ? 'rgba(139,115,150,0.4)' : 'rgba(193,123,94,0.4)',
     caption: isWine
       ? '내가 리뷰한 와인과의 상대적 위치'
-      : '내가 리뷰한 비슷한 가격대·지역 식당과의 상대적 위치',
+      : '내가 리뷰한 식당과의 상대적 위치',
   }
 }
 
@@ -137,7 +137,7 @@ export function QuadrantDisplay({
               )
             })}
 
-            {/* 현재 dot */}
+            {/* 현재 dot — 고정 20px (RATING_ENGINE 개편: 만족도 제거, 좌표만 표시) */}
             {currentDot && (
               <div
                 className="absolute flex flex-col items-center"
@@ -149,19 +149,15 @@ export function QuadrantDisplay({
                 }}
               >
                 <div
-                  className="flex items-center justify-center rounded-full"
+                  className="rounded-full"
                   style={{
-                    width: '38px',
-                    height: '38px',
+                    width: '20px',
+                    height: '20px',
                     backgroundColor: `var(${accentColor})`,
-                    border: `3px solid var(${accentColor}-light)`,
+                    border: `2px solid var(${accentColor}-light)`,
                     boxShadow: `0 2px 10px ${theme.dotShadow}`,
                   }}
-                >
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#FFFFFF' }}>
-                    {currentDot.satisfaction}
-                  </span>
-                </div>
+                />
                 <span
                   className="mt-0.5 whitespace-nowrap"
                   style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-sub)' }}

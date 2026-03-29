@@ -9,7 +9,9 @@ interface UsePhotoUploadReturn {
   photos: PendingPhoto[]
   addFiles: (files: File[]) => void
   removePhoto: (photoId: string) => Promise<void>
-  uploadAll: (userId: string, recordId: string) => Promise<{ url: string; orderIndex: number }[]>
+  replacePhoto: (photoId: string, newFile: File) => void
+  togglePublic: (photoId: string) => void
+  uploadAll: (userId: string, recordId: string) => Promise<{ url: string; orderIndex: number; isPublic: boolean }[]>
   isUploading: boolean
   error: string | null
   isMaxReached: boolean
@@ -39,6 +41,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         previewUrl: URL.createObjectURL(file),
         orderIndex: photos.length + i,
         status: 'pending' as const,
+        isPublic: false,
       }))
 
       setPhotos((prev) => [...prev, ...newPhotos])
@@ -70,16 +73,38 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     [photos],
   )
 
+  const replacePhoto = useCallback((photoId: string, newFile: File) => {
+    setPhotos((prev) =>
+      prev.map((p) => {
+        if (p.id !== photoId) return p
+        URL.revokeObjectURL(p.previewUrl)
+        return {
+          ...p,
+          file: newFile,
+          previewUrl: URL.createObjectURL(newFile),
+          status: 'pending' as const,
+          uploadedUrl: undefined,
+        }
+      }),
+    )
+  }, [])
+
+  const togglePublic = useCallback((photoId: string) => {
+    setPhotos((prev) =>
+      prev.map((p) => (p.id === photoId ? { ...p, isPublic: !p.isPublic } : p)),
+    )
+  }, [])
+
   const uploadAll = useCallback(
     async (userId: string, recordId: string) => {
       setIsUploading(true)
       setError(null)
 
-      const results: { url: string; orderIndex: number }[] = []
+      const results: { url: string; orderIndex: number; isPublic: boolean }[] = []
 
       for (const photo of photos) {
         if (photo.status === 'uploaded' && photo.uploadedUrl) {
-          results.push({ url: photo.uploadedUrl, orderIndex: photo.orderIndex })
+          results.push({ url: photo.uploadedUrl, orderIndex: photo.orderIndex, isPublic: photo.isPublic })
           continue
         }
 
@@ -96,7 +121,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
               p.id === photo.id ? { ...p, status: 'uploaded' as const, uploadedUrl: url } : p,
             ),
           )
-          results.push({ url, orderIndex: photo.orderIndex })
+          results.push({ url, orderIndex: photo.orderIndex, isPublic: photo.isPublic })
         } catch {
           setPhotos((prev) =>
             prev.map((p) => (p.id === photo.id ? { ...p, status: 'error' as const } : p)),
@@ -111,5 +136,5 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     [photos],
   )
 
-  return { photos, addFiles, removePhoto, uploadAll, isUploading, error, isMaxReached }
+  return { photos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading, error, isMaxReached }
 }

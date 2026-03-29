@@ -11,6 +11,7 @@ function mapToEntity(row: PhotoRow): RecordPhoto {
     recordId: row.record_id,
     url: row.url,
     orderIndex: row.order_index,
+    isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
     createdAt: row.created_at,
   }
 }
@@ -22,12 +23,13 @@ export class SupabasePhotoRepository implements PhotoRepository {
 
   async savePhotos(
     recordId: string,
-    photos: { url: string; orderIndex: number }[],
+    photos: { url: string; orderIndex: number; isPublic?: boolean }[],
   ): Promise<RecordPhoto[]> {
     const rows = photos.map((p) => ({
       record_id: recordId,
       url: p.url,
       order_index: p.orderIndex,
+      is_public: p.isPublic ?? false,
     }))
 
     const { data, error } = await this.supabase

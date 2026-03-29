@@ -35,6 +35,7 @@ import { NyamInput } from '@/presentation/components/ui/nyam-input'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { SearchDropdown } from '@/presentation/components/ui/search-dropdown'
+import { RatingInput } from '@/presentation/components/record/rating-input'
 import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { LayoutGrid, List } from 'lucide-react'
@@ -110,6 +111,10 @@ export default function DesignSystemPage() {
   const [demoConjunction, setDemoConjunction] = useState<'and' | 'or'>('and')
   const [demoSort, setDemoSort] = useState<SortOption>('latest')
   const [demoSearch, setDemoSearch] = useState('')
+  const [ratingValue, setRatingValue] = useState({ x: 50, y: 50 })
+  const [ratingHint, setRatingHint] = useState(false)
+  const [wineRatingValue, setWineRatingValue] = useState({ x: 50, y: 50 })
+  const [wineRatingHint, setWineRatingHint] = useState(false)
 
   // StickyTabs demo states
   const [homeTab, setHomeTab] = useState<'restaurant' | 'wine'>('restaurant')
@@ -1092,6 +1097,111 @@ export default function DesignSystemPage() {
           <div className="icon-btn"><Bell size={20} /><div className="notif-badge" /></div>
           <div className="icon-btn"><Bell size={20} /></div>
         </Row>
+      </Section>
+
+      {/* ── §20. Rating Input ── */}
+      <Section title="20. Rating Input">
+        <Sub title="Restaurant Rating — 사분면 + 바 게이지 + 가격대" />
+        <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
+          Nyam 핵심 평가 컴포넌트. X축(음식 퀄리티) + Y축(경험 가치) 사분면과<br />
+          개별 바 게이지, 총점 표시, 가격대 3단계로 구성.<br />
+          사분면 터치 또는 바 게이지 드래그로 점수 설정.
+        </p>
+        <RatingInput
+          type="restaurant"
+          value={ratingValue}
+          onChange={setRatingValue}
+          showHint={ratingHint}
+        />
+        <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setRatingHint(!ratingHint)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--r-md)',
+              border: '1px solid var(--border)',
+              backgroundColor: ratingHint ? 'var(--accent-food)' : 'var(--bg)',
+              color: ratingHint ? '#FFFFFF' : 'var(--text-sub)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {ratingHint ? '힌트 끄기' : '힌트 말풍선 보기'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setRatingValue({ x: 50, y: 50 })}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--r-md)',
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--bg)',
+              color: 'var(--text-sub)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            초기화
+          </button>
+        </div>
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-hint)' }}>
+          현재 값: 음식 퀄리티 {ratingValue.x} · 경험 가치 {ratingValue.y} · 총점 {Math.round((ratingValue.x + ratingValue.y) / 2)}
+        </div>
+
+        <div style={{ marginTop: '40px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+          <Sub title="Wine Rating — 사분면 + 바 게이지" />
+          <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
+            X축: 구조 · 완성도 — "이 와인은 객관적으로 얼마나 잘 만들어졌나?"<br />
+            Y축: 즐거움 · 감성 — "내가 실제로 마시면서 얼마나 만족했나 (가격 포함)"<br />
+            가격대 없음 (와인은 별도 구매가격 입력).
+          </p>
+          <RatingInput
+            type="wine"
+            value={wineRatingValue}
+            onChange={setWineRatingValue}
+            showHint={wineRatingHint}
+          />
+          <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setWineRatingHint(!wineRatingHint)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--r-md)',
+                border: '1px solid var(--border)',
+                backgroundColor: wineRatingHint ? 'var(--accent-wine)' : 'var(--bg)',
+                color: wineRatingHint ? '#FFFFFF' : 'var(--text-sub)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {wineRatingHint ? '힌트 끄기' : '힌트 말풍선 보기'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setWineRatingValue({ x: 50, y: 50 })}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--r-md)',
+                border: '1px solid var(--border)',
+                backgroundColor: 'var(--bg)',
+                color: 'var(--text-sub)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              초기화
+            </button>
+          </div>
+          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-hint)' }}>
+            현재 값: 구조·완성도 {wineRatingValue.x} · 즐거움·감성 {wineRatingValue.y} · 총점 {Math.round((wineRatingValue.x + wineRatingValue.y) / 2)}
+          </div>
+        </div>
       </Section>
     </div>
   )

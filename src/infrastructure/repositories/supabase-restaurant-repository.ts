@@ -70,6 +70,7 @@ function mapDbToRecord(row: Record<string, unknown>): DiningRecord {
     tips: row.tips as string | null,
     companions: row.companions as string[] | null,
     companionCount: row.companion_count as number | null,
+    privateNote: row.private_note as string ?? null,
     totalPrice: row.total_price as number | null,
     purchasePrice: row.purchase_price as number | null,
     visitDate: row.visit_date as string | null,
@@ -135,6 +136,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
         recordId: row.record_id,
         url: row.url,
         orderIndex: row.order_index,
+        isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
         createdAt: row.created_at,
       })
       result.set(row.record_id, photos)
@@ -144,6 +146,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
 
   async findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]> {
     // 내가 리뷰한 다른 식당들의 평균 좌표 (최대 12개)
+    // axis_x = 음식 퀄리티, axis_y = 경험 가치, satisfaction = (axisX + axisY) / 2
     const { data, error } = await this.supabase
       .from('records')
       .select('target_id, axis_x, axis_y, satisfaction')

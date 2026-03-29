@@ -23,6 +23,9 @@ export async function POST(request: NextRequest) {
   }
 
   const safeGenre = genre && VALID_GENRES.has(genre) ? genre : null
+  const safePriceRange = priceRange != null
+    ? Math.min(Math.max(Math.round(Number(priceRange)), 1), 3)
+    : null
 
   const { data: existing } = await supabase
     .from('restaurants')
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       address: address ?? null,
       area: area ?? null,
       genre: safeGenre,
-      price_range: priceRange ?? null,
+      price_range: safePriceRange,
       lat: lat ?? null,
       lng: lng ?? null,
       phone: phone ?? null,

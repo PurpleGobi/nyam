@@ -76,6 +76,7 @@ function mapDbToRecord(row: Record<string, unknown>): DiningRecord {
     tips: row.tips as string | null,
     companions: row.companions as string[] | null,
     companionCount: row.companion_count as number | null,
+    privateNote: row.private_note as string ?? null,
     totalPrice: row.total_price as number | null,
     purchasePrice: row.purchase_price as number | null,
     visitDate: row.visit_date as string | null,
@@ -141,6 +142,7 @@ export class SupabaseWineRepository implements WineRepository {
         recordId: row.record_id,
         url: row.url,
         orderIndex: row.order_index,
+        isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
         createdAt: row.created_at,
       })
       result.set(row.record_id, photos)
@@ -148,6 +150,7 @@ export class SupabaseWineRepository implements WineRepository {
     return result
   }
 
+  // axis_x = 구조·완성도, axis_y = 즐거움·감성, satisfaction = (axisX + axisY) / 2
   async findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]> {
     const { data, error } = await this.supabase
       .from('records')

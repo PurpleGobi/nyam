@@ -1,6 +1,7 @@
 // src/domain/services/filter-query-builder.ts
 // R1: 외부 의존 0
 // 특수 속성(satisfaction, visit_date, companion_count, prestige, complexity) → PostgREST 변환
+// satisfaction = (axisX + axisY) / 2 로 산출된 종합 만족도 (1-100)
 
 import type { FilterRule } from '@/domain/entities/saved-filter'
 

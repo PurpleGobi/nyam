@@ -5,7 +5,7 @@ import { getGaugeColor } from '@/shared/utils/gauge-color'
 import { QuadrantRefDot } from '@/presentation/components/record/quadrant-ref-dot'
 
 interface QuadrantInputProps {
-  /** 'restaurant': X=음식퀄리티, Y=경험가치 / 'wine': X=산미, Y=바디 */
+  /** 'restaurant': X=음식 퀄리티, Y=경험 가치 / 'wine': X=구조·완성도, Y=즐거움·감성 */
   type: 'restaurant' | 'wine'
   value: { x: number; y: number; satisfaction?: number }
   onChange: (value: { x: number; y: number; satisfaction?: number }) => void
@@ -25,10 +25,14 @@ const AXIS_LABELS = {
   restaurant: {
     xLabel: '음식\n퀄리티',
     yLabel: '경험\n가치',
+    xAxis: '음식 퀄리티 →',
+    yAxis: '경험 가치 →',
   },
   wine: {
-    xLabel: '산미',
-    yLabel: '바디',
+    xLabel: '구조\n완성도',
+    yLabel: '즐거움\n감성',
+    xAxis: '구조 · 완성도 →',
+    yAxis: '즐거움 · 감성 →',
   },
 } as const
 
@@ -40,10 +44,10 @@ const QUADRANT_LABELS = {
     bottomLeft: '전반적으로\n아쉬운',
   },
   wine: {
-    topRight: '산미↑\nFull Body',
-    topLeft: '산미↓\nFull Body',
-    bottomRight: '산미↑\nLight Body',
-    bottomLeft: '산미↓\nLight Body',
+    topRight: '잘 만들어졌고\n마시면서도 좋은',
+    topLeft: '완성도는 아쉽지만\n마시면서 좋았던',
+    bottomRight: '잘 만들어졌지만\n감흥이 적은',
+    bottomLeft: '전반적으로\n아쉬운',
   },
 } as const
 
@@ -62,7 +66,8 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
   const totalScore = Math.round((value.x + value.y) / 2)
   const foodColor = getGaugeColor(value.x, 'food')
   const expColor = getGaugeColor(value.y, 'experience')
-  const totalColor = getGaugeColor(totalScore, 'total')
+  const dotChannel = type === 'wine' ? 'wine-total' as const : 'total' as const
+  const totalColor = getGaugeColor(totalScore, dotChannel)
 
   const updateFromPointer = useCallback(
     (e: React.PointerEvent | PointerEvent) => {
@@ -140,12 +145,12 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             <>
               <div style={{ position: 'absolute', top: '30%', left: '44px', zIndex: 40 }}>
                 <HintBubble tailSide="left" accentColor="var(--accent-food)" bgColor="var(--accent-food-light)">
-                  맛 만족도<br />바를 터치
+                  {type === 'wine' ? '구조 · 완성도' : '맛 만족도'}<br />바를 터치
                 </HintBubble>
               </div>
               <div style={{ position: 'absolute', top: '55%', left: '95px', zIndex: 40 }}>
                 <HintBubble tailSide="left" accentColor="var(--accent-wine)" bgColor="var(--accent-wine-light)">
-                  경험 만족도<br />바를 터치
+                  {type === 'wine' ? '즐거움 · 감성' : '경험 가치'}<br />바를 터치
                 </HintBubble>
               </div>
             </>
@@ -159,8 +164,8 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             <HintBubble
               style={{ position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%) translateY(-100%)', zIndex: 30 }}
               tailSide="bottom"
-              accentColor="var(--accent-food)"
-              bgColor="var(--accent-food-light)"
+              accentColor={type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'}
+              bgColor={type === 'wine' ? 'var(--accent-wine-light)' : 'var(--accent-food-light)'}
             >
               사분면을 터치하여<br />만족도를 표시해주세요
             </HintBubble>
@@ -205,13 +210,13 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               className="absolute"
               style={{ bottom: '4px', left: '50%', transform: 'translateX(-50%)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}
             >
-              음식 퀄리티 →
+              {labels.xAxis}
             </span>
             <span
               className="absolute"
-              style={{ left: '4px', top: '50%', transform: 'translateY(-50%) rotate(-90deg)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)', transformOrigin: 'center' }}
+              style={{ left: '14px', top: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}
             >
-              경험 가치 →
+              {labels.yAxis}
             </span>
 
             {/* 참조 점 */}

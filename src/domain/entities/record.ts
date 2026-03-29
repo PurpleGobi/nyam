@@ -81,13 +81,13 @@ export interface DiningRecord {
 
   // ─── 사분면 ───
 
-  /** X축: 0~100 (식당: 가격%, 와인: 산미%) — DECIMAL(5,2) */
+  /** X축: 0~100 (식당: 음식 퀄리티, 와인: 구조·완성도) — DECIMAL(5,2) */
   axisX: number | null
 
-  /** Y축: 0~100 (식당: 분위기%, 와인: 바디%) — DECIMAL(5,2) */
+  /** Y축: 0~100 (식당: 경험 가치, 와인: 즐거움·감성) — DECIMAL(5,2) */
   axisY: number | null
 
-  /** 만족도: 1~100 (점 크기) — INT */
+  /** 만족도: 1~100 — INT */
   satisfaction: number | null
 
   /** 상황 태그 — VARCHAR(20) */
@@ -139,6 +139,13 @@ export interface DiningRecord {
 
   /** 동반자 수 (1=혼자, 2, 3, 4, 5+) — 필터/통계용, 비공개 아님 */
   companionCount: number | null
+
+  /**
+   * 개인 메모 — TEXT
+   * ⚠️ 무조건 비공개: 본인만 열람
+   * companions와 동일하게 외부 노출 절대 금지
+   */
+  privateNote: string | null
 
   /** 식당 1인 결제 금액 (원) — INT (총액 아님, 본인 지불 금액) */
   totalPrice: number | null
@@ -217,6 +224,7 @@ export function createDefaultRecord(
     tips: null,
     companions: null,
     companionCount: null,
+    privateNote: null,
     totalPrice: null,
     purchasePrice: null,
     visitDate: null,
@@ -299,6 +307,7 @@ export interface CreateRecordInput {
   tips?: string | null
   companions?: string[] | null
   companionCount?: number | null
+  privateNote?: string | null
   totalPrice?: number | null
   purchasePrice?: number | null
   visitDate?: string | null

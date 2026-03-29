@@ -253,8 +253,8 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           currentDot={currentDot}
           refDots={quadrantRefs}
           accentColor="--accent-food"
-          xAxisLabels={['저렴', '고가']}
-          yAxisLabels={['캐주얼', '포멀']}
+          xAxisLabels={['음식 퀄리티 ↓', '음식 퀄리티 ↑']}
+          yAxisLabels={['경험 가치 ↓', '경험 가치 ↑']}
           isVisible={quadrantVisible}
           sectionTitle="내 식당 지도"
           sectionMeta="리뷰한 식당 중 위치"

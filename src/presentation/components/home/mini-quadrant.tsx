@@ -10,13 +10,11 @@ interface MiniQuadrantProps {
   accentColor: string  // --accent-food 또는 --accent-wine
 }
 
-/** dot 크기: satisfaction 기반 4~10px 선형 매핑 */
-function getDotSize(satisfaction: number): number {
-  return 4 + (satisfaction / 100) * 6
-}
+/** dot 크기: 고정 6px (RATING_ENGINE 개편: 만족도 제거, 좌표만 표시) */
+const DOT_SIZE = 6
 
 export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor }: MiniQuadrantProps) {
-  const dotSize = getDotSize(satisfaction)
+  const dotSize = DOT_SIZE
   const dotColor = getGaugeColor(satisfaction)
   const topPercent = 100 - axisY
 

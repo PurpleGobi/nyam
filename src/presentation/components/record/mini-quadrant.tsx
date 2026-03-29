@@ -22,18 +22,13 @@ interface MiniQuadrantProps {
 }
 
 const LABELS = {
-  restaurant: { xL: '저렴', xR: '고가', yT: '포멀', yB: '캐주얼' },
-  wine: { xL: '산미↓', xR: '산미↑', yT: 'Full', yB: 'Light' },
+  restaurant: { xL: '퀄리티↓', xR: '퀄리티↑', yT: '경험↑', yB: '경험↓' },
+  wine: { xL: '구조↓', xR: '구조↑', yT: '감성↑', yB: '감성↓' },
 }
 
-/** 설계 스펙: 만족도 → 점 지름 이산 5단계 매핑 */
-function getDotSize(satisfaction: number): number {
-  if (satisfaction <= 20) return 14
-  if (satisfaction <= 40) return 20
-  if (satisfaction <= 60) return 26
-  if (satisfaction <= 80) return 36
-  return 48
-}
+/** 고정 dot 크기 (RATING_ENGINE 개편: 만족도 기반 크기 제거) */
+const CURRENT_DOT_SIZE = 20
+const REF_DOT_SIZE = 14
 
 export function MiniQuadrant({ currentDot, refDots, targetType, onTap, onEdit }: MiniQuadrantProps) {
   const labels = LABELS[targetType]
@@ -87,9 +82,7 @@ export function MiniQuadrant({ currentDot, refDots, targetType, onTap, onEdit }:
         <div className="absolute bottom-0 top-0" style={{ left: '50%', width: '1px', borderLeft: '1px dashed var(--border)' }} />
 
         {/* 참조 점 (다른 기록, 반투명 30%) */}
-        {refDots.map((dot, i) => {
-          const size = getDotSize(dot.satisfaction)
-          return (
+        {refDots.map((dot, i) => (
             <div
               key={`ref-${i}`}
               className="absolute rounded-full"
@@ -97,39 +90,26 @@ export function MiniQuadrant({ currentDot, refDots, targetType, onTap, onEdit }:
                 left: `${dot.axisX}%`,
                 bottom: `${dot.axisY}%`,
                 transform: 'translate(-50%, 50%)',
-                width: `${size}px`,
-                height: `${size}px`,
+                width: `${REF_DOT_SIZE}px`,
+                height: `${REF_DOT_SIZE}px`,
                 backgroundColor: getGaugeColor(dot.satisfaction),
                 opacity: 0.3,
               }}
             />
-          )
-        })}
+        ))}
 
-        {/* 현재 기록 점 (불투명) */}
-        {(() => {
-          const size = getDotSize(currentDot.satisfaction)
-          return (
-            <div
-              className="absolute rounded-full"
-              style={{
-                left: `${currentDot.axisX}%`,
-                bottom: `${currentDot.axisY}%`,
-                transform: 'translate(-50%, 50%)',
-                width: `${size}px`,
-                height: `${size}px`,
-                backgroundColor: getGaugeColor(currentDot.satisfaction),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span style={{ fontSize: '9px', fontWeight: 800, color: '#FFFFFF' }}>
-                {currentDot.satisfaction}
-              </span>
-            </div>
-          )
-        })()}
+        {/* 현재 기록 점 (불투명, 고정 크기) */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            left: `${currentDot.axisX}%`,
+            bottom: `${currentDot.axisY}%`,
+            transform: 'translate(-50%, 50%)',
+            width: `${CURRENT_DOT_SIZE}px`,
+            height: `${CURRENT_DOT_SIZE}px`,
+            backgroundColor: getGaugeColor(currentDot.satisfaction),
+          }}
+        />
       </div>
     </div>
   )

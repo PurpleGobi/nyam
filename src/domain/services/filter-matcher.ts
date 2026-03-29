@@ -1,6 +1,7 @@
 // src/domain/services/filter-matcher.ts
 // R1: 외부 의존 0
 // 특수 속성(satisfaction 범위, visit_date 기간, companion_count 범위, prestige 복합) 매칭 로직
+// satisfaction = (axisX + axisY) / 2 로 산출된 종합 만족도 (1-100)
 
 import type { FilterRule } from '@/domain/entities/saved-filter'
 

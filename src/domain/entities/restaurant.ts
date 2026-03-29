@@ -22,7 +22,7 @@ export const ALL_GENRES: RestaurantGenre[] = [
   '카페', '바/주점', '베이커리', '기타',
 ]
 
-export type PriceRange = 1 | 2 | 3 | 4
+export type PriceRange = 1 | 2 | 3
 
 export interface BusinessHours {
   mon?: string; tue?: string; wed?: string; thu?: string
