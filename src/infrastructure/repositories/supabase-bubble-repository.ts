@@ -670,4 +670,21 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .eq('auto_synced', true)
     return (data ?? []).map((r) => r.record_id as string)
   }
+
+  async cleanManualShares(userId: string): Promise<number> {
+    // 수동 공유(auto_synced=false) 중 현재 shareRule에 매칭 안 되는 것들 삭제
+    // 서버에서 필터 평가가 복잡하므로, 수동 공유 전체를 삭제하는 단순 방식 사용
+    const { data } = await this.supabase
+      .from('bubble_shares')
+      .select('id')
+      .eq('shared_by', userId)
+      .eq('auto_synced', false)
+    const ids = (data ?? []).map((r) => r.id as string)
+    if (ids.length === 0) return 0
+    await this.supabase
+      .from('bubble_shares')
+      .delete()
+      .in('id', ids)
+    return ids.length
+  }
 }

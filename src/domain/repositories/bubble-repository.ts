@@ -145,4 +145,5 @@ export interface BubbleRepository {
   batchUpsertAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
   batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
   getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
+  cleanManualShares(userId: string): Promise<number>
 }

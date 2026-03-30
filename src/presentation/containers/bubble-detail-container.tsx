@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal } from 'lucide-react'
+import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal, X } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -12,6 +12,7 @@ import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import type { MemberFilters, MemberSortType, MemberRoleFilter, MemberMatchFilter } from '@/application/hooks/use-bubble-members'
 import { useBubblePermissions } from '@/application/hooks/use-bubble-permissions'
 import { useReactions } from '@/application/hooks/use-reactions'
+import { useInviteLink } from '@/application/hooks/use-invite-link'
 import { BubbleHero } from '@/presentation/components/bubble/bubble-hero'
 import { BubbleQuickStats } from '@/presentation/components/bubble/bubble-quick-stats'
 import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sheet'
@@ -23,6 +24,7 @@ import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import { MemberGrid } from '@/presentation/components/bubble/member-grid'
 import { MemberListView } from '@/presentation/components/bubble/member-list-view'
 import { CommentSheetContainer } from '@/presentation/containers/comment-sheet-container'
+import { InviteLinkGenerator } from '@/presentation/components/bubble/invite-link-generator'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
@@ -46,6 +48,9 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const [memberViewMode, setMemberViewMode] = useState<'grid' | 'list'>('grid')
   const [rankingTargetType, setRankingTargetType] = useState<RankingTargetType>('restaurant')
   const [showInfoSheet, setShowInfoSheet] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const { inviteCode, generateLink, copyToClipboard, isLoading: inviteLoading } = useInviteLink(bubbleId)
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null)
 
   if (isLoading || !bubble) {
     return (
@@ -68,7 +73,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         tasteMatchPct={tasteMatch}
         onInfoClick={() => setShowInfoSheet(true)}
         onSettingsClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
-        onInviteClick={() => {/* invite modal */}}
+        onInviteClick={() => setShowInviteModal(true)}
       />
 
       {/* 퀵 통계 */}
@@ -143,6 +148,46 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         onClose={() => setShowInfoSheet(false)}
         bubble={bubble}
       />
+
+      {/* 초대 모달 */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setShowInviteModal(false)}
+            onKeyDown={() => {}}
+            role="presentation"
+          />
+          <div
+            className="relative w-full max-w-[400px] rounded-t-2xl p-5 pb-8 sm:rounded-2xl sm:pb-5"
+            style={{ backgroundColor: 'var(--bg-card)' }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>버블 초대</span>
+              <button type="button" onClick={() => setShowInviteModal(false)} className="icon-button">
+                <X size={20} style={{ color: 'var(--text-sub)' }} />
+              </button>
+            </div>
+            <InviteLinkGenerator
+              bubbleId={bubbleId}
+              inviteCode={inviteCode}
+              inviteExpiresAt={inviteExpiresAt}
+              onGenerate={async (expiry) => {
+                await generateLink(expiry)
+                if (expiry === 'unlimited') {
+                  setInviteExpiresAt(null)
+                } else {
+                  const days = expiry === '1d' ? 1 : expiry === '7d' ? 7 : 30
+                  setInviteExpiresAt(new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString())
+                }
+              }}
+              onCopy={copyToClipboard}
+              isLoading={inviteLoading}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

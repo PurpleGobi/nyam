@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import {
   Pencil, MessageSquare, ImageIcon, Shield, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
-  Thermometer, Upload, Download, Eraser, ScrollText, Info, LogOut, Trash2,
+  Thermometer, Upload, Download, Eraser, ScrollText, Info, LogOut, Trash2, Unlink,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
+import { bubbleRepo } from '@/shared/di/container'
 import { SettingsSection } from '@/presentation/components/settings/settings-section'
 import { SettingsCard } from '@/presentation/components/settings/settings-card'
 import { SettingsItem } from '@/presentation/components/settings/settings-item'
@@ -112,7 +113,7 @@ const VISIBILITY_FIELDS: { key: keyof VisibilityConfig; label: string }[] = [
 
 export function SettingsContainer() {
   const router = useRouter()
-  const { signOut } = useAuth()
+  const { signOut, user } = useAuth()
   const {
     settings, bubbleOverrides, isLoading,
     updatePrivacyProfile, updatePrivacyRecords,
@@ -123,6 +124,8 @@ export function SettingsContainer() {
     exportData, importData, clearCache,
   } = useSettings()
 
+  const [isCleaningManualShares, setIsCleaningManualShares] = useState(false)
+  const [manualShareCleanResult, setManualShareCleanResult] = useState<string | null>(null)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
   const [editField, setEditField] = useState<'nickname' | 'bio' | null>(null)
@@ -382,6 +385,24 @@ export function SettingsContainer() {
               icon={<Thermometer size={16} />}
               label="와인 온도 단위"
               rightElement={<NyamSelect options={TEMP_UNIT_OPTIONS} value={settings.prefTempUnit} onChange={(v) => updatePreference('pref_temp_unit', v)} />}
+            />
+            <SettingsItem
+              icon={<Unlink size={16} />}
+              label="수동 공유 항목 정리"
+              value={manualShareCleanResult ?? '규칙에 맞지 않는 수동 공유 삭제'}
+              showChevron
+              onPress={async () => {
+                if (isCleaningManualShares) return
+                setIsCleaningManualShares(true)
+                try {
+                  const count = await bubbleRepo.cleanManualShares(user?.id ?? '')
+                  setManualShareCleanResult(count > 0 ? `${count}건 삭제됨` : '정리할 항목 없음')
+                } catch {
+                  setManualShareCleanResult('정리 실패')
+                } finally {
+                  setIsCleaningManualShares(false)
+                }
+              }}
             />
           </SettingsCard>
         </SettingsSection>

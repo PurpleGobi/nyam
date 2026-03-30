@@ -24,6 +24,7 @@ import { useSettings } from '@/application/hooks/use-settings'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
+import { Toast } from '@/presentation/components/ui/toast'
 
 type RecordFlowStep = 'form' | 'success'
 
@@ -65,6 +66,7 @@ function RecordFlowInner() {
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [genreHint, setGenreHint] = useState<string | null>(null)
   const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
 
@@ -478,8 +480,15 @@ function RecordFlowInner() {
           }
         }
 
-        // 버블 자동 공유 동기화 (신규/수정 모두)
-        syncRecordToAllBubbles(savedRecord as unknown as { id: string } & Record<string, unknown>).catch(() => {})
+        // 버블 자동 공유 동기화 (신규/수정 모두) + 토스트
+        syncRecordToAllBubbles(savedRecord as unknown as { id: string } & Record<string, unknown>)
+          .then((syncResult) => {
+            if (syncResult.sharedTo.length > 0) {
+              const names = syncResult.sharedTo.map((b) => b.bubbleName).join(', ')
+              setToastMsg(`${names}에 공유됨`)
+            }
+          })
+          .catch(() => {})
 
         // 수정 완료 후 → 식당/와인 상세 페이지로 이동
         if (isEditMode) {
@@ -687,6 +696,8 @@ function RecordFlowInner() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+
+      <Toast message={toastMsg ?? ''} visible={!!toastMsg} onHide={() => setToastMsg(null)} />
     </div>
   )
 }

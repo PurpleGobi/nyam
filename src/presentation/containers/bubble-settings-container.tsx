@@ -8,7 +8,10 @@ import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
 import { useBubblePermissions } from '@/application/hooks/use-bubble-permissions'
-import type { Bubble, BubbleMemberRole } from '@/domain/entities/bubble'
+import { useRecordsWithTarget } from '@/application/hooks/use-records'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useAuth } from '@/presentation/providers/auth-provider'
+import type { Bubble, BubbleMemberRole, BubbleShareRule } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -21,13 +24,29 @@ interface BubbleSettingsContainerProps {
 
 export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: BubbleSettingsContainerProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const { permissions } = useBubblePermissions(bubble, myRole)
   const { updateSettings, deleteBubble, isLoading: settingsLoading } = useBubbleSettings(bubbleId)
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
+  const { records } = useRecordsWithTarget(user?.id ?? null)
+  const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
 
   const [pendingMembers, setPendingMembers] = useState<PendingMemberInfo[]>([])
   const [currentBubble, setCurrentBubble] = useState<Bubble>(bubble)
   const [pendingVersion, setPendingVersion] = useState(0)
+  const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
+  const [shareRuleLoaded, setShareRuleLoaded] = useState(false)
+
+  // 현재 멤버의 shareRule 로드
+  useEffect(() => {
+    if (!user) return
+    bubbleRepo.getMember(bubbleId, user.id).then((member) => {
+      if (member) {
+        setShareRule(member.shareRule)
+      }
+      setShareRuleLoaded(true)
+    })
+  }, [bubbleId, user])
 
   useEffect(() => {
     let cancelled = false
@@ -47,21 +66,18 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     return () => { cancelled = true }
   }, [bubbleId, pendingVersion])
 
-  // 권한 없으면 접근 차단
-  if (!permissions.canEditSettings) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[var(--bg)]">
-        <p className="text-[14px] text-[var(--text-sub)]">설정 권한이 없습니다</p>
-        <button type="button" onClick={onClose} className="text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
-          돌아가기
-        </button>
-      </div>
-    )
-  }
-
   const handleSave = async (updates: Partial<Bubble>) => {
     const updated = await updateSettings(updates)
     setCurrentBubble(updated)
+  }
+
+  const handleShareRuleChange = async (newRule: BubbleShareRule | null) => {
+    setShareRule(newRule)
+    await syncAllRecordsToBubble(
+      bubbleId,
+      newRule,
+      records as unknown as Array<{ id: string } & Record<string, unknown>>,
+    )
   }
 
   const handleDelete = async () => {
@@ -79,6 +95,9 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     setPendingVersion((v) => v + 1)
   }
 
+  // 모든 멤버에게 공유 규칙 편집 허용, owner가 아니면 버블 설정은 숨김
+  const isMemberOnly = !permissions.canEditSettings
+
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       {/* 헤더 */}
@@ -94,6 +113,9 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           pendingMembers={pendingMembers}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
+          shareRule={shareRuleLoaded ? shareRule : undefined}
+          onShareRuleChange={handleShareRuleChange}
+          memberOnly={isMemberOnly}
           stats={{
             weeklyRecordCount: 0,
             prevWeeklyRecordCount: 0,

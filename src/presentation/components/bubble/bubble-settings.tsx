@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Info, ShieldCheck, Eye, Users, BarChart3, AlertTriangle } from 'lucide-react'
-import type { Bubble, BubbleContentVisibility, BubbleJoinPolicy } from '@/domain/entities/bubble'
+import { Info, ShieldCheck, Eye, Users, BarChart3, AlertTriangle, Share2 } from 'lucide-react'
+import type { Bubble, BubbleContentVisibility, BubbleJoinPolicy, BubbleShareRule } from '@/domain/entities/bubble'
 import { JoinPolicySelector } from '@/presentation/components/bubble/join-policy-selector'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
+import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
 
 interface BubbleSettingsProps {
   bubble: Bubble
@@ -18,6 +19,11 @@ interface BubbleSettingsProps {
   onApproveJoin: (userId: string) => void
   onRejectJoin: (userId: string) => void
   onViewAllPending?: () => void
+  // 공유 규칙
+  shareRule?: BubbleShareRule | null
+  onShareRuleChange?: (rule: BubbleShareRule | null) => void
+  // 멤버 전용 모드 (owner 설정 섹션 숨김)
+  memberOnly?: boolean
   // 통계
   stats: {
     weeklyRecordCount: number
@@ -29,6 +35,7 @@ interface BubbleSettingsProps {
 export function BubbleSettings({
   bubble, onSave, onDelete, isLoading,
   pendingMembers, onApproveJoin, onRejectJoin, onViewAllPending,
+  shareRule, onShareRuleChange, memberOnly,
   stats,
 }: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
@@ -75,6 +82,8 @@ export function BubbleSettings({
 
   return (
     <div className="flex flex-col gap-6 px-4 py-4">
+      {!memberOnly && (
+      <>
       {/* 1. 기본 정보 */}
       <Section title="기본 정보" icon={<Info size={16} style={{ color: 'var(--accent-social)' }} />}>
         <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
@@ -157,8 +166,26 @@ export function BubbleSettings({
         <ToggleRow label="댓글 허용" value={allowComments} onChange={setAllowComments} />
         <ToggleRow label="외부 공유 허용" value={allowExternalShare} onChange={setAllowExternalShare} />
       </Section>
+      </>
+      )}
 
-      {/* 4. 멤버 관리 */}
+      {/* 4. 내 공유 규칙 */}
+      {shareRule !== undefined && onShareRuleChange && (
+        <Section title="내 공유 규칙" icon={<Share2 size={16} style={{ color: 'var(--accent-social)' }} />}>
+          <ShareRuleEditor
+            value={shareRule}
+            onChange={onShareRuleChange}
+            focusType={bubble.focusType}
+          />
+          <p className="text-[11px] text-[var(--text-hint)]">
+            규칙을 변경하면 기존 기록도 자동으로 재평가됩니다.
+          </p>
+        </Section>
+      )}
+
+      {!memberOnly && (
+      <>
+      {/* 5. 멤버 관리 */}
       <Section title="멤버 관리" icon={<Users size={16} style={{ color: 'var(--accent-social)' }} />}>
         <PendingApprovalList
           members={pendingMembers}
@@ -169,7 +196,7 @@ export function BubbleSettings({
         />
       </Section>
 
-      {/* 5. 버블 통계 */}
+      {/* 6. 버블 통계 */}
       <Section title="버블 통계" icon={<BarChart3 size={16} style={{ color: 'var(--accent-social)' }} />}>
         <BubbleStatsCard
           recordCount={bubble.recordCount}
@@ -192,7 +219,7 @@ export function BubbleSettings({
         {isLoading ? '저장 중...' : '설정 저장'}
       </button>
 
-      {/* 6. 위험 영역 */}
+      {/* 7. 위험 영역 */}
       <Section title="위험 영역" icon={<AlertTriangle size={16} style={{ color: 'var(--negative)' }} />}>
         <button
           type="button"
@@ -211,6 +238,8 @@ export function BubbleSettings({
           onCancel={() => setShowDanger(false)}
           isLoading={isLoading}
         />
+      )}
+      </>
       )}
     </div>
   )

@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { UtensilsCrossed, Wine, Heart, MessageCircle, ArrowRight } from 'lucide-react'
+import { UtensilsCrossed, Wine, Heart, MessageCircle, ArrowRight, Share2 } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { PlaceBadge } from '@/presentation/components/home/place-badge'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
@@ -18,6 +18,12 @@ export interface SourceInfo {
 export interface BadgeInfo {
   type: BadgeType
   label: string
+}
+
+export interface SharedBubbleChip {
+  bubbleId: string
+  bubbleName: string
+  bubbleIcon: string | null
 }
 
 export interface RecordCardProps {
@@ -36,6 +42,8 @@ export interface RecordCardProps {
   likeCount?: number
   commentCount?: number
   isNotMine?: boolean
+  sharedBubbles?: SharedBubbleChip[]
+  onShareClick?: () => void
 }
 
 export function RecordCard({
@@ -53,6 +61,8 @@ export function RecordCard({
   likeCount,
   commentCount,
   isNotMine,
+  sharedBubbles,
+  onShareClick,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -153,8 +163,33 @@ export function RecordCard({
           </>
         )}
 
+        {/* 버블 스티커 + 공유 버튼 */}
+        {(sharedBubbles && sharedBubbles.length > 0 || onShareClick) && (
+          <div className="mt-auto flex items-center gap-1.5 pt-1.5">
+            {sharedBubbles?.map((b) => (
+              <span
+                key={b.bubbleId}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+              >
+                {b.bubbleName}
+              </span>
+            ))}
+            {onShareClick && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onShareClick() }}
+                className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors"
+                style={{ color: 'var(--text-hint)', backgroundColor: 'var(--bg-elevated)' }}
+              >
+                <Share2 size={10} /> 공유
+              </button>
+            )}
+          </div>
+        )}
+
         {(likeCount != null || commentCount != null) && (
-          <div className="mt-auto flex items-center gap-2.5 pt-1.5 text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          <div className={`flex items-center gap-2.5 ${sharedBubbles && sharedBubbles.length > 0 ? 'pt-1' : 'mt-auto pt-1.5'} text-[11px]`} style={{ color: 'var(--text-hint)' }}>
             {likeCount != null && (
               <span className="flex items-center gap-1">
                 <Heart size={12} /> {likeCount}
