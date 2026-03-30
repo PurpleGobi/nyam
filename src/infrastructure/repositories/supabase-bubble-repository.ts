@@ -267,42 +267,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }): Promise<{ data: BubbleShare[]; total: number }> {
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
-    const needsRecordFilter = !!(options?.targetType || options?.minSatisfaction || options?.sortBy === 'score')
 
-    if (needsRecordFilter) {
-      // records JOIN으로 targetType/minSatisfaction 서버측 필터링
-      let query = this.supabase
-        .from('bubble_shares')
-        .select('*, records!inner(target_type, avg_satisfaction)', { count: 'exact' })
-        .eq('bubble_id', bubbleId)
-
-      if (options?.sharedBy) query = query.eq('shared_by', options.sharedBy)
-
-      if (options?.period && options.period !== 'all') {
-        const msMap = { week: 7 * 86400000, month: 30 * 86400000, '3months': 90 * 86400000 }
-        const cutoff = new Date(Date.now() - msMap[options.period]).toISOString()
-        query = query.gte('shared_at', cutoff)
-      }
-
-      if (options?.targetType) {
-        query = query.eq('records.target_type', options.targetType)
-      }
-      if (options?.minSatisfaction) {
-        query = query.gte('records.satisfaction', options.minSatisfaction)
-      }
-
-      switch (options?.sortBy) {
-        case 'score': query = query.order('shared_at', { ascending: false }); break
-        case 'member': query = query.order('shared_by', { ascending: true }); break
-        default: query = query.order('shared_at', { ascending: false })
-      }
-
-      query = query.range(offset, offset + limit - 1)
-      const { data, count } = await query
-      return { data: (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>)), total: count ?? 0 }
-    }
-
-    // 기본: records JOIN 불필요 시 단순 조회
     let query = this.supabase.from('bubble_shares').select('*', { count: 'exact' })
       .eq('bubble_id', bubbleId)
 
@@ -322,6 +287,103 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     query = query.range(offset, offset + limit - 1)
     const { data, count } = await query
     return { data: (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>)), total: count ?? 0 }
+  }
+
+  async getEnrichedShares(bubbleId: string, options?: {
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleFeedItem[]; total: number }> {
+    const limit = options?.limit ?? 50
+    const offset = options?.offset ?? 0
+
+    // 1) shares 가져오기
+    const { data: shareRows, count } = await this.supabase
+      .from('bubble_shares')
+      .select('*', { count: 'exact' })
+      .eq('bubble_id', bubbleId)
+      .order('shared_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    const shares = ((shareRows ?? []) as unknown as Record<string, unknown>[]).map((r) => toBubbleShare(r))
+    if (shares.length === 0) return { data: [], total: count ?? 0 }
+
+    // 2) records batch 조회 (comment는 visits JSONB 안에 있음)
+    const recordIds = [...new Set(shares.map((s) => s.recordId))]
+    const { data: recordRows } = await this.supabase
+      .from('records')
+      .select('id, target_id, target_type, avg_satisfaction, visits')
+      .in('id', recordIds)
+    const recordMap: Record<string, Record<string, unknown>> = {}
+    for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
+      recordMap[r.id as string] = r
+    }
+
+    // 3) authors batch 조회
+    const authorIds = [...new Set(shares.map((s) => s.sharedBy))]
+    const { data: userRows } = await this.supabase
+      .from('users')
+      .select('id, nickname, avatar_url, avatar_color, total_xp')
+      .in('id', authorIds)
+    const authorMap: Record<string, Record<string, unknown>> = {}
+    for (const u of ((userRows ?? []) as unknown as Record<string, unknown>[])) {
+      authorMap[u.id as string] = u
+    }
+
+    // 4) target 이름 batch 조회
+    const restaurantIds = [...new Set(
+      shares
+        .map((s) => recordMap[s.recordId])
+        .filter((r) => r && r.target_type === 'restaurant')
+        .map((r) => r.target_id as string),
+    )]
+    const wineIds = [...new Set(
+      shares
+        .map((s) => recordMap[s.recordId])
+        .filter((r) => r && r.target_type === 'wine')
+        .map((r) => r.target_id as string),
+    )]
+    const nameMap: Record<string, string> = {}
+
+    if (restaurantIds.length > 0) {
+      const { data: restData } = await this.supabase.from('restaurants').select('id, name').in('id', restaurantIds)
+      for (const r of ((restData ?? []) as unknown as Record<string, unknown>[])) {
+        nameMap[r.id as string] = r.name as string
+      }
+    }
+    if (wineIds.length > 0) {
+      const { data: wineData } = await this.supabase.from('wines').select('id, name').in('id', wineIds)
+      for (const w of ((wineData ?? []) as unknown as Record<string, unknown>[])) {
+        nameMap[w.id as string] = w.name as string
+      }
+    }
+
+    // 5) 조합
+    const items: BubbleFeedItem[] = shares.map((s) => {
+      const rec = recordMap[s.recordId]
+      const author = authorMap[s.sharedBy]
+      const targetId = (rec?.target_id as string) ?? ''
+      const targetType = ((rec?.target_type as string) ?? 'restaurant') as 'restaurant' | 'wine'
+      const visits = (rec?.visits as Array<Record<string, unknown>>) ?? []
+      const latestComment = (visits[0]?.comment as string) ?? null
+
+      return {
+        id: s.id,
+        recordId: s.recordId,
+        bubbleId: s.bubbleId,
+        sharedBy: s.sharedBy,
+        sharedAt: s.sharedAt,
+        targetId,
+        targetType,
+        targetName: nameMap[targetId] ?? '',
+        satisfaction: (rec?.avg_satisfaction as number) ?? null,
+        comment: latestComment,
+        authorNickname: (author?.nickname as string) ?? '',
+        authorAvatar: (author?.avatar_url as string) ?? null,
+        authorAvatarColor: (author?.avatar_color as string) ?? null,
+      }
+    })
+
+    return { data: items, total: count ?? 0 }
   }
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare> {

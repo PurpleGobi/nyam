@@ -208,6 +208,7 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     case 'contains': return String(val ?? '').toLowerCase().includes(String(value).toLowerCase())
     case 'not_contains': return !String(val ?? '').toLowerCase().includes(String(value).toLowerCase())
     case 'gte': return Number(val) >= Number(value)
+    case 'lte': return Number(val) <= Number(value)
     case 'lt': return Number(val) < Number(value)
     default: return true
   }

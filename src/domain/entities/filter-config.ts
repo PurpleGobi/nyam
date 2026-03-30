@@ -262,10 +262,9 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '가격대',
     type: 'select',
     options: [
-      { value: '1', label: '~2만' },
-      { value: '2', label: '2~5만' },
-      { value: '3', label: '5~10만' },
-      { value: '4', label: '10만+' },
+      { value: '1', label: '저가 ₩' },
+      { value: '2', label: '중간 ₩₩' },
+      { value: '3', label: '고가 ₩₩₩' },
     ],
   },
 ]
@@ -511,14 +510,8 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   },
   {
     key: 'purchase_price',
-    label: '가격대',
-    type: 'select',
-    options: [
-      { value: '30000', label: '~3만' },
-      { value: '70000', label: '3~7만' },
-      { value: '150000', label: '7~15만' },
-      { value: '150001', label: '15만+' },
-    ],
+    label: '가격',
+    type: 'range',
   },
   {
     key: 'acidity_level',

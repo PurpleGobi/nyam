@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import type { GaugeChannel } from '@/shared/utils/gauge-color'
 
 interface QuadrantRefDotProps {
@@ -10,19 +10,21 @@ interface QuadrantRefDotProps {
   name: string
   score: number
   channel?: GaugeChannel
+  isActive?: boolean
+  onSelect?: () => void
 }
 
 const DOT_SIZE = 20
 
-export function QuadrantRefDot({ x, y, satisfaction, name }: QuadrantRefDotProps) {
-  const [active, setActive] = useState(false)
+export function QuadrantRefDot({ x, y, satisfaction, name, isActive, onSelect }: QuadrantRefDotProps) {
+  const active = isActive ?? false
   const totalScore = satisfaction
   const baseOpacity = 0.15 + (totalScore / 100) * 0.45
 
   const handleTap = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
-    setActive((prev) => !prev)
-  }, [])
+    onSelect?.()
+  }, [onSelect])
 
   return (
     <div
@@ -31,16 +33,14 @@ export function QuadrantRefDot({ x, y, satisfaction, name }: QuadrantRefDotProps
         left: `${x}%`,
         bottom: `${y}%`,
         transform: 'translate(-50%, 50%)',
-        pointerEvents: 'auto',
+        pointerEvents: 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         zIndex: active ? 20 : 1,
-        cursor: 'pointer',
       }}
-      onPointerDown={handleTap}
     >
-      {/* 참조 dot — 그레이스케일, 탭 시 진해짐 */}
+      {/* 참조 dot — 클릭 영역을 dot에만 한정 */}
       <div
         style={{
           width: `${DOT_SIZE}px`,
@@ -51,7 +51,10 @@ export function QuadrantRefDot({ x, y, satisfaction, name }: QuadrantRefDotProps
             ? '0 0 8px 3px rgba(120, 113, 108, 0.4)'
             : `0 0 6px 2px rgba(120, 113, 108, ${0.05 + (totalScore / 100) * 0.15})`,
           transition: 'background-color 0.15s, box-shadow 0.15s',
+          pointerEvents: 'auto',
+          cursor: 'pointer',
         }}
+        onPointerDown={handleTap}
       />
       <span
         style={{
@@ -65,6 +68,7 @@ export function QuadrantRefDot({ x, y, satisfaction, name }: QuadrantRefDotProps
           textOverflow: 'ellipsis',
           opacity: active ? 1 : 0.5,
           transition: 'all 0.15s',
+          pointerEvents: 'none',
         }}
       >
         {name}

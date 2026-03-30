@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
+import { Info } from 'lucide-react'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 import { QuadrantRefDot } from '@/presentation/components/record/quadrant-ref-dot'
 
@@ -25,10 +26,10 @@ const DOT_SIZE = 20
 
 const AXIS_LABELS = {
   restaurant: {
-    xLabel: '음식\n퀄리티',
-    yLabel: '경험\n가치',
-    xAxis: '음식 퀄리티 →',
-    yAxis: '경험 가치 →',
+    xLabel: '맛,음식\n완성도',
+    yLabel: '경험\n만족도',
+    xAxis: '맛,음식 완성도 →',
+    yAxis: '경험 만족도 →',
   },
   wine: {
     xLabel: '구조\n완성도',
@@ -62,6 +63,39 @@ const PRICE_LEVELS = [
 export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false }: QuadrantInputProps) {
   const quadrantRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [selectedRefIdx, setSelectedRefIdx] = useState<number | null>(null)
+  const [showLabels, setShowLabels] = useState(false)
+
+  // 겹친 점 순환: 같은 위치의 점들을 찾아 다음 점으로 이동
+  const OVERLAP_THRESHOLD = 5 // %단위, 이 범위 내면 겹친 것으로 판단
+  const handleRefSelect = useCallback((tappedIdx: number) => {
+    const tapped = referencePoints[tappedIdx]
+    if (!tapped) return
+
+    // 같은 위치에 겹친 점들의 인덱스 목록
+    const overlapping = referencePoints
+      .map((p, i) => i)
+      .filter((i) => {
+        const p = referencePoints[i]
+        return Math.abs(p.x - tapped.x) < OVERLAP_THRESHOLD && Math.abs(p.y - tapped.y) < OVERLAP_THRESHOLD
+      })
+
+    if (overlapping.length <= 1) {
+      // 겹침 없음 — 토글
+      setSelectedRefIdx(selectedRefIdx === tappedIdx ? null : tappedIdx)
+    } else {
+      // 겹침 있음 — 순환
+      const currentPosInGroup = selectedRefIdx !== null ? overlapping.indexOf(selectedRefIdx) : -1
+      const nextPosInGroup = (currentPosInGroup + 1) % overlapping.length
+      const nextIdx = overlapping[nextPosInGroup]
+      // 한 바퀴 돌아서 다시 처음이고 이미 선택 중이면 해제
+      if (nextIdx === selectedRefIdx) {
+        setSelectedRefIdx(null)
+      } else {
+        setSelectedRefIdx(nextIdx)
+      }
+    }
+  }, [referencePoints, selectedRefIdx])
 
   const labels = AXIS_LABELS[type]
   const qLabels = QUADRANT_LABELS[type]
@@ -147,12 +181,12 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             <>
               <div style={{ position: 'absolute', top: '30%', left: '44px', zIndex: 40 }}>
                 <HintBubble tailSide="left" accentColor="var(--accent-food)" bgColor="var(--accent-food-light)">
-                  {type === 'wine' ? '구조 · 완성도' : '맛 만족도'}<br />바를 터치
+                  {type === 'wine' ? '구조 · 완성도' : '맛,음식 완성도'}<br />바를 터치
                 </HintBubble>
               </div>
               <div style={{ position: 'absolute', top: '55%', left: '95px', zIndex: 40 }}>
                 <HintBubble tailSide="left" accentColor="var(--accent-wine)" bgColor="var(--accent-wine-light)">
-                  {type === 'wine' ? '즐거움 · 감성' : '경험 가치'}<br />바를 터치
+                  {type === 'wine' ? '즐거움 · 감성' : '경험 만족도'}<br />바를 터치
                 </HintBubble>
               </div>
             </>
@@ -172,6 +206,32 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               사분면을 터치하여<br />만족도를 표시해주세요
             </HintBubble>
           )}
+          {/* info 토글 버튼 — 사분면 우측 상단 바깥 */}
+          <button
+            type="button"
+            onClick={() => setShowLabels((v) => !v)}
+            style={{
+              position: 'absolute',
+              top: '-28px',
+              right: '0px',
+              zIndex: 25,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              border: 'none',
+              backgroundColor: showLabels ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'var(--bg-elevated)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              opacity: showLabels ? 1 : 0.7,
+            }}
+          >
+            <Info size={11} style={{ color: showLabels ? '#fff' : 'var(--text-sub)' }} />
+            <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? '#fff' : 'var(--text-sub)' }}>
+              가이드
+            </span>
+          </button>
           {/* 사분면 박스 */}
           <div
             ref={quadrantRef}
@@ -191,11 +251,15 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           >
-            {/* 사분면 영역 라벨 — 각 사분면 중앙 */}
-            <QuadrantLabel quadrant="top-left" text={qLabels.topLeft} />
-            <QuadrantLabel quadrant="top-right" text={qLabels.topRight} />
-            <QuadrantLabel quadrant="bottom-left" text={qLabels.bottomLeft} />
-            <QuadrantLabel quadrant="bottom-right" text={qLabels.bottomRight} />
+            {/* 사분면 영역 라벨 — i 버튼으로 토글 */}
+            {showLabels && (
+              <>
+                <QuadrantLabel quadrant="top-left" text={qLabels.topLeft} />
+                <QuadrantLabel quadrant="top-right" text={qLabels.topRight} />
+                <QuadrantLabel quadrant="bottom-left" text={qLabels.bottomLeft} />
+                <QuadrantLabel quadrant="bottom-right" text={qLabels.bottomRight} />
+              </>
+            )}
 
             {/* 십자선 */}
             <div
@@ -231,6 +295,8 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 name={point.name}
                 score={point.score}
                 channel={type === 'wine' ? 'wine-total' : 'total'}
+                isActive={selectedRefIdx === i}
+                onSelect={() => handleRefSelect(i)}
               />
             ))}
 
@@ -266,14 +332,15 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
 
 /* ── 사분면 영역 라벨 ── */
 
-const QUADRANT_COLORS: Record<string, string> = {
-  'top-right':    '#7A9BAE',   // 통일 — 차분한 블루
-  'top-left':     '#7A9BAE',   // 통일 — 차분한 블루
-  'bottom-right': '#7A9BAE',   // 통일 — 차분한 블루
-  'bottom-left':  '#7A9BAE',   // 통일 — 차분한 블루
+const QUADRANT_STYLES: Record<string, { color: string; bg: string }> = {
+  'top-right':    { color: '#3A7D5C', bg: 'rgba(58, 125, 92, 0.08)' },   // 녹색 — 최고
+  'top-left':     { color: '#7A6C3A', bg: 'rgba(122, 108, 58, 0.08)' },  // 황갈 — 경험↑ 맛↓
+  'bottom-right': { color: '#4A6FA5', bg: 'rgba(74, 111, 165, 0.08)' },  // 청색 — 맛↑ 경험↓
+  'bottom-left':  { color: '#9E6B6B', bg: 'rgba(158, 107, 107, 0.08)' }, // 적갈 — 아쉬움
 }
 
 function QuadrantLabel({ quadrant, text }: { quadrant: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; text: string }) {
+  const style = QUADRANT_STYLES[quadrant]
   const base: React.CSSProperties = {
     position: 'absolute',
     width: '50%',
@@ -282,15 +349,16 @@ function QuadrantLabel({ quadrant, text }: { quadrant: 'top-left' | 'top-right' 
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 700,
     lineHeight: 1.4,
-    color: QUADRANT_COLORS[quadrant],
-    opacity: 0.45,
+    color: style.color,
+    backgroundColor: style.bg,
     whiteSpace: 'pre-line',
     textAlign: 'center',
     pointerEvents: 'none',
     zIndex: 1,
     padding: '8px',
+    transition: 'opacity 0.2s',
   }
 
   if (quadrant === 'top-left') { base.top = 0; base.left = 0 }

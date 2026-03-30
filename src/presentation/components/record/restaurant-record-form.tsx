@@ -157,7 +157,7 @@ export function RestaurantRecordForm({
   }, [isValid, quadrant, scene, comment, companions, privateNote, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine, selectedGenre])
 
   return (
-    <div className="flex flex-col pb-24">
+    <div className="flex flex-col overflow-x-hidden pb-24">
       {/* AI 인식 결과 헤더 */}
       <div className="flex items-center gap-3 px-4 py-3">
         <div
@@ -211,6 +211,9 @@ export function RestaurantRecordForm({
             color: 'var(--text)',
             backgroundColor: 'var(--bg-card)',
             outline: 'none',
+            boxSizing: 'border-box',
+            maxWidth: '100%',
+            minWidth: 0,
           }}
         />
       </section>

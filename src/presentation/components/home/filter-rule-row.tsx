@@ -31,8 +31,8 @@ const TEXT_OPERATORS = [
 ]
 
 const RANGE_OPERATORS = [
-  { value: 'gte', label: '≥' },
-  { value: 'lt', label: '<' },
+  { value: 'gte', label: '이상' },
+  { value: 'lt', label: '미만' },
 ]
 
 function getOperatorsForType(type: FilterAttributeType) {
@@ -212,6 +212,19 @@ export function FilterRuleRow({
           accentColor={accentColor}
           autoWidth
         />
+      ) : selectedAttr?.type === 'range' ? (
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={String(rule.value ?? '')}
+            onChange={(e) => onUpdate(index, { ...rule, value: e.target.value ? Number(e.target.value) : '' })}
+            placeholder="금액"
+            className="h-[26px] w-[80px] rounded px-2 text-right text-[12px] outline-none"
+            style={{ backgroundColor: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
+          />
+          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>원</span>
+        </div>
       ) : (
         <input
           type="text"

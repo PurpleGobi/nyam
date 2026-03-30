@@ -359,7 +359,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         <FabActions
           variant="food"
           onEdit={handleEdit}
-          onShare={handleShare}
           onDelete={() => setShowDeleteConfirm(true)}
         />
       )}

@@ -395,6 +395,7 @@ html, body, * {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .content-auth {
@@ -585,7 +586,7 @@ html, body, * {
 
 .fab-back {
   position: fixed;
-  bottom: 34px;
+  bottom: 16px;
   left: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 44px;
@@ -610,7 +611,7 @@ html, body, * {
 
 .fab-add {
   position: fixed;
-  bottom: 28px;
+  bottom: 10px;
   right: max(16px, calc(50% - 960px / 2 + 16px));
   z-index: 85;
   width: 56px;
@@ -635,7 +636,7 @@ html, body, * {
 
 .fab-actions {
   position: fixed;
-  bottom: 38px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 85;
@@ -1445,6 +1446,9 @@ html, body, * {
 
 .nyam-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--bg);

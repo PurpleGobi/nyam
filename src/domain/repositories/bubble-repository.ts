@@ -112,6 +112,10 @@ export interface BubbleRepository {
     limit?: number
     offset?: number
   }): Promise<{ data: BubbleShare[]; total: number }>
+  getEnrichedShares(bubbleId: string, options?: {
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleFeedItem[]; total: number }>
   addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare>
   removeShare(shareId: string): Promise<void>
 

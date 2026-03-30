@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { BubbleShare, BubbleContentVisibility, BubbleMemberRole } from '@/domain/entities/bubble'
+import type { BubbleContentVisibility, BubbleMemberRole } from '@/domain/entities/bubble'
+import type { BubbleFeedItem } from '@/domain/repositories/bubble-repository'
 import { bubbleRepo } from '@/shared/di/container'
 
 export type FeedTargetFilter = 'all' | 'restaurant' | 'wine'
@@ -16,7 +17,12 @@ export interface FeedFilters {
   memberId: string | null
 }
 
-export interface FeedShareEnriched extends BubbleShare {
+export interface FeedShareEnriched {
+  id: string
+  recordId: string
+  bubbleId: string
+  sharedBy: string
+  sharedAt: string
   authorName?: string
   authorAvatar?: string | null
   authorAvatarColor?: string | null
@@ -36,6 +42,23 @@ const DEFAULT_FILTERS: FeedFilters = {
   memberId: null,
 }
 
+function toEnriched(item: BubbleFeedItem): FeedShareEnriched {
+  return {
+    id: item.id,
+    recordId: item.recordId,
+    bubbleId: item.bubbleId,
+    sharedBy: item.sharedBy,
+    sharedAt: item.sharedAt,
+    authorName: item.authorNickname,
+    authorAvatar: item.authorAvatar,
+    authorAvatarColor: item.authorAvatarColor,
+    targetName: item.targetName,
+    targetType: item.targetType,
+    satisfaction: item.satisfaction,
+    comment: item.comment,
+  }
+}
+
 export function useBubbleFeed(
   bubbleId: string,
   myRole: BubbleMemberRole | null,
@@ -49,8 +72,8 @@ export function useBubbleFeed(
   const fetchShares = useCallback(async () => {
     setIsLoading(true)
     try {
-      const result = await bubbleRepo.getShares(bubbleId, { limit: 50 })
-      setShares(result.data as FeedShareEnriched[])
+      const result = await bubbleRepo.getEnrichedShares(bubbleId, { limit: 50 })
+      setShares(result.data.map(toEnriched))
     } finally {
       setIsLoading(false)
     }
