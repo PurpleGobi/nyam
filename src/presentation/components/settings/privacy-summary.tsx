@@ -21,10 +21,18 @@ export function PrivacySummary({ privacyProfile, privacyRecords }: PrivacySummar
   const text = SUMMARY_MAP[key] ?? ''
 
   return (
-    <div className="px-4 py-2.5">
-      <p style={{ fontSize: '12px', color: 'var(--text-hint)', lineHeight: 1.5 }}>
-        {text}
-      </p>
+    <div
+      style={{
+        marginTop: '12px',
+        padding: '10px 12px',
+        background: 'var(--bg)',
+        borderRadius: '8px',
+        fontSize: '12px',
+        color: 'var(--text-sub)',
+        lineHeight: 1.5,
+      }}
+    >
+      {text}
     </div>
   )
 }

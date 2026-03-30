@@ -3,7 +3,6 @@
 import { Info, Settings, UserPlus, Users, Share2, Sparkles } from 'lucide-react'
 import type { Bubble, BubbleMemberRole } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
-import { BubbleActivityRing } from '@/presentation/components/bubble/bubble-activity-ring'
 
 interface BubbleHeroProps {
   bubble: Bubble
@@ -25,10 +24,6 @@ export function BubbleHero({
   onInviteClick,
 }: BubbleHeroProps) {
   const isOwner = myRole === 'owner'
-  const activityPct = bubble.prevWeeklyRecordCount > 0
-    ? Math.min((bubble.weeklyRecordCount / bubble.prevWeeklyRecordCount) * 100, 100)
-    : bubble.weeklyRecordCount > 0 ? 80 : 0
-
   return (
     <div
       className="relative overflow-hidden"
@@ -43,15 +38,13 @@ export function BubbleHero({
       />
 
       <div className="flex flex-col items-center gap-3 px-4 pb-5 pt-6">
-        {/* 아이콘 + 활동 링 (더 크게) */}
-        <BubbleActivityRing progress={activityPct} size={72} strokeWidth={3}>
-          <div
-            className="flex h-full w-full items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-          >
-            <BubbleIcon icon={bubble.icon} size={32} />
-          </div>
-        </BubbleActivityRing>
+        {/* 아이콘 */}
+        <div
+          className="flex h-[64px] w-[64px] items-center justify-center rounded-2xl"
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+        >
+          <BubbleIcon icon={bubble.icon} size={32} />
+        </div>
 
         {/* 이름 + 액션 버튼 */}
         <div className="flex items-center gap-2">

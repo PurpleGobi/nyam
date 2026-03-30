@@ -1,21 +1,28 @@
 'use client'
 
 interface SettingsSectionProps {
-  icon: React.ReactNode
   title: string
   children: React.ReactNode
+  /** @deprecated Use without icon */
+  icon?: React.ReactNode
 }
 
-export function SettingsSection({ icon, title, children }: SettingsSectionProps) {
+export function SettingsSection({ title, children }: SettingsSectionProps) {
   return (
-    <div>
-      <div className="mb-2 flex items-center gap-2 px-1">
-        <span style={{ color: 'var(--text-sub)' }}>{icon}</span>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{title}</span>
+    <div style={{ padding: '20px 20px 8px' }}>
+      <div
+        style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          color: 'var(--text-sub)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          paddingBottom: '6px',
+        }}
+      >
+        {title}
       </div>
-      <div className="card overflow-hidden rounded-xl">
-        {children}
-      </div>
+      {children}
     </div>
   )
 }

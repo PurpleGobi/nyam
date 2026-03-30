@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import { SettingsCard } from './settings-card'
 
 interface PrivacyLayerProps {
   visible: boolean
@@ -23,34 +24,36 @@ export function PrivacyLayer({ visible, dotColor, title, note, children }: Priva
   return (
     <div
       style={{
-        maxHeight: visible ? `${contentHeight + 80}px` : '0px',
+        maxHeight: visible ? `${contentHeight + 100}px` : '0px',
         opacity: visible ? 1 : 0,
         overflow: 'hidden',
         transition: visible
           ? 'max-height 0.35s ease, opacity 0.35s ease'
           : 'max-height 0.25s ease, opacity 0.25s ease',
+        pointerEvents: visible ? 'auto' : 'none',
+        padding: visible ? '0 20px 0' : '0 20px',
       }}
     >
-      <div ref={contentRef} style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-3 px-4 py-3">
+      <div ref={contentRef}>
+        <div className="flex items-center gap-2" style={{ padding: '10px 16px 6px' }}>
           <div
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: dotColor }}
+            className="shrink-0 rounded-full"
+            style={{ width: '8px', height: '8px', backgroundColor: dotColor }}
           />
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-sub)' }}>
             {title}
           </span>
         </div>
 
+        <SettingsCard>
+          {children}
+        </SettingsCard>
+
         {note && (
-          <p className="px-4 pb-2" style={{ fontSize: '11px', fontStyle: 'italic', color: 'var(--text-hint)' }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-hint)', lineHeight: 1.5, padding: '6px 4px 0' }}>
             {note}
           </p>
         )}
-
-        <div className="px-4 pb-3">
-          {children}
-        </div>
       </div>
     </div>
   )

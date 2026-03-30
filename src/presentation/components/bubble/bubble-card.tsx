@@ -3,7 +3,6 @@
 import { Users, Lock, Globe, Flame, Clock } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
-import { BubbleActivityRing } from '@/presentation/components/bubble/bubble-activity-ring'
 
 interface BubbleCardProps {
   bubble: Bubble
@@ -24,11 +23,6 @@ export function BubbleCard({
   lastActivityText = null,
   onClick,
 }: BubbleCardProps) {
-  // 주간 활동 비율 (이전 대비)
-  const activityPct = bubble.prevWeeklyRecordCount > 0
-    ? Math.min((bubble.weeklyRecordCount / Math.max(bubble.prevWeeklyRecordCount, 1)) * 100, 100)
-    : bubble.weeklyRecordCount > 0 ? 80 : 0
-
   const isHot = bubble.weeklyRecordCount > 0 &&
     bubble.prevWeeklyRecordCount > 0 &&
     bubble.weeklyRecordCount > bubble.prevWeeklyRecordCount * 1.5
@@ -44,15 +38,13 @@ export function BubbleCard({
     >
       {/* 상단: 아이콘 + 이름 + 메타 */}
       <div className="flex items-start gap-3">
-        {/* 아이콘 + 활동 링 */}
-        <BubbleActivityRing progress={activityPct} size={48} strokeWidth={2.5}>
-          <div
-            className="flex h-full w-full items-center justify-center rounded-xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-          >
-            <BubbleIcon icon={bubble.icon} size={20} />
-          </div>
-        </BubbleActivityRing>
+        {/* 아이콘 */}
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+        >
+          <BubbleIcon icon={bubble.icon} size={20} />
+        </div>
 
         {/* 이름 + 뱃지 행 */}
         <div className="min-w-0 flex-1">

@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Pencil, MessageSquare, ImageIcon, Shield, Bell, Trophy, CircleDot, UserPlus,
+  Pencil, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
-  Thermometer, Upload, Download, Eraser, ScrollText, Info, LogOut, Trash2, Unlink,
+  Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
+  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
@@ -33,8 +34,8 @@ const PRIVACY_PROFILE_OPTIONS = [
 ]
 
 const PRIVACY_RECORDS_OPTIONS = [
-  { value: 'all', label: '모든 기록' },
   { value: 'shared_only', label: '공유한 기록만' },
+  { value: 'all', label: '모든 기록' },
 ]
 
 const LANDING_OPTIONS = [
@@ -101,14 +102,28 @@ const TEMP_UNIT_OPTIONS = [
   { value: 'F', label: '\u00B0F' },
 ]
 
-const VISIBILITY_FIELDS: { key: keyof VisibilityConfig; label: string }[] = [
-  { key: 'score', label: '점수' },
-  { key: 'comment', label: '코멘트' },
-  { key: 'photos', label: '사진' },
-  { key: 'level', label: '레벨' },
-  { key: 'quadrant', label: '사분면' },
-  { key: 'bubbles', label: '버블 목록' },
-  { key: 'price', label: '가격' },
+const VISIBILITY_ICONS: Record<keyof VisibilityConfig, React.ReactNode> = {
+  score: <Star size={18} />,
+  comment: <MessageCircle size={18} />,
+  photos: <ImageIcon size={18} />,
+  level: <Award size={18} />,
+  quadrant: <ScatterChart size={18} />,
+  bubbles: <CircleDot size={18} />,
+  price: <Wallet size={18} />,
+}
+
+const VISIBILITY_LABELS: Record<keyof VisibilityConfig, string> = {
+  score: '점수',
+  comment: '한줄평',
+  photos: '사진',
+  level: '레벨 뱃지',
+  quadrant: '사분면',
+  bubbles: '소속 버블',
+  price: '가격 정보',
+}
+
+const VISIBILITY_KEYS: (keyof VisibilityConfig)[] = [
+  'score', 'comment', 'photos', 'level', 'quadrant', 'bubbles', 'price',
 ]
 
 export function SettingsContainer() {
@@ -166,17 +181,17 @@ export function SettingsContainer() {
   }
 
   return (
-    <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className="flex min-h-dvh flex-col" style={{ background: 'var(--bg)' }}>
       <AppHeader />
       <FabBack />
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-10">
         {/* ── 계정 ── */}
-        <SettingsSection icon={<Pencil size={16} />} title="계정">
+        <SettingsSection title="계정">
           <SettingsCard>
-            <SettingsItem icon={<Pencil size={16} />} label="닉네임" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
-            <SettingsItem icon={<MessageSquare size={16} />} label="한줄 소개" value={settings.bio ?? '미설정'} showChevron onPress={() => setEditField('bio')} />
-            <SettingsItem icon={<ImageIcon size={16} />} label="아바타" showChevron onPress={() => avatarRef.current?.click()} />
+            <SettingsItem icon={<Pencil size={18} />} label="닉네임 변경" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
+            <SettingsItem icon={<MessageSquare size={18} />} label="한줄 소개 변경" showChevron onPress={() => setEditField('bio')} />
+            <SettingsItem icon={<ImageIcon size={18} />} label="아바타 변경" showChevron onPress={() => avatarRef.current?.click()} />
           </SettingsCard>
           <input
             ref={avatarRef}
@@ -192,19 +207,23 @@ export function SettingsContainer() {
         </SettingsSection>
 
         {/* ── 프라이버시 ── */}
-        <SettingsSection icon={<Shield size={16} />} title="프라이버시">
-          <SettingsCard>
-            <div className="px-4 py-3">
-              <SegmentControl
-                options={PRIVACY_PROFILE_OPTIONS}
-                value={settings.privacyProfile}
-                onChange={(v) => updatePrivacyProfile(v as 'public' | 'bubble_only' | 'private')}
-                variant="privacy"
-              />
+        <SettingsSection title="프라이버시">
+          <SettingsCard padding>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '10px' }}>
+              기본 공개 대상
             </div>
+            <SegmentControl
+              options={PRIVACY_PROFILE_OPTIONS}
+              value={settings.privacyProfile}
+              onChange={(v) => updatePrivacyProfile(v as 'public' | 'bubble_only' | 'private')}
+              variant="privacy"
+            />
 
             {settings.privacyProfile !== 'private' && (
-              <div className="px-4 pb-3">
+              <div style={{ marginTop: '14px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '8px' }}>
+                  기록은 어디까지?
+                </div>
                 <SegmentControl
                   options={PRIVACY_RECORDS_OPTIONS}
                   value={settings.privacyRecords}
@@ -217,110 +236,139 @@ export function SettingsContainer() {
               privacyProfile={settings.privacyProfile}
               privacyRecords={settings.privacyRecords}
             />
-
-            {/* 전체에게 보이는 항목 */}
-            <PrivacyLayer
-              visible={settings.privacyProfile === 'public'}
-              dotColor="var(--positive)"
-              title="전체에게 보이는 항목"
-            >
-              {VISIBILITY_FIELDS.map((field) => (
-                <div key={field.key} className="flex items-center justify-between py-2">
-                  <span style={{ fontSize: '13px', color: field.key === 'price' ? 'var(--text-hint)' : 'var(--text)' }}>
-                    {field.label}
-                  </span>
-                  {field.key === 'price' ? (
-                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>버블에서만</span>
-                  ) : (
-                    <Toggle
-                      checked={settings.visibilityPublic[field.key]}
-                      onChange={() => handleVisibilityToggle('public', field.key)}
-                    />
-                  )}
-                </div>
-              ))}
-            </PrivacyLayer>
-
-            {/* 버블 멤버 기본 공개 */}
-            <PrivacyLayer
-              visible={settings.privacyProfile !== 'private'}
-              dotColor="var(--accent-social)"
-              title="버블 멤버 기본 공개"
-            >
-              {VISIBILITY_FIELDS.map((field) => (
-                <div key={field.key} className="flex items-center justify-between py-2">
-                  <span style={{ fontSize: '13px', color: 'var(--text)' }}>{field.label}</span>
-                  <Toggle
-                    checked={settings.visibilityBubble[field.key]}
-                    onChange={() => handleVisibilityToggle('bubble', field.key)}
-                  />
-                </div>
-              ))}
-            </PrivacyLayer>
-
-            {/* 버블별 설정 */}
-            <PrivacyLayer
-              visible={settings.privacyProfile !== 'private'}
-              dotColor="var(--caution)"
-              title="버블별 설정"
-            >
-              {(bubbleOverrides ?? []).map((override) => (
-                <div
-                  key={override.bubbleId}
-                  className="flex items-center justify-between py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-6 w-6 rounded-full"
-                      style={{ backgroundColor: override.bubbleAvatarColor ?? 'var(--accent-food)' }}
-                    />
-                    <span style={{ fontSize: '13px', color: 'var(--text)' }}>{override.bubbleName}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveBubbleSheet(override)}
-                    style={{ fontSize: '12px', color: 'var(--accent-social)' }}
-                  >
-                    {override.useDefault ? '기본값' : '커스텀'}
-                  </button>
-                </div>
-              ))}
-              {(!bubbleOverrides || bubbleOverrides.length === 0) && (
-                <p style={{ fontSize: '12px', color: 'var(--text-hint)' }}>가입한 버블이 없습니다</p>
-              )}
-            </PrivacyLayer>
-
-            <PrivacyNote />
           </SettingsCard>
         </SettingsSection>
 
+        {/* 전체에게 보이는 항목 (전체 공개일 때만) */}
+        <PrivacyLayer
+          visible={settings.privacyProfile === 'public'}
+          dotColor="var(--positive)"
+          title="전체에게 보이는 항목"
+          note="프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위"
+        >
+          {VISIBILITY_KEYS.map((key) => (
+            <div key={key} style={key === 'price' ? { opacity: 0.5 } : undefined}>
+              <SettingsItem
+                icon={VISIBILITY_ICONS[key]}
+                label={VISIBILITY_LABELS[key]}
+                rightElement={
+                  key === 'price' ? (
+                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>버블에서만</span>
+                  ) : (
+                    <Toggle
+                      checked={settings.visibilityPublic[key]}
+                      onChange={() => handleVisibilityToggle('public', key)}
+                    />
+                  )
+                }
+              />
+            </div>
+          ))}
+        </PrivacyLayer>
+
+        {/* 버블 멤버 기본 공개 (전체/버블만 시) */}
+        <PrivacyLayer
+          visible={settings.privacyProfile !== 'private'}
+          dotColor="var(--accent-social)"
+          title="버블 멤버 기본 공개"
+          note="모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다."
+        >
+          {VISIBILITY_KEYS.map((key) => (
+            <SettingsItem
+              key={key}
+              icon={VISIBILITY_ICONS[key]}
+              label={VISIBILITY_LABELS[key]}
+              rightElement={
+                <Toggle
+                  checked={settings.visibilityBubble[key]}
+                  onChange={() => handleVisibilityToggle('bubble', key)}
+                />
+              }
+            />
+          ))}
+        </PrivacyLayer>
+
+        {/* 버블별 설정 */}
+        <PrivacyLayer
+          visible={settings.privacyProfile !== 'private'}
+          dotColor="var(--caution)"
+          title="버블별 설정"
+        >
+          {(bubbleOverrides ?? []).map((override, idx) => (
+            <div
+              key={override.bubbleId}
+              className="flex cursor-pointer items-center gap-3"
+              style={{ padding: '12px 16px', borderBottom: idx < (bubbleOverrides?.length ?? 0) - 1 ? '1px solid var(--border)' : 'none' }}
+              onClick={() => setActiveBubbleSheet(override)}
+            >
+              <div
+                className="flex shrink-0 items-center justify-center rounded-[10px]"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: override.bubbleAvatarColor ?? 'var(--accent-food-light)',
+                  fontSize: '14px',
+                }}
+              />
+              <span className="flex-1" style={{ fontSize: '14px', color: 'var(--text)' }}>
+                {override.bubbleName}
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  background: override.useDefault ? 'var(--bg-page)' : 'var(--accent-food-light)',
+                  color: override.useDefault ? 'var(--text-hint)' : 'var(--accent-food)',
+                }}
+              >
+                {override.useDefault ? '기본값' : '커스텀'}
+              </span>
+              <ChevronRight size={16} style={{ color: 'var(--border-bold)' }} />
+            </div>
+          ))}
+          {(!bubbleOverrides || bubbleOverrides.length === 0) && (
+            <p style={{ fontSize: '12px', color: 'var(--text-hint)', padding: '12px 16px' }}>
+              가입한 버블이 없습니다
+            </p>
+          )}
+        </PrivacyLayer>
+
+        {/* 프라이버시 안내 */}
+        {settings.privacyProfile !== 'private' && (
+          <div style={{ padding: '8px 24px 0' }}>
+            <PrivacyNote />
+          </div>
+        )}
+
         {/* ── 알림 ── */}
-        <SettingsSection icon={<Bell size={16} />} title="알림">
+        <SettingsSection title="알림">
           <SettingsCard>
             <SettingsItem
-              icon={<Bell size={16} />}
+              icon={<Bell size={18} />}
               label="푸시 알림"
               rightElement={<Toggle checked={settings.notifyPush} onChange={(v) => updateNotify('notify_push', v)} />}
             />
             <SettingsItem
-              icon={<Trophy size={16} />}
+              icon={<Trophy size={18} />}
               label="레벨업 알림"
               rightElement={<Toggle checked={settings.notifyLevelUp} onChange={(v) => updateNotify('notify_level_up', v)} />}
             />
             <SettingsItem
-              icon={<CircleDot size={16} />}
-              label="버블 가입"
+              icon={<CircleDot size={18} />}
+              label="버블 가입 알림"
               rightElement={<Toggle checked={settings.notifyBubbleJoin} onChange={(v) => updateNotify('notify_bubble_join', v)} />}
             />
             <SettingsItem
-              icon={<UserPlus size={16} />}
-              label="팔로우"
+              icon={<UserPlus size={18} />}
+              label="팔로우 알림"
               rightElement={<Toggle checked={settings.notifyFollow} onChange={(v) => updateNotify('notify_follow', v)} />}
             />
             <SettingsItem
-              icon={<Moon size={16} />}
+              icon={<Moon size={18} />}
               label="방해 금지"
-              value={settings.dndStart ? `${settings.dndStart} ~ ${settings.dndEnd}` : '꺼짐'}
+              value={settings.dndStart ? `${settings.dndStart}–${settings.dndEnd}` : '꺼짐'}
               showChevron
               onPress={() => setDndSheetOpen(true)}
             />
@@ -328,66 +376,72 @@ export function SettingsContainer() {
         </SettingsSection>
 
         {/* ── 화면 디폴트 ── */}
-        <SettingsSection icon={<Home size={16} />} title="화면 디폴트">
+        <SettingsSection title="화면 디폴트">
           <SettingsCard>
             <SettingsItem
-              icon={<Home size={16} />}
+              icon={<Home size={18} />}
               label="랜딩 화면"
+              hint="앱 실행 시 첫 화면"
               rightElement={<NyamSelect options={LANDING_OPTIONS} value={settings.prefLanding} onChange={(v) => updatePreference('pref_landing', v)} />}
             />
             <SettingsItem
-              icon={<Utensils size={16} />}
+              icon={<Utensils size={18} />}
               label="홈 시작 탭"
+              hint="홈 진입 시 식당/와인"
               rightElement={<NyamSelect options={HOME_TAB_OPTIONS} value={settings.prefHomeTab} onChange={(v) => updatePreference('pref_home_tab', v)} />}
             />
             <SettingsItem
-              icon={<MapPin size={16} />}
+              icon={<MapPin size={18} />}
               label="식당 서브탭"
+              hint="식당 탭 진입 시 기본 필터"
               rightElement={<NyamSelect options={RESTAURANT_SUB_OPTIONS} value={settings.prefRestaurantSub} onChange={(v) => updatePreference('pref_restaurant_sub', v)} />}
             />
             <SettingsItem
-              icon={<Wine size={16} />}
+              icon={<Wine size={18} />}
               label="와인 서브탭"
+              hint="와인 탭 진입 시 기본 필터"
               rightElement={<NyamSelect options={WINE_SUB_OPTIONS} value={settings.prefWineSub} onChange={(v) => updatePreference('pref_wine_sub', v)} />}
             />
             <SettingsItem
-              icon={<CircleDot size={16} />}
+              icon={<CircleDot size={18} />}
               label="버블 시작 탭"
+              hint="버블 페이지 진입 시 탭"
               rightElement={<NyamSelect options={BUBBLE_TAB_OPTIONS} value={settings.prefBubbleTab} onChange={(v) => updatePreference('pref_bubble_tab', v)} />}
             />
             <SettingsItem
-              icon={<LayoutGrid size={16} />}
+              icon={<LayoutGrid size={18} />}
               label="홈 보기 모드"
+              hint="리스트 간단/상세"
               rightElement={<NyamSelect options={VIEW_MODE_OPTIONS} value={settings.prefViewMode} onChange={(v) => updatePreference('pref_view_mode', v)} />}
             />
           </SettingsCard>
         </SettingsSection>
 
         {/* ── 기능 디폴트 ── */}
-        <SettingsSection icon={<ArrowUpDown size={16} />} title="기능 디폴트">
+        <SettingsSection title="기능 디폴트">
           <SettingsCard>
             <SettingsItem
-              icon={<ArrowUpDown size={16} />}
+              icon={<ArrowUpDown size={18} />}
               label="기본 정렬"
               rightElement={<NyamSelect options={SORT_OPTIONS} value={settings.prefDefaultSort} onChange={(v) => updatePreference('pref_default_sort', v)} />}
             />
             <SettingsItem
-              icon={<Camera size={16} />}
+              icon={<Camera size={18} />}
               label="기록 시 카메라"
               rightElement={<NyamSelect options={RECORD_INPUT_OPTIONS} value={settings.prefRecordInput} onChange={(v) => updatePreference('pref_record_input', v)} />}
             />
             <SettingsItem
-              icon={<Share2 size={16} />}
+              icon={<Share2 size={18} />}
               label="기록 후 버블 공유"
               rightElement={<NyamSelect options={BUBBLE_SHARE_OPTIONS} value={settings.prefBubbleShare} onChange={(v) => updatePreference('pref_bubble_share', v)} />}
             />
             <SettingsItem
-              icon={<Thermometer size={16} />}
+              icon={<Thermometer size={18} />}
               label="와인 온도 단위"
               rightElement={<NyamSelect options={TEMP_UNIT_OPTIONS} value={settings.prefTempUnit} onChange={(v) => updatePreference('pref_temp_unit', v)} />}
             />
             <SettingsItem
-              icon={<Unlink size={16} />}
+              icon={<Unlink size={18} />}
               label="수동 공유 항목 정리"
               value={manualShareCleanResult ?? '규칙에 맞지 않는 수동 공유 삭제'}
               showChevron
@@ -408,11 +462,11 @@ export function SettingsContainer() {
         </SettingsSection>
 
         {/* ── 데이터 ── */}
-        <SettingsSection icon={<Upload size={16} />} title="데이터">
+        <SettingsSection title="데이터">
           <SettingsCard>
-            <SettingsItem icon={<Upload size={16} />} label="데이터 내보내기" showChevron onPress={() => exportData('json')} />
-            <SettingsItem icon={<Download size={16} />} label="데이터 가져오기" showChevron onPress={() => importRef.current?.click()} />
-            <SettingsItem icon={<Eraser size={16} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
+            <SettingsItem icon={<Upload size={18} />} label="데이터 내보내기" value="JSON / CSV" showChevron onPress={() => exportData('json')} />
+            <SettingsItem icon={<Download size={18} />} label="데이터 가져오기" value="JSON / CSV" showChevron onPress={() => importRef.current?.click()} />
+            <SettingsItem icon={<Eraser size={18} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
           </SettingsCard>
           <input
             ref={importRef}
@@ -428,19 +482,26 @@ export function SettingsContainer() {
         </SettingsSection>
 
         {/* ── 정보 ── */}
-        <SettingsSection icon={<Info size={16} />} title="정보">
+        <SettingsSection title="정보">
           <SettingsCard>
-            <SettingsItem icon={<ScrollText size={16} />} label="이용약관" showChevron onPress={() => router.push('/terms')} />
-            <SettingsItem icon={<Shield size={16} />} label="개인정보처리방침" showChevron onPress={() => router.push('/privacy')} />
-            <SettingsItem icon={<Info size={16} />} label="버전" value="1.0.0" />
+            <SettingsItem icon={<ScrollText size={18} />} label="이용약관" showChevron onPress={() => router.push('/terms')} />
+            <SettingsItem icon={<Shield size={18} />} label="개인정보처리방침" showChevron onPress={() => router.push('/privacy')} />
+            <SettingsItem icon={<Info size={18} />} label="버전" value="1.0.0" />
           </SettingsCard>
         </SettingsSection>
 
         {/* ── 계정 관리 ── */}
-        <SettingsSection icon={<LogOut size={16} />} title="계정 관리">
+        <SettingsSection title="계정 관리">
           <SettingsCard>
-            <SettingsItem icon={<LogOut size={16} />} label="로그아웃" onPress={signOut} showChevron />
-            <SettingsItem icon={<Trash2 size={16} />} label="계정 삭제" danger onPress={() => setDeleteSheetOpen(true)} showChevron />
+            <SettingsItem icon={<LogOut size={18} />} label="로그아웃" onPress={signOut} showChevron />
+            <SettingsItem
+              icon={<Trash2 size={18} />}
+              label="계정 삭제"
+              subText="30일 유예 후 영구 삭제"
+              danger
+              onPress={() => setDeleteSheetOpen(true)}
+              showChevron
+            />
           </SettingsCard>
         </SettingsSection>
       </div>
@@ -506,8 +567,15 @@ function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
 
   return (
     <>
-      <div className="fixed inset-0 z-[190]" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl" style={{ backgroundColor: 'var(--bg-card)', padding: '20px 24px 32px' }}>
+      <div className="fixed inset-0 z-[190]" style={{ backgroundColor: 'rgba(0,0,0,0.35)' }} onClick={onClose} />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl"
+        style={{ backgroundColor: 'var(--bg-elevated)', padding: '20px 20px 40px' }}
+      >
+        <div
+          className="mx-auto mb-4"
+          style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border-bold)' }}
+        />
         <div className="mb-4 flex items-center justify-between">
           <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>방해 금지 설정</span>
           <Toggle checked={enabled} onChange={setEnabled} />
@@ -530,8 +598,8 @@ function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
         <button
           type="button"
           onClick={() => onSave(enabled ? start : null, enabled ? end : null)}
-          className="mt-5 w-full rounded-lg py-3"
-          style={{ fontSize: '14px', fontWeight: 700, backgroundColor: 'var(--text)', color: '#FFFFFF' }}
+          className="mt-5 w-full rounded-xl py-3.5"
+          style={{ fontSize: '15px', fontWeight: 600, backgroundColor: 'var(--text)', color: '#FFFFFF' }}
         >
           저장
         </button>

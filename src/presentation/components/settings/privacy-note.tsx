@@ -1,7 +1,5 @@
 'use client'
 
-import { Info } from 'lucide-react'
-
 const PRIVACY_NOTES = [
   '동반자 정보는 항상 비공개입니다 (나만 열람)',
   'OFF로 설정해도 나에게는 항상 표시됩니다',
@@ -11,20 +9,10 @@ const PRIVACY_NOTES = [
 
 export function PrivacyNote() {
   return (
-    <div className="px-4 py-3">
-      <div
-        className="flex gap-2.5 rounded-lg px-3 py-2.5"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--accent-social) 8%, transparent)' }}
-      >
-        <Info size={14} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-social)' }} />
-        <ul className="flex flex-col gap-1">
-          {PRIVACY_NOTES.map((note) => (
-            <li key={note} style={{ fontSize: '11px', color: 'var(--text-hint)', lineHeight: 1.5 }}>
-              {note}
-            </li>
-          ))}
-        </ul>
-      </div>
+    <div style={{ padding: '0 4px', fontSize: '11px', color: 'var(--text-hint)', lineHeight: 1.6 }}>
+      {PRIVACY_NOTES.map((note) => (
+        <div key={note}>· {note}</div>
+      ))}
     </div>
   )
 }

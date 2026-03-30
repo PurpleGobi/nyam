@@ -489,6 +489,42 @@ html, body, * {
   padding: 4px 0;
 }
 
+.header-level-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-level-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.header-xp-track {
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.header-xp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+
 .icon-btn {
   width: 38px;
   height: 38px;
@@ -1453,6 +1489,11 @@ html, body, * {
   left: 20px;
 }
 
+/* ── 12-1. 설정 아이템 ── */
+.settings-item-row:last-child {
+  border-bottom: none !important;
+}
+
 /* ── 13. 세그먼트 컨트롤 ── */
 
 .prv-segment {
@@ -1939,21 +1980,3 @@ html, body, * {
   animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Bubble Activity Ring ── */
-@keyframes activity-ring-draw {
-  from { stroke-dashoffset: var(--circumference, 150); }
-}
-
-.activity-ring-arc {
-  animation: activity-ring-draw 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes activity-ring-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.15; transform: scale(1.05); }
-}
-
-.activity-ring-glow {
-  animation: activity-ring-pulse 2s ease-in-out infinite;
-}

@@ -9,7 +9,6 @@ import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
 import { BubbleMyStats } from '@/presentation/components/bubble/bubble-my-stats'
-import { BubbleHotStrip } from '@/presentation/components/bubble/bubble-hot-strip'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
@@ -79,14 +78,6 @@ export function BubbleListContainer() {
       return { bubble: b, role: isMine ? 'mine' as const : 'joined' as const }
     })
   }, [bubbles, user?.id])
-
-  // HOT 버블: 이번 주 활동이 있는 버블 (주간 기록 수 내림차순)
-  const hotBubbles = useMemo(() => {
-    return [...bubbles]
-      .filter((b) => b.weeklyRecordCount > 0)
-      .sort((a, b) => b.weeklyRecordCount - a.weeklyRecordCount)
-      .slice(0, 8)
-  }, [bubbles])
 
   // 개인 통계
   const myStats = useMemo(() => {
@@ -196,14 +187,6 @@ export function BubbleListContainer() {
         <div className="pt-3">
           <BubbleMyStats {...myStats} />
         </div>
-      )}
-
-      {/* HOT 버블 스트립 — 활동이 있는 버블이 2개 이상일 때만 */}
-      {contentTab === 'bubbles' && hotBubbles.length >= 2 && !isLoading && (
-        <BubbleHotStrip
-          bubbles={hotBubbles}
-          onBubbleClick={(id) => router.push(`/bubbles/${id}`)}
-        />
       )}
 
       <StickyTabs
