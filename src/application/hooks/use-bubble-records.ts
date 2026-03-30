@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { BubbleShare } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -45,11 +45,16 @@ export function useBubbleRecords(
   const [isLoading, setIsLoading] = useState(false)
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null)
 
+  const bubbleIdsRef = useRef(userBubbleIds)
+  bubbleIdsRef.current = userBubbleIds
+  const bubbleIdsKey = userBubbleIds.join(',')
+
   const fetch = useCallback(async () => {
-    if (userBubbleIds.length === 0) return
+    const ids = bubbleIdsRef.current
+    if (ids.length === 0) return
     setIsLoading(true)
     try {
-      const shares = await bubbleRepo.getSharesForTarget(targetId, targetType, userBubbleIds)
+      const shares = await bubbleRepo.getSharesForTarget(targetId, targetType, ids)
       const items: BubbleRecordItem[] = shares.map((s) => ({
         shareId: s.id,
         recordId: s.recordId,
@@ -69,13 +74,14 @@ export function useBubbleRecords(
         commentCount: s.commentCount ?? 0,
         sharedAt: s.sharedAt,
         contentVisibility: s.contentVisibility ?? 'rating_and_comment',
-        isMember: userBubbleIds.includes(s.bubbleId),
+        isMember: ids.includes(s.bubbleId),
       }))
       setRecords(items)
     } finally {
       setIsLoading(false)
     }
-  }, [targetId, targetType, userBubbleIds])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetId, targetType, bubbleIdsKey])
 
   useEffect(() => {
     fetch()

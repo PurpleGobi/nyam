@@ -20,6 +20,8 @@ interface QuadrantInputProps {
   showHint?: boolean
   /** true면 현재 dot 숨김 (터치 전 상태) */
   hideDot?: boolean
+  /** true면 모든 인터랙션 비활성 (상세페이지 읽기 전용) */
+  readOnly?: boolean
 }
 
 const DOT_SIZE = 20
@@ -54,13 +56,7 @@ const QUADRANT_LABELS = {
   },
 } as const
 
-const PRICE_LEVELS = [
-  { value: 1, label: '저가' },
-  { value: 2, label: '중간' },
-  { value: 3, label: '고가' },
-] as const
-
-export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false }: QuadrantInputProps) {
+export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false, readOnly = false }: QuadrantInputProps) {
   const quadrantRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [selectedRefIdx, setSelectedRefIdx] = useState<number | null>(null)
@@ -156,12 +152,14 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               value={value.x}
               color={foodColor}
               onChange={(v) => onChange({ x: v, y: value.y, satisfaction: value.satisfaction })}
+              readOnly={readOnly}
             />
             <VerticalGauge
               label={labels.yLabel}
               value={value.y}
               color={expColor}
               onChange={(v) => onChange({ x: value.x, y: v, satisfaction: value.satisfaction })}
+              readOnly={readOnly}
             />
           </div>
 
@@ -241,15 +239,15 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               backgroundColor: 'var(--bg-card)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--r-lg)',
-              touchAction: 'none',
-              cursor: 'crosshair',
+              touchAction: readOnly ? 'auto' : 'none',
+              cursor: readOnly ? 'default' : 'crosshair',
               overflow: 'hidden',
               userSelect: 'none',
               WebkitUserSelect: 'none',
             }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
+            onPointerDown={readOnly ? undefined : handlePointerDown}
+            onPointerMove={readOnly ? undefined : handlePointerMove}
+            onPointerUp={readOnly ? undefined : handlePointerUp}
           >
             {/* 사분면 영역 라벨 — i 버튼으로 토글 */}
             {showLabels && (
@@ -322,10 +320,6 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
         </div>
       </div>
 
-      {/* 가격대 3단계 — restaurant만 */}
-      {type === 'restaurant' && (
-        <PriceLevelSelector />
-      )}
     </div>
   )
 }
@@ -376,9 +370,10 @@ interface VerticalGaugeProps {
   value: number
   color: string
   onChange: (value: number) => void
+  readOnly?: boolean
 }
 
-function VerticalGauge({ label, value, color, onChange }: VerticalGaugeProps) {
+function VerticalGauge({ label, value, color, onChange, readOnly = false }: VerticalGaugeProps) {
   const barRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -421,19 +416,19 @@ function VerticalGauge({ label, value, color, onChange }: VerticalGaugeProps) {
           border: '1px solid var(--border)',
           borderRadius: '16px',
           position: 'relative',
-          touchAction: 'none',
-          cursor: 'pointer',
+          touchAction: readOnly ? 'auto' : 'none',
+          cursor: readOnly ? 'default' : 'pointer',
           overflow: 'hidden',
         }}
-        onPointerDown={(e) => {
+        onPointerDown={readOnly ? undefined : (e) => {
           setIsDragging(true)
           updateValue(e)
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
-        onPointerMove={(e) => {
+        onPointerMove={readOnly ? undefined : (e) => {
           if (isDragging) updateValue(e)
         }}
-        onPointerUp={(e) => {
+        onPointerUp={readOnly ? undefined : (e) => {
           setIsDragging(false)
           e.currentTarget.releasePointerCapture(e.pointerId)
         }}
@@ -537,31 +532,3 @@ function HintBubble({ children, style, tailSide, accentColor, bgColor }: HintBub
   )
 }
 
-function PriceLevelSelector() {
-  const [selected, setSelected] = useState<number | null>(null)
-
-  return (
-    <div className="flex w-full flex-col gap-1.5">
-      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>가격대</span>
-      <div className="flex gap-2">
-        {PRICE_LEVELS.map((level) => (
-          <button
-            key={level.value}
-            type="button"
-            onClick={() => setSelected(selected === level.value ? null : level.value)}
-            className="flex flex-1 items-center justify-center rounded-lg py-2 transition-colors"
-            style={{
-              backgroundColor: selected === level.value ? 'var(--accent-food)' : 'var(--bg-card)',
-              border: `1px solid ${selected === level.value ? 'var(--accent-food)' : 'var(--border)'}`,
-              color: selected === level.value ? '#FFFFFF' : 'var(--text-sub)',
-              fontSize: '13px',
-              fontWeight: 600,
-            }}
-          >
-            {level.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}

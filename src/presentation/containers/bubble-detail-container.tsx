@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal, X } from 'lucide-react'
+import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal, X, Sparkles } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -54,8 +54,9 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
 
   if (isLoading || !bubble) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
         <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
+        <span className="mt-3 text-[12px]" style={{ color: 'var(--text-hint)' }}>버블 불러오는 중...</span>
       </div>
     )
   }
@@ -66,7 +67,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       <AppHeader />
       <FabBack />
 
-      {/* 히어로 */}
+      {/* 히어로 (리디자인) */}
       <BubbleHero
         bubble={bubble}
         myRole={myRole}
@@ -76,11 +77,12 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         onInviteClick={() => setShowInviteModal(true)}
       />
 
-      {/* 퀵 통계 */}
+      {/* 게이미피케이션 퀵 통계 */}
       <BubbleQuickStats
         recordCount={bubble.recordCount}
         avgSatisfaction={bubble.avgSatisfaction}
         weeklyRecordCount={bubble.weeklyRecordCount}
+        prevWeeklyRecordCount={bubble.prevWeeklyRecordCount}
         uniqueTargetCount={bubble.uniqueTargetCount}
       />
 
@@ -192,8 +194,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   )
 }
 
-/* FilterChip & FilterChipGroup imported from @/presentation/components/ui/filter-chip */
-
 /* ──── 피드 탭 ──── */
 function FeedTabContent({
   bubbleId,
@@ -262,7 +262,16 @@ function FeedTabContent({
 
       {/* 피드 목록 */}
       {shares.length === 0 ? (
-        <p className="py-8 text-center text-[14px]" style={{ color: 'var(--text-hint)' }}>공유된 기록이 없습니다</p>
+        <div className="flex flex-col items-center py-12">
+          <div
+            className="flex h-[56px] w-[56px] items-center justify-center rounded-2xl"
+            style={{ backgroundColor: 'var(--accent-social-light)' }}
+          >
+            <Sparkles size={24} style={{ color: 'var(--accent-social)' }} />
+          </div>
+          <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>아직 공유된 기록이 없어요</p>
+          <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>첫 기록을 공유해보세요!</p>
+        </div>
       ) : viewMode === 'compact' ? (
         <div className="flex flex-col gap-1">
           {shares.map((s) => (
@@ -414,7 +423,16 @@ function RankingTabContent({
       {isLoading ? (
         <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" /></div>
       ) : rankings.length === 0 ? (
-        <p className="py-8 text-center text-[14px]" style={{ color: 'var(--text-hint)' }}>랭킹 데이터가 없습니다</p>
+        <div className="flex flex-col items-center py-12">
+          <div
+            className="flex h-[56px] w-[56px] items-center justify-center rounded-2xl"
+            style={{ backgroundColor: 'var(--caution-light, #FFF8E1)' }}
+          >
+            <Sparkles size={24} style={{ color: 'var(--caution)' }} />
+          </div>
+          <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>아직 랭킹이 없어요</p>
+          <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>기록이 쌓이면 주간 랭킹이 생겨요</p>
+        </div>
       ) : (
         <>
           <RankingPodium items={top3} targetType={targetType} />

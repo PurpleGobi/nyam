@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Crown, Medal } from 'lucide-react'
+import { Crown, Medal, TrendingUp, TrendingDown, Sparkles } from 'lucide-react'
 
 export interface RankingPodiumItem {
   rank: 1 | 2 | 3
@@ -19,10 +19,16 @@ interface RankingPodiumProps {
   targetType: 'restaurant' | 'wine'
 }
 
-const PODIUM_CONFIG: Record<number, { height: string; badgeColor: string }> = {
-  1: { height: 'h-[110px]', badgeColor: '#FFD700' },
-  2: { height: 'h-[88px]', badgeColor: '#C0C0C0' },
-  3: { height: 'h-[76px]', badgeColor: '#CD7F32' },
+const PODIUM_CONFIG: Record<number, {
+  height: number
+  badgeColor: string
+  badgeBg: string
+  glowColor: string
+  ringColor: string
+}> = {
+  1: { height: 130, badgeColor: '#FFD700', badgeBg: 'linear-gradient(135deg, #FFD700, #FFA000)', glowColor: 'rgba(255, 215, 0, 0.2)', ringColor: '#FFD700' },
+  2: { height: 100, badgeColor: '#C0C0C0', badgeBg: 'linear-gradient(135deg, #E0E0E0, #A0A0A0)', glowColor: 'rgba(192, 192, 192, 0.15)', ringColor: '#C0C0C0' },
+  3: { height: 85, badgeColor: '#CD7F32', badgeBg: 'linear-gradient(135deg, #D4A06A, #B06A30)', glowColor: 'rgba(205, 127, 50, 0.15)', ringColor: '#CD7F32' },
 }
 
 export function RankingPodium({ items, targetType }: RankingPodiumProps) {
@@ -35,43 +41,66 @@ export function RankingPodium({ items, targetType }: RankingPodiumProps) {
   const ordered = [items.find((i) => i.rank === 2), items.find((i) => i.rank === 1), items.find((i) => i.rank === 3)].filter(Boolean) as RankingPodiumItem[]
 
   return (
-    <div className="flex items-end justify-center gap-3 px-4 py-4">
+    <div className="flex items-end justify-center gap-3 px-4 py-6">
       {ordered.map((item) => {
         const config = PODIUM_CONFIG[item.rank]
         const isFirst = item.rank === 1
-        const BadgeIcon = isFirst ? Crown : Medal
 
         return (
-          <div key={item.targetId} className="flex w-[100px] flex-col items-center gap-1.5">
-            {/* 사진 + 오버레이 */}
-            <div className={`relative w-full overflow-hidden rounded-xl ${config.height}`}>
-              {item.thumbnailUrl ? (
-                <Image src={item.thumbnailUrl} alt="" fill className="object-cover" sizes="100px" />
-              ) : (
-                <div className="h-full w-full" style={{ backgroundColor: targetType === 'restaurant' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)' }} />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-
-              {/* 순위 배지 */}
+          <div key={item.targetId} className="flex w-[105px] flex-col items-center gap-2">
+            {/* 순위 번호 */}
+            <div className="flex items-center gap-1">
               <div
-                className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-md"
-                style={{ backgroundColor: config.badgeColor }}
+                className="flex h-[22px] w-[22px] items-center justify-center rounded-full text-[10px] font-black text-white"
+                style={{ background: config.badgeBg }}
               >
-                <BadgeIcon size={12} color="#FFFFFF" />
+                {item.rank}
               </div>
+              {isFirst && <Crown size={14} style={{ color: '#FFD700' }} />}
+            </div>
 
-              {/* 점수 */}
-              <div className="absolute bottom-1.5 right-1.5 rounded-md px-1.5 py-0.5" style={{ backgroundColor: scoreColor }}>
-                <span className="text-[13px] font-black text-white">{Math.round(item.avgSatisfaction)}</span>
+            {/* 사진 카드 */}
+            <div
+              className="relative w-full overflow-hidden rounded-2xl"
+              style={{
+                height: config.height,
+                boxShadow: isFirst ? `0 4px 16px ${config.glowColor}` : undefined,
+                border: `2px solid ${config.ringColor}`,
+              }}
+            >
+              {item.thumbnailUrl ? (
+                <Image src={item.thumbnailUrl} alt="" fill className="object-cover" sizes="105px" />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center"
+                  style={{
+                    backgroundColor: targetType === 'restaurant' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)',
+                  }}
+                >
+                  {isFirst ? <Crown size={24} style={{ color: config.badgeColor }} /> : <Medal size={20} style={{ color: config.badgeColor }} />}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+              {/* 점수 오버레이 */}
+              <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
+                <span className="text-[22px] font-black leading-none text-white" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                  {Math.round(item.avgSatisfaction)}
+                </span>
+                <span className="ml-0.5 text-[10px] font-semibold text-white/70">점</span>
               </div>
             </div>
 
             {/* 이름 */}
-            <p className="w-full truncate text-center text-[12px] font-bold" style={{ color: 'var(--text)' }}>{item.targetName}</p>
+            <p className="w-full truncate text-center text-[12px] font-bold" style={{ color: 'var(--text)' }}>
+              {item.targetName}
+            </p>
 
-            {/* 메타 + 변동 */}
-            <div className="flex items-center gap-1">
-              <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>기록 {item.recordCount}개</span>
+            {/* 메타 행: 기록 수 + 변동 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>
+                {item.recordCount}개 기록
+              </span>
               <DeltaBadge delta={item.delta} />
             </div>
           </div>
@@ -82,11 +111,21 @@ export function RankingPodium({ items, targetType }: RankingPodiumProps) {
 }
 
 function DeltaBadge({ delta }: { delta: number | 'new' | null }) {
-  if (delta === null || delta === 0) return null
+  if (delta === null || delta === 0) {
+    return (
+      <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>
+        ─
+      </span>
+    )
+  }
 
   if (delta === 'new') {
     return (
-      <span className="rounded px-1 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-hint)' }}>
+      <span
+        className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+        style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+      >
+        <Sparkles size={8} />
         NEW
       </span>
     )
@@ -94,8 +133,15 @@ function DeltaBadge({ delta }: { delta: number | 'new' | null }) {
 
   const isUp = delta > 0
   return (
-    <span className="text-[10px] font-bold" style={{ color: isUp ? 'var(--positive)' : 'var(--negative)' }}>
-      {isUp ? '▲' : '▼'}{Math.abs(delta)}
+    <span
+      className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+      style={{
+        backgroundColor: isUp ? 'var(--positive-light)' : 'var(--negative-light)',
+        color: isUp ? 'var(--positive)' : 'var(--negative)',
+      }}
+    >
+      {isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+      {isUp ? '+' : ''}{delta}
     </span>
   )
 }

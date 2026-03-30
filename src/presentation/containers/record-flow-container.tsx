@@ -387,6 +387,15 @@ function RecordFlowInner() {
               await photoRepo.savePhotos(editRecordId, newResults)
             }
           }
+
+          // 수정 모드에서도 식당 가격대 업데이트
+          if (formData.targetType === 'restaurant' && formData.priceRange != null) {
+            await fetch('/api/restaurants', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: formData.targetId, priceRange: formData.priceRange }),
+            }).catch(() => {})
+          }
         } else {
           // 신규 모드: INSERT
           let hasExifGps = false
@@ -448,12 +457,15 @@ function RecordFlowInner() {
           }
           savedRecord = await createRecord(input)
 
-          // 선택한 장르가 있으면 식당 genre 업데이트
-          if (formData.genre && formData.targetType === 'restaurant') {
-            fetch('/api/restaurants', {
+          // 선택한 장르/가격대가 있으면 식당 업데이트
+          if (formData.targetType === 'restaurant' && (formData.genre || formData.priceRange != null)) {
+            const patch: Record<string, unknown> = { id: formData.targetId }
+            if (formData.genre) patch.genre = formData.genre
+            if (formData.priceRange != null) patch.priceRange = formData.priceRange
+            await fetch('/api/restaurants', {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: formData.targetId, genre: formData.genre }),
+              body: JSON.stringify(patch),
             }).catch(() => {})
           }
 

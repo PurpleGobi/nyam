@@ -7,6 +7,7 @@ import type { RestaurantScene } from '@/domain/entities/scene'
 import type { RestaurantGenre } from '@/domain/entities/restaurant'
 import { ALL_GENRES } from '@/domain/entities/restaurant'
 import { QuadrantInput } from '@/presentation/components/record/quadrant-input'
+import { PriceLevelSelector } from '@/presentation/components/record/price-level-selector'
 import { SceneTagSelector } from '@/presentation/components/record/scene-tag-selector'
 import { CompanionInput } from '@/presentation/components/record/companion-input'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
@@ -28,6 +29,7 @@ interface CreateRestaurantRecordInput {
   targetId: string
   targetType: 'restaurant'
   genre?: string
+  priceRange?: number | null
   axisX: number
   axisY: number
   satisfaction: number
@@ -102,6 +104,7 @@ export function RestaurantRecordForm({
   const [privateNote, setPrivateNote] = useState(initialData?.privateNote ?? '')
   const [menuTags, setMenuTags] = useState<string[]>(initialData?.menuTags ?? [])
   const [menuTagInput, setMenuTagInput] = useState('')
+  const [priceRange, setPriceRange] = useState<number | null>(null)
   const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice ? String(initialData.totalPrice) : '')
   const [visitDate, setVisitDate] = useState(
     initialData?.visitDate ?? new Date().toISOString().split('T')[0],
@@ -141,6 +144,7 @@ export function RestaurantRecordForm({
       targetId: target.id,
       targetType: 'restaurant',
       genre: selectedGenre ?? undefined,
+      priceRange,
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
@@ -154,7 +158,7 @@ export function RestaurantRecordForm({
       visitDate,
       linkedWineId: linkedWine?.id,
     })
-  }, [isValid, quadrant, scene, comment, companions, privateNote, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine, selectedGenre])
+  }, [isValid, quadrant, scene, comment, companions, privateNote, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine, selectedGenre, priceRange])
 
   return (
     <div className="flex flex-col overflow-x-hidden pb-24">
@@ -254,6 +258,9 @@ export function RestaurantRecordForm({
           어떤 곳이었나요?
         </h3>
         <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+        <div className="mt-4">
+          <PriceLevelSelector value={priceRange} onChange={setPriceRange} />
+        </div>
       </section>
 
       {/* 상황 태그 */}
@@ -331,33 +338,6 @@ export function RestaurantRecordForm({
         </div>
       </section>
 
-      {/* 가격 */}
-      <section className="px-4 py-4">
-        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          1인 가격 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택 · 영수증 인식</span>
-        </h3>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            value={totalPrice}
-            onChange={(e) => setTotalPrice(e.target.value)}
-            placeholder="0"
-            className="flex-1"
-            style={{
-              padding: '10px 14px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-md)',
-              fontSize: '14px',
-              color: 'var(--text)',
-              backgroundColor: 'var(--bg-card)',
-              outline: 'none',
-            }}
-          />
-          <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>원</span>
-        </div>
-      </section>
-
       {/* 같이 마신 와인 */}
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
@@ -408,6 +388,33 @@ export function RestaurantRecordForm({
           누구와 함께? <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
         </h3>
         <CompanionInput value={companions} onChange={setCompanions} recentCompanions={recentCompanions} />
+      </section>
+
+      {/* 지출내역 (비공개) */}
+      <section className="px-4 py-4">
+        <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+          지출내역 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택 · 영수증 인식</span>
+        </h3>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={totalPrice}
+            onChange={(e) => setTotalPrice(e.target.value)}
+            placeholder="0"
+            className="flex-1"
+            style={{
+              padding: '10px 14px',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              fontSize: '14px',
+              color: 'var(--text)',
+              backgroundColor: 'var(--bg-card)',
+              outline: 'none',
+            }}
+          />
+          <span style={{ fontSize: '14px', color: 'var(--text-sub)' }}>원</span>
+        </div>
       </section>
 
       {/* 개인 메모 (비공개) */}

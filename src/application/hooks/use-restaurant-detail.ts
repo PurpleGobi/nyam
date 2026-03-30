@@ -13,8 +13,6 @@ import type {
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
-import type { NyamScoreBreakdown } from '@/domain/services/nyam-score'
-import { calcNyamScore } from '@/domain/services/nyam-score'
 
 /** 뷰 모드 */
 export type RestaurantViewMode = 'my_records' | 'recommend' | 'bubble_review'
@@ -34,7 +32,6 @@ export interface RestaurantDetailState {
   myAvgScore: number | null
   visitCount: number
   latestVisitDate: string | null
-  nyamScoreBreakdown: NyamScoreBreakdown | null
   bubbleAvgScore: number | null
   bubbleCount: number
   viewMode: RestaurantViewMode
@@ -123,10 +120,6 @@ export function useRestaurantDetail(
     ? (myRecords[0].latestVisitDate ?? myRecords[0].createdAt.split('T')[0])
     : null
 
-  const nyamScoreBreakdown = restaurant
-    ? calcNyamScore(restaurant)
-    : null
-
   const scoredBubbles = bubbleScores.filter((b) => b.avgScore !== null)
   const bubbleAvgScore = scoredBubbles.length > 0
     ? Math.round(
@@ -157,7 +150,6 @@ export function useRestaurantDetail(
     myAvgScore,
     visitCount,
     latestVisitDate,
-    nyamScoreBreakdown,
     bubbleAvgScore,
     bubbleCount,
     viewMode,

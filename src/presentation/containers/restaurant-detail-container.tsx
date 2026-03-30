@@ -9,13 +9,13 @@ import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { restaurantRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
 import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { BadgeRow } from '@/presentation/components/detail/badge-row'
 import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
-import { ConnectedItems } from '@/presentation/components/detail/connected-items'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { BubbleRecordSection } from '@/presentation/components/detail/bubble-record-section'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
@@ -23,6 +23,17 @@ import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bub
 import { Toast } from '@/presentation/components/ui/toast'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
+
+
+function getGenreChain(genre: string | null): string | null {
+  if (!genre) return null
+  for (const [major, subs] of Object.entries(GENRE_MAJOR_CATEGORIES)) {
+    if (subs.includes(genre as never)) {
+      return major === genre ? genre : `${major} > ${genre}`
+    }
+  }
+  return genre
+}
 
 interface RestaurantDetailContainerProps {
   restaurantId: string
@@ -53,7 +64,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     myAvgScore,
     visitCount,
     latestVisitDate,
-    nyamScoreBreakdown,
     bubbleAvgScore,
     bubbleCount,
     viewMode,
@@ -98,19 +108,14 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       }
     : null
 
-  // 평균 가격
-  const visitsWithPrice = myRecords.flatMap((r) => r.visits.filter((v) => v.totalPrice !== null))
-  const avgPrice = visitsWithPrice.length > 0
-    ? Math.round(visitsWithPrice.reduce((s, v) => s + v.totalPrice!, 0) / visitsWithPrice.length)
-    : null
 
-  const connectedWineItems = linkedWines.map((w) => ({
-    id: w.wineId,
-    name: w.wineName,
-    imageUrl: w.labelImageUrl,
-    score: w.satisfaction,
-    subText: w.wineType ?? '',
-  }))
+
+  // 연결 와인 이름 맵 (타임라인용)
+  const linkedWineNames = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const w of linkedWines) map.set(w.wineId, w.wineName)
+    return map
+  }, [linkedWines])
 
   // ─── 콜백 ───
   const handleBack = useCallback(() => router.back(), [router])
@@ -163,11 +168,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       navigator.share({ title: restaurant?.name, url: window.location.href })
     }
   }, [restaurant])
-  const handleConnectedWineTap = useCallback(
-    (id: string) => router.push(`/wines/${id}`),
-    [router],
-  )
-
   // 히어로 사진
   const heroPhotos = useMemo(() => {
     if (!restaurant) return []
@@ -188,11 +188,8 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     )
   }
 
-  const metaParts = [restaurant.genre, restaurant.area?.join(' · ')]
-  if (restaurant.priceRange) metaParts.push('₩'.repeat(restaurant.priceRange))
-  const metaText = metaParts.filter(Boolean).join(' · ')
+  const genreChain = getGenreChain(restaurant.genre)
   const mySubText = visitCount > 0 ? `${visitCount}회 방문` : '미방문'
-  const nyamSubText = '웹+명성'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
   const heroThumbnail = {
     icon: 'utensils',
@@ -215,33 +212,35 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           onShare={handlePageShare}
         />
 
+        {/* ─── 1. 이름 + 분류 + 가격대 ─── */}
         <div>
           <div style={{ padding: '14px 20px 8px' }}>
             <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
               {restaurant.name}
             </h1>
-            <p className="mt-0.5" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-              {metaText.split(' · ').map((part, i, arr) => (
-                <span key={i}>
-                  {restaurant.priceRange && i === arr.length - 1 ? (
-                    <span style={{ fontWeight: 700, color: 'var(--text)' }}>{part}</span>
-                  ) : (
-                    part
-                  )}
-                  {i < arr.length - 1 && (
-                    <span style={{ fontSize: '8px', color: 'var(--border-bold)', margin: '0 5px' }}>·</span>
-                  )}
+
+            <div className="mt-1 flex items-center gap-1.5">
+              {genreChain && (
+                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                  {genreChain}
                 </span>
-              ))}
-            </p>
+              )}
+              {restaurant.priceRange && (
+                <>
+                  {genreChain && <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>·</span>}
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-food)' }}>
+                    {restaurant.priceRange === 1 ? '저가' : restaurant.priceRange === 2 ? '중간' : '고가'}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
 
+          {/* ─── 2. 스코어카드 + 버블 확장 + 뱃지 ─── */}
           <ScoreCards
             accentColor="--accent-food"
             myScore={myAvgScore}
             mySubText={mySubText}
-            nyamScore={nyamScoreBreakdown?.finalScore ?? (restaurant.nyamScore ? Math.round(restaurant.nyamScore) : null)}
-            nyamSubText={nyamSubText}
             bubbleScore={bubbleAvgScore}
             bubbleSubText={bubbleSubText}
             bubbleCount={bubbleCount}
@@ -265,7 +264,37 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           <BadgeRow badges={badges} />
         </div>
 
-        {/* L5: 나의 기록 타임라인 */}
+        {/* ─── 3. 나의 평가 (사분면) ─── */}
+        {viewMode === 'my_records' && currentDot && (
+          <>
+            <Divider />
+            <section style={{ padding: '16px 20px' }}>
+              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                나의 평가
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
+                  {visitCount}회 방문 평균
+                </span>
+              </h3>
+              <RatingInput
+                type="restaurant"
+                value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
+                onChange={() => {}}
+                readOnly
+                referencePoints={quadrantRefs.map((d) => ({
+                  x: d.avgAxisX,
+                  y: d.avgAxisY,
+                  satisfaction: d.avgSatisfaction,
+                  name: d.targetName,
+                  score: d.avgSatisfaction,
+                }))}
+              />
+            </section>
+          </>
+        )}
+
+        <Divider />
+
+        {/* ─── 4. 나의 기록 타임라인 ─── */}
         <RecordTimeline
           records={myRecords}
           recordPhotos={recordPhotos}
@@ -279,74 +308,29 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           emptyIcon="search"
           emptyTitle="아직 방문 기록이 없어요"
           emptyDescription="우하단 + 버튼으로 첫 기록을 남겨보세요"
+          linkedWineNames={linkedWineNames}
+          onLinkedWineTap={(id) => router.push(`/wines/${id}`)}
         />
 
         <Divider />
 
-        {/* ─── 나의 평가: 사분면 + 바 게이지 (기록 폼과 동일 컴포넌트) ─── */}
-        {viewMode === 'my_records' && currentDot && (
-          <>
-            <section style={{ padding: '16px 20px' }}>
-              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-                나의 평가
-                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
-                  {visitCount}회 방문 평균
-                </span>
-              </h3>
-              <RatingInput
-                type="restaurant"
-                value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
-                onChange={() => {}}
-                referencePoints={quadrantRefs.map((d) => ({
-                  x: d.avgAxisX,
-                  y: d.avgAxisY,
-                  satisfaction: d.avgSatisfaction,
-                  name: d.targetName,
-                  score: d.avgSatisfaction,
-                }))}
-              />
+        {/* ─── 5. 버블 기록 ─── */}
+        <BubbleRecordSection targetId={restaurantId} targetType="restaurant" />
 
-              {/* 1인 평균 가격 */}
-              {avgPrice !== null && (
-                <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--bg-card)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>1인 평균 가격</span>
-                  <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-food)', marginTop: '2px' }}>
-                    {avgPrice >= 10000 ? `${Math.round(avgPrice / 10000)}만원` : `${avgPrice.toLocaleString()}원`}
-                  </p>
-                </div>
-              )}
-            </section>
+        <Divider />
 
-            <Divider />
-          </>
-        )}
-
+        {/* ─── 6. 식당 정보 ─── */}
         <RestaurantInfo
           address={restaurant.address}
-          lat={restaurant.lat}
-          lng={restaurant.lng}
           hours={restaurant.hours}
           phone={restaurant.phone}
+          lat={restaurant.lat}
+          lng={restaurant.lng}
+          name={restaurant.name}
           menus={restaurant.menus ?? []}
           showMenuSection={viewMode === 'my_records'}
+          externalIds={restaurant.externalIds}
         />
-
-        <Divider />
-
-        {viewMode === 'my_records' && connectedWineItems.length > 0 && (
-          <>
-            <ConnectedItems
-              sectionTitle="연결된 와인"
-              sectionMeta="같이 즐긴 와인"
-              items={connectedWineItems}
-              targetType="wine"
-              onItemTap={handleConnectedWineTap}
-            />
-            <Divider />
-          </>
-        )}
-
-        <BubbleRecordSection targetId={restaurantId} targetType="restaurant" />
 
         {/* 하단 spacer (FAB + 액션바 클리어런스) */}
         <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />

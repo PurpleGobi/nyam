@@ -185,55 +185,69 @@ export function FilterRuleRow({
         autoWidth
       />
 
-      {/* 연산자 */}
-      <NyamSelect
-        options={operators}
-        value={rule.operator}
-        onChange={(op) => onUpdate(index, { ...rule, operator: op as FilterRule['operator'] })}
-        accentColor={accentColor}
-        autoWidth
-      />
-
-      {/* 값 */}
-      {isCascading ? (
-        <CascadingSelect
-          options={selectedAttr.cascadingOptions!}
-          labels={selectedAttr.cascadingLabels}
-          value={String(rule.value ?? '')}
-          onChange={(val) => onUpdate(index, { ...rule, value: val })}
-          accentColor={accentColor}
-          attributeKey={selectedAttr.key}
-        />
-      ) : selectedAttr?.options ? (
-        <NyamSelect
-          options={selectedAttr.options}
-          value={String(rule.value ?? '')}
-          onChange={(val) => onUpdate(index, { ...rule, value: val })}
-          accentColor={accentColor}
-          autoWidth
-        />
-      ) : selectedAttr?.type === 'range' ? (
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            inputMode="numeric"
-            value={String(rule.value ?? '')}
-            onChange={(e) => onUpdate(index, { ...rule, value: e.target.value ? Number(e.target.value) : '' })}
-            placeholder="금액"
-            className="h-[26px] w-[80px] rounded px-2 text-right text-[12px] outline-none"
-            style={{ backgroundColor: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
+      {/* range 타입: 값 → 연산자 순서 (자연스러운 한국어: "50,000원 이상") */}
+      {selectedAttr?.type === 'range' ? (
+        <>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={String(rule.value ?? '')}
+              onChange={(e) => onUpdate(index, { ...rule, value: e.target.value ? Number(e.target.value) : '' })}
+              placeholder="금액"
+              className="h-[26px] w-[80px] rounded px-2 text-right text-[12px] outline-none"
+              style={{ backgroundColor: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
+            />
+            <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>원</span>
+          </div>
+          <NyamSelect
+            options={operators}
+            value={rule.operator}
+            onChange={(op) => onUpdate(index, { ...rule, operator: op as FilterRule['operator'] })}
+            accentColor={accentColor}
+            autoWidth
           />
-          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>원</span>
-        </div>
+        </>
       ) : (
-        <input
-          type="text"
-          value={String(rule.value ?? '')}
-          onChange={(e) => onUpdate(index, { ...rule, value: e.target.value })}
-          placeholder="값 입력"
-          className="h-[26px] min-w-[60px] rounded px-2 text-[12px] outline-none"
-          style={{ backgroundColor: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
-        />
+        <>
+          {/* 연산자 */}
+          <NyamSelect
+            options={operators}
+            value={rule.operator}
+            onChange={(op) => onUpdate(index, { ...rule, operator: op as FilterRule['operator'] })}
+            accentColor={accentColor}
+            autoWidth
+          />
+
+          {/* 값 */}
+          {isCascading ? (
+            <CascadingSelect
+              options={selectedAttr.cascadingOptions!}
+              labels={selectedAttr.cascadingLabels}
+              value={String(rule.value ?? '')}
+              onChange={(val) => onUpdate(index, { ...rule, value: val })}
+              accentColor={accentColor}
+              attributeKey={selectedAttr.key}
+            />
+          ) : selectedAttr?.options ? (
+            <NyamSelect
+              options={selectedAttr.options}
+              value={String(rule.value ?? '')}
+              onChange={(val) => onUpdate(index, { ...rule, value: val })}
+              accentColor={accentColor}
+              autoWidth
+            />
+          ) : (
+            <input
+              type="text"
+              value={String(rule.value ?? '')}
+              onChange={(e) => onUpdate(index, { ...rule, value: e.target.value })}
+              placeholder="값 입력"
+              className="h-[26px] min-w-[60px] rounded px-2 text-[12px] outline-none"
+              style={{ backgroundColor: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}
+            />
+          )}
+        </>
       )}
 
       {/* 삭제 — hover 시만 표시 */}

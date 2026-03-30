@@ -262,9 +262,9 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '가격대',
     type: 'select',
     options: [
-      { value: '1', label: '저가 ₩' },
-      { value: '2', label: '중간 ₩₩' },
-      { value: '3', label: '고가 ₩₩₩' },
+      { value: '1', label: '저가' },
+      { value: '2', label: '중간' },
+      { value: '3', label: '고가' },
     ],
   },
 ]

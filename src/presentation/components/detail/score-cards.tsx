@@ -4,8 +4,6 @@ interface ScoreCardsProps {
   accentColor: string  // '--accent-food' | '--accent-wine'
   myScore: number | null
   mySubText: string           // '3회 방문' | '미방문'
-  nyamScore: number | null
-  nyamSubText: string         // '웹+명성' | 'Vivino+WS'
   bubbleScore: number | null
   bubbleSubText: string       // '평균 · 3개' | ''
   bubbleCount: number         // 우상단 카운트 뱃지 (0이면 비표시)
@@ -17,8 +15,6 @@ export function ScoreCards({
   accentColor,
   myScore,
   mySubText,
-  nyamScore,
-  nyamSubText,
   bubbleScore,
   bubbleSubText,
   bubbleCount,
@@ -32,14 +28,6 @@ export function ScoreCards({
         label="내 점수"
         value={myScore}
         subText={mySubText}
-        accentColor={accentColor}
-      />
-
-      {/* nyam 점수 카드 */}
-      <ScoreCard
-        label="nyam"
-        value={nyamScore}
-        subText={nyamSubText}
         accentColor={accentColor}
       />
 

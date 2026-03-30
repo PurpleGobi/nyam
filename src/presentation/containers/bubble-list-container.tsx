@@ -8,6 +8,8 @@ import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
+import { BubbleMyStats } from '@/presentation/components/bubble/bubble-my-stats'
+import { BubbleHotStrip } from '@/presentation/components/bubble/bubble-hot-strip'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
@@ -77,6 +79,35 @@ export function BubbleListContainer() {
       return { bubble: b, role: isMine ? 'mine' as const : 'joined' as const }
     })
   }, [bubbles, user?.id])
+
+  // HOT 버블: 이번 주 활동이 있는 버블 (주간 기록 수 내림차순)
+  const hotBubbles = useMemo(() => {
+    return [...bubbles]
+      .filter((b) => b.weeklyRecordCount > 0)
+      .sort((a, b) => b.weeklyRecordCount - a.weeklyRecordCount)
+      .slice(0, 8)
+  }, [bubbles])
+
+  // 개인 통계
+  const myStats = useMemo(() => {
+    const myBubbles = classified.filter((c) => c.role === 'mine' || c.role === 'joined')
+    const totalWeekly = myBubbles.reduce((sum, c) => sum + c.bubble.weeklyRecordCount, 0)
+    const topBubble = myBubbles.length > 0
+      ? myBubbles.sort((a, b) => b.bubble.weeklyRecordCount - a.bubble.weeklyRecordCount)[0]
+      : null
+    // 연속 활동 주 (간이 추정: 이전주 + 이번주 모두 활동 있으면 2+)
+    const hasLastWeek = myBubbles.some((c) => c.bubble.prevWeeklyRecordCount > 0)
+    const hasThisWeek = myBubbles.some((c) => c.bubble.weeklyRecordCount > 0)
+    const streak = hasLastWeek && hasThisWeek ? 2 : hasThisWeek ? 1 : 0
+
+    return {
+      weeklyShareCount: totalWeekly,
+      weeklyGoal: 5,
+      streakWeeks: streak,
+      totalBubbles: myBubbles.length,
+      topContributionBubble: topBubble?.bubble.weeklyRecordCount ? topBubble.bubble.name : null,
+    }
+  }, [classified])
 
   // 역할 필터
   const roleFiltered = useMemo(() => {
@@ -159,6 +190,21 @@ export function BubbleListContainer() {
   return (
     <div className="content-feed flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
+
+      {/* 개인 활동 배너 — 버블이 1개 이상일 때만 */}
+      {contentTab === 'bubbles' && classified.length > 0 && !isLoading && (
+        <div className="pt-3">
+          <BubbleMyStats {...myStats} />
+        </div>
+      )}
+
+      {/* HOT 버블 스트립 — 활동이 있는 버블이 2개 이상일 때만 */}
+      {contentTab === 'bubbles' && hotBubbles.length >= 2 && !isLoading && (
+        <BubbleHotStrip
+          bubbles={hotBubbles}
+          onBubbleClick={(id) => router.push(`/bubbles/${id}`)}
+        />
+      )}
 
       <StickyTabs
         tabs={[{ key: 'bubbles' as const, label: '버블' }, { key: 'bubblers' as const, label: '버블러' }]}
@@ -272,16 +318,31 @@ export function BubbleListContainer() {
             </div>
           ) : paged.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-              <Users size={48} style={{ color: 'var(--text-hint)' }} />
+              <div
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
+                style={{ backgroundColor: 'var(--accent-social-light)' }}
+              >
+                <Users size={32} style={{ color: 'var(--accent-social)' }} />
+              </div>
               <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
                 {searchQuery || filterRules.length > 0 ? '조건에 맞는 버블이 없어요' : '아직 버블이 없어요'}
               </p>
               <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
                 {searchQuery || filterRules.length > 0 ? '필터를 변경해보세요' : '버블을 만들어 맛집을 공유해보세요'}
               </p>
+              {!searchQuery && filterRules.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/bubbles/create')}
+                  className="mt-4 rounded-full px-5 py-2.5 text-[13px] font-bold text-white transition-transform active:scale-95"
+                  style={{ backgroundColor: 'var(--accent-social)' }}
+                >
+                  첫 버블 만들기
+                </button>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col gap-3 px-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">
+            <div className="flex flex-col gap-3 px-4 pb-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">
               {paged.map(({ bubble: b, role }) => (
                 <BubbleCard
                   key={b.id}
@@ -301,8 +362,8 @@ export function BubbleListContainer() {
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="text-[14px] font-semibold disabled:opacity-30"
-                style={{ color: 'var(--text-sub)' }}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold disabled:opacity-30"
+                style={{ color: 'var(--text-sub)', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
               >
                 &lt;
               </button>
@@ -313,8 +374,8 @@ export function BubbleListContainer() {
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="text-[14px] font-semibold disabled:opacity-30"
-                style={{ color: 'var(--text-sub)' }}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold disabled:opacity-30"
+                style={{ color: 'var(--text-sub)', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
               >
                 &gt;
               </button>
@@ -339,7 +400,12 @@ export function BubbleListContainer() {
           </FilterChipGroup>
 
           <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-            <User size={48} style={{ color: 'var(--text-hint)' }} />
+            <div
+              className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
+              style={{ backgroundColor: 'var(--accent-social-light)' }}
+            >
+              <User size={32} style={{ color: 'var(--accent-social)' }} />
+            </div>
             <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
               아직 버블러가 없어요
             </p>

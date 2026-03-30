@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import { getGooglePlaceDetail } from '@/infrastructure/api/google-places'
 
 /** 주소에서 구/군 추출 ("서울 강남구 도곡로 408" → "강남구") */
 function extractDistrict(address: string | null): string | null {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   const { data: existing } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, phone, kakao_map_url, next_refresh_at')
+    .select('id, name, genre, area, phone, kakao_map_url, next_refresh_at, external_ids')
     .ilike('name', name.trim())
     .limit(1)
     .maybeSingle()
@@ -60,6 +61,18 @@ export async function POST(request: NextRequest) {
       if (lat) updates.lat = lat
       if (lng) updates.lng = lng
       if (externalIds) updates.external_ids = externalIds
+
+      // stale 갱신 시에도 Google Place Detail 보강
+      const staleGoogleId = (externalIds?.google ?? existing.external_ids?.google) as string | undefined
+      if (staleGoogleId) {
+        const detail = await getGooglePlaceDetail(staleGoogleId)
+        if (detail) {
+          if (detail.phone && !updates.phone) updates.phone = detail.phone
+          if (detail.hours) updates.hours = detail.hours
+          if (detail.googleRating) updates.google_rating = detail.googleRating
+        }
+      }
+
       await supabase.from('restaurants').update(updates).eq('id', existing.id)
     }
     return NextResponse.json({
@@ -71,6 +84,20 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString()
   const refreshAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
+  // Google Place Detail로 영업시간·전화번호 보강
+  let enrichedPhone = phone ?? null
+  let enrichedHours = null
+  let enrichedGoogleRating = null
+  const googlePlaceId = externalIds?.google as string | undefined
+  if (googlePlaceId) {
+    const detail = await getGooglePlaceDetail(googlePlaceId)
+    if (detail) {
+      if (!enrichedPhone && detail.phone) enrichedPhone = detail.phone
+      enrichedHours = detail.hours
+      enrichedGoogleRating = detail.googleRating
+    }
+  }
+
   const { data, error } = await supabase
     .from('restaurants')
     .insert({
@@ -81,7 +108,9 @@ export async function POST(request: NextRequest) {
       price_range: safePriceRange,
       lat: lat ?? null,
       lng: lng ?? null,
-      phone: phone ?? null,
+      phone: enrichedPhone,
+      hours: enrichedHours,
+      google_rating: enrichedGoogleRating,
       kakao_map_url: kakaoMapUrl ?? null,
       external_ids: externalIds ?? null,
       cached_at: now,
@@ -108,7 +137,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { id, genre } = body
+  const { id, genre, priceRange } = body
 
   if (!id) {
     return NextResponse.json({ error: 'ID_REQUIRED' }, { status: 400 })
@@ -117,6 +146,10 @@ export async function PATCH(request: NextRequest) {
   const updates: Record<string, unknown> = {}
   if (genre && VALID_GENRES.has(genre)) {
     updates.genre = genre
+  }
+  if (priceRange != null) {
+    const safe = Math.min(Math.max(Math.round(Number(priceRange)), 1), 3)
+    updates.price_range = safe
   }
 
   if (Object.keys(updates).length === 0) {

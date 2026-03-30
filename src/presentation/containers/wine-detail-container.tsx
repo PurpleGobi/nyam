@@ -404,6 +404,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                   type="wine"
                   value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
                   onChange={() => {}}
+                  readOnly
                   referencePoints={[...allRecordDots, ...quadrantRefs].map((d) => ({
                     x: d.avgAxisX,
                     y: d.avgAxisY,
