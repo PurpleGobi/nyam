@@ -4,7 +4,7 @@
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
 export type HomeTab = 'restaurant' | 'wine'
-export type ViewMode = 'card' | 'list' | 'calendar'
+export type ViewMode = 'card' | 'list' | 'calendar' | 'map'
 
 export interface ViewModeState {
   filters: FilterRule[]
@@ -13,13 +13,12 @@ export interface ViewModeState {
 }
 
 export type ViewModeStateKey =
-  | 'restaurant_card' | 'restaurant_list' | 'restaurant_calendar'
-  | 'wine_card' | 'wine_list' | 'wine_calendar'
+  | 'restaurant_card' | 'restaurant_list' | 'restaurant_calendar' | 'restaurant_map'
+  | 'wine_card' | 'wine_list' | 'wine_calendar' | 'wine_map'
 
 export interface HomeState {
   activeTab: HomeTab
   viewMode: ViewMode
-  isMapOpen: boolean
   activeChipId: string | null
   viewModeStates: Record<ViewModeStateKey, ViewModeState>
 }

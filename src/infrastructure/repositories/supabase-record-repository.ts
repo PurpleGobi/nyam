@@ -217,7 +217,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     const wineIds = [...new Set(rows.filter((r) => r.target_type === 'wine').map((r) => r.target_id))]
 
     const restaurantMap = new Map<string, {
-      name: string; genre: string | null; area: string | null; photo_url: string | null
+      name: string; genre: string | null; district: string | null; area: string[] | null; photo_url: string | null
       lat: number | null; lng: number | null
       price_range: number | null; michelin_stars: number | null; has_blue_ribbon: boolean | null; media_appearances: string[] | null
     }>()
@@ -229,11 +229,11 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (restaurantIds.length > 0) {
       const { data: restaurants } = await this.supabase
         .from('restaurants')
-        .select('id, name, genre, area, photos, lat, lng, price_range, michelin_stars, has_blue_ribbon, media_appearances')
+        .select('id, name, genre, district, area, photos, lat, lng, price_range, michelin_stars, has_blue_ribbon, media_appearances')
         .in('id', restaurantIds)
       for (const r of restaurants ?? []) {
         restaurantMap.set(r.id, {
-          name: r.name, genre: r.genre, area: r.area, photo_url: r.photos?.[0] ?? null,
+          name: r.name, genre: r.genre, district: r.district ?? null, area: r.area, photo_url: r.photos?.[0] ?? null,
           lat: r.lat ?? null, lng: r.lng ?? null,
           price_range: r.price_range, michelin_stars: r.michelin_stars, has_blue_ribbon: r.has_blue_ribbon, media_appearances: r.media_appearances,
         })
@@ -302,12 +302,13 @@ export class SupabaseRecordRepository implements RecordRepository {
         ...base,
         targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
         targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
-        targetArea: isRestaurant ? (restaurant?.area ?? null) : (wine?.region ?? null),
+        targetArea: isRestaurant ? (restaurant?.district ?? restaurant?.area?.[0] ?? null) : (wine?.region ?? null),
         targetPhotoUrl: recordPhotoMap.get(row.id) ?? (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
         targetLat: isRestaurant ? (restaurant?.lat ?? null) : null,
         targetLng: isRestaurant ? (restaurant?.lng ?? null) : null,
         source: followingTargetIds.has(row.target_id) ? 'following' as const : 'mine' as const,
         genre: restaurant?.genre ?? null,
+        district: restaurant?.district ?? null,
         area: restaurant?.area ?? null,
         priceRange: restaurant?.price_range ?? null,
         michelinStars: restaurant?.michelin_stars ?? null,

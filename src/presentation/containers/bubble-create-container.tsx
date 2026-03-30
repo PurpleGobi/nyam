@@ -4,16 +4,20 @@ import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
+import { useRecordsWithTarget } from '@/application/hooks/use-records'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
-import { uploadBubbleIcon, settingsRepo, bubbleRepo } from '@/shared/di/container'
+import { uploadBubbleIcon, bubbleRepo } from '@/shared/di/container'
 
 export function BubbleCreateContainer() {
   const router = useRouter()
   const { user } = useAuth()
   const { createBubble, isLoading } = useBubbleCreate()
+  const { records } = useRecordsWithTarget(user?.id ?? null)
+  const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
 
   const handleSubmit = async (data: {
     name: string
@@ -44,14 +48,17 @@ export function BubbleCreateContainer() {
         createdBy: user.id,
       })
 
-      // 공개목록 범위 → users.privacy_records (전체 버블 공통)
-      await settingsRepo.updatePrivacyRecords(user.id, data.privacy.privacyRecords)
-
       // 정보공개 범위 → bubble_members.visibility_override (이 버블 개별)
-      // null = 모두 공개 (기본값), JSONB = 부분 공개
       await bubbleRepo.updateMember(result.bubble.id, user.id, {
         visibilityOverride: data.privacy.visibilityOverride,
       })
+
+      // 공유 규칙 저장 + 소급 적용 (기존 기록 전부 재평가)
+      await syncAllRecordsToBubble(
+        result.bubble.id,
+        data.privacy.shareRule,
+        records as unknown as Array<{ id: string } & Record<string, unknown>>,
+      )
 
       router.replace(`/bubbles/${result.bubble.id}`)
     } catch {

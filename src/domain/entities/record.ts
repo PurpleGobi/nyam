@@ -226,7 +226,8 @@ export interface RecordWithTarget extends DiningRecord {
   targetLng: number | null
   source?: RecordSource
   genre?: string | null
-  area?: string | null
+  district?: string | null
+  area?: string[] | null
   priceRange?: number | null
   michelinStars?: number | null
   hasBlueRibbon?: boolean | null

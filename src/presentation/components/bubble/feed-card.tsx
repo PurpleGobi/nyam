@@ -51,10 +51,12 @@ export function FeedCard({
   const scoreColor = targetType === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="card flex w-full flex-col overflow-hidden rounded-xl text-left"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      className="card flex w-full cursor-pointer flex-col overflow-hidden rounded-xl text-left"
     >
       {/* 사진 그리드 */}
       {photoUrls.length > 0 && (
@@ -139,7 +141,7 @@ export function FeedCard({
           </p>
         )}
       </div>
-    </button>
+    </div>
   )
 }
 

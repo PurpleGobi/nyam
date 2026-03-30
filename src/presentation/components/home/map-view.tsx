@@ -167,7 +167,7 @@ export function MapView({ records, onNavigate }: MapViewProps) {
 
     const bounds = new kakao.maps.LatLngBounds()
 
-    geoRecords.forEach((record) => {
+    geoRecords.forEach((record, idx) => {
       const position = new kakao.maps.LatLng(record.lat, record.lng)
       bounds.extend(position)
 
@@ -175,11 +175,15 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       el.innerHTML = createPinHtml(record.score, false, record.name)
       el.onclick = () => handleSelect(record.restaurantId)
 
+      // 리스트 순서와 일치하도록 상위 항목이 더 높은 zIndex
+      const zIndex = geoRecords.length - idx
+
       const overlay = new kakao.maps.CustomOverlay({
         position,
         content: el,
         yAnchor: 1,
         clickable: true,
+        zIndex,
       })
       overlay.setMap(map)
       overlaysRef.current.push({ overlay, el, id: record.restaurantId })
@@ -199,7 +203,8 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       const isSelected = item.id === selectedId
       item.el.innerHTML = createPinHtml(record.score, isSelected, record.name)
       // onclick은 재할당하지 않음 — initMap에서 한 번만 등록
-      item.overlay.setZIndex(isSelected ? 100 : 1)
+      const listIdx = geoRecords.findIndex((r) => r.restaurantId === item.id)
+      item.overlay.setZIndex(isSelected ? 100 : geoRecords.length - listIdx)
     }
   }, [selectedId, geoRecords])
 

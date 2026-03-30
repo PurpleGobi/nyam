@@ -188,7 +188,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     )
   }
 
-  const metaParts = [restaurant.genre, restaurant.area]
+  const metaParts = [restaurant.genre, restaurant.area?.join(' · ')]
   if (restaurant.priceRange) metaParts.push('₩'.repeat(restaurant.priceRange))
   const metaText = metaParts.filter(Boolean).join(' · ')
   const mySubText = visitCount > 0 ? `${visitCount}회 방문` : '미방문'

@@ -7,6 +7,7 @@ export type BubbleJoinPolicy = 'invite_only' | 'closed' | 'manual_approve' | 'au
 export type BubbleFocusType = 'all' | 'restaurant' | 'wine'
 export type BubbleMemberRole = 'owner' | 'admin' | 'member' | 'follower'
 export type BubbleMemberStatus = 'pending' | 'active' | 'rejected'
+export type BubbleShareRuleMode = 'all' | 'filtered'
 
 export interface Bubble {
   id: string
@@ -42,6 +43,18 @@ export interface Bubble {
   updatedAt: string
 }
 
+/** 버블 멤버별 자동 공유 규칙 — 홈 FilterRule 재사용 */
+export interface BubbleShareRule {
+  mode: BubbleShareRuleMode
+  rules: Array<{
+    conjunction?: 'and' | 'or'
+    attribute: string
+    operator: string
+    value: string | number | boolean | null
+  }>
+  conjunction: 'and' | 'or'
+}
+
 /** 가시성 오버라이드 7개 키 (users.visibility_bubble과 동일 구조) */
 export interface VisibilityOverride {
   score: boolean
@@ -58,6 +71,7 @@ export interface BubbleMember {
   userId: string
   role: BubbleMemberRole
   status: BubbleMemberStatus
+  shareRule: BubbleShareRule | null
   visibilityOverride: VisibilityOverride | null
   tasteMatchPct: number | null
   commonTargetCount: number

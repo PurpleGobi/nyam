@@ -267,10 +267,10 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
 /* ── 사분면 영역 라벨 ── */
 
 const QUADRANT_COLORS: Record<string, string> = {
-  'top-right':    '#8B7355',   // 따뜻한 브라운 — 둘 다 좋은
-  'top-left':     '#7A9BAE',   // 차분한 블루 — 경험은 좋은
-  'bottom-right': '#A08B6E',   // 머스타드 — 맛은 좋은
-  'bottom-left':  '#9E9490',   // 뉴트럴 그레이 — 아쉬운
+  'top-right':    '#7A9BAE',   // 통일 — 차분한 블루
+  'top-left':     '#7A9BAE',   // 통일 — 차분한 블루
+  'bottom-right': '#7A9BAE',   // 통일 — 차분한 블루
+  'bottom-left':  '#7A9BAE',   // 통일 — 차분한 블루
 }
 
 function QuadrantLabel({ quadrant, text }: { quadrant: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; text: string }) {

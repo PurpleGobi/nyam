@@ -18,7 +18,7 @@ function mapDbToRestaurant(data: Record<string, unknown>): Restaurant {
     address: data.address as string | null,
     country: (data.country as string) ?? '한국',
     city: (data.city as string) ?? '서울',
-    area: data.area as string | null,
+    area: data.area as string[] | null,
     district: data.district as string | null,
     genre: data.genre as Restaurant['genre'],
     priceRange: data.price_range as Restaurant['priceRange'],

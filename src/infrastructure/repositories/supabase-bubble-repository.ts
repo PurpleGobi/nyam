@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
@@ -20,6 +20,7 @@ const BUBBLE_FIELD_MAP: Record<string, string> = {
 
 const MEMBER_FIELD_MAP: Record<string, string> = {
   bubbleId: 'bubble_id', userId: 'user_id',
+  shareRule: 'share_rule',
   visibilityOverride: 'visibility_override', tasteMatchPct: 'taste_match_pct',
   commonTargetCount: 'common_target_count', avgSatisfaction: 'avg_satisfaction',
   memberUniqueTargetCount: 'member_unique_target_count', weeklyShareCount: 'weekly_share_count',
@@ -79,6 +80,7 @@ function toBubbleMember(row: Record<string, unknown>): BubbleMember {
     userId: row.user_id as string,
     role: row.role as BubbleMemberRole,
     status: row.status as BubbleMemberStatus,
+    shareRule: row.share_rule as BubbleShareRule | null,
     visibilityOverride: row.visibility_override as VisibilityOverride | null,
     tasteMatchPct: row.taste_match_pct as number | null,
     commonTargetCount: (row.common_target_count as number) ?? 0,
@@ -589,7 +591,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   async getUserBubbles(userId: string): Promise<UserBubbleMembership[]> {
     const { data } = await this.supabase
       .from('bubble_members')
-      .select('bubble_id, status, bubbles(name, icon, icon_bg_color)')
+      .select('bubble_id, status, share_rule, bubbles(name, icon, icon_bg_color)')
       .eq('user_id', userId)
     return (data ?? []).map((m: Record<string, unknown>) => {
       const bubble = m.bubbles as Record<string, unknown> | null
@@ -599,6 +601,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         bubbleIcon: (bubble?.icon as string) ?? null,
         bubbleIconBgColor: (bubble?.icon_bg_color as string) ?? null,
         status: m.status as string,
+        shareRule: m.share_rule as BubbleShareRule | null,
       }
     })
   }
@@ -621,5 +624,50 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .delete()
       .eq('record_id', recordId)
       .eq('bubble_id', bubbleId)
+  }
+
+  // ─── 자동 공유 동기화 ───
+
+  async updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void> {
+    await this.supabase
+      .from('bubble_members')
+      .update({ share_rule: shareRule })
+      .eq('bubble_id', bubbleId)
+      .eq('user_id', userId)
+  }
+
+  async batchUpsertAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void> {
+    if (recordIds.length === 0) return
+    const rows = recordIds.map((recordId) => ({
+      record_id: recordId,
+      bubble_id: bubbleId,
+      shared_by: userId,
+      auto_synced: true,
+    }))
+    const { error } = await this.supabase
+      .from('bubble_shares')
+      .upsert(rows, { onConflict: 'record_id,bubble_id' })
+    if (error) throw new Error(`자동 공유 일괄 추가 실패: ${error.message}`)
+  }
+
+  async batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void> {
+    if (recordIds.length === 0) return
+    await this.supabase
+      .from('bubble_shares')
+      .delete()
+      .in('record_id', recordIds)
+      .eq('bubble_id', bubbleId)
+      .eq('shared_by', userId)
+      .eq('auto_synced', true)
+  }
+
+  async getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]> {
+    const { data } = await this.supabase
+      .from('bubble_shares')
+      .select('record_id')
+      .eq('bubble_id', bubbleId)
+      .eq('shared_by', userId)
+      .eq('auto_synced', true)
+    return (data ?? []).map((r) => r.record_id as string)
   }
 }

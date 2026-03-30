@@ -41,7 +41,7 @@ export interface Restaurant {
   address: string | null
   country: string
   city: string
-  area: string | null
+  area: string[] | null
   district: string | null
   genre: RestaurantGenre | null
   priceRange: PriceRange | null

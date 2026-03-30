@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 
+/** 주소에서 구/군 추출 ("서울 강남구 도곡로 408" → "강남구") */
+function extractDistrict(address: string | null): string | null {
+  if (!address) return null
+  const parts = address.split(' ')
+  const found = parts.find((p) => /[구군시]$/.test(p) && p.length >= 2)
+  return found ?? null
+}
+
 const VALID_GENRES = new Set([
   '한식', '일식', '중식', '태국', '베트남', '인도',
   '이탈리안', '프렌치', '스페인', '지중해', '미국', '멕시칸',
@@ -17,6 +25,9 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const { name, address, area, genre, priceRange, lat, lng, phone, externalIds, kakaoMapUrl } = body
+
+  // district: 명시적으로 전달되거나, address에서 구/군 추출
+  const district = body.district ?? extractDistrict(address)
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'NAME_REQUIRED' }, { status: 400 })
@@ -42,7 +53,7 @@ export async function POST(request: NextRequest) {
       const refreshAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       const updates: Record<string, unknown> = { cached_at: now, next_refresh_at: refreshAt }
       if (address) updates.address = address
-      if (area) updates.area = area
+      if (district) updates.district = district
       if (safeGenre) updates.genre = safeGenre
       if (phone) updates.phone = phone
       if (kakaoMapUrl) updates.kakao_map_url = kakaoMapUrl
@@ -65,7 +76,7 @@ export async function POST(request: NextRequest) {
     .insert({
       name: name.trim(),
       address: address ?? null,
-      area: area ?? null,
+      district: district ?? null,
       genre: safeGenre,
       price_range: safePriceRange,
       lat: lat ?? null,

@@ -647,23 +647,7 @@ export default function DesignSystemPage() {
             <IconButton icon={Search} active={searchActive} onClick={() => { setSearchActive(!searchActive); setFilterActive(false); setSortActive(false) }} />
           </div>
 
-          {/* 필터칩 */}
-          <FilterChipGroup className="mt-2.5">
-            {demoChips.map((chip) => (
-              <FilterChip
-                key={chip.id}
-                active={activeChip === chip.id}
-                onClick={() => {
-                  setActiveChip(chip.id)
-                  setChipName(chip.name)
-                }}
-              >
-                {chip.name}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
-
-          {/* 필터 패널 (Notion 스타일) */}
+          {/* 필터 패널 */}
           {filterActive && (
             <div style={{ marginTop: '10px' }}>
               <FilterSystem
@@ -685,6 +669,22 @@ export default function DesignSystemPage() {
               />
             </div>
           )}
+
+          {/* 필터칩 (패널 아래) */}
+          <FilterChipGroup className="mt-2.5">
+            {demoChips.map((chip) => (
+              <FilterChip
+                key={chip.id}
+                active={activeChip === chip.id}
+                onClick={() => {
+                  setActiveChip(chip.id)
+                  setChipName(chip.name)
+                }}
+              >
+                {chip.name}
+              </FilterChip>
+            ))}
+          </FilterChipGroup>
 
           {/* 소팅 드롭다운 */}
           {sortActive && (

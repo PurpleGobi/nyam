@@ -83,6 +83,8 @@ const FIELD_MAP: Record<string, string> = {
   pairing_categories: 'pairingCategories',
   aroma_labels: 'aromaLabels',
   body_level: 'bodyLevel',
+  area: 'targetArea',
+  district: 'district',
 }
 
 export function getRecordField(record: Record<string, unknown>, attrKey: string): unknown {
@@ -187,6 +189,14 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
   if (attribute === 'status' && String(value) === 'following') {
     const source = record.source ?? record['source']
     const matches = source === 'following'
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // ── 배열 속성: area (생활권, TEXT[]) ──
+  if (attribute === 'area') {
+    const arr = record['area'] as string[] | null | undefined
+    if (!arr || !Array.isArray(arr)) return operator === 'neq'
+    const matches = arr.includes(String(value))
     return operator === 'eq' ? matches : !matches
   }
 

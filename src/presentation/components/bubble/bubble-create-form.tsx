@@ -3,14 +3,14 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { Lock, Globe, ImagePlus, X, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
-import type { BubbleJoinPolicy, BubbleVisibility, VisibilityOverride } from '@/domain/entities/bubble'
-import type { PrivacyRecords } from '@/domain/entities/user'
+import type { BubbleJoinPolicy, BubbleVisibility, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
 import type { InviteExpiry } from '@/application/hooks/use-bubble-create'
 import { JoinPolicySelector } from '@/presentation/components/bubble/join-policy-selector'
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
+import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
 
 export interface BubblePrivacySettings {
-  privacyRecords: PrivacyRecords
+  shareRule: BubbleShareRule | null
   visibilityOverride: VisibilityOverride | null
 }
 
@@ -77,8 +77,9 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   const [selectedColor, setSelectedColor] = useState('#F97316')
   const [inviteExpiry, setInviteExpiry] = useState<InviteExpiry>('30d')
   const [showIconPicker, setShowIconPicker] = useState(false)
-  // 공개 설정
-  const [privacyRecords, setPrivacyRecords] = useState<PrivacyRecords>('shared_only')
+  // 공유 규칙 (자동 동기화)
+  const [shareRule, setShareRule] = useState<BubbleShareRule | null>({ mode: 'all', rules: [], conjunction: 'and' })
+  // 정보 공개 범위
   const [infoScope, setInfoScope] = useState<'all' | 'partial'>('all')
   const [visibilityFields, setVisibilityFields] = useState<VisibilityOverride>({ ...ALL_VISIBLE })
   const [showFieldDetail, setShowFieldDetail] = useState(false)
@@ -136,7 +137,7 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   }
 
   const buildPrivacy = (): BubblePrivacySettings => ({
-    privacyRecords,
+    shareRule,
     visibilityOverride: infoScope === 'all' ? null : visibilityFields,
   })
 
@@ -447,32 +448,8 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
           동반자, 개인 메모 등 개인정보는 항상 비공개입니다.
         </p>
 
-        {/* 1. 공개목록의 범위 */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[12px] font-medium text-[var(--text-sub)]">공개 목록의 범위</span>
-          <div className="flex gap-2">
-            {([
-              { value: 'all' as const, label: '모두 공개', icon: Eye, desc: '내 모든 기록이\n버블에 공개' },
-              { value: 'shared_only' as const, label: '부분 공개', icon: EyeOff, desc: '공유한 기록만\n버블에 공개' },
-            ]).map(({ value, label, icon: VIcon, desc }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setPrivacyRecords(value)}
-                className="flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 transition-colors"
-                style={{
-                  backgroundColor: privacyRecords === value ? 'var(--accent-social)' : 'var(--bg-card)',
-                  color: privacyRecords === value ? '#FFFFFF' : 'var(--text-sub)',
-                  border: `1.5px solid ${privacyRecords === value ? 'var(--accent-social)' : 'var(--border)'}`,
-                }}
-              >
-                <VIcon size={18} />
-                <span className="text-[12px] font-semibold">{label}</span>
-                <span className="whitespace-pre-line text-center text-[10px] opacity-70">{desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* 1. 공유 규칙 (자동 동기화) */}
+        <ShareRuleEditor value={shareRule} onChange={setShareRule} />
 
         {/* 2. 정보공개의 범위 */}
         <div className="flex flex-col gap-1.5">
@@ -561,6 +538,7 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
       >
         {isLoading ? '생성 중...' : '버블 만들기'}
       </button>
+
     </div>
   )
 }

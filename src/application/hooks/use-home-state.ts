@@ -17,7 +17,7 @@ function getStoredTab(): HomeTab | null {
 function getStoredViewMode(): ViewMode | null {
   if (typeof window === 'undefined') return null
   const v = sessionStorage.getItem(VIEW_STORAGE_KEY)
-  return v === 'card' || v === 'list' || v === 'calendar' ? v : null
+  return v === 'card' || v === 'list' || v === 'calendar' || v === 'map' ? v : null
 }
 
 function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> {
@@ -25,9 +25,11 @@ function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> 
     restaurant_card: { ...DEFAULT_VIEW_MODE_STATE },
     restaurant_list: { ...DEFAULT_VIEW_MODE_STATE },
     restaurant_calendar: { ...DEFAULT_VIEW_MODE_STATE },
+    restaurant_map: { ...DEFAULT_VIEW_MODE_STATE },
     wine_card: { ...DEFAULT_VIEW_MODE_STATE },
     wine_list: { ...DEFAULT_VIEW_MODE_STATE },
     wine_calendar: { ...DEFAULT_VIEW_MODE_STATE },
+    wine_map: { ...DEFAULT_VIEW_MODE_STATE },
   }
 }
 
@@ -49,7 +51,6 @@ export function useHomeState(options?: UseHomeStateOptions) {
     _setViewMode(mode)
     sessionStorage.setItem(VIEW_STORAGE_KEY, mode)
   }, [])
-  const [isMapOpen, setIsMapOpen] = useState(false)
   const [activeChipId, setActiveChipId] = useState<string | null>(null)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isSortOpen, setIsSortOpen] = useState(false)
@@ -83,14 +84,22 @@ export function useHomeState(options?: UseHomeStateOptions) {
 
   const cycleViewMode = useCallback(() => {
     _setViewMode((prev) => {
-      const next = VIEW_MODE_CYCLE[(VIEW_MODE_CYCLE.indexOf(prev) + 1) % VIEW_MODE_CYCLE.length]
+      // map 뷰에서 뷰토글 클릭 시 card로 복귀, 그 외에는 card→list→calendar 순환
+      const idx = VIEW_MODE_CYCLE.indexOf(prev)
+      const next = idx === -1
+        ? VIEW_MODE_CYCLE[0]
+        : VIEW_MODE_CYCLE[(idx + 1) % VIEW_MODE_CYCLE.length]
       sessionStorage.setItem(VIEW_STORAGE_KEY, next)
       return next
     })
   }, [])
 
   const toggleMap = useCallback(() => {
-    setIsMapOpen((prev) => !prev)
+    _setViewMode((prev) => {
+      const next = prev === 'map' ? 'card' : 'map'
+      sessionStorage.setItem(VIEW_STORAGE_KEY, next)
+      return next
+    })
   }, [])
 
   // 상호 배타: 필터/소팅/검색 중 하나만 열림
@@ -118,7 +127,7 @@ export function useHomeState(options?: UseHomeStateOptions) {
 
   return {
     activeTab, setActiveTab, viewMode, cycleViewMode,
-    isMapOpen, toggleMap,
+    toggleMap,
     activeChipId, setActiveChipId,
     isFilterOpen, toggleFilter,
     isSortOpen, toggleSort,

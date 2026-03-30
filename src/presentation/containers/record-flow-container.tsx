@@ -19,6 +19,7 @@ import { RecordSuccess } from '@/presentation/components/record/record-success'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useSettings } from '@/application/hooks/use-settings'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
@@ -41,6 +42,7 @@ function RecordFlowInner() {
   const { user } = useAuth()
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
   const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
+  const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const entryPath = (searchParams.get('from') ?? 'camera') as AddFlowEntryPath
@@ -476,6 +478,9 @@ function RecordFlowInner() {
           }
         }
 
+        // 버블 자동 공유 동기화 (신규/수정 모두)
+        syncRecordToAllBubbles(savedRecord as unknown as { id: string } & Record<string, unknown>).catch(() => {})
+
         // 수정 완료 후 → 식당/와인 상세 페이지로 이동
         if (isEditMode) {
           const prefix = state.targetType === 'wine' ? 'wines' : 'restaurants'
@@ -499,7 +504,7 @@ function RecordFlowInner() {
         // useCreateRecord 내부에서 error state 처리
       }
     },
-    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType],
+    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles],
   )
 
   const handleBack = useCallback(() => router.back(), [router])

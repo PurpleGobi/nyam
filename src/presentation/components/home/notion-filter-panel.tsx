@@ -98,6 +98,8 @@ export function NotionFilterPanel({
                 attributes={attributes}
                 onUpdate={handleUpdateRule}
                 onDelete={handleDeleteRule}
+                conjunction={conjunction}
+                onConjunctionChange={onConjunctionChange}
                 accentColor={accentColor}
               />
             </div>

@@ -9,6 +9,7 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useAddFlow } from '@/application/hooks/use-add-flow'
 import { useCameraCapture } from '@/application/hooks/use-camera-capture'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { photoRepo, imageService } from '@/shared/di/container'
 import { parseExifFromBase64 } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -49,6 +50,7 @@ function AddFlowInner() {
 
   const { isRecognizing, result, identify, reset: resetCamera } = useCameraCapture()
   const { createRecord, isLoading: isQuickAdding } = useCreateRecord()
+  const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
@@ -259,6 +261,7 @@ function AddFlowInner() {
                 },
               })
               await uploadCapturedPhoto(record.id)
+              syncRecordToAllBubbles(record as unknown as { id: string } & Record<string, unknown>).catch(() => {})
               pushStep('success')
               return
             } catch {
@@ -363,6 +366,7 @@ function AddFlowInner() {
           },
         })
         await uploadCapturedPhoto(record.id)
+        syncRecordToAllBubbles(record as unknown as { id: string } & Record<string, unknown>).catch(() => {})
         pushStep('success')
         return
       } catch { /* 폴백 */ }

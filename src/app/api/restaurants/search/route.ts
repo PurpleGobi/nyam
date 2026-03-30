@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     genre: string | null
     genreDisplay: string | null
     categoryPath: string | null
-    area: string | null
+    district: string | null
     phone: string | null
     kakaoMapUrl: string | null
     externalId: string
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         genre: mapped?.genre ?? fallback ?? '기타',
         genreDisplay: mapped?.display ?? fallback ?? '기타',
         categoryPath: item.categoryDetail,
-        area: extractArea(item.address), phone: item.phone,
+        district: extractDistrict(item.address), phone: item.phone,
         kakaoMapUrl: item.kakaoMapUrl,
         externalId: `kakao_${item.kakaoId}`, externalIds: { kakao: item.kakaoId },
       })
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         genre: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
         genreDisplay: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
         categoryPath: item.category ?? null,
-        area: extractArea(item.address), phone: item.phone ?? null, kakaoMapUrl: null,
+        district: extractDistrict(item.address), phone: item.phone ?? null, kakaoMapUrl: null,
         externalId: `naver_${item.naverId ?? item.name}`,
         externalIds: item.naverId ? { naver: item.naverId } : {},
       })
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     for (const item of googleResult.value) {
       externals.push({
         name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: '기타', genreDisplay: '기타', categoryPath: null, area: extractArea(item.address), phone: null, kakaoMapUrl: null,
+        genre: '기타', genreDisplay: '기타', categoryPath: null, district: extractDistrict(item.address), phone: null, kakaoMapUrl: null,
         externalId: `google_${item.googlePlaceId}`, externalIds: { google: item.googlePlaceId },
       })
     }
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
     genre: ext.genre,
     genreDisplay: ext.genreDisplay,
     categoryPath: ext.categoryPath,
-    area: ext.area,
+    area: ext.district,
     address: ext.address,
     lat: ext.lat,
     lng: ext.lng,
@@ -161,7 +161,8 @@ export async function GET(request: NextRequest) {
   const externalData = dedupedExternals.map((ext) => ({
     name: ext.name,
     address: ext.address,
-    area: ext.area,
+    district: ext.district,
+    area: ext.district,
     genre: ext.genre,
     lat: ext.lat,
     lng: ext.lng,
@@ -191,11 +192,12 @@ function normalizeForDedup(name: string): string {
   return name.replace(/\s/g, '').toLowerCase()
 }
 
-/** 주소에서 동네명 추출 */
-function extractArea(address: string | null): string | null {
+/** 주소에서 구/군 추출 ("서울 강남구 도곡로 408" → "강남구") */
+function extractDistrict(address: string | null): string | null {
   if (!address) return null
   const parts = address.split(' ')
-  return parts.length >= 3 ? parts[parts.length - 1] : null
+  const found = parts.find((p) => /[구군시]$/.test(p) && p.length >= 2)
+  return found ?? null
 }
 
 /** 카카오 카테고리 → SSOT 매핑 테이블 */

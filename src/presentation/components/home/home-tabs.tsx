@@ -11,7 +11,6 @@ interface HomeTabsProps {
   onTabChange: (tab: HomeTab) => void
   onViewCycle: () => void
   onMapToggle: () => void
-  isMapOpen: boolean
   onFilterToggle: () => void
   isFilterOpen: boolean
   onSortToggle: () => void
@@ -23,7 +22,7 @@ interface HomeTabsProps {
   onSearchClear: () => void
 }
 
-const VIEW_ICONS: Record<ViewMode, typeof LayoutGrid> = {
+const VIEW_ICONS: Record<Exclude<ViewMode, 'map'>, typeof LayoutGrid> = {
   card: LayoutGrid,
   list: List,
   calendar: CalendarDays,
@@ -36,14 +35,16 @@ const HOME_TABS: { key: HomeTab; label: string; variant: 'food' | 'wine' }[] = [
 
 export function HomeTabs({
   activeTab, viewMode, onTabChange, onViewCycle,
-  onMapToggle, isMapOpen,
+  onMapToggle,
   onFilterToggle, isFilterOpen,
   onSortToggle, isSortOpen,
   onSearchToggle, isSearchOpen,
   searchQuery, onSearchQueryChange, onSearchClear,
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
-  const ViewIcon = VIEW_ICONS[viewMode]
+  const isMapView = viewMode === 'map'
+  // map 뷰일 때 뷰 사이클 아이콘은 card(기본) 표시
+  const ViewIcon = VIEW_ICONS[isMapView ? 'card' : viewMode]
   const tabType = foodActive ? 'food' : 'wine'
   const activeVariant = HOME_TABS.find((t) => t.key === activeTab)?.variant ?? 'food'
   const inputRef = useRef<HTMLInputElement>(null)
@@ -103,7 +104,7 @@ export function HomeTabs({
               <ViewIcon size={20} />
             </button>
             {foodActive && (
-              <button type="button" onClick={onMapToggle} className={`icon-button ${isMapOpen ? 'active map' : ''}`} title="지도">
+              <button type="button" onClick={onMapToggle} className={`icon-button ${isMapView ? 'active map' : ''}`} title="지도">
                 <Map size={20} />
               </button>
             )}

@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleShareRule } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -58,6 +58,7 @@ export interface UserBubbleMembership {
   bubbleIcon?: string | null
   bubbleIconBgColor?: string | null
   status: string
+  shareRule: BubbleShareRule | null
 }
 
 export interface MutualRecordItem {
@@ -138,4 +139,10 @@ export interface BubbleRepository {
   getRecordShares(recordId: string): Promise<BubbleShare[]>
   shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare>
   unshareRecord(recordId: string, bubbleId: string): Promise<void>
+
+  // 자동 공유 동기화
+  updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>
+  batchUpsertAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
+  batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
+  getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
 }

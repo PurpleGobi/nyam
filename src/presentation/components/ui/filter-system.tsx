@@ -1,56 +1,21 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Plus, X, Save, Layers, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, X, Save, Trash2 } from 'lucide-react'
 import type { FilterRule } from '@/domain/entities/saved-filter'
-import type { FilterAttribute, FilterAttributeType } from '@/domain/entities/filter-config'
-import { NyamSelect } from '@/presentation/components/ui/nyam-select'
+import type { FilterAttribute } from '@/domain/entities/filter-config'
+import { FilterRuleRow } from '@/presentation/components/home/filter-rule-row'
 
 /* ================================================================
-   FilterSystem — Notion 스타일 필터 패널 (공통 컴포넌트)
-   SSOT: DESIGN_SYSTEM.md §7-B, 04_filter_sort.md §3
-   사용처: 홈, 버블, Discover 등 모든 필터 가능 페이지
+   FilterSystem — Notion Advanced Filter (3단 중첩 지원)
    ================================================================ */
 
-// ─── 연산자 정의 ───
-
-const SELECT_OPERATORS = [
-  { value: 'eq', label: 'is' },
-  { value: 'neq', label: 'is not' },
-]
-
-const TEXT_OPERATORS = [
-  { value: 'eq', label: 'is' },
-  { value: 'neq', label: 'is not' },
-  { value: 'contains', label: 'contains' },
-  { value: 'not_contains', label: 'does not contain' },
-]
-
-const RANGE_OPERATORS = [
-  { value: 'gte', label: '≥' },
-  { value: 'lt', label: '<' },
-]
-
-function getOperatorsForType(type: FilterAttributeType) {
-  switch (type) {
-    case 'select':
-    case 'multi-select':
-      return SELECT_OPERATORS
-    case 'range':
-      return RANGE_OPERATORS
-    case 'text':
-      return TEXT_OPERATORS
-  }
-}
-
-// ─── 필터 규칙 그룹 (AND-of-ORs 지원) ───
-
-export interface FilterGroup {
+/** 재귀적 필터 그룹 — 룰 + 하위 그룹 */
+export interface NestedFilterGroup {
   conjunction: 'and' | 'or'
   rules: FilterRule[]
+  groups: NestedFilterGroup[]
 }
-
-// ─── Props ───
 
 export interface FilterSystemProps {
   rules: FilterRule[]
@@ -67,146 +32,156 @@ export interface FilterSystemProps {
   onClose?: () => void
 }
 
-// ─── 필터 규칙 행 ───
+const DEPTH_BG = [
+  'rgba(0,0,0,0.03)',
+  'rgba(0,0,0,0.05)',
+  'rgba(0,0,0,0.07)',
+]
 
-function FilterRuleRow({
-  index, rule, attributes, onUpdate, onDelete, accentColor,
+function makeDefaultRule(attributes: FilterAttribute[]): FilterRule {
+  const first = attributes[0]
+  return {
+    attribute: first?.key ?? '',
+    operator: 'eq',
+    value: first?.type === 'cascading-select' ? '' : (first?.options?.[0]?.value ?? ''),
+  }
+}
+
+/** 재귀 그룹 렌더러 */
+function FilterGroupView({
+  group,
+  onChange,
+  onDelete,
+  attributes,
+  accentColor,
+  depth,
+  isFirst,
+  parentConjunction,
+  onParentConjunctionChange,
 }: {
-  index: number
-  rule: FilterRule
+  group: NestedFilterGroup
+  onChange: (updated: NestedFilterGroup) => void
+  onDelete: () => void
   attributes: FilterAttribute[]
-  onUpdate: (index: number, updated: FilterRule) => void
-  onDelete: (index: number) => void
   accentColor?: string
+  depth: number
+  isFirst: boolean
+  parentConjunction: 'and' | 'or'
+  onParentConjunctionChange: (c: 'and' | 'or') => void
 }) {
-  const selectedAttr = attributes.find((a) => a.key === rule.attribute)
-  const operators = selectedAttr ? getOperatorsForType(selectedAttr.type) : SELECT_OPERATORS
+  const maxDepth = 3
 
-  const handleAttributeChange = (key: string) => {
-    const attr = attributes.find((a) => a.key === key)
-    const ops = attr ? getOperatorsForType(attr.type) : SELECT_OPERATORS
-    const defaultValue = attr?.options?.[0]?.value ?? ''
-    onUpdate(index, {
-      ...rule,
-      attribute: key,
-      operator: ops[0].value as FilterRule['operator'],
-      value: defaultValue,
-    })
+  const updateRule = (idx: number, updated: FilterRule) => {
+    const next = [...group.rules]
+    next[idx] = updated
+    onChange({ ...group, rules: next })
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      <NyamSelect
-        options={attributes.map((a) => ({ value: a.key, label: a.label }))}
-        value={rule.attribute}
-        onChange={handleAttributeChange}
-        accentColor={accentColor}
-      />
-      <NyamSelect
-        options={operators}
-        value={rule.operator}
-        onChange={(op) => onUpdate(index, { ...rule, operator: op as FilterRule['operator'] })}
-        accentColor={accentColor}
-      />
-      {selectedAttr?.options ? (
-        <NyamSelect
-          options={selectedAttr.options}
-          value={String(rule.value ?? '')}
-          onChange={(val) => onUpdate(index, { ...rule, value: val })}
-          accentColor={accentColor}
-        />
-      ) : (
-        <input
-          type="text"
-          value={String(rule.value ?? '')}
-          onChange={(e) => onUpdate(index, { ...rule, value: e.target.value })}
-          placeholder="값 입력"
-          className="nyam-input"
-          style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
-        />
-      )}
-      <button
-        type="button"
-        onClick={() => onDelete(index)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
-        style={{ color: 'var(--text-hint)' }}
-      >
-        <X size={15} />
-      </button>
-    </div>
-  )
-}
-
-// ─── + 필터 추가 드롭다운 ───
-
-function AddFilterDropdown({
-  onAddRule,
-  onAddGroup,
-}: {
-  onAddRule: () => void
-  onAddGroup: () => void
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+  const deleteRule = (idx: number) => {
+    const nextRules = group.rules.filter((_, i) => i !== idx)
+    if (nextRules.length === 0 && group.groups.length === 0) {
+      onDelete()
+    } else {
+      onChange({ ...group, rules: nextRules })
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }
+
+  const updateSubGroup = (idx: number, updated: NestedFilterGroup) => {
+    const next = [...group.groups]
+    next[idx] = updated
+    onChange({ ...group, groups: next })
+  }
+
+  const deleteSubGroup = (idx: number) => {
+    onChange({ ...group, groups: group.groups.filter((_, i) => i !== idx) })
+  }
+
+  const totalItems = group.rules.length + group.groups.length
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
-        style={{ color: 'var(--text-hint)' }}
-      >
-        <Plus size={12} style={{ opacity: 0.5 }} />
-        필터 추가
-      </button>
-      {open && (
-        <div
-          style={{
-            position: 'absolute', left: 0, top: '100%', zIndex: 90,
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            borderRadius: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.10)',
-            padding: '4px', minWidth: '180px',
-          }}
+    <div className="flex items-start gap-1 py-[3px]">
+      {/* 부모 기준 conjunction */}
+      {!isFirst && (
+        <button
+          type="button"
+          onClick={() => onParentConjunctionChange(parentConjunction === 'and' ? 'or' : 'and')}
+          className="w-[28px] shrink-0 pt-[5px] text-[11px]"
+          style={{ color: 'var(--text-hint)' }}
         >
+          {parentConjunction === 'and' ? 'And' : 'Or'}
+        </button>
+      )}
+
+      {/* 그룹 박스 */}
+      <div
+        className="min-w-0 flex-1 rounded-lg px-1.5 py-0.5"
+        style={{
+          backgroundColor: DEPTH_BG[Math.min(depth, DEPTH_BG.length - 1)],
+          border: '1px solid var(--border)',
+        }}
+      >
+        {/* 그룹 내 룰 */}
+        {group.rules.map((rule, ri) => (
+          <FilterRuleRow
+            key={ri}
+            index={ri}
+            rule={rule}
+            attributes={attributes}
+            onUpdate={updateRule}
+            onDelete={deleteRule}
+            conjunction={group.conjunction}
+            onConjunctionChange={(c) => onChange({ ...group, conjunction: c })}
+            accentColor={accentColor}
+          />
+        ))}
+
+        {/* 그룹 내 하위 그룹 (재귀) */}
+        {group.groups.map((sub, si) => (
+          <FilterGroupView
+            key={`sub-${si}`}
+            group={sub}
+            onChange={(updated) => updateSubGroup(si, updated)}
+            onDelete={() => deleteSubGroup(si)}
+            attributes={attributes}
+            accentColor={accentColor}
+            depth={depth + 1}
+            isFirst={group.rules.length === 0 && si === 0}
+            parentConjunction={group.conjunction}
+            onParentConjunctionChange={(c) => onChange({ ...group, conjunction: c })}
+          />
+        ))}
+
+        {/* 그룹 내 추가 버튼 */}
+        <div className="flex items-center gap-2 py-0.5">
           <button
             type="button"
-            onClick={() => { onAddRule(); setOpen(false) }}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[12px] font-medium transition-colors"
-            style={{ color: 'var(--text)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            onClick={() => onChange({ ...group, rules: [...group.rules, makeDefaultRule(attributes)] })}
+            className="flex items-center gap-0.5 text-[10px] font-medium"
+            style={{ color: accentColor ?? 'var(--accent-food)' }}
           >
-            <Plus size={14} style={{ color: 'var(--text-hint)' }} />
-            필터 추가
+            <Plus size={9} /> 추가
           </button>
-          <button
-            type="button"
-            onClick={() => { onAddGroup(); setOpen(false) }}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[12px] font-medium transition-colors"
-            style={{ color: 'var(--text)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-          >
-            <Layers size={14} style={{ color: 'var(--text-hint)' }} />
-            필터 그룹 추가
+          {depth < maxDepth - 1 && (
+            <button
+              type="button"
+              onClick={() => onChange({
+                ...group,
+                groups: [...group.groups, { conjunction: 'or', rules: [makeDefaultRule(attributes)], groups: [] }],
+              })}
+              className="flex items-center gap-0.5 text-[10px] font-medium"
+              style={{ color: accentColor ?? 'var(--accent-food)' }}
+            >
+              <Plus size={9} /> 그룹
+            </button>
+          )}
+          <button type="button" onClick={onDelete} style={{ color: 'var(--text-hint)' }}>
+            <X size={11} />
           </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
-
-// ─── 메인 FilterSystem 컴포넌트 ───
 
 export function FilterSystem({
   rules,
@@ -222,221 +197,110 @@ export function FilterSystem({
   accentColor,
   onClose,
 }: FilterSystemProps) {
-  const handleAddRule = () => {
-    const firstAttr = attributes[0]
-    if (!firstAttr) return
-    const newRule: FilterRule = {
-      attribute: firstAttr.key,
-      operator: 'eq',
-      value: firstAttr.options?.[0]?.value ?? '',
-    }
-    onRulesChange([...rules, newRule])
-  }
+  const [groups, setGroups] = useState<NestedFilterGroup[]>([])
 
-  const [subGroups, setSubGroups] = useState<FilterRule[][]>([])
-
-  const handleAddGroup = () => {
-    const firstAttr = attributes[0]
-    if (!firstAttr) return
-    setSubGroups([...subGroups, [{
-      attribute: firstAttr.key,
-      operator: 'eq',
-      value: firstAttr.options?.[0]?.value ?? '',
-    }]])
-  }
-
-  const handleUpdateRule = (index: number, updated: FilterRule) => {
-    const next = [...rules]
-    next[index] = updated
-    onRulesChange(next)
-  }
-
-  const handleDeleteRule = (index: number) => {
-    onRulesChange(rules.filter((_, i) => i !== index))
-  }
-
-  const toggleConjunction = () => {
-    onConjunctionChange(conjunction === 'and' ? 'or' : 'and')
-  }
-
-  const canSave = rules.length > 0 && chipName.trim().length > 0
+  const canSave = rules.length > 0
 
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      {/* 규칙 목록 */}
-      <div className="flex flex-col gap-2">
-        {rules.map((rule, index) => (
-          <div key={index} className="flex items-center gap-2">
-            {/* conjunction 라벨 */}
-            <div className="w-10 shrink-0 text-right">
-              {index === 0 ? (
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-hint)' }}>
-                  Where
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={toggleConjunction}
-                  className="rounded-md px-1.5 py-0.5 transition-colors"
-                  style={{
-                    fontSize: '11px', fontWeight: 600,
-                    backgroundColor: 'var(--bg-card)',
-                    color: 'var(--text-sub)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {conjunction === 'and' ? 'AND' : 'OR'}
-                </button>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <FilterRuleRow
-                index={index}
-                rule={rule}
-                attributes={attributes}
-                onUpdate={handleUpdateRule}
-                onDelete={handleDeleteRule}
-                accentColor={accentColor}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 서브 그룹 (AND 고정) */}
-      {subGroups.map((groupRules, gi) => (
-        <div
-          key={gi}
-          className="mt-2 rounded-lg p-3"
-          style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
-        >
-          <div className="mb-1.5 flex items-center justify-between">
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-hint)', textTransform: 'uppercase' }}>
-              AND 그룹
-            </span>
-            <button
-              type="button"
-              onClick={() => setSubGroups(subGroups.filter((_, i) => i !== gi))}
-              style={{ color: 'var(--text-hint)' }}
-            >
-              <X size={13} />
-            </button>
-          </div>
-          <div className="flex flex-col gap-2">
-            {groupRules.map((rule, ri) => (
-              <div key={ri} className="flex items-center gap-2">
-                <div className="w-10 shrink-0 text-right">
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-hint)' }}>
-                    {ri === 0 ? 'Where' : 'AND'}
-                  </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <FilterRuleRow
-                    index={ri}
-                    rule={rule}
-                    attributes={attributes}
-                    onUpdate={(idx, updated) => {
-                      const next = [...subGroups]
-                      next[gi] = [...next[gi]]
-                      next[gi][idx] = updated
-                      setSubGroups(next)
-                    }}
-                    onDelete={(idx) => {
-                      const next = [...subGroups]
-                      next[gi] = next[gi].filter((_, i) => i !== idx)
-                      if (next[gi].length === 0) {
-                        setSubGroups(next.filter((_, i) => i !== gi))
-                      } else {
-                        setSubGroups(next)
-                      }
-                    }}
-                    accentColor={accentColor}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const firstAttr = attributes[0]
-              if (!firstAttr) return
-              const next = [...subGroups]
-              next[gi] = [...next[gi], {
-                attribute: firstAttr.key,
-                operator: 'eq' as const,
-                value: firstAttr.options?.[0]?.value ?? '',
-              }]
-              setSubGroups(next)
-            }}
-            className="mt-2 flex items-center gap-1 text-[11px] font-medium"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            <Plus size={11} /> 조건 추가
-          </button>
-        </div>
+    <div className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+      {/* 최상위 룰 */}
+      {rules.map((rule, index) => (
+        <FilterRuleRow
+          key={index}
+          index={index}
+          rule={rule}
+          attributes={attributes}
+          onUpdate={(i, updated) => { const n = [...rules]; n[i] = updated; onRulesChange(n) }}
+          onDelete={(i) => onRulesChange(rules.filter((_, j) => j !== i))}
+          conjunction={conjunction}
+          onConjunctionChange={onConjunctionChange}
+          accentColor={accentColor}
+        />
       ))}
 
-      {/* 하단 액션: + 필터 추가 | 칩 이름 | 삭제 | 저장 */}
-      <div className={`${rules.length > 0 || subGroups.length > 0 ? 'mt-3' : ''} flex items-center gap-2`}>
-        <AddFilterDropdown
-          onAddRule={handleAddRule}
-          onAddGroup={handleAddGroup}
+      {/* 최상위 그룹 (재귀) */}
+      {groups.map((group, gi) => (
+        <FilterGroupView
+          key={`g-${gi}`}
+          group={group}
+          onChange={(updated) => { const n = [...groups]; n[gi] = updated; setGroups(n) }}
+          onDelete={() => setGroups(groups.filter((_, i) => i !== gi))}
+          attributes={attributes}
+          accentColor={accentColor}
+          depth={0}
+          isFirst={rules.length === 0 && gi === 0}
+          parentConjunction={conjunction}
+          onParentConjunctionChange={onConjunctionChange}
         />
+      ))}
 
-        {/* 칩 이름 입력 */}
-        <input
-          type="text"
-          value={chipName}
-          onChange={(e) => onChipNameChange?.(e.target.value)}
-          placeholder="칩 이름"
-          maxLength={20}
-          className="nyam-input"
-          style={{ flex: 1, fontSize: '12px', padding: '5px 10px' }}
-        />
-
-        {/* 삭제 (기존 칩 선택 시에만 표시) */}
-        {activeChipId && onDeleteChip && (
-          <button
-            type="button"
-            onClick={() => onDeleteChip(activeChipId)}
-            className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
-            style={{ color: 'var(--negative, #e55)' }}
-          >
-            <Trash2 size={12} />
-            삭제
-          </button>
-        )}
-
-        {/* 저장 / 닫기 */}
-        {canSave ? (
-          <button
-            type="button"
-            onClick={() => onSaveAsChip?.(chipName.trim())}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors"
-            style={{ color: 'var(--text-sub)' }}
-          >
-            <Save size={12} />
-            저장
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex shrink-0 items-center justify-center rounded-lg p-1.5 transition-colors"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            <X size={16} />
-          </button>
-        )}
+      {/* 추가 버튼 행 */}
+      <div className="flex items-center gap-3 py-1.5">
+        <button
+          type="button"
+          onClick={() => onRulesChange([...rules, makeDefaultRule(attributes)])}
+          className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium"
+          style={{ color: accentColor ?? 'var(--accent-food)' }}
+        >
+          <Plus size={10} /> 필터 추가
+        </button>
+        <button
+          type="button"
+          onClick={() => setGroups([...groups, { conjunction: 'or', rules: [makeDefaultRule(attributes)], groups: [] }])}
+          className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium"
+          style={{ color: accentColor ?? 'var(--accent-food)' }}
+        >
+          <Plus size={10} /> 그룹 추가
+        </button>
+        <button type="button" onClick={onClose} style={{ color: 'var(--text-hint)' }}>
+          <X size={13} />
+        </button>
       </div>
+
+      {/* 저장 행 */}
+      {rules.length > 0 && (
+        <div
+          className="flex items-center gap-1.5 pt-1.5"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <div
+            className="relative inline-flex items-center rounded-full px-2.5"
+            style={{ border: '1px solid var(--border)', height: '26px' }}
+          >
+            <span className="pointer-events-none invisible whitespace-pre text-[11px]">
+              {chipName || '신규 필터칩'}
+            </span>
+            <input
+              type="text"
+              value={chipName}
+              onChange={(e) => onChipNameChange?.(e.target.value)}
+              placeholder="신규 필터칩"
+              maxLength={20}
+              className="absolute inset-0 rounded-full bg-transparent px-2.5 text-[11px] outline-none"
+              style={{ color: 'var(--text)' }}
+            />
+          </div>
+          {activeChipId && onDeleteChip ? (
+            <button
+              type="button"
+              onClick={() => onDeleteChip(activeChipId)}
+              className="flex shrink-0 items-center justify-center"
+              style={{ color: '#E54D2E' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          ) : canSave ? (
+            <button
+              type="button"
+              onClick={() => onSaveAsChip?.(chipName.trim() || '신규 필터칩')}
+              className="flex shrink-0 items-center justify-center"
+              style={{ color: accentColor ?? 'var(--accent-food)' }}
+            >
+              <Save size={14} />
+            </button>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }

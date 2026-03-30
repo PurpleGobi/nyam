@@ -107,7 +107,7 @@ export function HomeContainer() {
   const { settings } = useSettings()
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
-    isMapOpen, toggleMap,
+    toggleMap,
     activeChipId, setActiveChipId,
     isFilterOpen, toggleFilter,
     isSortOpen, toggleSort,
@@ -278,8 +278,8 @@ export function HomeContainer() {
     return result
   }, [records, filterRules, conjunction, searchQuery, currentSort])
 
-  // 페이지네이션: 카드 5개, 리스트 10개
-  const pageSize = viewMode === 'list' ? 10 : 5
+  // 페이지네이션: 카드 5개, 리스트/지도 10개
+  const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
   const [currentRecordPage, setCurrentRecordPage] = useState(1)
   const totalRecordPages = Math.max(1, Math.ceil(allDisplayRecords.length / pageSize))
   const displayRecords = allDisplayRecords.slice(
@@ -326,6 +326,7 @@ export function HomeContainer() {
       lng: r.targetLng ?? 0,
       score: r.avgSatisfaction,
       distanceKm: null,
+      thumbnailUrl: r.targetPhotoUrl,
     }))
   }, [displayRecords, activeTab])
 
@@ -348,8 +349,8 @@ export function HomeContainer() {
 
   // 뷰 모드별 콘텐츠
   const renderContent = () => {
-    // 지도 뷰 (식당 전용, 별도 토글)
-    if (isMapOpen && activeTab === 'restaurant') {
+    // 지도 뷰 (식당 전용)
+    if (viewMode === 'map' && activeTab === 'restaurant') {
       if (mapRecords.length === 0) return renderEmptyState()
       return (
         <div className="pb-24">
@@ -396,7 +397,7 @@ export function HomeContainer() {
     if (viewMode === 'list') {
       if (displayRecords.length === 0) return renderEmptyState()
       return (
-        <div className="content-detail pb-24">
+        <div className="content-detail px-4 pb-24 md:px-8">
           {displayRecords.map((record, i) => (
             <CompactListItem
               key={record.id}
@@ -505,7 +506,6 @@ export function HomeContainer() {
           onTabChange={setActiveTab}
           onViewCycle={cycleViewMode}
           onMapToggle={toggleMap}
-          isMapOpen={isMapOpen}
           onFilterToggle={handleFilterToggle}
           isFilterOpen={isFilterOpen}
           onSortToggle={toggleSort}
@@ -589,7 +589,7 @@ export function HomeContainer() {
         )}
 
         {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && canShowStats && (
+        {!isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2 md:px-8">
             <StatsToggle
               isOpen={isStatsOpen}
@@ -679,7 +679,7 @@ export function HomeContainer() {
         )}
 
         {/* 추천 카드 */}
-        {!isCalendarMode && !isFollowingMode && !(isMapOpen && activeTab === 'restaurant') && recommendationCards.length > 0 && (
+        {!isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && recommendationCards.length > 0 && (
           <div className="px-4 pb-2 pt-3 md:px-8">
             <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>

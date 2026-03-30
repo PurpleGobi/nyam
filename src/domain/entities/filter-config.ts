@@ -2,11 +2,18 @@
 // R1: 외부 의존 0
 // SSOT: pages/06_HOME.md §3-1 (식당), §4-0 (와인)
 
-export type FilterAttributeType = 'select' | 'multi-select' | 'range' | 'text'
+export type FilterAttributeType = 'select' | 'multi-select' | 'range' | 'text' | 'cascading-select'
 
 export interface FilterAttributeOption {
   value: string
   label: string
+}
+
+/** 캐스케이딩 셀렉트용 트리 옵션 (country → city → district/area) */
+export interface CascadingOption {
+  value: string
+  label: string
+  children?: CascadingOption[]
 }
 
 export interface FilterAttribute {
@@ -14,9 +21,123 @@ export interface FilterAttribute {
   label: string
   type: FilterAttributeType
   options?: FilterAttributeOption[]
+  /** cascading-select 전용: 계층적 옵션 트리 */
+  cascadingOptions?: CascadingOption[]
+  /** cascading-select 전용: 각 레벨 placeholder */
+  cascadingLabels?: string[]
 }
 
-// ─── 식당 필터 속성 (11종) ───
+// ─── 위치 캐스케이딩 트리 ───
+
+const SEOUL_DISTRICTS: CascadingOption[] = [
+  { value: '강남구', label: '강남구' },
+  { value: '강동구', label: '강동구' },
+  { value: '강북구', label: '강북구' },
+  { value: '강서구', label: '강서구' },
+  { value: '관악구', label: '관악구' },
+  { value: '광진구', label: '광진구' },
+  { value: '구로구', label: '구로구' },
+  { value: '금천구', label: '금천구' },
+  { value: '노원구', label: '노원구' },
+  { value: '도봉구', label: '도봉구' },
+  { value: '동대문구', label: '동대문구' },
+  { value: '동작구', label: '동작구' },
+  { value: '마포구', label: '마포구' },
+  { value: '서대문구', label: '서대문구' },
+  { value: '서초구', label: '서초구' },
+  { value: '성동구', label: '성동구' },
+  { value: '성북구', label: '성북구' },
+  { value: '송파구', label: '송파구' },
+  { value: '양천구', label: '양천구' },
+  { value: '영등포구', label: '영등포구' },
+  { value: '용산구', label: '용산구' },
+  { value: '은평구', label: '은평구' },
+  { value: '종로구', label: '종로구' },
+  { value: '중구', label: '중구' },
+  { value: '중랑구', label: '중랑구' },
+]
+
+const SEOUL_AREAS: CascadingOption[] = [
+  { value: '강남', label: '강남' },
+  { value: '역삼', label: '역삼' },
+  { value: '삼성', label: '삼성' },
+  { value: '청담', label: '청담' },
+  { value: '압구정', label: '압구정' },
+  { value: '신사', label: '신사' },
+  { value: '가로수길', label: '가로수길' },
+  { value: '서초', label: '서초' },
+  { value: '잠실', label: '잠실' },
+  { value: '송파', label: '송파' },
+  { value: '홍대', label: '홍대' },
+  { value: '연남', label: '연남' },
+  { value: '합정', label: '합정' },
+  { value: '망원', label: '망원' },
+  { value: '상수', label: '상수' },
+  { value: '이태원', label: '이태원' },
+  { value: '한남', label: '한남' },
+  { value: '녹사평', label: '녹사평' },
+  { value: '을지로', label: '을지로' },
+  { value: '명동', label: '명동' },
+  { value: '종로', label: '종로' },
+  { value: '광화문', label: '광화문' },
+  { value: '북촌', label: '북촌' },
+  { value: '서촌', label: '서촌' },
+  { value: '성수', label: '성수' },
+  { value: '건대', label: '건대' },
+  { value: '왕십리', label: '왕십리' },
+  { value: '한양대', label: '한양대' },
+  { value: '여의도', label: '여의도' },
+  { value: '영등포', label: '영등포' },
+  { value: '신촌', label: '신촌' },
+  { value: '대학로', label: '대학로' },
+]
+
+const LOCATION_DISTRICT_TREE: CascadingOption[] = [
+  {
+    value: '한국', label: '한국',
+    children: [
+      { value: '서울', label: '서울', children: SEOUL_DISTRICTS },
+      { value: '부산', label: '부산', children: [
+        { value: '해운대구', label: '해운대구' },
+        { value: '수영구', label: '수영구' },
+        { value: '부산진구', label: '부산진구' },
+        { value: '중구', label: '중구' },
+        { value: '남구', label: '남구' },
+      ]},
+      { value: '제주', label: '제주', children: [
+        { value: '제주시', label: '제주시' },
+        { value: '서귀포시', label: '서귀포시' },
+      ]},
+    ],
+  },
+  {
+    value: 'Japan', label: '일본',
+    children: [
+      { value: 'Tokyo', label: '도쿄', children: [
+        { value: 'Shibuya', label: '시부야구' },
+        { value: 'Shinjuku', label: '신주쿠구' },
+        { value: 'Minato', label: '미나토구' },
+        { value: 'Chiyoda', label: '지요다구' },
+      ]},
+      { value: 'Osaka', label: '오사카', children: [
+        { value: 'Chuo', label: '츄오구' },
+        { value: 'Kita', label: '키타구' },
+        { value: 'Namba', label: '난바' },
+      ]},
+    ],
+  },
+]
+
+const LOCATION_AREA_TREE: CascadingOption[] = [
+  {
+    value: '한국', label: '한국',
+    children: [
+      { value: '서울', label: '서울', children: SEOUL_AREAS },
+    ],
+  },
+]
+
+// ─── 식당 필터 속성 ───
 
 export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
@@ -66,19 +187,18 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     ],
   },
   {
-    key: 'area',
+    key: 'district',
     label: '위치',
-    type: 'select',
-    options: [
-      { value: '강남', label: '강남' },
-      { value: '을지로', label: '을지로' },
-      { value: '청담', label: '청담' },
-      { value: '이태원', label: '이태원' },
-      { value: '홍대', label: '홍대' },
-      { value: '광화문', label: '광화문' },
-      { value: '성수', label: '성수' },
-      { value: '한남', label: '한남' },
-    ],
+    type: 'cascading-select',
+    cascadingLabels: ['국가', '도시', '구'],
+    cascadingOptions: LOCATION_DISTRICT_TREE,
+  },
+  {
+    key: 'area',
+    label: '생활권',
+    type: 'cascading-select',
+    cascadingLabels: ['국가', '도시', '생활권'],
+    cascadingOptions: LOCATION_AREA_TREE,
   },
   {
     key: 'satisfaction',
