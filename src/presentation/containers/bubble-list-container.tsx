@@ -8,7 +8,8 @@ import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
-import { BubbleMyStats } from '@/presentation/components/bubble/bubble-my-stats'
+import { BubbleHotStrip } from '@/presentation/components/bubble/bubble-hot-strip'
+import { BubbleDiscoverSheet } from '@/presentation/components/bubble/bubble-discover-sheet'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterSystem } from '@/presentation/components/ui/filter-system'
@@ -54,6 +55,7 @@ export function BubbleListContainer() {
   const [isFilterOpen, setFilterOpen] = useState(false)
   const [isSortOpen, setSortOpen] = useState(false)
   const [isSearchOpen, setSearchOpen] = useState(false)
+  const [isDiscoverOpen, setDiscoverOpen] = useState(false)
 
   // 필터 시스템 상태
   const [filterRules, setFilterRules] = useState<FilterRule[]>([])
@@ -79,26 +81,13 @@ export function BubbleListContainer() {
     })
   }, [bubbles, user?.id])
 
-  // 개인 통계
-  const myStats = useMemo(() => {
-    const myBubbles = classified.filter((c) => c.role === 'mine' || c.role === 'joined')
-    const totalWeekly = myBubbles.reduce((sum, c) => sum + c.bubble.weeklyRecordCount, 0)
-    const topBubble = myBubbles.length > 0
-      ? myBubbles.sort((a, b) => b.bubble.weeklyRecordCount - a.bubble.weeklyRecordCount)[0]
-      : null
-    // 연속 활동 주 (간이 추정: 이전주 + 이번주 모두 활동 있으면 2+)
-    const hasLastWeek = myBubbles.some((c) => c.bubble.prevWeeklyRecordCount > 0)
-    const hasThisWeek = myBubbles.some((c) => c.bubble.weeklyRecordCount > 0)
-    const streak = hasLastWeek && hasThisWeek ? 2 : hasThisWeek ? 1 : 0
-
-    return {
-      weeklyShareCount: totalWeekly,
-      weeklyGoal: 5,
-      streakWeeks: streak,
-      totalBubbles: myBubbles.length,
-      topContributionBubble: topBubble?.bubble.weeklyRecordCount ? topBubble.bubble.name : null,
-    }
-  }, [classified])
+  // HOT 버블: 이번 주 활동이 있는 버블 (주간 기록 수 내림차순)
+  const hotBubbles = useMemo(() => {
+    return [...bubbles]
+      .filter((b) => b.weeklyRecordCount > 0)
+      .sort((a, b) => b.weeklyRecordCount - a.weeklyRecordCount)
+      .slice(0, 8)
+  }, [bubbles])
 
   // 역할 필터
   const roleFiltered = useMemo(() => {
@@ -182,11 +171,12 @@ export function BubbleListContainer() {
     <div className="content-feed flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
 
-      {/* 개인 활동 배너 — 버블이 1개 이상일 때만 */}
-      {contentTab === 'bubbles' && classified.length > 0 && !isLoading && (
-        <div className="pt-3">
-          <BubbleMyStats {...myStats} />
-        </div>
+      {/* HOT 버블 스트립 — 활동이 있는 버블이 2개 이상일 때만 */}
+      {contentTab === 'bubbles' && hotBubbles.length >= 2 && !isLoading && (
+        <BubbleHotStrip
+          bubbles={hotBubbles}
+          onBubbleClick={(id) => router.push(`/bubbles/${id}`)}
+        />
       )}
 
       <StickyTabs
@@ -235,7 +225,7 @@ export function BubbleListContainer() {
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              <button type="button" className="icon-button" title="탐색" onClick={() => router.push('/discover')}>
+              <button type="button" className={`icon-button ${isDiscoverOpen ? 'active social' : ''}`} title="탐색" onClick={() => setDiscoverOpen(true)}>
                 <Compass size={20} />
               </button>
               <button type="button" className={`icon-button ${isFilterOpen ? 'active social' : ''}`} title="필터" onClick={toggleFilter}>
@@ -401,6 +391,20 @@ export function BubbleListContainer() {
 
       {/* FAB */}
       <FabAdd variant="social" onClick={() => router.push('/bubbles/create')} />
+
+      {/* 버블 탐색 바텀 시트 */}
+      <BubbleDiscoverSheet
+        isOpen={isDiscoverOpen}
+        onClose={() => setDiscoverOpen(false)}
+        recommended={[]}
+        nearby={[]}
+        trending={[]}
+        newest={[]}
+        onSelectBubble={(bubble) => {
+          setDiscoverOpen(false)
+          router.push(`/bubbles/${bubble.id}`)
+        }}
+      />
     </div>
   )
 }

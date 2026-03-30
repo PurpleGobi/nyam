@@ -22,6 +22,7 @@ export function useXpAward() {
     wineRegion: string | null,
     wineVariety: string | null,
     thresholds: LevelThreshold[],
+    previousRecordXp?: number,
   ): Promise<XpCalculationResult | null> => {
     setIsLoading(true)
     try {
@@ -30,6 +31,7 @@ export function useXpAward() {
         restaurantArea, restaurantGenre,
         wineRegion, wineVariety,
         thresholds,
+        previousRecordXp,
       )
 
       if (result) {

@@ -11,6 +11,8 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
+import { useXpAward } from '@/application/hooks/use-xp-award'
+import { useXp } from '@/application/hooks/use-xp'
 import { photoRepo, recordRepo, xpRepo, wishlistRepo, imageService, restaurantRepo, wineRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -44,6 +46,8 @@ function RecordFlowInner() {
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
   const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
+  const { awardXp } = useXpAward()
+  const { thresholds } = useXp(user?.id ?? null)
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const entryPath = (searchParams.get('from') ?? 'camera') as AddFlowEntryPath
@@ -492,6 +496,37 @@ function RecordFlowInner() {
           }
         }
 
+        // ── XP 적립 ──
+        if (thresholds.length > 0) {
+          let area: string | null = null
+          let genre: string | null = null
+          let region: string | null = null
+          let variety: string | null = null
+
+          if (savedRecord.targetType === 'restaurant') {
+            const restaurant = await restaurantRepo.findById(savedRecord.targetId)
+            area = restaurant?.area?.[0] ?? null
+            genre = restaurant?.genre ?? null
+          } else {
+            const wine = await wineRepo.findById(savedRecord.targetId)
+            region = wine?.region ?? null
+            // 품종: variety 또는 grape_varieties 비중 최고
+            if (wine?.variety) {
+              variety = wine.variety
+            } else if (wine && wine.grapeVarieties.length > 0) {
+              const sorted = [...wine.grapeVarieties].sort((a, b) => b.pct - a.pct)
+              variety = sorted[0].name
+            }
+          }
+
+          const previousXp = isEditMode ? (editingRecord?.recordQualityXp ?? 0) : undefined
+          awardXp(
+            user.id, savedRecord,
+            area, genre, region, variety,
+            thresholds, previousXp,
+          ).catch(() => {})
+        }
+
         // 버블 자동 공유 동기화 (신규/수정 모두) + 토스트
         syncRecordToAllBubbles(savedRecord as unknown as { id: string } & Record<string, unknown>)
           .then((syncResult) => {
@@ -525,7 +560,7 @@ function RecordFlowInner() {
         // useCreateRecord 내부에서 error state 처리
       }
     },
-    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles],
+    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds],
   )
 
   const handleBack = useCallback(() => router.back(), [router])

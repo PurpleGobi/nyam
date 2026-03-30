@@ -8,7 +8,9 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { wineRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { RatingInput } from '@/presentation/components/record/rating-input'
@@ -66,6 +68,13 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   )
 
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, selectedRecordId)
+
+  // 세부 축 레벨 (산지, 품종)
+  const bestVariety = wine?.variety ?? (wine?.grapeVarieties?.[0]?.name ?? null)
+  const axisLevels = useAxisLevel(user?.id ?? null, [
+    { axisType: 'wine_region', axisValue: wine?.region ?? null },
+    { axisType: 'wine_variety', axisValue: bestVariety },
+  ])
 
   // ─── 기록 액션 ───
   const handleRecordEdit = useCallback(() => {
@@ -390,7 +399,12 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
            ════════════════════════════════════════ */}
         <section style={{ padding: '16px 20px' }}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>나의 기록</h3>
+            <div className="flex items-center gap-2">
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>나의 기록</h3>
+              {axisLevels.length > 0 && myRecords.length > 0 && axisLevels.map((al) => (
+                <AxisLevelBadge key={al.axisValue} axisLabel={al.axisValue} level={al.level} />
+              ))}
+            </div>
             <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
               {tastingCount > 0 ? `${tastingCount}회 시음 · ${latestTastingDate ?? ''}` : '아직 기록이 없어요'}
             </span>

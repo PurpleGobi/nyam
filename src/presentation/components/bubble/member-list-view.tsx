@@ -2,9 +2,16 @@
 
 import { Shield, Crown } from 'lucide-react'
 import type { BubbleMember } from '@/domain/entities/bubble'
+import { getLevelColor } from '@/domain/services/xp-calculator'
+
+interface MemberWithLevel extends BubbleMember {
+  nickname?: string
+  level?: number
+  levelTitle?: string
+}
 
 interface MemberListViewProps {
-  members: BubbleMember[]
+  members: MemberWithLevel[]
   onSelect?: (userId: string) => void
 }
 
@@ -36,9 +43,22 @@ export function MemberListView({ members, onSelect }: MemberListViewProps) {
               {m.userId.substring(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-[var(--text)]">
-                {m.userId.substring(0, 8)}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-[14px] font-semibold text-[var(--text)]">
+                  {m.nickname ?? m.userId.substring(0, 8)}
+                </p>
+                {m.level != null && (
+                  <span
+                    className="shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold"
+                    style={{
+                      backgroundColor: `${getLevelColor(m.level)}18`,
+                      color: getLevelColor(m.level),
+                    }}
+                  >
+                    Lv.{m.level}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-[var(--text-hint)]">
                 기록 {m.memberUniqueTargetCount}곳 · 평균 {m.avgSatisfaction?.toFixed(1) ?? '-'}
               </p>

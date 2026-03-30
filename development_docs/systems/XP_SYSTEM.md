@@ -363,15 +363,23 @@ ANCHORS = [
 
 ## 11. 레벨 표시 규칙
 
-| 위치 | 표시 내용 |
-|------|----------|
-| 프로필 | 종합 레벨 + 칭호 + 식당 탭(지역·장르) + 와인 탭(산지·품종) |
-| 버블 피드 기록 옆 | 종합 레벨 (Lv.N) |
-| 버블 멤버 카드 | 종합 레벨 + 칭호 (Lv.N 미식가) |
-| 식당/와인 상세 | 기록자의 관련 세부 축 레벨 (예: 일식 Lv.6, 보르도 Lv.4) |
-| 버블 가입 신청 (대기 목록) | 종합 레벨 + 기록 수 + 취향 일치율 |
-| 버블 검색/탐색 카드 | 종합 레벨 + 기록 수 + 취향 일치율 |
-| 버블 가입 조건 표시 | "Lv.N 이상" / "검증 기록 N개 이상" |
+| 위치 | 표시 내용 | 구현 컴포넌트 |
+|------|----------|-------------|
+| 앱 헤더 | 종합 레벨 뱃지 + 현재 레벨 XP 프로그레스 바 | `header-level-bar.tsx` |
+| 프로필 | 종합 레벨 + 칭호 + 식당 탭(지역·장르) + 와인 탭(산지·품종) | `profile-header.tsx`, `total-level-card.tsx`, `level-list.tsx` |
+| 프로필 레벨 상세 시트 | 레벨 + 칭호 + XP + 통계 + XP 분석 + 다음 마일스톤 | `level-detail-sheet.tsx` |
+| 버블 피드 기록 옆 | 종합 레벨 (Lv.N) | `feed-card.tsx` |
+| 버블 멤버 그리드 | 종합 레벨 + 칭호 (Lv.N 미식가) | `member-grid.tsx` |
+| 버블 멤버 리스트 | 종합 레벨 (Lv.N) | `member-list-view.tsx` |
+| 버블러 프로필 | 종합 레벨 + 칭호 + 아바타 링 색상 | `bubbler-hero.tsx` |
+| 식당 상세 | 나의 관련 세부 축 레벨 (장르 Lv.N, 지역 Lv.N) | `axis-level-badge.tsx` in `restaurant-detail-container.tsx` |
+| 와인 상세 | 나의 관련 세부 축 레벨 (산지 Lv.N, 품종 Lv.N) | `axis-level-badge.tsx` in `wine-detail-container.tsx` |
+| 버블 기록 카드 (식당/와인 상세) | 작성자 종합 레벨 + 칭호 | `bubble-record-card.tsx` |
+| 기록 완료 XP 섹션 | 축별 현재 레벨 | `xp-earned-section.tsx` |
+| Wrapped 카드 | 카테고리별 레벨 + 칭호 | `wrapped-card.tsx` |
+| 버블 가입 신청 (대기 목록) | 종합 레벨 + 기록 수 + 취향 일치율 | — |
+| 버블 검색/탐색 카드 | 종합 레벨 + 기록 수 + 취향 일치율 | — |
+| 버블 가입 조건 표시 | "Lv.N 이상" / "검증 기록 N개 이상" | — |
 
 ---
 

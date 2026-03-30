@@ -8,6 +8,7 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { restaurantRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
@@ -18,6 +19,7 @@ import { RecordTimeline } from '@/presentation/components/detail/record-timeline
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { BubbleRecordSection } from '@/presentation/components/detail/bubble-record-section'
+import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { Toast } from '@/presentation/components/ui/toast'
@@ -75,6 +77,12 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     'restaurant',
     wishlistRepo,
   )
+
+  // 세부 축 레벨 (장르, 지역)
+  const axisLevels = useAxisLevel(user?.id ?? null, [
+    { axisType: 'genre', axisValue: restaurant?.genre ?? null },
+    { axisType: 'area', axisValue: restaurant?.area?.[0] ?? null },
+  ])
 
   // 최신 기록 ID (하단 액션 대상)
   const latestRecordId = myRecords[0]?.id ?? null
@@ -295,6 +303,13 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         <Divider />
 
         {/* ─── 4. 나의 기록 타임라인 ─── */}
+        {axisLevels.length > 0 && myRecords.length > 0 && (
+          <div className="flex items-center gap-1.5 px-5 pt-4">
+            {axisLevels.map((al) => (
+              <AxisLevelBadge key={al.axisValue} axisLabel={al.axisValue} level={al.level} />
+            ))}
+          </div>
+        )}
         <RecordTimeline
           records={myRecords}
           recordPhotos={recordPhotos}

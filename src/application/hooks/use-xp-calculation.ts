@@ -32,7 +32,10 @@ export function useXpCalculation() {
     wineRegion: string | null,
     wineVariety: string | null,
     thresholds: LevelThreshold[],
+    /** 수정 모드: 이전에 부여된 record_quality_xp. 차액만 적립. */
+    previousRecordXp?: number,
   ): Promise<XpCalculationResult> => {
+    const isEdit = previousRecordXp !== undefined
     const result: XpCalculationResult = {
       totalXpGain: 0,
       detailAxisGains: [],
@@ -41,11 +44,13 @@ export function useXpCalculation() {
       levelUps: [],
     }
 
-    // ── Step 0: 일일 기록 상한 체크 ──
-    const today = new Date().toISOString().split('T')[0]
-    const dailyCount = await xpRepo.getDailyRecordCount(userId, today)
-    if (isDailyRecordCapReached(dailyCount)) {
-      return result
+    // ── Step 0: 일일 기록 상한 체크 (신규만) ──
+    if (!isEdit) {
+      const today = new Date().toISOString().split('T')[0]
+      const dailyCount = await xpRepo.getDailyRecordCount(userId, today)
+      if (isDailyRecordCapReached(dailyCount)) {
+        return result
+      }
     }
 
     // ── Step 1: 기록 품질 → XP 산출 ──
@@ -61,22 +66,25 @@ export function useXpCalculation() {
       }
     }
 
-    // 차감 후 최종 XP 기준으로 reason 산출
-    const reason = getRecordXpReason(recordXp)
-
     // ── Step 2.5: record_quality_xp 저장 ──
     await xpRepo.updateRecordQualityXp(record.id, recordXp)
 
-    // ── Step 3: 종합 XP 적립 ──
-    if (recordXp > 0) {
-      result.totalXpGain = recordXp
-      await xpRepo.updateUserTotalXp(userId, recordXp)
+    // ── Step 2.6: 수정 모드 차액 산출 ──
+    const xpDelta = isEdit ? recordXp - previousRecordXp : recordXp
+
+    // 차감 후 최종 XP 기준으로 reason 산출
+    const reason = getRecordXpReason(recordXp)
+
+    // ── Step 3: 종합 XP 적립 (차액만) ──
+    if (xpDelta > 0) {
+      result.totalXpGain = xpDelta
+      await xpRepo.updateUserTotalXp(userId, xpDelta)
       await xpRepo.createXpHistory({
         userId,
         recordId: record.id,
         axisType: null,
         axisValue: null,
-        xpAmount: recordXp,
+        xpAmount: xpDelta,
         reason,
       })
     }
@@ -99,8 +107,8 @@ export function useXpCalculation() {
       }
     }
 
-    // ── Step 4: 세부 축 XP 적립 ──
-    const axisGains = calculateDetailAxisXp(record, restaurantArea, restaurantGenre, wineRegion, wineVariety)
+    // ── Step 4: 세부 축 XP 적립 (신규만 — 수정 시 이미 적립됨) ──
+    const axisGains: DetailAxisGain[] = isEdit ? [] : calculateDetailAxisXp(record, restaurantArea, restaurantGenre, wineRegion, wineVariety)
     for (const gain of axisGains) {
       const existing = await xpRepo.getUserExperience(userId, gain.axisType, gain.axisValue)
       const newXp = (existing?.totalXp ?? 0) + gain.xp
