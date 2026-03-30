@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
@@ -15,9 +15,10 @@ import { uploadBubbleIcon, bubbleRepo } from '@/shared/di/container'
 export function BubbleCreateContainer() {
   const router = useRouter()
   const { user } = useAuth()
-  const { createBubble, isLoading } = useBubbleCreate()
+  const { createBubble, isLoading: isCreating } = useBubbleCreate()
   const { records } = useRecordsWithTarget(user?.id ?? null)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (data: {
     name: string
@@ -32,7 +33,8 @@ export function BubbleCreateContainer() {
     maxMembers: number | null
     privacy: BubblePrivacySettings
   }) => {
-    if (!user) return
+    if (!user || isSubmitting) return
+    setIsSubmitting(true)
     try {
       const result = await createBubble({
         name: data.name,
@@ -53,7 +55,7 @@ export function BubbleCreateContainer() {
         visibilityOverride: data.privacy.visibilityOverride,
       })
 
-      // 공유 규칙 저장 + 소급 적용 (기존 기록 전부 재평가)
+      // 공유 규칙 저장 + 소급 적용 (완료 후 라우팅)
       await syncAllRecordsToBubble(
         result.bubble.id,
         data.privacy.shareRule,
@@ -62,7 +64,7 @@ export function BubbleCreateContainer() {
 
       router.replace(`/bubbles/${result.bubble.id}`)
     } catch {
-      // 에러 처리는 상위에서
+      setIsSubmitting(false)
     }
   }
 
@@ -75,7 +77,7 @@ export function BubbleCreateContainer() {
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader />
       <FabBack />
-      <BubbleCreateForm onSubmit={handleSubmit} onUploadPhoto={handleUploadPhoto} isLoading={isLoading} />
+      <BubbleCreateForm onSubmit={handleSubmit} onUploadPhoto={handleUploadPhoto} isLoading={isCreating || isSubmitting} />
     </div>
   )
 }

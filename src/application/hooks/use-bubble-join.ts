@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import type { Bubble, BubbleMember } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleShareRule } from '@/domain/entities/bubble'
 import { checkJoinEligibility, type JoinApplicantProfile, type JoinEligibility } from '@/domain/services/bubble-join-service'
 import { bubbleRepo } from '@/shared/di/container'
+
+const DEFAULT_SHARE_RULE: BubbleShareRule = { mode: 'all', rules: [], conjunction: 'and' }
 
 export function useBubbleJoin() {
   const [isLoading, setIsLoading] = useState(false)
@@ -40,6 +42,12 @@ export function useBubbleJoin() {
         : 'pending'
 
       const member = await bubbleRepo.addMember(bubbleId, userId, 'member', status)
+
+      // active 멤버 → 기본 공유 규칙 설정 (모든 항목 공유)
+      if (status === 'active') {
+        await bubbleRepo.updateShareRule(bubbleId, userId, DEFAULT_SHARE_RULE)
+      }
+
       return { success: true, member, eligibility }
     } finally {
       setIsLoading(false)

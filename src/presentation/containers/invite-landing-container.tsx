@@ -104,7 +104,14 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
         </button>
 
         {!user && (
-          <p className="text-[12px]" style={{ color: 'var(--text-hint)' }}>로그인 후 가입할 수 있습니다</p>
+          <button
+            type="button"
+            onClick={() => router.push(`/auth/login?redirect=/bubbles/invite/${inviteCode}`)}
+            className="w-full max-w-[280px] rounded-xl py-3 text-[15px] font-bold"
+            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+          >
+            로그인하고 가입하기
+          </button>
         )}
       </div>
     </div>

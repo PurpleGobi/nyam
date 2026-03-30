@@ -1,14 +1,17 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { LoginButtons } from '@/presentation/components/auth/login-buttons'
 import { useAuthActions } from '@/application/hooks/use-auth-actions'
 import type { AuthProvider } from '@/domain/entities/auth'
 
 export function LoginContainer() {
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get('redirect')
   const { signInWithOAuth } = useAuthActions()
 
   const handleLogin = (provider: AuthProvider) => {
-    signInWithOAuth(provider)
+    signInWithOAuth(provider, redirectPath ?? undefined)
   }
 
   return (

@@ -5,6 +5,8 @@ import type { Bubble } from '@/domain/entities/bubble'
 import type { JoinApplicantProfile } from '@/domain/services/bubble-join-service'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
+import { useRecordsWithTarget } from '@/application/hooks/use-records'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { JoinFlow } from '@/presentation/components/bubble/join-flow'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -18,6 +20,8 @@ interface BubbleJoinContainerProps {
 export function BubbleJoinContainer({ bubbleId, isOpen, onClose, onSuccess }: BubbleJoinContainerProps) {
   const { user } = useAuth()
   const { requestJoin, follow, isLoading } = useBubbleJoin()
+  const { records } = useRecordsWithTarget(user?.id ?? null)
+  const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
   const [bubble, setBubble] = useState<Bubble | null>(null)
   const [eligibilityError, setEligibilityError] = useState<string | null>(null)
 
@@ -43,6 +47,14 @@ export function BubbleJoinContainer({ bubbleId, isOpen, onClose, onSuccess }: Bu
     if (!result.success && result.eligibility) {
       setEligibilityError(result.eligibility.reasons.join(', '))
       return
+    }
+    // active 멤버 → 기본 공유 규칙(모든 항목)으로 소급 동기화
+    if (result.member?.status === 'active') {
+      await syncAllRecordsToBubble(
+        bubbleId,
+        { mode: 'all', rules: [], conjunction: 'and' },
+        records as unknown as Array<{ id: string } & Record<string, unknown>>,
+      )
     }
     onSuccess?.()
     onClose()

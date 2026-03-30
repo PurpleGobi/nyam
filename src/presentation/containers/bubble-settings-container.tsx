@@ -7,11 +7,10 @@ import { FabBack } from '@/presentation/components/layout/fab-back'
 import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings'
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
-import { useBubblePermissions } from '@/application/hooks/use-bubble-permissions'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import type { Bubble, BubbleMemberRole, BubbleShareRule } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMemberRole, BubbleShareRule, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -25,28 +24,30 @@ interface BubbleSettingsContainerProps {
 export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: BubbleSettingsContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { permissions } = useBubblePermissions(bubble, myRole)
+  const userId = user?.id ?? null
   const { updateSettings, deleteBubble, isLoading: settingsLoading } = useBubbleSettings(bubbleId)
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
-  const { records } = useRecordsWithTarget(user?.id ?? null)
-  const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
+  const { records } = useRecordsWithTarget(userId)
+  const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
 
   const [pendingMembers, setPendingMembers] = useState<PendingMemberInfo[]>([])
   const [currentBubble, setCurrentBubble] = useState<Bubble>(bubble)
   const [pendingVersion, setPendingVersion] = useState(0)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
-  const [shareRuleLoaded, setShareRuleLoaded] = useState(false)
+  const [visibilityOverride, setVisibilityOverride] = useState<VisibilityOverride | null>(null)
+  const [memberLoaded, setMemberLoaded] = useState(false)
 
-  // 현재 멤버의 shareRule 로드
+  // 현재 멤버의 shareRule + visibilityOverride 로드
   useEffect(() => {
-    if (!user) return
-    bubbleRepo.getMember(bubbleId, user.id).then((member) => {
+    if (!userId) return
+    bubbleRepo.getMember(bubbleId, userId).then((member) => {
       if (member) {
         setShareRule(member.shareRule)
+        setVisibilityOverride(member.visibilityOverride)
       }
-      setShareRuleLoaded(true)
+      setMemberLoaded(true)
     })
-  }, [bubbleId, user])
+  }, [bubbleId, userId])
 
   useEffect(() => {
     let cancelled = false
@@ -73,11 +74,17 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
 
   const handleShareRuleChange = async (newRule: BubbleShareRule | null) => {
     setShareRule(newRule)
-    await syncAllRecordsToBubble(
+    syncAllRecordsToBubble(
       bubbleId,
       newRule,
       records as unknown as Array<{ id: string } & Record<string, unknown>>,
-    )
+    ).catch(() => {})
+  }
+
+  const handleVisibilityChange = async (override: VisibilityOverride | null) => {
+    if (!userId) return
+    setVisibilityOverride(override)
+    await bubbleRepo.updateMember(bubbleId, userId, { visibilityOverride: override })
   }
 
   const handleDelete = async () => {
@@ -95,27 +102,25 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     setPendingVersion((v) => v + 1)
   }
 
-  // 모든 멤버에게 공유 규칙 편집 허용, owner가 아니면 버블 설정은 숨김
-  const isMemberOnly = !permissions.canEditSettings
-
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
-      {/* 헤더 */}
       <AppHeader />
       <FabBack />
 
       <div className="flex-1 overflow-y-auto">
         <BubbleSettings
           bubble={currentBubble}
+          myRole={myRole}
           onSave={handleSave}
           onDelete={handleDelete}
           isLoading={settingsLoading || rolesLoading}
           pendingMembers={pendingMembers}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
-          shareRule={shareRuleLoaded ? shareRule : undefined}
+          shareRule={memberLoaded ? shareRule : undefined}
           onShareRuleChange={handleShareRuleChange}
-          memberOnly={isMemberOnly}
+          visibilityOverride={memberLoaded ? visibilityOverride : undefined}
+          onVisibilityChange={handleVisibilityChange}
           stats={{
             weeklyRecordCount: 0,
             prevWeeklyRecordCount: 0,
