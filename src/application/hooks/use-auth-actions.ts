@@ -4,7 +4,8 @@ import type { AuthProvider } from '@/domain/entities/auth'
 export function useAuthActions() {
   const signInWithOAuth = async (provider: AuthProvider, nextPath?: string) => {
     const next = nextPath ?? '/'
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+    sessionStorage.setItem('auth_redirect_next', next)
+    const redirectTo = `${window.location.origin}/auth/callback`
     const { error } = await signInWithProvider(provider, redirectTo)
     if (error) throw error
   }
