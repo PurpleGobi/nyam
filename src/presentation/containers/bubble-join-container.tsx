@@ -53,7 +53,7 @@ export function BubbleJoinContainer({ bubbleId, isOpen, onClose, onSuccess }: Bu
       await syncAllRecordsToBubble(
         bubbleId,
         { mode: 'all', rules: [], conjunction: 'and' },
-        records as unknown as Array<{ id: string } & Record<string, unknown>>,
+        records as unknown as Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
       )
     }
     onSuccess?.()

@@ -92,13 +92,13 @@ export function useWineDetail(
 
   // 파생값 계산
   const myAvgScore = myRecords.length > 0
-    ? Math.round(myRecords.reduce((sum, r) => sum + (r.avgSatisfaction ?? 0), 0) / myRecords.length)
+    ? Math.round(myRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / myRecords.length)
     : null
 
-  const tastingCount = myRecords.reduce((sum, r) => sum + r.visitCount, 0)
+  const tastingCount = myRecords.length
 
   const latestTastingDate = myRecords.length > 0
-    ? (myRecords[0].latestVisitDate ?? myRecords[0].createdAt.split('T')[0])
+    ? (myRecords[0].visitDate ?? myRecords[0].createdAt.split('T')[0])
     : null
 
   const nyamScoreBreakdown: WineNyamScoreBreakdown | null = wine?.nyamScore != null

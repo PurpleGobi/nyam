@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleShareRule } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -116,11 +116,8 @@ export interface BubbleRepository {
     limit?: number
     offset?: number
   }): Promise<{ data: BubbleFeedItem[]; total: number }>
-  addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare>
+  addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   removeShare(shareId: string): Promise<void>
-
-  markShareRead(shareId: string, userId: string): Promise<void>
-  getShareReads(shareId: string): Promise<BubbleShareRead[]>
 
   getRankings(bubbleId: string, options: {
     targetType: 'restaurant' | 'wine'
@@ -141,12 +138,12 @@ export interface BubbleRepository {
   getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]>
   getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
   getRecordShares(recordId: string): Promise<BubbleShare[]>
-  shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare>
+  shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   unshareRecord(recordId: string, bubbleId: string): Promise<void>
 
   // 자동 공유 동기화
   updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>
-  batchUpsertAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
+  batchUpsertAutoShares(records: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void>
   batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
   getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
   cleanManualShares(userId: string): Promise<number>

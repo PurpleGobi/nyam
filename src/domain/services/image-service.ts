@@ -7,6 +7,8 @@
  */
 export interface ImageService {
   resizeImage(file: File): Promise<Blob>
-  uploadImage(userId: string, recordId: string, blob: Blob, fileId: string): Promise<string>
+  resizeThumbnail(file: File): Promise<Blob>
+  uploadImage(userId: string, recordId: string, blob: Blob, fileId: string, suffix?: string): Promise<string>
+  uploadImageWithThumbnail(userId: string, recordId: string, originalBlob: Blob, thumbnailBlob: Blob, fileId: string): Promise<{ url: string; thumbnailUrl: string }>
   deleteImage(url: string): Promise<void>
 }

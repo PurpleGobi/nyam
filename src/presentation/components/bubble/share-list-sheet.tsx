@@ -22,15 +22,15 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
   switch (sort) {
     case 'latest':
       return sorted.sort((a, b) => {
-        const dateA = a.latestVisitDate ?? ''
-        const dateB = b.latestVisitDate ?? ''
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
         if (dateA !== dateB) return dateB.localeCompare(dateA)
         return b.createdAt.localeCompare(a.createdAt)
       })
     case 'score_high':
-      return sorted.sort((a, b) => (b.avgSatisfaction ?? 0) - (a.avgSatisfaction ?? 0))
+      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
     case 'score_low':
-      return sorted.sort((a, b) => (a.avgSatisfaction ?? 0) - (b.avgSatisfaction ?? 0))
+      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
       return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count': {
@@ -350,7 +350,6 @@ export function ShareListSheet({
                     </span>
                     <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
                       {record.targetArea ?? record.targetMeta ?? ''}
-                      {record.visitCount > 1 && ` · ${record.visitCount}회 방문`}
                     </span>
                   </div>
                 </button>

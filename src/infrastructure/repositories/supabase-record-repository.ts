@@ -1,6 +1,5 @@
 import type { RecordRepository } from '@/domain/repositories/record-repository'
-import type { DiningRecord, CreateRecordInput, AddVisitInput, RecordTargetType, RecordWithTarget, RecordVisit } from '@/domain/entities/record'
-import { calcAvgSatisfaction } from '@/domain/entities/record'
+import type { DiningRecord, ListItem, ListStatus, CreateRecordInput, RecordTargetType, RecordWithTarget } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import { createClient } from '@/infrastructure/supabase/client'
 
@@ -8,55 +7,58 @@ import { createClient } from '@/infrastructure/supabase/client'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToRecord(row: any): DiningRecord {
-  const rawVisits = (row.visits ?? []) as Record<string, unknown>[]
-  const visits: RecordVisit[] = rawVisits.map(mapRawVisit)
+  return {
+    id: row.id,
+    listId: row.list_id,
+    userId: row.user_id,
+    targetId: row.target_id,
+    targetType: row.target_type,
+    axisX: row.axis_x ?? null,
+    axisY: row.axis_y ?? null,
+    satisfaction: row.satisfaction ?? null,
+    scene: row.scene ?? null,
+    comment: row.comment ?? null,
+    totalPrice: row.total_price ?? null,
+    purchasePrice: row.purchase_price ?? null,
+    visitDate: row.visit_date ?? null,
+    mealTime: row.meal_time ?? null,
+    menuTags: row.menu_tags ?? null,
+    pairingCategories: row.pairing_categories ?? null,
+    hasExifGps: row.has_exif_gps ?? false,
+    isExifVerified: row.is_exif_verified ?? false,
+    cameraMode: row.camera_mode ?? null,
+    ocrData: row.ocr_data as Record<string, unknown> | null,
+    aromaRegions: row.aroma_regions as Record<string, unknown> | null,
+    aromaLabels: row.aroma_labels ?? null,
+    aromaColor: row.aroma_color ?? null,
+    complexity: row.complexity ?? null,
+    finish: row.finish ?? null,
+    balance: row.balance ?? null,
+    autoScore: row.auto_score ?? null,
+    privateNote: row.private_note ?? null,
+    companionCount: row.companion_count ?? null,
+    companions: row.companions ?? null,
+    linkedRestaurantId: row.linked_restaurant_id ?? null,
+    linkedWineId: row.linked_wine_id ?? null,
+    recordQualityXp: row.record_quality_xp ?? 0,
+    scoreUpdatedAt: row.score_updated_at ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDbToListItem(row: any): ListItem {
   return {
     id: row.id,
     userId: row.user_id,
     targetId: row.target_id,
     targetType: row.target_type,
     status: row.status,
-    wineStatus: row.wine_status ?? null,
-    cameraMode: row.camera_mode ?? null,
-    ocrData: row.ocr_data as Record<string, unknown> | null,
-    menuTags: row.menu_tags ?? null,
-    pairingCategories: row.pairing_categories ?? null,
-    linkedRestaurantId: row.linked_restaurant_id ?? null,
-    linkedWineId: row.linked_wine_id ?? null,
-    visits,
-    visitCount: row.visit_count ?? visits.length,
-    latestVisitDate: row.latest_visit_date ?? null,
-    avgSatisfaction: row.avg_satisfaction ? Number(row.avg_satisfaction) : null,
-    recordQualityXp: row.record_quality_xp ?? 0,
+    source: row.source ?? 'direct',
+    sourceRecordId: row.source_record_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  }
-}
-
-function mapRawVisit(v: Record<string, unknown>): RecordVisit {
-  return {
-    date: (v.date as string) ?? new Date().toISOString().split('T')[0],
-    axisX: v.axisX != null ? Number(v.axisX) : null,
-    axisY: v.axisY != null ? Number(v.axisY) : null,
-    satisfaction: v.satisfaction != null ? Number(v.satisfaction) : null,
-    comment: (v.comment as string) ?? null,
-    tips: (v.tips as string) ?? null,
-    scene: (v.scene as string) ?? null,
-    mealTime: (v.mealTime as RecordVisit['mealTime']) ?? null,
-    companions: (v.companions as string[]) ?? null,
-    companionCount: v.companionCount != null ? Number(v.companionCount) : null,
-    totalPrice: v.totalPrice != null ? Number(v.totalPrice) : null,
-    purchasePrice: v.purchasePrice != null ? Number(v.purchasePrice) : null,
-    aromaRegions: (v.aromaRegions as Record<string, unknown>) ?? null,
-    aromaLabels: (v.aromaLabels as string[]) ?? null,
-    aromaColor: (v.aromaColor as string) ?? null,
-    complexity: v.complexity != null ? Number(v.complexity) : null,
-    finish: v.finish != null ? Number(v.finish) : null,
-    balance: v.balance != null ? Number(v.balance) : null,
-    autoScore: v.autoScore != null ? Number(v.autoScore) : null,
-    hasExifGps: (v.hasExifGps as boolean) ?? false,
-    isExifVerified: (v.isExifVerified as boolean) ?? false,
   }
 }
 
@@ -66,37 +68,11 @@ function mapDbToPhoto(row: any): RecordPhoto {
     id: row.id,
     recordId: row.record_id,
     url: row.url,
+    thumbnailUrl: row.thumbnail_url ?? null,
     orderIndex: row.order_index,
     isPublic: row.is_public ?? false,
     createdAt: row.created_at,
   }
-}
-
-// ─── Domain → DB Insert 매핑 ───
-
-function visitToJsonb(visit: RecordVisit): Record<string, unknown> {
-  const obj: Record<string, unknown> = { date: visit.date }
-  if (visit.axisX != null) obj.axisX = visit.axisX
-  if (visit.axisY != null) obj.axisY = visit.axisY
-  if (visit.satisfaction != null) obj.satisfaction = visit.satisfaction
-  if (visit.comment != null) obj.comment = visit.comment
-  if (visit.tips != null) obj.tips = visit.tips
-  if (visit.scene != null) obj.scene = visit.scene
-  if (visit.mealTime != null) obj.mealTime = visit.mealTime
-  if (visit.companions != null) obj.companions = visit.companions
-  if (visit.companionCount != null) obj.companionCount = visit.companionCount
-  if (visit.totalPrice != null) obj.totalPrice = visit.totalPrice
-  if (visit.purchasePrice != null) obj.purchasePrice = visit.purchasePrice
-  if (visit.aromaRegions != null) obj.aromaRegions = visit.aromaRegions
-  if (visit.aromaLabels != null) obj.aromaLabels = visit.aromaLabels
-  if (visit.aromaColor != null) obj.aromaColor = visit.aromaColor
-  if (visit.complexity != null) obj.complexity = visit.complexity
-  if (visit.finish != null) obj.finish = visit.finish
-  if (visit.balance != null) obj.balance = visit.balance
-  if (visit.autoScore != null) obj.autoScore = visit.autoScore
-  if (visit.hasExifGps) obj.hasExifGps = true
-  if (visit.isExifVerified) obj.isExifVerified = true
-  return obj
 }
 
 export class SupabaseRecordRepository implements RecordRepository {
@@ -104,28 +80,147 @@ export class SupabaseRecordRepository implements RecordRepository {
     return createClient()
   }
 
-  async create(input: CreateRecordInput): Promise<DiningRecord> {
-    const visits = [visitToJsonb(input.visit)]
-    const avgSat = input.visit.satisfaction
+  // ─── List ───
 
+  async findOrCreateList(
+    userId: string,
+    targetId: string,
+    targetType: RecordTargetType,
+    status: ListStatus,
+  ): Promise<ListItem> {
+    // 먼저 기존 항목 조회
+    const existing = await this.findListByUserAndTarget(userId, targetId, targetType)
+    if (existing) return existing
+
+    const { data, error } = await this.supabase
+      .from('lists')
+      .insert({
+        user_id: userId,
+        target_id: targetId,
+        target_type: targetType,
+        status,
+        source: 'direct',
+      })
+      .select()
+      .single()
+
+    if (error) {
+      // UNIQUE 충돌 시 재조회
+      if (error.code === '23505') {
+        const retry = await this.findListByUserAndTarget(userId, targetId, targetType)
+        if (retry) return retry
+      }
+      throw new Error(`List 생성 실패: ${error.message}`)
+    }
+    return mapDbToListItem(data)
+  }
+
+  async updateListStatus(listId: string, status: ListStatus): Promise<void> {
+    const { error } = await this.supabase
+      .from('lists')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', listId)
+
+    if (error) throw new Error(`List 상태 변경 실패: ${error.message}`)
+  }
+
+  async findListsByUser(
+    userId: string,
+    targetType: RecordTargetType,
+    status?: ListStatus,
+  ): Promise<ListItem[]> {
+    let query = this.supabase
+      .from('lists')
+      .select()
+      .eq('user_id', userId)
+      .eq('target_type', targetType)
+      .order('updated_at', { ascending: false })
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(`Lists 조회 실패: ${error.message}`)
+    return data.map(mapDbToListItem)
+  }
+
+  async findListByUserAndTarget(
+    userId: string,
+    targetId: string,
+    targetType: RecordTargetType,
+  ): Promise<ListItem | null> {
+    const { data, error } = await this.supabase
+      .from('lists')
+      .select()
+      .eq('user_id', userId)
+      .eq('target_id', targetId)
+      .eq('target_type', targetType)
+      .maybeSingle()
+
+    if (error) throw new Error(`List 조회 실패: ${error.message}`)
+    return data ? mapDbToListItem(data) : null
+  }
+
+  async deleteList(listId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('lists')
+      .delete()
+      .eq('id', listId)
+
+    if (error) throw new Error(`List 삭제 실패: ${error.message}`)
+  }
+
+  // ─── Record ───
+
+  async create(input: CreateRecordInput): Promise<DiningRecord> {
+    // 1) lists upsert
+    const list = await this.findOrCreateList(
+      input.userId,
+      input.targetId,
+      input.targetType,
+      input.listStatus,
+    )
+
+    // 방문 기록 생성 시 list status를 visited/tasted로 승격
+    if (list.status === 'wishlist' && (input.listStatus === 'visited' || input.listStatus === 'tasted')) {
+      await this.updateListStatus(list.id, input.listStatus)
+    }
+
+    // 2) records INSERT
     const { data, error } = await this.supabase
       .from('records')
       .insert({
+        list_id: list.id,
         user_id: input.userId,
         target_id: input.targetId,
         target_type: input.targetType,
-        status: input.status,
-        wine_status: input.wineStatus ?? null,
-        camera_mode: input.cameraMode ?? null,
-        ocr_data: null,
+        axis_x: input.axisX ?? null,
+        axis_y: input.axisY ?? null,
+        satisfaction: input.satisfaction ?? null,
+        scene: input.scene ?? null,
+        comment: input.comment ?? null,
+        total_price: input.totalPrice ?? null,
+        purchase_price: input.purchasePrice ?? null,
+        visit_date: input.visitDate ?? null,
+        meal_time: input.mealTime ?? null,
         menu_tags: input.menuTags ?? null,
         pairing_categories: input.pairingCategories ?? null,
+        has_exif_gps: input.hasExifGps ?? false,
+        is_exif_verified: input.isExifVerified ?? false,
+        camera_mode: input.cameraMode ?? null,
+        aroma_regions: input.aromaRegions ?? null,
+        aroma_labels: input.aromaLabels ?? null,
+        aroma_color: input.aromaColor ?? null,
+        complexity: input.complexity ?? null,
+        finish: input.finish ?? null,
+        balance: input.balance ?? null,
+        auto_score: input.autoScore ?? null,
+        private_note: input.privateNote ?? null,
+        companion_count: input.companionCount ?? null,
+        companions: input.companions ?? null,
         linked_restaurant_id: input.linkedRestaurantId ?? null,
         linked_wine_id: input.linkedWineId ?? null,
-        visits,
-        visit_count: 1,
-        latest_visit_date: input.visit.date,
-        avg_satisfaction: avgSat,
         record_quality_xp: 0,
       })
       .select()
@@ -133,36 +228,8 @@ export class SupabaseRecordRepository implements RecordRepository {
 
     if (error) {
       if (error.code === '42501') throw new Error('권한이 없습니다')
-      if (error.code === '23505') throw new Error('이미 존재하는 기록입니다')
       throw new Error(`Record 생성 실패: ${error.message}`)
     }
-    return mapDbToRecord(data)
-  }
-
-  async addVisit(input: AddVisitInput): Promise<DiningRecord> {
-    // 기존 record를 먼저 로드
-    const existing = await this.findById(input.recordId)
-    if (!existing) throw new Error('기록을 찾을 수 없습니다')
-
-    const newVisits = [input.visit, ...existing.visits]
-    newVisits.sort((a, b) => b.date.localeCompare(a.date))
-    const avg = calcAvgSatisfaction(newVisits)
-
-    const { data, error } = await this.supabase
-      .from('records')
-      .update({
-        visits: newVisits.map(visitToJsonb),
-        visit_count: newVisits.length,
-        latest_visit_date: newVisits[0].date,
-        avg_satisfaction: avg,
-        status: 'rated',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.recordId)
-      .select()
-      .single()
-
-    if (error) throw new Error(`방문 추가 실패: ${error.message}`)
     return mapDbToRecord(data)
   }
 
@@ -185,7 +252,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       .from('records')
       .select()
       .eq('user_id', userId)
-      .order('latest_visit_date', { ascending: false })
+      .order('visit_date', { ascending: false })
 
     if (targetType) {
       query = query.eq('target_type', targetType)
@@ -199,9 +266,9 @@ export class SupabaseRecordRepository implements RecordRepository {
   async findByUserIdWithTarget(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
     let query = this.supabase
       .from('records')
-      .select('*')
+      .select('*, lists!inner(status)')
       .eq('user_id', userId)
-      .order('latest_visit_date', { ascending: false })
+      .order('visit_date', { ascending: false })
 
     if (targetType) {
       query = query.eq('target_type', targetType)
@@ -298,6 +365,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       const isRestaurant = row.target_type === 'restaurant'
       const restaurant = isRestaurant ? restaurantMap.get(row.target_id) : null
       const wine = !isRestaurant ? wineMap.get(row.target_id) : null
+      const listStatus = row.lists?.status ?? null
       return {
         ...base,
         targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
@@ -319,6 +387,7 @@ export class SupabaseRecordRepository implements RecordRepository {
         country: wine?.country ?? null,
         region: wine?.region ?? null,
         vintage: wine?.vintage ?? null,
+        listStatus: listStatus as ListStatus | undefined,
       }
     })
   }
@@ -329,7 +398,7 @@ export class SupabaseRecordRepository implements RecordRepository {
       .select()
       .eq('user_id', userId)
       .eq('target_id', targetId)
-      .order('latest_visit_date', { ascending: false })
+      .order('visit_date', { ascending: false })
 
     if (error) throw new Error(`Records 조회 실패: ${error.message}`)
     return data.map(mapDbToRecord)
@@ -337,18 +406,33 @@ export class SupabaseRecordRepository implements RecordRepository {
 
   async update(id: string, data: Partial<DiningRecord>): Promise<DiningRecord> {
     const updateData: Record<string, unknown> = {}
-    if (data.status !== undefined) updateData.status = data.status
-    if (data.wineStatus !== undefined) updateData.wine_status = data.wineStatus
+    if (data.axisX !== undefined) updateData.axis_x = data.axisX
+    if (data.axisY !== undefined) updateData.axis_y = data.axisY
+    if (data.satisfaction !== undefined) updateData.satisfaction = data.satisfaction
+    if (data.scene !== undefined) updateData.scene = data.scene
+    if (data.comment !== undefined) updateData.comment = data.comment
+    if (data.totalPrice !== undefined) updateData.total_price = data.totalPrice
+    if (data.purchasePrice !== undefined) updateData.purchase_price = data.purchasePrice
+    if (data.visitDate !== undefined) updateData.visit_date = data.visitDate
+    if (data.mealTime !== undefined) updateData.meal_time = data.mealTime
     if (data.menuTags !== undefined) updateData.menu_tags = data.menuTags
     if (data.pairingCategories !== undefined) updateData.pairing_categories = data.pairingCategories
     if (data.linkedWineId !== undefined) updateData.linked_wine_id = data.linkedWineId
     if (data.linkedRestaurantId !== undefined) updateData.linked_restaurant_id = data.linkedRestaurantId
-    if (data.visits !== undefined) {
-      updateData.visits = data.visits.map(visitToJsonb)
-      updateData.visit_count = data.visits.length
-      updateData.latest_visit_date = data.visits[0]?.date ?? null
-      updateData.avg_satisfaction = calcAvgSatisfaction(data.visits)
-    }
+    if (data.companionCount !== undefined) updateData.companion_count = data.companionCount
+    if (data.companions !== undefined) updateData.companions = data.companions
+    if (data.privateNote !== undefined) updateData.private_note = data.privateNote
+    if (data.cameraMode !== undefined) updateData.camera_mode = data.cameraMode
+    if (data.aromaRegions !== undefined) updateData.aroma_regions = data.aromaRegions
+    if (data.aromaLabels !== undefined) updateData.aroma_labels = data.aromaLabels
+    if (data.aromaColor !== undefined) updateData.aroma_color = data.aromaColor
+    if (data.complexity !== undefined) updateData.complexity = data.complexity
+    if (data.finish !== undefined) updateData.finish = data.finish
+    if (data.balance !== undefined) updateData.balance = data.balance
+    if (data.autoScore !== undefined) updateData.auto_score = data.autoScore
+    if (data.hasExifGps !== undefined) updateData.has_exif_gps = data.hasExifGps
+    if (data.isExifVerified !== undefined) updateData.is_exif_verified = data.isExifVerified
+    if (data.recordQualityXp !== undefined) updateData.record_quality_xp = data.recordQualityXp
     updateData.updated_at = new Date().toISOString()
 
     const { data: updated, error } = await this.supabase
@@ -389,18 +473,5 @@ export class SupabaseRecordRepository implements RecordRepository {
       .eq('id', id)
 
     if (error) throw new Error(`사진 삭제 실패: ${error.message}`)
-  }
-
-  async markWishlistVisited(
-    userId: string,
-    targetId: string,
-    targetType: RecordTargetType,
-  ): Promise<void> {
-    await this.supabase
-      .from('wishlists')
-      .update({ is_visited: true })
-      .eq('user_id', userId)
-      .eq('target_id', targetId)
-      .eq('target_type', targetType)
   }
 }

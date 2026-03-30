@@ -36,7 +36,7 @@ export interface RecordCardProps {
   satisfaction: number | null
   axisX: number | null
   axisY: number | null
-  status: 'checked' | 'rated' | 'draft'
+  status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
   sources?: SourceInfo[]
   badges?: BadgeInfo[]
   likeCount?: number
@@ -68,7 +68,7 @@ export function RecordCard({
   const isFood = targetType === 'restaurant'
   const accentColor = isFood ? 'var(--accent-food)' : 'var(--accent-wine)'
   const hasQuadrant = axisX != null && axisY != null && satisfaction != null
-  const isUnrated = status === 'checked'
+  const isUnrated = satisfaction === null
 
   return (
     <button

@@ -25,8 +25,6 @@ import { StepProgress } from '@/presentation/components/ui/step-progress'
 import { NyamToggle } from '@/presentation/components/ui/nyam-toggle'
 import { Segment } from '@/presentation/components/ui/segment'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
-import { NudgeCard } from '@/presentation/components/ui/nudge-card'
-import { NudgeStrip } from '@/presentation/components/ui/nudge-strip'
 import { CompactListItem } from '@/presentation/components/ui/compact-list-item'
 import { ViewCycleButton } from '@/presentation/components/ui/view-cycle-button'
 import { IntroCard } from '@/presentation/components/ui/intro-card'
@@ -899,28 +897,6 @@ export default function DesignSystemPage() {
           ))}
         </Row>
         <Note>카드는 기본적으로 shadow 없이 border만 사용. 그림자는 절제 — 시트/토스트 전용.</Note>
-      </Section>
-
-      {/* ── 14-B. Nudge (NudgeCard / NudgeStrip) ── */}
-      <Section title="14-B. Nudge">
-        <Sub title="Nudge Card" />
-        <NudgeCard
-          icon={<Utensils size={20} style={{ color: 'var(--accent-food)' }} />}
-          title="첫 기록을 남겨보세요"
-          description="최근 방문한 식당을 기록하면 XP를 받아요"
-          onConfirm={() => {}}
-          onDismiss={() => {}}
-          onClose={() => {}}
-          confirmLabel="기록하기"
-          dismissLabel="나중에"
-        />
-        <Sub title="Nudge Strip" />
-        <NudgeStrip
-          icon={<Star size={14} color="#fff" />}
-          text="레벨 3까지 50XP 남았어요"
-          actionLabel="확인"
-          onAction={() => {}}
-        />
       </Section>
 
       {/* ── 14-C. View Cycle Button ── */}

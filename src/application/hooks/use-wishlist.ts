@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
+import type { RecordRepository } from '@/domain/repositories/record-repository'
+import type { ListStatus } from '@/domain/entities/record'
 
 export interface UseWishlistReturn {
   isWishlisted: boolean
@@ -9,18 +10,24 @@ export interface UseWishlistReturn {
   toggle: () => Promise<void>
 }
 
+/**
+ * 찜(wishlist) 토글 — lists 테이블 기반
+ * status='wishlist' 항목의 존재 여부로 판단
+ */
 export function useWishlist(
   userId: string | null,
   targetId: string,
   targetType: 'restaurant' | 'wine',
-  repo: WishlistRepository,
+  repo: RecordRepository,
 ): UseWishlistReturn {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (!userId) return
-    repo.isWishlisted(userId, targetId, targetType).then(setIsWishlisted)
+    repo.findListByUserAndTarget(userId, targetId, targetType).then((list) => {
+      setIsWishlisted(list?.status === 'wishlist')
+    })
   }, [userId, targetId, targetType, repo])
 
   const toggle = useCallback(async () => {
@@ -32,9 +39,14 @@ export function useWishlist(
 
     try {
       if (prev) {
-        await repo.remove(userId, targetId, targetType)
+        // 찜 해제: list 삭제
+        const list = await repo.findListByUserAndTarget(userId, targetId, targetType)
+        if (list && list.status === 'wishlist') {
+          await repo.deleteList(list.id)
+        }
       } else {
-        await repo.add({ userId, targetId, targetType, source: 'direct' })
+        // 찜 추가
+        await repo.findOrCreateList(userId, targetId, targetType, 'wishlist' as ListStatus)
       }
     } catch {
       setIsWishlisted(prev)

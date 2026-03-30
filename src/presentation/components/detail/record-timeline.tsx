@@ -145,12 +145,11 @@ export function RecordTimeline({
           />
 
           {records.map((record, i) => {
-            const latestVisit = record.visits[0] ?? null
-            const dotColor = latestVisit?.scene
-              ? (sceneColors[latestVisit.scene] ?? `var(${accentColor})`)
+            const dotColor = record.scene
+              ? (sceneColors[record.scene] ?? `var(${accentColor})`)
               : `var(${accentColor})`
             const photos = recordPhotos.get(record.id) ?? []
-            const displayDate = record.latestVisitDate ?? record.createdAt.split('T')[0]
+            const displayDate = record.visitDate ?? record.createdAt.split('T')[0]
 
             return (
               <div
@@ -178,52 +177,52 @@ export function RecordTimeline({
                   <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
                     {displayDate}
                   </span>
-                  {latestVisit?.scene && (
+                  {record.scene && (
                     <span
                       className="tag-chip"
                       style={{ backgroundColor: dotColor }}
                     >
-                      {sceneLabels[latestVisit.scene] ?? latestVisit.scene}
+                      {sceneLabels[record.scene] ?? record.scene}
                     </span>
                   )}
                   <span className="ml-auto" style={{ fontSize: '13px', fontWeight: 700, color: dotColor }}>
-                    {record.avgSatisfaction ?? '—'}점
+                    {record.satisfaction ?? '—'}점
                   </span>
                 </div>
 
                 {/* 한줄평 */}
-                {latestVisit?.comment && (
+                {record.comment && (
                   <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-sub)', fontStyle: 'italic' }}>
-                    &ldquo;{latestVisit.comment}&rdquo;
+                    &ldquo;{record.comment}&rdquo;
                   </p>
                 )}
 
                 {/* 개인메모 (비공개) */}
-                {latestVisit?.tips && (
+                {record.privateNote && (
                   <div className="mt-1 flex items-start gap-1">
                     <FileText size={11} className="mt-0.5 shrink-0" style={{ color: 'var(--text-hint)' }} />
                     <p className="line-clamp-2" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-                      {latestVisit.tips}
+                      {record.privateNote}
                     </p>
                   </div>
                 )}
 
                 {/* 지출내역 */}
-                {latestVisit?.totalPrice != null && latestVisit.totalPrice > 0 && (
+                {record?.totalPrice != null && record.totalPrice > 0 && (
                   <div className="mt-1 flex items-center gap-1">
                     <Wallet size={11} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
                     <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-                      {latestVisit.totalPrice.toLocaleString()}원
+                      {record.totalPrice.toLocaleString()}원
                     </span>
                   </div>
                 )}
 
                 {/* 동행자 */}
-                {latestVisit?.companions && latestVisit.companions.length > 0 && (
+                {record?.companions && record.companions.length > 0 && (
                   <div className="mt-1 flex items-center gap-1">
                     <Users size={11} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
                     <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-                      {latestVisit.companions.join(', ')}
+                      {record.companions.join(', ')}
                     </span>
                   </div>
                 )}

@@ -348,49 +348,54 @@ export interface Database {
           created_at?: string
         }
       }
-      grape_variety_profiles: {
-        Row: {
-          name: string
-          name_ko: string
-          body_order: number
-          category: 'red' | 'white'
-          typical_body: number | null
-          typical_acidity: number | null
-          typical_tannin: number | null
-        }
-        Insert: {
-          name: string
-          name_ko: string
-          body_order: number
-          category: 'red' | 'white'
-          typical_body?: number | null
-          typical_acidity?: number | null
-          typical_tannin?: number | null
-        }
-        Update: {
-          name?: string
-          name_ko?: string
-          body_order?: number
-          category?: 'red' | 'white'
-          typical_body?: number | null
-          typical_acidity?: number | null
-          typical_tannin?: number | null
-        }
-      }
-      records: {
+      lists: {
         Row: {
           id: string
           user_id: string
           target_id: string
           target_type: 'restaurant' | 'wine'
-          status: 'checked' | 'rated' | 'draft'
-          wine_status: 'tasted' | 'cellar' | 'wishlist' | null
+          status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          source: string
+          source_record_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          target_id: string
+          target_type: 'restaurant' | 'wine'
+          status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          source?: string
+          source_record_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          target_id?: string
+          target_type?: 'restaurant' | 'wine'
+          status?: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          source?: string
+          source_record_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      records: {
+        Row: {
+          id: string
+          list_id: string
+          user_id: string
+          target_id: string
+          target_type: 'restaurant' | 'wine'
           camera_mode: 'individual' | 'shelf' | 'receipt' | null
           ocr_data: Json | null
           axis_x: number | null
           axis_y: number | null
           satisfaction: number | null
-          scene: 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks' | 'gathering' | 'pairing' | 'gift' | 'tasting' | 'decanting' | null
+          scene: string | null
           aroma_regions: Json | null
           aroma_labels: string[] | null
           aroma_color: string | null
@@ -401,7 +406,6 @@ export interface Database {
           comment: string | null
           menu_tags: string[] | null
           pairing_categories: string[] | null
-          tips: string | null
           companions: string[] | null
           companion_count: number | null
           total_price: number | null
@@ -412,6 +416,7 @@ export interface Database {
           linked_wine_id: string | null
           has_exif_gps: boolean
           is_exif_verified: boolean
+          private_note: string | null
           record_quality_xp: number
           score_updated_at: string | null
           created_at: string
@@ -419,17 +424,17 @@ export interface Database {
         }
         Insert: {
           id?: string
+          list_id: string
           user_id: string
           target_id: string
           target_type: 'restaurant' | 'wine'
-          status?: 'checked' | 'rated' | 'draft'
-          wine_status?: 'tasted' | 'cellar' | 'wishlist' | null
+          legacy_record_id?: string | null
           camera_mode?: 'individual' | 'shelf' | 'receipt' | null
           ocr_data?: Json | null
           axis_x?: number | null
           axis_y?: number | null
           satisfaction?: number | null
-          scene?: 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks' | 'gathering' | 'pairing' | 'gift' | 'tasting' | 'decanting' | null
+          scene?: string | null
           aroma_regions?: Json | null
           aroma_labels?: string[] | null
           aroma_color?: string | null
@@ -440,7 +445,6 @@ export interface Database {
           comment?: string | null
           menu_tags?: string[] | null
           pairing_categories?: string[] | null
-          tips?: string | null
           companions?: string[] | null
           companion_count?: number | null
           total_price?: number | null
@@ -451,6 +455,7 @@ export interface Database {
           linked_wine_id?: string | null
           has_exif_gps?: boolean
           is_exif_verified?: boolean
+          private_note?: string | null
           record_quality_xp?: number
           score_updated_at?: string | null
           created_at?: string
@@ -458,17 +463,17 @@ export interface Database {
         }
         Update: {
           id?: string
+          list_id?: string
           user_id?: string
           target_id?: string
           target_type?: 'restaurant' | 'wine'
-          status?: 'checked' | 'rated' | 'draft'
-          wine_status?: 'tasted' | 'cellar' | 'wishlist' | null
+          legacy_record_id?: string | null
           camera_mode?: 'individual' | 'shelf' | 'receipt' | null
           ocr_data?: Json | null
           axis_x?: number | null
           axis_y?: number | null
           satisfaction?: number | null
-          scene?: 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks' | 'gathering' | 'pairing' | 'gift' | 'tasting' | 'decanting' | null
+          scene?: string | null
           aroma_regions?: Json | null
           aroma_labels?: string[] | null
           aroma_color?: string | null
@@ -479,7 +484,6 @@ export interface Database {
           comment?: string | null
           menu_tags?: string[] | null
           pairing_categories?: string[] | null
-          tips?: string | null
           companions?: string[] | null
           companion_count?: number | null
           total_price?: number | null
@@ -490,6 +494,7 @@ export interface Database {
           linked_wine_id?: string | null
           has_exif_gps?: boolean
           is_exif_verified?: boolean
+          private_note?: string | null
           record_quality_xp?: number
           score_updated_at?: string | null
           created_at?: string
@@ -501,21 +506,27 @@ export interface Database {
           id: string
           record_id: string
           url: string
+          thumbnail_url: string | null
           order_index: number
+          is_public: boolean
           created_at: string
         }
         Insert: {
           id?: string
           record_id: string
           url: string
+          thumbnail_url?: string | null
           order_index?: number
+          is_public?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           record_id?: string
           url?: string
+          thumbnail_url?: string | null
           order_index?: number
+          is_public?: boolean
           created_at?: string
         }
       }
@@ -671,6 +682,9 @@ export interface Database {
           bubble_id: string
           shared_by: string
           shared_at: string
+          auto_synced: boolean
+          target_id: string
+          target_type: 'restaurant' | 'wine'
         }
         Insert: {
           id?: string
@@ -678,6 +692,9 @@ export interface Database {
           bubble_id: string
           shared_by: string
           shared_at?: string
+          auto_synced?: boolean
+          target_id: string
+          target_type: 'restaurant' | 'wine'
         }
         Update: {
           id?: string
@@ -685,6 +702,9 @@ export interface Database {
           bubble_id?: string
           shared_by?: string
           shared_at?: string
+          auto_synced?: boolean
+          target_id?: string
+          target_type?: 'restaurant' | 'wine'
         }
       }
       comments: {
@@ -745,23 +765,6 @@ export interface Database {
           created_at?: string
         }
       }
-      bubble_share_reads: {
-        Row: {
-          share_id: string
-          user_id: string
-          read_at: string
-        }
-        Insert: {
-          share_id: string
-          user_id: string
-          read_at?: string
-        }
-        Update: {
-          share_id?: string
-          user_id?: string
-          read_at?: string
-        }
-      }
       bubble_ranking_snapshots: {
         Row: {
           bubble_id: string
@@ -811,7 +814,7 @@ export interface Database {
           created_at?: string
         }
       }
-      user_experiences: {
+      xp_totals: {
         Row: {
           id: string
           user_id: string
@@ -840,7 +843,7 @@ export interface Database {
           updated_at?: string
         }
       }
-      xp_histories: {
+      xp_log_changes: {
         Row: {
           id: string
           user_id: string
@@ -872,7 +875,7 @@ export interface Database {
           created_at?: string
         }
       }
-      level_thresholds: {
+      xp_seed_levels: {
         Row: {
           level: number
           required_xp: number
@@ -892,7 +895,7 @@ export interface Database {
           color?: string | null
         }
       }
-      milestones: {
+      xp_seed_milestones: {
         Row: {
           id: string
           axis_type: 'category' | 'area' | 'genre' | 'wine_variety' | 'wine_region' | 'global'
@@ -918,7 +921,7 @@ export interface Database {
           label?: string
         }
       }
-      user_milestones: {
+      xp_log_milestones: {
         Row: {
           user_id: string
           milestone_id: string
@@ -979,84 +982,6 @@ export interface Database {
           created_at?: string
         }
       }
-      nudge_history: {
-        Row: {
-          id: string
-          user_id: string | null
-          nudge_type: 'photo' | 'unrated' | 'meal_time'
-          target_id: string | null
-          status: 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          nudge_type: 'photo' | 'unrated' | 'meal_time'
-          target_id?: string | null
-          status: 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          nudge_type?: 'location' | 'time' | 'photo' | 'unrated' | 'new_area' | 'weekly'
-          target_id?: string | null
-          status?: 'sent' | 'opened' | 'acted' | 'dismissed' | 'skipped'
-          created_at?: string
-        }
-      }
-      nudge_fatigue: {
-        Row: {
-          user_id: string
-          score: number
-          last_nudge_at: string | null
-          paused_until: string | null
-        }
-        Insert: {
-          user_id: string
-          score?: number
-          last_nudge_at?: string | null
-          paused_until?: string | null
-        }
-        Update: {
-          user_id?: string
-          score?: number
-          last_nudge_at?: string | null
-          paused_until?: string | null
-        }
-      }
-      wishlists: {
-        Row: {
-          id: string
-          user_id: string
-          target_id: string
-          target_type: 'restaurant' | 'wine'
-          source: 'direct' | 'bubble' | 'ai' | 'web'
-          source_record_id: string | null
-          is_visited: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          target_id: string
-          target_type: 'restaurant' | 'wine'
-          source?: 'direct' | 'bubble' | 'ai' | 'web'
-          source_record_id?: string | null
-          is_visited?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          target_id?: string
-          target_type?: 'restaurant' | 'wine'
-          source?: 'direct' | 'bubble' | 'ai' | 'web'
-          source_record_id?: string | null
-          is_visited?: boolean
-          created_at?: string
-        }
-      }
       saved_filters: {
         Row: {
           id: string
@@ -1090,44 +1015,6 @@ export interface Database {
           sort_by?: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count' | null
           order_index?: number
           created_at?: string
-        }
-      }
-      ai_recommendations: {
-        Row: {
-          id: string
-          user_id: string
-          target_id: string
-          target_type: 'restaurant' | 'wine'
-          reason: string
-          algorithm: string | null
-          confidence: number | null
-          is_dismissed: boolean
-          created_at: string
-          expires_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          target_id: string
-          target_type: 'restaurant' | 'wine'
-          reason: string
-          algorithm?: string | null
-          confidence?: number | null
-          is_dismissed?: boolean
-          created_at?: string
-          expires_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          target_id?: string
-          target_type?: 'restaurant' | 'wine'
-          reason?: string
-          algorithm?: string | null
-          confidence?: number | null
-          is_dismissed?: boolean
-          created_at?: string
-          expires_at?: string | null
         }
       }
     }

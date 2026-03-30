@@ -2,9 +2,8 @@
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { RecordTargetType, CreateRecordInput, DiningRecord, RecordVisit } from '@/domain/entities/record'
+import type { RecordTargetType, CreateRecordInput, DiningRecord } from '@/domain/entities/record'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
-import { determineRecordStatus } from '@/domain/entities/add-flow'
 import type { AddFlowEntryPath } from '@/domain/entities/add-flow'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
@@ -13,7 +12,7 @@ import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { validateExifGps } from '@/domain/services/exif-validator'
 import { useXpAward } from '@/application/hooks/use-xp-award'
 import { useXp } from '@/application/hooks/use-xp'
-import { photoRepo, recordRepo, xpRepo, wishlistRepo, imageService, restaurantRepo, wineRepo } from '@/shared/di/container'
+import { photoRepo, recordRepo, xpRepo, imageService, restaurantRepo, wineRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -223,18 +222,15 @@ function RecordFlowInner() {
         const records = await recordRepo.findByUserAndTarget(userId!, state.targetId)
         if (cancelled) return
         const refs: QuadrantReferencePoint[] = records
-          .filter((r) => r.visits[0]?.axisX !== null && r.visits[0]?.axisY !== null && r.id !== editRecordId)
+          .filter((r) => r.axisX !== null && r.axisY !== null && r.id !== editRecordId)
           .slice(0, 12)
-          .map((r) => {
-            const v = r.visits[0]
-            return {
-              x: v?.axisX ?? 50,
-              y: v?.axisY ?? 50,
-              satisfaction: v?.satisfaction ?? 50,
-              name: r.latestVisitDate ?? '',
-              score: v?.satisfaction ?? 50,
-            }
-          })
+          .map((r) => ({
+            x: r.axisX ?? 50,
+            y: r.axisY ?? 50,
+            satisfaction: r.satisfaction ?? 50,
+            name: r.visitDate ?? '',
+            score: r.satisfaction ?? 50,
+          }))
         setReferenceRecords(refs)
       } catch {
         // 참조 점 로드 실패 시 무시 — 핵심 기능 아님
@@ -255,11 +251,9 @@ function RecordFlowInner() {
         if (cancelled) return
         const freq = new Map<string, number>()
         for (const r of records) {
-          for (const v of r.visits) {
-            if (v.companions) {
-              for (const name of v.companions) {
-                freq.set(name, (freq.get(name) ?? 0) + 1)
-              }
+          if (r.companions) {
+            for (const name of r.companions) {
+              freq.set(name, (freq.get(name) ?? 0) + 1)
             }
           }
         }
@@ -315,8 +309,8 @@ function RecordFlowInner() {
         let savedRecord: DiningRecord
 
         if (isEditMode && editRecordId) {
-          // 수정 모드: UPDATE — visit-level fields go into visits[0] patch
-          const visitPatch: Partial<RecordVisit> = {
+          // 수정 모드: UPDATE — 모든 필드가 record 레벨에 직접 존재
+          const updateData: Partial<DiningRecord> = {
             axisX: formData.axisX as number | undefined ?? null,
             axisY: formData.axisY as number | undefined ?? null,
             satisfaction: formData.satisfaction as number | undefined ?? null,
@@ -324,7 +318,7 @@ function RecordFlowInner() {
             comment: (formData.comment as string) ?? null,
             companions: (formData.companions as string[]) ?? null,
             companionCount: formData.companionCount as number | undefined ?? null,
-            tips: (formData.privateNote as string) ?? null,
+            privateNote: (formData.privateNote as string) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
             aromaRegions: (formData.aromaRegions as Record<string, unknown>) ?? null,
@@ -334,24 +328,12 @@ function RecordFlowInner() {
             finish: (formData.finish as number) ?? null,
             balance: (formData.balance as number) ?? null,
             autoScore: (formData.autoScore as number) ?? null,
-            mealTime: (formData.mealTime as RecordVisit['mealTime']) ?? null,
-            date: (formData.visitDate as string) ?? new Date().toISOString().split('T')[0],
-          }
-          const updateData: Partial<DiningRecord> = {
+            mealTime: (formData.mealTime as DiningRecord['mealTime']) ?? null,
+            visitDate: (formData.visitDate as string) ?? new Date().toISOString().split('T')[0],
             menuTags: (formData.menuTags as string[]) ?? null,
             pairingCategories: formData.pairingCategories as DiningRecord['pairingCategories'],
             linkedWineId: formData.linkedWineId as string | undefined,
             linkedRestaurantId: formData.linkedRestaurantId as string | undefined,
-          }
-          // Update the latest visit in the visits array
-          if (editingRecord && editingRecord.visits.length > 0) {
-            const { updateVisit, calcAvgSatisfaction } = await import('@/domain/entities/record')
-            const updatedVisits = updateVisit(editingRecord.visits, editingRecord.visits[0].date, visitPatch)
-            Object.assign(updateData, {
-              visits: updatedVisits,
-              avgSatisfaction: calcAvgSatisfaction(updatedVisits),
-              latestVisitDate: updatedVisits[0]?.date ?? null,
-            })
           }
           savedRecord = await recordRepo.update(editRecordId, updateData)
 
@@ -423,20 +405,27 @@ function RecordFlowInner() {
             }
           }
 
-          const visitDate = (formData.visitDate as string) ?? new Date().toISOString().split('T')[0]
-          const visit: RecordVisit = {
-            date: visitDate,
+          const input: CreateRecordInput = {
+            userId: user.id,
+            targetId: formData.targetId,
+            targetType: formData.targetType,
+            listStatus: formData.targetType === 'wine' ? 'tasted' : 'visited',
+            menuTags: formData.menuTags as string[] | undefined,
+            linkedWineId: formData.linkedWineId as string | undefined,
+            linkedRestaurantId: formData.linkedRestaurantId as string | undefined,
+            pairingCategories: formData.pairingCategories as CreateRecordInput['pairingCategories'],
             axisX: (formData.axisX as number) ?? null,
             axisY: (formData.axisY as number) ?? null,
             satisfaction: (formData.satisfaction as number) ?? null,
             comment: (formData.comment as string) ?? null,
-            tips: (formData.privateNote as string) ?? null,
+            privateNote: (formData.privateNote as string) ?? null,
             scene: (formData.scene as string) ?? null,
-            mealTime: (formData.mealTime as RecordVisit['mealTime']) ?? null,
+            mealTime: (formData.mealTime as CreateRecordInput['mealTime']) ?? null,
             companions: (formData.companions as string[]) ?? null,
             companionCount: (formData.companionCount as number) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
+            visitDate: (formData.visitDate as string) ?? new Date().toISOString().split('T')[0],
             aromaRegions: (formData.aromaRegions as Record<string, unknown>) ?? null,
             aromaLabels: (formData.aromaLabels as string[]) ?? null,
             aromaColor: (formData.aromaColor as string) ?? null,
@@ -446,18 +435,6 @@ function RecordFlowInner() {
             autoScore: (formData.autoScore as number) ?? null,
             hasExifGps,
             isExifVerified,
-          }
-          const input: CreateRecordInput = {
-            userId: user.id,
-            targetId: formData.targetId,
-            targetType: formData.targetType,
-            status: determineRecordStatus(entryPath, !!(formData.axisX || formData.axisY || formData.satisfaction)),
-            menuTags: formData.menuTags as string[] | undefined,
-            linkedWineId: formData.linkedWineId as string | undefined,
-            linkedRestaurantId: formData.linkedRestaurantId as string | undefined,
-            pairingCategories: formData.pairingCategories as CreateRecordInput['pairingCategories'],
-            wineStatus: formData.targetType === 'wine' ? 'tasted' : undefined,
-            visit,
           }
           savedRecord = await createRecord(input)
 
@@ -528,7 +505,7 @@ function RecordFlowInner() {
         }
 
         // 버블 자동 공유 동기화 (신규/수정 모두) + 토스트
-        syncRecordToAllBubbles(savedRecord as unknown as { id: string } & Record<string, unknown>)
+        syncRecordToAllBubbles(savedRecord as unknown as { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>)
           .then((syncResult) => {
             if (syncResult.sharedTo.length > 0) {
               const names = syncResult.sharedTo.map((b) => b.bubbleName).join(', ')
@@ -577,12 +554,6 @@ function RecordFlowInner() {
         for (const h of histories) totalXpToDeduct += h.xpAmount
         await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
         await xpRepo.deleteByRecordId(editRecordId)
-      }
-      if (editingRecord) {
-        const remaining = await recordRepo.findByUserAndTarget(user.id, editingRecord.targetId)
-        if (remaining.filter((r) => r.id !== editRecordId).length === 0) {
-          await wishlistRepo.updateVisitStatus(user.id, editingRecord.targetId, editingRecord.targetType, false)
-        }
       }
       router.replace('/')
     } catch {
@@ -646,37 +617,36 @@ function RecordFlowInner() {
     />
   )
 
-  // 수정 모드 초기 데이터 빌드 — visit-level fields from visits[0]
-  const editLatestVisit = editingRecord?.visits[0] ?? null
+  // 수정 모드 초기 데이터 빌드 — 모든 필드가 record에 직접 존재
   const restaurantInitial = editingRecord && editingRecord.targetType === 'restaurant' ? {
-    axisX: editLatestVisit?.axisX ?? null,
-    axisY: editLatestVisit?.axisY ?? null,
-    satisfaction: editLatestVisit?.satisfaction ?? null,
-    scene: editLatestVisit?.scene ?? null,
-    comment: editLatestVisit?.comment ?? null,
-    companions: editLatestVisit?.companions ?? null,
-    privateNote: editLatestVisit?.tips ?? null,
+    axisX: editingRecord.axisX ?? null,
+    axisY: editingRecord.axisY ?? null,
+    satisfaction: editingRecord.satisfaction ?? null,
+    scene: editingRecord.scene ?? null,
+    comment: editingRecord.comment ?? null,
+    companions: editingRecord.companions ?? null,
+    privateNote: editingRecord.privateNote ?? null,
     menuTags: editingRecord.menuTags,
-    totalPrice: editLatestVisit?.totalPrice ?? null,
-    visitDate: editLatestVisit?.date ?? null,
+    totalPrice: editingRecord.totalPrice ?? null,
+    visitDate: editingRecord.visitDate ?? null,
   } : undefined
 
   const wineInitial = editingRecord && editingRecord.targetType === 'wine' ? {
-    axisX: editLatestVisit?.axisX ?? null,
-    axisY: editLatestVisit?.axisY ?? null,
-    satisfaction: editLatestVisit?.satisfaction ?? null,
-    aromaRegions: editLatestVisit?.aromaRegions ?? null,
-    aromaLabels: editLatestVisit?.aromaLabels ?? null,
-    aromaColor: editLatestVisit?.aromaColor ?? null,
-    complexity: editLatestVisit?.complexity ?? null,
-    finish: editLatestVisit?.finish ?? null,
-    balance: editLatestVisit?.balance ?? null,
+    axisX: editingRecord.axisX ?? null,
+    axisY: editingRecord.axisY ?? null,
+    satisfaction: editingRecord.satisfaction ?? null,
+    aromaRegions: editingRecord.aromaRegions ?? null,
+    aromaLabels: editingRecord.aromaLabels ?? null,
+    aromaColor: editingRecord.aromaColor ?? null,
+    complexity: editingRecord.complexity ?? null,
+    finish: editingRecord.finish ?? null,
+    balance: editingRecord.balance ?? null,
     pairingCategories: editingRecord.pairingCategories as string[] | null,
-    comment: editLatestVisit?.comment ?? null,
-    purchasePrice: editLatestVisit?.purchasePrice ?? null,
-    companions: editLatestVisit?.companions ?? null,
-    privateNote: editLatestVisit?.tips ?? null,
-    visitDate: editLatestVisit?.date ?? null,
+    comment: editingRecord.comment ?? null,
+    purchasePrice: editingRecord.purchasePrice ?? null,
+    companions: editingRecord.companions ?? null,
+    privateNote: editingRecord.privateNote ?? null,
+    visitDate: editingRecord.visitDate ?? null,
   } : undefined
 
   return (

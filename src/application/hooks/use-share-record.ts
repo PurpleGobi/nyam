@@ -29,6 +29,8 @@ interface UseShareRecordResult {
 export function useShareRecord(
   userId: string | null,
   recordId: string | null,
+  targetId?: string | null,
+  targetType?: 'restaurant' | 'wine',
 ): UseShareRecordResult {
   const [availableBubbles, setAvailableBubbles] = useState<ShareableBubble[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -80,19 +82,19 @@ export function useShareRecord(
   }, [fetch])
 
   const shareToBubble = useCallback(async (bubbleId: string) => {
-    if (!userId || !recordId) return
-    await bubbleRepo.shareRecord(recordId, bubbleId, userId)
+    if (!userId || !recordId || !targetId || !targetType) return
+    await bubbleRepo.shareRecord(recordId, bubbleId, userId, targetId, targetType)
     setAvailableBubbles((prev) =>
       prev.map((b) => (b.id === bubbleId ? { ...b, isShared: true } : b)),
     )
     await awardSocialXp(userId, 'share')
     await awardBonus(userId, 'first_share')
-  }, [userId, recordId, awardSocialXp, awardBonus])
+  }, [userId, recordId, targetId, targetType, awardSocialXp, awardBonus])
 
   const shareToBubbles = useCallback(async (bubbleIds: string[]) => {
-    if (!userId || !recordId) return
+    if (!userId || !recordId || !targetId || !targetType) return
     for (const bubbleId of bubbleIds) {
-      await bubbleRepo.shareRecord(recordId, bubbleId, userId)
+      await bubbleRepo.shareRecord(recordId, bubbleId, userId, targetId, targetType)
       await awardSocialXp(userId, 'share')
     }
     if (bubbleIds.length > 0) {

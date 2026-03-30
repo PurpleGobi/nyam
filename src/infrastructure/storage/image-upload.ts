@@ -2,46 +2,70 @@ import { createClient } from '@/infrastructure/supabase/client'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 
 /**
- * 이미지를 리사이즈하여 WebP Blob으로 변환.
- * Canvas API 사용. max 1200px width, quality 0.8.
+ * 이미지를 지정 크기로 리사이즈하여 WebP Blob으로 변환.
+ * Canvas API 사용.
  */
-export async function resizeImage(file: File): Promise<Blob> {
+function resizeToBlob(
+  img: HTMLImageElement,
+  maxWidth: number,
+  quality: number,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    let width = img.width
+    let height = img.height
+
+    if (width > maxWidth) {
+      height = Math.round((height * maxWidth) / width)
+      width = maxWidth
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      reject(new Error('Canvas context not available'))
+      return
+    }
+    ctx.drawImage(img, 0, 0, width, height)
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error('Failed to create blob'))
+      },
+      PHOTO_CONSTANTS.OUTPUT_FORMAT,
+      quality,
+    )
+  })
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.onload = () => {
-      const { MAX_WIDTH, QUALITY, OUTPUT_FORMAT } = PHOTO_CONSTANTS
-
-      let width = img.width
-      let height = img.height
-
-      if (width > MAX_WIDTH) {
-        height = Math.round((height * MAX_WIDTH) / width)
-        width = MAX_WIDTH
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        reject(new Error('Canvas context not available'))
-        return
-      }
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob)
-          else reject(new Error('Failed to create blob'))
-        },
-        OUTPUT_FORMAT,
-        QUALITY,
-      )
-    }
+    img.onload = () => resolve(img)
     img.onerror = () => reject(new Error('Failed to load image'))
     img.src = URL.createObjectURL(file)
   })
+}
+
+/**
+ * 이미지를 리사이즈하여 WebP Blob으로 변환.
+ * max 1200px width, quality 0.8.
+ */
+export async function resizeImage(file: File): Promise<Blob> {
+  const img = await loadImage(file)
+  return resizeToBlob(img, PHOTO_CONSTANTS.MAX_WIDTH, PHOTO_CONSTANTS.QUALITY)
+}
+
+/**
+ * 썸네일 이미지를 생성하여 WebP Blob으로 변환.
+ * max 400px width, quality 0.7.
+ */
+export async function resizeThumbnail(file: File): Promise<Blob> {
+  const img = await loadImage(file)
+  return resizeToBlob(img, PHOTO_CONSTANTS.THUMBNAIL_WIDTH, PHOTO_CONSTANTS.THUMBNAIL_QUALITY)
 }
 
 /**
@@ -53,9 +77,11 @@ export async function uploadImage(
   recordId: string,
   blob: Blob,
   fileId: string,
+  suffix?: string,
 ): Promise<string> {
   const supabase = createClient()
-  const path = `${userId}/${recordId}/${fileId}.webp`
+  const filename = suffix ? `${fileId}_${suffix}.webp` : `${fileId}.webp`
+  const path = `${userId}/${recordId}/${filename}`
 
   const { error } = await supabase.storage
     .from(PHOTO_CONSTANTS.BUCKET_NAME)
@@ -71,6 +97,24 @@ export async function uploadImage(
     .getPublicUrl(path)
 
   return urlData.publicUrl
+}
+
+/**
+ * 원본 + 썸네일을 동시에 업로드.
+ * 반환: { url, thumbnailUrl }
+ */
+export async function uploadImageWithThumbnail(
+  userId: string,
+  recordId: string,
+  originalBlob: Blob,
+  thumbnailBlob: Blob,
+  fileId: string,
+): Promise<{ url: string; thumbnailUrl: string }> {
+  const [url, thumbnailUrl] = await Promise.all([
+    uploadImage(userId, recordId, originalBlob, fileId),
+    uploadImage(userId, recordId, thumbnailBlob, fileId, 'thumb'),
+  ])
+  return { url, thumbnailUrl }
 }
 
 /**

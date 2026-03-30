@@ -27,17 +27,17 @@ export function useCalendarRecords(params: {
       const records = await recordRepo.findByUserIdWithTarget(userId, targetType)
 
       const monthStr = `${year}-${String(month).padStart(2, '0')}`
-      const monthRecords = records.filter((r) => r.latestVisitDate?.startsWith(monthStr))
+      const monthRecords = records.filter((r) => r.visitDate?.startsWith(monthStr))
 
       const grouped = new Map<string, { topScore: number | null; recordCount: number; photoUrl: string | null }>()
       for (const r of monthRecords) {
-        if (!r.latestVisitDate) continue
-        const date = r.latestVisitDate.slice(0, 10)
+        if (!r.visitDate) continue
+        const date = r.visitDate.slice(0, 10)
         const existing = grouped.get(date)
         if (existing) {
           existing.recordCount += 1
-          if (r.avgSatisfaction != null && (existing.topScore == null || r.avgSatisfaction > existing.topScore)) {
-            existing.topScore = r.avgSatisfaction
+          if (r.satisfaction != null && (existing.topScore == null || r.satisfaction > existing.topScore)) {
+            existing.topScore = r.satisfaction
           }
           // 첫 번째 사진이 있는 기록의 사진을 대표 사진으로 사용
           if (!existing.photoUrl && r.targetPhotoUrl) {
@@ -45,7 +45,7 @@ export function useCalendarRecords(params: {
           }
         } else {
           grouped.set(date, {
-            topScore: r.avgSatisfaction,
+            topScore: r.satisfaction,
             recordCount: 1,
             photoUrl: r.targetPhotoUrl,
           })

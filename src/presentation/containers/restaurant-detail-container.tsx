@@ -9,7 +9,7 @@ import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
-import { restaurantRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { restaurantRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -75,7 +75,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     user?.id ?? null,
     restaurantId,
     'restaurant',
-    wishlistRepo,
+    recordRepo,
   )
 
   // 세부 축 레벨 (장르, 지역)
@@ -105,14 +105,12 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   }
 
   // 사분면 현재 dot (이 식당 내 모든 방문의 평균)
-  const allVisitsWithAxis = myRecords.flatMap((r) =>
-    r.visits.filter((v) => v.axisX !== null && v.axisY !== null && v.satisfaction !== null),
-  )
-  const currentDot = allVisitsWithAxis.length > 0
+  const allRecordsWithAxis = myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
+  const currentDot = allRecordsWithAxis.length > 0
     ? {
-        axisX: Math.round(allVisitsWithAxis.reduce((s, v) => s + v.axisX!, 0) / allVisitsWithAxis.length),
-        axisY: Math.round(allVisitsWithAxis.reduce((s, v) => s + v.axisY!, 0) / allVisitsWithAxis.length),
-        satisfaction: Math.round(allVisitsWithAxis.reduce((s, v) => s + v.satisfaction!, 0) / allVisitsWithAxis.length),
+        axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisX!, 0) / allRecordsWithAxis.length),
+        axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisY!, 0) / allRecordsWithAxis.length),
+        satisfaction: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.satisfaction!, 0) / allRecordsWithAxis.length),
       }
     : null
 
@@ -197,7 +195,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   }
 
   const genreChain = getGenreChain(restaurant.genre)
-  const mySubText = visitCount > 0 ? `${visitCount}회 방문` : '미방문'
+  const mySubText = myRecords.length > 0 ? `${myRecords.length}회 방문` : '미방문'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
   const heroThumbnail = {
     icon: 'utensils',
@@ -280,7 +278,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 나의 평가
                 <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
-                  {visitCount}회 방문 평균
+                  {myRecords.length}회 방문 평균
                 </span>
               </h3>
               <RatingInput
@@ -316,8 +314,8 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           accentColor="--accent-food"
           sectionTitle="나의 기록"
           sectionMeta={
-            visitCount > 0
-              ? `방문 ${visitCount}회 · ${latestVisitDate ?? ''}`
+            myRecords.length > 0
+              ? `방문 ${myRecords.length}회 · ${latestVisitDate ?? ''}`
               : ''
           }
           emptyIcon="search"

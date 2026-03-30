@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
@@ -99,6 +99,8 @@ function toBubbleShare(row: Record<string, unknown>): BubbleShare {
     bubbleId: row.bubble_id as string,
     sharedBy: row.shared_by as string,
     sharedAt: row.shared_at as string,
+    targetId: row.target_id as string,
+    targetType: row.target_type as 'restaurant' | 'wine',
   }
 }
 
@@ -307,11 +309,11 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const shares = ((shareRows ?? []) as unknown as Record<string, unknown>[]).map((r) => toBubbleShare(r))
     if (shares.length === 0) return { data: [], total: count ?? 0 }
 
-    // 2) records batch 조회 (comment는 visits JSONB 안에 있음)
+    // 2) records batch 조회
     const recordIds = [...new Set(shares.map((s) => s.recordId))]
     const { data: recordRows } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, avg_satisfaction, visits')
+      .select('id, target_id, target_type, satisfaction, comment, scene, visit_date')
       .in('id', recordIds)
     const recordMap: Record<string, Record<string, unknown>> = {}
     for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
@@ -363,8 +365,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       const author = authorMap[s.sharedBy]
       const targetId = (rec?.target_id as string) ?? ''
       const targetType = ((rec?.target_type as string) ?? 'restaurant') as 'restaurant' | 'wine'
-      const visits = (rec?.visits as Array<Record<string, unknown>>) ?? []
-      const latestComment = (visits[0]?.comment as string) ?? null
+      const latestComment = (rec?.comment as string) ?? null
 
       return {
         id: s.id,
@@ -375,7 +376,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         targetId,
         targetType,
         targetName: nameMap[targetId] ?? '',
-        satisfaction: (rec?.avg_satisfaction as number) ?? null,
+        satisfaction: (rec?.satisfaction as number) ?? null,
         comment: latestComment,
         authorNickname: (author?.nickname as string) ?? '',
         authorAvatar: (author?.avatar_url as string) ?? null,
@@ -386,30 +387,14 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return { data: items, total: count ?? 0 }
   }
 
-  async addShare(recordId: string, bubbleId: string, sharedBy: string): Promise<BubbleShare> {
-    const { data, error } = await this.supabase.from('bubble_shares').insert({ record_id: recordId, bubble_id: bubbleId, shared_by: sharedBy }).select().single()
+  async addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
+    const { data, error } = await this.supabase.from('bubble_shares').insert({ record_id: recordId, bubble_id: bubbleId, shared_by: sharedBy, target_id: targetId, target_type: targetType }).select().single()
     if (error) throw new Error(`공유 실패: ${error.message}`)
     return toBubbleShare(data as Record<string, unknown>)
   }
 
   async removeShare(shareId: string): Promise<void> {
     await this.supabase.from('bubble_shares').delete().eq('id', shareId)
-  }
-
-  async markShareRead(shareId: string, userId: string): Promise<void> {
-    await this.supabase.from('bubble_share_reads').upsert(
-      { share_id: shareId, user_id: userId },
-      { onConflict: 'share_id,user_id' },
-    )
-  }
-
-  async getShareReads(shareId: string): Promise<BubbleShareRead[]> {
-    const { data } = await this.supabase.from('bubble_share_reads').select('*').eq('share_id', shareId)
-    return (data ?? []).map((r: Record<string, unknown>) => ({
-      shareId: r.share_id as string,
-      userId: r.user_id as string,
-      readAt: r.read_at as string,
-    }))
   }
 
   async getRankings(bubbleId: string, options: {
@@ -604,9 +589,9 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         authorAvatarColor: (user?.avatar_color as string) ?? null,
         targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
         targetType: recTargetType as 'restaurant' | 'wine',
-        satisfaction: (rec?.avg_satisfaction as number) ?? null,
-        comment: ((rec?.visits as Array<Record<string, unknown>>)?.[0]?.comment as string) ?? null,
-        visitDate: (rec?.latest_visit_date as string) ?? null,
+        satisfaction: (rec?.satisfaction as number) ?? null,
+        comment: (rec?.comment as string) ?? null,
+        visitDate: (rec?.visit_date as string) ?? null,
         sharedAt: s.shared_at as string,
       }
     })
@@ -620,9 +605,8 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (userIds.length === 0) return []
     let query = this.supabase
       .from('records')
-      .select('id, target_id, target_type, avg_satisfaction, visits, latest_visit_date, created_at, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name)')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name)')
       .in('user_id', userIds)
-      .eq('status', 'rated')
     if (targetType) {
       query = query.eq('target_type', targetType)
     }
@@ -639,9 +623,9 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         targetId: (r.target_id as string) ?? '',
         targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
         targetType: recTargetType as 'restaurant' | 'wine',
-        satisfaction: (r.avg_satisfaction as number) ?? null,
-        comment: ((r.visits as Array<Record<string, unknown>>)?.[0]?.comment as string) ?? null,
-        visitDate: (r.latest_visit_date as string) ?? null,
+        satisfaction: (r.satisfaction as number) ?? null,
+        comment: (r.comment as string) ?? null,
+        visitDate: (r.visit_date as string) ?? null,
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,
@@ -676,8 +660,8 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>))
   }
 
-  async shareRecord(recordId: string, bubbleId: string, userId: string): Promise<BubbleShare> {
-    return this.addShare(recordId, bubbleId, userId)
+  async shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
+    return this.addShare(recordId, bubbleId, userId, targetId, targetType)
   }
 
   async unshareRecord(recordId: string, bubbleId: string): Promise<void> {
@@ -698,13 +682,15 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .eq('user_id', userId)
   }
 
-  async batchUpsertAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void> {
-    if (recordIds.length === 0) return
-    const rows = recordIds.map((recordId) => ({
-      record_id: recordId,
+  async batchUpsertAutoShares(records: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void> {
+    if (records.length === 0) return
+    const rows = records.map((r) => ({
+      record_id: r.id,
       bubble_id: bubbleId,
       shared_by: userId,
       auto_synced: true,
+      target_id: r.targetId,
+      target_type: r.targetType,
     }))
     const { error } = await this.supabase
       .from('bubble_shares')

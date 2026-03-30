@@ -11,7 +11,6 @@ import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
 import type { WineRepository } from '@/domain/repositories/wine-repository'
 import type { XpRepository } from '@/domain/repositories/xp-repository'
-import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
 import type { AxisType } from '@/domain/entities/xp'
 import { getLevelColor } from '@/domain/services/xp-calculator'
 
@@ -60,7 +59,6 @@ export function useRecordDetail(
     restaurantRepo: RestaurantRepository
     wineRepo: WineRepository
     xpRepo: XpRepository
-    wishlistRepo: WishlistRepository
   },
 ): RecordDetailState & RecordDetailActions {
   const [record, setRecord] = useState<DiningRecord | null>(null)
@@ -207,13 +205,7 @@ export function useRecordDetail(
       // 1. records DELETE (record_photos ON DELETE CASCADE 자동)
       await deps.recordRepo.delete(recordId)
 
-      // 2. wishlist is_visited 복원: 같은 target의 다른 기록 확인
-      const remaining = await deps.recordRepo.findByUserAndTarget(userId, record.targetId)
-      if (remaining.filter((r) => r.id !== recordId).length === 0) {
-        await deps.wishlistRepo.updateVisitStatus(userId, record.targetId, record.targetType, false)
-      }
-
-      // 3. XP 차감: xp_histories 조회 → user_experiences 차감 → total_xp 차감 → histories 삭제
+      // 2. XP 차감: xp_histories 조회 → user_experiences 차감 → total_xp 차감 → histories 삭제
       const histories = await deps.xpRepo.getHistoriesByRecord(recordId)
       if (histories.length > 0) {
         // axis별 XP 합산

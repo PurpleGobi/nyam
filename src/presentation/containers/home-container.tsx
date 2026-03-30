@@ -16,13 +16,10 @@ import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
-import { useNudge } from '@/application/hooks/use-nudge'
-import { useRecommendations } from '@/application/hooks/use-recommendations'
 import { useSettings } from '@/application/hooks/use-settings'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
-import { NudgeStrip } from '@/presentation/components/home/nudge-strip'
 import { HomeTabs } from '@/presentation/components/home/home-tabs'
 import { RecordCard } from '@/presentation/components/home/record-card'
 import { WineCard } from '@/presentation/components/home/wine-card'
@@ -33,7 +30,6 @@ import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { StatsToggle } from '@/presentation/components/home/stats-toggle'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
-import { RecommendationCard } from '@/presentation/components/home/recommendation-card'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
 // --- Heavy components: lazy-loaded (only fetched when actually rendered) ---
@@ -55,15 +51,15 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
   switch (sort) {
     case 'latest':
       return sorted.sort((a, b) => {
-        const dateA = a.latestVisitDate ?? ''
-        const dateB = b.latestVisitDate ?? ''
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
         if (dateA !== dateB) return dateB.localeCompare(dateA)
         return b.createdAt.localeCompare(a.createdAt)
       })
     case 'score_high':
-      return sorted.sort((a, b) => (b.avgSatisfaction ?? 0) - (a.avgSatisfaction ?? 0))
+      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
     case 'score_low':
-      return sorted.sort((a, b) => (a.avgSatisfaction ?? 0) - (b.avgSatisfaction ?? 0))
+      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
       return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count': {
@@ -143,15 +139,15 @@ export function HomeContainer() {
   // AI 인사말 — greeting-generator 기반
   const recentRecordsForGreeting = useMemo(() => {
     return records
-      .filter((r) => r.targetType === 'restaurant' && r.latestVisitDate)
+      .filter((r) => r.targetType === 'restaurant' && r.visitDate)
       .slice(0, 5)
       .map((r) => ({
         restaurantName: r.targetName,
         restaurantId: r.targetId,
-        satisfaction: r.avgSatisfaction ?? 0,
-        visitDate: r.latestVisitDate ?? '',
+        satisfaction: r.satisfaction ?? 0,
+        visitDate: r.visitDate ?? '',
         area: '',
-        scene: r.visits[0]?.scene ?? null,
+        scene: r.scene ?? null,
       }))
   }, [records])
 
@@ -159,7 +155,7 @@ export function HomeContainer() {
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
     const cutoff = oneWeekAgo.toISOString().slice(0, 10)
-    return records.filter((r) => (r.latestVisitDate ?? r.createdAt) >= cutoff).length
+    return records.filter((r) => (r.visitDate ?? r.createdAt) >= cutoff).length
   }, [records])
 
   const {
@@ -172,19 +168,6 @@ export function HomeContainer() {
     weeklyRecordCount,
     frequentArea: null,
   })
-
-  // 넛지 — useNudge hook
-  const hasUnratedRecords = useMemo(() => records.some((r) => r.status === 'checked'), [records])
-  const {
-    nudge,
-    isVisible: isNudgeVisible,
-    isDismissing: isNudgeDismissing,
-    handleAction: handleNudgeAction,
-    handleDismiss: handleNudgeDismiss,
-  } = useNudge({ userId: user?.id ?? null, hasUnratedRecords, hasRecentRecords: records.length > 0 })
-
-  // 추천 카드
-  const { cards: recommendationCards } = useRecommendations(user?.id ?? null, records.length)
 
   // 팔로잉 피드
   const [isFollowingMode, setIsFollowingMode] = useState(false)
@@ -304,7 +287,7 @@ export function HomeContainer() {
   // 캘린더 선택 날짜의 상세 기록
   const selectedDayRecords = useMemo(() => {
     if (!selectedDate) return []
-    return displayRecords.filter((r) => r.latestVisitDate?.startsWith(selectedDate))
+    return displayRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
   }, [displayRecords, selectedDate])
 
   const selectedDateLabel = useMemo(() => {
@@ -324,7 +307,7 @@ export function HomeContainer() {
       area: r.targetArea ?? '',
       lat: r.targetLat ?? 0,
       lng: r.targetLng ?? 0,
-      score: r.avgSatisfaction,
+      score: r.satisfaction,
       distanceKm: null,
       thumbnailUrl: r.targetPhotoUrl,
     }))
@@ -379,9 +362,9 @@ export function HomeContainer() {
             <CalendarDayDetail
               date={selectedDateLabel}
               records={selectedDayRecords.map((r) => ({
-                mealTime: MEAL_TIME_LABELS[r.visits[0]?.mealTime ?? ''] ?? '',
+                mealTime: MEAL_TIME_LABELS[r.mealTime ?? ''] ?? '',
                 name: r.targetName,
-                score: r.avgSatisfaction,
+                score: r.satisfaction,
                 id: r.id,
                 targetType: r.targetType,
                 targetId: r.targetId,
@@ -404,8 +387,8 @@ export function HomeContainer() {
               rank={i + 1}
               thumbnailUrl={record.targetPhotoUrl}
               name={record.targetName}
-              meta={[record.targetMeta, record.latestVisitDate].filter(Boolean).join(' · ')}
-              score={record.avgSatisfaction}
+              meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
+              score={record.satisfaction}
               accentType={activeTab}
               onClick={() =>
                 router.push(
@@ -436,12 +419,12 @@ export function HomeContainer() {
                 photoUrl: record.targetPhotoUrl,
               }}
               myRecord={{
-                satisfaction: record.avgSatisfaction,
-                axisX: record.visits[0]?.axisX ?? null,
-                axisY: record.visits[0]?.axisY ?? null,
-                visitDate: record.latestVisitDate,
-                wineStatus: record.wineStatus ?? 'tasted',
-                purchasePrice: record.visits[0]?.purchasePrice ?? null,
+                satisfaction: record.satisfaction,
+                axisX: record.axisX ?? null,
+                axisY: record.axisY ?? null,
+                visitDate: record.visitDate,
+                listStatus: record.listStatus ?? 'tasted',
+                purchasePrice: record.purchasePrice ?? null,
               }}
             />
           ) : (
@@ -451,17 +434,17 @@ export function HomeContainer() {
               targetId={record.targetId}
               targetType={record.targetType}
               name={record.targetName}
-              meta={[record.targetMeta, record.targetArea, record.latestVisitDate].filter(Boolean).join(' · ')}
+              meta={[record.targetMeta, record.targetArea, record.visitDate].filter(Boolean).join(' · ')}
               photoUrl={record.targetPhotoUrl}
-              satisfaction={record.avgSatisfaction}
-              axisX={record.visits[0]?.axisX ?? null}
-              axisY={record.visits[0]?.axisY ?? null}
-              status={record.status}
+              satisfaction={record.satisfaction}
+              axisX={record.axisX ?? null}
+              axisY={record.axisY ?? null}
+              status={record.listStatus ?? 'visited'}
               sources={[
                 {
                   type: 'me',
                   label: '나',
-                  detail: `${record.avgSatisfaction ?? '-'} · ${record.latestVisitDate ?? ''}`,
+                  detail: `${record.satisfaction ?? '-'} · ${record.visitDate ?? ''}`,
                 },
               ]}
             />
@@ -484,17 +467,6 @@ export function HomeContainer() {
               greeting={greeting}
               isDismissing={isGreetingDismissing}
               onDismiss={dismissGreeting}
-            />
-          </div>
-        )}
-
-        {isNudgeVisible && nudge && (
-          <div className="pt-2">
-            <NudgeStrip
-              nudge={nudge}
-              isDismissing={isNudgeDismissing}
-              onAction={handleNudgeAction}
-              onDismiss={handleNudgeDismiss}
             />
           </div>
         )}
@@ -675,18 +647,6 @@ export function HomeContainer() {
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* 추천 카드 */}
-        {!isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && recommendationCards.length > 0 && (
-          <div className="px-4 pb-2 pt-3 md:px-8">
-            <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>추천</p>
-            <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-              {recommendationCards.map((card) => (
-                <RecommendationCard key={card.id} card={card} />
-              ))}
-            </div>
           </div>
         )}
 

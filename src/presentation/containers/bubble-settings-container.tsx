@@ -77,7 +77,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     syncAllRecordsToBubble(
       bubbleId,
       newRule,
-      records as unknown as Array<{ id: string } & Record<string, unknown>>,
+      records as unknown as Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
     ).catch(() => {})
   }
 

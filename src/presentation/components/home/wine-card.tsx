@@ -27,7 +27,7 @@ export interface WineCardProps {
     axisX: number | null
     axisY: number | null
     visitDate: string | null
-    wineStatus: 'tasted' | 'cellar' | 'wishlist'
+    listStatus: 'visited' | 'tasted' | 'cellar' | 'wishlist'
     purchasePrice: number | null
   } | null
   bubbleMembers?: WineBubbleMember[]
@@ -37,7 +37,7 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
-  const isCellar = myRecord?.wineStatus === 'cellar'
+  const isCellar = myRecord?.listStatus === 'cellar'
 
   const sortedMembers = [...(bubbleMembers ?? [])].sort((a, b) => b.satisfaction - a.satisfaction)
   const visibleMembers = sortedMembers.slice(0, 2)

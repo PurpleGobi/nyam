@@ -1713,29 +1713,6 @@ html, body, * {
   cursor: pointer;
 }
 
-/* ── 17. 넛지 ── */
-
-.nudge-card {
-  margin: 14px 16px 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  position: relative;
-}
-
-.nudge-strip {
-  padding: 10px 16px;
-  background: var(--accent-food-light);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
 
 /* ── 18. 스텝 프로그레스 ── */
 

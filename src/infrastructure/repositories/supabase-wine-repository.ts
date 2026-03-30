@@ -50,48 +50,41 @@ function mapDbToWine(data: Record<string, unknown>): Wine {
 }
 
 function mapDbToRecord(row: Record<string, unknown>): DiningRecord {
-  const rawVisits = (row.visits as Array<Record<string, unknown>>) ?? []
-  const visits: import('@/domain/entities/record').RecordVisit[] = rawVisits.map((v) => ({
-    date: (v.date as string) ?? '',
-    axisX: v.axisX != null ? Number(v.axisX) : null,
-    axisY: v.axisY != null ? Number(v.axisY) : null,
-    satisfaction: v.satisfaction as number | null,
-    comment: (v.comment as string) ?? null,
-    tips: (v.tips as string) ?? null,
-    scene: (v.scene as string) ?? null,
-    mealTime: (v.mealTime as import('@/domain/entities/record').MealTime) ?? null,
-    companions: (v.companions as string[]) ?? null,
-    companionCount: v.companionCount as number | null,
-    totalPrice: v.totalPrice as number | null,
-    purchasePrice: v.purchasePrice as number | null,
-    aromaRegions: (v.aromaRegions as Record<string, unknown>) ?? null,
-    aromaLabels: (v.aromaLabels as string[]) ?? null,
-    aromaColor: (v.aromaColor as string) ?? null,
-    complexity: v.complexity as number | null,
-    finish: v.finish != null ? Number(v.finish) : null,
-    balance: v.balance != null ? Number(v.balance) : null,
-    autoScore: v.autoScore as number | null,
-    hasExifGps: (v.hasExifGps as boolean) ?? false,
-    isExifVerified: (v.isExifVerified as boolean) ?? false,
-  }))
   return {
     id: row.id as string,
+    listId: (row.list_id as string) ?? '',
     userId: row.user_id as string,
     targetId: row.target_id as string,
     targetType: row.target_type as DiningRecord['targetType'],
-    status: row.status as DiningRecord['status'],
-    wineStatus: row.wine_status as DiningRecord['wineStatus'],
-    cameraMode: row.camera_mode as DiningRecord['cameraMode'],
-    ocrData: row.ocr_data as DiningRecord['ocrData'],
+    axisX: row.axis_x != null ? Number(row.axis_x) : null,
+    axisY: row.axis_y != null ? Number(row.axis_y) : null,
+    satisfaction: row.satisfaction != null ? Number(row.satisfaction) : null,
+    scene: (row.scene as string) ?? null,
+    comment: (row.comment as string) ?? null,
+    totalPrice: row.total_price != null ? Number(row.total_price) : null,
+    purchasePrice: row.purchase_price != null ? Number(row.purchase_price) : null,
+    visitDate: (row.visit_date as string) ?? null,
+    mealTime: (row.meal_time as DiningRecord['mealTime']) ?? null,
     menuTags: row.menu_tags as string[] | null,
     pairingCategories: row.pairing_categories as DiningRecord['pairingCategories'],
+    hasExifGps: (row.has_exif_gps as boolean) ?? false,
+    isExifVerified: (row.is_exif_verified as boolean) ?? false,
+    cameraMode: row.camera_mode as DiningRecord['cameraMode'],
+    ocrData: row.ocr_data as Record<string, unknown> | null,
+    aromaRegions: (row.aroma_regions as Record<string, unknown>) ?? null,
+    aromaLabels: (row.aroma_labels as string[]) ?? null,
+    aromaColor: (row.aroma_color as string) ?? null,
+    complexity: row.complexity != null ? Number(row.complexity) : null,
+    finish: row.finish != null ? Number(row.finish) : null,
+    balance: row.balance != null ? Number(row.balance) : null,
+    autoScore: row.auto_score != null ? Number(row.auto_score) : null,
+    privateNote: (row.private_note as string) ?? null,
+    companionCount: row.companion_count != null ? Number(row.companion_count) : null,
+    companions: (row.companions as string[]) ?? null,
     linkedRestaurantId: row.linked_restaurant_id as string | null,
     linkedWineId: row.linked_wine_id as string | null,
-    visits,
-    visitCount: (row.visit_count as number) ?? visits.length,
-    latestVisitDate: (row.latest_visit_date as string) ?? visits[0]?.date ?? null,
-    avgSatisfaction: (row.avg_satisfaction as number) ?? null,
     recordQualityXp: (row.record_quality_xp as number) ?? 0,
+    scoreUpdatedAt: (row.score_updated_at as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }
@@ -122,7 +115,7 @@ export class SupabaseWineRepository implements WineRepository {
       .eq('target_id', wineId)
       .eq('user_id', userId)
       .eq('target_type', 'wine')
-      .order('latest_visit_date', { ascending: false, nullsFirst: false })
+      .order('visit_date', { ascending: false, nullsFirst: false })
 
     if (error) throw new Error(`기록 조회 실패: ${error.message}`)
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
@@ -146,6 +139,7 @@ export class SupabaseWineRepository implements WineRepository {
         id: row.id,
         recordId: row.record_id,
         url: row.url,
+        thumbnailUrl: (row as Record<string, unknown>).thumbnail_url as string | null ?? null,
         orderIndex: row.order_index,
         isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
         createdAt: row.created_at,
@@ -155,30 +149,26 @@ export class SupabaseWineRepository implements WineRepository {
     return result
   }
 
-  // visits JSONB에서 axisX/axisY/satisfaction 추출
   async findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]> {
     const { data, error } = await this.supabase
       .from('records')
-      .select('target_id, visits')
+      .select('target_id, axis_x, axis_y, satisfaction')
       .eq('user_id', userId)
       .eq('target_type', 'wine')
       .neq('target_id', excludeId)
-      .gt('visit_count', 0)
+      .not('axis_x', 'is', null)
 
     if (error) throw new Error(`사분면 참조 조회 실패: ${error.message}`)
 
     const grouped = new Map<string, { sumX: number; sumY: number; sumS: number; count: number }>()
     for (const row of data ?? []) {
-      const visits = (row.visits as Array<Record<string, unknown>>) ?? []
-      for (const v of visits) {
-        if (v.axisX == null || v.axisY == null || v.satisfaction == null) continue
-        const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
-        g.sumX += Number(v.axisX)
-        g.sumY += Number(v.axisY)
-        g.sumS += Number(v.satisfaction)
-        g.count += 1
-        grouped.set(row.target_id, g)
-      }
+      if (row.axis_x == null || row.axis_y == null || row.satisfaction == null) continue
+      const g = grouped.get(row.target_id) ?? { sumX: 0, sumY: 0, sumS: 0, count: 0 }
+      g.sumX += Number(row.axis_x)
+      g.sumY += Number(row.axis_y)
+      g.sumS += Number(row.satisfaction)
+      g.count += 1
+      grouped.set(row.target_id, g)
     }
 
     const targetIds = Array.from(grouped.keys()).slice(0, 12)

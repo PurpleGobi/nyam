@@ -42,22 +42,23 @@ export class SupabaseOnboardingRepository implements OnboardingRepository {
 
   async registerRestaurant(restaurantId: string, userId: string): Promise<void> {
     await this.supabase
-      .from('records')
-      .insert({
+      .from('lists')
+      .upsert({
         user_id: userId,
         target_id: restaurantId,
         target_type: 'restaurant',
-        status: 'checked',
-      })
+        status: 'visited',
+        source: 'onboarding',
+      }, { onConflict: 'user_id,target_id,target_type' })
   }
 
   async unregisterRestaurant(restaurantId: string, userId: string): Promise<void> {
     await this.supabase
-      .from('records')
+      .from('lists')
       .delete()
       .eq('user_id', userId)
       .eq('target_id', restaurantId)
-      .eq('status', 'checked')
+      .eq('target_type', 'restaurant')
   }
 
   async getSeedBubbles(): Promise<OnboardingSeedBubble[]> {

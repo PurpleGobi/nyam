@@ -247,21 +247,13 @@ function AddFlowInner() {
                 userId: user.id,
                 targetId: top.wineId,
                 targetType: 'wine',
-                status: 'checked',
-                wineStatus: 'tasted',
-                visit: {
-                  date: new Date().toISOString().split('T')[0],
-                  axisX: null, axisY: null, satisfaction: null,
-                  comment: null, tips: null, scene: null, mealTime: null,
-                  companions: null, companionCount: null,
-                  totalPrice: null, purchasePrice: null,
-                  aromaRegions: null, aromaLabels: null, aromaColor: null,
-                  complexity: null, finish: null, balance: null, autoScore: null,
-                  hasExifGps: exif.hasGps, isExifVerified: false,
-                },
+                listStatus: 'tasted',
+                visitDate: new Date().toISOString().split('T')[0],
+                hasExifGps: exif.hasGps,
+                isExifVerified: false,
               })
               await uploadCapturedPhoto(record.id)
-              syncRecordToAllBubbles(record as unknown as { id: string } & Record<string, unknown>).catch(() => {})
+              syncRecordToAllBubbles(record as unknown as { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>).catch(() => {})
               pushStep('success')
               return
             } catch {
@@ -352,21 +344,13 @@ function AddFlowInner() {
           userId: user.id,
           targetId: top.wineId,
           targetType: 'wine',
-          status: 'checked',
-          wineStatus: 'tasted',
-          visit: {
-            date: new Date().toISOString().split('T')[0],
-            axisX: null, axisY: null, satisfaction: null,
-            comment: null, tips: null, scene: null, mealTime: null,
-            companions: null, companionCount: null,
-            totalPrice: null, purchasePrice: null,
-            aromaRegions: null, aromaLabels: null, aromaColor: null,
-            complexity: null, finish: null, balance: null, autoScore: null,
-            hasExifGps: exif.hasGps, isExifVerified: false,
-          },
+          listStatus: 'tasted',
+          visitDate: new Date().toISOString().split('T')[0],
+          hasExifGps: exif.hasGps,
+          isExifVerified: false,
         })
         await uploadCapturedPhoto(record.id)
-        syncRecordToAllBubbles(record as unknown as { id: string } & Record<string, unknown>).catch(() => {})
+        syncRecordToAllBubbles(record as unknown as { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>).catch(() => {})
         pushStep('success')
         return
       } catch { /* 폴백 */ }

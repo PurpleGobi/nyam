@@ -7,7 +7,7 @@ import { DISCOVER_AREAS } from '@/domain/entities/discover'
 import type { DiscoverArea } from '@/domain/entities/discover'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import { wishlistRepo } from '@/shared/di/container'
+import { recordRepo } from '@/shared/di/container'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import type { ScoreBreakdown } from '@/domain/services/discover-scoring'
 import { formatBreakdownText } from '@/domain/services/discover-scoring'
@@ -594,7 +594,7 @@ function PortalLink({ label, url }: { label: string; url: string }) {
 
 function WishlistBtn({ userId, restaurant }: { userId: string; restaurant: DiscoverRestaurant }) {
   const [dbId, setDbId] = useState<string | null>(restaurant.id.startsWith('google_') ? null : restaurant.id)
-  const { isWishlisted, toggle } = useWishlist(userId, dbId ?? '__none__', 'restaurant', wishlistRepo)
+  const { isWishlisted, toggle } = useWishlist(userId, dbId ?? '__none__', 'restaurant', recordRepo)
 
   const handleToggle = useCallback(async () => {
     if (!dbId) {

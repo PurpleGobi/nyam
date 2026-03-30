@@ -88,14 +88,8 @@ export interface BubbleShare {
   bubbleId: string
   sharedBy: string
   sharedAt: string
-}
-
-// ─── 공유 읽음 (bubble_share_reads 테이블) ───
-
-export interface BubbleShareRead {
-  shareId: string
-  userId: string
-  readAt: string
+  targetId: string
+  targetType: 'restaurant' | 'wine'
 }
 
 // ─── 랭킹 스냅샷 (bubble_ranking_snapshots 테이블) ───

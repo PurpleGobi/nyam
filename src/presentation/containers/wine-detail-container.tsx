@@ -9,7 +9,7 @@ import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
-import { wineRepo, wishlistRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { wineRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
@@ -64,7 +64,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   } = useWineDetail(wineId, user?.id ?? null, wineRepo)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
-    user?.id ?? null, wineId, 'wine', wishlistRepo,
+    user?.id ?? null, wineId, 'wine', recordRepo,
   )
 
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, selectedRecordId)
@@ -117,17 +117,15 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   }, [selectedRecordId, user, router])
 
   // ─── 사분면: 모든 방문 dot ───
-  const allRecordDots = myRecords.flatMap((r) =>
-    r.visits
-      .filter((v) => v.axisX !== null && v.axisY !== null && v.satisfaction !== null)
-      .map((v) => ({
-        targetId: `${r.id}-${v.date}`,
-        targetName: v.date,
-        avgAxisX: v.axisX!,
-        avgAxisY: v.axisY!,
-        avgSatisfaction: v.satisfaction!,
-      })),
-  )
+  const allRecordDots = myRecords
+    .filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
+    .map((r) => ({
+      targetId: r.id,
+      targetName: r.visitDate ?? r.createdAt.split('T')[0],
+      avgAxisX: r.axisX!,
+      avgAxisY: r.axisY!,
+      avgSatisfaction: r.satisfaction!,
+    }))
 
   const currentDot = allRecordDots.length > 0
     ? {
@@ -143,20 +141,18 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
     const labelSet = new Set<string>()
     let colorR = 0, colorG = 0, colorB = 0, colorCount = 0
     for (const r of myRecords) {
-      for (const v of r.visits) {
-        if (v.aromaRegions) {
-          for (const [key, val] of Object.entries(v.aromaRegions as Record<string, number>)) {
-            regions[key] = Math.max(regions[key] ?? 0, val)
-          }
+      if (r.aromaRegions) {
+        for (const [key, val] of Object.entries(r.aromaRegions as Record<string, number>)) {
+          regions[key] = Math.max(regions[key] ?? 0, val)
         }
-        if (v.aromaLabels) for (const l of v.aromaLabels) labelSet.add(l)
-        if (v.aromaColor) {
-          const hex = v.aromaColor.replace('#', '')
-          colorR += parseInt(hex.substring(0, 2), 16)
-          colorG += parseInt(hex.substring(2, 4), 16)
-          colorB += parseInt(hex.substring(4, 6), 16)
-          colorCount++
-        }
+      }
+      if (r.aromaLabels) for (const l of r.aromaLabels) labelSet.add(l)
+      if (r.aromaColor) {
+        const hex = r.aromaColor.replace('#', '')
+        colorR += parseInt(hex.substring(0, 2), 16)
+        colorG += parseInt(hex.substring(2, 4), 16)
+        colorB += parseInt(hex.substring(4, 6), 16)
+        colorCount++
       }
     }
     const avgColor = colorCount > 0
@@ -167,17 +163,17 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
 
   // ─── 구조 평가 평균 ───
   const mergedStructure: WineStructure = useMemo(() => {
-    const visitsWithComplexity = myRecords.flatMap((r) => r.visits.filter((v) => v.complexity !== null))
-    if (visitsWithComplexity.length === 0) return { complexity: 30, finish: 50, balance: 50 }
+    const recordsWithComplexity = myRecords.filter((r) => r.complexity !== null)
+    if (recordsWithComplexity.length === 0) return { complexity: 30, finish: 50, balance: 50 }
     return {
-      complexity: Math.round(visitsWithComplexity.reduce((s, v) => s + (v.complexity ?? 30), 0) / visitsWithComplexity.length),
-      finish: Math.round(visitsWithComplexity.reduce((s, v) => s + (v.finish ?? 50), 0) / visitsWithComplexity.length),
-      balance: Math.round(visitsWithComplexity.reduce((s, v) => s + (v.balance ?? 50), 0) / visitsWithComplexity.length),
+      complexity: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.complexity ?? 30), 0) / recordsWithComplexity.length),
+      finish: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.finish ?? 50), 0) / recordsWithComplexity.length),
+      balance: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.balance ?? 50), 0) / recordsWithComplexity.length),
     }
   }, [myRecords])
 
   const hasAromaData = Object.keys(mergedAroma.regions).length > 0
-  const hasStructureData = myRecords.some((r) => r.visits.some((v) => v.complexity !== null))
+  const hasStructureData = myRecords.some((r) => r.complexity !== null)
 
   // ─── 히어로 사진 ───
   const heroPhotos = useMemo(() => {
@@ -499,9 +495,9 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                          {record.latestVisitDate ?? record.createdAt.split('T')[0]}
+                          {record.visitDate ?? record.createdAt.split('T')[0]}
                         </span>
-                        {record.avgSatisfaction !== null && (
+                        {record.satisfaction !== null && (
                           <span
                             className="rounded-full px-2 py-0.5"
                             style={{
@@ -510,13 +506,13 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                               color: 'var(--accent-wine)',
                             }}
                           >
-                            {record.avgSatisfaction}점
+                            {record.satisfaction}점
                           </span>
                         )}
                       </div>
-                      {record.visits[0]?.comment && (
+                      {record.comment && (
                         <p className="mt-1 line-clamp-2" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                          {record.visits[0].comment}
+                          {record.comment}
                         </p>
                       )}
                       {linkedName && (

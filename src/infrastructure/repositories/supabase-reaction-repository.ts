@@ -63,7 +63,7 @@ export class SupabaseReactionRepository implements ReactionRepository {
 
   async getDailySocialXpCount(userId: string, date: string): Promise<number> {
     const { count } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('reason', 'social_like')

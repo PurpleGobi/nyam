@@ -135,7 +135,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
       const { data: records, error: fetchError } = await supabase
         .from('records')
         .select(
-          'id, avg_satisfaction, latest_visit_date, visits, wine:wines!records_linked_wine_id_fkey(name, country, region, variety, wine_type)'
+          'id, satisfaction, visit_date, purchase_price, wine:wines!records_linked_wine_id_fkey(name, country, region, variety, wine_type)'
         )
         .eq('user_id', userId)
         .eq('target_type', 'wine')
@@ -232,7 +232,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
 
       // Score distribution
       const scores = records
-        .map((r) => r.avg_satisfaction as number | null)
+        .map((r) => r.satisfaction as number | null)
         .filter((s): s is number => s !== null)
       setScoreBuckets(buildScoreBuckets(scores))
 
@@ -251,20 +251,16 @@ export function useWineStats(userId: string | null): WineStatsResult {
 
       let spending = 0
       for (const r of records) {
-        const visits = (r.visits as Array<Record<string, unknown>>) ?? []
-        for (const v of visits) {
-          const price = (v.purchasePrice as number | null) ?? 0
-          spending += price
-        }
+        const price = (r.purchase_price as number | null) ?? 0
+        spending += price
 
-        const visitDate = r.latest_visit_date as string | null
+        const visitDate = r.visit_date as string | null
         if (!visitDate) continue
         const key = visitDate.slice(0, 7)
         const entry = monthlyMap.get(key)
         if (entry) {
           entry.count++
-          const latestPrice = (visits[0]?.purchasePrice as number | null) ?? 0
-          entry.amount += latestPrice
+          entry.amount += price
         }
       }
       setTotalSpending(spending)

@@ -59,7 +59,7 @@ export function BubbleCreateContainer() {
       await syncAllRecordsToBubble(
         result.bubble.id,
         data.privacy.shareRule,
-        records as unknown as Array<{ id: string } & Record<string, unknown>>,
+        records as unknown as Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
       )
 
       router.replace(`/bubbles/${result.bubble.id}`)

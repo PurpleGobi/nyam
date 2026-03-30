@@ -24,7 +24,7 @@ export function useBubbleAutoSync(userId: string | null) {
    * @returns 공유/해제된 버블 목록 (토스트용)
    */
   const syncRecordToAllBubbles = useCallback(async (
-    record: { id: string } & Record<string, unknown>,
+    record: { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>,
   ): Promise<SyncResult> => {
     const result: SyncResult = { sharedTo: [], unsharedFrom: [] }
     if (!userId) return result
@@ -39,7 +39,7 @@ export function useBubbleAutoSync(userId: string | null) {
       const info = { bubbleId: membership.bubbleId, bubbleName: membership.bubbleName ?? '' }
 
       if (shouldShare.length > 0 && !recordInCurrent) {
-        await bubbleRepo.batchUpsertAutoShares([record.id], membership.bubbleId, userId)
+        await bubbleRepo.batchUpsertAutoShares([{ id: record.id, targetId: record.targetId, targetType: record.targetType }], membership.bubbleId, userId)
         result.sharedTo.push(info)
       } else if (shouldShare.length === 0 && recordInCurrent) {
         await bubbleRepo.batchDeleteAutoShares([record.id], membership.bubbleId, userId)
@@ -60,7 +60,7 @@ export function useBubbleAutoSync(userId: string | null) {
   const syncAllRecordsToBubble = useCallback(async (
     bubbleId: string,
     shareRule: BubbleShareRule | null,
-    allRecords: Array<{ id: string } & Record<string, unknown>>,
+    allRecords: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
   ) => {
     if (!userId) return
 
@@ -74,9 +74,13 @@ export function useBubbleAutoSync(userId: string | null) {
     const currentlySharedIds = await bubbleRepo.getAutoSharedRecordIds(bubbleId, userId)
     const { toAdd, toRemove } = computeShareDiff(shouldShareIds, currentlySharedIds)
 
-    // 4. 일괄 동기화
+    // 4. 일괄 동기화 — toAdd IDs를 record 객체로 매칭
+    const toAddSet = new Set(toAdd)
+    const toAddRecords = allRecords
+      .filter((r) => toAddSet.has(r.id))
+      .map((r) => ({ id: r.id, targetId: r.targetId, targetType: r.targetType }))
     await Promise.all([
-      bubbleRepo.batchUpsertAutoShares(toAdd, bubbleId, userId),
+      bubbleRepo.batchUpsertAutoShares(toAddRecords, bubbleId, userId),
       bubbleRepo.batchDeleteAutoShares(toRemove, bubbleId, userId),
     ])
   }, [userId])

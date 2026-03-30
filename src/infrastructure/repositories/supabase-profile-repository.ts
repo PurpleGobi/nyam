@@ -58,11 +58,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: scores } = await this.supabase
       .from('records')
-      .select('avg_satisfaction')
+      .select('satisfaction')
       .eq('user_id', userId)
-      .not('avg_satisfaction', 'is', null)
+      .not('satisfaction', 'is', null)
 
-    const vals = (scores ?? []).map((s) => s.avg_satisfaction as number).filter((v) => v > 0)
+    const vals = (scores ?? []).map((s) => s.satisfaction as number).filter((v) => v > 0)
     const avgSatisfaction = vals.length > 0
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
@@ -78,7 +78,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       .gte('created_at', `${thisMonth}-01`)
 
     const { data: xpData } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('xp_amount')
       .eq('user_id', userId)
       .gte('created_at', `${thisMonth}-01`)
@@ -105,13 +105,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: records } = await this.supabase
       .from('records')
-      .select('latest_visit_date')
+      .select('visit_date')
       .eq('user_id', userId)
-      .gte('latest_visit_date', startStr)
+      .gte('visit_date', startStr)
 
     const countMap = new Map<string, number>()
     for (const r of records ?? []) {
-      const date = r.latest_visit_date as string
+      const date = r.visit_date as string
       if (!date) continue
       const day = date.slice(0, 10)
       countMap.set(day, (countMap.get(day) ?? 0) + 1)
@@ -145,11 +145,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
       .eq('user_id', userId).eq('target_type', 'restaurant')
 
     const { data: scores } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', 'restaurant')
-      .not('avg_satisfaction', 'is', null)
+      .not('satisfaction', 'is', null)
 
-    const vals = (scores ?? []).map((s) => s.avg_satisfaction as number).filter((v) => v > 0)
+    const vals = (scores ?? []).map((s) => s.satisfaction as number).filter((v) => v > 0)
     const avgScore = vals.length > 0
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
@@ -199,11 +199,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getRestaurantScoreDistribution(userId: string): Promise<ScoreDistribution[]> {
     const { data } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', 'restaurant')
-      .not('avg_satisfaction', 'is', null)
+      .not('satisfaction', 'is', null)
 
-    return buildScoreDistribution((data ?? []).map((r) => r.avg_satisfaction as number))
+    return buildScoreDistribution((data ?? []).map((r) => r.satisfaction as number))
   }
 
   async getRestaurantMonthlySpending(userId: string, months: number): Promise<MonthlySpending[]> {
@@ -211,15 +211,15 @@ export class SupabaseProfileRepository implements ProfileRepository {
     startDate.setMonth(startDate.getMonth() - months)
 
     const { data } = await this.supabase
-      .from('records').select('visits, latest_visit_date')
+      .from('records').select('total_price, visit_date')
       .eq('user_id', userId).eq('target_type', 'restaurant')
-      .gte('latest_visit_date', startDate.toISOString().split('T')[0])
-      .not('visits', 'is', null)
+      .gte('visit_date', startDate.toISOString().split('T')[0])
+      .not('total_price', 'is', null)
 
     const map = new Map<string, number>()
     for (const r of data ?? []) {
-      const month = (r.latest_visit_date as string).slice(0, 7)
-      map.set(month, (map.get(month) ?? 0) + (((r.visits as Array<Record<string, unknown>>)?.[0]?.totalPrice as number ?? 0)))
+      const month = (r.visit_date as string).slice(0, 7)
+      map.set(month, (map.get(month) ?? 0) + ((r.total_price as number) ?? 0))
     }
 
     return Array.from(map.entries())
@@ -261,13 +261,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getSceneDistribution(userId: string): Promise<SceneVisit[]> {
     const { data } = await this.supabase
-      .from('records').select('visits')
+      .from('records').select('scene')
       .eq('user_id', userId).eq('target_type', 'restaurant')
       .not('scene', 'is', null)
 
     const map = new Map<string, number>()
     for (const r of data ?? []) {
-      const scene = ((r.visits as Array<Record<string, unknown>>)?.[0]?.scene as string ?? 'etc')
+      const scene = (r.scene as string) ?? 'etc'
       map.set(scene, (map.get(scene) ?? 0) + 1)
     }
 
@@ -300,17 +300,17 @@ export class SupabaseProfileRepository implements ProfileRepository {
       .eq('user_id', userId).eq('target_type', 'wine')
 
     const { data: scores } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', 'wine')
       .not('satisfaction', 'is', null)
 
-    const vals = (scores ?? []).map((s) => s.avg_satisfaction as number).filter((v) => v > 0)
+    const vals = (scores ?? []).map((s) => s.satisfaction as number).filter((v) => v > 0)
     const avgScore = vals.length > 0
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
     const { count: cellarCount } = await this.supabase
-      .from('records').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('wine_status', 'cellar')
+      .from('lists').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('target_type', 'wine').eq('status', 'cellar')
 
     const thisMonth = new Date().toISOString().slice(0, 7)
     const { count: thisMonthTastings } = await this.supabase
@@ -348,11 +348,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   async getWineScoreDistribution(userId: string): Promise<ScoreDistribution[]> {
     const { data } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', 'wine')
       .not('satisfaction', 'is', null)
 
-    return buildScoreDistribution((data ?? []).map((r) => r.avg_satisfaction as number))
+    return buildScoreDistribution((data ?? []).map((r) => r.satisfaction as number))
   }
 
   async getWineMonthlySpending(userId: string, months: number): Promise<MonthlySpending[]> {
@@ -360,16 +360,16 @@ export class SupabaseProfileRepository implements ProfileRepository {
     startDate.setMonth(startDate.getMonth() - months)
 
     const { data } = await this.supabase
-      .from('records').select('visits, latest_visit_date')
+      .from('records').select('purchase_price, visit_date')
       .eq('user_id', userId).eq('target_type', 'wine')
-      .gte('latest_visit_date', startDate.toISOString().split('T')[0])
-      .not('visits', 'is', null)
+      .gte('visit_date', startDate.toISOString().split('T')[0])
+      .not('purchase_price', 'is', null)
 
     const map = new Map<string, { amount: number; count: number }>()
     for (const r of data ?? []) {
-      const month = (r.latest_visit_date as string).slice(0, 7)
+      const month = (r.visit_date as string).slice(0, 7)
       const existing = map.get(month) ?? { amount: 0, count: 0 }
-      existing.amount += (((r.visits as Array<Record<string, unknown>>)?.[0]?.purchasePrice as number ?? 0))
+      existing.amount += ((r.purchase_price as number) ?? 0)
       existing.count++
       map.set(month, existing)
     }
@@ -479,7 +479,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     // 1. 기록 조회
     let query = this.supabase
       .from('records')
-      .select('avg_satisfaction, latest_visit_date, visits, target_type, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, city), wine:wines!records_linked_wine_id_fkey(name, grape_variety, country)')
+      .select('satisfaction, visit_date, comment, total_price, scene, target_type, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, city), wine:wines!records_linked_wine_id_fkey(name, grape_variety, country)')
       .eq('user_id', userId)
 
     if (targetFilter) {
@@ -494,7 +494,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       { label: '총 기록', value: `${items.length}개` },
     ]
 
-    const scores = items.map((r) => r.avg_satisfaction as number | null).filter((s): s is number => s !== null && s > 0)
+    const scores = items.map((r) => r.satisfaction as number | null).filter((s): s is number => s !== null && s > 0)
     if (scores.length > 0) {
       stats.push({ label: '평균 만족도', value: `${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` })
     }
@@ -527,8 +527,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
     // 4. topItems (만족도 상위 6개)
     const topItems: WrappedData['topItems'] = []
     const scored = items
-      .filter((r) => r.avg_satisfaction !== null && (r.avg_satisfaction as number) > 0)
-      .sort((a, b) => (b.avg_satisfaction as number) - (a.avg_satisfaction as number))
+      .filter((r) => r.satisfaction !== null && (r.satisfaction as number) > 0)
+      .sort((a, b) => (b.satisfaction as number) - (a.satisfaction as number))
       .slice(0, 6)
 
     scored.forEach((r, i) => {
@@ -542,13 +542,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
         rank: i + 1,
         name,
         meta,
-        score: r.avg_satisfaction as number,
+        score: r.satisfaction as number,
       })
     })
 
     // 5. level (최고 XP 축)
     const { data: xpData } = await this.supabase
-      .from('user_experiences').select('axis_type, axis_value, level, total_xp')
+      .from('xp_totals').select('axis_type, axis_value, level, total_xp')
       .eq('user_id', userId)
       .order('total_xp', { ascending: false })
       .limit(1)
@@ -613,8 +613,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   private async getThisMonthNewCellar(userId: string, thisMonth: string): Promise<number> {
     const { count } = await this.supabase
-      .from('records').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('wine_status', 'cellar')
+      .from('lists').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('target_type', 'wine').eq('status', 'cellar')
       .gte('created_at', `${thisMonth}-01`)
 
     return count ?? 0
@@ -628,21 +628,21 @@ export class SupabaseProfileRepository implements ProfileRepository {
     const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
 
     const { data: thisData } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', targetType)
       .not('satisfaction', 'is', null)
       .gte('created_at', `${thisMonth}-01`)
 
     const { data: lastData } = await this.supabase
-      .from('records').select('avg_satisfaction')
+      .from('records').select('satisfaction')
       .eq('user_id', userId).eq('target_type', targetType)
       .not('satisfaction', 'is', null)
       .gte('created_at', `${lastMonthStr}-01`)
       .lt('created_at', `${thisMonth}-01`)
 
     const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
-    const thisAvg = avg((thisData ?? []).map((r) => r.avg_satisfaction as number))
-    const lastAvg = avg((lastData ?? []).map((r) => r.avg_satisfaction as number))
+    const thisAvg = avg((thisData ?? []).map((r) => r.satisfaction as number))
+    const lastAvg = avg((lastData ?? []).map((r) => r.satisfaction as number))
 
     if (thisAvg === 0 || lastAvg === 0) return 0
     return thisAvg - lastAvg
@@ -660,7 +660,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     if (!user) return null
 
     const [{ data: xpData }, { data: streakUser }, heatmap] = await Promise.all([
-      this.supabase.from('user_experiences').select('level').eq('user_id', userId).order('level', { ascending: false }).limit(1),
+      this.supabase.from('xp_totals').select('level').eq('user_id', userId).order('level', { ascending: false }).limit(1),
       this.supabase.from('users').select('current_streak, created_at').eq('id', userId).single(),
       this.getHeatmapData(userId, 13),
     ])
@@ -679,8 +679,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: records } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, avg_satisfaction, visits, latest_visit_date, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
-      .eq('user_id', userId).eq('status', 'rated')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, total_price, purchase_price, scene, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
+      .eq('user_id', userId)
       .eq('target_type', targetType)
       .order('satisfaction', { ascending: false })
       .limit(20)
@@ -699,7 +699,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         targetType: tType as 'restaurant' | 'wine',
         name,
         meta: metaParts.join(' · ') || '',
-        satisfaction: r.avg_satisfaction as number | null,
+        satisfaction: r.satisfaction as number | null,
         thumbnailUrl: (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null,
         genre,
       }
@@ -707,8 +707,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     const { data: recentData } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, avg_satisfaction, visits, latest_visit_date, created_at, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
-      .eq('user_id', userId).eq('status', 'rated')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, created_at, restaurant:restaurants!records_linked_restaurant_id_fkey(name, genre, area, photos), wine:wines!records_linked_wine_id_fkey(name, type, region, photos)')
+      .eq('user_id', userId)
       .eq('target_type', targetType)
       .order('created_at', { ascending: false })
       .limit(10)
@@ -720,7 +720,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       const targetName = tType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? '')
       const genre = tType === 'restaurant' ? ((rest?.genre as string) ?? null) : ((wine?.type as string) ?? null)
       const area = tType === 'restaurant' ? ((rest?.area as string) ?? null) : ((wine?.region as string) ?? null)
-      const dateStr = r.latest_visit_date as string | null
+      const dateStr = r.visit_date as string | null
       const relativeDate = dateStr ? formatRelativeDate(dateStr) : null
       const metaParts = [genre, area, relativeDate].filter(Boolean)
       const thumbnailUrl = (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null
@@ -730,8 +730,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
         targetType: tType as 'restaurant' | 'wine',
         targetName,
         meta: metaParts.join(' · ') || '',
-        satisfaction: r.avg_satisfaction as number | null,
-        comment: ((r.visits as Array<Record<string, unknown>>)?.[0]?.comment as string) ?? null,
+        satisfaction: r.satisfaction as number | null,
+        comment: (r.comment as string) ?? null,
         thumbnailUrl,
         visitDate: dateStr,
       }
@@ -831,7 +831,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
     // 평균 만족도
     const satisfactions = allRecords
-      .map((r) => r.avg_satisfaction as number | null)
+      .map((r) => r.satisfaction as number | null)
       .filter((s): s is number => s !== null)
     const avgSatisfaction = satisfactions.length > 0
       ? Math.round(satisfactions.reduce((a, b) => a + b, 0) / satisfactions.length)

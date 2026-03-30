@@ -106,18 +106,18 @@ export function useRestaurantDetail(
   }, [restaurantId, userId, repo])
 
   // 파생값 계산
-  const scoredRecords = myRecords.filter((r) => r.avgSatisfaction !== null)
+  const scoredRecords = myRecords.filter((r) => r.satisfaction !== null)
   const myAvgScore = scoredRecords.length > 0
     ? Math.round(
-        scoredRecords.reduce((sum, r) => sum + (r.avgSatisfaction ?? 0), 0) /
+        scoredRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) /
           scoredRecords.length,
       )
     : null
 
-  const visitCount = myRecords.reduce((sum, r) => sum + r.visitCount, 0)
+  const visitCount = myRecords.length
 
   const latestVisitDate = myRecords.length > 0
-    ? (myRecords[0].latestVisitDate ?? myRecords[0].createdAt.split('T')[0])
+    ? (myRecords[0].visitDate ?? myRecords[0].createdAt.split('T')[0])
     : null
 
   const scoredBubbles = bubbleScores.filter((b) => b.avgScore !== null)

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { ReactionType } from '@/domain/entities/reaction'
-import { reactionRepo, wishlistRepo, notificationRepo } from '@/shared/di/container'
+import { reactionRepo, recordRepo, notificationRepo } from '@/shared/di/container'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 
 interface UseReactionsParams {
@@ -72,15 +72,14 @@ export function useReactions({
     try {
       const result = await reactionRepo.toggle(targetType, targetId, reactionType, userId)
 
-      // bookmark + added → wishlists INSERT (source='bubble')
+      // bookmark + added → lists INSERT (status='wishlist', source='bubble')
       if (result.added && reactionType === 'bookmark' && bookmarkTarget) {
-        await wishlistRepo.add({
+        await recordRepo.findOrCreateList(
           userId,
-          targetId: bookmarkTarget.targetId,
-          targetType: bookmarkTarget.targetType,
-          source: 'bubble',
-          sourceRecordId: targetId,
-        })
+          bookmarkTarget.targetId,
+          bookmarkTarget.targetType,
+          'wishlist',
+        )
       }
 
       // like + added → 소셜 XP (기록 작성자에게, 본인 제외)

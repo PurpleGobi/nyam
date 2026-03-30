@@ -14,7 +14,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getUserExperiences(userId: string): Promise<UserExperience[]> {
     const { data, error } = await this.supabase
-      .from('user_experiences')
+      .from('xp_totals')
       .select('*')
       .eq('user_id', userId)
     if (error) throw error
@@ -23,7 +23,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getUserExperiencesByAxisType(userId: string, axisType: AxisType): Promise<UserExperience[]> {
     const { data, error } = await this.supabase
-      .from('user_experiences')
+      .from('xp_totals')
       .select('*')
       .eq('user_id', userId)
       .eq('axis_type', axisType)
@@ -33,7 +33,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getUserExperience(userId: string, axisType: AxisType, axisValue: string): Promise<UserExperience | null> {
     const { data, error } = await this.supabase
-      .from('user_experiences')
+      .from('xp_totals')
       .select('*')
       .eq('user_id', userId)
       .eq('axis_type', axisType)
@@ -84,7 +84,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getRecentXpHistories(userId: string, limit: number): Promise<XpHistory[]> {
     const { data, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -95,7 +95,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getHistoriesByRecord(recordId: string): Promise<XpHistory[]> {
     const { data, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('*')
       .eq('record_id', recordId)
       .order('created_at', { ascending: false })
@@ -105,7 +105,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async createXpHistory(history: Omit<XpHistory, 'id' | 'createdAt'>): Promise<XpHistory> {
     const { data, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .insert({
         user_id: history.userId,
         record_id: history.recordId,
@@ -122,7 +122,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async deleteByRecordId(recordId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .delete()
       .eq('record_id', recordId)
     if (error) throw error
@@ -132,7 +132,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getLevelThresholds(): Promise<LevelThreshold[]> {
     const { data, error } = await this.supabase
-      .from('level_thresholds')
+      .from('xp_seed_levels')
       .select('*')
       .order('level', { ascending: true })
     if (error) throw error
@@ -143,7 +143,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getMilestonesByAxisType(axisType: string): Promise<Milestone[]> {
     const { data, error } = await this.supabase
-      .from('milestones')
+      .from('xp_seed_milestones')
       .select('*')
       .eq('axis_type', axisType)
     if (error) throw error
@@ -152,7 +152,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getNextMilestone(axisType: string, metric: string, currentCount: number): Promise<Milestone | null> {
     const { data, error } = await this.supabase
-      .from('milestones')
+      .from('xp_seed_milestones')
       .select('*')
       .eq('axis_type', axisType)
       .eq('metric', metric)
@@ -166,7 +166,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getUserMilestones(userId: string): Promise<UserMilestone[]> {
     const { data, error } = await this.supabase
-      .from('user_milestones')
+      .from('xp_log_milestones')
       .select('*')
       .eq('user_id', userId)
     if (error) throw error
@@ -175,7 +175,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async hasAchievedMilestone(userId: string, milestoneId: string, axisValue: string): Promise<boolean> {
     const { count, error } = await this.supabase
-      .from('user_milestones')
+      .from('xp_log_milestones')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('milestone_id', milestoneId)
@@ -186,7 +186,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async createUserMilestone(userId: string, milestoneId: string, axisValue: string): Promise<UserMilestone> {
     const { data, error } = await this.supabase
-      .from('user_milestones')
+      .from('xp_log_milestones')
       .insert({ user_id: userId, milestone_id: milestoneId, axis_value: axisValue })
       .select()
       .single()
@@ -200,7 +200,7 @@ export class SupabaseXpRepository implements XpRepository {
     const startOfDay = `${date}T00:00:00Z`
     const endOfDay = `${date}T23:59:59Z`
     const { data, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('reason, xp_amount')
       .eq('user_id', userId)
       .in('reason', ['social_share', 'social_like', 'social_follow', 'social_mutual'])
@@ -255,7 +255,7 @@ export class SupabaseXpRepository implements XpRepository {
       first_share: 'bonus_first_share',
     }
     const { count, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('reason', reasonMap[bonusType])
@@ -301,7 +301,7 @@ export class SupabaseXpRepository implements XpRepository {
 
   async getXpBreakdownByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<Record<string, number>> {
     const { data, error } = await this.supabase
-      .from('xp_histories')
+      .from('xp_log_changes')
       .select('reason, xp_amount')
       .eq('user_id', userId)
       .eq('axis_type', axisType)
