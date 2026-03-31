@@ -41,7 +41,7 @@ export interface PendingPhoto {
 
 export const PHOTO_CONSTANTS = {
   MAX_PHOTOS: 10,
-  MAX_WIDTH: 600,
+  MAX_WIDTH: 800,
   QUALITY: 0.7,
   OUTPUT_FORMAT: 'image/webp' as const,
   BUCKET_NAME: 'record-photos',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useNotifications } from '@/application/hooks/use-notifications'
@@ -16,6 +16,16 @@ export function AppHeader() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
   const { levelInfo } = useXp(user?.id ?? null)
   const [notifOpen, setNotifOpen] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
+
+  const getBellPosition = () => {
+    if (!bellRef.current) return { top: 56, right: 16 }
+    const rect = bellRef.current.getBoundingClientRect()
+    return {
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    }
+  }
 
   return (
     <>
@@ -33,10 +43,12 @@ export function AppHeader() {
             >
               bubbles
             </button>
-            <NotificationBell
-              unreadCount={unreadCount}
-              onClick={() => setNotifOpen(!notifOpen)}
-            />
+            <div ref={bellRef}>
+              <NotificationBell
+                unreadCount={unreadCount}
+                onClick={() => setNotifOpen(!notifOpen)}
+              />
+            </div>
             {levelInfo && <HeaderLevelBar levelInfo={levelInfo} />}
             {user && (
               <AvatarDropdown
@@ -58,6 +70,7 @@ export function AppHeader() {
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
         onAction={handleAction}
+        position={getBellPosition()}
       />
     </>
   )

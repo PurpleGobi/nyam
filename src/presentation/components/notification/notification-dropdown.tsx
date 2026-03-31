@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Notification } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
 import { NotificationIcon } from '@/presentation/components/notification/notification-icon'
 import { NotificationActions } from '@/presentation/components/notification/notification-actions'
 import { NotificationEmpty } from '@/presentation/components/notification/notification-empty'
+import { PopupWindow } from '@/presentation/components/ui/popup-window'
 
 interface NotificationDropdownProps {
   isOpen: boolean
@@ -17,23 +18,15 @@ interface NotificationDropdownProps {
   onMarkAllAsRead: () => void
   onAction: (id: string, status: 'accepted' | 'rejected') => void
   onNavigate?: (notification: Notification) => void
+  position?: { top: number; right: number }
 }
 
 export function NotificationDropdown({
   isOpen, onClose, notifications, unreadCount,
-  onMarkAsRead, onMarkAllAsRead, onAction, onNavigate,
+  onMarkAsRead, onMarkAllAsRead, onAction, onNavigate, position,
 }: NotificationDropdownProps) {
   const ref = useRef<HTMLDivElement>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
 
   const handleItemClick = (n: Notification) => {
     if (!n.isRead) onMarkAsRead(n.id)
@@ -52,9 +45,12 @@ export function NotificationDropdown({
   }
 
   return (
-    <>
-      <div className="notif-dropdown-overlay" onClick={onClose} />
-      <div ref={ref} className="notif-dropdown">
+    <PopupWindow isOpen={isOpen} onClose={onClose}>
+      <div
+        ref={ref}
+        className="notif-dropdown"
+        style={position ? { position: 'fixed', top: `${position.top}px`, right: `${position.right}px` } : undefined}
+      >
         {/* 헤더 */}
         <div className="notif-header" style={{ borderBottom: '1px solid var(--border)' }}>
           <span className="notif-header-title">알림</span>
@@ -110,7 +106,7 @@ export function NotificationDropdown({
           </button>
         </div>
       </div>
-    </>
+    </PopupWindow>
   )
 }
 

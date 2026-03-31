@@ -1582,29 +1582,27 @@ html, body, * {
   margin: 10px auto 6px;
 }
 
-/* ── 16. 알림 드롭다운 ── */
+/* ── 공통 팝업 오버레이 ── */
 
-.notif-dropdown-overlay {
+.popup-window-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 190;
 }
 
+/* ── 16. 알림 드롭다운 ── */
+
 .notif-dropdown {
-  position: absolute;
-  top: 90px;
-  right: 16px;
-  width: 300px;
-  max-height: 400px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: 70vh;
   overflow-y: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-  z-index: 200;
   animation: dropdown-in 0.16s ease-out;
 }
 

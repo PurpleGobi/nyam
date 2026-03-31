@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Share2, UtensilsCrossed, Wine, X } from 'lucide-react'
+import { Share2, UtensilsCrossed, Wine } from 'lucide-react'
 import { WishlistButton } from '@/presentation/components/detail/wishlist-button'
+import { PopupWindow } from '@/presentation/components/ui/popup-window'
 
 interface HeroCarouselProps {
   photos: string[]
@@ -81,17 +82,6 @@ export function HeroCarousel({
     setPopupIndex((prev) => prev !== null ? (prev + 1) % photos.length : null)
   }, [photos.length])
 
-  // 팝업 터치 스와이프
-  const popupTouchStartX = useRef(0)
-  const handlePopupTouchStart = useCallback((e: React.TouchEvent) => {
-    popupTouchStartX.current = e.touches[0].clientX
-  }, [])
-  const handlePopupTouchEnd = useCallback((e: React.TouchEvent) => {
-    const diff = popupTouchStartX.current - e.changedTouches[0].clientX
-    if (diff > 40) setPopupIndex((prev) => prev !== null ? (prev + 1) % photos.length : null)
-    else if (diff < -40) setPopupIndex((prev) => prev !== null ? (prev - 1 + photos.length) % photos.length : null)
-  }, [photos.length])
-
   return (
     <>
       <div
@@ -131,14 +121,17 @@ export function HeroCarousel({
               }}
             />
 
-            {/* dot indicator */}
+            {/* dot indicator — 넓은 터치 영역으로 순환 */}
             {photos.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+              <button
+                type="button"
+                className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-center justify-center gap-1.5"
+                style={{ padding: '12px 20px' }}
+                onClick={(e) => { e.stopPropagation(); goNext() }}
+              >
                 {photos.map((_, i) => (
-                  <button
+                  <div
                     key={i}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setCurrentIndex(i) }}
                     className="rounded-full transition-all"
                     style={{
                       width: i === currentIndex ? '16px' : '6px',
@@ -148,7 +141,7 @@ export function HeroCarousel({
                     }}
                   />
                 ))}
-              </div>
+              </button>
             )}
           </>
         ) : (
@@ -180,51 +173,24 @@ export function HeroCarousel({
       </div>
 
       {/* 사진 팝업 */}
-      {popupIndex !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
-          onClick={handlePopupClick}
-          onTouchStart={handlePopupTouchStart}
-          onTouchEnd={handlePopupTouchEnd}
-        >
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setPopupIndex(null) }}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+      <PopupWindow isOpen={popupIndex !== null} onClose={() => setPopupIndex(null)}>
+        {popupIndex !== null && (
+          <div
+            className="fixed inset-0 flex items-center justify-center"
+            style={{ zIndex: 200, pointerEvents: 'none' }}
           >
-            <X size={24} color="#FFFFFF" />
-          </button>
-
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photos[popupIndex]}
-            alt=""
-            className="max-h-[80vh] max-w-[90vw] object-contain"
-            style={{ touchAction: 'pinch-zoom' }}
-            draggable={false}
-          />
-
-          {/* dot indicator */}
-          {photos.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-1.5">
-              {photos.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full"
-                  style={{
-                    width: i === popupIndex ? '8px' : '6px',
-                    height: i === popupIndex ? '8px' : '6px',
-                    backgroundColor: i === popupIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
-                    transition: 'all 150ms ease-out',
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photos[popupIndex]}
+              alt=""
+              onClick={handlePopupClick}
+              className="rounded-2xl shadow-lg"
+              style={{ maxWidth: 'min(90vw, 500px)', maxHeight: '70vh', objectFit: 'contain', cursor: 'pointer', pointerEvents: 'auto' }}
+              draggable={false}
+            />
+          </div>
+        )}
+      </PopupWindow>
     </>
   )
 }
