@@ -9,6 +9,9 @@ import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
+import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
+import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
+import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
 import { restaurantRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
@@ -39,6 +42,7 @@ function getGenreChain(genre: string | null): string | null {
 
 interface RestaurantDetailContainerProps {
   restaurantId: string
+  bubbleId: string | null
 }
 
 
@@ -46,7 +50,7 @@ function Divider() {
   return <div style={{ height: '8px', backgroundColor: '#F0EDE8' }} />
 }
 
-export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailContainerProps) {
+export function RestaurantDetailContainer({ restaurantId, bubbleId }: RestaurantDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
   const [bubbleExpanded, setBubbleExpanded] = useState(false)
@@ -103,6 +107,43 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
       badges.push({ type: 'tv', label: m.show, icon: 'tv' })
     })
   }
+
+  // ─── 버블 모드 ───
+  const isBubbleMode = bubbleId != null
+  const { bubble: bubbleInfo } = useBubbleDetail(bubbleId ?? '__none__', user?.id ?? null)
+  const { shares: bubbleFeedShares } = useBubbleFeed(
+    bubbleId ?? '__none__',
+    isBubbleMode ? 'member' : null,
+    'rating_and_comment',
+  )
+  // 이 식당에 대한 버블 멤버들의 평가만 필터
+  const bubbleMemberShares = useMemo(() => {
+    if (!isBubbleMode) return []
+    return bubbleFeedShares.filter((s) => s.targetId === restaurantId)
+  }, [isBubbleMode, bubbleFeedShares, restaurantId])
+
+  // 버블 멤버 사분면 dots: 내 dot만 컬러, 나머지 그레이스케일
+  const bubbleRefPoints = useMemo(() => {
+    return bubbleMemberShares
+      .filter((s) => s.axisX != null && s.axisY != null && s.satisfaction != null)
+      .map((s) => {
+        const isMe = s.sharedBy === user?.id
+        return {
+          x: s.axisX!,
+          y: s.axisY!,
+          satisfaction: isMe ? s.satisfaction! : 0,  // 0 → gaugeColor가 회색 계열
+          name: s.authorName ?? '',
+          score: s.satisfaction!,
+        }
+      })
+  }, [bubbleMemberShares, user?.id])
+
+  // 버블 평균 점수
+  const bubbleMemberAvg = useMemo(() => {
+    const rated = bubbleMemberShares.filter((s) => s.satisfaction != null)
+    if (rated.length === 0) return null
+    return Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
+  }, [bubbleMemberShares])
 
   // 사분면 현재 dot (이 식당 내 모든 방문의 평균)
   const allRecordsWithAxis = myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
@@ -201,6 +242,20 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
     <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
 
+      {isBubbleMode && bubbleInfo && (
+        <div style={{ position: 'sticky', top: '46px', zIndex: 80 }}>
+          <BubbleMiniHeader
+            bubbleId={bubbleId!}
+            name={bubbleInfo.name}
+            description={bubbleInfo.description}
+            icon={bubbleInfo.icon}
+            iconBgColor={bubbleInfo.iconBgColor}
+            memberCount={bubbleInfo.memberCount}
+            showBack
+          />
+        </div>
+      )}
+
       <div>
         <HeroCarousel
           photos={heroPhotos}
@@ -237,33 +292,58 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
           {/* ─── 2. 스코어카드 + 버블 확장 + 뱃지 ─── */}
           <ScoreCards
             accentColor="--accent-food"
-            myScore={myAvgScore}
-            mySubText={mySubText}
-            bubbleScore={bubbleAvgScore}
-            bubbleSubText={bubbleSubText}
-            bubbleCount={bubbleCount}
+            myScore={isBubbleMode ? bubbleMemberAvg : myAvgScore}
+            mySubText={isBubbleMode ? `버블 평균 · ${bubbleMemberShares.filter((s) => s.satisfaction != null).length}명` : mySubText}
+            bubbleScore={isBubbleMode ? myAvgScore : bubbleAvgScore}
+            bubbleSubText={isBubbleMode ? (myRecords.length > 0 ? `나 · ${myRecords.length}회` : '미방문') : bubbleSubText}
+            bubbleCount={isBubbleMode ? 0 : bubbleCount}
             onBubbleCardTap={() => setBubbleExpanded(!bubbleExpanded)}
             isBubbleExpanded={bubbleExpanded}
           />
 
-          <BubbleExpandPanel
-            isOpen={bubbleExpanded}
-            bubbleScores={bubbleScores.map((b) => ({
-              bubbleId: b.bubbleId,
-              bubbleName: b.bubbleName,
-              icon: b.bubbleIcon,
-              iconBgColor: b.bubbleColor,
-              ratingCount: b.memberCount,
-              avgScore: b.avgScore,
-            }))}
-            accentColor="--accent-food"
-          />
+          {!isBubbleMode && (
+            <BubbleExpandPanel
+              isOpen={bubbleExpanded}
+              bubbleScores={bubbleScores.map((b) => ({
+                bubbleId: b.bubbleId,
+                bubbleName: b.bubbleName,
+                icon: b.bubbleIcon,
+                iconBgColor: b.bubbleColor,
+                ratingCount: b.memberCount,
+                avgScore: b.avgScore,
+              }))}
+              accentColor="--accent-food"
+            />
+          )}
 
           <BadgeRow badges={badges} />
         </div>
 
-        {/* ─── 3. 나의 평가 (사분면) ─── */}
-        {viewMode === 'my_records' && currentDot && (
+        {/* ─── 3. 평가 사분면 ─── */}
+        {isBubbleMode && bubbleRefPoints.length > 0 ? (
+          <>
+            <Divider />
+            <section style={{ padding: '16px 20px' }}>
+              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                버블 멤버 평가
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
+                  {bubbleRefPoints.length}명
+                </span>
+              </h3>
+              <RatingInput
+                type="restaurant"
+                value={currentDot
+                  ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
+                  : { x: 50, y: 50 }
+                }
+                onChange={() => {}}
+                readOnly
+                hideDot={!currentDot}
+                referencePoints={bubbleRefPoints}
+              />
+            </section>
+          </>
+        ) : viewMode === 'my_records' && currentDot ? (
           <>
             <Divider />
             <section style={{ padding: '16px 20px' }}>
@@ -288,7 +368,7 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
               />
             </section>
           </>
-        )}
+        ) : null}
 
         <Divider />
 

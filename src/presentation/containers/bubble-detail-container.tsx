@@ -11,9 +11,10 @@ import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import type { MemberRoleFilter, MemberMatchFilter } from '@/application/hooks/use-bubble-members'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
-import { BubbleHero } from '@/presentation/components/bubble/bubble-hero'
 import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sheet'
-import { BubbleCompactCard } from '@/presentation/components/bubble/bubble-compact-card'
+import { CompactListItem } from '@/presentation/components/home/compact-list-item'
+import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
+import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
 import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
 import { RankingList } from '@/presentation/components/bubble/ranking-list'
@@ -25,10 +26,14 @@ import { FabBack } from '@/presentation/components/layout/fab-back'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { InlinePager } from '@/presentation/components/home/inline-pager'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
 import type { RankingTargetType } from '@/domain/entities/bubble'
 import type { SortOption } from '@/domain/entities/saved-filter'
+import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
+import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
+import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { matchesAllRules } from '@/domain/services/filter-matcher'
 
 interface BubbleDetailContainerProps {
   bubbleId: string
@@ -52,15 +57,20 @@ interface AggregatedTarget {
   targetId: string
   targetType: 'restaurant' | 'wine'
   name: string
-  meta: string
+  category: string | null
+  area: string | null
   photoUrl: string | null
   avgSatisfaction: number
   memberCount: number
   latestSharedAt: string
+  latestVisitDate: string | null
+  isMine: boolean
+  mySatisfaction: number | null
+  tasteMatchPct: number | null
   dots: Array<{ axisX: number; axisY: number; satisfaction: number; avatarColor: string; nickname: string }>
 }
 
-function aggregateByTarget(shares: FeedShareEnriched[]): AggregatedTarget[] {
+function aggregateByTarget(shares: FeedShareEnriched[], currentUserId: string | null): AggregatedTarget[] {
   const grouped: Record<string, FeedShareEnriched[]> = {}
   for (const s of shares) {
     const key = s.targetId ?? ''
@@ -74,19 +84,20 @@ function aggregateByTarget(shares: FeedShareEnriched[]): AggregatedTarget[] {
     const first = group[0]
     const isWine = first.targetType === 'wine'
 
-    // 메타 조합
-    let meta: string
-    if (isWine) {
-      meta = [
-        first.targetVintage ? String(first.targetVintage) : null,
-        first.targetWineType,
-        first.targetProducer,
-        [first.targetArea, first.targetCountry].filter(Boolean).join(', '),
-        first.targetMeta, // variety
-      ].filter(Boolean).join(' · ')
-    } else {
-      meta = [first.targetMeta, first.targetArea].filter(Boolean).join(' · ')
-    }
+    // 카테고리: 식당=장르, 와인=빈티지·스타일·와이너리·품종
+    const category = isWine
+      ? [
+          first.targetVintage ? String(first.targetVintage) : null,
+          first.targetWineType,
+          first.targetProducer,
+          first.targetMeta, // variety
+        ].filter(Boolean).join(' · ') || null
+      : first.targetMeta ?? null
+
+    // 지역: 식당=area, 와인=region, country
+    const area = isWine
+      ? [first.targetArea, first.targetCountry].filter(Boolean).join(', ') || null
+      : first.targetArea ?? null
 
     // 평가한 멤버들의 dot + 평균
     const rated = group.filter((s) => s.satisfaction != null)
@@ -106,15 +117,33 @@ function aggregateByTarget(shares: FeedShareEnriched[]): AggregatedTarget[] {
     const latestSharedAt = group.reduce((latest, s) =>
       s.sharedAt > latest ? s.sharedAt : latest, group[0].sharedAt)
 
+    // 최신 방문일
+    const visitDates = group.map((s) => s.visitDate).filter(Boolean) as string[]
+    const latestVisitDate = visitDates.length > 0
+      ? visitDates.sort().reverse()[0]
+      : null
+
+    // 내 기록 + 일치도
+    const myShare = currentUserId ? group.find((s) => s.sharedBy === currentUserId) : null
+    let tasteMatchPct: number | null = null
+    if (myShare?.satisfaction != null && avgSat > 0) {
+      tasteMatchPct = Math.max(0, 100 - Math.abs(myShare.satisfaction - avgSat))
+    }
+
     result.push({
       targetId,
       targetType: first.targetType ?? 'restaurant',
       name: first.targetName ?? '',
-      meta,
+      category,
+      area,
       photoUrl: first.targetPhotoUrl ?? null,
       avgSatisfaction: avgSat,
       memberCount: rated.length,
       latestSharedAt,
+      latestVisitDate,
+      isMine: myShare != null,
+      mySatisfaction: myShare?.satisfaction ?? null,
+      tasteMatchPct,
       dots,
     })
   }
@@ -145,7 +174,8 @@ function searchTargets(targets: AggregatedTarget[], query: string): AggregatedTa
   const q = query.trim().toLowerCase()
   return targets.filter((t) =>
     t.name.toLowerCase().includes(q)
-    || t.meta.toLowerCase().includes(q),
+    || (t.category ?? '').toLowerCase().includes(q)
+    || (t.area ?? '').toLowerCase().includes(q),
   )
 }
 
@@ -161,12 +191,40 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const { inviteCode, generateLink, copyToClipboard, isLoading: inviteLoading } = useInviteLink(bubbleId)
   const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null)
 
-  // 소팅 / 검색
+  // 소팅 / 검색 / 필터
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [currentSort, setCurrentSort] = useState<SortOption>('latest')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
+  const [filterRules, setFilterRules] = useState<import('@/domain/entities/saved-filter').FilterRule[]>([])
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+  const [prevTab, setPrevTab] = useState(activeTab)
+
+  // 탭 전환 시 칩 초기화
+  if (prevTab !== activeTab) {
+    setPrevTab(activeTab)
+    setConditionChips([])
+    setFilterRules([])
+  }
+
+  const handleChipsChange = useCallback((chips: FilterChipItem[]) => {
+    setConditionChips(chips)
+    setFilterRules(chipsToFilterRules(chips))
+  }, [])
+
+  const handleAdvancedApply = useCallback((chip: AdvancedFilterChip) => {
+    const hasExisting = conditionChips.some(isAdvancedChip)
+    const nextChips = hasExisting
+      ? conditionChips.map((c) => isAdvancedChip(c) ? chip : c)
+      : [...conditionChips, chip]
+    handleChipsChange(nextChips)
+  }, [conditionChips, handleChipsChange])
+
+  const filterAttributes = activeTab === 'restaurant'
+    ? RESTAURANT_FILTER_ATTRIBUTES
+    : WINE_FILTER_ATTRIBUTES
 
   const toggleSort = useCallback(() => {
     setIsSortOpen((p) => !p)
@@ -186,25 +244,38 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   )
 
   // 탭별 필터 → targetId별 집계
+  const userId = user?.id ?? null
   const aggregated = useMemo(() => {
     const tabShares = shares.filter((s) => s.targetType === activeTab)
-    return aggregateByTarget(tabShares)
-  }, [shares, activeTab])
+    return aggregateByTarget(tabShares, userId)
+  }, [shares, activeTab, userId])
 
-  // 검색 + 정렬
+  // 필터 + 검색 + 정렬
   const displayTargets = useMemo(() => {
     let result = aggregated
+    // 조건 필터 적용 (category → genre, area → area 매핑)
+    if (filterRules.length > 0) {
+      result = result.filter((t) => {
+        const obj: Record<string, unknown> = {
+          genre: t.category,
+          area: t.area,
+          satisfaction: t.avgSatisfaction,
+          member_count: t.memberCount,
+        }
+        return matchesAllRules(obj, filterRules, 'and')
+      })
+    }
     result = searchTargets(result, searchQuery)
     result = sortTargets(result, currentSort)
     return result
-  }, [aggregated, searchQuery, currentSort])
+  }, [aggregated, filterRules, searchQuery, currentSort])
 
   // 페이지네이션
   const totalPages = Math.max(1, Math.ceil(displayTargets.length / PAGE_SIZE))
   const pagedTargets = displayTargets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   // 탭/검색/정렬 변경 시 페이지 리셋
-  const pageResetKey = `${activeTab}-${searchQuery}-${currentSort}`
+  const pageResetKey = `${activeTab}-${searchQuery}-${currentSort}-${conditionChips.length}`
   const [prevResetKey, setPrevResetKey] = useState(pageResetKey)
   if (prevResetKey !== pageResetKey) {
     setPrevResetKey(pageResetKey)
@@ -237,18 +308,16 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       <AppHeader />
       <FabBack />
 
-      {/* 히어로 — 컴팩트 */}
-      <BubbleHero
-        bubble={bubble}
-        myRole={myRole}
-        tasteMatchPct={tasteMatch}
-        onInfoClick={() => setShowInfoSheet(true)}
-        onSettingsClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
-        onInviteClick={() => setShowInviteModal(true)}
-      />
-
-      {/* 스티키 탭 영역 */}
+      {/* 스티키 영역: 버블 헤더 + 탭 + 필터 */}
       <div style={{ position: 'sticky', top: '46px', zIndex: 80, backgroundColor: 'var(--bg)' }}>
+        <BubbleMiniHeader
+          bubbleId={bubbleId}
+          name={bubble.name}
+          description={bubble.description}
+          icon={bubble.icon}
+          iconBgColor={bubble.iconBgColor}
+          memberCount={bubble.memberCount}
+        />
         <StickyTabs
           tabs={[
             { key: 'restaurant' as const, label: '식당', variant: 'food' },
@@ -285,28 +354,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               </div>
             ) : (
               <div className="flex items-center gap-0.5">
-                {/* 버블 이름 표시 */}
-                <div className="mr-1 flex items-center gap-1 overflow-hidden">
-                  {isOwner && (
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
-                      className="flex shrink-0 items-center justify-center"
-                      style={{ color: 'var(--text-hint)' }}
-                    >
-                      <Settings size={14} />
-                    </button>
-                  )}
-                  <div
-                    className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-md"
-                    style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-                  >
-                    <BubbleIcon icon={bubble.icon} size={12} />
-                  </div>
-                  <span className="max-w-[80px] truncate text-[12px] font-bold" style={{ color: 'var(--text)' }}>
-                    {bubble.name}
-                  </span>
-                </div>
                 <button
                   type="button"
                   onClick={() => handleSubPageChange(subPage === 'ranking' ? 'list' : 'ranking')}
@@ -358,17 +405,29 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           </div>
         )}
 
-        {/* 리스트 모드: 페이저 */}
-        {subPage === 'list' && totalPages > 1 && (
-          <div className="flex items-center justify-end px-4 py-1">
-            <InlinePager
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            />
-          </div>
+        {/* 필터 칩 바 + 페이저 */}
+        {subPage === 'list' && (
+          <ConditionFilterBar
+            chips={conditionChips}
+            onChipsChange={handleChipsChange}
+            attributes={filterAttributes}
+            accentType={accentType}
+            onAdvancedOpen={() => setIsAdvancedOpen(true)}
+            recordPage={currentPage}
+            recordTotalPages={totalPages}
+            onRecordPagePrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onRecordPageNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          />
         )}
+
+        {/* Advanced Filter 바텀 시트 */}
+        <AdvancedFilterSheet
+          isOpen={isAdvancedOpen}
+          onClose={() => setIsAdvancedOpen(false)}
+          onApply={handleAdvancedApply}
+          attributes={filterAttributes}
+          accentType={accentType}
+        />
       </div>
 
       {/* 콘텐츠 영역 */}
@@ -378,6 +437,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
             targets={pagedTargets}
             isLoading={feedLoading}
             activeTab={activeTab}
+            bubbleId={bubbleId}
           />
         )}
         {subPage === 'ranking' && (
@@ -447,11 +507,14 @@ function ListContent({
   targets,
   isLoading,
   activeTab,
+  bubbleId,
 }: {
   targets: AggregatedTarget[]
   isLoading: boolean
   activeTab: ContentTab
+  bubbleId: string
 }) {
+  const router = useRouter()
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -479,18 +542,22 @@ function ListContent({
   }
 
   return (
-    <div className="flex flex-col gap-2 px-4 pb-24 pt-2">
-      {targets.map((t) => (
-        <BubbleCompactCard
+    <div className="px-4 pb-24">
+      {targets.map((t, i) => (
+        <CompactListItem
           key={t.targetId}
-          targetId={t.targetId}
-          targetType={t.targetType}
-          name={t.name}
-          meta={t.meta}
+          rank={i + 1}
           photoUrl={t.photoUrl}
-          avgSatisfaction={t.avgSatisfaction}
+          name={t.name}
+          meta={[t.category, t.area].filter(Boolean).join(' · ')}
+          score={t.avgSatisfaction || null}
+          axisX={null}
+          axisY={null}
+          accentType={t.targetType}
+          onClick={() => router.push(`/${t.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${t.targetId}?bubble=${bubbleId}`)}
+          bubbleDots={t.dots}
           memberCount={t.memberCount}
-          dots={t.dots}
+          latestReviewAt={t.latestVisitDate ?? t.latestSharedAt}
         />
       ))}
     </div>

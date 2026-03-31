@@ -1392,8 +1392,8 @@ html, body, * {
 .compact-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1402,9 +1402,9 @@ html, body, * {
 }
 
 .compact-rank {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  width: 18px;
+  width: 20px;
   text-align: center;
   flex-shrink: 0;
   color: var(--text-hint);
@@ -1419,16 +1419,16 @@ html, body, * {
 }
 
 .compact-thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   flex-shrink: 0;
   overflow: hidden;
 }
 
 .compact-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text);
   text-overflow: ellipsis;
   overflow: hidden;
@@ -1436,7 +1436,7 @@ html, body, * {
 }
 
 .compact-meta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-hint);
   white-space: nowrap;
   overflow: hidden;
@@ -1444,9 +1444,9 @@ html, body, * {
 }
 
 .compact-score {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
-  min-width: 32px;
+  min-width: 36px;
   text-align: right;
   flex-shrink: 0;
 }
@@ -1455,7 +1455,7 @@ html, body, * {
 .compact-score.wine { color: var(--accent-wine); }
 
 .compact-score.unrated {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-hint);
 }

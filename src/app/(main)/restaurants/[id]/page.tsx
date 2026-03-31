@@ -2,9 +2,11 @@ import { RestaurantDetailContainer } from '@/presentation/containers/restaurant-
 
 interface Props {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ bubble?: string }>
 }
 
-export default async function RestaurantDetailPage({ params }: Props) {
+export default async function RestaurantDetailPage({ params, searchParams }: Props) {
   const { id } = await params
-  return <RestaurantDetailContainer restaurantId={id} />
+  const { bubble } = await searchParams
+  return <RestaurantDetailContainer restaurantId={id} bubbleId={bubble ?? null} />
 }

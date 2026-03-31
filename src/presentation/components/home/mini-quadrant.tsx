@@ -2,24 +2,23 @@
 
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
-/** 홈 카드용 미니 사분면 (44x44) — 설계 §4 */
+/** 홈 카드용 미니 사분면 — 설계 §4 */
 interface MiniQuadrantProps {
   axisX: number      // 0~100
   axisY: number      // 0~100
   satisfaction: number // 1~100
   accentColor: string  // --accent-food 또는 --accent-wine
+  size?: number       // 기본 44px
 }
 
 /** dot 크기: 고정 6px (RATING_ENGINE 개편: 만족도 제거, 좌표만 표시) */
 const DOT_SIZE = 6
 
-export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor }: MiniQuadrantProps) {
+export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor, size = 44 }: MiniQuadrantProps) {
   const dotColor = getGaugeColor(satisfaction)
 
-  // 0~100% 입력을 safe zone(px) 안으로 매핑 — dot 크기 + border-radius 잘림 방지
-  const CONTAINER = 44
-  const INSET = 7 // halfDot(3px) + border-radius 곡선 여유(4px)
-  const safeRange = CONTAINER - INSET * 2 // 30px
+  const INSET = Math.round(size * 0.16)
+  const safeRange = size - INSET * 2
   const dotLeft = INSET + (axisX / 100) * safeRange
   const dotTop = INSET + ((100 - axisY) / 100) * safeRange
 
@@ -27,8 +26,8 @@ export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor }: MiniQu
     <div
       className="relative shrink-0 overflow-hidden rounded-[10px]"
       style={{
-        width: '44px',
-        height: '44px',
+        width: `${size}px`,
+        height: `${size}px`,
         backgroundColor: 'var(--bg-page)',
       }}
     >

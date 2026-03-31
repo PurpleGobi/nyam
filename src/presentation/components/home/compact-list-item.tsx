@@ -1,6 +1,9 @@
 'use client'
 
-import { Wine } from 'lucide-react'
+import { Wine, Users } from 'lucide-react'
+import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
+import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
+import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
 
 interface CompactListItemProps {
   rank: number
@@ -8,8 +11,24 @@ interface CompactListItemProps {
   name: string
   meta: string
   score: number | null
+  axisX: number | null
+  axisY: number | null
   accentType: 'restaurant' | 'wine'
   onClick: () => void
+  /** 버블 모드 — 멀티 dot 사분면 + 멤버 정보 */
+  bubbleDots?: MemberDot[]
+  memberCount?: number
+  latestReviewAt?: string | null
+}
+
+function formatRelativeDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return '오늘'
+  if (days === 1) return '어제'
+  if (days < 7) return `${days}일 전`
+  if (days < 30) return `${Math.floor(days / 7)}주 전`
+  return `${Math.floor(days / 30)}개월 전`
 }
 
 export function CompactListItem({
@@ -18,11 +37,21 @@ export function CompactListItem({
   name,
   meta,
   score,
+  axisX,
+  axisY,
   accentType,
   onClick,
+  bubbleDots,
+  memberCount,
+  latestReviewAt,
 }: CompactListItemProps) {
   const isTop3 = rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
+  const accentColor = accentType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'
+  const isBubbleMode = bubbleDots != null
+  const hasQuadrant = isBubbleMode
+    ? bubbleDots.length > 0
+    : axisX != null && axisY != null && score != null
 
   return (
     <button
@@ -44,7 +73,7 @@ export function CompactListItem({
           className="compact-thumb flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #2a2030, #1a1520)' }}
         >
-          <Wine size={16} color="rgba(255,255,255,0.4)" />
+          <Wine size={18} color="rgba(255,255,255,0.4)" />
         </div>
       ) : (
         <div
@@ -55,12 +84,28 @@ export function CompactListItem({
 
       <div className="min-w-0 flex-1">
         <p className="compact-name">{name}</p>
-        <p className="compact-meta">{meta}</p>
+        <p className="compact-meta flex items-center gap-0.5">
+          <span className="truncate">{meta}</span>
+          {isBubbleMode && memberCount != null && (
+            <span className="inline-flex shrink-0 items-center gap-0.5"> · <Users size={9} /> {memberCount}</span>
+          )}
+          {isBubbleMode && latestReviewAt && (
+            <span className="shrink-0"> · {formatRelativeDate(latestReviewAt)}</span>
+          )}
+        </p>
       </div>
 
-      <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
-        {score != null ? score : '—'}
-      </span>
+      {/* 사분면 + 점수 — 고정 너비로 정렬 */}
+      <div className="flex w-[88px] shrink-0 items-center justify-end gap-2">
+        {hasQuadrant && (
+          isBubbleMode
+            ? <BubbleQuadrant dots={bubbleDots} size={48} />
+            : <MiniQuadrant axisX={axisX!} axisY={axisY!} satisfaction={score!} accentColor={accentColor} size={48} />
+        )}
+        <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
+          {score != null ? score : '—'}
+        </span>
+      </div>
     </button>
   )
 }

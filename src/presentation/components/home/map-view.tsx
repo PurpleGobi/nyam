@@ -281,6 +281,8 @@ function MapList({
             name={record.name}
             meta={`${record.genre} · ${record.area}${record.distanceKm != null ? ` · ${record.distanceKm}km` : ''}`}
             score={record.score}
+            axisX={null}
+            axisY={null}
             accentType="restaurant"
             onClick={() => onSelect(record.restaurantId)}
           />

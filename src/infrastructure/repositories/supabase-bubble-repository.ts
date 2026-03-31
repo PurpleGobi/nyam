@@ -313,7 +313,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const recordIds = [...new Set(shares.map((s) => s.recordId))]
     const { data: recordRows } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date, list_status')
+      .select('id, target_id, target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date')
       .in('id', recordIds)
     const recordMap: Record<string, Record<string, unknown>> = {}
     for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
@@ -331,18 +331,16 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       authorMap[u.id as string] = u
     }
 
-    // 4) target 이름 batch 조회
+    // 4) target 이름 batch 조회 — bubble_shares의 target_id/target_type 직접 사용 (records RLS 무관)
     const restaurantIds = [...new Set(
       shares
-        .map((s) => recordMap[s.recordId])
-        .filter((r) => r && r.target_type === 'restaurant')
-        .map((r) => r.target_id as string),
+        .filter((s) => s.targetType === 'restaurant' && s.targetId)
+        .map((s) => s.targetId),
     )]
     const wineIds = [...new Set(
       shares
-        .map((s) => recordMap[s.recordId])
-        .filter((r) => r && r.target_type === 'wine')
-        .map((r) => r.target_id as string),
+        .filter((s) => s.targetType === 'wine' && s.targetId)
+        .map((s) => s.targetId),
     )]
     const targetInfoMap: Record<string, {
       name: string; meta: string | null; area: string | null; photoUrl: string | null
@@ -350,24 +348,26 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     }> = {}
 
     if (restaurantIds.length > 0) {
-      const { data: restData } = await this.supabase.from('restaurants').select('id, name, genre, area, photo_url').in('id', restaurantIds)
+      const { data: restData } = await this.supabase.from('restaurants').select('id, name, genre, area, district').in('id', restaurantIds)
       for (const r of ((restData ?? []) as unknown as Record<string, unknown>[])) {
+        const areaArr = r.area as string[] | null
+        const district = r.district as string | null
         targetInfoMap[r.id as string] = {
           name: r.name as string,
           meta: r.genre as string | null,
-          area: r.area as string | null,
-          photoUrl: r.photo_url as string | null,
+          area: areaArr?.join(', ') ?? district ?? null,
+          photoUrl: null, // 사진은 record_photos에서 별도 조회
         }
       }
     }
     if (wineIds.length > 0) {
-      const { data: wineData } = await this.supabase.from('wines').select('id, name, variety, region, country, wine_type, vintage, producer, photo_url, label_image_url').in('id', wineIds)
+      const { data: wineData } = await this.supabase.from('wines').select('id, name, variety, region, country, wine_type, vintage, producer, label_image_url').in('id', wineIds)
       for (const w of ((wineData ?? []) as unknown as Record<string, unknown>[])) {
         targetInfoMap[w.id as string] = {
           name: w.name as string,
           meta: w.variety as string | null,
           area: w.region as string | null,
-          photoUrl: (w.photo_url as string | null) ?? (w.label_image_url as string | null),
+          photoUrl: (w.label_image_url as string | null) ?? null,
           vintage: (w.vintage as number) ?? null,
           wineType: (w.wine_type as string) ?? null,
           producer: (w.producer as string) ?? null,
@@ -376,12 +376,24 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       }
     }
 
-    // 5) 조합
+    // 4-b) record_photos batch 조회 — 각 record의 첫 번째 사진
+    const { data: photoRows } = await this.supabase
+      .from('record_photos')
+      .select('record_id, url')
+      .in('record_id', recordIds)
+      .eq('order_index', 0)
+    const photoMap: Record<string, string> = {}
+    for (const p of ((photoRows ?? []) as unknown as Record<string, unknown>[])) {
+      photoMap[p.record_id as string] = p.url as string
+    }
+
+    // 5) 조합 — bubble_shares 자체의 target_id/target_type을 우선 사용 (records RLS 우회)
     const items: BubbleFeedItem[] = shares.map((s) => {
       const rec = recordMap[s.recordId]
       const author = authorMap[s.sharedBy]
-      const targetId = (rec?.target_id as string) ?? ''
-      const targetType = ((rec?.target_type as string) ?? 'restaurant') as 'restaurant' | 'wine'
+      // bubble_shares 테이블에 target_id/target_type이 직접 저장됨
+      const targetId = s.targetId || (rec?.target_id as string) || ''
+      const targetType = (s.targetType || (rec?.target_type as string) || 'restaurant') as 'restaurant' | 'wine'
       const targetInfo = targetInfoMap[targetId]
 
       return {
@@ -395,7 +407,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         targetName: targetInfo?.name ?? '',
         targetMeta: targetInfo?.meta ?? null,
         targetArea: targetInfo?.area ?? null,
-        targetPhotoUrl: targetInfo?.photoUrl ?? null,
+        targetPhotoUrl: photoMap[s.recordId] ?? targetInfo?.photoUrl ?? null,
         targetVintage: targetInfo?.vintage ?? null,
         targetWineType: targetInfo?.wineType ?? null,
         targetProducer: targetInfo?.producer ?? null,
@@ -406,7 +418,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         comment: (rec?.comment as string) ?? null,
         scene: (rec?.scene as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
-        listStatus: (rec?.list_status as string) ?? null,
+        listStatus: null,
         authorNickname: (author?.nickname as string) ?? '',
         authorAvatar: (author?.avatar_url as string) ?? null,
         authorAvatarColor: (author?.avatar_color as string) ?? null,

@@ -1,5 +1,7 @@
 'use client'
 
+import { getGaugeColor } from '@/shared/utils/gauge-color'
+
 export interface MemberDot {
   axisX: number       // 0~100
   axisY: number       // 0~100
@@ -17,10 +19,11 @@ const DOT_SIZE = 6
 
 /**
  * 버블 멤버들의 평가를 하나의 사분면에 멀티 dot으로 표시.
- * 각 dot 색상은 해당 멤버의 avatarColor 사용.
+ * 디자인은 홈 MiniQuadrant 기반 — gaugeColor 기반 dot.
+ * size prop으로 크기 조절 (기본 44px = 홈과 동일).
  */
-export function BubbleQuadrant({ dots, size = 52 }: BubbleQuadrantProps) {
-  const INSET = 8
+export function BubbleQuadrant({ dots, size = 44 }: BubbleQuadrantProps) {
+  const INSET = Math.round(size * 0.16) // 44→7, 56→9
   const safeRange = size - INSET * 2
 
   return (
@@ -41,10 +44,11 @@ export function BubbleQuadrant({ dots, size = 52 }: BubbleQuadrantProps) {
         className="absolute bottom-0 left-1/2 top-0 w-px"
         style={{ backgroundColor: 'var(--border)' }}
       />
-      {/* 멤버별 dot */}
+      {/* 멤버별 dot — 색상은 satisfaction 기반 (홈과 동일) */}
       {dots.map((dot, i) => {
         const dotLeft = INSET + (dot.axisX / 100) * safeRange
         const dotTop = INSET + ((100 - dot.axisY) / 100) * safeRange
+        const dotColor = getGaugeColor(dot.satisfaction)
         return (
           <span
             key={i}
@@ -54,10 +58,8 @@ export function BubbleQuadrant({ dots, size = 52 }: BubbleQuadrantProps) {
               top: `${dotTop}px`,
               width: `${DOT_SIZE}px`,
               height: `${DOT_SIZE}px`,
-              backgroundColor: dot.avatarColor,
+              backgroundColor: dotColor,
               transform: 'translate(-50%, -50%)',
-              zIndex: i + 1,
-              border: '1px solid var(--bg-page)',
             }}
           />
         )

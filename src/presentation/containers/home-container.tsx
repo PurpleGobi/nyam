@@ -367,6 +367,8 @@ export function HomeContainer() {
               name={record.targetName}
               meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
               score={record.satisfaction}
+              axisX={record.axisX ?? null}
+              axisY={record.axisY ?? null}
               accentType={activeTab}
               onClick={() =>
                 router.push(

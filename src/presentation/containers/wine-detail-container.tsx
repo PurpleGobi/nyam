@@ -9,6 +9,9 @@ import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useWishlist } from '@/application/hooks/use-wishlist'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
+import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
+import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
+import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
 import { wineRepo, recordRepo, xpRepo } from '@/shared/di/container'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
@@ -27,6 +30,7 @@ import type { WineStructure } from '@/domain/entities/wine-structure'
 
 interface WineDetailContainerProps {
   wineId: string
+  bubbleId: string | null
 }
 
 function Divider() {
@@ -43,7 +47,7 @@ const BODY_LABELS: Record<number, string> = { 1: 'Light', 2: 'Medium-', 3: 'Medi
 const ACIDITY_LABELS: Record<number, string> = { 1: '낮음', 2: '약간 낮음', 3: '보통', 4: '높음', 5: '매우 높음' }
 const SWEETNESS_LABELS: Record<number, string> = { 1: 'Dry', 2: 'Off-dry', 3: 'Medium', 4: 'Sweet', 5: 'Luscious' }
 
-export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
+export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
@@ -115,6 +119,40 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
       setIsDeleting(false)
     }
   }, [selectedRecordId, user, router])
+
+  // ─── 버블 모드 ───
+  const isBubbleMode = bubbleId != null
+  const { bubble: bubbleInfo } = useBubbleDetail(bubbleId ?? '__none__', user?.id ?? null)
+  const { shares: bubbleFeedShares } = useBubbleFeed(
+    bubbleId ?? '__none__',
+    isBubbleMode ? 'member' : null,
+    'rating_and_comment',
+  )
+  const bubbleMemberShares = useMemo(() => {
+    if (!isBubbleMode) return []
+    return bubbleFeedShares.filter((s) => s.targetId === wineId)
+  }, [isBubbleMode, bubbleFeedShares, wineId])
+
+  const bubbleRefPoints = useMemo(() => {
+    return bubbleMemberShares
+      .filter((s) => s.axisX != null && s.axisY != null && s.satisfaction != null)
+      .map((s) => {
+        const isMe = s.sharedBy === user?.id
+        return {
+          x: s.axisX!,
+          y: s.axisY!,
+          satisfaction: isMe ? s.satisfaction! : 0,
+          name: s.authorName ?? '',
+          score: s.satisfaction!,
+        }
+      })
+  }, [bubbleMemberShares, user?.id])
+
+  const bubbleMemberAvg = useMemo(() => {
+    const rated = bubbleMemberShares.filter((s) => s.satisfaction != null)
+    if (rated.length === 0) return null
+    return Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
+  }, [bubbleMemberShares])
 
   // ─── 사분면: 모든 방문 dot ───
   const allRecordDots = myRecords
@@ -227,6 +265,20 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
   return (
     <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
+
+      {isBubbleMode && bubbleInfo && (
+        <div style={{ position: 'sticky', top: '46px', zIndex: 80 }}>
+          <BubbleMiniHeader
+            bubbleId={bubbleId!}
+            name={bubbleInfo.name}
+            description={bubbleInfo.description}
+            icon={bubbleInfo.icon}
+            iconBgColor={bubbleInfo.iconBgColor}
+            memberCount={bubbleInfo.memberCount}
+            showBack
+          />
+        </div>
+      )}
 
       <div>
         <HeroCarousel
@@ -405,10 +457,22 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
             </span>
           </div>
 
-          {tastingCount > 0 && (
+          {(tastingCount > 0 || (isBubbleMode && bubbleRefPoints.length > 0)) && (
             <div className="flex flex-col gap-6">
-              {/* 사분면 — 기록 폼과 동일 컴포넌트 */}
-              {currentDot && (
+              {/* 사분면 — 버블 모드: 멤버 dots / 일반 모드: 내 기록 dots */}
+              {isBubbleMode && bubbleRefPoints.length > 0 ? (
+                <RatingInput
+                  type="wine"
+                  value={currentDot
+                    ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
+                    : { x: 50, y: 50 }
+                  }
+                  onChange={() => {}}
+                  readOnly
+                  hideDot={!currentDot}
+                  referencePoints={bubbleRefPoints}
+                />
+              ) : currentDot ? (
                 <RatingInput
                   type="wine"
                   value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
@@ -422,7 +486,7 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
                     score: d.avgSatisfaction,
                   }))}
                 />
-              )}
+              ) : null}
 
               {/* 향 휠 */}
               {hasAromaData && (
