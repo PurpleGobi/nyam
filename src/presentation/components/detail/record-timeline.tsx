@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import { Search, Wine, MapPin, FileText, Wallet, Users } from 'lucide-react'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
+import { PopupWindow } from '@/presentation/components/ui/popup-window'
 
 const EMPTY_ICONS = {
   search: Search,
@@ -105,6 +107,18 @@ export function RecordTimeline({
   linkedWineNames,
   onLinkedWineTap,
 }: RecordTimelineProps) {
+  const [popupPhotos, setPopupPhotos] = useState<string[]>([])
+  const [popupIndex, setPopupIndex] = useState<number | null>(null)
+
+  const openPhotoPopup = useCallback((photos: RecordPhoto[], startIndex: number) => {
+    setPopupPhotos(photos.map((p) => p.url))
+    setPopupIndex(startIndex)
+  }, [])
+
+  const handlePopupClick = useCallback(() => {
+    setPopupIndex((prev) => prev !== null ? (prev + 1) % popupPhotos.length : null)
+  }, [popupPhotos.length])
+
   const EmptyIcon = EMPTY_ICONS[emptyIcon] ?? Search
   const isWine = targetType === 'wine'
   const sceneColors = isWine ? { ...SCENE_COLORS, ...WINE_SCENE_COLORS } : SCENE_COLORS
@@ -264,14 +278,15 @@ export function RecordTimeline({
                 {/* 사진 썸네일 */}
                 {photos.length > 0 && (
                   <div className="mt-1.5 flex gap-1.5">
-                    {photos.slice(0, 4).map((p) => (
+                    {photos.slice(0, 4).map((p, pi) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={p.id}
                         src={p.url}
                         alt=""
                         className="shrink-0 rounded-md object-cover"
-                        style={{ width: '44px', height: '44px' }}
+                        style={{ width: '44px', height: '44px', cursor: 'pointer' }}
+                        onClick={(e) => { e.stopPropagation(); openPhotoPopup(photos, pi) }}
                       />
                     ))}
                   </div>
@@ -281,6 +296,25 @@ export function RecordTimeline({
           })}
         </div>
       )}
+      {/* 사진 팝업 */}
+      <PopupWindow isOpen={popupIndex !== null} onClose={() => setPopupIndex(null)}>
+        {popupIndex !== null && (
+          <div
+            className="fixed inset-0 flex items-center justify-center"
+            style={{ zIndex: 200, pointerEvents: 'none' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={popupPhotos[popupIndex]}
+              alt=""
+              onClick={handlePopupClick}
+              className="rounded-2xl shadow-lg"
+              style={{ maxWidth: 'min(90vw, 500px)', maxHeight: '70vh', objectFit: 'contain', cursor: 'pointer', pointerEvents: 'auto' }}
+              draggable={false}
+            />
+          </div>
+        )}
+      </PopupWindow>
     </section>
   )
 }

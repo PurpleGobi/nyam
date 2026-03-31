@@ -35,6 +35,7 @@ import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { SearchDropdown } from '@/presentation/components/ui/search-dropdown'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
+import { PopupWindow } from '@/presentation/components/ui/popup-window'
 import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import { LayoutGrid, List } from 'lucide-react'
@@ -1232,6 +1233,110 @@ export default function DesignSystemPage() {
           <RecordSaveBar variant="food" onSave={() => {}} isLoading={false} label="수정 완료" onDelete={() => {}} />
         </div>
       </Section>
+
+      {/* ── 22. Popup Window ── */}
+      <PopupWindowDemo />
     </div>
+  )
+}
+
+/* ── 22. PopupWindow 데모 ── */
+function PopupWindowDemo() {
+  const [photoOpen, setPhotoOpen] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const bellRef = useState<HTMLButtonElement | null>(null)
+
+  const demoPhotos = [
+    'https://gfshmpuuafjvwsgrxnie.supabase.co/storage/v1/object/public/record-photos/2ec28e73-c6b1-4652-a9c6-bf97ebb81493/9c8da8e1-b430-4cc2-935f-7dc4f980cfe6/aeba3471-3964-4c17-a5a3-5ed1608f5a40.webp',
+    'https://gfshmpuuafjvwsgrxnie.supabase.co/storage/v1/object/public/record-photos/2ec28e73-c6b1-4652-a9c6-bf97ebb81493/7432d80b-192d-42c5-9492-8cd37b080af3/0554a615-854b-4857-9d46-84b60e296adc.webp',
+  ]
+
+  return (
+    <>
+      <Section title="22. Popup Window">
+        <Note>
+          공통 팝업 로직: 배경 어둡게(0.7) + blur(4px) + 외부 클릭 시 닫힘 + Escape 닫힘.
+          Portal로 body에 렌더링되어 부모 stacking context에 영향 없음.
+        </Note>
+
+        <Sub title="22-A. Photo Popup" />
+        <Note>
+          중앙 정렬. 화면 대비 크게 표시 (max 90vw / 500px, 70vh).
+          사진 클릭 시 다음 사진 순환. 배경 클릭 시 닫힘.
+          사용처: hero-carousel, record-timeline 사진 썸네일.
+        </Note>
+        <button
+          type="button"
+          onClick={() => { setPhotoIndex(0); setPhotoOpen(true) }}
+          className="rounded-lg px-4 py-2 text-[13px] font-medium"
+          style={{ backgroundColor: `var(--accent-food)`, color: '#FFF' }}
+        >
+          사진 팝업 열기 (2장 순환)
+        </button>
+
+        <div style={{ height: '16px' }} />
+
+        <Sub title="22-B. Notification Popup" />
+        <Note>
+          bell 아이콘 기준 상대 위치 (아이콘 하단 + 우측 정렬).
+          팝업 자체는 fixed로 position 전달받음.
+          사용처: app-header 알림 드롭다운.
+        </Note>
+        <div className="relative inline-block">
+          <button
+            type="button"
+            ref={(el) => { bellRef[1](el) }}
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="icon-btn"
+          >
+            <Bell size={22} />
+          </button>
+        </div>
+      </Section>
+
+      {/* 사진 팝업 */}
+      <PopupWindow isOpen={photoOpen} onClose={() => setPhotoOpen(false)}>
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 200, pointerEvents: 'none' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={demoPhotos[photoIndex]}
+            alt=""
+            onClick={() => setPhotoIndex((prev) => (prev + 1) % demoPhotos.length)}
+            className="rounded-2xl shadow-lg"
+            style={{ maxWidth: 'min(90vw, 500px)', maxHeight: '70vh', objectFit: 'contain', cursor: 'pointer', pointerEvents: 'auto' }}
+            draggable={false}
+          />
+        </div>
+      </PopupWindow>
+
+      {/* 노티 팝업 */}
+      <PopupWindow isOpen={notifOpen} onClose={() => setNotifOpen(false)}>
+        <div
+          className="notif-dropdown"
+          style={{
+            position: 'fixed',
+            top: bellRef[0] ? bellRef[0].getBoundingClientRect().bottom + 8 : 100,
+            right: bellRef[0] ? window.innerWidth - bellRef[0].getBoundingClientRect().right : 16,
+          }}
+        >
+          <div className="notif-header" style={{ borderBottom: '1px solid var(--border)' }}>
+            <span className="notif-header-title">알림</span>
+          </div>
+          <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+            <Bell size={32} style={{ color: 'var(--text-hint)', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: '13px', color: 'var(--text-hint)' }}>데모 알림 팝업</p>
+          </div>
+          <div className="notif-footer" style={{ borderTop: '1px solid var(--border)' }}>
+            <button type="button" onClick={() => setNotifOpen(false)} className="notif-footer">
+              닫기
+            </button>
+          </div>
+        </div>
+      </PopupWindow>
+    </>
   )
 }

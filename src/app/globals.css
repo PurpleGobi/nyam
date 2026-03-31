@@ -1596,7 +1596,7 @@ html, body, * {
 /* ── 16. 알림 드롭다운 ── */
 
 .notif-dropdown {
-  width: min(360px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 48px));
   max-height: 70vh;
   overflow-y: auto;
   background: var(--bg-elevated);
