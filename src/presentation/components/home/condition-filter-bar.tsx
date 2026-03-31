@@ -21,7 +21,7 @@ interface ConditionFilterBarProps {
   chips: FilterChipItem[]
   onChipsChange: (chips: FilterChipItem[]) => void
   attributes: FilterAttribute[]
-  accentType: 'food' | 'wine'
+  accentType: 'food' | 'wine' | 'social'
   onAdvancedOpen: () => void
   recordPage?: number
   recordTotalPages?: number
@@ -104,8 +104,8 @@ export function ConditionFilterBar({
   const [selectedAttribute, setSelectedAttribute] = useState<FilterAttribute | null>(null)
   const addBtnRef = useRef<HTMLButtonElement>(null)
 
-  const accent = accentType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'
-  const wineClass = accentType === 'wine' ? 'wine' : ''
+  const accent = accentType === 'wine' ? 'var(--accent-wine)' : accentType === 'social' ? 'var(--accent-social)' : 'var(--accent-food)'
+  const wineClass = accentType === 'wine' ? 'wine' : accentType === 'social' ? 'social' : ''
 
   // 모든 칩을 동등하게 취급
   const conditionChips = chips.filter((c) => !isAdvancedChip(c)) as ConditionChip[]

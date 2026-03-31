@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, User, Compass, SlidersHorizontal, ArrowUpDown, Search, X } from 'lucide-react'
+import { Users, User, Compass, ArrowUpDown, Search, X } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -11,16 +11,16 @@ import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
 import { BubbleHotStrip } from '@/presentation/components/bubble/bubble-hot-strip'
 import { BubbleDiscoverSheet } from '@/presentation/components/bubble/bubble-discover-sheet'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
-import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
-import { FilterSystem } from '@/presentation/components/ui/filter-system'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { BUBBLE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
+import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
+import { BUBBLE_FILTER_ATTRIBUTES, BUBBLER_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule } from '@/domain/entities/saved-filter'
 import type { BubbleSortOption } from '@/domain/entities/saved-filter'
+import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
+import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 
 type ContentTab = 'bubbles' | 'bubblers'
-type RoleFilter = 'all' | 'mine' | 'joined'
-type BubblerFilter = 'all' | 'following' | 'followers' | 'mutual'
 
 const PAGE_SIZE = 10
 
@@ -46,20 +46,41 @@ export function BubbleListContainer() {
     _setContentTab(tab)
     sessionStorage.setItem('nyam_bubble_tab', tab)
   }
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [sortBy, setSortBy] = useState<BubbleSortOption>('activity')
-  const [bubblerFilter, setBubblerFilter] = useState<BubblerFilter>('all')
   const [page, setPage] = useState(1)
 
   // 패널 토글 (상호 배타)
-  const [isFilterOpen, setFilterOpen] = useState(false)
   const [isSortOpen, setSortOpen] = useState(false)
   const [isSearchOpen, setSearchOpen] = useState(false)
   const [isDiscoverOpen, setDiscoverOpen] = useState(false)
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
-  // 필터 시스템 상태
+  // 조건 칩 필터
+  const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
   const [filterRules, setFilterRules] = useState<FilterRule[]>([])
-  const [filterConjunction, setFilterConjunction] = useState<'and' | 'or'>('and')
+  const [prevContentTab, setPrevContentTab] = useState(contentTab)
+
+  if (prevContentTab !== contentTab) {
+    setPrevContentTab(contentTab)
+    setConditionChips([])
+    setFilterRules([])
+  }
+
+  const handleChipsChange = (chips: FilterChipItem[]) => {
+    setConditionChips(chips)
+    setFilterRules(chipsToFilterRules(chips))
+    setPage(1)
+  }
+
+  const handleAdvancedApply = (chip: AdvancedFilterChip) => {
+    const hasExisting = conditionChips.some(isAdvancedChip)
+    const next = hasExisting
+      ? conditionChips.map((c) => isAdvancedChip(c) ? chip : c)
+      : [...conditionChips, chip]
+    handleChipsChange(next)
+  }
+
+  const filterAttributes = contentTab === 'bubbles' ? BUBBLE_FILTER_ATTRIBUTES : BUBBLER_FILTER_ATTRIBUTES
 
   // 검색
   const [searchQuery, setSearchQuery] = useState('')
@@ -69,9 +90,8 @@ export function BubbleListContainer() {
     if (isSearchOpen) searchInputRef.current?.focus()
   }, [isSearchOpen])
 
-  const toggleFilter = () => { setFilterOpen(!isFilterOpen); setSortOpen(false); setSearchOpen(false) }
-  const toggleSort = () => { setSortOpen(!isSortOpen); setFilterOpen(false); setSearchOpen(false) }
-  const toggleSearch = () => { setSearchOpen(!isSearchOpen); setFilterOpen(false); setSortOpen(false) }
+  const toggleSort = () => { setSortOpen(!isSortOpen); setSearchOpen(false) }
+  const toggleSearch = () => { setSearchOpen(!isSearchOpen); setSortOpen(false) }
 
   // 역할 분류
   const classified = useMemo(() => {
@@ -89,22 +109,16 @@ export function BubbleListContainer() {
       .slice(0, 8)
   }, [bubbles])
 
-  // 역할 필터
-  const roleFiltered = useMemo(() => {
-    if (roleFilter === 'all') return classified
-    return classified.filter((c) => c.role === roleFilter)
-  }, [classified, roleFilter])
-
   // 검색 필터
   const searchFiltered = useMemo(() => {
-    if (!searchQuery.trim()) return roleFiltered
+    if (!searchQuery.trim()) return classified
     const q = searchQuery.toLowerCase()
-    return roleFiltered.filter((c) =>
+    return classified.filter((c) =>
       c.bubble.name.toLowerCase().includes(q) ||
       (c.bubble.description ?? '').toLowerCase().includes(q) ||
       (c.bubble.area ?? '').toLowerCase().includes(q)
     )
-  }, [roleFiltered, searchQuery])
+  }, [classified, searchQuery])
 
   // 규칙 기반 필터
   const ruleFiltered = useMemo(() => {
@@ -113,6 +127,8 @@ export function BubbleListContainer() {
       const b = c.bubble
       const results = filterRules.map((rule) => {
         switch (rule.attribute) {
+          case 'role':
+            return rule.operator === 'eq' ? c.role === rule.value : c.role !== rule.value
           case 'focus_type':
             return rule.operator === 'eq' ? b.focusType === rule.value : b.focusType !== rule.value
           case 'area':
@@ -138,9 +154,9 @@ export function BubbleListContainer() {
             return true
         }
       })
-      return filterConjunction === 'and' ? results.every(Boolean) : results.some(Boolean)
+      return results.every(Boolean)
     })
-  }, [searchFiltered, filterRules, filterConjunction, now])
+  }, [searchFiltered, filterRules, now])
 
   // 정렬
   const sorted = useMemo(() => {
@@ -163,9 +179,6 @@ export function BubbleListContainer() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // 필터칩 카운트
-  const mineCount = classified.filter((c) => c.role === 'mine').length
-  const joinedCount = classified.filter((c) => c.role === 'joined').length
 
   return (
     <div className="content-feed flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
@@ -228,9 +241,6 @@ export function BubbleListContainer() {
               <button type="button" className={`icon-button ${isDiscoverOpen ? 'active social' : ''}`} title="탐색" onClick={() => setDiscoverOpen(true)}>
                 <Compass size={20} />
               </button>
-              <button type="button" className={`icon-button ${isFilterOpen ? 'active social' : ''}`} title="필터" onClick={toggleFilter}>
-                <SlidersHorizontal size={20} />
-              </button>
               <button type="button" className={`icon-button ${isSortOpen ? 'active social' : ''}`} title="정렬" onClick={toggleSort}>
                 <ArrowUpDown size={20} />
               </button>
@@ -241,21 +251,6 @@ export function BubbleListContainer() {
           )
         }
       />
-
-      {/* 필터 패널 */}
-      {isFilterOpen && (
-        <div className="px-4 py-2">
-          <FilterSystem
-            rules={filterRules}
-            conjunction={filterConjunction}
-            attributes={BUBBLE_FILTER_ATTRIBUTES}
-            onRulesChange={(rules) => { setFilterRules(rules); setPage(1) }}
-            onConjunctionChange={setFilterConjunction}
-            accentColor="var(--accent-social)"
-            onClose={toggleFilter}
-          />
-        </div>
-      )}
 
       {/* 소트 드롭다운 */}
       {isSortOpen && (
@@ -269,20 +264,29 @@ export function BubbleListContainer() {
         </div>
       )}
 
+      {/* 조건 필터 칩 바 + 페이저 */}
+      <ConditionFilterBar
+        chips={conditionChips}
+        onChipsChange={handleChipsChange}
+        attributes={filterAttributes}
+        accentType="social"
+        onAdvancedOpen={() => setIsAdvancedOpen(true)}
+        recordPage={page}
+        recordTotalPages={totalPages}
+        onRecordPagePrev={() => setPage((p) => Math.max(1, p - 1))}
+        onRecordPageNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
+
+      <AdvancedFilterSheet
+        isOpen={isAdvancedOpen}
+        onClose={() => setIsAdvancedOpen(false)}
+        onApply={handleAdvancedApply}
+        attributes={filterAttributes}
+        accentType="social"
+      />
 
       {contentTab === 'bubbles' && (
         <>
-          <FilterChipGroup className="px-4 py-2">
-            {([
-              { key: 'all' as const, label: '전체', count: classified.length },
-              { key: 'mine' as const, label: '운영', count: mineCount },
-              { key: 'joined' as const, label: '가입', count: joinedCount },
-            ]).map(({ key, label, count }) => (
-              <FilterChip key={key} active={roleFilter === key} variant="social" count={count} onClick={() => { setRoleFilter(key); setPage(1) }}>
-                {label}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
 
           {/* 버블 목록 */}
           {isLoading ? (
@@ -328,50 +332,11 @@ export function BubbleListContainer() {
             </div>
           )}
 
-          {/* 인라인 페이저 */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 py-4">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold disabled:opacity-30"
-                style={{ color: 'var(--text-sub)', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-              >
-                &lt;
-              </button>
-              <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
-                {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-semibold disabled:opacity-30"
-                style={{ color: 'var(--text-sub)', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-              >
-                &gt;
-              </button>
-            </div>
-          )}
         </>
       )}
 
       {contentTab === 'bubblers' && (
         <>
-          <FilterChipGroup className="px-4 py-2">
-            {([
-              { key: 'all' as const, label: '전체', count: 0 },
-              { key: 'following' as const, label: '팔로잉', count: 0 },
-              { key: 'followers' as const, label: '팔로워', count: 0 },
-              { key: 'mutual' as const, label: '맞팔', count: 0 },
-            ]).map(({ key, label, count }) => (
-              <FilterChip key={key} active={bubblerFilter === key} variant="social" count={count} onClick={() => { setBubblerFilter(key); setPage(1) }}>
-                {label}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
-
           <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
             <div
               className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"

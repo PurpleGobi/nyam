@@ -20,7 +20,7 @@ interface AdvancedFilterSheetProps {
   onClose: () => void
   onApply: (chip: AdvancedFilterChip) => void
   attributes: FilterAttribute[]
-  accentType: 'food' | 'wine'
+  accentType: 'food' | 'wine' | 'social'
   editingChip?: AdvancedFilterChip | null
 }
 

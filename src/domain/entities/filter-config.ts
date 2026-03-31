@@ -274,11 +274,19 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
 
 export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
+    key: 'role',
+    label: '역할',
+    type: 'select',
+    options: [
+      { value: 'mine', label: '운영' },
+      { value: 'joined', label: '가입' },
+    ],
+  },
+  {
     key: 'focus_type',
     label: '유형',
     type: 'select',
     options: [
-      { value: 'all', label: '전체' },
       { value: 'restaurant', label: '식당' },
       { value: 'wine', label: '와인' },
     ],
@@ -329,6 +337,21 @@ export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: '1d', label: '24시간 내' },
       { value: '1w', label: '최근 1주' },
       { value: '1m', label: '최근 1개월' },
+    ],
+  },
+]
+
+// ─── 버블러 필터 속성 ───
+
+export const BUBBLER_FILTER_ATTRIBUTES: FilterAttribute[] = [
+  {
+    key: 'relation',
+    label: '관계',
+    type: 'select',
+    options: [
+      { value: 'following', label: '팔로잉' },
+      { value: 'followers', label: '팔로워' },
+      { value: 'mutual', label: '맞팔' },
     ],
   },
 ]
