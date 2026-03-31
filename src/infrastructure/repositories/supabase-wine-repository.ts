@@ -238,7 +238,7 @@ export class SupabaseWineRepository implements WineRepository {
 
     const { data: bubbles } = await this.supabase
       .from('bubbles')
-      .select('id, name, icon, theme_color')
+      .select('id, name, icon, icon_bg_color')
       .in('id', bubbleIds)
 
     const { data: shares } = await this.supabase
@@ -265,7 +265,7 @@ export class SupabaseWineRepository implements WineRepository {
           bubbleId: b.id,
           bubbleName: b.name,
           bubbleIcon: b.icon,
-          bubbleColor: b.theme_color,
+          bubbleColor: b.icon_bg_color,
           memberCount: g?.count ?? 0,
           avgScore: g ? Math.round(g.total / g.count) : null,
         }

@@ -238,7 +238,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     // 버블 정보
     const { data: bubbles } = await this.supabase
       .from('bubbles')
-      .select('id, name, icon, theme_color')
+      .select('id, name, icon, icon_bg_color')
       .in('id', bubbleIds)
 
     // 해당 식당에 대한 버블 공유 기록의 점수 집계
@@ -267,7 +267,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
           bubbleId: b.id,
           bubbleName: b.name,
           bubbleIcon: b.icon,
-          bubbleColor: b.theme_color,
+          bubbleColor: b.icon_bg_color,
           memberCount: g?.count ?? 0,
           avgScore: g ? Math.round(g.total / g.count) : null,
         }
