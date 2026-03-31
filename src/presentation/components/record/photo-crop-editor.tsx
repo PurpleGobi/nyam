@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
+import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 
 interface PhotoCropEditorProps {
   /** 원본 이미지 blob URL */
@@ -186,7 +187,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
     if (!img) return
 
     const canvas = document.createElement('canvas')
-    const outputSize = Math.min(1200, cropSize / scale * (window.devicePixelRatio || 1))
+    const outputSize = Math.min(PHOTO_CONSTANTS.MAX_WIDTH, cropSize / scale * (window.devicePixelRatio || 1))
     canvas.width = outputSize
     canvas.height = outputSize
 
@@ -221,8 +222,8 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
         const file = new File([blob], 'cropped.webp', { type: 'image/webp' })
         onDone(file)
       },
-      'image/webp',
-      0.9,
+      PHOTO_CONSTANTS.OUTPUT_FORMAT,
+      PHOTO_CONSTANTS.QUALITY,
     )
   }, [scale, offset, rotation, cropSize, onDone])
 
