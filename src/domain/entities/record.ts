@@ -153,33 +153,3 @@ export interface CreateRecordInput {
   autoScore?: number | null
 }
 
-// ─── 하위 호환용 (기존 코드에서 참조하는 타입) ───
-
-/** @deprecated RecordVisit 구조는 제거됨. DiningRecord가 곧 방문 1회. */
-export type RecordVisit = Pick<DiningRecord,
-  'visitDate' | 'axisX' | 'axisY' | 'satisfaction' | 'scene' | 'comment' |
-  'totalPrice' | 'purchasePrice' | 'mealTime' | 'companionCount' | 'companions' |
-  'hasExifGps' | 'isExifVerified' | 'aromaRegions' | 'aromaLabels' | 'aromaColor' |
-  'complexity' | 'finish' | 'balance' | 'autoScore'
->
-
-/** @deprecated status 필드는 lists.status로 이전 */
-export type RecordStatus = 'checked' | 'rated' | 'draft'
-
-/** @deprecated wine_status는 lists.status로 통합 */
-export type WineStatus = 'tasted' | 'cellar' | 'wishlist'
-
-/** @deprecated AddVisitInput은 CreateRecordInput으로 대체 */
-export interface AddVisitInput {
-  recordId: string
-  visit: RecordVisit
-}
-
-// ─── 헬퍼 ───
-
-/** 평균 만족도 계산 (records 배열) */
-export function calcAvgSatisfaction(records: DiningRecord[]): number | null {
-  const rated = records.filter((r) => r.satisfaction !== null)
-  if (rated.length === 0) return null
-  return Math.round(rated.reduce((s, r) => s + r.satisfaction!, 0) / rated.length)
-}

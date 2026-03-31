@@ -133,7 +133,6 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
         id: row.id,
         recordId: row.record_id,
         url: row.url,
-        thumbnailUrl: (row as Record<string, unknown>).thumbnail_url as string | null ?? null,
         orderIndex: row.order_index,
         isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
         createdAt: row.created_at,

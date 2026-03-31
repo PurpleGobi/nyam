@@ -12,11 +12,8 @@ export interface RecordPhoto {
   /** FK → records.id (ON DELETE CASCADE) */
   recordId: string
 
-  /** 원본 이미지 URL (Supabase Storage) */
+  /** 이미지 URL (Supabase Storage, 800px webp) */
   url: string
-
-  /** 썸네일 이미지 URL (업로드 시 리사이즈 생성, 목록 화면용) */
-  thumbnailUrl: string | null
 
   /** 사진 순서 (0부터 시작, 기본값 0) */
   orderIndex: number
@@ -44,10 +41,8 @@ export interface PendingPhoto {
 
 export const PHOTO_CONSTANTS = {
   MAX_PHOTOS: 10,
-  MAX_WIDTH: 1200,
-  THUMBNAIL_WIDTH: 400,
-  QUALITY: 0.8,
-  THUMBNAIL_QUALITY: 0.7,
+  MAX_WIDTH: 800,
+  QUALITY: 0.7,
   OUTPUT_FORMAT: 'image/webp' as const,
   BUCKET_NAME: 'record-photos',
   ACCEPTED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],

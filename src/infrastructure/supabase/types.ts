@@ -506,7 +506,6 @@ export interface Database {
           id: string
           record_id: string
           url: string
-          thumbnail_url: string | null
           order_index: number
           is_public: boolean
           created_at: string
@@ -515,7 +514,6 @@ export interface Database {
           id?: string
           record_id: string
           url: string
-          thumbnail_url?: string | null
           order_index?: number
           is_public?: boolean
           created_at?: string
@@ -524,7 +522,6 @@ export interface Database {
           id?: string
           record_id?: string
           url?: string
-          thumbnail_url?: string | null
           order_index?: number
           is_public?: boolean
           created_at?: string

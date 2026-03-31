@@ -16,7 +16,7 @@ import { SupabaseSettingsRepository } from '@/infrastructure/repositories/supaba
 import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabase-comment-repository'
 import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository'
 import { SupabaseOnboardingRepository } from '@/infrastructure/repositories/supabase-onboarding-repository'
-import { resizeImage, resizeThumbnail, uploadImage, uploadImageWithThumbnail, deleteImage } from '@/infrastructure/storage/image-upload'
+import { resizeImage, uploadImage, deleteImage } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
 import type { WineRepository } from '@/domain/repositories/wine-repository'
@@ -45,7 +45,7 @@ export const recordRepo: RecordRepository = new SupabaseRecordRepository()
 export const restaurantRepo: RestaurantRepository = new SupabaseRestaurantRepository()
 export const wineRepo: WineRepository = new SupabaseWineRepository()
 export const photoRepo: PhotoRepository = new SupabasePhotoRepository()
-export const imageService: ImageService = { resizeImage, resizeThumbnail, uploadImage, uploadImageWithThumbnail, deleteImage }
+export const imageService: ImageService = { resizeImage, uploadImage, deleteImage }
 export const xpRepo: XpRepository = new SupabaseXpRepository()
 export const notificationRepo: NotificationRepository = new SupabaseNotificationRepository()
 export const bubbleRepo: BubbleRepository = new SupabaseBubbleRepository()

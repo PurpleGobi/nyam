@@ -284,19 +284,59 @@ export class SupabaseXpRepository implements XpRepository {
   }
 
   async getTotalRecordCountByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<number> {
-    const { data, error } = await this.supabase.rpc('get_record_count_by_axis', {
-      p_user_id: userId, p_axis_type: axisType, p_axis_value: axisValue,
-    })
+    // 축 값에 해당하는 대상들의 records 수
+    const targetIds = await this.getTargetIdsByAxis(userId, axisType, axisValue)
+    if (targetIds.length === 0) return 0
+    const { count, error } = await this.supabase
+      .from('records')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .in('target_id', targetIds)
     if (error) throw error
-    return data ?? 0
+    return count ?? 0
   }
 
   async getRevisitCountByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<number> {
-    const { data, error } = await this.supabase.rpc('get_revisit_count_by_axis', {
-      p_user_id: userId, p_axis_type: axisType, p_axis_value: axisValue,
-    })
+    // 같은 대상에 2건 이상 기록이 있는 대상 수 (재방문)
+    const targetIds = await this.getTargetIdsByAxis(userId, axisType, axisValue)
+    if (targetIds.length === 0) return 0
+    const { data, error } = await this.supabase
+      .from('records')
+      .select('target_id')
+      .eq('user_id', userId)
+      .in('target_id', targetIds)
     if (error) throw error
-    return data ?? 0
+    const counts = new Map<string, number>()
+    for (const r of data ?? []) {
+      counts.set(r.target_id, (counts.get(r.target_id) ?? 0) + 1)
+    }
+    return Array.from(counts.values()).filter((c) => c >= 2).length
+  }
+
+  private async getTargetIdsByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<string[]> {
+    // axisType에 따라 restaurants/wines 테이블에서 해당 축 값의 target_id 조회
+    const targetType = ['area', 'genre'].includes(axisType) ? 'restaurant' : 'wine'
+    const columnMap: Record<string, string> = {
+      area: 'district', genre: 'genre', wine_region: 'region', wine_variety: 'variety',
+    }
+    const column = columnMap[axisType]
+    if (!column) return []
+
+    const table = targetType === 'restaurant' ? 'restaurants' : 'wines'
+    const { data: targets } = await this.supabase
+      .from(table)
+      .select('id')
+      .eq(column, axisValue)
+    const targetIds = (targets ?? []).map((t) => t.id)
+    if (targetIds.length === 0) return []
+
+    // 이 사용자가 실제로 기록한 대상만 필터
+    const { data: records } = await this.supabase
+      .from('records')
+      .select('target_id')
+      .eq('user_id', userId)
+      .in('target_id', targetIds)
+    return [...new Set((records ?? []).map((r) => r.target_id))]
   }
 
   async getXpBreakdownByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<Record<string, number>> {

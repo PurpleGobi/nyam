@@ -11,9 +11,9 @@ const RESTAURANT_PRESETS: { name: string; rules: FilterRule[] }[] = [
 ]
 
 const WINE_PRESETS: { name: string; rules: FilterRule[] }[] = [
-  { name: '시음', rules: [{ attribute: 'wine_status', operator: 'eq', value: 'tasted' }] },
-  { name: '찜', rules: [{ attribute: 'wine_status', operator: 'eq', value: 'wishlist' }] },
-  { name: '셀러', rules: [{ attribute: 'wine_status', operator: 'eq', value: 'cellar' }] },
+  { name: '시음', rules: [{ attribute: 'status', operator: 'eq', value: 'tasted' }] },
+  { name: '찜', rules: [{ attribute: 'status', operator: 'eq', value: 'wishlist' }] },
+  { name: '셀러', rules: [{ attribute: 'status', operator: 'eq', value: 'cellar' }] },
 ]
 
 export function useSavedFilters(userId: string | null, targetType: string) {

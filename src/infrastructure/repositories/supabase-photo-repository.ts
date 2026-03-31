@@ -1,21 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { PhotoRepository } from '@/domain/repositories/photo-repository'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
-import type { Database } from '@/infrastructure/supabase/types'
-
-type PhotoRow = Database['public']['Tables']['record_photos']['Row']
-
-function mapToEntity(row: PhotoRow): RecordPhoto {
-  return {
-    id: row.id,
-    recordId: row.record_id,
-    url: row.url,
-    thumbnailUrl: row.thumbnail_url,
-    orderIndex: row.order_index,
-    isPublic: row.is_public ?? false,
-    createdAt: row.created_at,
-  }
-}
 
 export class SupabasePhotoRepository implements PhotoRepository {
   private get supabase() {
@@ -24,12 +9,11 @@ export class SupabasePhotoRepository implements PhotoRepository {
 
   async savePhotos(
     recordId: string,
-    photos: { url: string; thumbnailUrl?: string | null; orderIndex: number; isPublic?: boolean }[],
+    photos: { url: string; orderIndex: number; isPublic?: boolean }[],
   ): Promise<RecordPhoto[]> {
     const rows = photos.map((p) => ({
       record_id: recordId,
       url: p.url,
-      thumbnail_url: p.thumbnailUrl ?? null,
       order_index: p.orderIndex,
       is_public: p.isPublic ?? false,
     }))
@@ -40,7 +24,14 @@ export class SupabasePhotoRepository implements PhotoRepository {
       .select()
 
     if (error) throw new Error(`record_photos INSERT failed: ${error.message}`)
-    return (data ?? []).map(mapToEntity)
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      recordId: row.record_id,
+      url: row.url,
+      orderIndex: row.order_index,
+      isPublic: row.is_public ?? false,
+      createdAt: row.created_at,
+    }))
   }
 
   async getPhotosByRecordId(recordId: string): Promise<RecordPhoto[]> {
@@ -51,7 +42,14 @@ export class SupabasePhotoRepository implements PhotoRepository {
       .order('order_index', { ascending: true })
 
     if (error) throw new Error(`record_photos SELECT failed: ${error.message}`)
-    return (data ?? []).map(mapToEntity)
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      recordId: row.record_id,
+      url: row.url,
+      orderIndex: row.order_index,
+      isPublic: row.is_public ?? false,
+      createdAt: row.created_at,
+    }))
   }
 
   async deletePhoto(photoId: string): Promise<void> {

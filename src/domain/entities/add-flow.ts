@@ -34,13 +34,3 @@ export interface AIPreFillData {
   capturedAt?: string | null
 }
 
-/** status 결정 규칙 (RECORD_FLOW.md §1) */
-export function determineRecordStatus(
-  entryPath: AddFlowEntryPath,
-  hasRating: boolean,
-): 'checked' | 'rated' {
-  if (entryPath === 'search' && !hasRating) {
-    return 'checked'
-  }
-  return 'rated'
-}

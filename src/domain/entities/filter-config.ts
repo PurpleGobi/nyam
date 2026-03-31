@@ -337,7 +337,7 @@ export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
 
 export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
-    key: 'wine_status',
+    key: 'status',
     label: '상태',
     type: 'select',
     options: [
