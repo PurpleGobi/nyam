@@ -82,8 +82,8 @@ export function RestaurantRegisterStep({
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg"
                     style={{ backgroundColor: 'var(--bg-elevated)' }}
                   >
-                    {r.thumbnailUrl ? (
-                      <Image src={r.thumbnailUrl} alt="" width={48} height={48} className="h-full w-full rounded-lg object-cover" />
+                    {r.photoUrl ? (
+                      <Image src={r.photoUrl} alt="" width={48} height={48} className="h-full w-full rounded-lg object-cover" />
                     ) : (
                       <UtensilsCrossed size={20} style={{ color: 'var(--text-hint)' }} />
                     )}

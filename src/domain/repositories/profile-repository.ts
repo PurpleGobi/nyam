@@ -15,7 +15,7 @@ export interface BubblerPickItem {
   name: string
   meta: string                    // "일식 · 광화문" 또는 "레드 · 보르도"
   satisfaction: number | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
   genre: string | null
 }
 
@@ -27,7 +27,7 @@ export interface BubblerRecentRecord {
   meta: string                    // "한식 · 을지로 · 3일 전"
   satisfaction: number | null
   comment: string | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
   visitDate: string | null
 }
 

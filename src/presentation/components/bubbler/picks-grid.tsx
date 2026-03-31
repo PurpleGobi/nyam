@@ -9,7 +9,7 @@ interface PickItem {
   name: string
   targetType: 'restaurant' | 'wine'
   satisfaction: number | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
   genre: string | null
 }
 
@@ -50,9 +50,9 @@ export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
                 backgroundColor: item.targetType === 'restaurant' ? 'var(--accent-food-light)' : 'var(--accent-wine-light)',
               }}
             >
-              {item.thumbnailUrl ? (
+              {item.photoUrl ? (
                 <>
-                  <Image src={item.thumbnailUrl} alt="" fill className="rounded-xl object-cover" sizes="82px" />
+                  <Image src={item.photoUrl} alt="" fill className="rounded-xl object-cover" sizes="82px" />
                   <div className="absolute inset-0 rounded-xl" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)' }} />
                 </>
               ) : item.targetType === 'restaurant' ? (

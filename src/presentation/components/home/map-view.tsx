@@ -13,7 +13,7 @@ export interface MapRecord {
   lng: number
   score: number | null
   distanceKm: number | null
-  thumbnailUrl?: string | null
+  photoUrl?: string | null
 }
 
 interface MapViewProps {
@@ -277,7 +277,7 @@ function MapList({
         >
           <CompactListItem
             rank={i + 1}
-            thumbnailUrl={record.thumbnailUrl ?? null}
+            photoUrl={record.photoUrl ?? null}
             name={record.name}
             meta={`${record.genre} · ${record.area}${record.distanceKm != null ? ` · ${record.distanceKm}km` : ''}`}
             score={record.score}

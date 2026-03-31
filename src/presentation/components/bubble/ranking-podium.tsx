@@ -8,7 +8,7 @@ export interface RankingPodiumItem {
   targetId: string
   targetName: string
   targetMeta: string | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
   avgSatisfaction: number
   recordCount: number
   delta: number | 'new' | null
@@ -68,8 +68,8 @@ export function RankingPodium({ items, targetType }: RankingPodiumProps) {
                 border: `2px solid ${config.ringColor}`,
               }}
             >
-              {item.thumbnailUrl ? (
-                <Image src={item.thumbnailUrl} alt="" fill className="object-cover" sizes="105px" />
+              {item.photoUrl ? (
+                <Image src={item.photoUrl} alt="" fill className="object-cover" sizes="105px" />
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center"

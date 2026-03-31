@@ -18,7 +18,7 @@ export class SupabaseOnboardingRepository implements OnboardingRepository {
       area: r.area ?? '',
       genre: r.genre ?? null,
       address: r.address ?? null,
-      thumbnailUrl: r.photos?.[0] ?? null,
+      photoUrl: r.photos?.[0] ?? null,
     }))
   }
 
@@ -36,7 +36,7 @@ export class SupabaseOnboardingRepository implements OnboardingRepository {
       area: r.area ?? '',
       genre: r.genre ?? null,
       address: r.address ?? null,
-      thumbnailUrl: r.photos?.[0] ?? null,
+      photoUrl: r.photos?.[0] ?? null,
     }))
   }
 

@@ -22,30 +22,30 @@ const STEP_INDEX: Record<OnboardingStep, number> = { intro: -1, record: 0, bubbl
 const STEPS: OnboardingStep[] = ['record', 'bubble', 'explore']
 
 // 시드 식당 데이터 (실제로는 DB에서 가져오지만, 온보딩에서는 하드코딩)
-const SEED_RESTAURANTS: Record<string, Array<{ id: string; name: string; genre: string | null; area: string; address: string | null; thumbnailUrl: string | null }>> = {
+const SEED_RESTAURANTS: Record<string, Array<{ id: string; name: string; genre: string | null; area: string; address: string | null; photoUrl: string | null }>> = {
   을지로: [
-    { id: 'seed-1', name: '을지면옥', genre: '한식', area: '을지로', address: null, thumbnailUrl: null },
-    { id: 'seed-2', name: '스시코우지', genre: '일식', area: '을지로', address: null, thumbnailUrl: null },
-    { id: 'seed-3', name: '을지다락', genre: '카페', area: '을지로', address: null, thumbnailUrl: null },
-    { id: 'seed-4', name: '을지OB맥주', genre: '바/주점', area: '을지로', address: null, thumbnailUrl: null },
+    { id: 'seed-1', name: '을지면옥', genre: '한식', area: '을지로', address: null, photoUrl: null },
+    { id: 'seed-2', name: '스시코우지', genre: '일식', area: '을지로', address: null, photoUrl: null },
+    { id: 'seed-3', name: '을지다락', genre: '카페', area: '을지로', address: null, photoUrl: null },
+    { id: 'seed-4', name: '을지OB맥주', genre: '바/주점', area: '을지로', address: null, photoUrl: null },
   ],
   광화문: [
-    { id: 'seed-5', name: '토속촌삼계탕', genre: '한식', area: '광화문', address: null, thumbnailUrl: null },
-    { id: 'seed-6', name: '경복궁 쌈밥집', genre: '한식', area: '광화문', address: null, thumbnailUrl: null },
+    { id: 'seed-5', name: '토속촌삼계탕', genre: '한식', area: '광화문', address: null, photoUrl: null },
+    { id: 'seed-6', name: '경복궁 쌈밥집', genre: '한식', area: '광화문', address: null, photoUrl: null },
   ],
   성수: [
-    { id: 'seed-7', name: '성수동 카페거리', genre: '카페', area: '성수', address: null, thumbnailUrl: null },
-    { id: 'seed-8', name: '뚝섬 숯불갈비', genre: '한식', area: '성수', address: null, thumbnailUrl: null },
+    { id: 'seed-7', name: '성수동 카페거리', genre: '카페', area: '성수', address: null, photoUrl: null },
+    { id: 'seed-8', name: '뚝섬 숯불갈비', genre: '한식', area: '성수', address: null, photoUrl: null },
   ],
   강남: [
-    { id: 'seed-9', name: '봉피양', genre: '한식', area: '강남', address: null, thumbnailUrl: null },
-    { id: 'seed-10', name: '스시 쵸우', genre: '일식', area: '강남', address: null, thumbnailUrl: null },
+    { id: 'seed-9', name: '봉피양', genre: '한식', area: '강남', address: null, photoUrl: null },
+    { id: 'seed-10', name: '스시 쵸우', genre: '일식', area: '강남', address: null, photoUrl: null },
   ],
   홍대: [
-    { id: 'seed-11', name: '연남토마', genre: '이탈리안', area: '홍대', address: null, thumbnailUrl: null },
+    { id: 'seed-11', name: '연남토마', genre: '이탈리안', area: '홍대', address: null, photoUrl: null },
   ],
   이태원: [
-    { id: 'seed-12', name: '하동관', genre: '한식', area: '이태원', address: null, thumbnailUrl: null },
+    { id: 'seed-12', name: '하동관', genre: '한식', area: '이태원', address: null, photoUrl: null },
   ],
 }
 

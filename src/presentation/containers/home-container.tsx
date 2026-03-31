@@ -309,7 +309,7 @@ export function HomeContainer() {
       lng: r.targetLng ?? 0,
       score: r.satisfaction,
       distanceKm: null,
-      thumbnailUrl: r.targetPhotoUrl,
+      photoUrl: r.targetPhotoUrl,
     }))
   }, [displayRecords, activeTab])
 
@@ -385,7 +385,7 @@ export function HomeContainer() {
             <CompactListItem
               key={record.id}
               rank={i + 1}
-              thumbnailUrl={record.targetPhotoUrl}
+              photoUrl={record.targetPhotoUrl}
               name={record.targetName}
               meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
               score={record.satisfaction}

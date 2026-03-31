@@ -11,7 +11,7 @@ interface RecentRecordItem {
   meta: string
   satisfaction: number | null
   comment: string | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
   visitDate: string | null
 }
 
@@ -66,9 +66,9 @@ export function RecentRecords({ records, accentType, onRecordPress, onViewAll }:
                 backgroundColor: 'var(--bg-section)',
               }}
             >
-              {r.thumbnailUrl ? (
+              {r.photoUrl ? (
                 <Image
-                  src={r.thumbnailUrl}
+                  src={r.photoUrl}
                   alt=""
                   width={44}
                   height={44}

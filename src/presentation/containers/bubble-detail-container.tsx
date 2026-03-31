@@ -388,7 +388,7 @@ function RankingTabContent({
       targetId: r.targetId,
       targetName: r.targetId.substring(0, 8),
       targetMeta: null,
-      thumbnailUrl: null,
+      photoUrl: null,
       avgSatisfaction: r.avgSatisfaction ?? 0,
       recordCount: r.recordCount,
       delta: r.delta.direction === 'new' ? 'new' as const

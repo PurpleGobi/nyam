@@ -5,7 +5,7 @@ const CSE_API_URL = 'https://www.googleapis.com/customsearch/v1'
 
 interface ImageSearchResult {
   url: string
-  thumbnailUrl: string
+  photoUrl: string
   width: number
   height: number
 }

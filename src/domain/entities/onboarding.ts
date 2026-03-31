@@ -18,7 +18,7 @@ export interface OnboardingSeedRestaurant {
   area: string
   genre: string | null
   address: string | null
-  thumbnailUrl: string | null
+  photoUrl: string | null
 }
 
 export interface OnboardingBubbleTemplate {

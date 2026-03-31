@@ -700,7 +700,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         name,
         meta: metaParts.join(' · ') || '',
         satisfaction: r.satisfaction as number | null,
-        thumbnailUrl: (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null,
+        photoUrl: (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null,
         genre,
       }
     })
@@ -723,7 +723,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       const dateStr = r.visit_date as string | null
       const relativeDate = dateStr ? formatRelativeDate(dateStr) : null
       const metaParts = [genre, area, relativeDate].filter(Boolean)
-      const thumbnailUrl = (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null
+      const photoUrl = (tType === 'restaurant' ? (rest?.photos as string[])?.[0] : (wine?.photos as string[])?.[0]) ?? null
       return {
         id: r.id as string,
         targetId: r.target_id as string,
@@ -732,7 +732,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         meta: metaParts.join(' · ') || '',
         satisfaction: r.satisfaction as number | null,
         comment: (r.comment as string) ?? null,
-        thumbnailUrl,
+        photoUrl,
         visitDate: dateStr,
       }
     })

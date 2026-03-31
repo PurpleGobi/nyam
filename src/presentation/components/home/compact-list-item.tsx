@@ -4,7 +4,7 @@ import { Wine } from 'lucide-react'
 
 interface CompactListItemProps {
   rank: number
-  thumbnailUrl: string | null
+  photoUrl: string | null
   name: string
   meta: string
   score: number | null
@@ -14,7 +14,7 @@ interface CompactListItemProps {
 
 export function CompactListItem({
   rank,
-  thumbnailUrl,
+  photoUrl,
   name,
   meta,
   score,
@@ -34,10 +34,10 @@ export function CompactListItem({
         {rank}
       </span>
 
-      {thumbnailUrl ? (
+      {photoUrl ? (
         <div
           className="compact-thumb bg-cover bg-center"
-          style={{ backgroundImage: `url(${thumbnailUrl})` }}
+          style={{ backgroundImage: `url(${photoUrl})` }}
         />
       ) : accentType === 'wine' ? (
         <div
