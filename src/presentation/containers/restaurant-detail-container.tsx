@@ -197,13 +197,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
   const genreChain = getGenreChain(restaurant.genre)
   const mySubText = myRecords.length > 0 ? `${myRecords.length}회 방문` : '미방문'
   const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
-  const heroThumbnail = {
-    icon: 'utensils',
-    name: restaurant.name,
-    backgroundUrl: heroPhotos[0] ?? null,
-    orientation: 'horizontal' as const,
-  }
-
   return (
     <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
@@ -212,7 +205,6 @@ export function RestaurantDetailContainer({ restaurantId }: RestaurantDetailCont
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="restaurant"
-          thumbnail={heroThumbnail}
           isWishlisted={isWishlisted}
           onWishlistToggle={toggleWishlist}
           onShare={handlePageShare}

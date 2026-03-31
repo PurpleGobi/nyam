@@ -232,7 +232,6 @@ export function WineDetailContainer({ wineId }: WineDetailContainerProps) {
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="wine"
-          thumbnail={{ icon: 'wine', name: wine.name, backgroundUrl: heroPhotos[0] ?? null, orientation: 'vertical' }}
           isWishlisted={isWishlisted}
           onWishlistToggle={toggleWishlist}
           onShare={handlePageShare}
