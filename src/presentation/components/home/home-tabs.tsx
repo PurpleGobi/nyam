@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { LayoutGrid, List, CalendarDays, Map, SlidersHorizontal, ArrowUpDown, Search, X } from 'lucide-react'
+import { LayoutGrid, List, CalendarDays, Map, ArrowUpDown, Search, X } from 'lucide-react'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import type { HomeTab, ViewMode } from '@/domain/entities/home-state'
 
@@ -11,8 +11,8 @@ interface HomeTabsProps {
   onTabChange: (tab: HomeTab) => void
   onViewCycle: () => void
   onMapToggle: () => void
-  onFilterToggle: () => void
-  isFilterOpen: boolean
+  onFilterToggle?: () => void
+  isFilterOpen?: boolean
   onSortToggle: () => void
   isSortOpen: boolean
   onSearchToggle: () => void
@@ -36,7 +36,7 @@ const HOME_TABS: { key: HomeTab; label: string; variant: 'food' | 'wine' }[] = [
 export function HomeTabs({
   activeTab, viewMode, onTabChange, onViewCycle,
   onMapToggle,
-  onFilterToggle, isFilterOpen,
+  onFilterToggle, isFilterOpen = false,
   onSortToggle, isSortOpen,
   onSearchToggle, isSearchOpen,
   searchQuery, onSearchQueryChange, onSearchClear,
@@ -108,9 +108,6 @@ export function HomeTabs({
                 <Map size={20} />
               </button>
             )}
-            <button type="button" onClick={onFilterToggle} className={`icon-button ${isFilterOpen ? `active ${tabType}` : ''}`} title="필터">
-              <SlidersHorizontal size={20} />
-            </button>
             <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`} title="정렬">
               <ArrowUpDown size={20} />
             </button>

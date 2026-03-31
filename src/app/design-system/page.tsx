@@ -36,8 +36,11 @@ import { SearchDropdown } from '@/presentation/components/ui/search-dropdown'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
-import { RESTAURANT_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
+import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
+import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
+import type { FilterChipItem } from '@/domain/entities/condition-chip'
 import { LayoutGrid, List } from 'lucide-react'
 
 /* ── 섹션 래퍼 (프로토타입 .section 스타일) ── */
@@ -111,6 +114,17 @@ export default function DesignSystemPage() {
   const [demoConjunction, setDemoConjunction] = useState<'and' | 'or'>('and')
   const [demoSort, setDemoSort] = useState<SortOption>('latest')
   const [demoSearch, setDemoSearch] = useState('')
+
+  // 7-B Condition Filter demo states
+  const [foodChips, setFoodChips] = useState<FilterChipItem[]>([])
+  const [wineChips, setWineChips] = useState<FilterChipItem[]>([])
+  const [prefilledChips, setPrefilledChips] = useState<FilterChipItem[]>([
+    { id: 'pf_status', attribute: 'status', operator: 'eq' as const, value: 'visited', displayLabel: '방문' },
+    { id: 'pf_genre', attribute: 'genre', operator: 'eq' as const, value: '한식', displayLabel: '한식' },
+    { id: 'pf_scene', attribute: 'scene', operator: 'eq' as const, value: 'romantic', displayLabel: '데이트' },
+  ])
+  const [advancedSheetOpen, setAdvancedSheetOpen] = useState(false)
+  const [advancedSheetType, setAdvancedSheetType] = useState<'food' | 'wine'>('food')
   const [ratingValue, setRatingValue] = useState({ x: 50, y: 50 })
   const [ratingHint, setRatingHint] = useState(false)
   const [wineRatingValue, setWineRatingValue] = useState({ x: 50, y: 50 })
@@ -633,116 +647,69 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      {/* ── 7-B. Filter / Sort System ── */}
-      <Section title="7-B. Filter / Sort System">
-        <Note>필터 버튼 → Notion 스타일 필터 패널 · 소팅 버튼 → 드롭다운 · 검색 버튼 → 검색 입력 드롭다운. 세 버튼 나란히 배치, 상호 배타. 아래 아이콘을 클릭하여 테스트.</Note>
+      {/* ── 7-B. Condition Filter System ── */}
+      <Section title="7-B. Condition Filter System">
+        <Note>ConditionFilterBar — 개별 조건 칩 기반 필터. 칩 하나 = 조건 하나 (AND 조합).</Note>
 
-        {/* 인터랙티브 데모 */}
-        <div style={{ marginTop: '16px', maxWidth: '420px' }}>
-          {/* 아이콘 버튼 행 */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-            <IconButton icon={SlidersHorizontal} active={filterActive} onClick={() => { setFilterActive(!filterActive); setSortActive(false); setSearchActive(false) }} />
-            <IconButton icon={ArrowUpDown} active={sortActive} onClick={() => { setSortActive(!sortActive); setFilterActive(false); setSearchActive(false) }} />
-            <IconButton icon={Search} active={searchActive} onClick={() => { setSearchActive(!searchActive); setFilterActive(false); setSortActive(false) }} />
-          </div>
-
-          {/* 필터 패널 */}
-          {filterActive && (
-            <div style={{ marginTop: '10px' }}>
-              <FilterSystem
-                rules={demoRules}
-                conjunction={demoConjunction}
-                attributes={RESTAURANT_FILTER_ATTRIBUTES}
-                onRulesChange={setDemoRules}
-                onConjunctionChange={setDemoConjunction}
-                chipName={chipName}
-                onChipNameChange={setChipName}
-                onSaveAsChip={(name) => {
-                  if (!name) return
-                  const id = `chip-${Date.now()}`
-                  setDemoChips([...demoChips, { id, name }])
-                  setActiveChip(id)
-                  setChipName('')
-                }}
-                accentColor="var(--accent-food)"
-              />
-            </div>
-          )}
-
-          {/* 필터칩 (패널 아래) */}
-          <FilterChipGroup className="mt-2.5">
-            {demoChips.map((chip) => (
-              <FilterChip
-                key={chip.id}
-                active={activeChip === chip.id}
-                onClick={() => {
-                  setActiveChip(chip.id)
-                  setChipName(chip.name)
-                }}
-              >
-                {chip.name}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
-
-          {/* 소팅 드롭다운 */}
-          {sortActive && (
-            <div style={{ marginTop: '10px', position: 'relative' }}>
-              <SortDropdown
-                currentSort={demoSort}
-                onSortChange={(s) => { setDemoSort(s); setSortActive(false) }}
-                accentType="food"
-              />
-            </div>
-          )}
-
-          {/* 검색 드롭다운 */}
-          {searchActive && (
-            <div style={{ marginTop: '10px', position: 'relative', height: '44px' }}>
-              <SearchDropdown
-                query={demoSearch}
-                onQueryChange={setDemoSearch}
-                onClear={() => setDemoSearch('')}
-                placeholder="식당·와인 이름으로 검색"
-                autoFocus={false}
-              />
-            </div>
-          )}
+        <Sub title="Food — 빈 상태 (칩 없음 = 전체보기)" />
+        <div style={{ margin: '0 -24px', background: 'var(--bg)' }}>
+          <ConditionFilterBar
+            chips={foodChips}
+            onChipsChange={setFoodChips}
+            attributes={RESTAURANT_FILTER_ATTRIBUTES}
+            accentType="food"
+            onAdvancedOpen={() => { setAdvancedSheetType('food'); setAdvancedSheetOpen(true) }}
+          />
         </div>
 
-        {/* States */}
-        <Sub title="States" />
-        <div style={{ display: 'flex', gap: '40px' }}>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Default (닫힘)</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <IconButton icon={SlidersHorizontal} />
-              <IconButton icon={ArrowUpDown} />
-              <IconButton icon={Search} />
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-hint)', marginBottom: '8px' }}>Active (열림)</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <IconButton icon={SlidersHorizontal} active />
-              <IconButton icon={ArrowUpDown} active />
-              <IconButton icon={Search} active />
-            </div>
-          </div>
+        <Sub title="Wine — 빈 상태 (칩 없음 = 전체보기)" />
+        <div style={{ margin: '0 -24px', background: 'var(--bg)' }}>
+          <ConditionFilterBar
+            chips={wineChips}
+            onChipsChange={setWineChips}
+            attributes={WINE_FILTER_ATTRIBUTES}
+            accentType="wine"
+            onAdvancedOpen={() => { setAdvancedSheetType('wine'); setAdvancedSheetOpen(true) }}
+          />
         </div>
 
-        {/* Spec */}
-        <Sub title="Spec" />
-        <Note>
-          필터 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>sliders-horizontal</code> 아이콘, 32×32 터치 영역<br />
-          소팅 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>arrow-up-down</code> 아이콘, 32×32 터치 영역<br />
-          활성 상태: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>color: var(--accent-food)</code><br />
-          필터 패널: max-height 애니메이션 (0 → 260px), Notion 스타일 룰 기반<br />
-          소팅 드롭다운: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>border-radius: 12px</code>, <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>box-shadow: 0 8px 28px</code>, 절대 위치<br />
-          검색 버튼: <code style={{ fontSize: '11px', background: 'var(--bg)', padding: '2px 6px', borderRadius: 'var(--r-xs)', color: 'var(--accent-food)' }}>search</code> 아이콘, 32×32 터치 영역<br />
-          검색 드롭다운: 우측 정렬, 폭 50%, textarea 자동 확장<br />
-          상호 배타: 필터·소팅·검색 중 하나만 열림
-        </Note>
+        <Sub title="Food — 칩 적용 상태 (방문 + 한식 + 데이트)" />
+        <div style={{ margin: '0 -24px', background: 'var(--bg)' }}>
+          <ConditionFilterBar
+            chips={prefilledChips}
+            onChipsChange={setPrefilledChips}
+            attributes={RESTAURANT_FILTER_ATTRIBUTES}
+            accentType="food"
+            onAdvancedOpen={() => { setAdvancedSheetType('food'); setAdvancedSheetOpen(true) }}
+          />
+        </div>
+
+        <Sub title="Advanced Filter Sheet" />
+        <button
+          type="button"
+          onClick={() => { setAdvancedSheetType('food'); setAdvancedSheetOpen(true) }}
+          style={{
+            padding: '8px 16px', borderRadius: 'var(--r-md)',
+            border: '1px solid var(--border)', background: 'var(--bg)',
+            color: 'var(--text)', fontSize: '13px', cursor: 'pointer',
+          }}
+        >
+          Advanced Filter Sheet 열기
+        </button>
+
+        <AdvancedFilterSheet
+          isOpen={advancedSheetOpen}
+          onClose={() => setAdvancedSheetOpen(false)}
+          onApply={(chip) => {
+            if (advancedSheetType === 'food') {
+              setFoodChips((prev) => [...prev.filter((c) => c.attribute !== '__advanced__'), chip])
+            } else {
+              setWineChips((prev) => [...prev.filter((c) => c.attribute !== '__advanced__'), chip])
+            }
+          }}
+          attributes={advancedSheetType === 'food' ? RESTAURANT_FILTER_ATTRIBUTES : WINE_FILTER_ATTRIBUTES}
+          accentType={advancedSheetType}
+        />
       </Section>
 
       {/* ── 7-C. Search Dropdown ── */}

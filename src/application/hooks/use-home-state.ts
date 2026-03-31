@@ -51,8 +51,6 @@ export function useHomeState(options?: UseHomeStateOptions) {
     _setViewMode(mode)
     sessionStorage.setItem(VIEW_STORAGE_KEY, mode)
   }, [])
-  const [activeChipId, setActiveChipId] = useState<string | null>(null)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [viewModeStates, setViewModeStates] = useState(createInitialViewModeStates)
@@ -102,22 +100,14 @@ export function useHomeState(options?: UseHomeStateOptions) {
     })
   }, [])
 
-  // 상호 배타: 필터/소팅/검색 중 하나만 열림
-  const toggleFilter = useCallback(() => {
-    setIsFilterOpen((prev) => !prev)
-    setIsSortOpen(false)
-    setIsSearchOpen(false)
-  }, [])
-
+  // 상호 배타: 소팅/검색 중 하나만 열림
   const toggleSort = useCallback(() => {
     setIsSortOpen((prev) => !prev)
-    setIsFilterOpen(false)
     setIsSearchOpen(false)
   }, [])
 
   const toggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev)
-    setIsFilterOpen(false)
     setIsSortOpen(false)
   }, [])
 
@@ -128,8 +118,6 @@ export function useHomeState(options?: UseHomeStateOptions) {
   return {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     toggleMap,
-    activeChipId, setActiveChipId,
-    isFilterOpen, toggleFilter,
     isSortOpen, toggleSort,
     isSearchOpen, toggleSearch,
     filterRules, setFilterRules,

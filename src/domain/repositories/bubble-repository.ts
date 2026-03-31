@@ -37,10 +37,21 @@ export interface BubbleFeedItem {
   authorAvatarColor?: string | null
   targetName?: string
   targetType?: 'restaurant' | 'wine'
+  targetMeta?: string | null
+  targetArea?: string | null
+  targetPhotoUrl?: string | null
+  /** 와인 전용 메타 */
+  targetVintage?: number | null
+  targetWineType?: string | null
+  targetProducer?: string | null
+  targetCountry?: string | null
   satisfaction?: number | null
+  axisX?: number | null
+  axisY?: number | null
   comment?: string | null
   scene?: string | null
   visitDate?: string | null
+  listStatus?: string | null
   sharedAt: string
 }
 

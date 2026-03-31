@@ -14,9 +14,14 @@ interface MiniQuadrantProps {
 const DOT_SIZE = 6
 
 export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor }: MiniQuadrantProps) {
-  const dotSize = DOT_SIZE
   const dotColor = getGaugeColor(satisfaction)
-  const topPercent = 100 - axisY
+
+  // 0~100% 입력을 safe zone(px) 안으로 매핑 — dot 크기 + border-radius 잘림 방지
+  const CONTAINER = 44
+  const INSET = 7 // halfDot(3px) + border-radius 곡선 여유(4px)
+  const safeRange = CONTAINER - INSET * 2 // 30px
+  const dotLeft = INSET + (axisX / 100) * safeRange
+  const dotTop = INSET + ((100 - axisY) / 100) * safeRange
 
   return (
     <div
@@ -40,10 +45,10 @@ export function MiniQuadrant({ axisX, axisY, satisfaction, accentColor }: MiniQu
       <span
         className="absolute rounded-full"
         style={{
-          left: `${axisX}%`,
-          top: `${topPercent}%`,
-          width: `${dotSize}px`,
-          height: `${dotSize}px`,
+          left: `${dotLeft}px`,
+          top: `${dotTop}px`,
+          width: `${DOT_SIZE}px`,
+          height: `${DOT_SIZE}px`,
           backgroundColor: dotColor,
           transform: 'translate(-50%, -50%)',
         }}

@@ -6,12 +6,13 @@ import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget } from '@/domain/entities/record'
+import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
+import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useHomeState } from '@/application/hooks/use-home-state'
-import { useSavedFilters } from '@/application/hooks/use-saved-filters'
 import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
@@ -25,8 +26,8 @@ import { RecordCard } from '@/presentation/components/home/record-card'
 import { WineCard } from '@/presentation/components/home/wine-card'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
 import type { MapRecord } from '@/presentation/components/home/map-view'
-import { SavedFilterChips } from '@/presentation/components/home/saved-filter-chips'
-import { FilterSystem } from '@/presentation/components/ui/filter-system'
+import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
+import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { StatsToggle } from '@/presentation/components/home/stats-toggle'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
@@ -104,8 +105,6 @@ export function HomeContainer() {
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     toggleMap,
-    activeChipId, setActiveChipId,
-    isFilterOpen, toggleFilter,
     isSortOpen, toggleSort,
     isSearchOpen, toggleSearch,
     filterRules, setFilterRules,
@@ -117,21 +116,40 @@ export function HomeContainer() {
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
 
-  const { filters, createFilter, deleteFilter } = useSavedFilters(user?.id ?? null, activeTab)
   const { records: restaurantRecords } = useRecordsWithTarget(user?.id ?? null, 'restaurant')
   const { records: wineRecords } = useRecordsWithTarget(user?.id ?? null, 'wine')
   const records = activeTab === 'wine' ? wineRecords : restaurantRecords
 
-  // 칩별 카운트: 로드된 records에 matchesAllRules 적용 (repo의 getRecordCount는 rules 미적용이므로 클라이언트 계산)
-  const counts = useMemo(() => {
-    const result: Record<string, number> = {}
-    for (const f of filters) {
-      result[f.id] = records.filter((r) =>
-        matchesAllRules(r as unknown as Record<string, unknown>, f.rules, 'and'),
-      ).length
+  // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
+  const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+  const [prevTab, setPrevTab] = useState(activeTab)
+
+  // 탭 전환 시 칩 초기화
+  if (prevTab !== activeTab) {
+    setPrevTab(activeTab)
+    setConditionChips([])
+  }
+
+  // 칩 변경 → filterRules 동기화
+  const handleChipsChange = useCallback((chips: FilterChipItem[]) => {
+    setConditionChips(chips)
+    const rules = chipsToFilterRules(chips)
+    setFilterRules(rules)
+  }, [setFilterRules])
+
+  // Advanced Filter 적용
+  const handleAdvancedApply = useCallback((chip: AdvancedFilterChip) => {
+    // 기존 advanced 칩을 교체하거나 추가
+    const hasExisting = conditionChips.some(isAdvancedChip)
+    let nextChips: FilterChipItem[]
+    if (hasExisting) {
+      nextChips = conditionChips.map((c) => isAdvancedChip(c) ? chip : c)
+    } else {
+      nextChips = [...conditionChips, chip]
     }
-    return result
-  }, [filters, records])
+    handleChipsChange(nextChips)
+  }, [conditionChips, handleChipsChange])
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)
@@ -179,24 +197,10 @@ export function HomeContainer() {
   const handleFollowingSelect = useCallback(() => {
     setIsFollowingMode((prev) => !prev)
     if (!isFollowingMode) {
-      setActiveChipId(null)
       setFilterRules([])
     }
-  }, [isFollowingMode, setActiveChipId, setFilterRules])
+  }, [isFollowingMode, setFilterRules])
 
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
-  const [chipName, setChipName] = useState('')
-
-  // 필터 열 때 항상 빈 상태로 초기화
-  const handleFilterToggle = useCallback(() => {
-    if (!isFilterOpen) {
-      setFilterRules([])
-      setConjunction('and')
-      setChipName('')
-      setActiveChipId(null)
-    }
-    toggleFilter()
-  }, [isFilterOpen, toggleFilter, setFilterRules, setConjunction, setActiveChipId])
   const [isStatsOpen, setIsStatsOpen] = useState(false)
 
   // 캘린더 상태
@@ -221,36 +225,10 @@ export function HomeContainer() {
     return countries.size
   }, [restaurantStats.cityStats])
 
-  const handleChipSelect = useCallback((chipId: string | null) => {
-    setIsFollowingMode(false)
-    setActiveChipId(chipId)
-    if (chipId) {
-      const chip = filters.find((f) => f.id === chipId)
-      if (chip) {
-        setFilterRules(chip.rules)
-        setChipName(chip.name)
-        if (chip.sortBy) setCurrentSort(chip.sortBy)
-      }
-    } else {
-      setFilterRules([])
-      setChipName('')
-    }
-  }, [filters, setActiveChipId, setFilterRules, setCurrentSort])
-
-  const handleRulesChange = useCallback((rules: FilterRule[]) => {
-    setFilterRules(rules)
-    setActiveChipId(null)
-  }, [setFilterRules, setActiveChipId])
-
   const handleSortChange = useCallback((sort: SortOption) => {
     setCurrentSort(sort)
     toggleSort()
   }, [setCurrentSort, toggleSort])
-
-  const handleSaveChip = useCallback(async (name: string) => {
-    await createFilter(name, filterRules, currentSort)
-    setIsSaveModalOpen(false)
-  }, [createFilter, filterRules, currentSort])
 
   // 필터/소팅/검색 적용된 레코드
   const allDisplayRecords = useMemo(() => {
@@ -271,7 +249,7 @@ export function HomeContainer() {
   )
 
   // 필터/탭/뷰모드 변경 시 페이지 리셋
-  const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${activeChipId}-${viewMode}`
+  const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
   useEffect(() => {
     setCurrentRecordPage(1)
   }, [pageResetKey])
@@ -478,8 +456,6 @@ export function HomeContainer() {
           onTabChange={setActiveTab}
           onViewCycle={cycleViewMode}
           onMapToggle={toggleMap}
-          onFilterToggle={handleFilterToggle}
-          isFilterOpen={isFilterOpen}
           onSortToggle={toggleSort}
           isSortOpen={isSortOpen}
           onSearchToggle={() => router.push('/discover')}
@@ -488,36 +464,6 @@ export function HomeContainer() {
           onSearchQueryChange={setSearchQuery}
           onSearchClear={() => setSearchQuery('')}
         />
-
-        {/* 필터/소팅/검색 패널 — 캘린더/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && isFilterOpen && (
-          <div className="px-4 pt-2 md:px-8">
-            <FilterSystem
-              rules={filterRules}
-              conjunction={conjunction}
-              attributes={filterAttributes}
-              onRulesChange={handleRulesChange}
-              onConjunctionChange={setConjunction}
-              chipName={chipName}
-              onChipNameChange={setChipName}
-              onSaveAsChip={(name) => {
-                if (name) {
-                  handleSaveChip(name)
-                  setChipName('')
-                }
-              }}
-              activeChipId={activeChipId}
-              onDeleteChip={(chipId) => {
-                deleteFilter(chipId)
-                setActiveChipId(null)
-                setFilterRules([])
-                setChipName('')
-              }}
-              accentColor={accentColor}
-              onClose={handleFilterToggle}
-            />
-          </div>
-        )}
 
         {!isCalendarMode && isSortOpen && (
           <div className="relative">
@@ -529,21 +475,29 @@ export function HomeContainer() {
           </div>
         )}
 
-
-        {/* 저장 필터 칩 — 캘린더/팔로잉 모드에서는 숨김 */}
+        {/* 조건 필터 칩 바 — 캘린더/팔로잉 모드에서는 숨김 */}
         {!isCalendarMode && (
-          <SavedFilterChips
-            chips={filters}
-            activeChipId={activeChipId}
-            counts={counts}
-            accentClass={accentType}
-            onChipSelect={handleChipSelect}
+          <ConditionFilterBar
+            chips={conditionChips}
+            onChipsChange={handleChipsChange}
+            attributes={filterAttributes}
+            accentType={accentType}
+            onAdvancedOpen={() => setIsAdvancedOpen(true)}
             recordPage={currentRecordPage}
             recordTotalPages={totalRecordPages}
             onRecordPagePrev={() => setCurrentRecordPage((p) => Math.max(1, p - 1))}
             onRecordPageNext={() => setCurrentRecordPage((p) => Math.min(totalRecordPages, p + 1))}
           />
         )}
+
+        {/* Advanced Filter 바텀 시트 */}
+        <AdvancedFilterSheet
+          isOpen={isAdvancedOpen}
+          onClose={() => setIsAdvancedOpen(false)}
+          onApply={handleAdvancedApply}
+          attributes={filterAttributes}
+          accentType={accentType}
+        />
         </div>
 
         {/* 팔로잉 피드 */}

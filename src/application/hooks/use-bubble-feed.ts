@@ -27,11 +27,23 @@ export interface FeedShareEnriched {
   authorAvatar?: string | null
   authorAvatarColor?: string | null
   authorLevel?: number
+  targetId?: string
   targetName?: string
   targetType?: 'restaurant' | 'wine'
   targetMeta?: string | null
+  targetArea?: string | null
+  targetPhotoUrl?: string | null
+  targetVintage?: number | null
+  targetWineType?: string | null
+  targetProducer?: string | null
+  targetCountry?: string | null
   satisfaction?: number | null
+  axisX?: number | null
+  axisY?: number | null
   comment?: string | null
+  scene?: string | null
+  visitDate?: string | null
+  listStatus?: string | null
   photoUrls?: string[]
 }
 
@@ -52,10 +64,23 @@ function toEnriched(item: BubbleFeedItem): FeedShareEnriched {
     authorName: item.authorNickname,
     authorAvatar: item.authorAvatar,
     authorAvatarColor: item.authorAvatarColor,
+    targetId: item.targetId,
     targetName: item.targetName,
     targetType: item.targetType,
+    targetMeta: item.targetMeta,
+    targetArea: item.targetArea,
+    targetPhotoUrl: item.targetPhotoUrl,
+    targetVintage: item.targetVintage,
+    targetWineType: item.targetWineType,
+    targetProducer: item.targetProducer,
+    targetCountry: item.targetCountry,
     satisfaction: item.satisfaction,
+    axisX: item.axisX,
+    axisY: item.axisY,
     comment: item.comment,
+    scene: item.scene,
+    visitDate: item.visitDate,
+    listStatus: item.listStatus,
   }
 }
 

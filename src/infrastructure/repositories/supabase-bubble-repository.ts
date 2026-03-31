@@ -313,7 +313,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const recordIds = [...new Set(shares.map((s) => s.recordId))]
     const { data: recordRows } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, comment, scene, visit_date')
+      .select('id, target_id, target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date, list_status')
       .in('id', recordIds)
     const recordMap: Record<string, Record<string, unknown>> = {}
     for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
@@ -344,18 +344,35 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         .filter((r) => r && r.target_type === 'wine')
         .map((r) => r.target_id as string),
     )]
-    const nameMap: Record<string, string> = {}
+    const targetInfoMap: Record<string, {
+      name: string; meta: string | null; area: string | null; photoUrl: string | null
+      vintage?: number | null; wineType?: string | null; producer?: string | null; country?: string | null
+    }> = {}
 
     if (restaurantIds.length > 0) {
-      const { data: restData } = await this.supabase.from('restaurants').select('id, name').in('id', restaurantIds)
+      const { data: restData } = await this.supabase.from('restaurants').select('id, name, genre, area, photo_url').in('id', restaurantIds)
       for (const r of ((restData ?? []) as unknown as Record<string, unknown>[])) {
-        nameMap[r.id as string] = r.name as string
+        targetInfoMap[r.id as string] = {
+          name: r.name as string,
+          meta: r.genre as string | null,
+          area: r.area as string | null,
+          photoUrl: r.photo_url as string | null,
+        }
       }
     }
     if (wineIds.length > 0) {
-      const { data: wineData } = await this.supabase.from('wines').select('id, name').in('id', wineIds)
+      const { data: wineData } = await this.supabase.from('wines').select('id, name, variety, region, country, wine_type, vintage, producer, photo_url, label_image_url').in('id', wineIds)
       for (const w of ((wineData ?? []) as unknown as Record<string, unknown>[])) {
-        nameMap[w.id as string] = w.name as string
+        targetInfoMap[w.id as string] = {
+          name: w.name as string,
+          meta: w.variety as string | null,
+          area: w.region as string | null,
+          photoUrl: (w.photo_url as string | null) ?? (w.label_image_url as string | null),
+          vintage: (w.vintage as number) ?? null,
+          wineType: (w.wine_type as string) ?? null,
+          producer: (w.producer as string) ?? null,
+          country: (w.country as string) ?? null,
+        }
       }
     }
 
@@ -365,7 +382,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       const author = authorMap[s.sharedBy]
       const targetId = (rec?.target_id as string) ?? ''
       const targetType = ((rec?.target_type as string) ?? 'restaurant') as 'restaurant' | 'wine'
-      const latestComment = (rec?.comment as string) ?? null
+      const targetInfo = targetInfoMap[targetId]
 
       return {
         id: s.id,
@@ -375,9 +392,21 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         sharedAt: s.sharedAt,
         targetId,
         targetType,
-        targetName: nameMap[targetId] ?? '',
+        targetName: targetInfo?.name ?? '',
+        targetMeta: targetInfo?.meta ?? null,
+        targetArea: targetInfo?.area ?? null,
+        targetPhotoUrl: targetInfo?.photoUrl ?? null,
+        targetVintage: targetInfo?.vintage ?? null,
+        targetWineType: targetInfo?.wineType ?? null,
+        targetProducer: targetInfo?.producer ?? null,
+        targetCountry: targetInfo?.country ?? null,
         satisfaction: (rec?.satisfaction as number) ?? null,
-        comment: latestComment,
+        axisX: (rec?.axis_x as number) ?? null,
+        axisY: (rec?.axis_y as number) ?? null,
+        comment: (rec?.comment as string) ?? null,
+        scene: (rec?.scene as string) ?? null,
+        visitDate: (rec?.visit_date as string) ?? null,
+        listStatus: (rec?.list_status as string) ?? null,
         authorNickname: (author?.nickname as string) ?? '',
         authorAvatar: (author?.avatar_url as string) ?? null,
         authorAvatarColor: (author?.avatar_color as string) ?? null,

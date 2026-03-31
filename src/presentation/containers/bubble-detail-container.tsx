@@ -1,56 +1,222 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, List, UtensilsCrossed, Wine, SlidersHorizontal, X, Sparkles } from 'lucide-react'
+import { Trophy, Users, Map, ArrowUpDown, Search, X, Settings, UtensilsCrossed, Wine } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
-import type { FeedFilters, FeedSortType, FeedTargetFilter, FeedPeriodFilter, FeedScoreFilter } from '@/application/hooks/use-bubble-feed'
+import type { FeedShareEnriched } from '@/application/hooks/use-bubble-feed'
 import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
-import type { MemberFilters, MemberSortType, MemberRoleFilter, MemberMatchFilter } from '@/application/hooks/use-bubble-members'
-import { useBubblePermissions } from '@/application/hooks/use-bubble-permissions'
-import { useReactions } from '@/application/hooks/use-reactions'
+import type { MemberRoleFilter, MemberMatchFilter } from '@/application/hooks/use-bubble-members'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
 import { BubbleHero } from '@/presentation/components/bubble/bubble-hero'
-import { BubbleQuickStats } from '@/presentation/components/bubble/bubble-quick-stats'
 import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sheet'
-import { FeedCard } from '@/presentation/components/bubble/feed-card'
-import { FeedCompact } from '@/presentation/components/bubble/feed-compact'
+import { BubbleCompactCard } from '@/presentation/components/bubble/bubble-compact-card'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
 import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
 import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import { MemberGrid } from '@/presentation/components/bubble/member-grid'
 import { MemberListView } from '@/presentation/components/bubble/member-list-view'
-import { CommentSheetContainer } from '@/presentation/containers/comment-sheet-container'
 import { InviteLinkGenerator } from '@/presentation/components/bubble/invite-link-generator'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
-import type { RankingTargetType, BubbleMemberRole, BubbleContentVisibility } from '@/domain/entities/bubble'
-import type { ReactionType } from '@/domain/entities/reaction'
+import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
+import { InlinePager } from '@/presentation/components/home/inline-pager'
+import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+import type { RankingTargetType } from '@/domain/entities/bubble'
+import type { SortOption } from '@/domain/entities/saved-filter'
 
 interface BubbleDetailContainerProps {
   bubbleId: string
 }
 
-type TabType = 'feed' | 'ranking' | 'members'
+type ContentTab = 'restaurant' | 'wine'
+type SubPage = 'list' | 'ranking' | 'members'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  latest: '최신순',
+  score_high: '점수 높은순',
+  score_low: '점수 낮은순',
+  name: '이름순',
+  visit_count: '방문 많은순',
+}
+
+const PAGE_SIZE = 8
+
+/** targetId별로 그룹핑한 집계 카드 데이터 */
+interface AggregatedTarget {
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  name: string
+  meta: string
+  photoUrl: string | null
+  avgSatisfaction: number
+  memberCount: number
+  latestSharedAt: string
+  dots: Array<{ axisX: number; axisY: number; satisfaction: number; avatarColor: string; nickname: string }>
+}
+
+function aggregateByTarget(shares: FeedShareEnriched[]): AggregatedTarget[] {
+  const grouped: Record<string, FeedShareEnriched[]> = {}
+  for (const s of shares) {
+    const key = s.targetId ?? ''
+    if (!key) continue
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(s)
+  }
+
+  const result: AggregatedTarget[] = []
+  for (const [targetId, group] of Object.entries(grouped)) {
+    const first = group[0]
+    const isWine = first.targetType === 'wine'
+
+    // 메타 조합
+    let meta: string
+    if (isWine) {
+      meta = [
+        first.targetVintage ? String(first.targetVintage) : null,
+        first.targetWineType,
+        first.targetProducer,
+        [first.targetArea, first.targetCountry].filter(Boolean).join(', '),
+        first.targetMeta, // variety
+      ].filter(Boolean).join(' · ')
+    } else {
+      meta = [first.targetMeta, first.targetArea].filter(Boolean).join(' · ')
+    }
+
+    // 평가한 멤버들의 dot + 평균
+    const rated = group.filter((s) => s.satisfaction != null)
+    const avgSat = rated.length > 0
+      ? Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
+      : 0
+    const dots = rated
+      .filter((s) => s.axisX != null && s.axisY != null)
+      .map((s) => ({
+        axisX: s.axisX!,
+        axisY: s.axisY!,
+        satisfaction: s.satisfaction!,
+        avatarColor: s.authorAvatarColor ?? 'var(--text-hint)',
+        nickname: s.authorName ?? '',
+      }))
+
+    const latestSharedAt = group.reduce((latest, s) =>
+      s.sharedAt > latest ? s.sharedAt : latest, group[0].sharedAt)
+
+    result.push({
+      targetId,
+      targetType: first.targetType ?? 'restaurant',
+      name: first.targetName ?? '',
+      meta,
+      photoUrl: first.targetPhotoUrl ?? null,
+      avgSatisfaction: avgSat,
+      memberCount: rated.length,
+      latestSharedAt,
+      dots,
+    })
+  }
+
+  return result
+}
+
+function sortTargets(targets: AggregatedTarget[], sort: SortOption): AggregatedTarget[] {
+  const sorted = [...targets]
+  switch (sort) {
+    case 'latest':
+      return sorted.sort((a, b) => b.latestSharedAt.localeCompare(a.latestSharedAt))
+    case 'score_high':
+      return sorted.sort((a, b) => b.avgSatisfaction - a.avgSatisfaction)
+    case 'score_low':
+      return sorted.sort((a, b) => a.avgSatisfaction - b.avgSatisfaction)
+    case 'name':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name))
+    case 'visit_count':
+      return sorted.sort((a, b) => b.memberCount - a.memberCount)
+    default:
+      return sorted
+  }
+}
+
+function searchTargets(targets: AggregatedTarget[], query: string): AggregatedTarget[] {
+  if (!query.trim()) return targets
+  const q = query.trim().toLowerCase()
+  return targets.filter((t) =>
+    t.name.toLowerCase().includes(q)
+    || t.meta.toLowerCase().includes(q),
+  )
+}
 
 export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { bubble, myRole, tasteMatch, isLoading } = useBubbleDetail(bubbleId, user?.id ?? null)
 
-  const [activeTab, setActiveTab] = useState<TabType>('feed')
-  const [feedViewMode, setFeedViewMode] = useState<'card' | 'compact'>('card')
-  const [memberViewMode, setMemberViewMode] = useState<'grid' | 'list'>('grid')
-  const [rankingTargetType, setRankingTargetType] = useState<RankingTargetType>('restaurant')
+  const [activeTab, setActiveTab] = useState<ContentTab>('restaurant')
+  const [subPage, setSubPage] = useState<SubPage>('list')
   const [showInfoSheet, setShowInfoSheet] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const { inviteCode, generateLink, copyToClipboard, isLoading: inviteLoading } = useInviteLink(bubbleId)
   const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null)
+
+  // 소팅 / 검색
+  const [isSortOpen, setIsSortOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [currentSort, setCurrentSort] = useState<SortOption>('latest')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const toggleSort = useCallback(() => {
+    setIsSortOpen((p) => !p)
+    setIsSearchOpen(false)
+  }, [])
+
+  const toggleSearch = useCallback(() => {
+    setIsSearchOpen((p) => !p)
+    setIsSortOpen(false)
+  }, [])
+
+  // 피드 데이터
+  const { shares, isLoading: feedLoading } = useBubbleFeed(
+    bubbleId,
+    myRole,
+    bubble?.contentVisibility ?? 'rating_and_comment',
+  )
+
+  // 탭별 필터 → targetId별 집계
+  const aggregated = useMemo(() => {
+    const tabShares = shares.filter((s) => s.targetType === activeTab)
+    return aggregateByTarget(tabShares)
+  }, [shares, activeTab])
+
+  // 검색 + 정렬
+  const displayTargets = useMemo(() => {
+    let result = aggregated
+    result = searchTargets(result, searchQuery)
+    result = sortTargets(result, currentSort)
+    return result
+  }, [aggregated, searchQuery, currentSort])
+
+  // 페이지네이션
+  const totalPages = Math.max(1, Math.ceil(displayTargets.length / PAGE_SIZE))
+  const pagedTargets = displayTargets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  // 탭/검색/정렬 변경 시 페이지 리셋
+  const pageResetKey = `${activeTab}-${searchQuery}-${currentSort}`
+  const [prevResetKey, setPrevResetKey] = useState(pageResetKey)
+  if (prevResetKey !== pageResetKey) {
+    setPrevResetKey(pageResetKey)
+    setCurrentPage(1)
+  }
+
+  // 서브페이지 전환 시 리스트로 돌아올 때 상태 유지
+  const handleSubPageChange = useCallback((page: SubPage) => {
+    setSubPage(page)
+    setIsSortOpen(false)
+    setIsSearchOpen(false)
+  }, [])
 
   if (isLoading || !bubble) {
     return (
@@ -61,13 +227,17 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
     )
   }
 
+  const isOwner = myRole === 'owner'
+  const accentType = activeTab === 'restaurant' ? 'food' as const : 'wine' as const
+
+  const tabVariant = activeTab === 'restaurant' ? 'food' as const : 'wine' as const
+
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      {/* 헤더 */}
       <AppHeader />
       <FabBack />
 
-      {/* 히어로 (리디자인) */}
+      {/* 히어로 — 컴팩트 */}
       <BubbleHero
         bubble={bubble}
         myRole={myRole}
@@ -77,67 +247,145 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         onInviteClick={() => setShowInviteModal(true)}
       />
 
-      {/* 게이미피케이션 퀵 통계 */}
-      <BubbleQuickStats
-        recordCount={bubble.recordCount}
-        avgSatisfaction={bubble.avgSatisfaction}
-        weeklyRecordCount={bubble.weeklyRecordCount}
-        prevWeeklyRecordCount={bubble.prevWeeklyRecordCount}
-        uniqueTargetCount={bubble.uniqueTargetCount}
-      />
+      {/* 스티키 탭 영역 */}
+      <div style={{ position: 'sticky', top: '46px', zIndex: 80, backgroundColor: 'var(--bg)' }}>
+        <StickyTabs
+          tabs={[
+            { key: 'restaurant' as const, label: '식당', variant: 'food' },
+            { key: 'wine' as const, label: '와인', variant: 'wine' },
+          ]}
+          activeTab={subPage === 'list' ? activeTab : activeTab}
+          variant={tabVariant}
+          onTabChange={(tab) => {
+            setActiveTab(tab)
+            setSubPage('list')
+          }}
+          rightSlot={
+            isSearchOpen ? (
+              <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
+                <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="이름으로 검색"
+                  style={{
+                    flex: 1, minWidth: 0, border: 'none', background: 'none',
+                    fontSize: '13px', color: 'var(--text)', outline: 'none',
+                  }}
+                />
+                {searchQuery.length > 0 && (
+                  <button type="button" onClick={() => setSearchQuery('')} style={{ color: 'var(--text-hint)' }}>
+                    <X size={14} />
+                  </button>
+                )}
+                <button type="button" onClick={toggleSearch} className="shrink-0 text-[12px] font-medium" style={{ color: 'var(--text-sub)' }}>
+                  닫기
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0.5">
+                {/* 버블 이름 표시 */}
+                <div className="mr-1 flex items-center gap-1 overflow-hidden">
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
+                      className="flex shrink-0 items-center justify-center"
+                      style={{ color: 'var(--text-hint)' }}
+                    >
+                      <Settings size={14} />
+                    </button>
+                  )}
+                  <div
+                    className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-md"
+                    style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+                  >
+                    <BubbleIcon icon={bubble.icon} size={12} />
+                  </div>
+                  <span className="max-w-[80px] truncate text-[12px] font-bold" style={{ color: 'var(--text)' }}>
+                    {bubble.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSubPageChange(subPage === 'ranking' ? 'list' : 'ranking')}
+                  className={`icon-button ${subPage === 'ranking' ? `active ${accentType}` : ''}`}
+                  title="랭킹"
+                >
+                  <Trophy size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubPageChange(subPage === 'members' ? 'list' : 'members')}
+                  className={`icon-button ${subPage === 'members' ? `active ${accentType}` : ''}`}
+                  title="멤버"
+                >
+                  <Users size={18} />
+                </button>
+                <button type="button" className="icon-button" title="지도">
+                  <Map size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleSort}
+                  className={`icon-button ${isSortOpen ? `active ${accentType}` : ''}`}
+                  title="정렬"
+                >
+                  <ArrowUpDown size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleSearch}
+                  className={`icon-button ${isSearchOpen ? `active ${accentType}` : ''}`}
+                  title="검색"
+                >
+                  <Search size={18} />
+                </button>
+              </div>
+            )
+          }
+        />
 
-      {/* 스티키 탭 */}
-      <StickyTabs
-        tabs={[
-          { key: 'feed' as const, label: '피드' },
-          { key: 'ranking' as const, label: '랭킹' },
-          { key: 'members' as const, label: '멤버' },
-        ]}
-        activeTab={activeTab}
-        variant="social"
-        onTabChange={setActiveTab}
-        rightSlot={
-          (activeTab === 'feed' || activeTab === 'members') ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (activeTab === 'feed') setFeedViewMode((v) => v === 'card' ? 'compact' : 'card')
-                if (activeTab === 'members') setMemberViewMode((v) => v === 'grid' ? 'list' : 'grid')
-              }}
-              className="icon-button"
-            >
-              {(activeTab === 'feed' ? feedViewMode === 'card' : memberViewMode === 'grid')
-                ? <List size={20} />
-                : <Eye size={20} />
-              }
-            </button>
-          ) : undefined
-        }
-      />
+        {/* 소트 드롭다운 */}
+        {subPage === 'list' && isSortOpen && (
+          <div className="relative">
+            <SortDropdown
+              currentSort={currentSort}
+              onSortChange={(s) => { setCurrentSort(s); setIsSortOpen(false) }}
+              accentType={accentType}
+            />
+          </div>
+        )}
 
-      {/* 탭 콘텐츠 */}
-      <div className="flex-1 px-4 py-4">
-        {activeTab === 'feed' && (
-          <FeedTabContent
-            bubbleId={bubbleId}
-            myRole={myRole}
-            contentVisibility={bubble.contentVisibility}
-            allowComments={bubble.allowComments}
-            viewMode={feedViewMode}
-            userId={user?.id ?? null}
+        {/* 리스트 모드: 페이저 */}
+        {subPage === 'list' && totalPages > 1 && (
+          <div className="flex items-center justify-end px-4 py-1">
+            <InlinePager
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 콘텐츠 영역 */}
+      <div className="flex-1">
+        {subPage === 'list' && (
+          <ListContent
+            targets={pagedTargets}
+            isLoading={feedLoading}
+            activeTab={activeTab}
           />
         )}
-        {activeTab === 'ranking' && (
-          <RankingTabContent
-            bubbleId={bubbleId}
-            targetType={rankingTargetType}
-            onTargetTypeChange={setRankingTargetType}
-          />
+        {subPage === 'ranking' && (
+          <RankingContent bubbleId={bubbleId} activeTab={activeTab} />
         )}
-        {activeTab === 'members' && (
-          <MemberTabContent
+        {subPage === 'members' && (
+          <MemberContent
             bubbleId={bubbleId}
-            viewMode={memberViewMode}
             currentUserId={user?.id ?? null}
             onMemberClick={(userId) => router.push(`/users/${userId}?bubble=${bubbleId}`)}
           />
@@ -194,191 +442,70 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   )
 }
 
-/* ──── 피드 탭 ──── */
-function FeedTabContent({
-  bubbleId,
-  myRole,
-  contentVisibility,
-  allowComments,
-  viewMode,
-  userId,
+/* ──── 리스트 콘텐츠 ──── */
+function ListContent({
+  targets,
+  isLoading,
+  activeTab,
 }: {
-  bubbleId: string
-  myRole: BubbleMemberRole | null
-  contentVisibility: BubbleContentVisibility
-  allowComments: boolean
-  viewMode: 'card' | 'compact'
-  userId: string | null
+  targets: AggregatedTarget[]
+  isLoading: boolean
+  activeTab: ContentTab
 }) {
-  const { shares, filters, setFilters, sort, setSort, isLoading } = useBubbleFeed(bubbleId, myRole, contentVisibility)
-  const { permissions } = useBubblePermissions(
-    { allowComments, contentVisibility, joinPolicy: 'open' } as Parameters<typeof useBubblePermissions>[0],
-    myRole,
-  )
-
-  // 댓글 시트 상태
-  const [commentTarget, setCommentTarget] = useState<{ recordId: string; ownerId: string | null } | null>(null)
-
   if (isLoading) {
-    return <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" /></div>
+    return (
+      <div className="flex justify-center py-8">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (targets.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-16">
+        {activeTab === 'restaurant' ? (
+          <UtensilsCrossed size={40} style={{ color: 'var(--text-hint)' }} />
+        ) : (
+          <Wine size={40} style={{ color: 'var(--text-hint)' }} />
+        )}
+        <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+          {activeTab === 'restaurant' ? '공유된 식당이 없어요' : '공유된 와인이 없어요'}
+        </p>
+        <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>
+          멤버들이 기록을 공유하면 여기에 나타나요
+        </p>
+      </div>
+    )
   }
 
   return (
-    <>
-      {/* 필터칩 행 */}
-      <FilterChipGroup className="mb-3">
-        {(['all', 'restaurant', 'wine'] as FeedTargetFilter[]).map((t) => (
-          <FilterChip key={t} active={filters.targetType === t} variant="social" onClick={() => setFilters({ ...filters, targetType: t })}>
-            {t === 'all' ? '전체' : t === 'restaurant' ? '식당' : '와인'}
-          </FilterChip>
-        ))}
-        {(['all', 'week', 'month'] as FeedPeriodFilter[]).map((p) => (
-          <FilterChip key={p} active={filters.period === p} variant="social" onClick={() => setFilters({ ...filters, period: p })}>
-            {p === 'all' ? '전체 기간' : p === 'week' ? '이번 주' : '이번 달'}
-          </FilterChip>
-        ))}
-        {(['all', '90', '80'] as FeedScoreFilter[]).map((s) => (
-          <FilterChip key={s} active={filters.minScore === s} variant="social" onClick={() => setFilters({ ...filters, minScore: s })}>
-            {s === 'all' ? '점수 전체' : `${s}+`}
-          </FilterChip>
-        ))}
-      </FilterChipGroup>
-
-      {/* 정렬 */}
-      <div className="mb-3 flex items-center gap-2">
-        <SlidersHorizontal size={12} style={{ color: 'var(--text-hint)' }} />
-        {(['recent', 'score', 'member'] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setSort(s)}
-            className="text-[11px] font-semibold"
-            style={{ color: sort === s ? 'var(--accent-social)' : 'var(--text-hint)' }}
-          >
-            {s === 'recent' ? '최신순' : s === 'score' ? '점수순' : '멤버별'}
-          </button>
-        ))}
-      </div>
-
-      {/* 피드 목록 */}
-      {shares.length === 0 ? (
-        <div className="flex flex-col items-center py-12">
-          <div
-            className="flex h-[56px] w-[56px] items-center justify-center rounded-2xl"
-            style={{ backgroundColor: 'var(--accent-social-light)' }}
-          >
-            <Sparkles size={24} style={{ color: 'var(--accent-social)' }} />
-          </div>
-          <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>아직 공유된 기록이 없어요</p>
-          <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>첫 기록을 공유해보세요!</p>
-        </div>
-      ) : viewMode === 'compact' ? (
-        <div className="flex flex-col gap-1">
-          {shares.map((s) => (
-            <FeedCompact
-              key={s.id}
-              recordId={s.recordId}
-              authorName={s.authorName ?? '멤버'}
-              targetName={s.targetName ?? '기록'}
-              targetType={s.targetType ?? 'restaurant'}
-              targetMeta={s.targetMeta ?? null}
-              satisfaction={s.satisfaction ?? null}
-              sharedAt={s.sharedAt}
-              onClick={() => {}}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {shares.map((s) => (
-            <FeedCardWithReactions
-              key={s.id}
-              share={s}
-              userId={userId}
-              canReact={permissions.canReact}
-              onCommentClick={() => setCommentTarget({ recordId: s.recordId, ownerId: s.sharedBy })}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* 댓글 시트 */}
-      {commentTarget && (
-        <CommentSheetContainer
-          isOpen={!!commentTarget}
-          onClose={() => setCommentTarget(null)}
-          targetType="record"
-          targetId={commentTarget.recordId}
-          bubbleId={bubbleId}
-          allowComments={allowComments}
-          targetOwnerId={commentTarget.ownerId}
+    <div className="flex flex-col gap-2 px-4 pb-24 pt-2">
+      {targets.map((t) => (
+        <BubbleCompactCard
+          key={t.targetId}
+          targetId={t.targetId}
+          targetType={t.targetType}
+          name={t.name}
+          meta={t.meta}
+          photoUrl={t.photoUrl}
+          avgSatisfaction={t.avgSatisfaction}
+          memberCount={t.memberCount}
+          dots={t.dots}
         />
-      )}
-    </>
+      ))}
+    </div>
   )
 }
 
-/* ──── 피드 카드 + 리액션 훅 연동 ──── */
-function FeedCardWithReactions({
-  share,
-  userId,
-  canReact,
-  onCommentClick,
-}: {
-  share: ReturnType<typeof useBubbleFeed>['shares'][number]
-  userId: string | null
-  canReact: boolean
-  onCommentClick: () => void
-}) {
-  const { counts, myReactions, toggle } = useReactions({
-    targetType: 'record',
-    targetId: share.recordId,
-    userId,
-    targetOwnerId: share.sharedBy,
-    bookmarkTarget: null,
-  })
-
-  const handleReactionToggle = useCallback((type: ReactionType) => {
-    if (!canReact) return
-    toggle(type)
-  }, [canReact, toggle])
-
-  return (
-    <FeedCard
-      recordId={share.recordId}
-      authorName={share.authorName ?? '멤버'}
-      authorAvatar={share.authorAvatar ?? null}
-      authorAvatarColor={share.authorAvatarColor ?? null}
-      authorLevel={share.authorLevel ?? 1}
-      sharedAt={share.sharedAt}
-      targetName={share.targetName ?? '기록'}
-      targetType={share.targetType ?? 'restaurant'}
-      targetMeta={share.targetMeta ?? null}
-      satisfaction={share.satisfaction ?? null}
-      comment={share.comment ?? null}
-      photoUrls={share.photoUrls ?? []}
-      reactions={counts}
-      myReactions={Array.from(myReactions)}
-      likeCount={counts.like ?? 0}
-      commentCount={0}
-      readCount={0}
-      onReactionToggle={handleReactionToggle}
-      onCommentClick={onCommentClick}
-      onClick={() => {}}
-    />
-  )
-}
-
-/* ──── 랭킹 탭 ──── */
-function RankingTabContent({
+/* ──── 랭킹 콘텐츠 ──── */
+function RankingContent({
   bubbleId,
-  targetType,
-  onTargetTypeChange,
+  activeTab,
 }: {
   bubbleId: string
-  targetType: RankingTargetType
-  onTargetTypeChange: (t: RankingTargetType) => void
+  activeTab: ContentTab
 }) {
+  const targetType: RankingTargetType = activeTab
   const { rankings, isLoading } = useBubbleRanking(bubbleId, targetType)
 
   const top3: RankingPodiumItem[] = rankings
@@ -398,75 +525,59 @@ function RankingTabContent({
     }))
   const rest = rankings.filter((r) => r.rankPosition > 3)
 
-  return (
-    <div>
-      {/* 서브토글: 식당/와인 */}
-      <div className="mb-4 flex items-center justify-center">
-        <div className="flex rounded-full p-1" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          {(['restaurant', 'wine'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onTargetTypeChange(t)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-semibold transition-colors"
-              style={{
-                backgroundColor: targetType === t ? 'var(--text)' : 'transparent',
-                color: targetType === t ? 'var(--bg)' : 'var(--text-sub)',
-              }}
-            >
-              {t === 'restaurant' ? <><UtensilsCrossed size={13} /> 식당</> : <><Wine size={13} /> 와인</>}
-            </button>
-          ))}
-        </div>
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" />
       </div>
+    )
+  }
 
-      {isLoading ? (
-        <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" /></div>
-      ) : rankings.length === 0 ? (
-        <div className="flex flex-col items-center py-12">
-          <div
-            className="flex h-[56px] w-[56px] items-center justify-center rounded-2xl"
-            style={{ backgroundColor: 'var(--caution-light, #FFF8E1)' }}
-          >
-            <Sparkles size={24} style={{ color: 'var(--caution)' }} />
-          </div>
-          <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>아직 랭킹이 없어요</p>
-          <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>기록이 쌓이면 주간 랭킹이 생겨요</p>
+  if (rankings.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-16">
+        <Trophy size={40} style={{ color: 'var(--text-hint)' }} />
+        <p className="mt-3 text-[14px] font-semibold" style={{ color: 'var(--text)' }}>아직 랭킹이 없어요</p>
+        <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>기록이 쌓이면 주간 랭킹이 생겨요</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-4 pb-24 pt-2">
+      <RankingPodium items={top3} targetType={targetType} />
+      {rest.length > 0 && (
+        <div className="mt-2">
+          <RankingList entries={rest} targetType={targetType} targetNames={{}} />
         </div>
-      ) : (
-        <>
-          <RankingPodium items={top3} targetType={targetType} />
-          {rest.length > 0 && (
-            <div className="mt-2">
-              <RankingList entries={rest} targetType={targetType} targetNames={{}} />
-            </div>
-          )}
-        </>
       )}
     </div>
   )
 }
 
-/* ──── 멤버 탭 ──── */
-function MemberTabContent({
+/* ──── 멤버 콘텐츠 ──── */
+function MemberContent({
   bubbleId,
-  viewMode,
   currentUserId,
   onMemberClick,
 }: {
   bubbleId: string
-  viewMode: 'grid' | 'list'
   currentUserId: string | null
   onMemberClick: (userId: string) => void
 }) {
   const { members, filters, setFilters, sort, setSort, isLoading } = useBubbleMembers(bubbleId)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   if (isLoading) {
-    return <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" /></div>
+    return (
+      <div className="flex justify-center py-8">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent-social)] border-t-transparent" />
+      </div>
+    )
   }
 
   return (
-    <>
+    <div className="px-4 pb-24 pt-2">
       <FilterChipGroup className="mb-3">
         {(['all', 'admin', 'member'] as MemberRoleFilter[]).map((r) => (
           <FilterChip key={r} active={filters.role === r} variant="social" onClick={() => setFilters({ ...filters, role: r })}>
@@ -479,22 +590,6 @@ function MemberTabContent({
           </FilterChip>
         ))}
       </FilterChipGroup>
-
-      {/* 정렬 */}
-      <div className="mb-3 flex items-center gap-2">
-        <SlidersHorizontal size={12} style={{ color: 'var(--text-hint)' }} />
-        {(['match', 'records', 'level', 'activity'] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setSort(s)}
-            className="text-[11px] font-semibold"
-            style={{ color: sort === s ? 'var(--accent-social)' : 'var(--text-hint)' }}
-          >
-            {s === 'match' ? '일치도순' : s === 'records' ? '기록순' : s === 'level' ? '레벨순' : '활동순'}
-          </button>
-        ))}
-      </div>
 
       {members.length === 0 ? (
         <p className="py-8 text-center text-[14px]" style={{ color: 'var(--text-hint)' }}>멤버가 없습니다</p>
@@ -521,6 +616,6 @@ function MemberTabContent({
           onFollowToggle={() => {}}
         />
       )}
-    </>
+    </div>
   )
 }

@@ -386,6 +386,12 @@ html, body, * {
   100% { transform: translateY(0); }
 }
 
+/* Advanced filter panel slide down */
+@keyframes slide-down {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* AI Greeting dot pulse animation */
 @keyframes aiPulse {
   0%, 100% { opacity: 1; }
