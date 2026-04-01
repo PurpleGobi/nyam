@@ -193,16 +193,26 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     if (!latestRecordId || !user) return
     setIsDeleting(true)
     try {
-      await recordRepo.delete(latestRecordId)
+      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
       const histories = await xpRepo.getHistoriesByRecord(latestRecordId)
-      if (histories.length > 0) {
-        let totalXpToDeduct = 0
-        for (const h of histories) totalXpToDeduct += h.xpAmount
-        await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-        await xpRepo.deleteByRecordId(latestRecordId)
+
+      await recordRepo.delete(latestRecordId)
+
+      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
+      try {
+        if (histories.length > 0) {
+          let totalXpToDeduct = 0
+          for (const h of histories) totalXpToDeduct += h.xpAmount
+          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
+          await xpRepo.deleteByRecordId(latestRecordId)
+        }
+      } catch {
+        // CASCADE로 이미 삭제된 경우 무시
       }
+
       setShowDeleteConfirm(false)
-      router.refresh()
+      setToastMsg('기록이 삭제되었습니다')
+      setTimeout(() => router.replace('/'), 800)
     } catch {
       setToastMsg('삭제에 실패했습니다')
     } finally {

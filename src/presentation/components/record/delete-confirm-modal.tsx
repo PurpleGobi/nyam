@@ -41,7 +41,10 @@ export function DeleteConfirmModal({ isOpen, isDeleting, onConfirm, onCancel }: 
             취소
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault()
+              onConfirm()
+            }}
             disabled={isDeleting}
             className="flex-1 rounded-xl py-3 text-[14px] font-semibold disabled:opacity-50"
             style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
