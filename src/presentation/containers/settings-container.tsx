@@ -6,7 +6,7 @@ import {
   Pencil, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
   Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
-  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight,
+  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
@@ -26,6 +26,7 @@ import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import type { VisibilityConfig, DeleteMode, BubblePrivacyOverride } from '@/domain/entities/settings'
+import { TIMEZONE_OPTIONS, detectBrowserTimezone } from '@/shared/utils/date-format'
 
 const PRIVACY_PROFILE_OPTIONS = [
   { value: 'public', label: '전체 공개' },
@@ -162,6 +163,14 @@ export function SettingsContainer() {
     }
   }, [])
 
+  // 타임존 미설정 시 브라우저 timezone 자동 감지하여 저장
+  useEffect(() => {
+    if (settings && settings.prefTimezone === null && user?.id) {
+      const detected = detectBrowserTimezone()
+      updatePreference('pref_timezone', detected)
+    }
+  }, [settings, user?.id, updatePreference])
+
   if (isLoading || !settings) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
@@ -181,7 +190,7 @@ export function SettingsContainer() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col" style={{ background: 'var(--bg)' }}>
+    <div className="content-detail flex min-h-dvh flex-col" style={{ background: 'var(--bg)' }}>
       <AppHeader />
       <FabBack />
 
@@ -439,6 +448,12 @@ export function SettingsContainer() {
               icon={<Thermometer size={18} />}
               label="와인 온도 단위"
               rightElement={<NyamSelect options={TEMP_UNIT_OPTIONS} value={settings.prefTempUnit} onChange={(v) => updatePreference('pref_temp_unit', v)} />}
+            />
+            <SettingsItem
+              icon={<Globe size={18} />}
+              label="타임존"
+              hint="날짜·시간 표시 기준"
+              rightElement={<NyamSelect options={TIMEZONE_OPTIONS} value={settings.prefTimezone ?? detectBrowserTimezone()} onChange={(v) => updatePreference('pref_timezone', v)} />}
             />
             <SettingsItem
               icon={<Unlink size={18} />}

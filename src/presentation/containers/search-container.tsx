@@ -91,16 +91,6 @@ function SearchInner() {
           ? [result.genreDisplay, result.area].filter(Boolean).join(' · ')
           : [result.wineType, result.region, result.vintage].filter(Boolean).join(' · ')
 
-      // 기록 있음 → 토스트 + 상세 페이지 이동
-      if (result.hasRecord) {
-        setToast('다녀온 적 있어요')
-        const detailPath = result.type === 'restaurant'
-          ? `/restaurants/${result.id}`
-          : `/wines/${result.id}`
-        setTimeout(() => router.push(detailPath), 600)
-        return
-      }
-
       let targetId = result.id
 
       // 외부 API 결과 선택 → DB에 자동 INSERT

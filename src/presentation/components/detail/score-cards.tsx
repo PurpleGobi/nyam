@@ -6,7 +6,6 @@ interface ScoreCardsProps {
   mySubText: string           // '3회 방문' | '미방문'
   bubbleScore: number | null
   bubbleSubText: string       // '평균 · 3개' | ''
-  bubbleCount: number         // 우상단 카운트 뱃지 (0이면 비표시)
   onBubbleCardTap: () => void
   isBubbleExpanded: boolean
 }
@@ -17,7 +16,6 @@ export function ScoreCards({
   mySubText,
   bubbleScore,
   bubbleSubText,
-  bubbleCount,
   onBubbleCardTap,
   isBubbleExpanded,
 }: ScoreCardsProps) {
@@ -33,23 +31,6 @@ export function ScoreCards({
 
       {/* 버블 점수 카드 */}
       <div className="relative flex-1">
-        {bubbleCount > 0 && (
-          <div
-            className="absolute z-10 flex items-center justify-center rounded-full"
-            style={{
-              top: '-4px',
-              right: '-4px',
-              width: '16px',
-              height: '16px',
-              backgroundColor: 'var(--accent-social)',
-              border: '1.5px solid var(--bg)',
-            }}
-          >
-            <span style={{ fontSize: '9px', fontWeight: 700, color: '#FFFFFF' }}>
-              {bubbleCount}
-            </span>
-          </div>
-        )}
         <button
           type="button"
           onClick={onBubbleCardTap}
@@ -63,10 +44,10 @@ export function ScoreCards({
           }}
         >
           <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-hint)', letterSpacing: '0.02em' }}>
-            버블
+            버블러 평균
           </span>
           {bubbleScore !== null ? (
-            <span style={{ fontSize: '24px', fontWeight: 800, color: `var(${accentColor})` }}>
+            <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-social)' }}>
               {bubbleScore}
             </span>
           ) : (

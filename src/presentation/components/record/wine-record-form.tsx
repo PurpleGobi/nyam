@@ -15,6 +15,7 @@ import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
 import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { AROMA_SECTORS } from '@/shared/constants/aroma-sectors'
 import {
   WINE_COUNTRIES, WINE_REGIONS, WINE_TYPES,
@@ -152,7 +153,7 @@ export function WineRecordForm({
     initialData?.purchasePrice ? String(initialData.purchasePrice) : '',
   )
   const [visitDate, setVisitDate] = useState(
-    initialData?.visitDate ?? new Date().toISOString().split('T')[0],
+    initialData?.visitDate ?? todayInTz(detectBrowserTimezone()),
   )
   const [companions, setCompanions] = useState<string[]>(initialData?.companions ?? [])
   const [privateNote, setPrivateNote] = useState(initialData?.privateNote ?? '')
@@ -426,7 +427,7 @@ export function WineRecordForm({
           type="date"
           value={visitDate}
           onChange={(e) => setVisitDate(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
+          max={todayInTz(detectBrowserTimezone())}
           className="nyam-input w-full"
           style={{ backgroundColor: 'var(--bg-card)' }}
         />

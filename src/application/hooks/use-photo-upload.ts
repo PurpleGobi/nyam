@@ -12,6 +12,7 @@ interface UsePhotoUploadReturn {
   initExistingPhotos: (existing: { id: string; url: string; orderIndex: number; isPublic: boolean }[]) => void
   removePhoto: (photoId: string) => Promise<void>
   replacePhoto: (photoId: string, newFile: File) => void
+  reorderPhotos: (fromIndex: number, toIndex: number) => void
   togglePublic: (photoId: string) => void
   uploadAll: (userId: string, recordId: string) => Promise<{ url: string; orderIndex: number; isPublic: boolean }[]>
   isUploading: boolean
@@ -61,7 +62,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         previewUrl: URL.createObjectURL(file),
         orderIndex: photos.length + i,
         status: 'pending' as const,
-        isPublic: false,
+        isPublic: true,
       }))
 
       setPhotos((prev) => [...prev, ...newPhotos])
@@ -107,6 +108,15 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
         }
       }),
     )
+  }, [])
+
+  const reorderPhotos = useCallback((fromIndex: number, toIndex: number) => {
+    setPhotos((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next.map((p, i) => ({ ...p, orderIndex: i }))
+    })
   }, [])
 
   const togglePublic = useCallback((photoId: string) => {
@@ -156,5 +166,5 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
     [photos],
   )
 
-  return { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading, error, isMaxReached }
+  return { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, reorderPhotos, togglePublic, uploadAll, isUploading, error, isMaxReached }
 }

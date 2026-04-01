@@ -12,7 +12,6 @@ interface PhotoCropEditorProps {
   onCancel: () => void
 }
 
-const MIN_SCALE = 1
 const MAX_SCALE = 4
 const CROP_SIZE_RATIO = 0.82 // 팝업 내 크롭 영역 비율
 
@@ -147,8 +146,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
           e.touches[0].clientY - e.touches[1].clientY,
         )
         const ratio = dist / pinchState.current.initialDist
-        const fitScale = cropSize / Math.min(naturalSize.w, naturalSize.h)
-        const minScale = Math.max(MIN_SCALE, fitScale)
+        const minScale = cropSize / Math.max(naturalSize.w, naturalSize.h)
         const newScale = Math.max(minScale, Math.min(MAX_SCALE, pinchState.current.initialScale * ratio))
         setScale(newScale)
         setOffset((prev) => clampOffset(prev.x, prev.y, newScale))
@@ -164,8 +162,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
   // ── 줌 버튼 ──
   const adjustScale = useCallback(
     (delta: number) => {
-      const fitScale = cropSize / Math.min(naturalSize.w || 1, naturalSize.h || 1)
-      const minScale = Math.max(MIN_SCALE, fitScale)
+      const minScale = cropSize / Math.max(naturalSize.w || 1, naturalSize.h || 1)
       setScale((prev) => {
         const next = Math.max(minScale, Math.min(MAX_SCALE, prev + delta))
         setOffset((o) => clampOffset(o.x, o.y, next))
@@ -382,7 +379,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
 
           <input
             type="range"
-            min={Math.max(MIN_SCALE, cropSize / Math.min(naturalSize.w || 1, naturalSize.h || 1))}
+            min={cropSize / Math.max(naturalSize.w || 1, naturalSize.h || 1)}
             max={MAX_SCALE}
             step={0.01}
             value={scale}

@@ -55,6 +55,7 @@ export interface UserSettings {
   prefRecordInput: string
   prefBubbleShare: string
   prefTempUnit: string
+  prefTimezone: string | null
 
   // 계정 삭제
   deletedAt: string | null

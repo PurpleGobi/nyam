@@ -12,6 +12,7 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { photoRepo, imageService } from '@/shared/di/container'
 import { parseExifFromBase64 } from '@/shared/utils/exif-parser'
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
@@ -248,7 +249,7 @@ function AddFlowInner() {
                 targetId: top.wineId,
                 targetType: 'wine',
                 listStatus: 'tasted',
-                visitDate: new Date().toISOString().split('T')[0],
+                visitDate: todayInTz(detectBrowserTimezone()),
                 hasExifGps: exif.hasGps,
                 isExifVerified: false,
               })
@@ -345,7 +346,7 @@ function AddFlowInner() {
           targetId: top.wineId,
           targetType: 'wine',
           listStatus: 'tasted',
-          visitDate: new Date().toISOString().split('T')[0],
+          visitDate: todayInTz(detectBrowserTimezone()),
           hasExifGps: exif.hasGps,
           isExifVerified: false,
         })

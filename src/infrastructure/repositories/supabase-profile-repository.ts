@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
+import { formatRelativeDate } from '@/shared/utils/date-format'
 import type { ProfileRepository, BubblerProfileData } from '@/domain/repositories/profile-repository'
 import type {
   UserProfile, ActivitySummary, HeatmapCell, RestaurantStats, WineStats,
@@ -884,16 +885,6 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
 // ── 유틸 ──
 
-function formatRelativeDate(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return '오늘'
-  if (diffDays === 1) return '어제'
-  if (diffDays < 7) return `${diffDays}일 전`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전`
-  return `${Math.floor(diffDays / 365)}년 전`
-}
 
 function getScoreTendencyLabel(avgSatisfaction: number): string {
   if (avgSatisfaction === 0) return '-'

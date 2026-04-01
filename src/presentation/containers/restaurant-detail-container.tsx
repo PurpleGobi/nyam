@@ -237,7 +237,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   const genreChain = getGenreChain(restaurant.genre)
   const mySubText = myRecords.length > 0 ? `${myRecords.length}회 방문` : '미방문'
-  const bubbleSubText = bubbleCount > 0 ? `평균 · ${bubbleCount}개` : ''
+  const bubbleSubText = bubbleCount > 0 ? `리뷰 ${bubbleCount}개` : ''
   return (
     <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
@@ -296,7 +296,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
             mySubText={isBubbleMode ? `버블 평균 · ${bubbleMemberShares.filter((s) => s.satisfaction != null).length}명` : mySubText}
             bubbleScore={isBubbleMode ? myAvgScore : bubbleAvgScore}
             bubbleSubText={isBubbleMode ? (myRecords.length > 0 ? `나 · ${myRecords.length}회` : '미방문') : bubbleSubText}
-            bubbleCount={isBubbleMode ? 0 : bubbleCount}
             onBubbleCardTap={() => setBubbleExpanded(!bubbleExpanded)}
             isBubbleExpanded={bubbleExpanded}
           />

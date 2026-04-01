@@ -2,6 +2,7 @@
 
 import { Sparkles, Heart, Trophy, Gift, CircleDot } from 'lucide-react'
 import type { XpHistory, XpReason } from '@/domain/entities/xp'
+import { formatTimeAgo } from '@/shared/utils/date-format'
 
 interface RecentXpListProps {
   items: XpHistory[]
@@ -70,23 +71,6 @@ function getIconConfig(reason: XpReason) {
   }
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const now = Date.now()
-  const date = new Date(dateStr).getTime()
-  const diffSec = Math.floor((now - date) / 1000)
-
-  if (diffSec < 60) return '방금 전'
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}분 전`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}시간 전`
-  const diffDay = Math.floor(diffHour / 24)
-  if (diffDay < 30) return `${diffDay}일 전`
-  const diffMonth = Math.floor(diffDay / 30)
-  if (diffMonth < 12) return `${diffMonth}개월 전`
-  const diffYear = Math.floor(diffMonth / 12)
-  return `${diffYear}년 전`
-}
 
 export function RecentXpList({ items }: RecentXpListProps) {
   const displayItems = items.slice(0, 5)
@@ -127,7 +111,7 @@ export function RecentXpList({ items }: RecentXpListProps) {
                     className="shrink-0"
                     style={{ fontSize: '11px', color: 'var(--text-hint)' }}
                   >
-                    {formatRelativeTime(item.createdAt)}
+                    {formatTimeAgo(item.createdAt)}
                   </span>
                 </div>
 

@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
 
   const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
 
-  const nyamResults: RestaurantSearchResult[] = (restaurants ?? []).map((r) => ({
+  // DB 내부 중복 제거: 같은 이름의 식당이 여러 행일 때 기록있는 것 우선
+  const nyamDeduped = deduplicateNyamResults(restaurants ?? [], recordedIds)
+
+  const nyamResults: RestaurantSearchResult[] = nyamDeduped.map((r) => ({
     id: r.id,
     type: 'restaurant' as const,
     name: r.name,
@@ -129,12 +132,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 중복 제거 (이름 정규화 기준)
-  const existingKeys = new Set(nyamResults.map((r) => normalizeForDedup(r.name) + '||' + normalizeForDedup(r.address ?? '')))
+  // 중복 제거 (이름 + 좌표 근접 200m 이내면 같은 식당)
+  const accepted: { name: string; lat: number | null; lng: number | null }[] =
+    nyamResults.map((r) => ({ name: r.name, lat: r.lat, lng: r.lng }))
+
   const dedupedExternals = externals.filter((ext) => {
-    const key = normalizeForDedup(ext.name) + '||' + normalizeForDedup(ext.address)
-    if (existingKeys.has(key)) return false
-    existingKeys.add(key)
+    if (isSameRestaurant(ext, accepted)) return false
+    accepted.push({ name: ext.name, lat: ext.lat, lng: ext.lng })
     return true
   })
 
@@ -308,6 +312,79 @@ function mapKakaoCategory(category: string): string | null {
 function mapNaverCategory(category: string): string | null {
   const primary = category.split('>')[0]?.trim()
   return primary || null
+}
+
+/** DB 내부 중복 제거: 이름+좌표 근접 기준 그룹핑, 기록 있는 행 우선 */
+function deduplicateNyamResults(
+  restaurants: { id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; phone: string | null; kakao_map_url: string | null }[],
+  recordedIds: Set<string>,
+): typeof restaurants {
+  const groups: (typeof restaurants)[] = []
+
+  for (const r of restaurants) {
+    let merged = false
+    for (const group of groups) {
+      if (isSameRestaurant(r, [group[0]])) {
+        group.push(r)
+        merged = true
+        break
+      }
+    }
+    if (!merged) groups.push([r])
+  }
+
+  return groups.map((group) => {
+    // 기록 있는 행 우선 → genre가 유의미한 행 → 첫 번째
+    const withRecord = group.find((r) => recordedIds.has(r.id))
+    const withGenre = group.find((r) => r.genre && r.genre !== '기타')
+    return withRecord ?? withGenre ?? group[0]
+  })
+}
+
+/** 같은 식당인지 판단 */
+function isSameRestaurant(
+  candidate: { name: string; lat: number | null; lng: number | null },
+  existing: { name: string; lat: number | null; lng: number | null }[],
+): boolean {
+  const candName = normalizeForDedup(candidate.name)
+  return existing.some((e) => {
+    const eName = normalizeForDedup(e.name)
+    const hasCoords = candidate.lat && candidate.lng && e.lat && e.lng
+    const dist = hasCoords
+      ? haversineDistance(candidate.lat!, candidate.lng!, e.lat!, e.lng!)
+      : null
+
+    // 1) 이름 완전 일치: 좌표 200m 이내 or 좌표 없으면 동일 판정
+    if (candName === eName) {
+      return dist === null || dist <= 200
+    }
+
+    // 2) 이름 유사 + 좌표 100m 이내: 철자 오차 허용 (편집거리 ≤2, 유사도 ≥70%)
+    if (dist !== null && dist <= 100) {
+      const longer = Math.max(candName.length, eName.length)
+      const ed = editDistance(candName, eName)
+      return ed <= 2 && ed / longer <= 0.3
+    }
+
+    return false
+  })
+}
+
+/** Levenshtein 편집 거리 */
+function editDistance(a: string, b: string): number {
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+  const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  )
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[a.length][b.length]
 }
 
 /** Haversine 거리 (미터) */

@@ -9,6 +9,7 @@ import {
   isDailyRecordCapReached, checkMilestoneReached, BONUS_XP_MAP,
 } from '@/domain/services/xp-calculator'
 import { xpRepo } from '@/shared/di/container'
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 
 /**
  * XP 계산 + 적립 오케스트레이션 hook.
@@ -46,7 +47,7 @@ export function useXpCalculation() {
 
     // ── Step 0: 일일 기록 상한 체크 (신규만) ──
     if (!isEdit) {
-      const today = new Date().toISOString().split('T')[0]
+      const today = todayInTz(detectBrowserTimezone())
       const dailyCount = await xpRepo.getDailyRecordCount(userId, today)
       if (isDailyRecordCapReached(dailyCount)) {
         return result

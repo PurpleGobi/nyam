@@ -18,7 +18,7 @@ export interface RecordPhoto {
   /** 사진 순서 (0부터 시작, 기본값 0) */
   orderIndex: number
 
-  /** 공개 여부 (기본값 false — 비공개) */
+  /** 공개 여부 (기본값 true — 공개) */
   isPublic: boolean
 
   /** 생성 시각 — ISO datetime */
@@ -35,7 +35,7 @@ export interface PendingPhoto {
   orderIndex: number
   status: 'pending' | 'uploading' | 'uploaded' | 'error'
   uploadedUrl?: string
-  /** 공개 여부 (기본값 false — 비공개) */
+  /** 공개 여부 (기본값 true — 공개) */
   isPublic: boolean
 }
 

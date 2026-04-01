@@ -13,6 +13,7 @@ import { CompanionInput } from '@/presentation/components/record/companion-input
 import { RecordSaveBar } from '@/presentation/components/record/record-save-bar'
 import { LinkSearchSheet } from '@/presentation/components/record/link-search-sheet'
 import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 
 interface RestaurantTarget {
   id: string
@@ -107,7 +108,7 @@ export function RestaurantRecordForm({
   const [priceRange, setPriceRange] = useState<number | null>(null)
   const [totalPrice, setTotalPrice] = useState(initialData?.totalPrice ? String(initialData.totalPrice) : '')
   const [visitDate, setVisitDate] = useState(
-    initialData?.visitDate ?? new Date().toISOString().split('T')[0],
+    initialData?.visitDate ?? todayInTz(detectBrowserTimezone()),
   )
   const [linkedWine, setLinkedWine] = useState<LinkSearchResult | null>(null)
   const [showLinkSheet, setShowLinkSheet] = useState(false)
@@ -205,7 +206,7 @@ export function RestaurantRecordForm({
           type="date"
           value={visitDate}
           onChange={(e) => setVisitDate(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
+          max={todayInTz(detectBrowserTimezone())}
           className="w-full"
           style={{
             padding: '10px 14px',
@@ -245,7 +246,7 @@ export function RestaurantRecordForm({
         </div>
       </section>
 
-      {/* 사진 (기본 비공개) */}
+      {/* 사진 (기본 공개) */}
       {photoSlot && (
         <section className="px-4 py-4">
           {photoSlot}

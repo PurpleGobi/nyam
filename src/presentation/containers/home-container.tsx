@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget } from '@/domain/entities/record'
+import type { GroupedTarget } from '@/domain/entities/grouped-target'
+import { groupRecordsByTarget } from '@/domain/services/record-grouper'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
@@ -64,13 +66,33 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
     case 'name':
       return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count': {
-      // targetId별 방문 횟수 집계 후 내림차순 정렬
       const visitCounts = new Map<string, number>()
       for (const r of records) {
         visitCounts.set(r.targetId, (visitCounts.get(r.targetId) ?? 0) + 1)
       }
       return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
     }
+  }
+}
+
+function sortGroupedTargets(groups: GroupedTarget[], sort: SortOption): GroupedTarget[] {
+  const sorted = [...groups]
+  switch (sort) {
+    case 'latest':
+      return sorted.sort((a, b) => {
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
+        if (dateA !== dateB) return dateB.localeCompare(dateA)
+        return b.createdAt.localeCompare(a.createdAt)
+      })
+    case 'score_high':
+      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
+    case 'score_low':
+      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
+    case 'name':
+      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
+    case 'visit_count':
+      return sorted.sort((a, b) => b.visitCount - a.visitCount)
   }
 }
 
@@ -230,20 +252,31 @@ export function HomeContainer() {
     toggleSort()
   }, [setCurrentSort, toggleSort])
 
-  // 필터/소팅/검색 적용된 레코드
-  const allDisplayRecords = useMemo(() => {
+  // 필터/검색 적용된 레코드 (그룹화 전)
+  const filteredRecords = useMemo(() => {
     let result = records
     result = applyFilterRules(result, filterRules, conjunction)
     result = searchRecords(result, searchQuery)
-    result = sortRecords(result, currentSort)
     return result
-  }, [records, filterRules, conjunction, searchQuery, currentSort])
+  }, [records, filterRules, conjunction, searchQuery])
+
+  // 그룹화 + 소팅 (카드/리스트/맵 뷰용)
+  const allGroupedTargets = useMemo(() => {
+    const grouped = groupRecordsByTarget(filteredRecords)
+    return sortGroupedTargets(grouped, currentSort)
+  }, [filteredRecords, currentSort])
+
+  // 캘린더 뷰용 개별 레코드 (소팅 적용)
+  const allSortedRecords = useMemo(() => {
+    if (viewMode !== 'calendar') return []
+    return sortRecords(filteredRecords, currentSort)
+  }, [filteredRecords, currentSort, viewMode])
 
   // 페이지네이션: 카드 5개, 리스트/지도 10개
   const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
   const [currentRecordPage, setCurrentRecordPage] = useState(1)
-  const totalRecordPages = Math.max(1, Math.ceil(allDisplayRecords.length / pageSize))
-  const displayRecords = allDisplayRecords.slice(
+  const totalRecordPages = Math.max(1, Math.ceil(allGroupedTargets.length / pageSize))
+  const displayGrouped = allGroupedTargets.slice(
     (currentRecordPage - 1) * pageSize,
     currentRecordPage * pageSize,
   )
@@ -265,8 +298,8 @@ export function HomeContainer() {
   // 캘린더 선택 날짜의 상세 기록
   const selectedDayRecords = useMemo(() => {
     if (!selectedDate) return []
-    return displayRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
-  }, [displayRecords, selectedDate])
+    return allSortedRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
+  }, [allSortedRecords, selectedDate])
 
   const selectedDateLabel = useMemo(() => {
     if (!selectedDate) return ''
@@ -275,21 +308,21 @@ export function HomeContainer() {
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`
   }, [selectedDate])
 
-  // 맵 레코드 (식당 전용)
+  // 맵 레코드 (식당 전용 — 그룹화로 중복 마커 제거)
   const mapRecords: MapRecord[] = useMemo(() => {
     if (activeTab !== 'restaurant') return []
-    return displayRecords.map((r) => ({
-      restaurantId: r.targetId,
-      name: r.targetName,
-      genre: r.targetMeta ?? '',
-      area: r.targetArea ?? '',
-      lat: r.targetLat ?? 0,
-      lng: r.targetLng ?? 0,
-      score: r.satisfaction,
+    return displayGrouped.map((g) => ({
+      restaurantId: g.targetId,
+      name: g.targetName,
+      genre: g.targetMeta ?? '',
+      area: g.targetArea ?? '',
+      lat: g.targetLat ?? 0,
+      lng: g.targetLng ?? 0,
+      score: g.satisfaction,
       distanceKm: null,
-      photoUrl: r.targetPhotoUrl,
+      photoUrl: g.targetPhotoUrl,
     }))
-  }, [displayRecords, activeTab])
+  }, [displayGrouped, activeTab])
 
   // 빈 상태
   const renderEmptyState = () => (
@@ -356,23 +389,24 @@ export function HomeContainer() {
 
     // 리스트(list) 뷰
     if (viewMode === 'list') {
-      if (displayRecords.length === 0) return renderEmptyState()
+      if (displayGrouped.length === 0) return renderEmptyState()
       return (
         <div className="content-detail px-4 pb-24 md:px-8">
-          {displayRecords.map((record, i) => (
+          {displayGrouped.map((group, i) => (
             <CompactListItem
-              key={record.id}
+              key={group.targetId}
               rank={i + 1}
-              photoUrl={record.targetPhotoUrl}
-              name={record.targetName}
-              meta={[record.targetMeta, record.visitDate].filter(Boolean).join(' · ')}
-              score={record.satisfaction}
-              axisX={record.axisX ?? null}
-              axisY={record.axisY ?? null}
+              photoUrl={group.targetPhotoUrl}
+              name={group.targetName}
+              meta={[group.targetMeta, group.visitDate].filter(Boolean).join(' · ')}
+              score={group.satisfaction}
+              axisX={group.axisX}
+              axisY={group.axisY}
               accentType={activeTab}
+              visitCount={group.visitCount}
               onClick={() =>
                 router.push(
-                  `/${record.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${record.targetId}`,
+                  `/${group.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${group.targetId}`,
                 )
               }
             />
@@ -382,49 +416,50 @@ export function HomeContainer() {
     }
 
     // 카드(card) 뷰 — 기본
-    if (displayRecords.length === 0) return renderEmptyState()
+    if (displayGrouped.length === 0) return renderEmptyState()
     return (
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-        {displayRecords.map((record) =>
+        {displayGrouped.map((group) =>
           activeTab === 'wine' ? (
             <WineCard
-              key={record.id}
-              id={record.id}
+              key={group.targetId}
+              id={group.latestRecordId}
               wine={{
-                id: record.targetId,
-                name: record.targetName,
+                id: group.targetId,
+                name: group.targetName,
                 wineType: '',
-                variety: record.targetMeta ?? null,
-                region: record.targetArea ?? null,
-                photoUrl: record.targetPhotoUrl,
+                variety: group.targetMeta ?? null,
+                region: group.targetArea ?? null,
+                photoUrl: group.targetPhotoUrl,
               }}
               myRecord={{
-                satisfaction: record.satisfaction,
-                axisX: record.axisX ?? null,
-                axisY: record.axisY ?? null,
-                visitDate: record.visitDate,
-                listStatus: record.listStatus ?? 'tasted',
-                purchasePrice: record.purchasePrice ?? null,
+                satisfaction: group.satisfaction,
+                axisX: group.axisX,
+                axisY: group.axisY,
+                visitDate: group.visitDate,
+                listStatus: group.listStatus ?? 'tasted',
+                purchasePrice: group.allRecords[0]?.purchasePrice ?? null,
               }}
             />
           ) : (
             <RecordCard
-              key={record.id}
-              id={record.id}
-              targetId={record.targetId}
-              targetType={record.targetType}
-              name={record.targetName}
-              meta={[record.targetMeta, record.targetArea, record.visitDate].filter(Boolean).join(' · ')}
-              photoUrl={record.targetPhotoUrl}
-              satisfaction={record.satisfaction}
-              axisX={record.axisX ?? null}
-              axisY={record.axisY ?? null}
-              status={record.listStatus ?? 'visited'}
+              key={group.targetId}
+              id={group.latestRecordId}
+              targetId={group.targetId}
+              targetType={group.targetType}
+              name={group.targetName}
+              meta={[group.targetMeta, group.targetArea, group.visitDate].filter(Boolean).join(' · ')}
+              photoUrl={group.targetPhotoUrl}
+              satisfaction={group.satisfaction}
+              axisX={group.axisX}
+              axisY={group.axisY}
+              status={group.listStatus ?? 'visited'}
+              visitCount={group.visitCount}
               sources={[
                 {
                   type: 'me',
                   label: '나',
-                  detail: `${record.satisfaction ?? '-'} · ${record.visitDate ?? ''}`,
+                  detail: `${group.satisfaction ?? '-'} · ${group.visitDate ?? ''}`,
                 },
               ]}
             />

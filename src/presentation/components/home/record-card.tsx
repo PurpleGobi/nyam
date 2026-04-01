@@ -44,6 +44,7 @@ export interface RecordCardProps {
   isNotMine?: boolean
   sharedBubbles?: SharedBubbleChip[]
   onShareClick?: () => void
+  visitCount?: number
 }
 
 export function RecordCard({
@@ -63,6 +64,7 @@ export function RecordCard({
   isNotMine,
   sharedBubbles,
   onShareClick,
+  visitCount,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -118,7 +120,17 @@ export function RecordCard({
 
       <div className="flex flex-1 flex-col p-3.5" style={{ minWidth: 0 }}>
         <p className="truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>{name}</p>
-        <p className="mb-2.5 text-[12px]" style={{ color: 'var(--text-sub)' }}>{meta}</p>
+        <p className="mb-2.5 text-[12px]" style={{ color: 'var(--text-sub)' }}>
+          {meta}
+          {visitCount != null && visitCount > 1 && (
+            <span
+              className="ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold"
+              style={{ backgroundColor: 'var(--bg-elevated)', color: accentColor }}
+            >
+              {visitCount}회
+            </span>
+          )}
+        </p>
 
         {isUnrated ? (
           <div className="flex flex-1 items-center">

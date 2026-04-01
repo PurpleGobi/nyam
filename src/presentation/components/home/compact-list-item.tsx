@@ -4,6 +4,7 @@ import { Wine, Users } from 'lucide-react'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
 import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
+import { formatRelativeDate } from '@/shared/utils/date-format'
 
 interface CompactListItemProps {
   rank: number
@@ -19,16 +20,7 @@ interface CompactListItemProps {
   bubbleDots?: MemberDot[]
   memberCount?: number
   latestReviewAt?: string | null
-}
-
-function formatRelativeDate(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return '오늘'
-  if (days === 1) return '어제'
-  if (days < 7) return `${days}일 전`
-  if (days < 30) return `${Math.floor(days / 7)}주 전`
-  return `${Math.floor(days / 30)}개월 전`
+  visitCount?: number
 }
 
 export function CompactListItem({
@@ -44,6 +36,7 @@ export function CompactListItem({
   bubbleDots,
   memberCount,
   latestReviewAt,
+  visitCount,
 }: CompactListItemProps) {
   const isTop3 = rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
@@ -86,6 +79,9 @@ export function CompactListItem({
         <p className="compact-name">{name}</p>
         <p className="compact-meta flex items-center gap-0.5">
           <span className="truncate">{meta}</span>
+          {visitCount != null && visitCount > 1 && (
+            <span className="shrink-0"> · {visitCount}회</span>
+          )}
           {isBubbleMode && memberCount != null && (
             <span className="inline-flex shrink-0 items-center gap-0.5"> · <Users size={9} /> {memberCount}</span>
           )}

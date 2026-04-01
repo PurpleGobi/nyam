@@ -9,6 +9,7 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { validateExifGps } from '@/domain/services/exif-validator'
 import { useXpAward } from '@/application/hooks/use-xp-award'
 import { useXp } from '@/application/hooks/use-xp'
@@ -43,7 +44,7 @@ function RecordFlowInner() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
-  const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, togglePublic, uploadAll, isUploading } = usePhotoUpload()
+  const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, reorderPhotos, togglePublic, uploadAll, isUploading } = usePhotoUpload()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const { awardXp } = useXpAward()
   const { thresholds } = useXp(user?.id ?? null)
@@ -329,7 +330,7 @@ function RecordFlowInner() {
             balance: (formData.balance as number) ?? null,
             autoScore: (formData.autoScore as number) ?? null,
             mealTime: (formData.mealTime as DiningRecord['mealTime']) ?? null,
-            visitDate: (formData.visitDate as string) ?? new Date().toISOString().split('T')[0],
+            visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
             menuTags: (formData.menuTags as string[]) ?? null,
             pairingCategories: formData.pairingCategories as DiningRecord['pairingCategories'],
             linkedWineId: formData.linkedWineId as string | undefined,
@@ -425,7 +426,7 @@ function RecordFlowInner() {
             companionCount: (formData.companionCount as number) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
-            visitDate: (formData.visitDate as string) ?? new Date().toISOString().split('T')[0],
+            visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
             aromaRegions: (formData.aromaRegions as Record<string, unknown>) ?? null,
             aromaLabels: (formData.aromaLabels as string[]) ?? null,
             aromaColor: (formData.aromaColor as string) ?? null,
@@ -537,7 +538,7 @@ function RecordFlowInner() {
         // useCreateRecord 내부에서 error state 처리
       }
     },
-    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds],
+    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone],
   )
 
   const handleBack = useCallback(() => router.back(), [router])
@@ -559,7 +560,7 @@ function RecordFlowInner() {
     } catch {
       setIsDeleting(false)
     }
-  }, [editRecordId, user, editingRecord, router])
+  }, [editRecordId, user, router])
   const handleAddMore = useCallback(() => {
     const prefix = state.targetType === 'wine' ? 'wines' : 'restaurants'
     router.push(`/${prefix}/${state.targetId}`)
@@ -610,6 +611,7 @@ function RecordFlowInner() {
       onAddFiles={addFiles}
       onRemovePhoto={removePhoto}
       onReplacePhoto={replacePhoto}
+      onReorderPhotos={reorderPhotos}
       onTogglePublic={togglePublic}
       isUploading={isUploading}
       isMaxReached={photos.length >= PHOTO_CONSTANTS.MAX_PHOTOS}

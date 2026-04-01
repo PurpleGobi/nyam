@@ -2,7 +2,7 @@ import { createClient } from '@/infrastructure/supabase/client'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { UserSettings, VisibilityConfig, PrivacyProfile, PrivacyRecords, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
 
-const SETTINGS_SELECT = 'nickname, bio, avatar_url, privacy_profile, privacy_records, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
+const SETTINGS_SELECT = 'nickname, bio, avatar_url, privacy_profile, privacy_records, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_timezone, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
 
 export class SupabaseSettingsRepository implements SettingsRepository {
   private get supabase() {
@@ -42,6 +42,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       prefRecordInput: (data.pref_record_input as string) ?? 'camera',
       prefBubbleShare: (data.pref_bubble_share as string) ?? 'ask',
       prefTempUnit: (data.pref_temp_unit as string) ?? 'C',
+      prefTimezone: (data.pref_timezone as string) ?? null,
       deletedAt: data.deleted_at as string | null,
       deleteMode: data.delete_mode as DeleteMode | null,
       deleteScheduledAt: data.delete_scheduled_at as string | null,
