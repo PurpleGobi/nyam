@@ -84,7 +84,9 @@
       "Bash(git fetch:*)",
       "Bash(wc:*)",
       "mcp__playwright__browser_press_key",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Read(//proc/12889/**)",
+      "Read(//private/tmp/**)"
     ]
   },
   "enableAllProjectMcpServers": true,
