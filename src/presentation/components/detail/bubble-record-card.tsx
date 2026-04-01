@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Heart, MessageCircle } from 'lucide-react'
+import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface BubbleRecordCardProps {
@@ -10,17 +10,17 @@ interface BubbleRecordCardProps {
   authorAvatarColor: string | null
   authorLevel: number
   authorLevelTitle: string
-  bubbleName: string
   satisfaction: number | null
+  axisX: number | null
+  axisY: number | null
   comment: string | null
   scene: string | null
   visitDate: string | null
-  likeCount: number
-  commentCount: number
   /** 현재 뷰어가 해당 버블 멤버인지 */
   isMember: boolean
   /** 버블의 콘텐츠 가시성 설정 */
   contentVisibility: 'rating_only' | 'rating_and_comment'
+  accentType: 'food' | 'wine'
   onPress?: () => void
 }
 
@@ -30,46 +30,49 @@ export function BubbleRecordCard({
   authorAvatarColor,
   authorLevel,
   authorLevelTitle,
-  bubbleName,
   satisfaction,
+  axisX,
+  axisY,
   comment,
   scene,
   visitDate,
-  likeCount,
-  commentCount,
   isMember,
   contentVisibility,
+  accentType,
   onPress,
 }: BubbleRecordCardProps) {
-  // 멤버: 모든 필드 표시
-  // 비멤버 + rating_only: 아바타 + 레벨 + 점수만
-  // 비멤버 + rating_and_comment: 아바타 + 레벨 + 점수 + 한줄평
   const showComment = isMember || contentVisibility === 'rating_and_comment'
-  const showBottomRow = isMember
+  const showMeta = isMember
+  const accentColor = accentType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'
+  const hasQuadrant = axisX != null && axisY != null && satisfaction != null
 
   return (
     <button
       type="button"
       onClick={onPress}
-      className="flex w-full items-start gap-3 rounded-xl p-3 text-left transition-transform active:scale-[0.98]"
-      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      className="flex w-full items-center gap-3 text-left transition-transform active:scale-[0.985]"
+      style={{ padding: '8px 0' }}
     >
+      {/* 아바타 */}
       <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
         style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
       >
         {authorAvatar ? (
-          <Image src={authorAvatar} alt="" width={32} height={32} className="h-full w-full rounded-full object-cover" />
+          <Image src={authorAvatar} alt="" width={40} height={40} className="h-full w-full rounded-full object-cover" />
         ) : (
           authorNickname.charAt(0)
         )}
       </div>
 
+      {/* 버블러 정보 + 한줄평/상황/방문일 */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>{authorNickname}</span>
+          <span className="truncate text-[13px] font-bold" style={{ color: 'var(--text)' }}>
+            {authorNickname}
+          </span>
           <span
-            className="text-[11px] font-medium"
+            className="shrink-0 text-[10px] font-medium"
             style={{
               backgroundColor: 'var(--bg-section)',
               color: 'var(--text-sub)',
@@ -79,42 +82,38 @@ export function BubbleRecordCard({
           >
             {authorLevelTitle} Lv.{authorLevel}
           </span>
-          <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{bubbleName}</span>
         </div>
-        {showComment && comment && (
-          <p className="mt-1 line-clamp-1 text-[12px]" style={{ color: 'var(--text-sub)', lineHeight: 1.5 }}>
-            {comment}
-          </p>
-        )}
-        {showBottomRow && (
-          <div className="mt-1 flex items-center gap-1" style={{ color: 'var(--text-hint)', fontSize: '11px' }}>
-            {scene && <><span>{scene}</span><span>·</span></>}
-            {visitDate && <span>{visitDate}</span>}
-            {(likeCount > 0 || commentCount > 0) && (
-              <span className="ml-auto flex items-center gap-2">
-                {likeCount > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    <Heart size={12} />
-                    {likeCount}
-                  </span>
-                )}
-                {commentCount > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    <MessageCircle size={12} />
-                    {commentCount}
-                  </span>
-                )}
-              </span>
-            )}
-          </div>
-        )}
+        <p className="mt-0.5 flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          {showComment && comment && (
+            <span className="truncate" style={{ color: 'var(--text-sub)' }}>{comment}</span>
+          )}
+          {showMeta && scene && (
+            <>
+              {showComment && comment && <span>·</span>}
+              <span className="shrink-0">{scene}</span>
+            </>
+          )}
+          {showMeta && visitDate && (
+            <>
+              {((showComment && comment) || scene) && <span>·</span>}
+              <span className="shrink-0">{visitDate}</span>
+            </>
+          )}
+        </p>
       </div>
 
-      {satisfaction !== null && (
-        <span className="shrink-0 text-[14px] font-extrabold" style={{ color: getGaugeColor(satisfaction) }}>
-          {satisfaction}
+      {/* 미니 사분면 + 점수 */}
+      <div className="flex w-[88px] shrink-0 items-center justify-end gap-2">
+        {hasQuadrant && (
+          <MiniQuadrant axisX={axisX} axisY={axisY} satisfaction={satisfaction} accentColor={accentColor} size={48} />
+        )}
+        <span
+          className="text-[18px] font-extrabold"
+          style={{ color: satisfaction != null ? getGaugeColor(satisfaction) : 'var(--border-bold)', minWidth: '28px', textAlign: 'right' }}
+        >
+          {satisfaction != null ? satisfaction : '—'}
         </span>
-      )}
+      </div>
     </button>
   )
 }

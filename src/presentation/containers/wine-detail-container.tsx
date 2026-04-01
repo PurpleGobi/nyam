@@ -122,9 +122,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
   // ─── 버블 모드 ───
   const isBubbleMode = bubbleId != null
-  const { bubble: bubbleInfo } = useBubbleDetail(bubbleId ?? '__none__', user?.id ?? null)
+  const { bubble: bubbleInfo } = useBubbleDetail(bubbleId, user?.id ?? null)
   const { shares: bubbleFeedShares } = useBubbleFeed(
-    bubbleId ?? '__none__',
+    bubbleId,
     isBubbleMode ? 'member' : null,
     'rating_and_comment',
   )

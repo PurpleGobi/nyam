@@ -15,20 +15,17 @@ interface BubbleFilterChipsProps {
   bubbles: BubbleChipItem[]
   selectedId: string | null
   onSelect: (id: string | null) => void
-  accentType?: 'food' | 'wine'
 }
 
-export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 'food' }: BubbleFilterChipsProps) {
+export function BubbleFilterChips({ bubbles, selectedId, onSelect }: BubbleFilterChipsProps) {
   if (bubbles.length === 0) return null
-
-  const variant = accentType === 'food' ? 'food' : 'wine'
 
   return (
     <FilterChipGroup className="py-1">
       <button
         type="button"
         onClick={() => onSelect(null)}
-        className={`filter-chip ${selectedId === null ? `active ${variant}` : ''}`}
+        className={`filter-chip ${selectedId === null ? 'active social' : ''}`}
       >
         전체
       </button>
@@ -39,7 +36,12 @@ export function BubbleFilterChips({ bubbles, selectedId, onSelect, accentType = 
             key={b.id}
             type="button"
             onClick={() => onSelect(isActive ? null : b.id)}
-            className={`filter-chip ${isActive ? `active ${variant}` : ''}`}
+            className="filter-chip"
+            style={isActive ? {
+              backgroundColor: b.iconBgColor ?? 'var(--accent-social)',
+              borderColor: b.iconBgColor ?? 'var(--accent-social)',
+              color: '#FFFFFF',
+            } : undefined}
           >
             <BubbleIcon icon={b.icon} size={11} />
             {b.name}

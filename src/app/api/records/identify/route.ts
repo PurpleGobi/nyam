@@ -27,7 +27,8 @@ async function upsertWineFromAI(
     throw new Error('NO_WINE_NAME')
   }
 
-  // 중복 체크: 이름(대소문자 무시) + 빈티지
+  // 중복 체크: 다단계 퍼지 매칭
+  // 1단계: 정확한 이름 매칭
   let query = supabase
     .from('wines')
     .select('id, name, producer, vintage, wine_type, region, country')
@@ -37,7 +38,56 @@ async function upsertWineFromAI(
     query = query.eq('vintage', recognition.vintage)
   }
 
-  const { data: existing } = await query.limit(1).maybeSingle()
+  let { data: existing } = await query.limit(1).maybeSingle()
+
+  // 2단계: 이름에 핵심 키워드 포함 매칭 (Château X → X, X Y Z → 각 단어)
+  if (!existing) {
+    const nameWords = recognition.wineName
+      .replace(/^(Château|Chateau|Domaine|Clos|Maison)\s+/i, '')
+      .split(/[\s,·-]+/)
+      .filter((w) => w.length >= 3)
+      .slice(0, 3)
+
+    if (nameWords.length > 0) {
+      // 핵심 단어들을 모두 포함하는 와인 검색
+      const patterns = nameWords.map((w) => `name.ilike.%${w}%`)
+      const { data: fuzzyResults } = await supabase
+        .from('wines')
+        .select('id, name, producer, vintage, wine_type, region, country')
+        .or(patterns.join(','))
+        .limit(10)
+
+      if (fuzzyResults && fuzzyResults.length > 0) {
+        // 핵심 단어 매칭 수가 가장 많은 후보 선택
+        const scored = fuzzyResults.map((w) => {
+          const nameLower = w.name.toLowerCase()
+          const matchCount = nameWords.filter((word) => nameLower.includes(word.toLowerCase())).length
+          return { ...w, matchCount }
+        })
+        scored.sort((a, b) => b.matchCount - a.matchCount)
+
+        // 2개 이상 단어가 매칭되면 동일 와인으로 판단
+        if (scored[0].matchCount >= 2) {
+          existing = scored[0]
+        }
+      }
+    }
+  }
+
+  // 3단계: 생산자 + 빈티지 매칭 (이름이 다르더라도)
+  if (!existing && recognition.producer && recognition.vintage) {
+    const { data: producerMatch } = await supabase
+      .from('wines')
+      .select('id, name, producer, vintage, wine_type, region, country')
+      .ilike('producer', `%${recognition.producer}%`)
+      .eq('vintage', recognition.vintage)
+      .limit(1)
+      .maybeSingle()
+
+    if (producerMatch) {
+      existing = producerMatch
+    }
+  }
 
   if (existing) {
     return { id: existing.id, name: existing.name, isExisting: true }

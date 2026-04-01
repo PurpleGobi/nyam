@@ -69,6 +69,8 @@ function SearchInner() {
     return () => clearTimeout(timer)
   }, [toast])
 
+  const initialQuery = searchParams.get('q') ?? ''
+
   const {
     query,
     setQuery,
@@ -81,7 +83,7 @@ function SearchInner() {
     recentSearches,
     addRecentSearch,
     clearRecentSearches,
-  } = useSearch({ targetType, lat: gps?.lat, lng: gps?.lng })
+  } = useSearch({ targetType, lat: gps?.lat, lng: gps?.lng, initialQuery })
 
   const handleSelect = useCallback(
     async (result: SearchResult) => {

@@ -25,6 +25,8 @@ export interface FilterAttribute {
   cascadingOptions?: CascadingOption[]
   /** cascading-select 전용: 각 레벨 placeholder */
   cascadingLabels?: string[]
+  /** cascading-select 전용: 각 레벨의 실제 DB 필드 키 (예: ['country','city','district']) */
+  cascadingFieldKeys?: string[]
 }
 
 // ─── 위치 캐스케이딩 트리 ───
@@ -191,6 +193,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '위치',
     type: 'cascading-select',
     cascadingLabels: ['국가', '도시', '구'],
+    cascadingFieldKeys: ['country', 'city', 'district'],
     cascadingOptions: LOCATION_DISTRICT_TREE,
   },
   {
@@ -198,6 +201,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '생활권',
     type: 'cascading-select',
     cascadingLabels: ['국가', '도시', '생활권'],
+    cascadingFieldKeys: ['country', 'city', 'area'],
     cascadingOptions: LOCATION_AREA_TREE,
   },
   {

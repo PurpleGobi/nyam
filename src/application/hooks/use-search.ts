@@ -14,10 +14,11 @@ interface UseSearchParams {
   targetType: 'restaurant' | 'wine'
   lat?: number | null
   lng?: number | null
+  initialQuery?: string
 }
 
-export function useSearch({ targetType, lat, lng }: UseSearchParams) {
-  const [query, setQueryState] = useState('')
+export function useSearch({ targetType, lat, lng, initialQuery }: UseSearchParams) {
+  const [query, setQueryState] = useState(initialQuery ?? '')
   const [screenState, setScreenState] = useState<SearchScreenState>('idle')
   const [results, setResults] = useState<SearchResult[]>([])
   const [aiCandidates, setAiCandidates] = useState<WineSearchCandidate[]>([])
@@ -116,6 +117,15 @@ export function useSearch({ targetType, lat, lng }: UseSearchParams) {
     () => debounce((q: string) => executeSearch(q), DEBOUNCE_MS),
     [executeSearch],
   )
+
+  // initialQuery가 있으면 마운트 시 자동 검색
+  const initialSearchDone = useRef(false)
+  useEffect(() => {
+    if (initialQuery && initialQuery.length >= MIN_QUERY_LENGTH && !initialSearchDone.current) {
+      initialSearchDone.current = true
+      executeSearch(initialQuery)
+    }
+  }, [initialQuery, executeSearch])
 
   const setQuery = useCallback(
     (q: string) => {

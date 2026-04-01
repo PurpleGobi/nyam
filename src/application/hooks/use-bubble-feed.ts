@@ -85,7 +85,7 @@ function toEnriched(item: BubbleFeedItem): FeedShareEnriched {
 }
 
 export function useBubbleFeed(
-  bubbleId: string,
+  bubbleId: string | null,
   myRole: BubbleMemberRole | null,
   contentVisibility: BubbleContentVisibility,
 ) {
@@ -95,6 +95,10 @@ export function useBubbleFeed(
   const [isLoading, setIsLoading] = useState(true)
 
   const fetchShares = useCallback(async () => {
+    if (!bubbleId) {
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
     try {
       const result = await bubbleRepo.getEnrichedShares(bubbleId, { limit: 50 })

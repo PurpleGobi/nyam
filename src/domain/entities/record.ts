@@ -101,6 +101,8 @@ export interface RecordWithTarget extends DiningRecord {
   targetLng: number | null
   source?: RecordSource
   genre?: string | null
+  country?: string | null
+  city?: string | null
   district?: string | null
   area?: string[] | null
   priceRange?: number | null
@@ -109,7 +111,6 @@ export interface RecordWithTarget extends DiningRecord {
   mediaAppearances?: string[] | null
   wineType?: string | null
   variety?: string | null
-  country?: string | null
   region?: string | null
   vintage?: number | null
   // list 정보

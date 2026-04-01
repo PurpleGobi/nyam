@@ -522,12 +522,14 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     if (bubbleIds.length === 0) return []
     const { data } = await this.supabase
       .from('bubble_shares')
-      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, comment, scene, visit_date, users(nickname, avatar_url, avatar_color, total_xp))')
+      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date, users(nickname, avatar_url, avatar_color, total_xp))')
+      .eq('target_id', targetId)
+      .eq('target_type', targetType)
       .in('bubble_id', bubbleIds)
       .order('shared_at', { ascending: false })
     const filtered = (data ?? []).filter((s: Record<string, unknown>) => {
       const rec = s.records as Record<string, unknown> | null
-      return rec && (rec as Record<string, unknown>).target_type === targetType
+      return rec != null
     })
 
     // 리액션/댓글 카운트 배치 조회
@@ -557,6 +559,8 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         authorLevel: level,
         authorLevelTitle: getLevelTitle(level),
         satisfaction: (rec?.satisfaction as number) ?? null,
+        axisX: (rec?.axis_x as number) ?? null,
+        axisY: (rec?.axis_y as number) ?? null,
         comment: (rec?.comment as string) ?? null,
         scene: (rec?.scene as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,

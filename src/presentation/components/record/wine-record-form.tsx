@@ -47,9 +47,9 @@ interface CreateWineRecordInput {
   axisX: number
   axisY: number
   satisfaction: number
-  aromaRegions: Record<string, unknown>
-  aromaLabels: string[]
-  aromaColor: string
+  aromaRegions: Record<string, unknown> | null
+  aromaLabels: string[] | null
+  aromaColor: string | null
   complexity?: number
   finish?: number
   balance?: number
@@ -163,7 +163,8 @@ export function WineRecordForm({
 
   const aromaRingCount = countActiveRings(aroma.regions)
 
-  const isValid = quadrantTouched
+  const isEditMode = !!onDelete
+  const isValid = isEditMode || quadrantTouched
 
   const handleQuadrantChange = useCallback((val: { x: number; y: number; satisfaction?: number }) => {
     isManualOverrideRef.current = true
@@ -177,7 +178,7 @@ export function WineRecordForm({
   }, [])
 
   const handleSave = useCallback(async () => {
-    if (!isValid || !aroma.color) return
+    if (!isValid) return
 
     await onSave({
       targetId: target.id,
@@ -191,9 +192,9 @@ export function WineRecordForm({
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
-      aromaRegions: aroma.regions as Record<string, unknown>,
-      aromaLabels: aroma.labels,
-      aromaColor: aroma.color,
+      aromaRegions: Object.keys(aroma.regions).length > 0 ? aroma.regions as Record<string, unknown> : null,
+      aromaLabels: aroma.labels.length > 0 ? aroma.labels : null,
+      aromaColor: aroma.color ?? null,
       complexity: structure.complexity,
       finish: structure.finish,
       balance: structure.balance,

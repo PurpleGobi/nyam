@@ -16,6 +16,8 @@ interface BubbleRecordItem {
   authorLevel: number
   authorLevelTitle: string
   satisfaction: number | null
+  axisX: number | null
+  axisY: number | null
   comment: string | null
   scene: string | null
   visitDate: string | null
@@ -67,6 +69,8 @@ export function useBubbleRecords(
         authorLevel: s.authorLevel ?? 1,
         authorLevelTitle: s.authorLevelTitle ?? '',
         satisfaction: s.satisfaction ?? null,
+        axisX: s.axisX ?? null,
+        axisY: s.axisY ?? null,
         comment: s.comment ?? null,
         scene: s.scene ?? null,
         visitDate: s.visitDate ?? null,

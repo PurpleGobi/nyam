@@ -76,6 +76,8 @@ const FIELD_MAP: Record<string, string> = {
   aroma_labels: 'aromaLabels',
   body_level: 'bodyLevel',
   area: 'targetArea',
+  country: 'country',
+  city: 'city',
   district: 'district',
 }
 

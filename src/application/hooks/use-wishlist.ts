@@ -16,7 +16,7 @@ export interface UseWishlistReturn {
  */
 export function useWishlist(
   userId: string | null,
-  targetId: string,
+  targetId: string | null,
   targetType: 'restaurant' | 'wine',
   repo: RecordRepository,
 ): UseWishlistReturn {
@@ -24,14 +24,14 @@ export function useWishlist(
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || !targetId) return
     repo.findListByUserAndTarget(userId, targetId, targetType).then((list) => {
       setIsWishlisted(list?.status === 'wishlist')
     })
   }, [userId, targetId, targetType, repo])
 
   const toggle = useCallback(async () => {
-    if (!userId || isLoading) return
+    if (!userId || !targetId || isLoading) return
     setIsLoading(true)
 
     const prev = isWishlisted

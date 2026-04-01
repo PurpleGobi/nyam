@@ -10,6 +10,8 @@ export interface ConditionChip {
   operator: FilterOperator
   value: string | number | boolean | null
   displayLabel: string     // "한식", "방문" 등 화면 표시용
+  /** cascading 칩에서 실제 필터링할 DB 필드 (레벨별로 다를 때) */
+  filterKey?: string
 }
 
 /** 고급 필터 칩 — 복잡한 규칙 묶음 */
@@ -37,8 +39,13 @@ export function chipsToFilterRules(chips: FilterChipItem[]): FilterRule[] {
     } else {
       // status:all은 필터 없음
       if (chip.attribute === 'status' && chip.value === 'all') continue
+      // cascading "전체" 칩은 필터에서 제외
+      if (chip.value === CASCADING_ALL) continue
+      // filterKey 우선, 없으면 cascading base key, 아니면 attribute 그대로
+      const attribute = chip.filterKey
+        ?? (isCascadingKey(chip.attribute) ? getCascadingBaseKey(chip.attribute) : chip.attribute)
       rules.push({
-        attribute: chip.attribute,
+        attribute,
         operator: chip.operator,
         value: chip.value,
       })
@@ -51,4 +58,29 @@ let _chipIdCounter = 0
 export function generateChipId(): string {
   _chipIdCounter += 1
   return `chip_${Date.now()}_${_chipIdCounter}`
+}
+
+/* ── cascading-select 헬퍼 ── */
+
+/** cascading "전체" 플레이스홀더 값 */
+export const CASCADING_ALL = '__all__'
+
+/** cascading 칩 키 생성 (예: district__0, district__1) */
+export function cascadingKey(baseKey: string, level: number): string {
+  return `${baseKey}__${level}`
+}
+
+/** cascading 칩 키인지 판별 */
+export function isCascadingKey(key: string): boolean {
+  return key.includes('__') && !isNaN(Number(key.split('__')[1]))
+}
+
+/** cascading 칩 키에서 base key 추출 (district__0 → district) */
+export function getCascadingBaseKey(key: string): string {
+  return key.split('__')[0]
+}
+
+/** cascading 칩 키에서 레벨 추출 (district__1 → 1) */
+export function getCascadingLevel(key: string): number {
+  return Number(key.split('__')[1])
 }

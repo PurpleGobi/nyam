@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react'
 import type { Bubble, BubbleMember, BubbleMemberRole } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
-export function useBubbleDetail(bubbleId: string, userId: string | null) {
+export function useBubbleDetail(bubbleId: string | null, userId: string | null) {
   const [bubble, setBubble] = useState<Bubble | null>(null)
   const [myRole, setMyRole] = useState<BubbleMemberRole | null>(null)
   const [tasteMatch, setTasteMatch] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    if (!bubbleId) {
+      setIsLoading(false)
+      return
+    }
     let cancelled = false
     Promise.all([
       bubbleRepo.findById(bubbleId),
@@ -29,7 +33,7 @@ export function useBubbleDetail(bubbleId: string, userId: string | null) {
   }, [bubbleId, userId])
 
   const refetch = () => {
-    bubbleRepo.findById(bubbleId).then(setBubble)
+    if (bubbleId) bubbleRepo.findById(bubbleId).then(setBubble)
   }
 
   return { bubble, myRole, tasteMatch, isLoading, refetch }

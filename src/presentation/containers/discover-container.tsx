@@ -594,7 +594,7 @@ function PortalLink({ label, url }: { label: string; url: string }) {
 
 function WishlistBtn({ userId, restaurant }: { userId: string; restaurant: DiscoverRestaurant }) {
   const [dbId, setDbId] = useState<string | null>(restaurant.id.startsWith('google_') ? null : restaurant.id)
-  const { isWishlisted, toggle } = useWishlist(userId, dbId ?? '__none__', 'restaurant', recordRepo)
+  const { isWishlisted, toggle } = useWishlist(userId, dbId, 'restaurant', recordRepo)
 
   const handleToggle = useCallback(async () => {
     if (!dbId) {

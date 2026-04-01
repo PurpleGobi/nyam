@@ -33,45 +33,42 @@ export function BubbleRecordSection({ targetId, targetType }: BubbleRecordSectio
           버블 기록
         </span>
       </div>
+      <BubbleFilterChips
+        bubbles={userBubbles}
+        selectedId={selectedBubbleId}
+        onSelect={setSelectedBubbleId}
+      />
       {bubbleRecords.length > 0 ? (
-        <>
-          <BubbleFilterChips
-            bubbles={userBubbles}
-            selectedId={selectedBubbleId}
-            onSelect={setSelectedBubbleId}
-            accentType={accentType}
-          />
-          <div className="mt-3 flex flex-col gap-2">
-            {bubbleRecords.map((r) => (
-              <BubbleRecordCard
-                key={r.shareId}
-                authorNickname={r.authorNickname}
-                authorAvatar={r.authorAvatar}
-                authorAvatarColor={r.authorAvatarColor}
-                authorLevel={r.authorLevel}
-                authorLevelTitle={r.authorLevelTitle}
-                bubbleName={r.bubbleName}
-                satisfaction={r.satisfaction}
-                comment={r.comment}
-                scene={r.scene}
-                visitDate={r.visitDate}
-                likeCount={r.likeCount}
-                commentCount={r.commentCount}
-                isMember={r.isMember}
-                contentVisibility={r.contentVisibility}
-              />
-            ))}
-            {bubbleHasMore && (
-              <button
-                type="button"
-                className="w-full py-2 text-center text-[13px] font-semibold"
-                style={{ color: 'var(--accent-social)' }}
-              >
-                더보기
-              </button>
-            )}
-          </div>
-        </>
+        <div className="mt-3 flex flex-col">
+          {bubbleRecords.map((r) => (
+            <BubbleRecordCard
+              key={r.shareId}
+              authorNickname={r.authorNickname}
+              authorAvatar={r.authorAvatar}
+              authorAvatarColor={r.authorAvatarColor}
+              authorLevel={r.authorLevel}
+              authorLevelTitle={r.authorLevelTitle}
+              satisfaction={r.satisfaction}
+              axisX={r.axisX}
+              axisY={r.axisY}
+              comment={r.comment}
+              scene={r.scene}
+              visitDate={r.visitDate}
+              isMember={r.isMember}
+              contentVisibility={r.contentVisibility}
+              accentType={accentType}
+            />
+          ))}
+          {bubbleHasMore && (
+            <button
+              type="button"
+              className="w-full py-2 text-center text-[13px] font-semibold"
+              style={{ color: 'var(--accent-social)' }}
+            >
+              더보기
+            </button>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col items-center text-center" style={{ padding: '40px 20px' }}>
           <MessageCircle size={28} style={{ color: 'var(--text-hint)' }} />

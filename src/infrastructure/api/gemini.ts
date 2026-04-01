@@ -14,11 +14,19 @@ interface GeminiVisionResponse {
 const GEMINI_API_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
+function detectMimeType(base64: string): string {
+  if (base64.startsWith('UklGR')) return 'image/webp'
+  if (base64.startsWith('iVBOR')) return 'image/png'
+  return 'image/jpeg'
+}
+
 async function callGeminiVision(request: GeminiVisionRequest): Promise<GeminiVisionResponse> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not configured')
   }
+
+  const mimeType = detectMimeType(request.imageBase64)
 
   const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
@@ -30,7 +38,7 @@ async function callGeminiVision(request: GeminiVisionRequest): Promise<GeminiVis
             { text: request.prompt },
             {
               inline_data: {
-                mime_type: 'image/jpeg',
+                mime_type: mimeType,
                 data: request.imageBase64,
               },
             },
@@ -275,32 +283,35 @@ async function callGeminiText(prompt: string): Promise<string> {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
-const WINE_SEARCH_PROMPT = (query: string) => `당신은 와인 전문 소믈리에입니다. 사용자가 입력한 와인 검색어를 보고, 가장 가능성 높은 와인 후보를 최대 5개 추천해주세요.
+const WINE_SEARCH_PROMPT = (query: string) => `You are a wine expert sommelier. Given the user's search query, recommend up to 5 most likely wine matches.
 
-검색어: "${query}"
+Search query: "${query}"
 
-규칙:
-- 검색어가 와인 이름의 일부, 생산자, 지역, 품종 등 어떤 단서든 활용하세요.
-- 한국에서 접할 수 있는 와인을 우선하세요.
-- 한글 검색어도 영문 와인명으로 매칭하세요 (예: "오퍼스" → "Opus One").
-- 각 후보의 정식 영문 이름을 반드시 포함하세요.
-- 검색어와 전혀 관련 없는 와인은 포함하지 마세요.
+Rules:
+- The "name" field MUST be the official English wine name (e.g. "Domaine Faiveley Bourgogne Pinot Noir", NOT "부르고뉴 피노 누아"). Never use Korean for the name field.
+- If the query is a producer/winery name, always include their entry-level/basic wine first, then higher-tier wines.
+  Example: "Faiveley" → include "Domaine Faiveley Bourgogne Pinot Noir" before "Domaine Faiveley Gevrey-Chambertin".
+- Only recommend wines where the query words directly appear in the wine name, producer, or winery.
+- Do not recommend wines with merely similar-sounding names.
+- Prioritize wines available in Korea.
+- Match Korean search terms to English wine names (e.g. "오퍼스" → "Opus One").
+- Include the full official name with producer (e.g. "Domaine Faiveley Bourgogne Pinot Noir", not just "Bourgogne Pinot Noir").
 
-JSON 배열로만 응답:
+Respond with JSON array only:
 [
   {
-    "name": "와인 정식 이름 (영문)",
-    "name_ko": "와인 한국어 이름 (없으면 null)",
-    "producer": "생산자/와이너리",
+    "name": "Official English wine name including producer",
+    "name_ko": "Korean name (null if none)",
+    "producer": "Producer/Winery",
     "vintage": null,
     "wine_type": "red/white/rose/sparkling/orange/fortified/dessert",
-    "region": "산지",
-    "country": "국가",
+    "region": "Region",
+    "country": "Country",
     "confidence": 0.0~1.0
   }
 ]
 
-와인과 무관한 검색어면 빈 배열 []로 응답.`
+Return empty array [] if query is unrelated to wine.`
 
 export interface WineSearchCandidate {
   name: string

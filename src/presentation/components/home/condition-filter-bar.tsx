@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, X, SlidersHorizontal, Check } from 'lucide-react'
-import type { FilterAttribute } from '@/domain/entities/filter-config'
+import type { FilterAttribute, CascadingOption } from '@/domain/entities/filter-config'
 import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
-import { isAdvancedChip, generateChipId } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL } from '@/domain/entities/condition-chip'
 import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { InlinePager } from '@/presentation/components/home/inline-pager'
 
@@ -104,6 +104,17 @@ export function ConditionFilterBar({
   const [selectedAttribute, setSelectedAttribute] = useState<FilterAttribute | null>(null)
   const addBtnRef = useRef<HTMLButtonElement>(null)
 
+  // 칩 클릭 → 값 변경 드롭다운
+  const [editingChipId, setEditingChipId] = useState<string | null>(null)
+  const chipRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  // cascading-select 다단계 선택 상태
+  const [cascadingState, setCascadingState] = useState<{
+    attribute: FilterAttribute
+    level: number
+    currentOptions: CascadingOption[]
+  } | null>(null)
+
   const accent = accentType === 'wine' ? 'var(--accent-wine)' : accentType === 'social' ? 'var(--accent-social)' : 'var(--accent-food)'
   const wineClass = accentType === 'wine' ? 'wine' : accentType === 'social' ? 'social' : ''
 
@@ -111,9 +122,40 @@ export function ConditionFilterBar({
   const conditionChips = chips.filter((c) => !isAdvancedChip(c)) as ConditionChip[]
   const advancedChips = chips.filter(isAdvancedChip)
 
-  // 이미 추가된 속성 키 (중복 방지)
-  const usedKeys = new Set(conditionChips.map((c) => c.attribute))
-  const availableAttributes = attributes.filter((a) => !usedKeys.has(a.key))
+  // 이미 추가된 속성 키 (중복 방지) — cascading 칩은 base key로 그룹
+  const usedBaseKeys = new Set(conditionChips.map((c) =>
+    isCascadingKey(c.attribute) ? getCascadingBaseKey(c.attribute) : c.attribute,
+  ))
+  const availableAttributes = attributes.filter((a) => !usedBaseKeys.has(a.key))
+
+  /* ── helpers: cascading 트리에서 레벨별 옵션 찾기 ── */
+  const findCascadingOptionsAtLevel = useCallback((
+    attr: FilterAttribute,
+    level: number,
+    currentChips: ConditionChip[],
+  ): CascadingOption[] | null => {
+    if (!attr.cascadingOptions) return null
+    let options: CascadingOption[] = attr.cascadingOptions
+    for (let l = 0; l < level; l++) {
+      const chipAtLevel = currentChips.find((c) => c.attribute === cascadingKey(attr.key, l))
+      if (!chipAtLevel) return null
+      const selected = options.find((o) => o.value === String(chipAtLevel.value))
+      if (!selected?.children) return null
+      options = selected.children
+    }
+    return options
+  }, [])
+
+  /** 칩 attribute label 해석 (cascading은 레벨별 라벨 사용) */
+  const getChipAttrLabel = useCallback((chip: ConditionChip): string => {
+    if (isCascadingKey(chip.attribute)) {
+      const baseKey = getCascadingBaseKey(chip.attribute)
+      const level = getCascadingLevel(chip.attribute)
+      const attr = attributes.find((a) => a.key === baseKey)
+      return attr?.cascadingLabels?.[level] ?? attr?.label ?? baseKey
+    }
+    return attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
+  }, [attributes])
 
   /* ── handlers ── */
   const handleAddCondition = useCallback((attr: FilterAttribute, value: string) => {
@@ -128,18 +170,147 @@ export function ConditionFilterBar({
     onChipsChange([...chips, newChip])
     setSelectedAttribute(null)
     setIsAddOpen(false)
+    setCascadingState(null)
   }, [chips, onChipsChange])
 
+  /** cascading-select 값 선택 → 선택된 칩 + 나머지 레벨 "전체" 칩 일괄 생성 */
+  const handleCascadingSelect = useCallback((opt: CascadingOption) => {
+    if (!cascadingState) return
+    const { attribute: attr, level } = cascadingState
+    const totalLevels = attr.cascadingLabels?.length ?? 1
+    const baseKey = attr.key
+
+    // 기존 cascading 칩 제거 (현재 레벨 이상)
+    const kept = chips.filter((c) => {
+      if (isAdvancedChip(c)) return true
+      if (!isCascadingKey(c.attribute)) return true
+      if (getCascadingBaseKey(c.attribute) !== baseKey) return true
+      return getCascadingLevel(c.attribute) < level
+    })
+
+    // 현재 레벨: 선택된 값
+    const fieldKeys = attr.cascadingFieldKeys
+    const newChips: ConditionChip[] = [{
+      id: generateChipId(),
+      attribute: cascadingKey(baseKey, level),
+      operator: 'eq',
+      value: opt.value,
+      displayLabel: opt.label,
+      filterKey: fieldKeys?.[level],
+    }]
+
+    // 나머지 하위 레벨: "전체" 플레이스홀더
+    for (let l = level + 1; l < totalLevels; l++) {
+      newChips.push({
+        id: generateChipId(),
+        attribute: cascadingKey(baseKey, l),
+        operator: 'eq',
+        value: CASCADING_ALL,
+        displayLabel: '전체',
+        filterKey: fieldKeys?.[l],
+      })
+    }
+
+    onChipsChange([...kept, ...newChips])
+    setCascadingState(null)
+    setIsAddOpen(false)
+  }, [cascadingState, chips, onChipsChange])
+
   const handleRemoveChip = useCallback((chipId: string) => {
-    onChipsChange(chips.filter((c) => c.id !== chipId))
-  }, [chips, onChipsChange])
+    const chip = conditionChips.find((c) => c.id === chipId)
+    if (chip && isCascadingKey(chip.attribute)) {
+      const baseKey = getCascadingBaseKey(chip.attribute)
+      const level = getCascadingLevel(chip.attribute)
+      // 레벨 0(최상위) 삭제 → 전체 cascading 그룹 제거
+      if (level === 0) {
+        onChipsChange(chips.filter((c) => {
+          if (isAdvancedChip(c)) return true
+          if (!isCascadingKey(c.attribute)) return true
+          return getCascadingBaseKey(c.attribute) !== baseKey
+        }))
+      } else {
+        // 하위 칩 삭제 → 해당 칩 + 더 깊은 레벨을 "전체"로 전환
+        onChipsChange(chips.map((c) => {
+          if (isAdvancedChip(c)) return c
+          if (!isCascadingKey(c.attribute)) return c
+          if (getCascadingBaseKey(c.attribute) !== baseKey) return c
+          if (getCascadingLevel(c.attribute) >= level) {
+            return { ...c, value: CASCADING_ALL, displayLabel: '전체' }
+          }
+          return c
+        }))
+      }
+    } else {
+      onChipsChange(chips.filter((c) => c.id !== chipId))
+    }
+    setEditingChipId(null)
+    setCascadingState(null)
+  }, [chips, conditionChips, onChipsChange])
+
+  /** 칩 값 변경 (일반 select) */
+  const handleChangeChipValue = useCallback((chipId: string, newValue: string) => {
+    const chip = conditionChips.find((c) => c.id === chipId)
+    if (!chip) return
+    const attr = attributes.find((a) => a.key === chip.attribute)
+    const option = attr?.options?.find((o) => o.value === newValue)
+    onChipsChange(chips.map((c) =>
+      c.id === chipId
+        ? { ...c, value: newValue, displayLabel: option?.label ?? newValue }
+        : c,
+    ))
+    setEditingChipId(null)
+  }, [chips, conditionChips, attributes, onChipsChange])
+
+  /** cascading 칩 값 변경 → 현재 칩 업데이트 + 하위 레벨 "전체"로 리셋 */
+  const handleChangeCascadingChipValue = useCallback((chipId: string, opt: CascadingOption) => {
+    const chip = conditionChips.find((c) => c.id === chipId)
+    if (!chip || !isCascadingKey(chip.attribute)) return
+    const baseKey = getCascadingBaseKey(chip.attribute)
+    const level = getCascadingLevel(chip.attribute)
+    const attr = attributes.find((a) => a.key === baseKey)
+    if (!attr) return
+    const totalLevels = attr.cascadingLabels?.length ?? 1
+
+    // "전체" 선택 시
+    if (opt.value === CASCADING_ALL) {
+      // 현재 칩을 전체로 + 하위 레벨도 전체로 리셋
+      const nextChips = chips.map((c) => {
+        if (isAdvancedChip(c)) return c
+        if (!isCascadingKey(c.attribute)) return c
+        if (getCascadingBaseKey(c.attribute) !== baseKey) return c
+        const cl = getCascadingLevel(c.attribute)
+        if (cl >= level) return { ...c, value: CASCADING_ALL, displayLabel: '전체' }
+        return c
+      })
+      onChipsChange(nextChips)
+      setEditingChipId(null)
+      return
+    }
+
+    // 현재 칩 값 변경 + 하위 레벨 "전체"로 리셋
+    const nextChips = chips.map((c) => {
+      if (isAdvancedChip(c)) return c
+      if (!isCascadingKey(c.attribute)) return c
+      if (getCascadingBaseKey(c.attribute) !== baseKey) return c
+      const cl = getCascadingLevel(c.attribute)
+      if (c.id === chipId) return { ...c, value: opt.value, displayLabel: opt.label }
+      if (cl > level) return { ...c, value: CASCADING_ALL, displayLabel: '전체' }
+      return c
+    })
+    onChipsChange(nextChips)
+    setEditingChipId(null)
+  }, [chips, conditionChips, attributes, onChipsChange])
 
   const closeAll = useCallback(() => {
     setIsAddOpen(false)
     setSelectedAttribute(null)
+    setEditingChipId(null)
+    setCascadingState(null)
   }, [])
 
   const handleAddClick = useCallback(() => {
+    setEditingChipId(null)
+    setCascadingState(null)
     setIsAddOpen((prev) => {
       if (prev) setSelectedAttribute(null)
       return !prev
@@ -154,19 +325,35 @@ export function ConditionFilterBar({
   return (
     <div className="flex items-center px-4 py-2" style={{ backgroundColor: 'var(--bg)' }}>
       <FilterChipGroup className="min-w-0 flex-1">
-        {/* 조건 칩들 — status 포함 모든 속성 동등 */}
+        {/* 조건 칩들 — status 포함 모든 속성 동등, cascading은 레벨별 라벨 */}
         {conditionChips.map((chip) => {
-          const attrLabel = attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
+          const attrLabel = getChipAttrLabel(chip)
+          const isAllPlaceholder = chip.value === CASCADING_ALL
           return (
             <button
               key={chip.id}
+              ref={(el) => { if (el) chipRefs.current.set(chip.id, el); else chipRefs.current.delete(chip.id) }}
               type="button"
-              className={`filter-chip active ${wineClass}`}
-              onClick={() => handleRemoveChip(chip.id)}
+              className={`filter-chip ${isAllPlaceholder ? '' : 'active'} ${wineClass}`}
+              style={isAllPlaceholder ? { opacity: 0.6, borderStyle: 'dashed' } : undefined}
+              onClick={() => {
+                setEditingChipId((prev) => prev === chip.id ? null : chip.id)
+                setIsAddOpen(false)
+                setSelectedAttribute(null)
+                setCascadingState(null)
+              }}
             >
               <span style={{ opacity: 0.7, fontSize: '11px' }}>{attrLabel}</span>
               {chip.displayLabel}
-              <X size={10} style={{ opacity: 0.6 }} />
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); handleRemoveChip(chip.id) }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleRemoveChip(chip.id) } }}
+                style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '2px' }}
+              >
+                <X size={10} style={{ opacity: 0.6 }} />
+              </span>
             </button>
           )
         })}
@@ -207,7 +394,7 @@ export function ConditionFilterBar({
       )}
 
       {/* ── 속성 선택 팝오버 (Portal) ── */}
-      {isAddOpen && !selectedAttribute && (
+      {isAddOpen && !selectedAttribute && !cascadingState && (
         <Popover anchorRef={addBtnRef} align="right" onClose={closeAll}>
           <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
             속성 선택
@@ -216,7 +403,13 @@ export function ConditionFilterBar({
             <button
               key={attr.key}
               type="button"
-              onClick={() => setSelectedAttribute(attr)}
+              onClick={() => {
+                if (attr.type === 'cascading-select' && attr.cascadingOptions) {
+                  setCascadingState({ attribute: attr, level: 0, currentOptions: attr.cascadingOptions })
+                } else {
+                  setSelectedAttribute(attr)
+                }
+              }}
               className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
               style={{ color: 'var(--text)' }}
             >
@@ -241,8 +434,8 @@ export function ConditionFilterBar({
         </Popover>
       )}
 
-      {/* ── 값 선택 팝오버 (Portal) ── */}
-      {isAddOpen && selectedAttribute && (
+      {/* ── 값 선택 팝오버 (일반 select) ── */}
+      {isAddOpen && selectedAttribute && !cascadingState && (
         <Popover anchorRef={addBtnRef} align="right" onClose={closeAll}>
           <button
             type="button"
@@ -263,13 +456,122 @@ export function ConditionFilterBar({
               {opt.label}
             </button>
           ))}
-          {selectedAttribute.type === 'cascading-select' && !selectedAttribute.options && (
-            <div className="px-3 py-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>
-              Advanced Filter에서 설정하세요
-            </div>
-          )}
         </Popover>
       )}
+
+      {/* ── cascading-select 초기 선택 팝오버 (레벨 0) ── */}
+      {isAddOpen && cascadingState && (
+        <Popover anchorRef={addBtnRef} align="right" onClose={closeAll}>
+          <button
+            type="button"
+            onClick={() => setCascadingState(null)}
+            className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            ← {cascadingState.attribute.cascadingLabels?.[0] ?? cascadingState.attribute.label}
+          </button>
+          {cascadingState.currentOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleCascadingSelect(opt)}
+              className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
+              style={{ color: 'var(--text)' }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </Popover>
+      )}
+
+      {/* ── 칩 값 변경 팝오버 (Portal) ── */}
+      {editingChipId && (() => {
+        const chip = conditionChips.find((c) => c.id === editingChipId)
+        if (!chip) return null
+        const chipBtnRef = { current: chipRefs.current.get(editingChipId) ?? null }
+
+        // cascading 칩 편집
+        if (isCascadingKey(chip.attribute)) {
+          const baseKey = getCascadingBaseKey(chip.attribute)
+          const level = getCascadingLevel(chip.attribute)
+          const attr = attributes.find((a) => a.key === baseKey)
+          if (!attr) return null
+
+          // 상위 레벨이 "전체"이면 선택 불가 → 안내 메시지
+          const parentIsAll = level > 0 && conditionChips.some((c) =>
+            isCascadingKey(c.attribute)
+            && getCascadingBaseKey(c.attribute) === baseKey
+            && getCascadingLevel(c.attribute) < level
+            && c.value === CASCADING_ALL,
+          )
+
+          const options = parentIsAll ? null : findCascadingOptionsAtLevel(attr, level, conditionChips)
+          const levelLabel = attr.cascadingLabels?.[level] ?? attr.label
+          const allOption: CascadingOption = { value: CASCADING_ALL, label: '전체' }
+
+          return (
+            <Popover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
+              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
+                {levelLabel}
+              </div>
+              {parentIsAll ? (
+                <div className="px-3 py-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>
+                  상위 항목을 먼저 선택하세요
+                </div>
+              ) : (
+                <>
+                  {/* 전체 옵션 */}
+                  <button
+                    type="button"
+                    onClick={() => handleChangeCascadingChipValue(editingChipId, allOption)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    전체
+                    {chip.value === CASCADING_ALL && <Check size={14} style={{ color: accent }} />}
+                  </button>
+                  <div style={{ borderTop: '1px solid var(--border)', margin: '2px 0' }} />
+                  {options?.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleChangeCascadingChipValue(editingChipId, opt)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      {opt.label}
+                      {String(chip.value) === opt.value && <Check size={14} style={{ color: accent }} />}
+                    </button>
+                  ))}
+                </>
+              )}
+            </Popover>
+          )
+        }
+
+        // 일반 select 칩 편집
+        const attr = attributes.find((a) => a.key === chip.attribute)
+        if (!attr?.options) return null
+        return (
+          <Popover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
+            <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
+              {attr.label}
+            </div>
+            {attr.options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleChangeChipValue(editingChipId, opt.value)}
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                style={{ color: 'var(--text)' }}
+              >
+                {opt.label}
+                {String(chip.value) === opt.value && <Check size={14} style={{ color: accent }} />}
+              </button>
+            ))}
+          </Popover>
+        )
+      })()}
     </div>
   )
 }

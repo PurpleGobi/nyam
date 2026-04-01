@@ -283,7 +283,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     const wineIds = [...new Set(rows.filter((r) => r.target_type === 'wine').map((r) => r.target_id))]
 
     const restaurantMap = new Map<string, {
-      name: string; genre: string | null; district: string | null; area: string[] | null; photo_url: string | null
+      name: string; genre: string | null; country: string | null; city: string | null; district: string | null; area: string[] | null; photo_url: string | null
       lat: number | null; lng: number | null
       price_range: number | null; michelin_stars: number | null; has_blue_ribbon: boolean | null; media_appearances: string[] | null
     }>()
@@ -295,11 +295,11 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (restaurantIds.length > 0) {
       const { data: restaurants } = await this.supabase
         .from('restaurants')
-        .select('id, name, genre, district, area, photos, lat, lng, price_range, michelin_stars, has_blue_ribbon, media_appearances')
+        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, michelin_stars, has_blue_ribbon, media_appearances')
         .in('id', restaurantIds)
       for (const r of restaurants ?? []) {
         restaurantMap.set(r.id, {
-          name: r.name, genre: r.genre, district: r.district ?? null, area: r.area, photo_url: r.photos?.[0] ?? null,
+          name: r.name, genre: r.genre, country: r.country ?? null, city: r.city ?? null, district: r.district ?? null, area: r.area, photo_url: r.photos?.[0] ?? null,
           lat: r.lat ?? null, lng: r.lng ?? null,
           price_range: r.price_range, michelin_stars: r.michelin_stars, has_blue_ribbon: r.has_blue_ribbon, media_appearances: r.media_appearances,
         })
@@ -375,6 +375,8 @@ export class SupabaseRecordRepository implements RecordRepository {
         targetLng: isRestaurant ? (restaurant?.lng ?? null) : null,
         source: followingTargetIds.has(row.target_id) ? 'following' as const : 'mine' as const,
         genre: restaurant?.genre ?? null,
+        country: isRestaurant ? (restaurant?.country ?? null) : (wine?.country ?? null),
+        city: restaurant?.city ?? null,
         district: restaurant?.district ?? null,
         area: restaurant?.area ?? null,
         priceRange: restaurant?.price_range ?? null,
@@ -383,7 +385,6 @@ export class SupabaseRecordRepository implements RecordRepository {
         mediaAppearances: restaurant?.media_appearances ?? null,
         wineType: wine?.wine_type ?? null,
         variety: wine?.variety ?? null,
-        country: wine?.country ?? null,
         region: wine?.region ?? null,
         vintage: wine?.vintage ?? null,
         listStatus: listStatus as ListStatus | undefined,

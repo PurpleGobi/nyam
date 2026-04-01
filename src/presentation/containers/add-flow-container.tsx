@@ -54,6 +54,9 @@ function AddFlowInner() {
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  // Phase 1 업로드 상태: 사진은 즉시 업로드, 기록 미완료 시 삭제
+  const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null)
+  const [recordCompleted, setRecordCompleted] = useState(false)
   const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyGenre, setNearbyGenre] = useState('')
@@ -78,6 +81,17 @@ function AddFlowInner() {
     )
   }, [targetType])
 
+  // Cleanup: 기록 미완료 시 임시 업로드 삭제
+  useEffect(() => {
+    const url = tempPhotoUrl
+    const completed = recordCompleted
+    return () => {
+      if (url && !completed) {
+        imageService.deleteImage(url).catch(() => {})
+      }
+    }
+  }, [tempPhotoUrl, recordCompleted])
+
   const [nearbyRadius, setNearbyRadius] = useState(500)
 
   const fetchNearby = useCallback((keyword: string, radius: number = 500) => {
@@ -96,24 +110,16 @@ function AddFlowInner() {
       .finally(() => setNearbyLoading(false))
   }, [gps])
 
-  /** 촬영 이미지를 리사이즈 → Storage 업로드 → photo 레코드 저장 */
+  /** Phase 1에서 이미 업로드된 사진을 record에 연결 */
   const uploadCapturedPhoto = useCallback(async (recordId: string) => {
-    if (!capturedImage || !user) return
+    if (!tempPhotoUrl) return
     try {
-      const byteString = atob(capturedImage)
-      const ab = new ArrayBuffer(byteString.length)
-      const ia = new Uint8Array(ab)
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i)
-      }
-      const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
-      const blob = await imageService.resizeImage(file)
-      const url = await imageService.uploadImage(user.id, recordId, blob, crypto.randomUUID())
-      await photoRepo.savePhotos(recordId, [{ url, orderIndex: 0 }])
+      await photoRepo.savePhotos(recordId, [{ url: tempPhotoUrl, orderIndex: 0 }])
+      setRecordCompleted(true)
     } catch {
-      // 사진 업로드 실패해도 record는 유지
+      // DB 저장 실패해도 record는 유지
     }
-  }, [capturedImage, user])
+  }, [tempPhotoUrl])
 
   const goBack = useCallback(() => {
     const prev = hookGoBack()
@@ -164,20 +170,58 @@ function AddFlowInner() {
     [identify, gps, pushStep],
   )
 
+  /** base64 → File → 리사이즈(중앙화 로직) → 업로드 + 리사이즈된 base64 반환 */
+  const resizeAndUpload = useCallback(async (rawBase64: string): Promise<{ resizedBase64: string; uploadedUrl: string } | null> => {
+    if (!user) return null
+    try {
+      // base64 → File
+      const byteString = atob(rawBase64)
+      const ab = new ArrayBuffer(byteString.length)
+      const ia = new Uint8Array(ab)
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i)
+      const rawFile = new File([ab], 'capture.jpg', { type: 'image/jpeg' })
+
+      // 중앙화된 리사이즈 로직 (imageService.resizeImage)
+      const resizedBlob = await imageService.resizeImage(rawFile)
+
+      // Storage 업로드 (pending 경로 — 기록 완료 전까지 임시)
+      const fileId = crypto.randomUUID()
+      const uploadedUrl = await imageService.uploadImage(user.id, 'pending', resizedBlob, fileId)
+
+      // 리사이즈된 blob → base64 (Gemini 전송용)
+      const resizedBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+        reader.readAsDataURL(resizedBlob)
+      })
+
+      return { resizedBase64, uploadedUrl }
+    } catch {
+      return null
+    }
+  }, [user])
+
   /** confident match → quickAdd(checked) → success, 아니면 ai_result/wine_confirm/search */
   const handleCapture = useCallback(
     async (imageBase64: string) => {
-      setCapturedImage(imageBase64)
+      // ── Phase 1: 리사이즈 + 즉시 업로드 ──
+      const uploaded = await resizeAndUpload(imageBase64)
+      const searchBase64 = uploaded?.resizedBase64 ?? imageBase64
+      if (uploaded) {
+        setTempPhotoUrl(uploaded.uploadedUrl)
+      }
+      setCapturedImage(searchBase64)
 
+      // ── Phase 2: AI 검색 (리사이즈된 이미지 사용) ──
       const aiResult = await identify({
-        imageBase64,
+        imageBase64: searchBase64,
         targetType,
         latitude: gps?.latitude,
         longitude: gps?.longitude,
       })
       if (!aiResult) {
         // 사진은 보관 → 이후 기록 폼에서 자동 첨부
-        try { sessionStorage.setItem('nyam_captured_image', imageBase64) } catch {}
+        try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
         pushStep('search')
         return
       }
@@ -203,7 +247,7 @@ function AddFlowInner() {
 
           // DB 등록 실패 시 검색으로 폴백
           if (targetId.startsWith('kakao_')) {
-            try { sessionStorage.setItem('nyam_captured_image', imageBase64) } catch {}
+            try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
             pushStep('search')
           } else {
             setTarget({
@@ -213,7 +257,7 @@ function AddFlowInner() {
               meta: [top.genre, top.area].filter(Boolean).join(' · '),
               isAiRecognized: true,
             })
-            try { sessionStorage.setItem('nyam_captured_image', imageBase64) } catch {}
+            try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
             try {
               sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
                 genre: restResult.detectedGenre,
@@ -229,47 +273,21 @@ function AddFlowInner() {
         }
       } else {
         const wineResult = aiResult as WineAIResult
-        if (wineResult.isConfidentMatch && wineResult.candidates.length > 0) {
-          const top = wineResult.candidates[0]
-          const newTarget = {
-            id: top.wineId,
-            name: top.name,
-            type: 'wine' as const,
-            meta: [top.wineType, top.region, top.vintage].filter(Boolean).join(' · '),
-            isAiRecognized: true,
-          }
-          setTarget(newTarget)
-          // 빠른추가: checked 기록 INSERT → success
-          if (user) {
-            try {
-              // EXIF GPS 검증
-              const exif = await parseExifFromBase64(imageBase64)
-              const record = await createRecord({
-                userId: user.id,
-                targetId: top.wineId,
-                targetType: 'wine',
-                listStatus: 'tasted',
-                visitDate: todayInTz(detectBrowserTimezone()),
-                hasExifGps: exif.hasGps,
-                isExifVerified: false,
-              })
-              await uploadCapturedPhoto(record.id)
-              syncRecordToAllBubbles(record as unknown as { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>).catch(() => {})
-              pushStep('success')
-              return
-            } catch {
-              // quickAdd 실패 → full record form으로 폴백
-            }
-          }
-          pushStep('record')
-        } else if (wineResult.candidates.length > 0) {
+        if (wineResult.candidates.length > 0) {
+          // 와인은 항상 사용자 컨펌을 거침
           pushStep('wine_confirm')
         } else {
-          pushStep('search')
+          // 후보 없음 — OCR 이름이 있으면 자동 텍스트 검색
+          const ocrName = wineResult.ocrData?.wine_name
+          if (ocrName) {
+            router.push(`/search?type=wine&q=${encodeURIComponent(ocrName)}`)
+          } else {
+            pushStep('search')
+          }
         }
       }
     },
-    [identify, targetType, gps, pushStep, setTarget, user, createRecord, uploadCapturedPhoto],
+    [identify, targetType, gps, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, resizeAndUpload, syncRecordToAllBubbles, router],
   )
 
   const handleRestaurantSelect = useCallback(
@@ -325,7 +343,7 @@ function AddFlowInner() {
     [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage],
   )
 
-  const handleWineConfirm = useCallback(async () => {
+  const handleWineConfirm = useCallback(() => {
     if (result?.targetType !== 'wine') return
     const wineResult = result as WineAIResult
     const top = wineResult.candidates[0]
@@ -337,27 +355,12 @@ function AddFlowInner() {
       meta: [top.wineType, top.region, top.vintage].filter(Boolean).join(' · '),
       isAiRecognized: true,
     })
-    // 빠른추가 시도
-    if (user && capturedImage) {
-      try {
-        const exif = await parseExifFromBase64(capturedImage)
-        const record = await createRecord({
-          userId: user.id,
-          targetId: top.wineId,
-          targetType: 'wine',
-          listStatus: 'tasted',
-          visitDate: todayInTz(detectBrowserTimezone()),
-          hasExifGps: exif.hasGps,
-          isExifVerified: false,
-        })
-        await uploadCapturedPhoto(record.id)
-        syncRecordToAllBubbles(record as unknown as { id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>).catch(() => {})
-        pushStep('success')
-        return
-      } catch { /* 폴백 */ }
+    // 사진은 Phase 1에서 이미 업로드됨 → 기록 폼으로 이동
+    if (capturedImage) {
+      try { sessionStorage.setItem('nyam_captured_image', capturedImage) } catch {}
     }
     pushStep('record')
-  }, [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage])
+  }, [result, pushStep, setTarget, capturedImage])
 
   const handleSearchFallback = useCallback(() => {
     router.push(`/search?type=${targetType}`)
@@ -405,6 +408,7 @@ function AddFlowInner() {
         <CameraCapture
           targetType={targetType}
           onCapture={handleCapture}
+          previewUrl={tempPhotoUrl}
           onAlbumSelect={() => {
             const input = document.createElement('input')
             input.type = 'file'
