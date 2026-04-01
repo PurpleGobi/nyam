@@ -65,17 +65,28 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { id, vintage, region, country, variety } = body
+  const { id, ...fields } = body
 
   if (!id) {
     return NextResponse.json({ error: 'ID_REQUIRED' }, { status: 400 })
   }
 
+  const fieldMap: Record<string, string> = {
+    vintage: 'vintage', producer: 'producer', region: 'region',
+    subRegion: 'sub_region', appellation: 'appellation', country: 'country',
+    variety: 'variety', abv: 'abv', bodyLevel: 'body_level',
+    acidityLevel: 'acidity_level', sweetnessLevel: 'sweetness_level',
+    classification: 'classification', servingTemp: 'serving_temp',
+    decanting: 'decanting', referencePrice: 'reference_price',
+    drinkingWindowStart: 'drinking_window_start', drinkingWindowEnd: 'drinking_window_end',
+    vivinoRating: 'vivino_rating', criticScores: 'critic_scores',
+    tastingNotes: 'tasting_notes',
+  }
+
   const updateData: Record<string, unknown> = {}
-  if (vintage !== undefined) updateData.vintage = vintage
-  if (region !== undefined) updateData.region = region
-  if (country !== undefined) updateData.country = country
-  if (variety !== undefined) updateData.variety = variety
+  for (const [key, dbCol] of Object.entries(fieldMap)) {
+    if (fields[key] !== undefined) updateData[dbCol] = fields[key]
+  }
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ success: true })

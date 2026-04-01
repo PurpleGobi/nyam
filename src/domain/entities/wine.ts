@@ -29,6 +29,7 @@ export interface Wine {
   producer: string | null
   region: string | null
   subRegion: string | null
+  appellation: string | null
   country: string | null
   variety: string | null
   grapeVarieties: GrapeVariety[]
@@ -49,6 +50,7 @@ export interface Wine {
   vivinoRating: number | null
   criticScores: CriticScores | null
   classification: string | null
+  tastingNotes: string | null
   nyamScore: number | null
   nyamScoreUpdatedAt: string | null
   externalIds: WineExternalIds | null

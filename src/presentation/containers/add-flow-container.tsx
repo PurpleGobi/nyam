@@ -17,7 +17,6 @@ import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { AIResultDisplay } from '@/presentation/components/camera/ai-result-display'
-import { WineConfirmCard } from '@/presentation/components/camera/wine-confirm-card'
 import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
 import { NearbyList } from '@/presentation/components/search/nearby-list'
 import type { NearbyRestaurant } from '@/domain/entities/search'
@@ -128,48 +127,6 @@ function AddFlowInner() {
     }
   }, [hookGoBack, router])
 
-  const handleShelfMode = useCallback(
-    async (imageBase64: string) => {
-      const aiResult = await identify({
-        imageBase64,
-        targetType: 'wine',
-        cameraMode: 'shelf',
-        latitude: gps?.latitude,
-        longitude: gps?.longitude,
-      })
-      if (!aiResult) return
-      const wineResult = aiResult as WineAIResult
-      if (wineResult.candidates.length === 1) {
-        // 단일 후보 → wine_confirm
-        pushStep('wine_confirm')
-      } else {
-        pushStep('search')
-      }
-    },
-    [identify, gps, pushStep],
-  )
-
-  const handleReceiptMode = useCallback(
-    async (imageBase64: string) => {
-      const aiResult = await identify({
-        imageBase64,
-        targetType: 'wine',
-        cameraMode: 'receipt',
-        latitude: gps?.latitude,
-        longitude: gps?.longitude,
-      })
-      if (!aiResult) return
-      const wineResult = aiResult as WineAIResult
-      if (wineResult.candidates.length === 1) {
-        // 단일 후보 → wine_confirm
-        pushStep('wine_confirm')
-      } else {
-        pushStep('search')
-      }
-    },
-    [identify, gps, pushStep],
-  )
-
   /** base64 → File → 리사이즈(중앙화 로직) → 업로드 + 리사이즈된 base64 반환 */
   const resizeAndUpload = useCallback(async (rawBase64: string): Promise<{ resizedBase64: string; uploadedUrl: string } | null> => {
     if (!user) return null
@@ -201,7 +158,27 @@ function AddFlowInner() {
     }
   }, [user])
 
-  /** confident match → quickAdd(checked) → success, 아니면 ai_result/wine_confirm/search */
+  const handleShelfMode = useCallback(
+    async (imageBase64: string) => {
+      const uploaded = await resizeAndUpload(imageBase64)
+      if (uploaded) setTempPhotoUrl(uploaded.uploadedUrl)
+      setCapturedImage(uploaded?.resizedBase64 ?? imageBase64)
+      try { sessionStorage.setItem('nyam_captured_image', uploaded?.resizedBase64 ?? imageBase64) } catch {}
+    },
+    [resizeAndUpload],
+  )
+
+  const handleReceiptMode = useCallback(
+    async (imageBase64: string) => {
+      const uploaded = await resizeAndUpload(imageBase64)
+      if (uploaded) setTempPhotoUrl(uploaded.uploadedUrl)
+      setCapturedImage(uploaded?.resizedBase64 ?? imageBase64)
+      try { sessionStorage.setItem('nyam_captured_image', uploaded?.resizedBase64 ?? imageBase64) } catch {}
+    },
+    [resizeAndUpload],
+  )
+
+  /** 카메라/앨범 캡처 → 와인: Phase 1(업로드)만, 식당: Phase 1 + AI 검색 */
   const handleCapture = useCallback(
     async (imageBase64: string) => {
       // ── Phase 1: 리사이즈 + 즉시 업로드 ──
@@ -212,7 +189,46 @@ function AddFlowInner() {
       }
       setCapturedImage(searchBase64)
 
-      // ── Phase 2: AI 검색 (리사이즈된 이미지 사용) ──
+      // 와인: Phase 1 완료 → Gemini 호출 → 바로 기록
+      if (targetType === 'wine') {
+        try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
+        if (uploaded) {
+          try { sessionStorage.setItem('nyam_captured_photo_url', uploaded.uploadedUrl) } catch {}
+        }
+
+        const aiResult = await identify({
+          imageBase64: searchBase64,
+          targetType: 'wine',
+        })
+
+        if (aiResult?.targetType === 'wine') {
+          const wineResult = aiResult as WineAIResult
+          const top = wineResult.candidates[0]
+          if (top) {
+            setTarget({
+              id: top.wineId,
+              name: top.name,
+              type: 'wine',
+              meta: [top.wineType, top.region, top.vintage ? String(top.vintage) : null].filter(Boolean).join(' · '),
+              isAiRecognized: true,
+            })
+            try {
+              sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
+                wineType: top.wineType,
+                region: top.region,
+                vintage: top.vintage,
+              }))
+            } catch {}
+            pushStep('record')
+            return
+          }
+        }
+
+        pushStep('search')
+        return
+      }
+
+      // ── 식당: Phase 2 AI 검색 ──
       const aiResult = await identify({
         imageBase64: searchBase64,
         targetType,
@@ -220,7 +236,6 @@ function AddFlowInner() {
         longitude: gps?.longitude,
       })
       if (!aiResult) {
-        // 사진은 보관 → 이후 기록 폼에서 자동 첨부
         try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
         pushStep('search')
         return
@@ -270,20 +285,6 @@ function AddFlowInner() {
           pushStep('ai_result')
         } else {
           pushStep('search')
-        }
-      } else {
-        const wineResult = aiResult as WineAIResult
-        if (wineResult.candidates.length > 0) {
-          // 와인은 항상 사용자 컨펌을 거침
-          pushStep('wine_confirm')
-        } else {
-          // 후보 없음 — OCR 이름이 있으면 자동 텍스트 검색
-          const ocrName = wineResult.ocrData?.wine_name
-          if (ocrName) {
-            router.push(`/search?type=wine&q=${encodeURIComponent(ocrName)}`)
-          } else {
-            pushStep('search')
-          }
         }
       }
     },
@@ -343,25 +344,6 @@ function AddFlowInner() {
     [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage],
   )
 
-  const handleWineConfirm = useCallback(() => {
-    if (result?.targetType !== 'wine') return
-    const wineResult = result as WineAIResult
-    const top = wineResult.candidates[0]
-    if (!top) return
-    setTarget({
-      id: top.wineId,
-      name: top.name,
-      type: 'wine',
-      meta: [top.wineType, top.region, top.vintage].filter(Boolean).join(' · '),
-      isAiRecognized: true,
-    })
-    // 사진은 Phase 1에서 이미 업로드됨 → 기록 폼으로 이동
-    if (capturedImage) {
-      try { sessionStorage.setItem('nyam_captured_image', capturedImage) } catch {}
-    }
-    pushStep('record')
-  }, [result, pushStep, setTarget, capturedImage])
-
   const handleSearchFallback = useCallback(() => {
     router.push(`/search?type=${targetType}`)
   }, [router, targetType])
@@ -392,10 +374,13 @@ function AddFlowInner() {
     if (capturedImage) {
       try { sessionStorage.setItem('nyam_captured_image', capturedImage) } catch {}
     }
+    if (tempPhotoUrl) {
+      try { sessionStorage.setItem('nyam_captured_photo_url', tempPhotoUrl) } catch {}
+    }
     router.replace(
       `/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}&meta=${encodeURIComponent(target.meta)}&from=${entryPath}`,
     )
-  }, [shouldRedirectToRecord, target, result, gps, capturedImage, router, entryPath])
+  }, [shouldRedirectToRecord, target, result, gps, capturedImage, tempPhotoUrl, router, entryPath])
 
   if (shouldRedirectToRecord) return null
 
@@ -413,6 +398,8 @@ function AddFlowInner() {
             const input = document.createElement('input')
             input.type = 'file'
             input.accept = 'image/*'
+            input.style.display = 'none'
+            document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
               if (!file) return
@@ -422,6 +409,7 @@ function AddFlowInner() {
                 handleCapture(base64)
               }
               reader.readAsDataURL(file)
+              document.body.removeChild(input)
             }
             input.click()
           }}
@@ -430,6 +418,8 @@ function AddFlowInner() {
             const input = document.createElement('input')
             input.type = 'file'
             input.accept = 'image/*'
+            input.style.display = 'none'
+            document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
               if (!file) return
@@ -439,6 +429,7 @@ function AddFlowInner() {
                 handleShelfMode(base64)
               }
               reader.readAsDataURL(file)
+              document.body.removeChild(input)
             }
             input.click()
           } : undefined}
@@ -446,6 +437,8 @@ function AddFlowInner() {
             const input = document.createElement('input')
             input.type = 'file'
             input.accept = 'image/*'
+            input.style.display = 'none'
+            document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
               if (!file) return
@@ -455,6 +448,7 @@ function AddFlowInner() {
                 handleReceiptMode(base64)
               }
               reader.readAsDataURL(file)
+              document.body.removeChild(input)
             }
             input.click()
           } : undefined}
@@ -468,21 +462,6 @@ function AddFlowInner() {
           detectedGenre={(result as RestaurantAIResult).detectedGenre}
           onSelect={handleRestaurantSelect}
           onSearchFallback={handleSearchFallback}
-        />
-      )}
-
-      {step === 'wine_confirm' && result?.targetType === 'wine' && (result as WineAIResult).candidates.length > 0 && (
-        <WineConfirmCard
-          wineName={(result as WineAIResult).candidates[0].name}
-          wineType={(result as WineAIResult).candidates[0].wineType}
-          region={(result as WineAIResult).candidates[0].region}
-          country={(result as WineAIResult).candidates[0].country}
-          vintage={(result as WineAIResult).candidates[0].vintage}
-          onConfirm={handleWineConfirm}
-          onReject={() => {
-            resetCamera()
-            resetFlow()
-          }}
         />
       )}
 

@@ -329,9 +329,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   {wine.country}
                 </span>
               )}
-              {(wine.region || wine.subRegion) && (
+              {(wine.region || wine.subRegion || wine.appellation) && (
                 <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                  {[wine.region, wine.subRegion].filter(Boolean).join(' · ')}
+                  {[wine.region, wine.subRegion, wine.appellation].filter(Boolean).join(' · ')}
                 </span>
               )}
             </div>

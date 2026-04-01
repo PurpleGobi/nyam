@@ -18,6 +18,8 @@ interface NyamSelectProps {
   accentColor?: string
   /** true면 선택된 값 텍스트 폭에 맞춤 (Notion 스타일) */
   autoWidth?: boolean
+  /** true면 배경/테두리 없는 인라인 텍스트 스타일. 탭하면 드롭다운 열림 */
+  inline?: boolean
 }
 
 const EDGE_MARGIN = 8       // 화면 가장자리 여유
@@ -25,7 +27,7 @@ const GAP = 4               // 버튼-드롭다운 간격
 const MIN_HEIGHT = 80       // 드롭다운 최소 높이
 const ITEM_HEIGHT_EST = 38  // 항목 1개 예상 높이 (padding 포함)
 
-export function NyamSelect({ options, value, onChange, placeholder, disabled = false, accentColor = 'var(--accent-food)', autoWidth = false }: NyamSelectProps) {
+export function NyamSelect({ options, value, onChange, placeholder, disabled = false, accentColor = 'var(--accent-food)', autoWidth = false, inline = false }: NyamSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
@@ -122,16 +124,19 @@ export function NyamSelect({ options, value, onChange, placeholder, disabled = f
   }
 
   return (
-    <div ref={containerRef} className={autoWidth ? 'nyam-select-wrap' : 'nyam-select-wrap min-w-0 flex-1'}>
+    <div ref={containerRef} className={inline ? 'nyam-select-wrap' : autoWidth ? 'nyam-select-wrap' : 'nyam-select-wrap min-w-0 flex-1'}>
       <button
         ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`nyam-select ${autoWidth ? 'w-auto' : 'w-full'} ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''} ${disabled ? 'disabled' : ''}`}
+        className={inline
+          ? `inline-flex items-center gap-0.5 border-0 bg-transparent p-0 text-[13px] font-medium outline-none ${disabled ? 'disabled' : ''}`
+          : `nyam-select ${autoWidth ? 'w-auto' : 'w-full'} ${isOpen ? 'open' : ''} ${isWine ? 'wine' : ''} ${disabled ? 'disabled' : ''}`
+        }
         style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
       >
-        <span className="truncate" style={!value && placeholder ? { color: 'var(--text-hint)' } : undefined}>{selectedLabel}</span>
-        <ChevronDown size={12} className="nyam-select-arrow shrink-0" />
+        <span className="truncate" style={!value && placeholder ? { color: 'var(--text-hint)' } : { color: 'var(--text)' }}>{selectedLabel}</span>
+        {!inline && <ChevronDown size={12} className="nyam-select-arrow shrink-0" />}
       </button>
 
       {isOpen && createPortal(

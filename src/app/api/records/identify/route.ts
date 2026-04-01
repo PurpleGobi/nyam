@@ -102,6 +102,7 @@ async function upsertWineFromAI(
       vintage: recognition.vintage,
       region: recognition.region,
       sub_region: recognition.subRegion,
+      appellation: recognition.appellation,
       country: recognition.country,
       wine_type: recognition.wineType ?? 'red',
       variety: recognition.variety,
@@ -118,6 +119,7 @@ async function upsertWineFromAI(
       drinking_window_start: recognition.drinkingWindowStart,
       drinking_window_end: recognition.drinkingWindowEnd,
       vivino_rating: recognition.vivinoRating,
+      critic_scores: recognition.criticScores,
     })
     .select('id, name')
     .single()

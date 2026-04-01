@@ -254,6 +254,7 @@ export interface Database {
           producer: string | null
           region: string | null
           sub_region: string | null
+          appellation: string | null
           country: string | null
           variety: string | null
           grape_varieties: Json | null
@@ -274,6 +275,7 @@ export interface Database {
           vivino_rating: number | null
           critic_scores: Json | null
           classification: string | null
+          tasting_notes: string | null
           nyam_score: number | null
           nyam_score_updated_at: string | null
           external_ids: Json | null
@@ -287,6 +289,7 @@ export interface Database {
           producer?: string | null
           region?: string | null
           sub_region?: string | null
+          appellation?: string | null
           country?: string | null
           variety?: string | null
           grape_varieties?: Json | null
@@ -307,6 +310,7 @@ export interface Database {
           vivino_rating?: number | null
           critic_scores?: Json | null
           classification?: string | null
+          tasting_notes?: string | null
           nyam_score?: number | null
           nyam_score_updated_at?: string | null
           external_ids?: Json | null
@@ -320,6 +324,7 @@ export interface Database {
           producer?: string | null
           region?: string | null
           sub_region?: string | null
+          appellation?: string | null
           country?: string | null
           variety?: string | null
           grape_varieties?: Json | null
@@ -340,6 +345,7 @@ export interface Database {
           vivino_rating?: number | null
           critic_scores?: Json | null
           classification?: string | null
+          tasting_notes?: string | null
           nyam_score?: number | null
           nyam_score_updated_at?: string | null
           external_ids?: Json | null

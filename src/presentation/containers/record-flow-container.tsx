@@ -101,8 +101,15 @@ function RecordFlowInner() {
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
   const [recentCompanions, setRecentCompanions] = useState<string[]>([])
   const [wineData, setWineData] = useState<{
-    wineType?: string; region?: string; country?: string
-    variety?: string; producer?: string; vintage?: number
+    wineType?: string; region?: string; subRegion?: string; appellation?: string
+    country?: string; variety?: string; grapeVarieties?: Array<{ name: string; pct: number }>
+    producer?: string; vintage?: number; abv?: number
+    bodyLevel?: number; acidityLevel?: number; sweetnessLevel?: number
+    classification?: string; servingTemp?: string; decanting?: string
+    referencePrice?: number; drinkingWindowStart?: number; drinkingWindowEnd?: number
+    vivinoRating?: number; criticScores?: { RP?: number; WS?: number; JR?: number; JH?: number }
+    tastingNotes?: string
+    foodPairings?: string[]
   } | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
@@ -199,10 +206,27 @@ function RecordFlowInner() {
         setWineData({
           wineType: wine.wineType,
           region: wine.region ?? undefined,
+          subRegion: wine.subRegion ?? undefined,
+          appellation: wine.appellation ?? undefined,
           country: wine.country ?? undefined,
           variety: bestVariety,
+          grapeVarieties: wine.grapeVarieties.length > 0 ? wine.grapeVarieties : undefined,
           producer: wine.producer ?? undefined,
           vintage: wine.vintage ?? undefined,
+          abv: wine.abv ?? undefined,
+          bodyLevel: wine.bodyLevel ?? undefined,
+          acidityLevel: wine.acidityLevel ?? undefined,
+          sweetnessLevel: wine.sweetnessLevel ?? undefined,
+          classification: wine.classification ?? undefined,
+          servingTemp: wine.servingTemp ?? undefined,
+          decanting: wine.decanting ?? undefined,
+          referencePrice: wine.referencePrice ?? undefined,
+          drinkingWindowStart: wine.drinkingWindowStart ?? undefined,
+          drinkingWindowEnd: wine.drinkingWindowEnd ?? undefined,
+          vivinoRating: wine.vivinoRating ?? undefined,
+          criticScores: wine.criticScores ?? undefined,
+          tastingNotes: wine.tastingNotes ?? undefined,
+          foodPairings: wine.foodPairings.length > 0 ? wine.foodPairings : undefined,
         })
       } catch {
         // 조회 실패 시 URL param 폴백
@@ -277,6 +301,7 @@ function RecordFlowInner() {
   // sessionStorage에서 촬영 이미지 + AI prefill 읽기
   useEffect(() => {
     if (isEditMode) return
+    let photoRestored = false
     try {
       const base64 = sessionStorage.getItem('nyam_captured_image')
       if (base64) {
@@ -289,8 +314,24 @@ function RecordFlowInner() {
         }
         const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
         addFiles([file])
+        photoRestored = true
       }
     } catch {}
+    // base64 복원 실패 시 업로드된 URL로 폴백
+    if (!photoRestored) {
+      try {
+        const photoUrl = sessionStorage.getItem('nyam_captured_photo_url')
+        if (photoUrl) {
+          sessionStorage.removeItem('nyam_captured_photo_url')
+          fetch(photoUrl).then((res) => res.blob()).then((blob) => {
+            const file = new File([blob], 'camera-capture.jpg', { type: blob.type || 'image/jpeg' })
+            addFiles([file])
+          }).catch(() => {})
+        }
+      } catch {}
+    } else {
+      try { sessionStorage.removeItem('nyam_captured_photo_url') } catch {}
+    }
     try {
       const prefillStr = sessionStorage.getItem('nyam_ai_prefill')
       if (prefillStr) {
@@ -453,7 +494,7 @@ function RecordFlowInner() {
 
           // 와인 메타 업데이트 (빈티지, 산지, 품종)
           if (formData.wineMetaUpdate && formData.targetType === 'wine') {
-            const meta = formData.wineMetaUpdate as { vintage: number | null; region: string | null; country: string | null; variety: string | null }
+            const meta = formData.wineMetaUpdate as Record<string, unknown>
             fetch('/api/wines', {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
@@ -556,7 +597,9 @@ function RecordFlowInner() {
         await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
         await xpRepo.deleteByRecordId(editRecordId)
       }
-      router.replace('/')
+      setShowDeleteConfirm(false)
+      setToastMsg('기록이 삭제되었습니다')
+      setTimeout(() => router.replace('/'), 1200)
     } catch {
       setIsDeleting(false)
     }
@@ -681,18 +724,36 @@ function RecordFlowInner() {
         />
       ) : (
         <WineRecordForm
+          key={editRecordId ?? (wineData ? 'wine-loaded' : 'wine-init')}
           target={{
             id: state.targetId,
             name: state.targetName,
             wineType: wineData?.wineType ?? state.targetMeta.split(' · ')[0],
             region: wineData?.region ?? state.targetMeta.split(' · ')[1],
+            subRegion: wineData?.subRegion,
+            appellation: wineData?.appellation,
             country: wineData?.country ?? state.targetMeta.split(' · ')[2],
             vintage: wineData?.vintage ?? (() => {
               const v = searchParams.get('vintage')
               return v ? Number(v) : undefined
             })(),
             variety: wineData?.variety ?? searchParams.get('variety') ?? undefined,
+            grapeVarieties: wineData?.grapeVarieties,
             producer: wineData?.producer ?? searchParams.get('producer') ?? undefined,
+            abv: wineData?.abv,
+            bodyLevel: wineData?.bodyLevel,
+            acidityLevel: wineData?.acidityLevel,
+            sweetnessLevel: wineData?.sweetnessLevel,
+            classification: wineData?.classification,
+            servingTemp: wineData?.servingTemp,
+            decanting: wineData?.decanting,
+            referencePrice: wineData?.referencePrice,
+            drinkingWindowStart: wineData?.drinkingWindowStart,
+            drinkingWindowEnd: wineData?.drinkingWindowEnd,
+            vivinoRating: wineData?.vivinoRating,
+            criticScores: wineData?.criticScores,
+            tastingNotes: wineData?.tastingNotes,
+            foodPairings: wineData?.foodPairings,
             isAiRecognized: !!wineData,
           }}
           referenceRecords={isEditMode ? [] : referenceRecords}

@@ -750,6 +750,37 @@ export default function DesignSystemPage() {
           </div>
         </div>
 
+        <Sub title="Inline Select (박스 없는 드롭다운)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <NyamSelect
+            options={[{ value: 'France', label: 'France' }, { value: 'Italy', label: 'Italy' }, { value: 'Spain', label: 'Spain' }]}
+            value={selectVal === 'latest' ? '' : selectVal}
+            onChange={setSelectVal}
+            placeholder="Country"
+            accentColor="var(--accent-wine)"
+            inline
+          />
+          <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+          <NyamSelect
+            options={[{ value: 'Bordeaux', label: 'Bordeaux' }, { value: 'Burgundy', label: 'Burgundy' }]}
+            value=""
+            onChange={() => {}}
+            placeholder="Region"
+            accentColor="var(--accent-wine)"
+            inline
+          />
+          <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+          <NyamSelect
+            options={[]}
+            value=""
+            onChange={() => {}}
+            placeholder="Sub-region"
+            disabled
+            accentColor="var(--accent-wine)"
+            inline
+          />
+        </div>
+
         <Sub title="Text Input (NyamInput)" />
         <NyamInput placeholder="와인 이름 검색..." style={{ maxWidth: '340px' }} />
         <div style={{ display: 'flex', gap: '8px', marginTop: '8px', maxWidth: '340px' }}>

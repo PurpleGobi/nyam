@@ -12,7 +12,7 @@ interface GeminiVisionResponse {
 }
 
 const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent'
 
 function detectMimeType(base64: string): string {
   if (base64.startsWith('UklGR')) return 'image/webp'
@@ -149,40 +149,94 @@ export async function recognizeRestaurant(imageBase64: string): Promise<Restaura
 
 // ─── 와인 라벨 OCR (확장) ───
 
-const WINE_LABEL_PROMPT = `당신은 와인 전문 소믈리에이자 데이터 분석가입니다. 이 사진에서 와인 정보를 최대한 추출하고, 라벨에 없는 정보는 와인 지식으로 추론해주세요.
+const WINE_LABEL_PROMPT = `당신은 와인 전문 소믈리에입니다. 사진에서 와인 정보를 추출하고, 라벨에 없는 정보는 와인 지식으로 추론하세요.
 
-규칙:
-- 와인 라벨, 와인 병, 와인 잔, 와인 관련 사진이면 분석하세요.
-- 라벨에서 직접 읽은 정보와 추론한 정보를 구분하되, 모두 포함하세요.
-- 가격은 한국 소매 기준 원화(KRW)로 추정하세요.
-- vivino_rating은 Vivino에서의 일반적인 평점을 추정하세요 (해당 와인의 일반적 평판 기반).
-- 확실하지 않아도 최선의 추측을 해주세요.
+■ 반드시 지킬 제약조건 (위반 시 시스템 오류 발생):
 
-JSON으로만 응답:
+[wine_type] 다음 7개만 허용: "red", "white", "rose", "sparkling", "orange", "fortified", "dessert"
+
+[country] 다음 15개국만 허용 (해당 없으면 가장 가까운 것 선택):
+France, Germany, Austria, Hungary, Greece, Italy, Spain, Portugal, USA, Canada, Chile, Argentina, South Africa, Australia, New Zealand
+
+[region] country에 따라 아래 값만 허용:
+- France: Bordeaux, South West France, Burgundy, Beaujolais, Alsace, Loire Valley, Rhône Valley, Southern France
+- Germany: Mosel, Nahe, Rheingau, Rheinhessen, Pfalz, Baden, Franken
+- Austria: Niederösterreich, Burgenland
+- Hungary: Tokaj
+- Greece: Naoussa, Nemea, Santorini
+- Italy: Trentino-Alto Adige, Friuli-Venezia Giulia, Veneto, Piedmont, Tuscany, Marche, Umbria, Lazio, Abruzzo, Campania, Puglia, Basilicata, Sicily
+- Spain: The Upper Ebro, Catalunya, The Duero Valley, The North West, The Levante, Castilla-La Mancha, Castilla y León
+- Portugal: Vinho Verde, Douro, Dão, Bairrada, Alentejo, Lisboa, Alentejano
+- USA: California, Oregon, Washington, New York
+- Canada: Ontario, British Columbia
+- Chile: Coquimbo Region, Aconcagua Region, Central Valley, Southern Region
+- Argentina: Salta, San Juan, Mendoza, Patagonia
+- South Africa: Coastal Region, Breede River Valley, Cape South Coast
+- Australia: South Eastern Australia, South Australia, Victoria, New South Wales, Tasmania, Western Australia
+- New Zealand: North Island, South Island
+
+[sub_region] region에 따라 허용되는 값이 다름. 주요 예시:
+- Bordeaux → Médoc, Haut-Médoc, Saint-Estèphe, Pauillac, Saint-Julien, Margaux, Graves, Pessac-Léognan, Saint-Émilion, Pomerol, Sauternes, Barsac, Côtes de Bordeaux, Entre-Deux-Mers
+- Burgundy → Chablis, Côte de Nuits, Côte de Beaune, Côte Chalonnaise, Mâconnais
+- Rhône Valley → Côtes du Rhône, Côte-Rôtie, Condrieu, Hermitage, Crozes-Hermitage, Cornas, Châteauneuf-du-Pape, Gigondas, Vacqueyras, Lirac, Tavel
+- California → Napa Valley, Sonoma County, Mendocino County, Paso Robles, Santa Maria Valley, Lodi
+- South Australia → Barossa, Clare Valley, Adelaide Hills, McLaren Vale, Coonawarra
+- 해당 없으면 null
+
+[appellation] sub_region의 하위 AOC/AVA. 일부만 해당:
+- Côte de Nuits → Gevrey-Chambertin, Vougeot, Vosne-Romanée, Nuits-Saint-Georges
+- Côte de Beaune → Aloxe-Corton, Beaune, Pommard, Volnay, Meursault, Puligny-Montrachet, Chassagne-Montrachet
+- Côte Chalonnaise → Rully, Mercurey, Givry, Montagny
+- Mâconnais → Pouilly-Fuissé, Saint-Véran
+- Napa Valley → Rutherford, Oakville, Stags Leap District, Howell Mountain, Mt. Veeder, Los Carneros, St. Helena, Calistoga
+- Sonoma County → Russian River Valley, Alexander Valley, Dry Creek Valley, Sonoma Coast
+- Barossa → Barossa Valley, Eden Valley
+- Walker Bay → Hemel-en-Aarde Wards
+- 해당 없으면 null
+
+[variety] 대표 품종 1개. 반드시 아래 정확한 이름만 사용 ("Merlot Blend" 같은 조합명 금지):
+- Red: Cabernet Sauvignon, Merlot, Pinot Noir, Syrah / Shiraz, Grenache, Malbec, Tempranillo, Cabernet Franc, Zinfandel, Mourvèdre, Carménère, Petit Verdot, Gamay, Pinotage, Sangiovese, Nebbiolo, Barbera, Primitivo, Montepulciano, Nero d'Avola, Aglianico, Dolcetto, Corvina
+- White: Chardonnay, Sauvignon Blanc, Riesling, Pinot Grigio, Gewürztraminer, Viognier, Chenin Blanc, Sémillon, Grüner Veltliner, Albariño, Marsanne, Roussanne, Muscadet, Torrontés, Vermentino, Trebbiano, Garganega, Fiano, Arneis
+- Rose: Grenache, Syrah / Shiraz, Mourvèdre, Cinsault, Pinot Noir, Sangiovese, Tempranillo
+- Sparkling: Chardonnay, Pinot Noir, Pinot Meunier, Glera
+[grape_varieties] [{name, pct}] 배열. name은 위 품종명만 사용. pct는 0~100 정수, 합계=100. 단일 품종이면 [{name:"...", pct:100}].
+[body_level] 정수만. 1=Light, 2=Medium-, 3=Medium, 4=Medium+, 5=Full. 반드시 1~5 범위.
+[acidity_level] 정수만. 1=낮음, 2=보통, 3=높음. 반드시 1~3 범위.
+[sweetness_level] 정수만. 1=Dry, 2=Medium, 3=Sweet. 반드시 1~3 범위.
+[abv] 소수점 1자리 (예: 13.5). 모르면 null.
+[vivino_rating] 소수점 1자리, 1.0~5.0 범위. 모르면 null.
+[critic_scores] {RP?: 50~100, WS?: 50~100, JR?: 12.0~20.0, JH?: 50~100}. 모르면 null.
+[reference_price] 한국 소매가 원화 정수 (예: 45000). 모르면 null.
+[vintage] 정수 연도. NV이면 null.
+[drinking_window_start/end] 정수 연도. 모르면 null.
+
+■ JSON 응답 형식 (이 구조 정확히 따르기):
 {
-  "wine_name": "와인 정식 이름 (라벨에서 읽은 그대로)",
-  "producer": "생산자/와이너리 이름 (없으면 null)",
-  "vintage": 빈티지 연도(숫자, 없으면 null),
-  "region": "산지 (예: Bordeaux, Napa Valley)",
-  "sub_region": "세부 산지 (예: Saint-Émilion, Rutherford, 없으면 null)",
-  "country": "국가 (예: France, Italy)",
-  "wine_type": "red/white/rose/sparkling/orange/fortified/dessert 중 하나",
-  "variety": "주요 포도 품종 (예: Cabernet Sauvignon, Pinot Noir)",
-  "grape_varieties": [{"name": "품종명", "pct": 비율(0~100)}],
-  "abv": 알코올 도수(숫자, 예: 13.5, 없으면 null),
-  "classification": "등급 (예: Grand Cru Classé, DOC, AVA, 없으면 null)",
-  "body_level": 바디감(1~5, 1=라이트 5=풀바디),
-  "acidity_level": 산도(1~5, 1=낮음 5=높음),
-  "sweetness_level": 당도(1~5, 1=드라이 5=스위트),
-  "food_pairings": ["추천 음식 페어링 3~5개"],
-  "serving_temp": "적정 서빙 온도 (예: 16-18°C)",
-  "decanting": "디캔팅 추천 (예: 1시간, 불필요, 없으면 null)",
-  "reference_price": 한국 소매 추정가(원화 숫자, 예: 45000),
-  "drinking_window_start": 음용 시작 연도(숫자, 없으면 null),
-  "drinking_window_end": 음용 마감 연도(숫자, 없으면 null),
-  "vivino_rating": Vivino 추정 평점(소수점 1자리, 예: 4.2, 모르면 null),
-  "tasting_notes": "간단한 테이스팅 노트 (1~2문장, 한국어)",
-  "confidence": 0.0~1.0
+  "wine_name": "string",
+  "producer": "string|null",
+  "vintage": "number|null",
+  "country": "string",
+  "region": "string",
+  "sub_region": "string|null",
+  "appellation": "string|null",
+  "wine_type": "string",
+  "variety": "string",
+  "grape_varieties": [{"name":"string","pct":"number"}],
+  "abv": "number|null",
+  "classification": "string|null",
+  "body_level": "number(1-5)",
+  "acidity_level": "number(1-3)",
+  "sweetness_level": "number(1-3)",
+  "food_pairings": ["string"],
+  "serving_temp": "string|null",
+  "decanting": "string|null",
+  "reference_price": "number|null",
+  "drinking_window_start": "number|null",
+  "drinking_window_end": "number|null",
+  "vivino_rating": "number|null",
+  "critic_scores": {"RP":"number","WS":"number"}|null,
+  "tasting_notes": "한국어 1~2문장",
+  "confidence": "number(0-1)"
 }
 
 와인과 전혀 무관한 사진만 {"error": "not_wine_label"}로 응답.`
@@ -193,6 +247,7 @@ export interface WineLabelRecognition {
   vintage: number | null
   region: string | null
   subRegion: string | null
+  appellation: string | null
   country: string | null
   wineType: string | null
   variety: string | null
@@ -209,6 +264,7 @@ export interface WineLabelRecognition {
   drinkingWindowStart: number | null
   drinkingWindowEnd: number | null
   vivinoRating: number | null
+  criticScores: { RP?: number; WS?: number; JR?: number; JH?: number } | null
   tastingNotes: string | null
   confidence: number
 }
@@ -231,6 +287,7 @@ export async function recognizeWineLabel(imageBase64: string): Promise<WineLabel
     vintage: parsed.vintage ? Number(parsed.vintage) : null,
     region: (parsed.region as string) ?? null,
     subRegion: (parsed.sub_region as string) ?? null,
+    appellation: (parsed.appellation as string) ?? null,
     country: (parsed.country as string) ?? null,
     wineType: (parsed.wine_type as string) ?? null,
     variety: (parsed.variety as string) ?? null,
@@ -247,6 +304,9 @@ export async function recognizeWineLabel(imageBase64: string): Promise<WineLabel
     drinkingWindowStart: parsed.drinking_window_start ? Number(parsed.drinking_window_start) : null,
     drinkingWindowEnd: parsed.drinking_window_end ? Number(parsed.drinking_window_end) : null,
     vivinoRating: parsed.vivino_rating ? Number(parsed.vivino_rating) : null,
+    criticScores: parsed.critic_scores && typeof parsed.critic_scores === 'object'
+      ? parsed.critic_scores as { RP?: number; WS?: number; JR?: number; JH?: number }
+      : null,
     tastingNotes: (parsed.tasting_notes as string) ?? null,
     confidence: (parsed.confidence as number) ?? 0,
   }
@@ -255,7 +315,7 @@ export async function recognizeWineLabel(imageBase64: string): Promise<WineLabel
 // ─── 와인 이름 검색 (LLM, 이미지 없이 텍스트만) ───
 
 const GEMINI_TEXT_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent'
 
 async function callGeminiText(prompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
@@ -350,41 +410,65 @@ const WINE_DETAIL_PROMPT = (name: string, producer: string | null, vintage: numb
   let desc = `"${name}"`
   if (producer) desc += ` by ${producer}`
   if (vintage) desc += ` (${vintage})`
-  return `당신은 와인 전문 소믈리에이자 데이터 분석가입니다. 다음 와인에 대한 상세 정보를 제공해주세요.
+  return `당신은 와인 전문 소믈리에입니다. 다음 와인의 상세 정보를 제공하세요.
 
 와인: ${desc}
 
-규칙:
-- 해당 와인에 대해 알려진 정보를 최대한 정확하게 제공하세요.
-- 가격은 한국 소매 기준 원화(KRW)로 추정하세요.
-- vivino_rating은 Vivino에서의 일반적인 평점을 추정하세요.
-- 확실하지 않아도 최선의 추측을 해주세요.
+■ 반드시 지킬 제약조건 (위반 시 시스템 오류 발생):
 
-JSON으로만 응답:
+[wine_type] "red"|"white"|"rose"|"sparkling"|"orange"|"fortified"|"dessert" 중 하나만.
+[country] France|Germany|Austria|Hungary|Greece|Italy|Spain|Portugal|USA|Canada|Chile|Argentina|South Africa|Australia|New Zealand 중 하나.
+[region] country별 허용값:
+- France: Bordeaux, South West France, Burgundy, Beaujolais, Alsace, Loire Valley, Rhône Valley, Southern France
+- Germany: Mosel, Nahe, Rheingau, Rheinhessen, Pfalz, Baden, Franken
+- Italy: Trentino-Alto Adige, Friuli-Venezia Giulia, Veneto, Piedmont, Tuscany, Marche, Umbria, Lazio, Abruzzo, Campania, Puglia, Basilicata, Sicily
+- Spain: The Upper Ebro, Catalunya, The Duero Valley, The North West, The Levante, Castilla-La Mancha, Castilla y León
+- USA: California, Oregon, Washington, New York
+- Chile: Coquimbo Region, Aconcagua Region, Central Valley, Southern Region
+- Argentina: Salta, San Juan, Mendoza, Patagonia
+- Australia: South Eastern Australia, South Australia, Victoria, New South Wales, Tasmania, Western Australia
+- New Zealand: North Island, South Island
+- 기타 국가도 동일 패턴으로.
+[sub_region] 해당 region의 세부산지. 없으면 null.
+[appellation] sub_region의 하위 AOC/AVA/Ward. 없으면 null.
+[variety] 대표 품종 1개. 정확한 품종명만 (Merlot, Cabernet Sauvignon 등). "Merlot Blend" 같은 조합명 금지.
+[grape_varieties] [{name, pct}]. name은 정확한 품종명만. pct 합계=100.
+[body_level] 정수 1~5만. 1=Light, 2=Medium-, 3=Medium, 4=Medium+, 5=Full.
+[acidity_level] 정수 1~3만. 1=낮음, 2=보통, 3=높음.
+[sweetness_level] 정수 1~3만. 1=Dry, 2=Medium, 3=Sweet.
+[abv] 소수점 1자리. 모르면 null.
+[grape_varieties] [{name, pct}]. pct 합계=100. 단일 품종이면 [{name:"...", pct:100}].
+[vivino_rating] 1.0~5.0 소수 1자리. 모르면 null.
+[critic_scores] {RP?: 50~100, WS?: 50~100, JR?: 12.0~20.0, JH?: 50~100}. 모르면 null.
+[reference_price] 한국 소매가 원화 정수. 모르면 null.
+
+■ JSON 응답:
 {
   "wine_name": "${name}",
-  "producer": "생산자/와이너리 이름 (없으면 null)",
+  "producer": "string|null",
   "vintage": ${vintage ?? 'null'},
-  "region": "산지 (예: Bordeaux, Napa Valley)",
-  "sub_region": "세부 산지 (없으면 null)",
-  "country": "국가",
-  "wine_type": "red/white/rose/sparkling/orange/fortified/dessert 중 하나",
-  "variety": "주요 포도 품종",
-  "grape_varieties": [{"name": "품종명", "pct": 비율(0~100)}],
-  "abv": 알코올 도수(숫자, 없으면 null),
-  "classification": "등급 (없으면 null)",
-  "body_level": 바디감(1~5),
-  "acidity_level": 산도(1~5),
-  "sweetness_level": 당도(1~5),
-  "food_pairings": ["추천 음식 페어링 3~5개"],
-  "serving_temp": "적정 서빙 온도",
-  "decanting": "디캔팅 추천 (없으면 null)",
-  "reference_price": 한국 소매 추정가(원화 숫자),
-  "drinking_window_start": 음용 시작 연도(없으면 null),
-  "drinking_window_end": 음용 마감 연도(없으면 null),
-  "vivino_rating": Vivino 추정 평점(소수점 1자리, 없으면 null),
-  "tasting_notes": "간단한 테이스팅 노트 (1~2문장, 한국어)",
-  "confidence": 0.0~1.0
+  "country": "string",
+  "region": "string",
+  "sub_region": "string|null",
+  "appellation": "string|null",
+  "wine_type": "string",
+  "variety": "string",
+  "grape_varieties": [{"name":"string","pct":"number"}],
+  "abv": "number|null",
+  "classification": "string|null",
+  "body_level": "number(1-5)",
+  "acidity_level": "number(1-3)",
+  "sweetness_level": "number(1-3)",
+  "food_pairings": ["string 3~5개"],
+  "serving_temp": "string|null",
+  "decanting": "string|null",
+  "reference_price": "number|null",
+  "drinking_window_start": "number|null",
+  "drinking_window_end": "number|null",
+  "vivino_rating": "number|null",
+  "critic_scores": {"RP":"number","WS":"number"}|null,
+  "tasting_notes": "한국어 1~2문장",
+  "confidence": "number(0-1)"
 }`
 }
 
@@ -406,6 +490,7 @@ export async function getWineDetailByName(
     vintage: parsed.vintage ? Number(parsed.vintage) : vintage,
     region: (parsed.region as string) ?? null,
     subRegion: (parsed.sub_region as string) ?? null,
+    appellation: (parsed.appellation as string) ?? null,
     country: (parsed.country as string) ?? null,
     wineType: (parsed.wine_type as string) ?? null,
     variety: (parsed.variety as string) ?? null,
@@ -422,6 +507,9 @@ export async function getWineDetailByName(
     drinkingWindowStart: parsed.drinking_window_start ? Number(parsed.drinking_window_start) : null,
     drinkingWindowEnd: parsed.drinking_window_end ? Number(parsed.drinking_window_end) : null,
     vivinoRating: parsed.vivino_rating ? Number(parsed.vivino_rating) : null,
+    criticScores: parsed.critic_scores && typeof parsed.critic_scores === 'object'
+      ? parsed.critic_scores as { RP?: number; WS?: number; JR?: number; JH?: number }
+      : null,
     tastingNotes: (parsed.tasting_notes as string) ?? null,
     confidence: (parsed.confidence as number) ?? 0,
   }
