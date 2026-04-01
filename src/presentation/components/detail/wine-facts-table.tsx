@@ -94,7 +94,12 @@ export function WineFactsTable({ wine }: WineFactsTableProps) {
   }
   if (wine.servingTemp) rows.push({ label: '적정 온도', value: wine.servingTemp })
   if (wine.decanting) rows.push({ label: '디캔팅', value: wine.decanting })
-  if (wine.referencePrice) rows.push({ label: '참고 시세', value: formatPrice(wine.referencePrice) })
+  if (wine.referencePriceMin || wine.referencePriceMax) {
+    const priceText = wine.referencePriceMin && wine.referencePriceMax
+      ? `${formatPrice(wine.referencePriceMin)}~${formatPrice(wine.referencePriceMax)}`
+      : formatPrice(wine.referencePriceMin ?? wine.referencePriceMax ?? 0)
+    rows.push({ label: '적정가', value: priceText })
+  }
   if (wine.drinkingWindowStart && wine.drinkingWindowEnd) {
     rows.push({ label: '음용 적기', value: `${wine.drinkingWindowStart}–${wine.drinkingWindowEnd}` })
   }

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { SearchResult, SearchScreenState, RecentSearch } from '@/domain/entities/search'
-import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
+import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import { debounce } from '@/shared/utils/debounce'
 
 const DEBOUNCE_MS = 300

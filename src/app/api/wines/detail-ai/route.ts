@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
-import { getWineDetailByName } from '@/infrastructure/api/gemini'
-import type { WineLabelRecognition } from '@/infrastructure/api/gemini'
+import { getWineDetailByName } from '@/infrastructure/api/ai-recognition'
+import type { WineLabelRecognition } from '@/infrastructure/api/ai-recognition'
 
 /** AI 인식 결과로 wines 테이블에 중복 체크 후 INSERT (없으면 생성) */
 async function upsertWineFromAI(
@@ -24,6 +24,30 @@ async function upsertWineFromAI(
   const { data: existing } = await query.limit(1).maybeSingle()
 
   if (existing) {
+    // 기존 와인이라도 빈 필드(tasting_notes, price_review 등)가 있으면 보강
+    const patch: Record<string, unknown> = {}
+    const fields: Array<[string, unknown]> = [
+      ['tasting_notes', recognition.tastingNotes],
+      ['price_review', recognition.priceReview],
+      ['reference_price_min', recognition.referencePriceMin],
+      ['reference_price_max', recognition.referencePriceMax],
+      ['food_pairings', recognition.foodPairings],
+      ['serving_temp', recognition.servingTemp],
+      ['decanting', recognition.decanting],
+      ['drinking_window_start', recognition.drinkingWindowStart],
+      ['drinking_window_end', recognition.drinkingWindowEnd],
+      ['vivino_rating', recognition.vivinoRating],
+      ['critic_scores', recognition.criticScores],
+      ['body_level', recognition.bodyLevel],
+      ['acidity_level', recognition.acidityLevel],
+      ['sweetness_level', recognition.sweetnessLevel],
+    ]
+    for (const [key, val] of fields) {
+      if (val != null) patch[key] = val
+    }
+    if (Object.keys(patch).length > 0) {
+      await supabase.from('wines').update(patch).eq('id', existing.id)
+    }
     return { id: existing.id, name: existing.name, isExisting: true }
   }
 
@@ -48,11 +72,14 @@ async function upsertWineFromAI(
       food_pairings: recognition.foodPairings,
       serving_temp: recognition.servingTemp,
       decanting: recognition.decanting,
-      reference_price: recognition.referencePrice,
+      reference_price_min: recognition.referencePriceMin,
+      reference_price_max: recognition.referencePriceMax,
+      price_review: recognition.priceReview,
       drinking_window_start: recognition.drinkingWindowStart,
       drinking_window_end: recognition.drinkingWindowEnd,
       vivino_rating: recognition.vivinoRating,
       critic_scores: recognition.criticScores,
+      tasting_notes: recognition.tastingNotes,
     })
     .select('id, name')
     .single()

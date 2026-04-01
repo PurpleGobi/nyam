@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest) {
     variety: 'variety', abv: 'abv', bodyLevel: 'body_level',
     acidityLevel: 'acidity_level', sweetnessLevel: 'sweetness_level',
     classification: 'classification', servingTemp: 'serving_temp',
-    decanting: 'decanting', referencePrice: 'reference_price',
+    decanting: 'decanting', referencePriceMin: 'reference_price_min', referencePriceMax: 'reference_price_max',
     drinkingWindowStart: 'drinking_window_start', drinkingWindowEnd: 'drinking_window_end',
     vivinoRating: 'vivino_rating', criticScores: 'critic_scores',
     tastingNotes: 'tasting_notes',

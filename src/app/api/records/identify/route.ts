@@ -5,8 +5,8 @@ import {
   recognizeWineLabel,
   recognizeWineShelf,
   recognizeWineReceipt,
-} from '@/infrastructure/api/gemini'
-import type { WineLabelRecognition } from '@/infrastructure/api/gemini'
+} from '@/infrastructure/api/ai-recognition'
+import type { WineLabelRecognition } from '@/infrastructure/api/ai-recognition'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { rankCandidatesByGenreMatch, isConfidentMatch } from '@/domain/services/ai-recognition'
 import type {
@@ -115,11 +115,14 @@ async function upsertWineFromAI(
       food_pairings: recognition.foodPairings,
       serving_temp: recognition.servingTemp,
       decanting: recognition.decanting,
-      reference_price: recognition.referencePrice,
+      reference_price_min: recognition.referencePriceMin,
+      reference_price_max: recognition.referencePriceMax,
+      price_review: recognition.priceReview,
       drinking_window_start: recognition.drinkingWindowStart,
       drinking_window_end: recognition.drinkingWindowEnd,
       vivino_rating: recognition.vivinoRating,
       critic_scores: recognition.criticScores,
+      tasting_notes: recognition.tastingNotes,
     })
     .select('id, name')
     .single()
@@ -143,15 +146,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
   }
 
   const body: IdentifyRequest = await request.json()
-  const { imageBase64, targetType, cameraMode, latitude, longitude, capturedAt } = body
+  const { imageUrl, targetType, cameraMode, latitude, longitude, capturedAt } = body
 
-  if (!imageBase64 || !targetType) {
+  if (!imageUrl || !targetType) {
     return NextResponse.json({ success: false, result: null, error: 'MISSING_FIELDS' }, { status: 400 })
   }
 
   try {
     if (targetType === 'restaurant') {
-      const recognition = await recognizeRestaurant(imageBase64)
+      const recognition = await recognizeRestaurant(imageUrl)
 
       let candidates: RestaurantCandidate[] = []
 
@@ -197,7 +200,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
       const mode = cameraMode ?? 'individual'
 
       if (mode === 'shelf') {
-        const recognition = await recognizeWineShelf(imageBase64)
+        const recognition = await recognizeWineShelf(imageUrl)
         const result: WineAIResult = {
           targetType: 'wine',
           ocrData: { wine_name: '', vintage: null, producer: null },
@@ -211,7 +214,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
           shelfData: recognition,
         })
       } else if (mode === 'receipt') {
-        const recognition = await recognizeWineReceipt(imageBase64)
+        const recognition = await recognizeWineReceipt(imageUrl)
         const result: WineAIResult = {
           targetType: 'wine',
           ocrData: { wine_name: '', vintage: null, producer: null },
@@ -225,7 +228,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
           receiptData: recognition,
         })
       } else {
-        const recognition = await recognizeWineLabel(imageBase64)
+        const recognition = await recognizeWineLabel(imageUrl)
 
         const ocrData = {
           wine_name: recognition.wineName ?? '',

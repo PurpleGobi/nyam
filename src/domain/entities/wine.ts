@@ -17,6 +17,13 @@ export interface CriticScores {
   JH?: number   // James Halliday
 }
 
+/** 가격 분석 리뷰 (AI) */
+export interface PriceReview {
+  verdict: 'buy' | 'conditional_buy' | 'avoid'
+  summary: string
+  alternatives: Array<{ name: string; price: string }>
+}
+
 /** external_ids JSONB */
 export interface WineExternalIds {
   vivino?: string
@@ -44,13 +51,15 @@ export interface Wine {
   foodPairings: string[]
   servingTemp: string | null
   decanting: string | null
-  referencePrice: number | null
+  referencePriceMin: number | null
+  referencePriceMax: number | null
   drinkingWindowStart: number | null
   drinkingWindowEnd: number | null
   vivinoRating: number | null
   criticScores: CriticScores | null
   classification: string | null
   tastingNotes: string | null
+  priceReview: PriceReview | null
   nyamScore: number | null
   nyamScoreUpdatedAt: string | null
   externalIds: WineExternalIds | null

@@ -2,7 +2,7 @@
 
 import { Plus, Search, Sparkles, Loader2 } from 'lucide-react'
 import type { SearchResult, SearchScreenState } from '@/domain/entities/search'
-import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
+import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import { SearchResultItem } from '@/presentation/components/search/search-result-item'
 
 interface SearchResultsProps {

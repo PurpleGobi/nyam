@@ -5,7 +5,7 @@ import { Camera, ImagePlus, List, Wine, UtensilsCrossed } from 'lucide-react'
 
 interface CameraCaptureProps {
   targetType: 'restaurant' | 'wine'
-  onCapture: (imageBase64: string) => void
+  onCapture: (file: File) => void
   onAlbumSelect: () => void
   onSearchFallback: () => void
   onShelfMode?: () => void
@@ -38,13 +38,7 @@ export function CameraCapture({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-
-      const reader = new FileReader()
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(',')[1]
-        onCapture(base64)
-      }
-      reader.readAsDataURL(file)
+      onCapture(file)
       e.target.value = ''
     },
     [onCapture],

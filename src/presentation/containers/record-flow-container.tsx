@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType, CreateRecordInput, DiningRecord } from '@/domain/entities/record'
+import type { PriceReview } from '@/domain/entities/wine'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { AddFlowEntryPath } from '@/domain/entities/add-flow'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -106,10 +107,11 @@ function RecordFlowInner() {
     producer?: string; vintage?: number; abv?: number
     bodyLevel?: number; acidityLevel?: number; sweetnessLevel?: number
     classification?: string; servingTemp?: string; decanting?: string
-    referencePrice?: number; drinkingWindowStart?: number; drinkingWindowEnd?: number
+    referencePriceMin?: number; referencePriceMax?: number; drinkingWindowStart?: number; drinkingWindowEnd?: number
     vivinoRating?: number; criticScores?: { RP?: number; WS?: number; JR?: number; JH?: number }
     tastingNotes?: string
     foodPairings?: string[]
+    priceReview?: PriceReview
   } | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
@@ -220,13 +222,15 @@ function RecordFlowInner() {
           classification: wine.classification ?? undefined,
           servingTemp: wine.servingTemp ?? undefined,
           decanting: wine.decanting ?? undefined,
-          referencePrice: wine.referencePrice ?? undefined,
+          referencePriceMin: wine.referencePriceMin ?? undefined,
+          referencePriceMax: wine.referencePriceMax ?? undefined,
           drinkingWindowStart: wine.drinkingWindowStart ?? undefined,
           drinkingWindowEnd: wine.drinkingWindowEnd ?? undefined,
           vivinoRating: wine.vivinoRating ?? undefined,
           criticScores: wine.criticScores ?? undefined,
           tastingNotes: wine.tastingNotes ?? undefined,
           foodPairings: wine.foodPairings.length > 0 ? wine.foodPairings : undefined,
+          priceReview: wine.priceReview ?? undefined,
         })
       } catch {
         // 조회 실패 시 URL param 폴백
@@ -295,43 +299,21 @@ function RecordFlowInner() {
     return () => { cancelled = true }
   }, [userId])
 
-  // sessionStorage에서 촬영 이미지를 읽어 자동 첨부
+  // sessionStorage에서 촬영 사진 URL + AI prefill 읽기
   const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
 
-  // sessionStorage에서 촬영 이미지 + AI prefill 읽기
   useEffect(() => {
     if (isEditMode) return
-    let photoRestored = false
     try {
-      const base64 = sessionStorage.getItem('nyam_captured_image')
-      if (base64) {
-        sessionStorage.removeItem('nyam_captured_image')
-        const byteString = atob(base64)
-        const ab = new ArrayBuffer(byteString.length)
-        const ia = new Uint8Array(ab)
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i)
-        }
-        const file = new File([ab], 'camera-capture.jpg', { type: 'image/jpeg' })
-        addFiles([file])
-        photoRestored = true
+      const photoUrl = sessionStorage.getItem('nyam_captured_photo_url')
+      if (photoUrl) {
+        sessionStorage.removeItem('nyam_captured_photo_url')
+        fetch(photoUrl).then((res) => res.blob()).then((blob) => {
+          const file = new File([blob], 'camera-capture.webp', { type: blob.type || 'image/webp' })
+          addFiles([file])
+        }).catch(() => {})
       }
     } catch {}
-    // base64 복원 실패 시 업로드된 URL로 폴백
-    if (!photoRestored) {
-      try {
-        const photoUrl = sessionStorage.getItem('nyam_captured_photo_url')
-        if (photoUrl) {
-          sessionStorage.removeItem('nyam_captured_photo_url')
-          fetch(photoUrl).then((res) => res.blob()).then((blob) => {
-            const file = new File([blob], 'camera-capture.jpg', { type: blob.type || 'image/jpeg' })
-            addFiles([file])
-          }).catch(() => {})
-        }
-      } catch {}
-    } else {
-      try { sessionStorage.removeItem('nyam_captured_photo_url') } catch {}
-    }
     try {
       const prefillStr = sessionStorage.getItem('nyam_ai_prefill')
       if (prefillStr) {
@@ -588,20 +570,30 @@ function RecordFlowInner() {
     if (!editRecordId || !user) return
     setIsDeleting(true)
     try {
-      await recordRepo.delete(editRecordId)
-      // XP 차감 + wishlist 복원은 record-detail과 동일 로직
+      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
       const histories = await xpRepo.getHistoriesByRecord(editRecordId)
-      if (histories.length > 0) {
-        let totalXpToDeduct = 0
-        for (const h of histories) totalXpToDeduct += h.xpAmount
-        await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-        await xpRepo.deleteByRecordId(editRecordId)
+
+      await recordRepo.delete(editRecordId)
+
+      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
+      try {
+        if (histories.length > 0) {
+          let totalXpToDeduct = 0
+          for (const h of histories) totalXpToDeduct += h.xpAmount
+          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
+          await xpRepo.deleteByRecordId(editRecordId)
+        }
+      } catch {
+        // CASCADE로 이미 삭제된 경우 무시
       }
+
       setShowDeleteConfirm(false)
       setToastMsg('기록이 삭제되었습니다')
-      setTimeout(() => router.replace('/'), 1200)
+      setTimeout(() => router.replace('/'), 800)
     } catch {
       setIsDeleting(false)
+      setShowDeleteConfirm(false)
+      setToastMsg('삭제에 실패했습니다. 다시 시도해주세요.')
     }
   }, [editRecordId, user, router])
   const handleAddMore = useCallback(() => {
@@ -747,13 +739,15 @@ function RecordFlowInner() {
             classification: wineData?.classification,
             servingTemp: wineData?.servingTemp,
             decanting: wineData?.decanting,
-            referencePrice: wineData?.referencePrice,
+            referencePriceMin: wineData?.referencePriceMin,
+            referencePriceMax: wineData?.referencePriceMax,
             drinkingWindowStart: wineData?.drinkingWindowStart,
             drinkingWindowEnd: wineData?.drinkingWindowEnd,
             vivinoRating: wineData?.vivinoRating,
             criticScores: wineData?.criticScores,
             tastingNotes: wineData?.tastingNotes,
             foodPairings: wineData?.foodPairings,
+            priceReview: wineData?.priceReview,
             isAiRecognized: !!wineData,
           }}
           referenceRecords={isEditMode ? [] : referenceRecords}

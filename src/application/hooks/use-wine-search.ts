@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import type { WineSearchResult } from '@/domain/entities/search'
 import type { WineCandidate } from '@/domain/entities/camera'
-import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
+import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import { wineRepo } from '@/shared/di/container'
 
 export function useWineSearch(userId: string | null) {

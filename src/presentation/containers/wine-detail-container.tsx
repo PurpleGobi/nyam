@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, Grape } from 'lucide-react'
+import { MapPin, Grape, Thermometer, GlassWater, CalendarRange, UtensilsCrossed, Info, X, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
@@ -55,6 +55,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [showPriceReview, setShowPriceReview] = useState(false)
 
   const {
     wine,
@@ -102,17 +103,27 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     if (!selectedRecordId || !user) return
     setIsDeleting(true)
     try {
-      await recordRepo.delete(selectedRecordId)
+      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
       const histories = await xpRepo.getHistoriesByRecord(selectedRecordId)
-      if (histories.length > 0) {
-        let totalXpToDeduct = 0
-        for (const h of histories) totalXpToDeduct += h.xpAmount
-        await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-        await xpRepo.deleteByRecordId(selectedRecordId)
+
+      await recordRepo.delete(selectedRecordId)
+
+      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
+      try {
+        if (histories.length > 0) {
+          let totalXpToDeduct = 0
+          for (const h of histories) totalXpToDeduct += h.xpAmount
+          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
+          await xpRepo.deleteByRecordId(selectedRecordId)
+        }
+      } catch {
+        // CASCADE로 이미 삭제된 경우 무시
       }
+
       setShowDeleteConfirm(false)
       setSelectedRecordId(null)
-      router.refresh()
+      setToastMsg('기록이 삭제되었습니다')
+      setTimeout(() => router.replace('/'), 800)
     } catch {
       setToastMsg('삭제에 실패했습니다')
     } finally {
@@ -290,153 +301,184 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         />
 
         {/* ════════════════════════════════════════
-            기본 섹션
+            기본 정보 (수정 페이지와 동일 순서)
            ════════════════════════════════════════ */}
         <section style={{ padding: '14px 20px 0' }}>
 
-          {/* #1 와인명 · 빈티지 */}
-          <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)', lineHeight: 1.3 }}>
-            {wine.name}
-            {wine.vintage && (
-              <span style={{ fontWeight: 600, color: 'var(--text-sub)', marginLeft: '6px' }}>
-                {wine.vintage}
-              </span>
-            )}
-          </h1>
-
-          {/* #2 스타일 스티커 + 와이너리 */}
-          <div className="mt-1.5 flex items-center gap-2">
-            <WineTypeChip wineType={wine.wineType} />
-            {wine.producer && (
-              <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>{wine.producer}</span>
+          {/* 1행: 와인명 [스타일뱃지] + Classification/Vivino/RP/적정가 */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h1 className="flex items-center gap-1.5" style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text)', lineHeight: 1.3 }}>
+                <span className="truncate">{wine.name}</span>
+                <WineTypeChip wineType={wine.wineType} />
+              </h1>
+              <div className="mt-0.5 flex items-center gap-1.5" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>
+                {wine.vintage && <span>{wine.vintage}</span>}
+                {wine.producer && <span>{wine.producer}</span>}
+              </div>
+            </div>
+            {(wine.classification || wine.vivinoRating || wine.criticScores?.RP || wine.criticScores?.WS) && (
+              <div className="flex shrink-0 items-center gap-2">
+                {wine.classification && (
+                  <span className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-sub)' }}>
+                    {wine.classification}
+                  </span>
+                )}
+                {wine.vivinoRating && (
+                  <div className="flex items-baseline gap-0.5">
+                    <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>Vivino</span>
+                    <span className="text-[18px] font-bold" style={{ color: 'var(--text-sub)' }}>{wine.vivinoRating}</span>
+                  </div>
+                )}
+                {wine.criticScores?.RP && (
+                  <div className="flex items-baseline gap-0.5">
+                    <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>RP</span>
+                    <span className="text-[18px] font-bold" style={{ color: 'var(--text-sub)' }}>{wine.criticScores.RP}</span>
+                  </div>
+                )}
+                {wine.criticScores?.WS && (
+                  <div className="flex items-baseline gap-0.5">
+                    <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>WS</span>
+                    <span className="text-[18px] font-bold" style={{ color: 'var(--text-sub)' }}>{wine.criticScores.WS}</span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* #3 국가(칩) · 세부산지 */}
-          {(wine.country || wine.region) && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {wine.country && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1"
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    backgroundColor: 'color-mix(in srgb, var(--accent-wine) 12%, transparent)',
-                    color: 'var(--accent-wine)',
-                  }}
+          {/* 적정가 (우측 상단 2행) */}
+          {(wine.referencePriceMin || wine.referencePriceMax) && (
+            <div className="mt-0.5 flex items-center justify-end gap-1">
+              <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>적정가</span>
+              <span className="text-[13px] font-bold" style={{ color: 'var(--accent-wine)' }}>
+                {wine.referencePriceMin && wine.referencePriceMax
+                  ? `${formatPrice(wine.referencePriceMin)}~${formatPrice(wine.referencePriceMax)}`
+                  : formatPrice(wine.referencePriceMin ?? wine.referencePriceMax ?? 0)}
+              </span>
+              {wine.priceReview && (
+                <button
+                  type="button"
+                  onClick={() => setShowPriceReview(true)}
+                  className="flex items-center gap-0.5"
+                  style={{ padding: '3px 8px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--bg-elevated)', cursor: 'pointer' }}
                 >
+                  <Info size={11} style={{ color: 'var(--text-sub)' }} />
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-sub)' }}>추가정보</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '10px 0' }} />
+
+          {/* 2행: Country › Region › Sub-region */}
+          {(wine.country || wine.region) && (
+            <div className="flex flex-wrap items-center gap-1 py-1" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+              {wine.country && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '12px', fontWeight: 700, backgroundColor: 'color-mix(in srgb, var(--accent-wine) 12%, transparent)', color: 'var(--accent-wine)' }}>
                   <MapPin size={11} />
                   {wine.country}
                 </span>
               )}
-              {(wine.region || wine.subRegion || wine.appellation) && (
-                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                  {[wine.region, wine.subRegion, wine.appellation].filter(Boolean).join(' · ')}
-                </span>
+              {wine.region && (
+                <>
+                  <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                  <span>{wine.region}</span>
+                </>
+              )}
+              {(wine.subRegion || wine.appellation) && (
+                <>
+                  <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                  <span>{wine.subRegion ?? wine.appellation}</span>
+                </>
               )}
             </div>
           )}
 
-          {/* #4 대표품종(칩) · 블렌드 품종 */}
+          {/* 3행: 품종 칩 */}
           {mainVariety && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 pb-4">
-              <span
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1"
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  backgroundColor: 'color-mix(in srgb, var(--accent-wine) 12%, transparent)',
-                  color: 'var(--accent-wine)',
-                }}
-              >
-                <Grape size={11} />
-                {mainVariety}
-              </span>
-              {blendText && (
-                <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-                  + {blendText}
-                </span>
-              )}
-            </div>
-          )}
-        </section>
-
-        <Divider />
-
-        {/* ════════════════════════════════════════
-            와인 정보 (compact) + AI 분석
-           ════════════════════════════════════════ */}
-        <section style={{ padding: '14px 20px' }}>
-          <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-            와인 정보
-          </h3>
-
-          {/* compact 스펙 그리드 */}
-          {infoItems.length > 0 && (
-            <div className="mb-3 grid grid-cols-3 gap-x-2 gap-y-2">
-              {infoItems.map((item) => (
-                <div key={item.label} className="rounded-lg px-2.5 py-2" style={{ backgroundColor: 'var(--bg-card)' }}>
-                  <p style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-hint)', textTransform: 'uppercase' }}>
-                    {item.label}
-                  </p>
-                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginTop: '1px' }}>
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 외부 평점 */}
-          {(wine.vivinoRating || wine.classification) && (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {wine.vivinoRating && (
-                <span className="rounded-full px-2.5 py-1" style={{ fontSize: '11px', fontWeight: 700, backgroundColor: 'var(--bg-card)', color: 'var(--text)' }}>
-                  Vivino {wine.vivinoRating}
-                </span>
-              )}
-              {wine.classification && (
-                <span className="rounded-full px-2.5 py-1" style={{ fontSize: '11px', fontWeight: 600, backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)' }}>
-                  {wine.classification}
-                </span>
-              )}
-              {wine.criticScores?.RP && (
-                <span className="rounded-full px-2.5 py-1" style={{ fontSize: '11px', fontWeight: 600, backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)' }}>
-                  RP {wine.criticScores.RP}
-                </span>
-              )}
-              {wine.criticScores?.WS && (
-                <span className="rounded-full px-2.5 py-1" style={{ fontSize: '11px', fontWeight: 600, backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)' }}>
-                  WS {wine.criticScores.WS}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* 적정 구입가 */}
-          {wine.referencePrice && (
-            <div className="mb-3 rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--bg-card)' }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-hint)' }}>적정 구입가</p>
-              <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-wine)', marginTop: '2px' }}>
-                {formatPrice(wine.referencePrice)}
-              </p>
-            </div>
-          )}
-
-          {/* 음식 페어링 */}
-          {wine.foodPairings.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {wine.foodPairings.map((f) => (
+            <div className="flex flex-wrap items-center gap-1 py-1">
+              {wine.grapeVarieties.length > 0 ? (
+                wine.grapeVarieties.map((g) => (
+                  <span
+                    key={g.name}
+                    className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[12px] font-medium"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--accent-wine) 10%, transparent)', color: 'var(--accent-wine)' }}
+                  >
+                    <Grape size={11} />
+                    {g.name}
+                    {g.pct > 0 && g.pct < 100 && (
+                      <span style={{ fontSize: '10px', opacity: 0.55 }}>{g.pct}%</span>
+                    )}
+                  </span>
+                ))
+              ) : (
                 <span
-                  key={f}
-                  className="rounded-full px-2 py-0.5"
-                  style={{ fontSize: '11px', fontWeight: 500, backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)' }}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium"
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--accent-wine) 10%, transparent)', color: 'var(--accent-wine)' }}
                 >
-                  {f}
+                  <Grape size={11} />
+                  {mainVariety}
                 </span>
-              ))}
+              )}
             </div>
           )}
+
+          {/* 4행: Body | Acidity | Sweet | ABV */}
+          {(wine.bodyLevel || wine.acidityLevel || wine.sweetnessLevel || wine.abv) && (
+            <div className="flex flex-wrap items-baseline gap-1.5 py-1 text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+              {wine.bodyLevel && <span>{BODY_LABELS[wine.bodyLevel]} Body</span>}
+              {wine.bodyLevel && wine.acidityLevel && <span style={{ color: 'var(--border)' }}>|</span>}
+              {wine.acidityLevel && <span>{ACIDITY_LABELS[wine.acidityLevel]} Acid</span>}
+              {wine.acidityLevel && wine.sweetnessLevel && <span style={{ color: 'var(--border)' }}>|</span>}
+              {wine.sweetnessLevel && <span>{SWEETNESS_LABELS[wine.sweetnessLevel]}</span>}
+              {wine.sweetnessLevel && wine.abv && <span style={{ color: 'var(--border)' }}>|</span>}
+              {wine.abv && <span>ABV {wine.abv}%</span>}
+            </div>
+          )}
+
+          {/* 5행: 서빙온도 · 디캔팅 · 음용시기 */}
+          {(wine.servingTemp || wine.decanting || (wine.drinkingWindowStart && wine.drinkingWindowEnd)) && (
+            <div className="flex flex-wrap items-center gap-1 py-1 text-[13px] font-medium" style={{ color: 'var(--text-sub)' }}>
+              {wine.servingTemp && (
+                <>
+                  <Thermometer size={13} style={{ color: 'var(--text-hint)' }} />
+                  <span>{wine.servingTemp}</span>
+                </>
+              )}
+              {wine.servingTemp && wine.decanting && <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>}
+              {wine.decanting && (
+                <>
+                  <GlassWater size={13} style={{ color: 'var(--text-hint)' }} />
+                  <span><span style={{ color: 'var(--text-hint)' }}>디캔팅</span> {wine.decanting}</span>
+                </>
+              )}
+              {(wine.servingTemp || wine.decanting) && wine.drinkingWindowStart && <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>}
+              {wine.drinkingWindowStart && wine.drinkingWindowEnd && (
+                <>
+                  <CalendarRange size={13} style={{ color: 'var(--text-hint)' }} />
+                  <span><span style={{ color: 'var(--text-hint)' }}>음용</span> {wine.drinkingWindowStart}–{wine.drinkingWindowEnd}</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 6행: 푸드페어링 */}
+          {wine.foodPairings.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 py-1 text-[13px] font-medium" style={{ color: 'var(--text-sub)' }}>
+              <UtensilsCrossed size={13} style={{ color: 'var(--text-hint)' }} />
+              <span>{wine.foodPairings.join(', ')}</span>
+            </div>
+          )}
+
+          {/* 7행: 테이스팅 노트 */}
+          {wine.tastingNotes && (
+            <p className="py-1 text-[12px] italic leading-relaxed" style={{ color: 'var(--text-sub)' }}>
+              &ldquo;{wine.tastingNotes}&rdquo;
+            </p>
+          )}
+
+          <div style={{ height: '8px' }} />
         </section>
 
         <Divider />
@@ -618,6 +660,73 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         onShareMultiple={shareToBubbles}
       />
       <Toast message={toastMsg ?? ''} visible={!!toastMsg} onHide={() => setToastMsg(null)} />
+
+      {/* 가격 분석 팝업 */}
+      {showPriceReview && wine.priceReview && (
+        <>
+          <div
+            className="fixed inset-0 z-[200]"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setShowPriceReview(false)}
+          />
+          <div
+            className="fixed left-1/2 top-1/2 z-[201] w-[calc(100%-40px)] max-w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-2xl px-5 pb-6 pt-5"
+            style={{ backgroundColor: 'var(--bg)', maxHeight: '80dvh', overflowY: 'auto' }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>가격 분석</h3>
+              <button type="button" onClick={() => setShowPriceReview(false)} style={{ color: 'var(--text-hint)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 판정 뱃지 */}
+            <div className="mb-3 flex items-center gap-2">
+              {wine.priceReview.verdict === 'buy' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold text-white" style={{ backgroundColor: '#16a34a' }}>
+                  <ShieldCheck size={15} /> 구매 추천
+                </span>
+              )}
+              {wine.priceReview.verdict === 'conditional_buy' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold" style={{ backgroundColor: '#f59e0b', color: '#fff' }}>
+                  <ShieldAlert size={15} /> 조건부 구매
+                </span>
+              )}
+              {wine.priceReview.verdict === 'avoid' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold text-white" style={{ backgroundColor: '#dc2626' }}>
+                  <ShieldX size={15} /> 비추천
+                </span>
+              )}
+            </div>
+
+            {/* 분석 요약 */}
+            <p className="mb-4 leading-relaxed" style={{ fontSize: '14px', color: 'var(--text)' }}>
+              {wine.priceReview.summary}
+            </p>
+
+            {/* 대안 와인 */}
+            {wine.priceReview.alternatives.length > 0 && (
+              <div>
+                <p className="mb-2" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>
+                  같은 가격대 대안
+                </p>
+                <div className="flex flex-col gap-2">
+                  {wine.priceReview.alternatives.map((alt) => (
+                    <div
+                      key={alt.name}
+                      className="flex items-center justify-between rounded-xl px-4 py-3"
+                      style={{ backgroundColor: 'var(--bg-card)' }}
+                    >
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{alt.name}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-wine)' }}>{alt.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

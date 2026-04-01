@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { SearchResult, NearbyRestaurant } from '@/domain/entities/search'
-import type { WineSearchCandidate } from '@/infrastructure/api/gemini'
+import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import type { RecordTargetType } from '@/domain/entities/record'
 import { useSearch } from '@/application/hooks/use-search'
 import { AppHeader } from '@/presentation/components/layout/app-header'

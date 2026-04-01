@@ -11,7 +11,6 @@ import { useCameraCapture } from '@/application/hooks/use-camera-capture'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { photoRepo, imageService } from '@/shared/di/container'
-import { parseExifFromBase64 } from '@/shared/utils/exif-parser'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -52,7 +51,6 @@ function AddFlowInner() {
   const { createRecord, isLoading: isQuickAdding } = useCreateRecord()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
   // Phase 1 업로드 상태: 사진은 즉시 업로드, 기록 미완료 시 삭제
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null)
   const [recordCompleted, setRecordCompleted] = useState(false)
@@ -127,77 +125,49 @@ function AddFlowInner() {
     }
   }, [hookGoBack, router])
 
-  /** base64 → File → 리사이즈(중앙화 로직) → 업로드 + 리사이즈된 base64 반환 */
-  const resizeAndUpload = useCallback(async (rawBase64: string): Promise<{ resizedBase64: string; uploadedUrl: string } | null> => {
+  /** File → resizeImage → Storage 업로드 → URL 반환 */
+  const uploadFile = useCallback(async (file: File): Promise<string | null> => {
     if (!user) return null
     try {
-      // base64 → File
-      const byteString = atob(rawBase64)
-      const ab = new ArrayBuffer(byteString.length)
-      const ia = new Uint8Array(ab)
-      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i)
-      const rawFile = new File([ab], 'capture.jpg', { type: 'image/jpeg' })
-
-      // 중앙화된 리사이즈 로직 (imageService.resizeImage)
-      const resizedBlob = await imageService.resizeImage(rawFile)
-
-      // Storage 업로드 (pending 경로 — 기록 완료 전까지 임시)
+      const resizedBlob = await imageService.resizeImage(file)
       const fileId = crypto.randomUUID()
-      const uploadedUrl = await imageService.uploadImage(user.id, 'pending', resizedBlob, fileId)
-
-      // 리사이즈된 blob → base64 (Gemini 전송용)
-      const resizedBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
-        reader.readAsDataURL(resizedBlob)
-      })
-
-      return { resizedBase64, uploadedUrl }
+      return await imageService.uploadImage(user.id, 'pending', resizedBlob, fileId)
     } catch {
       return null
     }
   }, [user])
 
   const handleShelfMode = useCallback(
-    async (imageBase64: string) => {
-      const uploaded = await resizeAndUpload(imageBase64)
-      if (uploaded) setTempPhotoUrl(uploaded.uploadedUrl)
-      setCapturedImage(uploaded?.resizedBase64 ?? imageBase64)
-      try { sessionStorage.setItem('nyam_captured_image', uploaded?.resizedBase64 ?? imageBase64) } catch {}
+    async (file: File) => {
+      const url = await uploadFile(file)
+      if (url) setTempPhotoUrl(url)
     },
-    [resizeAndUpload],
+    [uploadFile],
   )
 
   const handleReceiptMode = useCallback(
-    async (imageBase64: string) => {
-      const uploaded = await resizeAndUpload(imageBase64)
-      if (uploaded) setTempPhotoUrl(uploaded.uploadedUrl)
-      setCapturedImage(uploaded?.resizedBase64 ?? imageBase64)
-      try { sessionStorage.setItem('nyam_captured_image', uploaded?.resizedBase64 ?? imageBase64) } catch {}
+    async (file: File) => {
+      const url = await uploadFile(file)
+      if (url) setTempPhotoUrl(url)
     },
-    [resizeAndUpload],
+    [uploadFile],
   )
 
-  /** 카메라/앨범 캡처 → 와인: Phase 1(업로드)만, 식당: Phase 1 + AI 검색 */
+  /** 카메라/앨범 캡처 → 1단계: resize+upload → 2단계: URL로 LLM 호출 */
   const handleCapture = useCallback(
-    async (imageBase64: string) => {
-      // ── Phase 1: 리사이즈 + 즉시 업로드 ──
-      const uploaded = await resizeAndUpload(imageBase64)
-      const searchBase64 = uploaded?.resizedBase64 ?? imageBase64
-      if (uploaded) {
-        setTempPhotoUrl(uploaded.uploadedUrl)
+    async (file: File) => {
+      // ── 1단계: resizeImage → Storage 업로드 → URL ──
+      const photoUrl = await uploadFile(file)
+      if (!photoUrl) {
+        pushStep('search')
+        return
       }
-      setCapturedImage(searchBase64)
+      setTempPhotoUrl(photoUrl)
 
-      // 와인: Phase 1 완료 → Gemini 호출 → 바로 기록
+      // ── 2단계: URL로 LLM 호출 ──
       if (targetType === 'wine') {
-        try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
-        if (uploaded) {
-          try { sessionStorage.setItem('nyam_captured_photo_url', uploaded.uploadedUrl) } catch {}
-        }
-
         const aiResult = await identify({
-          imageBase64: searchBase64,
+          imageUrl: photoUrl,
           targetType: 'wine',
         })
 
@@ -228,15 +198,14 @@ function AddFlowInner() {
         return
       }
 
-      // ── 식당: Phase 2 AI 검색 ──
+      // ── 식당: LLM 호출 ──
       const aiResult = await identify({
-        imageBase64: searchBase64,
+        imageUrl: photoUrl,
         targetType,
         latitude: gps?.latitude,
         longitude: gps?.longitude,
       })
       if (!aiResult) {
-        try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
         pushStep('search')
         return
       }
@@ -260,9 +229,7 @@ function AddFlowInner() {
             } catch {}
           }
 
-          // DB 등록 실패 시 검색으로 폴백
           if (targetId.startsWith('kakao_')) {
-            try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
             pushStep('search')
           } else {
             setTarget({
@@ -272,7 +239,6 @@ function AddFlowInner() {
               meta: [top.genre, top.area].filter(Boolean).join(' · '),
               isAiRecognized: true,
             })
-            try { sessionStorage.setItem('nyam_captured_image', searchBase64) } catch {}
             try {
               sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
                 genre: restResult.detectedGenre,
@@ -288,7 +254,7 @@ function AddFlowInner() {
         }
       }
     },
-    [identify, targetType, gps, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, resizeAndUpload, syncRecordToAllBubbles, router],
+    [identify, targetType, gps, pushStep, setTarget, uploadFile],
   )
 
   const handleRestaurantSelect = useCallback(
@@ -329,9 +295,6 @@ function AddFlowInner() {
         meta: [selected.genre, selected.area].filter(Boolean).join(' · '),
         isAiRecognized: true,
       })
-      if (capturedImage) {
-        try { sessionStorage.setItem('nyam_captured_image', capturedImage) } catch {}
-      }
       try {
         const restResult = result as RestaurantAIResult
         sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
@@ -341,7 +304,7 @@ function AddFlowInner() {
       } catch {}
       pushStep('record')
     },
-    [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto, capturedImage],
+    [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto],
   )
 
   const handleSearchFallback = useCallback(() => {
@@ -371,16 +334,13 @@ function AddFlowInner() {
       if (gps) aiPrefill.gps = gps
       try { sessionStorage.setItem('nyam_ai_prefill', JSON.stringify(aiPrefill)) } catch {}
     }
-    if (capturedImage) {
-      try { sessionStorage.setItem('nyam_captured_image', capturedImage) } catch {}
-    }
     if (tempPhotoUrl) {
       try { sessionStorage.setItem('nyam_captured_photo_url', tempPhotoUrl) } catch {}
     }
     router.replace(
       `/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}&meta=${encodeURIComponent(target.meta)}&from=${entryPath}`,
     )
-  }, [shouldRedirectToRecord, target, result, gps, capturedImage, tempPhotoUrl, router, entryPath])
+  }, [shouldRedirectToRecord, target, result, gps, tempPhotoUrl, router, entryPath])
 
   if (shouldRedirectToRecord) return null
 
@@ -402,14 +362,9 @@ function AddFlowInner() {
             document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
-              if (!file) return
-              const reader = new FileReader()
-              reader.onload = () => {
-                const base64 = (reader.result as string).split(',')[1]
-                handleCapture(base64)
-              }
-              reader.readAsDataURL(file)
               document.body.removeChild(input)
+              if (!file) return
+              handleCapture(file)
             }
             input.click()
           }}
@@ -422,14 +377,9 @@ function AddFlowInner() {
             document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
-              if (!file) return
-              const reader = new FileReader()
-              reader.onload = () => {
-                const base64 = (reader.result as string).split(',')[1]
-                handleShelfMode(base64)
-              }
-              reader.readAsDataURL(file)
               document.body.removeChild(input)
+              if (!file) return
+              handleShelfMode(file)
             }
             input.click()
           } : undefined}
@@ -441,14 +391,9 @@ function AddFlowInner() {
             document.body.appendChild(input)
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0]
-              if (!file) return
-              const reader = new FileReader()
-              reader.onload = () => {
-                const base64 = (reader.result as string).split(',')[1]
-                handleReceiptMode(base64)
-              }
-              reader.readAsDataURL(file)
               document.body.removeChild(input)
+              if (!file) return
+              handleReceiptMode(file)
             }
             input.click()
           } : undefined}

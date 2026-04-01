@@ -12,9 +12,9 @@ interface UseCameraCaptureReturn {
   isRecognizing: boolean
   result: AIRecognitionResult | null
   error: string | null
-  capturedImage: string | null
+  capturedImageUrl: string | null
   identify: (params: {
-    imageBase64: string
+    imageUrl: string
     targetType: 'restaurant' | 'wine'
     cameraMode?: CameraMode
     latitude?: number
@@ -28,11 +28,11 @@ export function useCameraCapture(): UseCameraCaptureReturn {
   const [isRecognizing, setIsRecognizing] = useState(false)
   const [result, setResult] = useState<AIRecognitionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null)
 
   const identify = useCallback(
     async (params: {
-      imageBase64: string
+      imageUrl: string
       targetType: 'restaurant' | 'wine'
       cameraMode?: CameraMode
       latitude?: number
@@ -41,11 +41,11 @@ export function useCameraCapture(): UseCameraCaptureReturn {
     }): Promise<AIRecognitionResult | null> => {
       setIsRecognizing(true)
       setError(null)
-      setCapturedImage(params.imageBase64)
+      setCapturedImageUrl(params.imageUrl)
 
       try {
         const body: IdentifyRequest = {
-          imageBase64: params.imageBase64,
+          imageUrl: params.imageUrl,
           targetType: params.targetType,
           cameraMode: params.cameraMode,
           latitude: params.latitude,
@@ -86,9 +86,9 @@ export function useCameraCapture(): UseCameraCaptureReturn {
   const reset = useCallback(() => {
     setResult(null)
     setError(null)
-    setCapturedImage(null)
+    setCapturedImageUrl(null)
     setIsRecognizing(false)
   }, [])
 
-  return { isRecognizing, result, error, capturedImage, identify, reset }
+  return { isRecognizing, result, error, capturedImageUrl, identify, reset }
 }

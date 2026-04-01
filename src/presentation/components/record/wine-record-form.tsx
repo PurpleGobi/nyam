@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Wine, Sparkles, Lock, GlassWater, CalendarRange, Thermometer, UtensilsCrossed } from 'lucide-react'
+import { Wine, Sparkles, Lock, GlassWater, CalendarRange, Thermometer, UtensilsCrossed, Grape, Info, X, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 import { WINE_TYPE_COLORS } from '@/domain/entities/wine'
-import type { WineType } from '@/domain/entities/wine'
+import type { WineType, PriceReview } from '@/domain/entities/wine'
 import type { AromaSelection, AromaRing } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import type { PairingCategory } from '@/domain/entities/record'
@@ -43,13 +43,15 @@ interface WineTarget {
   classification?: string
   servingTemp?: string
   decanting?: string
-  referencePrice?: number
+  referencePriceMin?: number
+  referencePriceMax?: number
   drinkingWindowStart?: number
   drinkingWindowEnd?: number
   vivinoRating?: number
   criticScores?: { RP?: number; WS?: number; JR?: number; JH?: number }
   tastingNotes?: string
   foodPairings?: string[]
+  priceReview?: PriceReview
   isAiRecognized?: boolean
 }
 
@@ -72,7 +74,8 @@ interface CreateWineRecordInput {
     classification: string | null
     servingTemp: string | null
     decanting: string | null
-    referencePrice: number | null
+    referencePriceMin: number | null
+    referencePriceMax: number | null
     drinkingWindowStart: number | null
     drinkingWindowEnd: number | null
     vivinoRating: number | null
@@ -157,7 +160,15 @@ export function WineRecordForm({
   const [producer, setProducer] = useState(target.producer ?? '')
   const [vintage, setVintage] = useState(target.vintage ? String(target.vintage) : '')
   const [region, setRegion] = useState(target.region ?? '')
-  const [subRegion, setSubRegion] = useState(target.subRegion ?? '')
+  const [subRegion, setSubRegion] = useState(() => {
+    if (target.subRegion) return target.subRegion
+    // DB에 sub_region이 없고 appellation이 sub_region 목록에 있으면 채움
+    if (target.appellation && target.region) {
+      const subs = WINE_SUB_REGIONS[target.region] ?? []
+      if (subs.includes(target.appellation)) return target.appellation
+    }
+    return ''
+  })
   const [appellation, setAppellation] = useState(target.appellation ?? '')
   // region이 있는데 country가 없으면 역방향 추론
   const [country, setCountry] = useState(() => {
@@ -182,7 +193,8 @@ export function WineRecordForm({
   const [classification, setClassification] = useState(target.classification ?? '')
   const [servingTemp, setServingTemp] = useState(target.servingTemp ?? '')
   const [decanting, setDecanting] = useState(target.decanting ?? '')
-  const [referencePrice, setReferencePrice] = useState(target.referencePrice ? String(target.referencePrice) : '')
+  const [referencePriceMin, setReferencePriceMin] = useState(target.referencePriceMin ? String(target.referencePriceMin) : '')
+  const [referencePriceMax, setReferencePriceMax] = useState(target.referencePriceMax ? String(target.referencePriceMax) : '')
   const [drinkingWindowStart, setDrinkingWindowStart] = useState(target.drinkingWindowStart ? String(target.drinkingWindowStart) : '')
   const [drinkingWindowEnd, setDrinkingWindowEnd] = useState(target.drinkingWindowEnd ? String(target.drinkingWindowEnd) : '')
   const [vivinoRating, setVivinoRating] = useState(target.vivinoRating ? String(target.vivinoRating) : '')
@@ -223,6 +235,7 @@ export function WineRecordForm({
   const [privateNote, setPrivateNote] = useState(initialData?.privateNote ?? '')
   const [linkedRestaurant, setLinkedRestaurant] = useState<LinkSearchResult | null>(null)
   const [showLinkSheet, setShowLinkSheet] = useState(false)
+  const [showPriceReview, setShowPriceReview] = useState(false)
   const isManualOverrideRef = useRef(false)
 
   const aromaRingCount = countActiveRings(aroma.regions)
@@ -262,7 +275,8 @@ export function WineRecordForm({
         classification: classification || null,
         servingTemp: servingTemp || null,
         decanting: decanting || null,
-        referencePrice: referencePrice ? Number(referencePrice) : null,
+        referencePriceMin: referencePriceMin ? Number(referencePriceMin) : null,
+        referencePriceMax: referencePriceMax ? Number(referencePriceMax) : null,
         drinkingWindowStart: drinkingWindowStart ? Number(drinkingWindowStart) : null,
         drinkingWindowEnd: drinkingWindowEnd ? Number(drinkingWindowEnd) : null,
         vivinoRating: vivinoRating ? Number(vivinoRating) : null,
@@ -288,7 +302,7 @@ export function WineRecordForm({
       visitDate,
       linkedRestaurantId: linkedRestaurant?.id,
     })
-  }, [isValid, producer, vintage, region, subRegion, appellation, country, varieties, wineType, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePrice, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
+  }, [isValid, producer, vintage, region, subRegion, appellation, country, varieties, wineType, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
 
   // 인라인 입력 공통 스타일
   const fi = 'min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] font-medium outline-none'
@@ -318,17 +332,38 @@ export function WineRecordForm({
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 truncate">
                 <span className="truncate text-[15px] font-bold" style={{ color: 'var(--text)' }}>{target.name}</span>
-                <NyamSelect
-                  value={wineType}
-                  onChange={(v) => { setWineType(v); setVarieties([]) }}
-                  options={WINE_TYPES.map((t) => ({ value: t.value, label: t.value.charAt(0).toUpperCase() + t.value.slice(1) }))}
-                  placeholder="Style"
-                  accentColor={WINE_TYPE_COLORS[wineType as WineType] ?? 'var(--accent-wine)'}
-                  inline
-                />
+                {wineType ? (
+                  <span
+                    className="shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+                    style={{ backgroundColor: WINE_TYPE_COLORS[wineType as WineType] ?? 'var(--accent-wine)' }}
+                    onClick={() => {
+                      const types = WINE_TYPES.map((t) => t.value as string)
+                      const idx = types.indexOf(wineType)
+                      const next = types[(idx + 1) % types.length] as string
+                      setWineType(next)
+                      setVarieties([])
+                    }}
+                  >
+                    {wineType.charAt(0).toUpperCase() + wineType.slice(1)}
+                  </span>
+                ) : (
+                  <NyamSelect
+                    value={wineType}
+                    onChange={(v) => { setWineType(v); setVarieties([]) }}
+                    options={WINE_TYPES.map((t) => ({ value: t.value, label: t.value.charAt(0).toUpperCase() + t.value.slice(1) }))}
+                    placeholder="Style"
+                    accentColor="var(--accent-wine)"
+                    inline
+                  />
+                )}
               </span>
-              {(vivinoRating || criticRP || criticWS) && (
+              {(classification || vivinoRating || criticRP || criticWS) && (
                 <div className="flex shrink-0 items-center gap-2">
+                  {classification && (
+                    <span className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-sub)' }}>
+                      {classification}
+                    </span>
+                  )}
                   {vivinoRating && (
                     <div className="flex items-baseline gap-0.5">
                       <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>Vivino</span>
@@ -353,17 +388,39 @@ export function WineRecordForm({
             <div className="mt-0.5 flex items-center gap-1">
               <input type="number" inputMode="numeric" value={vintage} onChange={(e) => setVintage(e.target.value)} placeholder="Vintage" min={1900} max={new Date().getFullYear()} className="w-16 border-0 bg-transparent p-0 text-[13px] outline-none" style={{ color: 'var(--text-sub)' }} />
               <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} placeholder="Winery" className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] outline-none" style={{ color: 'var(--text-sub)' }} />
-              <div className="flex shrink-0 items-baseline gap-0.5">
+              {target.priceReview && (
+                <button
+                  type="button"
+                  onClick={() => setShowPriceReview(true)}
+                  className="flex items-center gap-0.5"
+                  style={{ padding: '3px 8px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--bg-elevated)', cursor: 'pointer' }}
+                >
+                  <Info size={11} style={{ color: 'var(--text-sub)' }} />
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-sub)' }}>추가정보</span>
+                </button>
+              )}
+              <div className="flex shrink-0 items-baseline gap-0.5 text-[13px] font-semibold" style={{ color: 'var(--accent-wine)' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-hint)', fontWeight: 500 }}>적정가</span>
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={referencePrice ? Number(referencePrice).toLocaleString() : ''}
-                  onChange={(e) => setReferencePrice(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="적정가"
-                  className="w-16 border-0 bg-transparent p-0 text-right text-[13px] font-semibold outline-none"
-                  style={{ color: 'var(--accent-wine)' }}
+                  value={referencePriceMin ? Number(referencePriceMin).toLocaleString() : ''}
+                  onChange={(e) => setReferencePriceMin(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="—"
+                  className="w-12 border-0 bg-transparent p-0 text-right text-[13px] font-semibold outline-none"
+                  style={{ color: 'inherit' }}
                 />
-                {referencePrice && <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>원</span>}
+                <span style={{ color: 'var(--text-hint)', fontWeight: 400 }}>~</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={referencePriceMax ? Number(referencePriceMax).toLocaleString() : ''}
+                  onChange={(e) => setReferencePriceMax(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="—"
+                  className="w-12 border-0 bg-transparent p-0 text-right text-[13px] font-semibold outline-none"
+                  style={{ color: 'inherit' }}
+                />
+                {(referencePriceMin || referencePriceMax) && <span style={{ fontSize: '10px', color: 'var(--text-hint)', fontWeight: 500 }}>원</span>}
               </div>
             </div>
           </div>
@@ -372,7 +429,7 @@ export function WineRecordForm({
 
         {/* 2-4행: 인라인 드롭다운 (구분선 없이 컴팩트) */}
         <div className="flex flex-col gap-0 px-4 py-1.5">
-          {/* 2행: Country › Region › Sub-region (appellation은 DB만 저장) */}
+          {/* 2행: Country › Region › Sub-region */}
           <div className="flex flex-wrap items-center gap-1 py-1">
             <NyamSelect value={country} onChange={(v) => { setCountry(v); const r = WINE_REGIONS[v]; if (r && !r.includes(region)) { setRegion(''); setSubRegion(''); setAppellation('') } }} options={WINE_COUNTRIES.map((c) => ({ value: c, label: c }))} placeholder="Country" accentColor="var(--accent-wine)" inline />
             <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
@@ -390,6 +447,7 @@ export function WineRecordForm({
                 className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[12px] font-medium"
                 style={{ backgroundColor: 'color-mix(in srgb, var(--accent-wine) 10%, transparent)', color: 'var(--accent-wine)' }}
               >
+                <Grape size={11} />
                 {g.name}
                 {g.pct > 0 && g.pct < 100 && (
                   <span style={{ fontSize: '10px', opacity: 0.55 }}>{g.pct}%</span>
@@ -415,9 +473,9 @@ export function WineRecordForm({
             <span style={{ fontSize: '13px', color: 'var(--border)' }}>|</span>
             <NyamSelect value={sweetnessLevel} onChange={setSweetnessLevel} options={[{ value: '1', label: 'Dry' }, { value: '2', label: 'Off-dry' }, { value: '3', label: 'Sweet' }]} placeholder="Sweet" accentColor="var(--accent-wine)" inline />
             <span style={{ fontSize: '13px', color: 'var(--border)' }}>|</span>
-            <div className="inline-flex items-center gap-0.5 text-[13px] font-medium" style={{ color: abv ? 'var(--text)' : 'var(--text-hint)' }}>
+            <div className="inline-flex items-baseline gap-0.5 text-[13px] font-medium" style={{ color: abv ? 'var(--text)' : 'var(--text-hint)' }}>
               <span>ABV</span>
-              <input type="text" inputMode="decimal" value={abv} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); setAbv(v) }} placeholder="—" className="w-7 border-0 bg-transparent p-0 text-right text-[13px] font-medium outline-none" style={{ color: 'inherit', fontFamily: 'inherit' }} />
+              <input type="text" inputMode="decimal" value={abv} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); setAbv(v) }} placeholder="—" className="w-7 border-0 bg-transparent p-0 text-right text-[13px] font-medium outline-none" style={{ color: 'inherit', fontFamily: 'inherit', lineHeight: 'inherit' }} />
               <span>%</span>
             </div>
           </div>
@@ -465,8 +523,8 @@ export function WineRecordForm({
           )}
           {/* 7행: 테이스팅 노트 (AI 요약) */}
           {tastingNotes && (
-            <p className="py-1 text-[12px] leading-relaxed" style={{ color: 'var(--text-sub)' }}>
-              {tastingNotes}
+            <p className="py-1 text-[12px] italic leading-relaxed" style={{ color: 'var(--text-sub)' }}>
+              &ldquo;{tastingNotes}&rdquo;
             </p>
           )}
         </div>
@@ -609,6 +667,44 @@ export function WineRecordForm({
       </section>
 
       <LinkSearchSheet isOpen={showLinkSheet} onClose={() => setShowLinkSheet(false)} type="restaurant" onSelect={setLinkedRestaurant} />
+
+      {/* 가격 분석 바텀시트 */}
+      {showPriceReview && target.priceReview && (
+        <>
+          <div className="fixed inset-0 z-[200]" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={() => setShowPriceReview(false)} />
+          <div className="fixed left-1/2 top-1/2 z-[201] w-[calc(100%-40px)] max-w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-2xl px-5 pb-6 pt-5" style={{ backgroundColor: 'var(--bg)', maxHeight: '80dvh', overflowY: 'auto' }}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>가격 분석</h3>
+              <button type="button" onClick={() => setShowPriceReview(false)} style={{ color: 'var(--text-hint)' }}><X size={20} /></button>
+            </div>
+            <div className="mb-3 flex items-center gap-2">
+              {target.priceReview.verdict === 'buy' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold text-white" style={{ backgroundColor: '#16a34a' }}><ShieldCheck size={15} /> 구매 추천</span>
+              )}
+              {target.priceReview.verdict === 'conditional_buy' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold text-white" style={{ backgroundColor: '#f59e0b' }}><ShieldAlert size={15} /> 조건부 구매</span>
+              )}
+              {target.priceReview.verdict === 'avoid' && (
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-bold text-white" style={{ backgroundColor: '#dc2626' }}><ShieldX size={15} /> 비추천</span>
+              )}
+            </div>
+            <p className="mb-4 leading-relaxed" style={{ fontSize: '14px', color: 'var(--text)' }}>{target.priceReview.summary}</p>
+            {target.priceReview.alternatives.length > 0 && (
+              <div>
+                <p className="mb-2" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-hint)' }}>같은 가격대 대안</p>
+                <div className="flex flex-col gap-2">
+                  {target.priceReview.alternatives.map((alt) => (
+                    <div key={alt.name} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--bg-card)' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{alt.name}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-wine)' }}>{alt.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <RecordSaveBar
         variant="wine"

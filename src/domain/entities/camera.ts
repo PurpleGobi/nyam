@@ -65,7 +65,7 @@ export type AIRecognitionResult = RestaurantAIResult | WineAIResult
 // ─── API 요청/응답 ───
 
 export interface IdentifyRequest {
-  imageBase64: string
+  imageUrl: string
   targetType: 'restaurant' | 'wine'
   cameraMode?: CameraMode
   latitude?: number
