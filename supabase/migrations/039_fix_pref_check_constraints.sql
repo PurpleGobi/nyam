@@ -2,9 +2,9 @@
 -- DB CHECK 제약을 실제 코드 값에 맞춤
 --
 -- pref_view_mode: 'detailed'/'compact' → 'card'/'list' (UI 표준 용어)
--- pref_restaurant_sub: 'recommended' 제거 (UI에서 미사용)
+-- pref_restaurant_sub: 미사용 'recommended' 제거
 
--- Step 1: 기존 데이터 마이그레이션 (혹시 DB에 old 값이 있을 경우)
+-- Step 1: 기존 데이터 마이그레이션
 UPDATE users SET pref_view_mode = 'card' WHERE pref_view_mode = 'detailed';
 UPDATE users SET pref_view_mode = 'list' WHERE pref_view_mode = 'compact';
 UPDATE users SET pref_restaurant_sub = 'last' WHERE pref_restaurant_sub = 'recommended';
