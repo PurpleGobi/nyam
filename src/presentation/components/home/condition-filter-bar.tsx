@@ -381,6 +381,7 @@ export function ConditionFilterBar({
           style={{ padding: '6px 8px', color: isAddOpen ? accent : undefined }}
         >
           <Plus size={14} style={{ transition: 'transform .15s', transform: isAddOpen ? 'rotate(45deg)' : '' }} />
+          <span className="text-[12px] font-medium">필터 추가</span>
         </button>
       </FilterChipGroup>
 

@@ -1,6 +1,6 @@
-# Nyam v2 PRD (Product Requirements Document)
+# Nyam PRD (Product Requirements Document)
 
-> 최종 갱신: 2026-03-24
+> 최종 갱신: 2026-04-02
 
 ---
 
@@ -109,8 +109,12 @@
 
 ### 시그니처 기능: 사분면 평가
 
-- 2D 좌표(특성 2축) + 점 크기(만족도) + 상황 태그 = 3초에 4차원 데이터
-- 기록이 쌓이면 사분면 위에 "나만의 취향 지도" 자동 생성
+- 2D 좌표(특성 2축) + 자동 계산 만족도 + 상황 태그
+  - 식당: X축=음식 퀄리티, Y축=경험 가치
+  - 와인: X축=구조·완성도, Y축=즐거움·감성
+  - 만족도 = (X + Y) / 2 자동 계산 (별도 입력 아님)
+  - 점 크기는 고정 20px
+- 기록이 쌓이면 사분면 위에 "나만의 취향 지도" 자동 생성 (참조 점 opacity 0.3, 최대 8~12개)
 
 ---
 
@@ -144,35 +148,65 @@
 
 ### Phase 1 + Phase 2 통합 (현재 개발 범위)
 
-> S1에서 P2 테이블 포함 전체 스키마 생성. 9 스프린트로 진행.
+> S1에서 P2 테이블 포함 전체 스키마 생성. 10 스프린트(68 태스크)로 진행.
 
 **개인 기록**:
-- 온보딩 (취향 파악 + 첫 버블 생성 유도)
-- 식당/와인 검색 및 등록 (텍스트 + 사진)
-- 사분면 평가 (식당: 가격×분위기, 와인: 산미×바디)
-- 와인 향 팔레트
-- 상세 페이지 (식당/와인)
-- 홈 대시보드 (내 기록 + 추천)
-- 위시리스트
-- 규칙 기반 추천 (재방문, 상황별, 권위)
-- 경험치/레벨 (지역별, 와인 타입별)
-- 넛지 시스템 (위치, 사진, 미평가)
+- 온보딩 (지역 선택 → 식당 등록 → 버블 생성/탐색 → 완료)
+- 식당/와인 검색 및 등록 (텍스트 + 사진 + AI 인식)
+  - 카메라 3모드: 개별(individual), 진열대(shelf), 영수증(receipt)
+  - AI 이미지 인식 + OCR (와인 라벨, 진열대, 영수증)
+  - EXIF GPS 검증
+- 사분면 평가
+  - 식당: X축=음식 퀄리티, Y축=경험 가치
+  - 와인: X축=구조·완성도, Y축=즐거움·감성
+  - 만족도 = (X + Y) / 2 자동 계산
+- 와인 아로마 휠 (WSET Level 3 기준, 16섹터 3링: 1차향 9섹터 + 2차향 4섹터 + 3차향 3섹터)
+- 와인 품질 평가 BLIC (Balance, Length/Finish, Intensity, Complexity) + autoScore
+- 상세 페이지 (식당/와인) — 리뷰, 사분면, 사진, 버블 점수
+- 홈 — 4종 뷰 (카드/리스트/캘린더/지도) + 필터/소팅 + 통계 차트
+  - 식당 서브탭: 방문/위시리스트/팔로잉
+  - 와인 서브탭: 시음/위시리스트/셀러
+- 리스트 상태 4종: visited(방문), wishlist(위시), cellar(셀러), tasted(시음)
+- 식당 장르 16종 + 장르 대분류 7개
+- 와인 7종 타입 (레드/화이트/로제/스파클링/오렌지/주정강화/디저트)
+- 페어링 8종 카테고리 (적색육/백색육/어패류/치즈/채소/매운·발효/디저트/샤퀴트리)
+- 상황 태그 — 식당 6종(혼밥/데이트/친구/가족/회식/술자리), 와인 7종(혼술/데이트/모임/페어링/선물/테이스팅/디캔팅)
+- 식당·와인 연결 기록 (linkedRestaurantId/linkedWineId)
+- Discover (지역별 AI 분석/추천/랭킹 기반 식당 탐색)
+- 경험치/레벨 (5축: category, area, genre, wine_variety, wine_region)
+  - 기록 품질 XP (recordQualityXp)
+  - 소셜 XP (공유/좋아요/팔로우/맞팔 — 일일 제한)
+  - 보너스 XP (온보딩/첫 기록/첫 버블/첫 공유)
+  - 마일스톤 시스템
+- Wrapped (연간 결산) — 카테고리별 통계, 레벨, Top 아이템, 버블 활동
+- 프라이버시 — 프로필 가시성(public/bubble_only/private), 기록 가시성(all/shared_only)
+  - 가시성 설정 7개 키: score, comment, photos, level, quadrant, bubbles, price
+- 알림 10종: level_up, bubble_join_request/approved, follow_request/accepted, bubble_invite, bubble_new_record, bubble_member_joined, reaction_like, comment_reply
+- Edge Functions 3종 (주간 랭킹 스냅샷, 활성 XP 갱신, 계정 삭제 처리)
 
 **소셜 (버블)**:
 - 버블 생성/가입/공유 (누구나 무한 생성, 1인 버블 가능)
-- 경험치 기반 가입 조건 설정
-- 버블 피드, 댓글, 리액션
+- 가입 정책 5종: invite_only, closed, manual_approve, auto_approve, open
+- 경험치 기반 가입 조건 설정 (최소 기록 수 + 최소 레벨)
+- 버블 피드, 댓글(익명 옵션), 리액션 5종(좋아요/저장/가고싶다/다녀왔다/불꽃)
+- 자동 공유 시스템 — 필터 규칙 기반(all/filtered 모드), 소급 적용 + 수정 반영
+- 콘텐츠 가시성 (rating_only/rating_and_comment)
+- 멤버별 가시성 오버라이드 (7개 키)
+- 멤버 역할 4종: owner, admin, member, follower
+- 초대 코드 + 만료 기한
+- 주간 랭킹 스냅샷 (크론)
+- 맛 궁합 (tasteMatchPct)
 - 팔로우/맞팔로우 (맞팔 = 풀 액세스, 콜드스타트 해결의 핵심)
   - 팔로우 (무료, XP 불필요) → 이름+점수 맛보기
   - 맞팔로우 → 풀 액세스 (리뷰, 사진, 팁, 상세 기록)
   - 버블 → 개인 팔로우 발견 채널
-- 프로필 (미식 정체성, 레벨, 버블 활동)
+- 프로필 (미식 정체성, 레벨, 히트맵, 통계 차트, 버블 활동)
+- 버블러 프로필 (타인 프로필 + 맛 궁합)
 - 버블 간 연결/해지
 - 알림 시스템
 
 ### Phase 3: 수익화 (추후)
 - 프리미엄 통계/대시보드
-- Wrapped (연간 결산)
 - 크리에이터 채널 (유료 버블)
 - 로컬 파트너십
 
@@ -184,8 +218,8 @@
 
 - **Frontend**: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 - **Backend**: Supabase (PostgreSQL + Auth + RLS + Edge Functions + Storage)
-- **AI**: Gemini Vision (사진 분석, OCR)
-- **외부 API**: 카카오맵, 네이버 지도, 구글 Places (식당), 와인 DB API (TBD)
+- **AI/LLM**: Gemini Vision (사진 분석, OCR, 와인 검색/상세, 식당 분석/추천) — provider-agnostic 라우팅
+- **외부 API**: 카카오맵, 네이버 지도, 구글 Places (식당), 구글 이미지 검색, Tavily (웹 검색)
 - **모바일**: PWA 우선, 네이티브 전환 검토 (Phase 3+)
 
 ---

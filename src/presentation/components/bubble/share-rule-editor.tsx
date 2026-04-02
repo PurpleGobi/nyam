@@ -1,16 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { Filter, Zap } from 'lucide-react'
+import { useMemo, useCallback, useRef } from 'react'
+import { Filter, Zap, UtensilsCrossed, Wine } from 'lucide-react'
 import type { BubbleShareRule } from '@/domain/entities/bubble'
-import type { FilterRule } from '@/domain/entities/saved-filter'
 import type { FilterAttribute } from '@/domain/entities/filter-config'
+import type { FilterOperator } from '@/domain/entities/saved-filter'
+import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, CASCADING_ALL } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
-import { FilterSystem } from '@/presentation/components/ui/filter-system'
+import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
 
 /* ================================================================
    ShareRuleEditor — 버블 공유 규칙 설정 UI
-   "모든 항목 공유" 토글 + "조건부" 시 FilterSystem 재사용
+   "모든 항목 공유" 토글 + "조건부" 시 ConditionFilterBar 재사용
+   focusType=all → 식당/와인 각각 완전 독립된 ConditionFilterBar
    ================================================================ */
 
 interface ShareRuleEditorProps {
@@ -19,45 +22,109 @@ interface ShareRuleEditorProps {
   focusType?: 'restaurant' | 'wine' | 'all'
 }
 
-function getAttributes(focusType: string): FilterAttribute[] {
-  switch (focusType) {
-    case 'restaurant': return RESTAURANT_FILTER_ATTRIBUTES
-    case 'wine': return WINE_FILTER_ATTRIBUTES
-    default: return [...RESTAURANT_FILTER_ATTRIBUTES, ...WINE_FILTER_ATTRIBUTES]
-  }
+type ShareRuleItem = BubbleShareRule['rules'][number]
+
+const restaurantKeySet = new Set(RESTAURANT_FILTER_ATTRIBUTES.map((a) => a.key))
+const wineKeySet = new Set(WINE_FILTER_ATTRIBUTES.map((a) => a.key))
+
+/** rules → FilterChipItem[] */
+function rulesToChips(rules: ShareRuleItem[], attributes: FilterAttribute[]): FilterChipItem[] {
+  return rules.map((r, i) => {
+    const attr = attributes.find((a) => a.key === r.attribute)
+    const option = attr?.options?.find((o) => o.value === String(r.value))
+    return {
+      id: `share_${r.attribute}_${String(r.value)}_${i}`,
+      attribute: r.attribute,
+      operator: (r.operator || 'eq') as FilterOperator,
+      value: r.value,
+      displayLabel: String(r.value) === CASCADING_ALL ? '전체' : (option?.label ?? String(r.value ?? '')),
+    } satisfies ConditionChip
+  })
+}
+
+/** FilterChipItem[] → rules */
+function chipsToRules(chips: FilterChipItem[]): ShareRuleItem[] {
+  return chips
+    .filter((c): c is ConditionChip => !isAdvancedChip(c))
+    .map((c) => ({
+      attribute: c.attribute,
+      operator: c.operator || 'eq',
+      value: c.value,
+    }))
 }
 
 export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRuleEditorProps) {
   const mode = value?.mode ?? 'all'
-  const [filterTab, setFilterTab] = useState<'restaurant' | 'wine'>(
-    focusType === 'wine' ? 'wine' : 'restaurant',
+  const allRules = value?.rules ?? []
+
+  // 식당/와인 규칙을 완전 분리 — 각각 독립적으로 memo
+  const restaurantRules = useMemo(
+    () => allRules.filter((r) => restaurantKeySet.has(r.attribute)),
+    [allRules],
   )
-  const attributes = focusType === 'all' ? getAttributes(filterTab) : getAttributes(focusType)
+  const wineRules = useMemo(
+    () => allRules.filter((r) => wineKeySet.has(r.attribute)),
+    [allRules],
+  )
+
+  // ref로 상대 도메인 규칙 보관 — 콜백에서 stale closure 방지
+  const restaurantRulesRef = useRef(restaurantRules)
+  restaurantRulesRef.current = restaurantRules
+  const wineRulesRef = useRef(wineRules)
+  wineRulesRef.current = wineRules
+
+  const restaurantChips = useMemo(
+    () => rulesToChips(restaurantRules, RESTAURANT_FILTER_ATTRIBUTES),
+    [restaurantRules],
+  )
+  const wineChips = useMemo(
+    () => rulesToChips(wineRules, WINE_FILTER_ATTRIBUTES),
+    [wineRules],
+  )
+
+  const conjunction = value?.conjunction ?? 'and'
 
   const handleModeChange = (newMode: 'all' | 'filtered') => {
     if (newMode === 'all') {
       onChange({ mode: 'all', rules: [], conjunction: 'and' })
     } else {
-      onChange({ mode: 'filtered', rules: value?.rules ?? [], conjunction: value?.conjunction ?? 'and' })
+      onChange({ mode: 'filtered', rules: allRules, conjunction })
     }
   }
 
-  const handleRulesChange = (rules: FilterRule[]) => {
+  /** 식당 칩 변경 → 와인 규칙은 ref에서 가져와 합침 */
+  const handleRestaurantChipsChange = useCallback((newChips: FilterChipItem[]) => {
     onChange({
       mode: 'filtered',
-      rules: rules.map((r) => ({
-        conjunction: r.conjunction,
-        attribute: r.attribute,
-        operator: r.operator,
-        value: r.value,
-      })),
-      conjunction: value?.conjunction ?? 'and',
+      rules: [...chipsToRules(newChips), ...wineRulesRef.current],
+      conjunction,
     })
-  }
+  }, [onChange, conjunction])
 
-  const handleConjunctionChange = (conjunction: 'and' | 'or') => {
-    onChange({ ...value, mode: 'filtered', rules: value?.rules ?? [], conjunction })
-  }
+  /** 와인 칩 변경 → 식당 규칙은 ref에서 가져와 합침 */
+  const handleWineChipsChange = useCallback((newChips: FilterChipItem[]) => {
+    onChange({
+      mode: 'filtered',
+      rules: [...restaurantRulesRef.current, ...chipsToRules(newChips)],
+      conjunction,
+    })
+  }, [onChange, conjunction])
+
+  /** focusType 단일 */
+  const singleAttributes = focusType === 'wine' ? WINE_FILTER_ATTRIBUTES : RESTAURANT_FILTER_ATTRIBUTES
+  const singleChips = useMemo(
+    () => rulesToChips(focusType === 'wine' ? wineRules : restaurantRules, singleAttributes),
+    [focusType, wineRules, restaurantRules, singleAttributes],
+  )
+  const handleSingleChipsChange = useCallback((newChips: FilterChipItem[]) => {
+    onChange({
+      mode: 'filtered',
+      rules: chipsToRules(newChips),
+      conjunction,
+    })
+  }, [onChange, conjunction])
+
+  const noop = useCallback(() => {}, [])
 
   return (
     <div className="flex flex-col gap-2">
@@ -89,38 +156,50 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
 
       {/* 조건부 모드일 때 필터 빌더 */}
       {mode === 'filtered' && (
-        <div className="mt-1 flex flex-col gap-2">
-          {/* focusType이 all이면 식당/와인 탭 */}
-          {focusType === 'all' && (
-            <div className="flex gap-1">
-              {(['restaurant', 'wine'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setFilterTab(tab)}
-                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-colors"
-                  style={{
-                    backgroundColor: filterTab === tab ? 'var(--accent-social)' : 'var(--bg-card)',
-                    color: filterTab === tab ? '#FFFFFF' : 'var(--text-sub)',
-                    border: `1px solid ${filterTab === tab ? 'var(--accent-social)' : 'var(--border)'}`,
-                  }}
-                >
-                  {tab === 'restaurant' ? '식당' : '와인'}
-                </button>
-              ))}
-            </div>
+        <div className="mt-1 flex flex-col gap-3">
+          {focusType === 'all' ? (
+            <>
+              {/* 식당 필터 — 완전 독립 */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5 px-1">
+                  <UtensilsCrossed size={13} style={{ color: 'var(--accent-food)' }} />
+                  <span className="text-[11px] font-semibold" style={{ color: 'var(--text-sub)' }}>식당</span>
+                </div>
+                <ConditionFilterBar
+                  chips={restaurantChips}
+                  onChipsChange={handleRestaurantChipsChange}
+                  attributes={RESTAURANT_FILTER_ATTRIBUTES}
+                  accentType="food"
+                  onAdvancedOpen={noop}
+                />
+              </div>
+
+              {/* 와인 필터 — 완전 독립 */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5 px-1">
+                  <Wine size={13} style={{ color: 'var(--accent-wine)' }} />
+                  <span className="text-[11px] font-semibold" style={{ color: 'var(--text-sub)' }}>와인</span>
+                </div>
+                <ConditionFilterBar
+                  chips={wineChips}
+                  onChipsChange={handleWineChipsChange}
+                  attributes={WINE_FILTER_ATTRIBUTES}
+                  accentType="wine"
+                  onAdvancedOpen={noop}
+                />
+              </div>
+            </>
+          ) : (
+            <ConditionFilterBar
+              chips={singleChips}
+              onChipsChange={handleSingleChipsChange}
+              attributes={singleAttributes}
+              accentType={focusType === 'wine' ? 'wine' : 'food'}
+              onAdvancedOpen={noop}
+            />
           )}
 
-          <FilterSystem
-            rules={(value?.rules ?? []) as FilterRule[]}
-            conjunction={value?.conjunction ?? 'and'}
-            attributes={attributes}
-            onRulesChange={handleRulesChange}
-            onConjunctionChange={handleConjunctionChange}
-            accentColor="var(--accent-social)"
-          />
-
-          {(value?.rules?.length ?? 0) === 0 && (
+          {allRules.length === 0 && (
             <p className="text-[11px] text-[var(--text-hint)]">
               조건을 추가하면 해당 조건에 맞는 기록만 자동으로 공유됩니다.
             </p>

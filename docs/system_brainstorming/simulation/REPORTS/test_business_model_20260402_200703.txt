@@ -1,0 +1,54 @@
+========================================================================================
+Nyam Business Model Simulation — KR First
+========================================================================================
+
+가정
+- 분모: 기존 KR 성장 시뮬레이션 24개월 결과 사용
+- 고정 플랫폼비: $110 / 월 (₩15만)
+- 비용 소스:
+  Gemini pricing: https://ai.google.dev/gemini-api/docs/pricing
+  Supabase billing: https://supabase.com/docs/guides/platform/billing-on-supabase
+  Supabase egress: https://supabase.com/docs/guides/platform/manage-your-usage/egress
+  Supabase MAU: https://supabase.com/docs/guides/platform/manage-your-usage/monthly-active-users
+  Supabase Edge Functions: https://supabase.com/docs/guides/functions/pricing
+  Vercel Pro: https://vercel.com/docs/plans/pro
+  Vercel pricing: https://vercel.com/pricing
+
+상위 가격 조합
+1. Personal ₩5,900 | Bubble Plus ₩3만 | Bubble Pro ₩8만
+   24개월 매출 $462.4K / 공헌이익 $458.7K / 24개월차 MRR $113.6K
+2. Personal ₩4,900 | Bubble Plus ₩3만 | Bubble Pro ₩8만
+   24개월 매출 $462.4K / 공헌이익 $458.6K / 24개월차 MRR $113.6K
+3. Personal ₩5,900 | Bubble Plus ₩2만 | Bubble Pro ₩8만
+   24개월 매출 $460.3K / 공헌이익 $456.6K / 24개월차 MRR $113.1K
+4. Personal ₩4,900 | Bubble Plus ₩2만 | Bubble Pro ₩8만
+   24개월 매출 $460.3K / 공헌이익 $456.5K / 24개월차 MRR $113.1K
+5. Personal ₩6,900 | Bubble Plus ₩3만 | Bubble Pro ₩8만
+   24개월 매출 $458.8K / 공헌이익 $455.1K / 24개월차 MRR $112.7K
+
+추천 가격
+- Personal Plus: ₩5,900 / 월
+- Bubble Plus: ₩3만 / 월
+- Bubble Pro: ₩8만 / 월
+
+추천 가격 조합 결과
+- 24개월 누적 매출: $462.4K (₩6.5억)
+- 24개월 누적 변동비: $1.1K (₩154만)
+- 24개월 누적 플랫폼비: $2.6K (₩370만)
+- 24개월 누적 공헌이익: $458.7K (₩6.4억)
+- 24개월차 월매출: $113.6K (₩1.6억)
+- 24개월차 월공헌이익: $113.1K (₩1.6억)
+
+BEP
+- 솔로 창업자: 인건비 ₩700만/월 | 월 BEP 13개월차 | 누적 BEP 19개월차
+- 2인 코어팀: 인건비 ₩1600만/월 | 월 BEP 16개월차 | 누적 BEP 22개월차
+- 3인 제품팀: 인건비 ₩2700만/월 | 월 BEP 18개월차 | 누적 BEP 24개월 내 미도달
+
+주요 스냅샷
+  월    Alive  Bubbles     P+     B+   BPro         매출         공헌   Storage
+  1      500       13     10      0      0        $42       $-68      0.1G
+  3      882       54     22      3      0       $155        $44      0.3G
+  6    1,533      157     47     13      2       $580       $468      0.9G
+ 12    5,852      723    247     85     19      $3.9K      $3.8K      4.0G
+ 18   24,803    3,090  1,336    466    117     $21.9K     $21.7K     17.2G
+ 24  138,859   15,102  7,637  2,325    590    $113.6K    $113.1K     83.9G

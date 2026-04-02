@@ -1,7 +1,15 @@
 # Nyam v2 — 프로젝트 규칙 & 개발 실행 가이드
 
 ---
+## 세션 시작 프로토콜
 
+작업 시작 전 아래를 **반드시** 순서대로 Read:
+
+```
+1. WORKLOG.md                         ← 최근 작업 맥락 (무엇을 했고, 무엇이 남았는지)
+2. CODEBASE.md                        ← 코드베이스 구조 인덱스 (어디에 뭐가 있는지)
+```
+s
 ## 프로젝트 구조
 
 ```
@@ -20,7 +28,6 @@ nyam/
 │   ├── pages/                      #   페이지별 구현 스펙 (01~12)
 │   ├── prototype/                  #   인터랙티브 목업 HTML
 │   └── implementation/             #   개발 실행 문서
-│       ├── orchestration/          #     진행 추적 (MASTER_TRACKER, CURRENT_SPRINT 등)
 │       ├── phases/                 #     스프린트별 지침 (S1~S10)
 │       └── shared/                 #     공통 패턴 (클린 아키텍처, 테스트, 규칙)
 └── src/                            # 코드 (구현 시작 시 생성)
@@ -28,97 +35,13 @@ nyam/
 
 ---
 
-## 세션 시작 프로토콜
-
-```
-1. CLAUDE.md                                          ← 이 파일
-2. development_docs/implementation/orchestration/MASTER_TRACKER.md   ← 현재 어디까지
-3. development_docs/implementation/orchestration/CURRENT_SPRINT.md   ← 다음 태스크 + 컨텍스트
-4. 해당 phase overview (phases/SN_xxx/00_overview.md)
-5. 해당 태스크의 세부 지침 문서
-6. SSOT 문서 (overview에 명시된 systems/*.md, pages/*.md, prototype/*.html)
-```
 
 ---
 
 ## 작업 루프
 
-```
-태스크 시작
-  │
-  ├─ MASTER_TRACKER 상태 → in_progress
-  ├─ CURRENT_SPRINT 갱신 (태스크 #, 제목, 시작 시각)
-  │
-  ├─ SSOT 문서 + 목업 읽기
-  ├─ domain → infrastructure → application → presentation → app 순서로 구현
-  ├─ 목 데이터로 UI 먼저 → 인프라 연결은 나중
-  │
-  ├─ 🔄 검증-수정 루프 (최대 10회, 매회 처음부터 검토)
-  │   │
-  │   │  ⚠️ 매 회차마다 이전 검토 결과를 신뢰하지 않는다.
-  │   │     수정이 새로운 문제를 만들 수 있으므로, 처음 검토하듯 전체를 다시 확인한다.
-  │   │
-  │   ├─ 1. 크리티컬 게이트 전체 실행 (빌드/린트/타입/R1~R5/SSOT/목업/보안/모바일)
-  │   ├─ 2. SSOT 문서 다시 읽고 → 구현 누락/불일치 확인
-  │   ├─ 3. prototype/*.html 대조 → UI 차이 확인
-  │   │
-  │   ├─ 문제 발견 → 수정 → 루프 반복 (카운트 +1)
-  │   ├─ 문제 없음 → 루프 종료 → MASTER_TRACKER 상태 → done
-  │   └─ 10회 도달 → 사용자에게 보고 (잔여 이슈 목록 제시)
-  │
-  └─ CURRENT_SPRINT 갱신 (완료 기록 + 다음 태스크 프리뷰)
-```
+세션 종료 시: WORKLOG.md에 작업 엔트리 추가/갱신 (10개 초과 시 가장 오래된 것 삭제).
 
-세션 종료 시: CURRENT_SPRINT "컨텍스트 노트"에 인수인계 사항 기록.
-
-### 검증-수정 루프 상세
-
-```
-적절한 규모의 구현 완료 (태스크 1개 또는 관련 태스크 묶음)
-  │
-  ├─ [회차 1] 크리티컬 게이트 실행
-  │   ├─ pnpm build + pnpm lint
-  │   ├─ R1~R5 grep 검증
-  │   ├─ SSOT 문서 재확인 (해당 태스크의 systems/*.md + pages/*.md)
-  │   ├─ prototype/*.html UI 대조
-  │   ├─ 360px 모바일 확인
-  │   └─ 발견된 이슈 → 수정
-  │
-  ├─ [회차 2~N] 수정 후 재검증 — 이전 회차 결과를 신뢰하지 않고 처음부터 전체 재검토
-  │   ├─ 크리티컬 게이트 전항목 재실행 (이전에 통과한 항목도 다시)
-  │   ├─ SSOT 문서를 다시 읽고 처음 보듯 대조
-  │   ├─ 새로운 이슈 발견 → 수정 → 다음 회차
-  │   └─ 이슈 없음 → 완료
-  │
-  └─ 최대 10회. 10회 후에도 이슈 → 사용자에게 잔여 이슈 보고
-```
-
----
-
-## 문서 우선순위 & 정합성
-
-```
-CLAUDE.md > systems/*.md > pages/*.md > 00_PRD.md
-```
-
-- 코드와 문서가 충돌 → **코드를 문서에 맞춘다**
-- 문서가 명백히 틀림 → 사용자에게 알리고 확인 후 수정
-- **문서에 없는 기능은 자의적으로 추가하지 않는다**
-- 구현 중 설계 결정이 필요하면 → `implementation/orchestration/DECISIONS_LOG.md`에 기록
-
-### 문서-목업-코드 동기화
-
-```
-목업 수정 → 문서 반영 → 코드 반영 (어느 한쪽만 수정하는 것은 금지)
-```
-
-| 변경 대상 | 반영해야 할 곳 |
-|-----------|---------------|
-| `prototype/*.html` | → `pages/*.md` 또는 `systems/*.md` |
-| `pages/*.md` | → 관련 코드 + `prototype/*.html` |
-| `systems/*.md` | → 관련 `pages/*.md` + `prototype/*.html` + 코드 모두 |
-
----
 
 ## 기술 스택
 
@@ -205,12 +128,6 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 □ 모바일              360px에서 레이아웃 깨짐 없음
 ```
 
-스프린트 완료 시 추가:
-```
-□ 이전 스프린트 기능 회귀 없음
-□ DECISIONS_LOG에 주요 결정 기록
-□ MASTER_TRACKER 갱신
-```
 
 ---
 
@@ -290,8 +207,26 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 | **S9** Onboarding | 온보딩(로그인→맛집등록→버블생성→탐색→홈) + 넛지 정교화 + E2E + 최적화 | 전체 |
 | **S10** Maps | 식당 드릴다운 지도 + 와인 산지 3단계 드릴다운 지도 + SVG 데이터 | S6 |
 
-상세 태스크 목록 → `development_docs/implementation/orchestration/MASTER_TRACKER.md`
-의존성 그래프 → `development_docs/implementation/orchestration/DEPENDENCY_MAP.md`
+
+---
+
+## 문서화 의무
+
+### WORKLOG.md 갱신 규칙
+- **갱신 트리거**: 세션 종료 시, 의미 있는 작업 단위 완료 시
+- **엔트리 형식**: 날짜 + 번호 + 제목 / 영역 / 맥락 / 미완료 / 다음 (4줄 이내)
+- **롤링**: 최대 10개. 11번째 추가 시 가장 오래된 것 삭제
+- **불변 규칙**: 미완료 항목이 있으면 반드시 기록. "없음"이라도 명시
+
+### CODEBASE.md 갱신 규칙
+- **갱신 트리거**: 새 모듈/디렉토리 추가, DI 등록 변경, 레이어 구조 변경, 마이그레이션 추가
+- **갱신 범위**: 해당 섹션만 수정 (전체 재작성 금지)
+- **불변 규칙**: 코드 내용 복사 금지. 경로, 역할, 상태만 기록
+
+### 불변 원칙
+- WORKLOG.md와 CODEBASE.md는 **코드 변경과 동급으로 취급** — 갱신 누락은 크리티컬 게이트 실패
+- 새 세션은 이 두 파일을 먼저 읽고 작업 시작 (코드 탐색 전)
+- 문서가 코드 현실과 불일치 시 → 문서를 코드에 맞춰 즉시 수정
 
 ---
 
@@ -315,11 +250,8 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 
 | 필요한 정보 | 읽을 문서 |
 |------------|----------|
-| 현재 진행 상황 | `implementation/orchestration/MASTER_TRACKER.md` |
-| 다음 할 일 | `implementation/orchestration/CURRENT_SPRINT.md` |
-| 의존성/순서 | `implementation/orchestration/DEPENDENCY_MAP.md` |
-| 과거 결정 | `implementation/orchestration/DECISIONS_LOG.md` |
-| 검증 방법 | `implementation/orchestration/REVIEW_LOOP.md` |
+| 코드베이스 구조 | `CODEBASE.md` |
+| 최근 작업 맥락 | `WORKLOG.md` |
 | 클린 아키텍처 패턴 | `implementation/shared/CLEAN_ARCH_PATTERN.md` |
 | 테스트 전략 | `implementation/shared/TESTING_STRATEGY.md` |
 | 네이밍/규칙 | `implementation/shared/CONVENTIONS.md` |

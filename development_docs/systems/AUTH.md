@@ -14,8 +14,59 @@
 
 ### Supabase Auth 설정
 - Provider: Google, Kakao, Naver, Apple
-- 가입 시 `users` 테이블에 자동 row 생성 (trigger)
-- 닉네임: 소셜 계정 이름 자동 설정 (나중에 변경 가능)
+- 가입 시 `users` 테이블에 자동 row 생성 (trigger + callback 이중 안전장치)
+- 닉네임: 소셜 계정 이름 자동 설정 (최대 20자, 나중에 변경 가능)
+- 기본 닉네임 폴백: `name` → `full_name` → `preferred_username` → `'냠유저'`
+- Google은 `access_type: 'offline'`, `prompt: 'consent'` 옵션 적용
+
+### 인증 흐름 (OAuth PKCE)
+
+```
+1. LoginButtons에서 provider 선택
+2. signInWithProvider() → Supabase OAuth redirect
+3. 소셜 로그인 완료 → /auth/callback?code=... 리다이렉트
+4. 서버: exchangeCodeForSession(code) → 세션 생성
+5. 프로필 존재 확인 → 없으면 users 테이블에 INSERT (트리거 미작동 시 안전장치)
+6. 홈(/)으로 리다이렉트
+```
+
+### 세션 관리
+
+- **Middleware** (`src/middleware.ts`): 모든 요청에서 Supabase SSR 클라이언트로 세션 유지
+- **AuthProvider** (`src/presentation/providers/auth-provider.tsx`): 클라이언트 React Context
+  - `getUser()` + `getSession()`으로 초기화
+  - `onAuthStateChange()` 구독으로 실시간 상태 동기화
+  - 제공: `user`, `session`, `isLoading`, `signOut()`
+- **AuthGuard** (`src/presentation/guards/auth-guard.tsx`): `(main)` 레이아웃에서 인증 보호
+
+### 공개 라우트 (인증 불필요)
+
+- `/auth/login`
+- `/auth/callback`
+- `/onboarding`
+- `/design-system`
+- `/bubbles/invite`
+
+### 구현 파일
+
+| 컴포넌트 | 파일 |
+|----------|------|
+| Supabase 브라우저 클라이언트 | `src/infrastructure/supabase/client.ts` |
+| Supabase 서버 클라이언트 | `src/infrastructure/supabase/server.ts` |
+| Auth 서비스 (signIn/signOut) | `src/infrastructure/supabase/auth-service.ts` |
+| Auth 매퍼 (Supabase→Domain) | `src/infrastructure/supabase/auth-mapper.ts` |
+| Domain 엔티티 | `src/domain/entities/auth.ts` (`AuthUser`, `AuthSession`, `AuthProvider`) |
+| User 엔티티 | `src/domain/entities/user.ts` (`User`, `PrivacyProfile`, `VisibilityConfig`) |
+| Settings 엔티티 | `src/domain/entities/settings.ts` (`UserSettings`, `DeleteMode`) |
+| Auth Provider (React Context) | `src/presentation/providers/auth-provider.tsx` |
+| Auth Guard | `src/presentation/guards/auth-guard.tsx` |
+| Login Buttons UI | `src/presentation/components/auth/login-buttons.tsx` |
+| useAuthActions Hook | `src/application/hooks/use-auth-actions.ts` |
+| DI Container (auth 재수출) | `src/shared/di/container.ts`, `src/shared/di/auth-mappers.ts` |
+| 미들웨어 | `src/middleware.ts` |
+| 로그인 페이지 | `src/app/auth/login/page.tsx` |
+| OAuth 콜백 | `src/app/auth/callback/route.ts` |
+| Auth 트리거 | `supabase/migrations/013_auth_trigger.sql` |
 
 ---
 
@@ -24,28 +75,35 @@
 ### 2-1. 버블 역할
 
 > DB: `bubble_members.role` — `'owner' | 'admin' | 'member' | 'follower'`
+> DB: `bubble_members.status` — `'pending' | 'active' | 'rejected'`
 
-| 역할 | 기록 공유 | 댓글/리액션 | 멤버 관리 | 버블 설정 | 버블 삭제 |
-|------|----------|------------|----------|----------|----------|
-| owner | O | O | 승인/거절/제거 | 전체 (기본정보, 가입조건, 검색노출) | O |
-| admin | O | O | 승인/거절 | X | X |
-| member | O | O | X | X | X |
-| follower | X (읽기만) | X | X | X | X |
+| 역할 | 기록 공유 | 댓글 | 리액션 | 피드 열람 | 멤버 관리 | 초대 | 버블 설정 | 버블 삭제 |
+|------|----------|------|--------|----------|----------|------|----------|----------|
+| owner | O | O | O | 전체 | 승인/거절/제거 | O | 전체 | O |
+| admin | O | O | O | 전체 | 승인/거절 | O | X | X |
+| member | O | 조건부* | O | 전체 | X | X | X | X |
+| follower | X | X | X | 제한적** | X | X | X | X |
 
-> `follower`는 public 버블에 가입하지 않고 팔로우만 한 상태.
+> \* member의 댓글 권한은 `bubbles.allow_comments` 설정에 따라 결정.
+> \*\* follower는 피드 읽기만 가능 (`canReadFeed: true`, `canReadFullFeed: false`).
 > `closed` 정책 버블에서는 이름+점수만 열람 가능.
+
+구현: `src/domain/services/bubble-permission-service.ts` — `calculatePermissions()`, `canChangeRole()`
 
 ### 2-2. owner 전용 설정 항목
 
-> prototype: `prototype/bubbles_detail.html` (screen-bubble-settings)
+> prototype: `development_docs/prototype/04_bubbles_detail.html` (screen-bubble-settings)
 
-| 그룹 | 항목 | 비고 |
-|------|------|------|
-| 기본 정보 | 버블 이름, 설명, 유형(양방향/일방향) | `bubbles.content_visibility` |
-| 가입 조건 | 가입 승인 필요, 최소 기록 수, 최소 레벨, 최대 인원 | `join_policy`, `min_records`, `min_level`, `max_members` |
+| 그룹 | 항목 | DB 필드 |
+|------|------|---------|
+| 기본 정보 | 버블 이름, 설명, 집중 유형(전체/식당/와인), 지역, 공개 범위(공개/비공개) | `name`, `description`, `focus_type`, `area`, `visibility` |
+| 외관 | 아이콘, 아이콘 배경색 | `icon`, `icon_bg_color` |
+| 콘텐츠 | 유형(일방향/양방향), 댓글 허용, 외부 공유 허용, 버블 규칙 | `content_visibility`, `allow_comments`, `allow_external_share`, `rules` |
+| 가입 조건 | 가입 정책, 최소 기록 수, 최소 레벨, 최대 인원 | `join_policy`, `min_records`, `min_level`, `max_members` |
 | 검색 노출 | 탐색 노출 여부, 검색 키워드 | `is_searchable`, `search_keywords` |
-| 멤버 관리 | 대기 중 승인/거절, 멤버 제거 | `bubble_members.status` |
-| 버블 통계 | 총 기록, 멤버 수, 주간 활성도, 평균 만족도, 주간 추이 차트 | 읽기 전용 (트리거/크론 갱신) |
+| 초대 | 초대 코드, 초대 만료일 | `invite_code`, `invite_expires_at` |
+| 멤버 관리 | 대기 중 승인/거절, 멤버 제거 | `bubble_members.status`, `bubble_members.role` |
+| 버블 통계 | 팔로워 수, 멤버 수, 총 기록, 평균 만족도, 주간 기록수, 전주 기록수, 고유 대상 수, 최근 활동일 | 읽기 전용 (`follower_count`, `member_count`, `record_count`, `avg_satisfaction`, `weekly_record_count`, `prev_weekly_record_count`, `unique_target_count`, `last_activity_at`) |
 | 위험 영역 | 버블 삭제 | 전체 데이터 영구 삭제 |
 
 ### 2-3. 버블 가입 정책
@@ -64,7 +122,7 @@
 
 ## 3. 프라이버시 계층
 
-> 상세 매트릭스 → `pages/SETTINGS.md` §2~§6
+> 상세 매트릭스 → `pages/11_SETTINGS.md` §2~§6
 
 ### 3-1. 프로필 공개 범위
 
@@ -122,8 +180,10 @@
 
 ## 4. RLS 정책
 
-> 전체 25개 테이블에 RLS 활성화. **총 49개 정책**.
-> 구현: `supabase/migrations/012_rls.sql`
+> 전체 25개 테이블에 RLS 활성화. **총 58개 정책**.
+> 기본 구현: `supabase/migrations/012_rls.sql` (55개)
+> 추가: `025_bubble_owner_read_policy.sql` (+1), `033_bubble_member_read_rls.sql` (+2)
+> 수정: `034_rls_security_fixes.sql` (bm_insert_self 교체 + 보안 트리거)
 
 ### 4-1. users (3 정책)
 | 정책 | 동작 | 조건 |
@@ -152,41 +212,44 @@
 |------|------|------|
 | `gvp_select` | SELECT | 인증된 사용자 (읽기 전용 참조) |
 
-### 4-5. records (4 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `records_own` | ALL | `user_id = auth.uid()` |
-| `records_public` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile='public'` |
-| `records_bubble_all` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile!='private'` + 같은 버블 |
-| `records_bubble_shared` | SELECT | 작성자 `privacy_profile!='private'` + `bubble_shares` 경유 공유된 기록 |
+### 4-5. records (5 정책)
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `records_own` | ALL | `user_id = auth.uid()` | 012 |
+| `records_public` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile='public'` | 012 |
+| `records_bubble_all` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile!='private'` + 같은 버블 | 012 |
+| `records_bubble_shared` | SELECT | 작성자 `privacy_profile!='private'` + `bubble_shares` 경유 공유된 기록 | 012 |
+| `records_bubble_member_read` | SELECT | 같은 버블 active 멤버의 기록 열람 | 033 |
 
-> `companions` 필드는 `records_own` 정책에 의해 **본인만 열람 가능** (무조건 비공개).
+> **주의**: `companions` 필드는 RLS(row-level)로는 컬럼 단위 제한이 불가하여, SELECT 통과 시 다른 사용자에게도 노출될 수 있음. 비공개 처리는 **application layer**에서 구현 필요 (§3-5 "동반자 정보 무조건 비공개" 원칙).
 
-### 4-6. record_photos (2 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `record_photos_own` | ALL | 소유 record의 사진 |
-| `record_photos_read` | SELECT | records RLS 통과한 기록의 사진 |
+### 4-6. record_photos (3 정책)
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `record_photos_own` | ALL | 소유 record의 사진 | 012 |
+| `record_photos_read` | SELECT | records RLS 통과한 기록의 사진 | 012 |
+| `record_photos_bubble_member_read` | SELECT | 같은 버블 active 멤버의 기록 사진 열람 | 033 |
 
-### 4-7. bubbles (5 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `bubble_public` | SELECT | `visibility = 'public'` |
-| `bubble_private` | SELECT | `visibility = 'private'` + active 멤버 |
-| `bubble_insert` | INSERT | 인증 + `created_by = auth.uid()` |
-| `bubble_update` | UPDATE | owner만 |
-| `bubble_delete` | DELETE | owner만 |
+### 4-7. bubbles (6 정책)
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `bubble_public` | SELECT | `visibility = 'public'` | 012 |
+| `bubble_private` | SELECT | `visibility = 'private'` + active 멤버 | 012 |
+| `bubble_owner_read` | SELECT | `created_by = auth.uid()` (생성 직후 INSERT→SELECT 허용) | 025 |
+| `bubble_insert` | INSERT | 인증 + `created_by = auth.uid()` | 012 |
+| `bubble_update` | UPDATE | owner만 | 012 |
+| `bubble_delete` | DELETE | owner만 | 012 |
 
 ### 4-8. bubble_members (7 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `bm_read_member` | SELECT | 같은 버블 active 멤버 |
-| `bm_read_public` | SELECT | public 버블의 멤버 목록 |
-| `bm_insert_self` | INSERT | 본인 가입 |
-| `bm_update_self` | UPDATE | 본인 상태 변경 |
-| `bm_update_admin` | UPDATE | owner/admin이 멤버 관리 |
-| `bm_delete_self` | DELETE | 본인 탈퇴 |
-| `bm_delete_admin` | DELETE | owner/admin이 멤버 제거 |
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `bm_read_member` | SELECT | 같은 버블 active 멤버 | 012 |
+| `bm_read_public` | SELECT | public 버블의 멤버 목록 | 012 |
+| `bm_insert_self` | INSERT | 본인 가입 + **role은 member/follower만** (RLS에 `pending` 포함이나 DB CHECK `chk_bm_role`가 차단) | 034 (012 교체) |
+| `bm_update_self` | UPDATE | 본인 상태 변경 | 012 |
+| `bm_update_admin` | UPDATE | owner/admin이 멤버 관리 | 012 |
+| `bm_delete_self` | DELETE | 본인 탈퇴 | 012 |
+| `bm_delete_admin` | DELETE | owner/admin이 멤버 제거 | 012 |
 
 ### 4-9. bubble_shares (3 정책)
 | 정책 | 동작 | 조건 |
@@ -276,6 +339,14 @@
 |------|------|------|
 | `ai_rec_own` | ALL | 본인만 |
 
+### 4-24. 보안 트리거 & 함수 (034_rls_security_fixes.sql)
+
+| 보안 조치 | 유형 | 설명 |
+|----------|------|------|
+| `bm_insert_self` 교체 | RLS 정책 | INSERT 시 role을 `member`, `follower`로 제한 (owner/admin 자기 부여 방지). RLS에 `pending` 포함이나 DB CHECK `chk_bm_role`에 의해 무효 |
+| `prevent_role_self_promotion()` | BEFORE UPDATE 트리거 | 자기 자신의 role 변경 차단 (admin/owner가 타인 변경은 허용, service_role도 허용) |
+| `increment_user_total_xp()` | 함수 | 클라이언트(auth.uid() != NULL): delta 0~500 제한. service_role(Edge Function): 제한 없음 |
+
 ### RLS 정책 요약
 
 | 테이블 | 정책 수 | 핵심 규칙 |
@@ -284,10 +355,10 @@
 | restaurants | 3 | 인증된 사용자 읽기/쓰기 |
 | wines | 3 | 인증된 사용자 읽기/쓰기 |
 | grape_variety_profiles | 1 | 읽기 전용 참조 |
-| records | 4 | 본인 전체, privacy 기반 타인 열람 |
-| record_photos | 2 | 본인 전체, records RLS 경유 |
-| bubbles | 5 | public/private SELECT, owner 수정/삭제 |
-| bubble_members | 7 | 멤버/public 읽기, 본인 가입/탈퇴, admin 관리 |
+| records | 5 | 본인 전체, privacy 기반 타인 열람, 버블 멤버 열람 |
+| record_photos | 3 | 본인 전체, records RLS 경유, 버블 멤버 열람 |
+| bubbles | 6 | public/private/owner SELECT, owner 수정/삭제 |
+| bubble_members | 7 | 멤버/public 읽기, 본인 가입(role 제한), admin 관리 |
 | bubble_shares | 3 | 멤버 읽기, 본인 공유/삭제 |
 | comments | 1 | 버블 멤버(owner/admin/member) |
 | reactions | 2 | 본인 전체, 인증 사용자 읽기 |
@@ -305,13 +376,14 @@
 | wishlists | 1 | 본인만 |
 | saved_filters | 1 | 본인만 |
 | ai_recommendations | 1 | 본인만 |
-| **합계** | **48** | |
+| **합계** | **58** | |
 
 ---
 
 ## 5. 계정 삭제
 
-> prototype: `prototype/settings.html` (DeleteAccountSheet)
+> prototype: `development_docs/prototype/05_settings.html` (DeleteAccountSheet)
+> 구현: `supabase/functions/process-account-deletion/index.ts`
 
 ### DB 필드
 | 필드 | 설명 |
@@ -323,34 +395,58 @@
 ### 삭제 모드
 | 모드 | 동작 |
 |------|------|
-| 기록 익명화 (기본) | 닉네임 → "탈퇴한 사용자", 아바타 삭제. 기록은 익명으로 집계에 유지 |
-| 기록 완전 삭제 | 모든 기록, 사진, 버블 공유, 댓글 삭제. 복구 불가 |
+| 기록 익명화 (기본) | 닉네임 → "탈퇴한 사용자", 개인정보 삭제. 기록은 익명으로 집계에 유지 |
+| 기록 완전 삭제 | 모든 기록, 관련 데이터, Auth 계정 삭제. 복구 불가 |
 
 ### 삭제 시 처리
 
 **공통 (모든 모드)**:
 1. `users.deleted_at = NOW()`, `delete_scheduled_at = NOW() + 30일`
-2. 소속 버블 자동 탈퇴 (`bubble_members` 처리)
-3. owner인 버블 → 다음 admin에게 이전, admin 없으면 버블 삭제
-4. `follows` 양방향 삭제
-5. `reactions`, `notifications` 삭제
-6. 소셜 로그인 연결 해제
-7. 30일 유예 (복구 가능) → 30일 후 hard delete (Cron)
+2. 30일 유예 (복구 가능 — `cancelAccountDeletion()`)
+3. 30일 후 Edge Function이 크론(매일 00:30 UTC)으로 자동 처리
 
-**모드별 차이**:
-| 대상 | `anonymize` | `hard_delete` |
-|------|------------|---------------|
-| records | 유지 (user 익명화 후 집계에 포함) | 삭제 |
-| record_photos | 유지 | 삭제 |
-| bubble_shares | 유지 | 삭제 |
-| comments | 익명화 (`user_id = null`, `is_anonymous = true`) | 삭제 |
+**Anonymize (기록 익명화)**:
+| 처리 대상 | 동작 |
+|----------|------|
+| users 테이블 | `nickname` → "탈퇴한 사용자", `email`/`bio`/`avatar_url`/`avatar_color`/`taste_summary`/`taste_tags` → NULL |
+| follows | 양방향 삭제 (`follower_id`, `following_id`) |
+| bubble_members | 삭제 (모든 버블에서 탈퇴) |
+| notifications | 삭제 |
+| records | **유지** (익명화된 user에 연결, 집계에 포함) |
+| delete_mode/delete_scheduled_at | NULL로 초기화 |
+
+**Hard Delete (완전 삭제)**:
+| 삭제 순서 | 테이블 |
+|----------|--------|
+| 1 | notifications |
+| 2 | xp_histories |
+| 3 | user_experiences |
+| 4 | user_milestones |
+| 5 | reactions |
+| 6 | comments |
+| 7 | follows (양방향) |
+| 8 | bubble_members |
+| 9 | wishlists |
+| 10 | records |
+| 11 | nudge_history |
+| 12 | nudge_fatigue |
+| 13 | users |
+| 14 | `auth.admin.deleteUser()` — Supabase Auth 계정 삭제 |
+
+> **FK Cascade**: `record_photos`, `bubble_shares`는 `records(id) ON DELETE CASCADE`로 함께 삭제. `bubble_share_reads`는 `bubble_shares(id) ON DELETE CASCADE`로 연쇄 삭제.
+> **미삭제**: `saved_filters`, `ai_recommendations`가 `users(id)` FK를 참조하지만 hard_delete에서 삭제하지 않음 (잠재적 FK violation).
+> **미구현**: owner인 버블의 다음 admin 이전 (현재 bubble_members 삭제 시 owner 없는 버블이 남을 수 있음).
 
 ---
 
 ## 6. 보안 원칙
 
-- SECURITY DEFINER 함수 사용 금지 (RLS 우회 방지)
-- API 키/토큰 클라이언트 노출 금지
-- 외부 API 키는 Edge Function 환경변수로만 관리
+- SECURITY DEFINER 함수 사용 금지 (RLS 우회 방지) — auth trigger도 `SECURITY INVOKER`
+- API 키/토큰 클라이언트 노출 금지 (클라이언트 허용: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_KAKAO_JS_KEY`)
+- 외부 API 키는 Edge Function 환경변수로만 관리 (`SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY` 등)
 - 사용자 위치 데이터는 서버에 저장하지 않음 (클라이언트에서만 사용)
 - 가시성 필드 필터링(`visibility_public`, `visibility_bubble`, `visibility_override`)은 application layer에서 처리
+- 역할 자기 승격 방지: BEFORE UPDATE 트리거 (`prevent_role_self_promotion()`)
+- 역할 자기 부여 방지: INSERT RLS에서 role을 `member`/`follower`로 제한 (DB CHECK가 `pending` role 차단)
+- XP 조작 방지: 클라이언트 delta 0~500 제한 (`increment_user_total_xp()`)
+- 미들웨어에서 모든 비공개 라우트 인증 확인 (`src/middleware.ts`)
