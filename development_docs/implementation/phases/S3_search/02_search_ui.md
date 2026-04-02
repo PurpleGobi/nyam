@@ -57,23 +57,25 @@
 // src/domain/entities/search.ts
 // R1: 외부 의존 0
 
-/** 검색 결과 공통 인터페이스 */
 export interface SearchResultBase {
   id: string
   name: string
-  /** 사용자가 이미 기록한 항목인지 */
   hasRecord: boolean
 }
 
-/** 식당 검색 결과 */
+/** 식당 검색 결과 — genreDisplay, categoryPath, phone, kakaoMapUrl 추가 */
 export interface RestaurantSearchResult extends SearchResultBase {
   type: 'restaurant'
   genre: string | null
+  genreDisplay: string | null       // 카카오 세분류 표시용 ("한식 > 냉면")
+  categoryPath: string | null       // 카카오 카테고리 원본 ("음식점 > 한식 > 냉면")
   area: string | null
   address: string | null
-  distance: number | null  // meters (GPS 기반)
+  distance: number | null
   lat: number | null
   lng: number | null
+  phone: string | null
+  kakaoMapUrl: string | null
 }
 
 /** 와인 검색 결과 */
@@ -81,36 +83,32 @@ export interface WineSearchResult extends SearchResultBase {
   type: 'wine'
   producer: string | null
   vintage: number | null
-  wineType: string | null  // 'red' | 'white' | ...
+  wineType: string | null
   region: string | null
   country: string | null
 }
 
-/** 검색 결과 유니온 */
 export type SearchResult = RestaurantSearchResult | WineSearchResult
 
-/** 검색 화면 상태 */
-export type SearchScreenState =
-  | 'idle'           // 검색 전 (근처 목록 or 힌트 표시)
-  | 'typing'         // 입력 중 (debounce 대기)
-  | 'searching'      // API 호출 중
-  | 'results'        // 결과 표시
-  | 'empty'          // 결과 없음
+export type SearchScreenState = 'idle' | 'typing' | 'searching' | 'results' | 'empty'
 
-/** 최근 검색 항목 */
 export interface RecentSearch {
   query: string
   targetType: 'restaurant' | 'wine'
   timestamp: number
 }
 
-/** 근처 식당 항목 (GPS 기반, 검색 전 표시) */
+/** 근처 식당 항목 — categoryPath, address, lat, lng 추가 */
 export interface NearbyRestaurant {
   id: string
   name: string
   genre: string | null
+  categoryPath: string | null
   area: string | null
-  distance: number  // meters
+  address: string | null
+  lat: number | null
+  lng: number | null
+  distance: number
   hasRecord: boolean
 }
 ```
@@ -236,474 +234,133 @@ export function debounce<T extends (...args: Parameters<T>) => void>(
 
 ### 4. `src/application/hooks/use-search.ts`
 
+> **설계 변경 사항**:
+> - `initialQuery` 파라미터 추가 — URL searchParams에서 `q` 값을 받아 마운트 시 자동 검색
+> - AI 와인 검색 통합 — 와인 DB 결과가 3개 미만이면 `/api/wines/search-ai` 자동 트리거
+> - `WineSearchCandidate` 타입 import (`@/infrastructure/api/ai-recognition`)
+> - `selectAiCandidate` 메서드 추가 — AI 후보 선택 시 `/api/wines/detail-ai` 호출하여 DB 저장 후 반환
+> - `debounce`를 `@/shared/utils/debounce`에서 import
+
 ```typescript
-// src/application/hooks/use-search.ts
-
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { debounce } from '@/shared/utils/debounce'
-import type { SearchResult, SearchScreenState, RecentSearch } from '@/domain/entities/search'
-
-const DEBOUNCE_MS = 300
-const MIN_QUERY_LENGTH = 2
-const MAX_RECENT_SEARCHES = 10
-const RECENT_SEARCHES_KEY = 'nyam_recent_searches'
+// src/application/hooks/use-search.ts (실제 구현 시그니처)
 
 interface UseSearchParams {
   targetType: 'restaurant' | 'wine'
-  /** GPS 좌표 (검색 API에 전달 — 거리 기반 정렬용) */
   lat?: number | null
   lng?: number | null
+  initialQuery?: string          // URL searchParams 'q' 값 (마운트 시 자동 검색)
 }
 
-interface UseSearchReturn {
-  query: string
-  setQuery: (q: string) => void
-  screenState: SearchScreenState
-  results: SearchResult[]
-  recentSearches: RecentSearch[]
-  isSearching: boolean
-  /** 검색 실행 (2자 이상 시 자동 호출) */
-  executeSearch: (q: string) => Promise<void>
-  /** 최근 검색 추가 */
-  addRecentSearch: (q: string) => void
-  /** 최근 검색 삭제 */
-  clearRecentSearches: () => void
-  /** 전체 초기화 */
-  reset: () => void
+export function useSearch({ targetType, lat, lng, initialQuery }: UseSearchParams) {
+  // 반환:
+  //   query: string
+  //   setQuery: (q: string) => void
+  //   screenState: SearchScreenState
+  //   results: SearchResult[]               // DB 검색 결과
+  //   aiCandidates: WineSearchCandidate[]    // AI 와인 검색 결과 (wine만)
+  //   isSearching: boolean
+  //   isAiSearching: boolean                 // AI 검색 진행 중
+  //   isSelectingAi: boolean                 // AI 후보 선택(DB 저장) 진행 중
+  //   selectAiCandidate: (candidate) => Promise<{id, name} | null>
+  //   recentSearches: RecentSearch[]
+  //   executeSearch: (q: string) => Promise<void>
+  //   addRecentSearch: (q: string) => void
+  //   clearRecentSearches: () => void
+  //   reset: () => void
 }
-
-export function useSearch({ targetType, lat, lng }: UseSearchParams): UseSearchReturn {
-  const [query, setQueryInternal] = useState('')
-  const [screenState, setScreenState] = useState<SearchScreenState>('idle')
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
-  /** 진행 중인 fetch 요청 취소용 AbortController */
-  const abortRef = useRef<AbortController | null>(null)
-
-  // 로컬 스토리지에서 최근 검색 로드
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(RECENT_SEARCHES_KEY)
-      if (stored) {
-        const parsed: RecentSearch[] = JSON.parse(stored)
-        setRecentSearches(parsed.filter((s) => s.targetType === targetType))
-      }
-    } catch {
-      // localStorage 접근 불가 시 무시
-    }
-  }, [targetType])
-
-  const executeSearch = useCallback(async (q: string) => {
-    if (q.length < MIN_QUERY_LENGTH) {
-      setScreenState('idle')
-      setResults([])
-      return
-    }
-
-    // 이전 진행 중인 요청 취소
-    if (abortRef.current) {
-      abortRef.current.abort()
-    }
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    setIsSearching(true)
-    setScreenState('searching')
-
-    try {
-      const endpoint = targetType === 'restaurant'
-        ? '/api/restaurants/search'
-        : '/api/wines/search'
-
-      let url = `${endpoint}?q=${encodeURIComponent(q)}`
-      if (lat != null && lng != null) url += `&lat=${lat}&lng=${lng}`
-
-      const response = await fetch(url, {
-        signal: controller.signal,
-      })
-      const data: { results: SearchResult[] } = await response.json()
-
-      if (data.results.length === 0) {
-        setScreenState('empty')
-      } else {
-        setScreenState('results')
-      }
-      setResults(data.results)
-    } catch (err) {
-      // AbortError는 무시 (새 검색으로 대체된 요청)
-      if (err instanceof DOMException && err.name === 'AbortError') return
-      setScreenState('empty')
-      setResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }, [targetType])
-
-  // debounced search
-  const debouncedSearch = useMemo(
-    () => debounce((q: string) => {
-      executeSearch(q)
-    }, DEBOUNCE_MS),
-    [executeSearch]
-  )
-
-  const setQuery = useCallback((q: string) => {
-    setQueryInternal(q)
-    if (q.length === 0) {
-      // 입력 완전 삭제 → idle (최근 검색 표시 조건)
-      setScreenState('idle')
-      setResults([])
-    } else if (q.length < MIN_QUERY_LENGTH) {
-      // 1자 입력 → 너무 짧음, 검색 없이 idle 유지
-      setScreenState('idle')
-      setResults([])
-    } else {
-      // MIN_QUERY_LENGTH(2자) 이상 → typing + debounce 검색
-      setScreenState('typing')
-      debouncedSearch(q)
-    }
-  }, [debouncedSearch])
-
-  // addRecentSearch: 검색 쿼리 문자열을 직접 받음 (결과 이름이 아닌 사용자 입력 쿼리 저장)
-  const addRecentSearch = useCallback((q: string) => {
-    const newEntry: RecentSearch = {
-      query: q,
-      targetType,
-      timestamp: Date.now(),
-    }
-
-    setRecentSearches((prev) => {
-      const filtered = prev.filter((s) => s.query !== q)
-      const updated = [newEntry, ...filtered].slice(0, MAX_RECENT_SEARCHES)
-      try {
-        const allStored = localStorage.getItem(RECENT_SEARCHES_KEY)
-        const all: RecentSearch[] = allStored ? JSON.parse(allStored) : []
-        const otherType = all.filter((s) => s.targetType !== targetType)
-        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify([...updated, ...otherType]))
-      } catch {
-        // localStorage 접근 불가 시 무시
-      }
-      return updated
-    })
-  }, [targetType])
-
-  const clearRecentSearches = useCallback(() => {
-    setRecentSearches([])
-    try {
-      const allStored = localStorage.getItem(RECENT_SEARCHES_KEY)
-      const all: RecentSearch[] = allStored ? JSON.parse(allStored) : []
-      const otherType = all.filter((s) => s.targetType !== targetType)
-      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(otherType))
-    } catch {
-      // 무시
-    }
-  }, [targetType])
-
-  const reset = useCallback(() => {
-    // 진행 중인 요청 취소
-    if (abortRef.current) {
-      abortRef.current.abort()
-      abortRef.current = null
-    }
-    setQueryInternal('')
-    setScreenState('idle')
-    setResults([])
-    setIsSearching(false)
-  }, [])
-
-  return {
-    query,
-    setQuery,
-    screenState,
-    results,
-    recentSearches,
-    isSearching,
-    executeSearch,
-    addRecentSearch,
-    clearRecentSearches,
-    reset,
-  }
-}
+// 와인 검색 흐름:
+//   1. DB 검색 → results (WineSearchResult[])
+//   2. DB 결과 < 3개 → /api/wines/search-ai 자동 호출 → aiCandidates 업데이트
+//   3. AI 후보 선택 → selectAiCandidate → /api/wines/detail-ai → DB 저장 → {id, name} 반환
 ```
 
 ### 5. `src/presentation/components/search/search-bar.tsx`
 
+> **설계 변경 사항**:
+> - 최근 검색 기능이 SearchBar에 내장됨 (별도 RecentSearches 컴포넌트 대신 드롭다운으로 표시)
+> - `recentSearches`, `onRecentSelect`, `onRecentClear` props 추가
+> - `focused` 상태로 포커스 시 border 색상 변경 관리
+> - 포커스 + 입력 비어있음 + 최근 검색 존재 → 드롭다운 표시
+> - 아이콘: `Search`, `X`, `Clock` (lucide-react)
+
 ```typescript
 // src/presentation/components/search/search-bar.tsx
-
-import { useRef, useEffect } from 'react'
-import { Search, X } from 'lucide-react'
 
 interface SearchBarProps {
   value: string
   onChange: (value: string) => void
   placeholder: string
-  /** 와인 모드일 때 --accent-wine 포커스 색상 */
   variant: 'restaurant' | 'wine'
   autoFocus?: boolean
+  recentSearches?: RecentSearch[]       // 최근 검색 목록 (인라인 드롭다운)
+  onRecentSelect?: (query: string) => void
+  onRecentClear?: () => void
 }
-
-export function SearchBar({
-  value,
-  onChange,
-  placeholder,
-  variant,
-  autoFocus = true,
-}: SearchBarProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (autoFocus && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [autoFocus])
-
-  const focusRingClass = variant === 'restaurant'
-    ? 'border-[var(--accent-food)]'  // onFocusCapture/onBlurCapture inline style로 구현
-    : 'border-[var(--accent-wine)]'
-
-  return (
-    <div
-      className={`flex items-center gap-2 px-4 py-3 mx-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] transition-colors ${focusRingClass}`}
-    >
-      <Search size={18} className="text-[var(--text-hint)] flex-shrink-0" />
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="flex-1 text-[14px] text-[var(--text)] placeholder:text-[var(--text-hint)] bg-transparent outline-none"
-      />
-      {value.length > 0 && (
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          className="flex-shrink-0 p-0.5"
-        >
-          <X size={16} className="text-[var(--text-hint)]" />
-        </button>
-      )}
-    </div>
-  )
-}
+// 포커스 + value 비어있음 + recentSearches 존재 → 하단 드롭다운 표시
+// 드롭다운: "최근 검색" 헤더 + 전체 삭제 버튼 + Clock 아이콘 + 검색어 목록
 ```
 
 ### 6. `src/presentation/components/search/search-result-item.tsx`
 
+> **설계 변경 사항**:
+> - 식당/와인 공통 렌더링으로 통합 (별도 RestaurantResultItem/WineResultItem 분리 X)
+> - 아이콘 영역: 9x9 rounded-lg 배경 박스 + 아이콘 (UtensilsCrossed/Wine)
+> - 식당 subtitle: `genreDisplay`(카카오 세분류) 사용 (기존 `genre` 대신)
+> - 거리: MapPin 아이콘과 함께 표시 (식당만)
+> - 아이콘: `UtensilsCrossed`, `Wine`, `MapPin` (lucide-react)
+
 ```typescript
 // src/presentation/components/search/search-result-item.tsx
-
-import { UtensilsCrossed, Wine, MapPin } from 'lucide-react'
-import type { SearchResult, RestaurantSearchResult, WineSearchResult } from '@/domain/entities/search'
 
 interface SearchResultItemProps {
   result: SearchResult
   onSelect: (result: SearchResult) => void
 }
-
-export function SearchResultItem({ result, onSelect }: SearchResultItemProps) {
-  if (result.type === 'restaurant') {
-    return <RestaurantResultItem result={result} onSelect={() => onSelect(result)} />
-  }
-  return <WineResultItem result={result} onSelect={() => onSelect(result)} />
-}
-
-function RestaurantResultItem({
-  result,
-  onSelect,
-}: {
-  result: RestaurantSearchResult
-  onSelect: () => void
-}) {
-  const subtextParts = [result.genre, result.area].filter(Boolean).join(' · ')
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-food-light)] transition-colors"
-    >
-      <UtensilsCrossed size={18} className="text-[var(--accent-food)] flex-shrink-0" />
-      <div className="flex-1 min-w-0 text-left">
-        <p className="text-[14px] font-semibold text-[var(--text)] truncate">
-          {result.name}
-        </p>
-        {subtextParts && (
-          <p className="text-[12px] text-[var(--text-sub)] truncate">
-            {subtextParts}
-          </p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {result.distance !== null && (
-          <span className="text-[12px] text-[var(--text-hint)]">
-            {result.distance < 1000
-              ? `${Math.round(result.distance)}m`
-              : `${(result.distance / 1000).toFixed(1)}km`}
-          </span>
-        )}
-        {result.hasRecord && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--accent-food-light)] text-[var(--accent-food)] font-medium">
-            기록 있음
-          </span>
-        )}
-      </div>
-    </button>
-  )
-}
-
-function WineResultItem({
-  result,
-  onSelect,
-}: {
-  result: WineSearchResult
-  onSelect: () => void
-}) {
-  const namePart = result.vintage
-    ? `${result.name} ${result.vintage}`
-    : result.name
-
-  const subtextParts: string[] = []
-  if (result.wineType) {
-    const typeMap: Record<string, string> = {
-      red: 'Red', white: 'White', rose: 'Rosé',
-      sparkling: 'Sparkling', orange: 'Orange',
-      fortified: 'Fortified', dessert: 'Dessert',
-    }
-    subtextParts.push(typeMap[result.wineType] ?? result.wineType)
-  }
-  if (result.country) subtextParts.push(result.country)
-  if (result.region) subtextParts.push(result.region)
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-wine-light)] transition-colors"
-    >
-      <Wine size={18} className="text-[var(--accent-wine)] flex-shrink-0" />
-      <div className="flex-1 min-w-0 text-left">
-        <p className="text-[14px] font-semibold text-[var(--text)] truncate">
-          {namePart}
-        </p>
-        {subtextParts.length > 0 && (
-          <p className="text-[12px] text-[var(--text-sub)] truncate">
-            {subtextParts.join(' · ')}
-          </p>
-        )}
-      </div>
-      {result.hasRecord && (
-        <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--accent-wine-light)] text-[var(--accent-wine)] font-medium flex-shrink-0">
-          기록 있음
-        </span>
-      )}
-    </button>
-  )
-}
+// 식당: displayName=name, subtitle=genreDisplay · area, distance=MapPin+거리
+// 와인: displayName=name+vintage, subtitle=wineType · country · region
+// 공통: hasRecord → "기록 있음" 뱃지 (accent-food/accent-wine)
 ```
 
 ### 7. `src/presentation/components/search/nearby-list.tsx`
 
-**SEARCH_REGISTER.md §3 근처 식당** — 검색 전 GPS 기반 기본 표시
+> **설계 변경 사항**:
+> - 장르 필터 + 반경 필터 UI 추가 — `genre`, `radius`, `onGenreChange`, `onRadiusChange` props
+> - `NEARBY_GENRE_FILTERS` 상수 export: 전체/한식/일식/중식/양식/아시안/카페·바
+> - `NEARBY_RADIUS_OPTIONS` 상수 export: 100m/250m/500m/1km/2km
+> - `onRegister` prop 추가 — 하단 "직접 등록하기" 버튼
+> - nearby API는 카카오맵 API를 사용 (PostGIS RPC 대신 `/api/restaurants/nearby` → 카카오 키워드/카테고리 검색)
+> - 아이콘: `MapPin`, `Plus`, `UtensilsCrossed` (lucide-react)
 
 ```typescript
 // src/presentation/components/search/nearby-list.tsx
 
-import { UtensilsCrossed, MapPin } from 'lucide-react'
-import type { NearbyRestaurant } from '@/domain/entities/search'
-
 interface NearbyListProps {
   restaurants: NearbyRestaurant[]
   isLoading: boolean
+  genre: string                           // 현재 선택된 장르 필터
+  radius: number                          // 현재 선택된 반경 (m)
+  onGenreChange: (genre: string) => void
+  onRadiusChange: (radius: number) => void
   onSelect: (restaurantId: string) => void
+  onRegister?: () => void                 // "직접 등록하기" 클릭
 }
-
-export function NearbyList({ restaurants, isLoading, onSelect }: NearbyListProps) {
-  if (isLoading) {
-    return (
-      <div className="px-4 py-6">
-        <div className="flex items-center gap-2 mb-3">
-          <MapPin size={14} className="text-[var(--text-sub)]" />
-          <span className="text-[13px] font-semibold text-[var(--text-sub)]">근처 식당</span>
-        </div>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-3 py-3">
-            <div className="w-9 h-9 rounded-lg bg-[var(--border)] animate-pulse" />
-            <div className="flex-1 space-y-1.5">
-              <div className="w-24 h-3.5 rounded bg-[var(--border)] animate-pulse" />
-              <div className="w-32 h-3 rounded bg-[var(--border)] animate-pulse" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (restaurants.length === 0) {
-    return (
-      <div className="flex flex-col items-center py-12">
-        <MapPin size={32} className="text-[var(--text-hint)] mb-3" />
-        <p className="text-[14px] text-[var(--text-sub)]">
-          근처에 등록된 식당이 없습니다
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="px-4 py-2">
-      <div className="flex items-center gap-2 mb-2 px-3">
-        <MapPin size={14} className="text-[var(--text-sub)]" />
-        <span className="text-[13px] font-semibold text-[var(--text-sub)]">근처 식당</span>
-      </div>
-
-      {restaurants.map((r) => (
-        <button
-          key={r.id}
-          type="button"
-          onClick={() => onSelect(r.id)}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--accent-food-light)] transition-colors"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[var(--accent-food-light)] flex items-center justify-center flex-shrink-0">
-            <UtensilsCrossed size={18} className="text-[var(--accent-food)]" />
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-[14px] font-semibold text-[var(--text)] truncate">
-              {r.name}
-            </p>
-            <p className="text-[12px] text-[var(--text-sub)] truncate">
-              {[r.genre, r.area].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-[12px] text-[var(--text-hint)]">
-              {r.distance < 1000
-                ? `${Math.round(r.distance)}m`
-                : `${(r.distance / 1000).toFixed(1)}km`}
-            </span>
-            {r.hasRecord && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--accent-food-light)] text-[var(--accent-food)] font-medium">
-                기록 있음
-              </span>
-            )}
-          </div>
-        </button>
-      ))}
-    </div>
-  )
-}
+// 상단: MapPin "근처 식당" + 반경 pill 버튼 (100m~2km)
+// 중간: 장르 필터 가로 스크롤 (전체/한식/일식/...)
+// 목록: UtensilsCrossed 아이콘 + 이름 + genre·area + 거리 + "기록 있음" 뱃지
+// 하단: "직접 등록하기" border-dashed 버튼
 ```
 
 ### 8. `src/presentation/components/search/search-results.tsx`
 
+> **설계 변경 사항**:
+> - AI 와인 검색 섹션 추가 — `aiCandidates`, `isAiSearching`, `isSelectingAi`, `onSelectAiCandidate` props
+> - `WineSearchCandidate` 타입 import (`@/infrastructure/api/ai-recognition`)
+> - 와인 검색 시 DB 결과 하단에 "AI 추천 와인" 섹션 (Sparkles 아이콘)
+> - AI 후보 항목: labelImageUrl 이미지 or Sparkles 아이콘 + 이름(한글) + 타입·국가·산지·생산자
+> - 아이콘: `Plus`, `Search`, `Sparkles`, `Loader2` (lucide-react)
+
 ```typescript
 // src/presentation/components/search/search-results.tsx
-
-import { Plus, Search } from 'lucide-react'
-import { SearchResultItem } from '@/presentation/components/search/search-result-item'
-import type { SearchResult, SearchScreenState } from '@/domain/entities/search'
 
 interface SearchResultsProps {
   screenState: SearchScreenState
@@ -711,86 +368,35 @@ interface SearchResultsProps {
   variant: 'restaurant' | 'wine'
   onSelect: (result: SearchResult) => void
   onRegister: () => void
+  aiCandidates?: WineSearchCandidate[]        // AI 와인 검색 결과
+  isAiSearching?: boolean
+  isSelectingAi?: boolean                     // AI 후보 DB 저장 진행 중
+  onSelectAiCandidate?: (candidate: WineSearchCandidate) => void
 }
-
-export function SearchResults({
-  screenState,
-  results,
-  variant,
-  onSelect,
-  onRegister,
-}: SearchResultsProps) {
-  if (screenState === 'searching') {
-    return (
-      <div className="flex flex-col items-center py-12">
-        <div className="w-6 h-6 border-2 border-[var(--text-hint)] border-t-transparent rounded-full animate-spin" />
-        <p className="mt-3 text-[13px] text-[var(--text-hint)]">검색 중...</p>
-      </div>
-    )
-  }
-
-  if (screenState === 'empty') {
-    const label = variant === 'restaurant' ? '식당' : '와인'
-    return (
-      <div className="flex flex-col items-center py-12">
-        <Search size={32} className="text-[var(--text-hint)] mb-3" />
-        <p className="text-[14px] text-[var(--text-sub)]">
-          검색 결과가 없습니다
-        </p>
-        <button
-          type="button"
-          onClick={onRegister}
-          className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-[var(--border-bold)] text-[13px] text-[var(--text-sub)]"
-        >
-          <Plus size={16} />
-          목록에 없나요? 직접 등록하기
-        </button>
-      </div>
-    )
-  }
-
-  if (screenState !== 'results' || results.length === 0) {
-    return null
-  }
-
-  return (
-    <div>
-      <ul className="divide-y divide-[var(--border)]">
-        {results.map((result) => (
-          <li key={result.id}>
-            <SearchResultItem result={result} onSelect={onSelect} />
-          </li>
-        ))}
-      </ul>
-
-      {/* 하단 직접 등록 */}
-      <div className="border-t border-[var(--border)]">
-        <button
-          type="button"
-          onClick={onRegister}
-          className="w-full flex items-center gap-2 px-4 py-3.5 text-[13px] text-[var(--text-sub)]"
-        >
-          <Plus size={16} />
-          목록에 없나요? 직접 등록하기
-        </button>
-      </div>
-    </div>
-  )
-}
+// 렌더링 구조:
+//   searching (결과 0) → 로딩 스피너
+//   empty (DB+AI 모두 0) → "검색 결과가 없습니다" + "직접 등록하기"
+//   results → DB 결과 목록 + (와인) "AI 추천 와인" 섹션 + "직접 등록하기"
 ```
 
 ---
 
 ## 목업 매핑
 
-> **SearchContainer**: `screenState === 'idle'`일 때 `RecentSearches` 컴포넌트를 NearbyList/힌트 위에 렌더링함 (최근 검색어가 있을 경우). `addRecentSearch`는 사용자가 결과 항목을 선택할 때 결과 이름이 아닌 **검색 쿼리 문자열**을 전달받아 저장.
+> **SearchContainer** (`search-container.tsx`): 검색 전용 페이지 (`/search`). `useSearch` hook 사용.
+> - 최근 검색은 `SearchBar` 내부 드롭다운으로 표시 (별도 `RecentSearches` 컴포넌트 사용하지 않음, `RecentSearches` 컴포넌트는 별도 파일로 존재하지만 SearchBar에 인라인 통합)
+> - 식당 검색 전: `NearbyList` (장르/반경 필터 포함, 카카오맵 API 사용)
+> - 와인 검색 전: SearchBar만 표시
+> - 외부 API 결과 선택 시 자동 INSERT (`/api/restaurants` POST)
+> - AI 와인 후보 선택 시 `/api/wines/detail-ai` → DB 저장
+> - 결과 선택 시 `/record` 페이지로 이동 (sessionStorage에 genre_hint/record_extra 저장)
 
 | 프로토타입 Screen ID | 구현 컴포넌트 | 상태 |
 |---------------------|-------------|------|
-| `screen-add-restaurant-search` (검색 전) | `SearchBar` + `RecentSearches` + `NearbyList` | `screenState = 'idle'` |
+| `screen-add-restaurant-search` (검색 전) | `SearchBar` (최근 검색 드롭다운) + `NearbyList` (장르/반경 필터) | `screenState = 'idle'` |
 | `screen-add-restaurant-search` (검색 중) | `SearchBar` + `SearchResults` | `screenState = 'results'` |
-| `screen-add-wine-search` (검색 전) | `SearchBar` + 힌트 텍스트 | `screenState = 'idle'` |
-| `screen-add-wine-search` (검색 중) | `SearchBar` + `SearchResults` | `screenState = 'results'` |
+| `screen-add-wine-search` (검색 전) | `SearchBar` (최근 검색 드롭다운) | `screenState = 'idle'` |
+| `screen-add-wine-search` (검색 중) | `SearchBar` + `SearchResults` + AI 추천 와인 섹션 | `screenState = 'results'` |
 
 ---
 
@@ -800,24 +406,33 @@ export function SearchResults({
 ┌─ 사용자: 텍스트 입력
 │
 ├─ setQuery(text)
-│  ├─ text.length === 0 → screenState='idle' (RecentSearches + 근처 목록 or 힌트 표시)
-│  ├─ text.length < 2 → screenState='idle' (검색 없이 대기)
+│  ├─ text.length === 0 → screenState='idle' (근처 목록 or 대기)
+│  ├─ text.length < 2 → screenState='idle'
 │  └─ text.length >= 2 → screenState='typing' → debounce(300ms)
 │
 ├─ debounce 만료 → executeSearch(query)
 │  ├─ screenState='searching'
-│  ├─ GET /api/restaurants/search?q={query} (or /api/wines/search)
-│  │   └─ 서버: Nyam DB 검색 + 외부 API 폴백 (03_restaurant_search.md)
-│  ├─ 결과 0개 → screenState='empty'
+│  ├─ GET /api/restaurants/search?q={query}&lat=...&lng=... (식당)
+│  │   or GET /api/wines/search?q={query} (와인)
+│  │
+│  ├─ 와인: DB 결과 < 3개 → POST /api/wines/search-ai 자동 트리거
+│  │   → aiCandidates 업데이트 ("AI 추천 와인" 섹션 표시)
+│  │
+│  ├─ 결과 0개 (DB+AI 모두) → screenState='empty'
 │  └─ 결과 N개 → screenState='results'
 │
-├─ 사용자: 결과 항목 선택
-│  ├─ hasRecord=true → 토스트 "기록 있음" → 상세 페이지 이동
-│  └─ hasRecord=false → 07_full_flow.md 연결
-│     ├─ 검색/목록 경로 → status='checked' → 성공 화면
-│     └─ (카메라 경로에서 왔으면 → 기록 화면)
+├─ 사용자: DB 결과 항목 선택
+│  ├─ 외부 API 결과 (kakao_/naver_/google_ prefix)
+│  │   → POST /api/restaurants 자동 INSERT → DB UUID 획득
+│  ├─ sessionStorage에 genre_hint/record_extra 저장
+│  └─ /record 페이지로 이동 (?type=...&targetId=...&name=...&meta=...)
 │
-└─ 사용자: "직접 등록하기" → 06_register.md
+├─ 사용자: AI 와인 후보 선택
+│  → selectAiCandidate → POST /api/wines/detail-ai → DB 저장 → {id, name}
+│  → /record 페이지로 이동
+│
+└─ 사용자: "직접 등록하기"
+   → /register 페이지로 이동 (?type=...&name=...)
 ```
 
 ---

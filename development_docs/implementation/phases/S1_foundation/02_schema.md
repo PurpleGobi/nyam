@@ -77,6 +77,18 @@
 | `supabase/migrations/011_triggers.sql` | 모든 트리거 함수 (record_count, follow_counts, bubble_member_count, bubble_share_stats) | DB |
 | `src/infrastructure/supabase/types.ts` | 자동 생성 TypeScript 타입 | infrastructure |
 
+### 이후 추가된 마이그레이션 (S2~S9)
+
+S1 이후 스프린트에서 추가된 마이그레이션 파일 목록 (014~041):
+
+| 파일 | 역할 |
+|------|------|
+| `014_rpc_nearby.sql` | 근처 식당 RPC 함수 |
+| `015_genre_restructure.sql` | 장르 구조 변경 |
+| `016~041` | restaurants, wines, records, bubbles, XP, 알림, RLS 등 스키마 확장/수정 |
+
+전체 마이그레이션 파일 목록은 `supabase/migrations/` 디렉토리 참조.
+
 ### 생성하지 않는 것
 
 - RLS 정책 (1.3에서)
@@ -202,10 +214,10 @@ CREATE TABLE users (
   CONSTRAINT chk_users_auth_provider CHECK (auth_provider IN ('kakao', 'google', 'apple', 'naver')),
   CONSTRAINT chk_users_pref_landing CHECK (pref_landing IN ('last', 'home', 'bubbles', 'profile')),
   CONSTRAINT chk_users_pref_home_tab CHECK (pref_home_tab IN ('last', 'restaurant', 'wine')),
-  CONSTRAINT chk_users_pref_restaurant_sub CHECK (pref_restaurant_sub IN ('last', 'visited', 'wishlist', 'recommended', 'following')),
+  CONSTRAINT chk_users_pref_restaurant_sub CHECK (pref_restaurant_sub IN ('last', 'visited', 'wishlist', 'following')),
   CONSTRAINT chk_users_pref_wine_sub CHECK (pref_wine_sub IN ('last', 'tasted', 'wishlist', 'cellar')),
   CONSTRAINT chk_users_pref_bubble_tab CHECK (pref_bubble_tab IN ('last', 'bubble', 'bubbler')),
-  CONSTRAINT chk_users_pref_view_mode CHECK (pref_view_mode IN ('last', 'detailed', 'compact', 'calendar')),
+  CONSTRAINT chk_users_pref_view_mode CHECK (pref_view_mode IN ('last', 'card', 'list', 'calendar')),
   CONSTRAINT chk_users_pref_default_sort CHECK (pref_default_sort IN ('latest', 'score_high', 'score_low', 'name', 'visit_count')),
   CONSTRAINT chk_users_pref_record_input CHECK (pref_record_input IN ('camera', 'search')),
   CONSTRAINT chk_users_pref_bubble_share CHECK (pref_bubble_share IN ('ask', 'auto', 'never')),
@@ -267,7 +279,7 @@ CREATE TABLE restaurants (
     '이탈리안', '프렌치', '스페인', '지중해', '미국', '멕시칸',
     '카페', '바/주점', '베이커리', '기타'
   )),
-  CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 4)),
+  CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 3)),
   CONSTRAINT chk_restaurants_michelin CHECK (michelin_stars IS NULL OR (michelin_stars >= 1 AND michelin_stars <= 3))
 );
 

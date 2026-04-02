@@ -53,110 +53,62 @@ src/application/hooks/use-following-feed.ts
 
 - "팔로잉" 칩 탭 → 서브 패널을 `<FollowingFeed>` 컴포넌트로 전환
 - 식당 탭: `targetType='restaurant'`, 와인 탭: `targetType='wine'`
-- 기존 S5 구현의 `saved-chip` 시스템에 통합
 
 ### 2. Application Layer
 
 #### `src/application/hooks/use-following-feed.ts`
 
 ```typescript
-type FeedSource = 'bubble' | 'mutual';
-
-interface FollowingFeedItem {
-  id: string;                    // bubble_share.id 또는 record.id
-  source: FeedSource;
-  /** 버블 소스일 때 */
-  bubble?: {
-    id: string;
-    name: string;
-    icon: string;                // lucide 아이콘명 또는 이미지 URL
-    iconBgColor: string;
-  };
-  /** 맞팔 소스일 때 */
-  author?: {
-    id: string;
-    nickname: string;
-    avatarColor: string;
-    level: number;
-  };
-  /** 기록 데이터 */
-  record: {
-    id: string;
-    targetId: string;
-    targetType: 'restaurant' | 'wine';
-    targetName: string;
-    satisfaction: number;
-    comment: string | null;
-    scene: string | null;
-    area: string | null;          // 지역명
-    recordedAt: string;
-    photos: string[];
-  };
-  sharedAt: string;               // 정렬 기준
+interface FeedItem {
+  id: string                        // 'bubble-{shareId}' 또는 'mutual-{recordId}'
+  recordId: string
+  targetId: string
+  targetName: string
+  targetType: 'restaurant' | 'wine'
+  satisfaction: number | null
+  comment: string | null
+  visitDate: string | null
+  sourceType: 'bubble' | 'user'     // bubble=버블 피드, user=맞팔 유저
+  sourceName: string                // 버블명 또는 유저 닉네임
+  sourceIcon: string | null         // 버블 아이콘
+  sourceAvatar: string | null       // 유저 아바타 URL
+  sourceAvatarColor: string | null  // 유저 아바타 색상
+  authorNickname: string
+  authorAvatar: string | null
+  authorAvatarColor: string | null
+  createdAt: string
 }
+
+type SourceFilter = 'all' | 'bubble' | 'mutual'
 
 interface UseFollowingFeedOptions {
-  targetType: 'restaurant' | 'wine';
-  /** 소스 필터 */
-  sourceFilter?: 'all' | 'bubble' | 'mutual';
-  /** 특정 버블 필터 */
-  bubbleId?: string;
-  /** 지역 필터 */
-  area?: string;
-  /** 최소 점수 필터 */
-  minScore?: number;
+  userId: string | null
+  targetType: 'restaurant' | 'wine'
 }
 
-interface UseFollowingFeedReturn {
-  items: FollowingFeedItem[];
-  isLoading: boolean;
-  hasMore: boolean;
-  loadMore: () => void;
-  /** 필터용 — 현재 피드에 등장하는 버블 목록 */
-  availableBubbles: { id: string; name: string }[];
-  /** 피드 아이템 총 개수 (칩 카운트 표시용) */
-  totalCount: number;
+interface UseFollowingFeedResult {
+  items: FeedItem[]
+  isLoading: boolean
+  refresh: () => void
+  sourceFilter: SourceFilter
+  setSourceFilter: (f: SourceFilter) => void
+  totalCount: number
 }
 
-export function useFollowingFeed(options: UseFollowingFeedOptions): UseFollowingFeedReturn {
-  // ...
-}
+export function useFollowingFeed(options: UseFollowingFeedOptions): UseFollowingFeedResult
 ```
 
 **데이터 소스 2가지**:
 
-1. **버블 팔로우 기록**: 내가 팔로우(follower)인 버블의 공유 기록
-   ```sql
-   SELECT bs.*, r.*, u.*, b.*
-   FROM bubble_shares bs
-   JOIN records r ON r.id = bs.record_id
-   JOIN users u ON u.id = bs.shared_by
-   JOIN bubbles b ON b.id = bs.bubble_id
-   JOIN bubble_members bm ON bm.bubble_id = bs.bubble_id AND bm.user_id = $currentUserId
-   WHERE bm.role = 'follower' AND bm.status = 'active'
-     AND r.target_type = $targetType
-   ```
+1. **버블 피드 기록**: `bubbleRepo.getFeedFromBubbles(userId, targetType)` — 소속 버블의 공유 기록
+2. **맞팔 유저 기록**: `followRepo.getFollowing(userId)` → `bubbleRepo.getRecentRecordsByUsers(mutualUserIds, targetType)` — 맞팔 유저의 최근 기록
 
-2. **맞팔 유저 기록**: 맞팔인 유저의 기록 (직접, 버블 경유 아님)
-   ```sql
-   SELECT r.*, u.*
-   FROM records r
-   JOIN users u ON u.id = r.user_id
-   WHERE r.user_id IN (
-     -- 맞팔 목록
-     SELECT f1.following_id FROM follows f1
-     JOIN follows f2 ON f1.following_id = f2.follower_id AND f1.follower_id = f2.following_id
-     WHERE f1.follower_id = $currentUserId
-       AND f1.status = 'accepted' AND f2.status = 'accepted'
-   )
-   AND r.target_type = $targetType
-   ```
-
-3. **합집합 → `shared_at`/`recorded_at` DESC 정렬** (시간순, 알고리즘 없음)
-
-**맞팔 기록 가시성**: 맞팔이므로 `AccessLevel = 'mutual'` → 풀 액세스 (리뷰, 사진, 팁 모두 표시)
-
-**버블 팔로우 기록 가시성**: 팔로워는 이름+점수+지역만 → 상세 리뷰/사진 숨김
+**동작 흐름**:
+- `Promise.all`로 두 소스 병렬 조회
+- 버블 피드 → `FeedItem[]` (sourceType='bubble')
+- 맞팔 유저 기록 → `FeedItem[]` (sourceType='user')
+- 합집합 → `createdAt` DESC 정렬 (시간순, 알고리즘 없음)
+- `sourceFilter`에 따라 `useMemo`로 클라이언트 필터링
 
 ### 3. Presentation Layer
 
@@ -164,30 +116,27 @@ export function useFollowingFeed(options: UseFollowingFeedOptions): UseFollowing
 
 ```typescript
 interface FollowingSourceBadgeProps {
-  source: FeedSource;
-  /** 버블 소스 */
-  bubbleName?: string;
-  bubbleIcon?: string;
-  bubbleIconBgColor?: string;
-  /** 맞팔 소스 */
-  authorNickname?: string;
-  authorAvatarColor?: string;
+  sourceType: 'bubble' | 'user'
+  sourceName: string
+  sourceIcon: string | null
+  sourceAvatar: string | null
+  sourceAvatarColor: string | null
 }
 ```
 
 **렌더링**:
 
-| source | 표시 | 스타일 |
-|--------|------|--------|
-| `bubble` | `[버블아이콘] 직장 맛집` | 아이콘 16px, `font-size: 11px; font-weight: 600; color: var(--accent-social)` |
-| `mutual` | `[아바타] 김영수` | 아바타 16px 원형, `font-size: 11px; font-weight: 600; color: var(--text-sub)` |
+| sourceType | 표시 | 스타일 |
+|------------|------|--------|
+| `bubble` | `<BubbleIcon> 버블명` | 아이콘 16px, `11px 600 var(--accent-social); max-w-[60px] truncate` |
+| `user` | `[아바타원] 유저명` | 아바타 16px(avatarColor 원형, 이니셜 8px), `11px 600 var(--text-sub); max-w-[60px] truncate` |
 
 #### `src/presentation/components/home/following-feed-card.tsx`
 
 ```typescript
 interface FollowingFeedCardProps {
-  item: FollowingFeedItem;
-  accentType: 'food' | 'wine';
+  item: FeedItem
+  onPress: () => void
 }
 ```
 
@@ -195,92 +144,73 @@ interface FollowingFeedCardProps {
 
 ```
 ┌──────────────────────────────────────┐
-│ [source badge]              3시간 전  │  ← 소스 + 시간
+│ [source badge]              방문일    │  ← 소스 + 시간
 │                                      │
-│ 식당명                          92   │  ← 이름 + 점수
-│ 일식 · 을지로                        │  ← 메타
+│ 식당/와인명                     92   │  ← 이름 + 점수
+│                                      │
 │ "여기 오마카세 코스가..."            │  ← 한줄평 (맞팔만, 1줄 클램프)
 │                                      │
-│ 버블 소스 CTA (버블일 때만)           │
+│ 버블에 가입하면 더 볼 수 있어요       │  ← CTA (버블 소스만)
 └──────────────────────────────────────┘
 ```
 
 | 요소 | 스타일 |
 |------|--------|
-| 카드 | `bg: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px` |
-| 식당/와인명 | `font-size: 15px; font-weight: 800; color: var(--text)` |
-| 점수 | `font-size: 18px; font-weight: 800`, 식당: `--accent-food`, 와인: `--accent-wine` |
-| 메타 | `font-size: 12px; color: var(--text-sub)` |
-| 한줄평 | `font-size: 12px; color: var(--text-sub); line-clamp: 1` — **맞팔 소스만 표시** |
-| 시간 | `font-size: 11px; color: var(--text-hint)` |
-| 버블 CTA | `font-size: 11px; color: var(--accent-social)`, "버블에 가입하면 더 볼 수 있어요" |
-
-**버블 소스 제한 표시**:
-- 팔로워 접근 = 이름 + 점수 + 지역만 → 한줄평/사진 숨김
-- 하단에 CTA: "버블에 가입하면 더 볼 수 있어요" (탭 → 버블 상세)
-
-**맞팔 소스 표시**:
-- 풀 액세스 → 이름 + 점수 + 지역 + 한줄평 + 사진 썸네일(있으면)
+| 카드 | `bg: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; active:scale-[0.98]` |
+| 식당/와인명 | `15px 800 var(--text)` |
+| 점수 | `18px 800`, 식당: `--accent-food`, 와인: `--accent-wine` |
+| 한줄평 | `12px var(--text-sub); line-clamp: 1` — **맞팔 소스(sourceType='user')만 표시** |
+| 시간 | `11px var(--text-hint)` — visitDate 표시 |
+| 버블 CTA | `11px var(--accent-social)`, "버블에 가입하면 더 볼 수 있어요" |
 
 #### `src/presentation/components/home/following-feed.tsx`
 
 ```typescript
 interface FollowingFeedProps {
-  targetType: 'restaurant' | 'wine';
+  items: FeedItem[]
+  isLoading: boolean
+  onItemPress: (targetId: string, targetType: 'restaurant' | 'wine') => void
+  sourceFilter: SourceFilter
+  onSourceFilterChange: (f: SourceFilter) => void
 }
 ```
+
+> **참고**: `FollowingFeed`는 순수 UI 컴포넌트로, 훅을 직접 사용하지 않는다. `items`, `sourceFilter` 등은 부모에서 `useFollowingFeed` 결과를 주입받는다.
 
 **구조**:
 
 ```tsx
-<div className="following-feed">
-  {/* 필터 행: 소스 필터칩 */}
+<div className="flex flex-col">
+  {/* 소스 필터칩 */}
   <div className="flex gap-2 px-4 py-2">
-    <FilterChip active={source === 'all'} onClick={() => setSource('all')}>전체</FilterChip>
-    <FilterChip active={source === 'bubble'} onClick={() => setSource('bubble')}>버블</FilterChip>
-    <FilterChip active={source === 'mutual'} onClick={() => setSource('mutual')}>맞팔</FilterChip>
+    {['전체', '버블', '맞팔'].map(chip => (
+      <button className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
+        style={{
+          active: { bg: var(--accent-social), color: #fff },
+          inactive: { bg: var(--bg-card), color: var(--text-sub), border: 1px solid var(--border) }
+        }}
+      />
+    ))}
   </div>
 
-  {items.length === 0 ? (
-    <EmptyState
-      icon="users"
-      message="팔로우하는 버블이 없거나 맞팔 친구가 없어요"
-      ctaLabel="버블 탐색하기"
-      ctaHref="/bubbles"
-    />
-  ) : (
-    <div className="flex flex-col gap-2 px-4">
-      {items.map(item => (
-        <FollowingFeedCard key={item.id} item={item} accentType={targetType === 'restaurant' ? 'food' : 'wine'} />
-      ))}
+  {/* 빈 상태 */}
+  {items.length === 0 && (
+    <div>
+      <Users size={40} color="var(--text-hint)" />
+      "팔로우하는 버블이 없거나 맞팔 친구가 없어요"
+      "버블에 가입하거나 다른 유저를 팔로우해보세요"
+      <Link href="/bubbles">버블 탐색하기</Link>
     </div>
   )}
+
+  {/* 피드 카드 */}
+  {items.map(item => <FollowingFeedCard ... />)}
 </div>
 ```
 
-**필터 옵션** (BUBBLE.md §14 + HOME.md):
-
-| 필터 | 옵션 |
-|------|------|
-| 소스 | 전체 / 버블 / 맞팔 |
-| 버블 (소스=버블일 때) | 전체 / 특정 버블 선택 |
-| 지역 | 전체 / 지역 목록 |
-| 점수 | 전체 / 90+ / 80+ / 70+ |
+**로딩 상태**: skeleton 카드 3개 (`h-24 animate-pulse rounded-xl bg-var(--bg-card)`)
 
 **정렬**: 시간순만 (최신 먼저). 알고리즘 피드 없음 (BUBBLE.md §14 명시).
-
-### 4. 홈 통합
-
-기존 S5의 `saved-chips-row` 시스템에서 "팔로잉" 칩 탭 시:
-
-```typescript
-// HomeContainer 또는 해당 탭 컨테이너에서
-if (activeChip === 'following') {
-  return <FollowingFeed targetType={currentTab} />;
-}
-```
-
-`pref_restaurant_sub` / `pref_wine_sub` 유저 설정에 `'following'` 값 이미 정의됨 (DATA_MODEL.md users 테이블).
 
 ---
 
@@ -298,22 +228,27 @@ if (activeChip === 'following') {
 
 ```
 [홈 → "팔로잉" 칩 탭]
-  → <FollowingFeed targetType="restaurant" />
-    → useFollowingFeed({ targetType: 'restaurant' })
-      → 병렬 조회:
-        1. 버블 팔로우 피드: bubble_members(role='follower') → bubble_shares → records
-        2. 맞팔 피드: follows(mutual) → records
-      → UNION → shared_at/recorded_at DESC 정렬
-      → 가시성 적용:
-        - 버블 팔로우: 이름+점수+지역만 (comment/photos 숨김)
-        - 맞팔: 풀 액세스
-      → items[] 반환
-    → 소스 필터칩 렌더
+  → useFollowingFeed({ userId, targetType: 'restaurant' })
+    → 병렬 조회:
+      1. bubbleRepo.getFeedFromBubbles(userId, targetType) → 버블 피드
+      2. followRepo.getFollowing(userId) → mutualUserIds
+         → bubbleRepo.getRecentRecordsByUsers(mutualUserIds, targetType) → 맞팔 기록
+    → 합집합 → createdAt DESC 정렬
+    → sourceFilter에 따라 useMemo 필터링
+  → <FollowingFeed
+      items={items}
+      sourceFilter={sourceFilter}
+      onSourceFilterChange={setSourceFilter}
+      onItemPress={(id, type) => router.push(...)}
+    />
+    → 소스 필터칩 렌더 (전체/버블/맞팔)
     → items.map(item => <FollowingFeedCard />)
-      → source 뱃지 표시 (버블 아이콘+이름 / 아바타+이름)
+      → source 뱃지 표시 (BubbleIcon+이름 / 아바타+이름)
       → 버블 소스: CTA "버블에 가입하면 더 볼 수 있어요"
+      → 맞팔 소스: 한줄평 1줄 표시
 
 [카드 탭]
+  → onItemPress(targetId, targetType)
   → 식당/와인 상세 페이지로 이동 (/restaurants/[id] 또는 /wines/[id])
 ```
 
@@ -323,12 +258,12 @@ if (activeChip === 'following') {
 
 ```
 □ "팔로잉" 필터칩 활성 → 팔로잉 피드 표시
-□ 버블 팔로우 기록: 이름+점수+지역만 표시 (한줄평/사진 숨김)
-□ 맞팔 기록: 풀 액세스 (한줄평 포함)
-□ 소스 배지: 버블(아이콘+이름) / 맞팔(아바타+이름) 구분
+□ 버블 소스 기록: 이름+점수만 표시 (한줄평 숨김)
+□ 맞팔 소스 기록: 한줄평 포함 표시
+□ 소스 배지: 버블(BubbleIcon+이름, accent-social) / 맞팔(아바타+이름, text-sub) 구분
 □ 소스 필터: 전체/버블/맞팔 단일선택
 □ 시간순 정렬 (최신 먼저, 알고리즘 없음)
-□ 빈 상태: "팔로우하는 버블이 없거나 맞팔 친구가 없어요" + [버블 탐색하기] CTA
+□ 빈 상태: Users 아이콘 40px + "팔로우하는 버블이 없거나 맞팔 친구가 없어요" + [버블 탐색하기] CTA
 □ 버블 소스 CTA: "버블에 가입하면 더 볼 수 있어요" 표시
 □ 카드 탭 → 식당/와인 상세 이동
 □ 식당 탭/와인 탭 모두 동작

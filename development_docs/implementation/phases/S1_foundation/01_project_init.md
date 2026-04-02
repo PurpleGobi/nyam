@@ -33,7 +33,7 @@
 | `.gitignore` | Git 무시 파일 |
 | `src/app/layout.tsx` | 루트 레이아웃 (Pretendard Variable + Comfortaa 폰트) |
 | `src/app/globals.css` | Tailwind directives + 폰트 import + CSS 변수 초기화 |
-| `src/app/page.tsx` | 루트 페이지 (임시 헬스 체크용) |
+| ~~`src/app/page.tsx`~~ | ~~루트 페이지 (임시)~~ — 현재 존재하지 않음. `(main)/page.tsx`가 홈 담당 |
 | `src/shared/utils/cn.ts` | clsx + tailwind-merge 유틸 |
 | `components.json` | shadcn/ui 설정 |
 
@@ -70,39 +70,39 @@ cd nyam
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "^16",
-    "react": "^19",
-    "react-dom": "^19",
-    "@supabase/supabase-js": "^2",
-    "@supabase/ssr": "^0.9",
-    "lucide-react": "^0.577",
-    "class-variance-authority": "^0.7",
-    "clsx": "^2",
-    "tailwind-merge": "^3",
-    "framer-motion": "^12",
-    "swr": "^2",
-    "sonner": "^2",
-    "html-to-image": "^1",
-    "@base-ui/react": "^1",
-    "tw-animate-css": "^1",
-    "@ducanh2912/next-pwa": "^10",
+    "@base-ui/react": "^1.3.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "html-to-image": "^1.11.13",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "radix-ui": "^1.4.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "server-only": "^0.0.1",
-    "shadcn": "^4"
+    "shadcn": "^4.0.7",
+    "sonner": "^2.0.7",
+    "swr": "^2.4.1",
+    "tailwind-merge": "^3.5.0",
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3.3.5",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/node": "^20",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^9",
-    "eslint-config-next": "^16",
-    "@eslint/eslintrc": "^3",
+    "eslint-config-next": "16.1.6",
     "supabase": "^2",
-    "@playwright/test": "^1",
-    "@typescript-eslint/eslint-plugin": "^8",
-    "@typescript-eslint/parser": "^8"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
 ```
@@ -139,8 +139,8 @@ pnpm install
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "exclude": ["node_modules", "supabase/functions"]
 }
 ```
 
@@ -154,6 +154,8 @@ pnpm install
 ```typescript
 import type { NextConfig } from 'next'
 
+const isDev = process.env.NODE_ENV === 'development'
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -162,7 +164,12 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
     ],
+    unoptimized: isDev,
   },
 }
 
@@ -239,7 +246,9 @@ supabase/.temp/
 
 ### 8. 폰트 설정
 
-#### src/app/globals.css
+> **참고**: 아래는 1.1 시점의 최소 구현이다. 전체 디자인 토큰은 1.5(05_design_tokens.md)에서 추가된다.
+
+#### src/app/globals.css (1.1 최소 버전)
 
 ```css
 /* Pretendard Variable — 본문 전체 */
@@ -266,6 +275,8 @@ html {
 
 #### src/app/layout.tsx
 
+> **참고**: 최종 형태는 1.4(인증)에서 `AuthProvider`와 `ToastProvider` 래핑이 추가된다. 아래는 1.1 시점의 최소 구현이며, 1.4 완료 후 최종 형태는 04_auth.md §11 참조.
+
 ```tsx
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
@@ -288,51 +299,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko">
-      <body>{children}</body>
+    <html lang="ko" suppressHydrationWarning>
+      <body className="font-sans bg-background text-foreground antialiased">
+        {children}
+      </body>
     </html>
   )
 }
 ```
 
-### 9. 루트 페이지 (임시)
+### 9. 루트 페이지
 
-#### src/app/page.tsx
-
-```tsx
-export default function HomePage() {
-  return (
-    <main
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'var(--font)',
-      }}
-    >
-      <h1
-        style={{
-          fontFamily: 'var(--font-logo)',
-          fontWeight: 700,
-          fontSize: '42px',
-          letterSpacing: '-1px',
-          background: 'linear-gradient(135deg, #FF6038, #8B7396)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}
-      >
-        nyam
-      </h1>
-      <p style={{ marginTop: '8px', color: '#8C8580', fontSize: '15px' }}>
-        프로젝트 초기화 완료
-      </p>
-    </main>
-  )
-}
-```
+> **현재 상태**: `src/app/page.tsx`는 존재하지 않는다. 루트 `/` 경로는 `src/app/(main)/page.tsx`가 담당하며 (1.6에서 생성), middleware가 미인증 사용자를 `/auth/login`으로 리다이렉트한다.
 
 ### 10. cn 유틸리티
 

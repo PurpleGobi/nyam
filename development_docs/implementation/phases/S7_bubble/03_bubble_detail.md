@@ -37,9 +37,16 @@
 | application | `src/application/hooks/use-bubble-ranking.ts` | 랭킹 탭 데이터 |
 | application | `src/application/hooks/use-bubble-members.ts` | 멤버 탭 데이터 |
 | application | `src/application/hooks/use-bubble-list.ts` | 버블 목록 페이지 데이터 |
+| application | `src/application/hooks/use-bubble-records.ts` | 버블 기록 관련 로직 |
+| application | `src/application/hooks/use-bubbler-profile.ts` | 버블러 프로필 데이터 |
+| application | `src/application/hooks/use-user-bubbles.ts` | 사용자 버블 목록 조회 |
 | presentation/components | `src/presentation/components/bubble/bubble-hero.tsx` | 히어로 섹션 |
 | presentation/components | `src/presentation/components/bubble/bubble-quick-stats.tsx` | 퀵 통계 4칩 |
 | presentation/components | `src/presentation/components/bubble/bubble-info-sheet.tsx` | 정보 바텀 시트 (ℹ️) |
+| presentation/components | `src/presentation/components/bubble/bubble-icon.tsx` | 버블 아이콘 렌더링 |
+| presentation/components | `src/presentation/components/bubble/bubble-mini-header.tsx` | 버블 미니 헤더 |
+| presentation/components | `src/presentation/components/bubble/bubble-hot-strip.tsx` | 핫 버블 스트립 |
+| presentation/components | `src/presentation/components/bubble/bubble-quadrant.tsx` | 버블 사분면 |
 | presentation/components | `src/presentation/components/bubble/feed-card.tsx` | 피드 카드 뷰 |
 | presentation/components | `src/presentation/components/bubble/feed-compact.tsx` | 피드 컴팩트 뷰 |
 | presentation/components | `src/presentation/components/bubble/ranking-podium.tsx` | 랭킹 포디움 (Top 3) |
@@ -47,13 +54,15 @@
 | presentation/components | `src/presentation/components/bubble/member-grid.tsx` | 멤버 그리드 (2열) |
 | presentation/components | `src/presentation/components/bubble/member-list-view.tsx` | 멤버 리스트 뷰 |
 | presentation/components | `src/presentation/components/bubble/bubble-card.tsx` | 버블 목록 카드 |
+| presentation/components | `src/presentation/components/bubble/share-list-sheet.tsx` | 공유 목록 시트 |
 | presentation/containers | `src/presentation/containers/bubble-list-container.tsx` | 버블 목록 |
 | presentation/containers | `src/presentation/containers/bubble-detail-container.tsx` | 버블 상세 |
 | presentation/containers | `src/presentation/containers/bubbler-profile-container.tsx` | 버블러 프로필 |
 | app | `src/app/(main)/bubbles/page.tsx` | 버블 목록 라우트 |
 | app | `src/app/(main)/bubbles/[id]/page.tsx` | 버블 상세 라우트 |
-| app | `src/app/(main)/bubbles/[id]/members/[userId]/page.tsx` | 버블러 프로필 라우트 |
 | app | `src/app/(main)/bubbles/invite/[code]/page.tsx` | 초대 링크 라우트 |
+
+> **참고**: `/bubbles/[id]/members/[userId]` 버블러 프로필 라우트는 현재 미구현 (버블러 프로필은 컨테이너만 존재).
 
 ### 스코프 외
 
@@ -70,10 +79,13 @@
 
 ```
 /bubbles                              → 버블 목록 (버블 탭 / 버블러 탭)
+/bubbles/create                       → 버블 생성 페이지
 /bubbles/[id]                         → 버블 상세 (피드 / 랭킹 / 멤버)
-/bubbles/[id]/members/[userId]        → 버블러 프로필
+/bubbles/[id]/settings                → 버블 설정 페이지 (owner 전용)
 /bubbles/invite/[code]                → 초대 링크 → 버블 미리보기 → 가입
 ```
+
+> **참고**: `/bubbles/[id]/members/[userId]` 버블러 프로필 라우트는 현재 미구현.
 
 ### 2. 버블 목록 페이지 (/bubbles)
 
@@ -526,13 +538,13 @@ interface BubbleInfoSheetProps {
 ```
 [버블 목록]
   page.tsx → BubbleListContainer
-    → useBubbleList() → bubbleRepo.getUserBubbles(userId)
+    → useBubbleList() → bubbleRepo.findByUserId(userId)
     → 탭 전환: 버블 / 버블러
     → 필터/소팅 적용 (클라이언트 사이드 또는 쿼리 파라미터)
 
 [버블 상세]
   page.tsx → BubbleDetailContainer
-    → useBubbleDetail(bubbleId) → bubbleRepo.getById() + getMember(myId)
+    → useBubbleDetail(bubbleId) → bubbleRepo.findById() + getMember(myId)
     → 탭 상태 관리: feed | ranking | members
     → 각 탭은 독립 hook 사용
 

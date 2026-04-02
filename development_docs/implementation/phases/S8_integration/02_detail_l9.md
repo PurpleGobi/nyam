@@ -32,7 +32,9 @@
 src/presentation/components/detail/bubble-record-section.tsx
 src/presentation/components/detail/bubble-filter-chips.tsx
 src/presentation/components/detail/bubble-record-card.tsx
+src/presentation/components/detail/bubble-expand-panel.tsx    ← 버블별 평균 점수 확장 패널
 src/application/hooks/use-bubble-records.ts
+src/application/hooks/use-user-bubbles.ts                     ← 현재 유저 소속 버블 목록 조회
 ```
 
 ### 스코프 외
@@ -51,200 +53,180 @@ src/application/hooks/use-bubble-records.ts
 
 ```typescript
 interface BubbleRecordItem {
-  shareId: string;
-  recordId: string;
-  /** 기록 작성자 */
-  author: {
-    id: string;
-    nickname: string;
-    avatarColor: string;       // hex
-    level: number;
-    levelTitle: string;
-  };
-  /** 소속 버블 */
-  bubble: {
-    id: string;
-    name: string;
-    contentVisibility: 'rating_only' | 'rating_and_comment';
-  };
-  /** 기록 데이터 (가시성에 따라 일부 null) */
-  satisfaction: number;          // 항상 노출
-  comment: string | null;        // rating_and_comment + 멤버이면 노출
-  scene: string | null;          // 상황 태그
-  recordedAt: string;
-  /** 리액션 카운트 */
-  likeCount: number;
-  commentCount: number;
+  shareId: string
+  recordId: string
+  bubbleId: string
+  bubbleName: string
+  sharedBy: string
+  authorNickname: string
+  authorAvatar: string | null
+  authorAvatarColor: string | null
+  authorLevel: number
+  authorLevelTitle: string
+  satisfaction: number | null
+  axisX: number | null              // 사분면 X축 좌표
+  axisY: number | null              // 사분면 Y축 좌표
+  comment: string | null
+  scene: string | null
+  visitDate: string | null
+  likeCount: number
+  commentCount: number
+  sharedAt: string
+  contentVisibility: 'rating_only' | 'rating_and_comment'
+  /** 현재 뷰어가 해당 버블 멤버인지 */
+  isMember: boolean
 }
 
-interface UseBubbleRecordsReturn {
-  records: BubbleRecordItem[];
-  /** 필터링된 버블 목록 */
-  availableBubbles: { id: string; name: string }[];
-  /** 현재 선택된 버블 ID (null = 전체) */
-  selectedBubbleId: string | null;
-  setSelectedBubbleId: (id: string | null) => void;
-  isLoading: boolean;
-  hasMore: boolean;
+interface UseBubbleRecordsResult {
+  records: BubbleRecordItem[]       // 최대 5개
+  isLoading: boolean
+  hasMore: boolean                  // 5개 초과 시 true
+  selectedBubbleId: string | null
+  setSelectedBubbleId: (id: string | null) => void
+  refresh: () => void
 }
 
 export function useBubbleRecords(
   targetId: string,
   targetType: 'restaurant' | 'wine',
-): UseBubbleRecordsReturn {
-  // 1. bubble_shares JOIN records JOIN users
-  //    WHERE records.target_id = targetId AND records.target_type = targetType
-  // 2. 현재 유저의 소속 버블 목록 조회 (필터 칩용)
-  // 3. content_visibility 적용:
-  //    - 뷰어가 해당 버블 멤버인지 확인
-  //    - 멤버: 모든 필드 노출
-  //    - 비멤버 + rating_only: satisfaction만 (comment, photos 숨김)
-  //    - 비멤버 + rating_and_comment: satisfaction + comment
-  // 4. 최대 5개 반환, hasMore로 더보기 표시 여부
-}
+  userBubbleIds: string[],          // useUserBubbles에서 가져온 소속 버블 ID 목록
+): UseBubbleRecordsResult
 ```
 
-**Supabase 쿼리 구조**:
+**주요 동작**:
+- `bubbleRepo.getSharesForTarget(targetId, targetType, userBubbleIds)` 호출하여 해당 대상의 버블 공유 기록 조회
+- `isMember` 판별: `userBubbleIds.includes(record.bubbleId)`
+- `selectedBubbleId` 필터링: 선택된 버블이 있으면 해당 버블 기록만 표시
+- 결과를 최대 5개로 제한, `hasMore = filtered.length > 5`
+- `userBubbleIds` 변화 감지를 위해 `useRef` + join 키 패턴 사용
 
-```sql
-SELECT
-  bs.id as share_id,
-  bs.record_id,
-  r.satisfaction,
-  r.comment,
-  r.scene,
-  r.recorded_at,
-  u.id as author_id, u.nickname, u.avatar_color, u.total_xp,
-  b.id as bubble_id, b.name as bubble_name, b.content_visibility,
-  (SELECT COUNT(*) FROM reactions WHERE target_type='record' AND target_id=r.id AND reaction_type='like') as like_count,
-  (SELECT COUNT(*) FROM comments WHERE target_type='record' AND target_id=r.id) as comment_count
-FROM bubble_shares bs
-JOIN records r ON r.id = bs.record_id
-JOIN users u ON u.id = bs.shared_by
-JOIN bubbles b ON b.id = bs.bubble_id
-WHERE r.target_id = $targetId
-  AND r.target_type = $targetType
-ORDER BY bs.shared_at DESC
-LIMIT 6;  -- 5개 표시 + 1개로 hasMore 판별
-```
+#### `src/application/hooks/use-user-bubbles.ts`
+
+현재 로그인 유저의 소속 버블 목록을 조회하는 훅. `BubbleRecordSection`과 `BubbleFilterChips`에서 사용.
 
 ### 2. Presentation Layer
 
 #### `src/presentation/components/detail/bubble-filter-chips.tsx`
 
 ```typescript
+interface BubbleChipItem {
+  id: string
+  name: string
+  icon: string | null
+  iconBgColor: string | null
+}
+
 interface BubbleFilterChipsProps {
-  bubbles: { id: string; name: string }[];
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
-  /** 식당/와인에 따른 accent 색상 */
-  accentType: 'food' | 'wine';
+  bubbles: BubbleChipItem[]
+  selectedId: string | null
+  onSelect: (id: string | null) => void
 }
 ```
 
-**레이아웃** (RESTAURANT_DETAIL.md Layer 9 기준):
-
-```
-[전체] [직장 맛집] [와인 모임] [동네 맛집]
-```
-
-| 요소 | 스타일 |
-|------|--------|
-| 컨테이너 | `flex gap-2 overflow-x-auto`, 가로 스크롤, 스크롤바 숨김 |
-| 칩 (비활성) | `padding: 5px 12px`, `border-radius: 20px`, `font-size: 11px`, `font-weight: 500`, `bg: var(--bg)`, `border: 1.5px solid var(--border)`, `color: var(--text-sub)` |
-| 칩 (활성, 식당) | `bg: var(--accent-food-light)`, `border-color: var(--accent-food)`, `color: var(--accent-food)`, `font-weight: 600` |
-| 칩 (활성, 와인) | `bg: var(--accent-wine-light)`, `border-color: var(--accent-wine)`, `color: var(--accent-wine)`, `font-weight: 600` |
-| 선택 모드 | 단일 선택 (radio) |
+**구현 특징**:
+- 공통 `FilterChipGroup` UI 컴포넌트 래핑 사용
+- "전체" 칩 + 소속 버블별 칩
+- 활성 칩: `BubbleIcon` + 이름 + `Check` 아이콘, 버블의 `iconBgColor` 배경
+- 비활성 칩: `filter-chip` 기본 스타일
+- 단일 선택 (radio) — 같은 칩 재탭 시 `null`(전체)로 토글
 
 #### `src/presentation/components/detail/bubble-record-card.tsx`
 
 ```typescript
 interface BubbleRecordCardProps {
-  record: BubbleRecordItem;
+  authorNickname: string
+  authorAvatar: string | null
+  authorAvatarColor: string | null
+  authorLevel: number
+  authorLevelTitle: string
+  satisfaction: number | null
+  axisX: number | null
+  axisY: number | null
+  comment: string | null
+  scene: string | null
+  visitDate: string | null
   /** 현재 뷰어가 해당 버블 멤버인지 */
-  isMember: boolean;
-  accentType: 'food' | 'wine';
-  onTap?: () => void;
+  isMember: boolean
+  /** 버블의 콘텐츠 가시성 설정 */
+  contentVisibility: 'rating_only' | 'rating_and_comment'
+  accentType: 'food' | 'wine'
+  onPress?: () => void
 }
 ```
 
-**카드 레이아웃** (RESTAURANT_DETAIL.md L9 와이어프레임 기준):
+**카드 레이아웃**:
 
 ```
-┌────────────────────────────────────┐
-│ [👤32] 김영수  [지역 Lv.9]  버블명  │  ← top row
-│                              90    │  ← 점수 (우측)
-│ "메밀국수 진짜 맛있다..."          │  ← one-liner (멤버/visibility 조건)
-│ 혼밥 · 3일 전       ♡4  💬2       │  ← bottom row
-└────────────────────────────────────┘
+┌────────────────────────────────────────────────────┐
+│ [아바타40] 이름 [레벨타이틀 Lv.N]   [미니사분면] 점수 │
+│           한줄평 · 상황 · 방문일                     │
+└────────────────────────────────────────────────────┘
 ```
 
-**스타일 (목업 기준)**:
+**스타일**:
 
 | 요소 | CSS |
 |------|-----|
-| 카드 | `border: 1px solid var(--border)`, `border-radius: 12px`, `padding: 12px` |
-| 아바타 | `width: 32px; height: 32px; border-radius: 50%`, 그라디언트 배경 (avatar_color 기반) |
-| 사용자명 | `font-size: 13px; font-weight: 700; color: var(--text)` |
-| 레벨 뱃지 | 인라인, `font-size: 11px; font-weight: 500; border-radius: 4px; padding: 1px 5px`, `bg: var(--bg-section); color: var(--text-sub)` |
-| 버블명 | `font-size: 11px; color: var(--text-hint)`, 이름 아래 줄 |
-| 점수 | `font-size: 14px; font-weight: 800`, 식당: `color: var(--accent-food)`, 와인: `color: var(--accent-wine)` |
-| 한줄평 | `font-size: 12px; color: var(--text-sub)`, 1줄 클램프 |
-| 메타 (상황+시간) | `font-size: 11px; color: var(--text-hint)` |
-| 리액션 | `heart` + `message-circle` lucide 12px, `color: var(--text-hint)` |
-| 터치 피드백 | `active:scale-[0.98]`, `transition: transform 0.1s` |
+| 카드 행 | `flex items-center gap-3; padding: 8px 0; active:scale-[0.985]` |
+| 아바타 | `40×40px; border-radius: 50%`, `avatarColor` 배경, 이니셜 or Image |
+| 사용자명 | `13px 700 var(--text); truncate` |
+| 레벨 뱃지 | `10px 500; bg: var(--bg-section); color: var(--text-sub); border-radius: 4px; padding: 1px 5px` |
+| 미니 사분면 | `<MiniQuadrant>` 48px — axisX/axisY/satisfaction 존재 시 표시 |
+| 점수 | `18px 800`, `getGaugeColor(satisfaction)` 동적 색상, 우측 정렬 |
+| 한줄평 | `11px var(--text-sub); truncate` — showComment 조건 |
+| 메타 (상황+방문일) | `11px var(--text-hint)` — showMeta 조건 (멤버만) |
 
 **content_visibility 제한 렌더링**:
 
 ```typescript
-// 비멤버에게 보이는 것
-if (!isMember) {
-  switch (record.bubble.contentVisibility) {
-    case 'rating_only':
-      // 아바타 + 레벨 + 점수만 표시
-      // comment, scene, likeCount, commentCount 숨김
-      break;
-    case 'rating_and_comment':
-      // 아바타 + 레벨 + 점수 + 한줄평만 표시
-      // scene, likeCount, commentCount 숨김 (BUBBLE.md §4-5: 비멤버는 "점수 + 한줄평"만)
-      break;
-  }
-}
-// 멤버: 모든 필드 표시
+const showComment = isMember || contentVisibility === 'rating_and_comment'
+const showMeta = isMember
 ```
+
+- 비멤버 + `rating_only`: 아바타 + 레벨 + 점수(+사분면)만 표시
+- 비멤버 + `rating_and_comment`: + 한줄평 추가 표시
+- 멤버: 모든 필드(한줄평, 상황, 방문일) 표시
+
+#### `src/presentation/components/detail/bubble-expand-panel.tsx`
+
+버블별 평균 점수를 확장 패널 형태로 표시하는 컴포넌트.
+
+```typescript
+interface BubbleScore {
+  bubbleId: string
+  bubbleName: string
+  icon: string | null
+  iconBgColor: string | null
+  ratingCount: number
+  avgScore: number | null
+}
+
+interface BubbleExpandPanelProps {
+  isOpen: boolean
+  bubbleScores: BubbleScore[]
+  accentColor: string   // '--accent-food' | '--accent-wine'
+}
+```
+
+- 버블 아이콘(24px) + 버블명 + "N명 평가" + 평균 점수 표시
+- `maxHeight` 애니메이션으로 열림/닫힘 전환 (0.25s ease)
 
 #### `src/presentation/components/detail/bubble-record-section.tsx`
 
 ```typescript
 interface BubbleRecordSectionProps {
-  targetId: string;
-  targetType: 'restaurant' | 'wine';
+  targetId: string
+  targetType: 'restaurant' | 'wine'
 }
 ```
 
-**구조**:
-
-```tsx
-<section className="section">
-  <SectionHeader icon="circle-dot" title="버블 기록" />
-  <BubbleFilterChips ... />
-  {records.length === 0 ? (
-    <EmptyState
-      icon="message-circle"       // 28px, --text-hint
-      message="아직 버블 기록이 없어요"
-    />
-  ) : (
-    <>
-      {records.slice(0, 5).map(r => <BubbleRecordCard key={r.shareId} ... />)}
-      {hasMore && <MoreLink href={`...`} label="더보기" />}
-    </>
-  )}
-</section>
-```
-
-- `.section` padding: `16px 20px`
-- 카드 간 gap: `8px`
-- "더보기" 링크: `font-size: 13px; font-weight: 600; color: var(--accent-social); text-align: center; padding: 8px 0`
+**구현 특징**:
+- `useAuth()`로 현재 유저 조회
+- `useUserBubbles(userId)`로 소속 버블 목록 + bubbleIds 가져옴
+- `useBubbleRecords(targetId, targetType, userBubbleIds)`로 기록 조회
+- 헤더: `CircleDot` 아이콘(14px) + "버블 기록" (15px 700)
+- 빈 상태: `MessageCircle`(28px) + "아직 버블 기록이 없어요" + "버블에서 {이 식당/이 와인}에 대한 이야기를 나눠보세요"
+- 더보기 버튼: `13px 600 var(--accent-social); text-align: center`
 
 ---
 
@@ -255,7 +237,7 @@ interface BubbleRecordSectionProps {
 | 02_detail_restaurant.html Layer 9 필터 칩 | `<BubbleFilterChips>` |
 | 02_detail_restaurant.html Layer 9 버블 카드 | `<BubbleRecordCard>` |
 | 02_detail_restaurant.html Layer 9 전체 섹션 | `<BubbleRecordSection>` |
-| 02_detail_wine.html Layer 9 (동일 구조) | 동일 컴포넌트, `accentType="wine"` |
+| 02_detail_wine.html Layer 9 (동일 구조) | 동일 컴포넌트, `targetType="wine"` |
 
 ---
 
@@ -264,19 +246,22 @@ interface BubbleRecordSectionProps {
 ```
 [식당/와인 상세 페이지]
   → <BubbleRecordSection targetId={id} targetType="restaurant" />
-    → useBubbleRecords(id, "restaurant")
-      → Supabase: bubble_shares JOIN records JOIN users JOIN bubbles
-      → 현재 유저 소속 버블 목록 조회 (bubble_members WHERE user_id = me)
-      → content_visibility 조건 적용
-      → records[] + availableBubbles[] 반환
-    → <BubbleFilterChips> 렌더
-    → records.map(r => <BubbleRecordCard isMember={소속여부} ... />)
-      → isMember 판별: availableBubbles에 r.bubble.id 포함 여부
+    → useAuth() → user.id
+    → useUserBubbles(userId) → bubbles[], bubbleIds[]
+    → useBubbleRecords(id, "restaurant", bubbleIds)
+      → bubbleRepo.getSharesForTarget(targetId, targetType, bubbleIds)
+      → isMember 판별: userBubbleIds.includes(record.bubbleId)
+      → records[] 반환 (최대 5개)
+    → <BubbleFilterChips> 렌더 (useUserBubbles 결과 사용)
+    → records.map(r => <BubbleRecordCard
+        isMember={r.isMember}
+        contentVisibility={r.contentVisibility}
+        ... />)
 
 [필터 칩 탭]
   → setSelectedBubbleId(bubbleId)
-    → useBubbleRecords 내부: WHERE bubble_id = selectedBubbleId 추가
-    → 재조회 → 리렌더
+    → useBubbleRecords 내부 필터링 (records.filter(r => r.bubbleId === selectedBubbleId))
+    → 리렌더
 ```
 
 ---
@@ -285,16 +270,16 @@ interface BubbleRecordSectionProps {
 
 ```
 □ 식당 상세 L9: 버블 기록 섹션 L8 아래에 표시
-□ 와인 상세 L9: 동일 구조, accent-wine 색상
+□ 와인 상세 L9: 동일 구조, accentType="wine"
 □ 필터 칩: 전체 + 소속 버블별 단일 선택
-□ 활성 칩: accent-food-light/accent-wine-light 배경, accent 보더+텍스트
-□ 기록 카드: 아바타(32px) + 이름 + 레벨 배지 + 버블명 + 점수 + 한줄평
-□ content_visibility='rating_only' 비멤버: 아바타 + Lv + 점수만
+□ 활성 칩: iconBgColor 배경, 흰색 텍스트, Check 아이콘
+□ 기록 카드: 아바타(40px) + 이름 + 레벨 배지 + 미니사분면 + 점수
+□ content_visibility='rating_only' 비멤버: 아바타 + Lv + 점수(+사분면)만
 □ content_visibility='rating_and_comment' 비멤버: + 한줄평
-□ 멤버: 모든 필드 표시
-□ 최대 5개 + "더보기" 링크
-□ 빈 상태: message-circle 28px + "아직 버블 기록이 없어요"
-□ 카드 탭: scale(0.98) 피드백
+□ 멤버: 모든 필드 표시 (한줄평, 상황, 방문일)
+□ 최대 5개 + "더보기" 버튼
+□ 빈 상태: MessageCircle 28px + "아직 버블 기록이 없어요"
+□ 카드 탭: scale(0.985) 피드백
 □ 360px 레이아웃 정상
 □ R1~R5 위반 없음
 □ pnpm build / lint 통과

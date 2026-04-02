@@ -248,6 +248,11 @@ expect(thresholds.find(t => t.level === 99)?.requiredXp).toBe(100000);
 | `follow_request` | `user-plus` | `--accent-social` | [수락][거절] |
 | `bubble_join_approved` | `circle-check` | `--positive` | 없음 |
 | `follow_accepted` | `user-check` | `--accent-social` | 없음 |
+| `bubble_invite` | `mail` | `--accent-social` | [수락][거절] |
+| `bubble_new_record` | `file-plus` | `--accent-food` | 없음 |
+| `bubble_member_joined` | `user-plus-2` | `--accent-social` | 없음 |
+| `reaction_like` | `heart` | `--negative` | 없음 |
+| `comment_reply` | `message-circle` | `--accent-social` | 없음 |
 
 ### 6-4. 액션 처리
 
@@ -323,7 +328,7 @@ expect(thresholds.find(t => t.level === 99)?.requiredXp).toBe(100000);
 | XP 공식 | XP_SYSTEM.md §4 기록 XP 테이블과 일치 |
 | 레벨 커브 | XP_SYSTEM.md §5 앵커 14개 정확히 일치 |
 | 레벨 색상 | DESIGN_SYSTEM.md + XP_SYSTEM.md §5 색상 일치 |
-| 알림 유형 | 09_NOTIFICATIONS.md 5가지 유형과 정확히 일치 |
+| 알림 유형 | 09_NOTIFICATIONS.md 10가지 유형과 정확히 일치 |
 | 프로필 레이아웃 | 10_PROFILE.md 와이어프레임과 일치 |
 | 설정 항목 | 11_SETTINGS.md 전체 항목/DB 필드와 일치 |
 | DB 필드 | DATA_MODEL.md 테이블 정의와 일치 |

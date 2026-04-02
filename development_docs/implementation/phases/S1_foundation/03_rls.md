@@ -623,6 +623,16 @@ supabase migration new 012_rls
 supabase db push --linked
 ```
 
+### 이후 추가된 RLS 마이그레이션
+
+S1 이후 스프린트에서 추가된 RLS 관련 마이그레이션:
+
+| 파일 | 역할 |
+|------|------|
+| `025_bubble_owner_read_policy.sql` | 버블 오너 읽기 정책 추가 |
+| `033_bubble_member_read_rls.sql` | 버블 멤버 읽기 RLS 수정 |
+| `034_rls_security_fixes.sql` | RLS 보안 수정 |
+
 ---
 
 ## 검증 체크리스트

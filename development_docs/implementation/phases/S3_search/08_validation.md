@@ -98,7 +98,7 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 ### 4.1 카메라 → AI 인식 → 기록
 
 ```
-□ FAB(+) 탭 → 현재 탭(식당)에 따라 카메라 화면 진입
+□ FAB(+) 탭 → 현재 홈탭 기반 직접 진입 (카메라 화면)
 □ 촬영 버튼 → 카메라 실행 (모바일)
 □ 앨범에서 추가 → 갤러리 열림
 □ 촬영/선택 → AI 인식 로딩 표시
@@ -117,16 +117,18 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 ### 4.2 검색 → 자동완성 → 결과
 
 ```
-□ "목록에서 추가" 탭 → 검색 화면 진입
-□ 검색 전: 근처 식당 목록 표시 (GPS 기반)
+□ "목록에서 추가" → 검색 화면 진입 (/search)
+□ 검색 전: 근처 식당 목록 표시 (카카오맵 API 기반, 장르/반경 필터)
 □ 1자 입력 → 아무 동작 없음 (2자 미만)
 □ 2자 이상 입력 → 300ms debounce 후 자동완성
 □ fuzzy matching: "스시 코우지" = "스시코우지" 매칭 확인
 □ fuzzy matching: "스시코우지점" → "스시코우지" 매칭 (접미사 무시)
 □ 검색 결과: "기록 있음" 뱃지 (accent-food/accent-wine)
 □ "기록 있음" 항목 선택 → 토스트 "다녀온 적 있어요" → 상세 페이지 이동
-□ 새 항목 선택 → 성공 화면 (status='checked')
+□ 새 항목 선택 → /record 페이지 이동
 □ 와인 검색: 와인명, 생산자 모두 검색 가능
+□ 와인 검색: DB 결과 < 3개 → AI 와인 검색 자동 트리거 ("AI 추천 와인" 섹션)
+□ 와인 검색: AI 후보 선택 → /api/wines/detail-ai → DB 저장 → /record 이동
 □ 와인 검색: 빈티지별 별도 표시 (같은 와인 다른 빈티지)
 □ 검색 결과 없음 → "직접 등록하기" 표시
 ```
@@ -135,14 +137,14 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 
 ```
 □ 식당 검색: Nyam DB 결과 < 5개 → 외부 API 호출
-□ 카카오 로컬 API 정상 응답
+□ 카카오 로컬 API 정상 응답 (nearby도 카카오 API 사용)
 □ 네이버 지역 검색 API 정상 응답
 □ 구글 Places API 정상 응답
 □ 외부 API 1개 실패 → 나머지 결과는 정상 표시
 □ 외부 API 전체 실패 → Nyam DB 결과만 표시 + "직접 등록하기"
 □ 외부 결과 선택 → restaurants 테이블 자동 INSERT
-□ 중복 제거: 같은 이름 식당 Nyam DB + 외부 동시 표시 안 함
-□ 정렬: Nyam DB 우선 → 거리순
+□ 중복 제거: isSameRestaurant() — 이름+좌표 근접 (Levenshtein 편집 거리 포함)
+□ 정렬: 거리순 → 이름순
 ```
 
 ### 4.4 EXIF GPS 검증
@@ -172,8 +174,8 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 ### 4.6 풀플로우 E2E
 
 ```
-□ 카메라 풀플로우: FAB→카메라→AI→기록→저장→성공 (status='rated')
-□ 검색 풀플로우: FAB→검색→선택→성공 (status='checked')
+□ 카메라 풀플로우: FAB→카메라→AI→빠른추가(checked)→성공 or 기록→저장→성공(rated)
+□ 검색 풀플로우: FAB→/search→선택→/record 이동
 □ 상세 FAB 풀플로우: 상세→FAB→기록→저장→성공 (status='rated', 참조점 표시)
 □ 성공 화면: "내용 추가하기" → 상세 페이지
 □ 성공 화면: "한 곳 더 추가" → 플로우 재시작
@@ -204,7 +206,7 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 ## 6. SSOT 정합성
 
 ```
-□ 검색 결과 항목: SEARCH_REGISTER.md §3 "가게명 볼드 + 장르·위치 서브" 일치
+□ 검색 결과 항목: SEARCH_REGISTER.md §3 "가게명 볼드 + genreDisplay·위치 서브" 일치
 □ 와인 검색 결과: SEARCH_REGISTER.md §6 "와인명+빈티지 볼드 + 타입·산지 서브" 일치
 □ 근처 식당: SEARCH_REGISTER.md §3 "아이콘 + 가게명 + 장르·위치 + 거리 + 기록여부" 일치
 □ 성공 화면: RECORD_FLOW.md §7 레이아웃 일치
@@ -242,9 +244,11 @@ grep -rn "SECURITY DEFINER\|security definer" supabase/ --include="*.sql"
 □ MASTER_TRACKER.md: S3 모든 태스크 상태 → done
 □ CURRENT_SPRINT.md: S3 완료 기록 + S4 프리뷰
 □ DECISIONS_LOG.md: S3 중 주요 결정 기록
-  - 예: EXIF 파싱 라이브러리 선택 (piexifjs vs 자체 구현)
-  - 예: 외부 API 폴백 전략 (동시 호출 vs 순차)
-  - 예: 와인 중복 판정 기준 (이름+빈티지)
+  - EXIF 파싱: 외부 라이브러리 없이 자체 바이너리 파싱 구현
+  - 외부 API 폴백 전략: 3종 동시 호출 (Promise.allSettled)
+  - 와인 중복 판정: 다단계 퍼지 매칭 (이름 → 키워드 → 생산자+빈티지)
+  - AI 인식: gemini.ts → ai-recognition.ts 리팩토링 (LLM provider 추상화)
+  - nearby API: PostGIS RPC 대신 카카오맵 API 사용
 □ 이전 스프린트 (S1, S2) 기능 회귀 없음 확인
 ```
 

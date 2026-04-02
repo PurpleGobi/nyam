@@ -13,6 +13,7 @@
 |--------|------|------|
 | `/profile` | `src/app/(main)/profile/page.tsx` | ProfileContainer 렌더링만 |
 | `/profile/wrapped` | `src/app/(main)/profile/wrapped/page.tsx` | WrappedContainer 렌더링만 |
+| `/users/[id]` | `src/app/(main)/users/[id]/page.tsx` | BubblerProfileContainer 렌더링 (타인 프로필, `?bubble=` 쿼리 지원) |
 
 ---
 
@@ -38,6 +39,7 @@ export interface UserProfile {
   activeVerified: number;
   recordCount: number;
   currentStreak: number;
+  preferredAreas: string[] | null;
   createdAt: string;
 }
 
@@ -140,6 +142,8 @@ export interface WrappedData {
   bubbles: { name: string; avatarColor: string }[];
 }
 
+export type WrappedCategory = 'all' | 'restaurant' | 'wine';
+
 /** 상황별 방문 */
 export interface SceneVisit {
   scene: string;                  // DB scene 값
@@ -168,7 +172,40 @@ import type {
   UserProfile, ActivitySummary, HeatmapCell, RestaurantStats, WineStats,
   BarChartItem, ScoreDistribution, MonthlySpending, MapMarker,
   WineRegionMapData, SceneVisit, WineTypeDistribution, WrappedData,
+  WrappedCategory,
 } from '@/domain/entities/profile';
+
+/** 버블러 프로필 관련 인터페이스 (getBubblerProfile용) */
+export interface BubblerPickItem {
+  id: string; targetId: string; targetType: 'restaurant' | 'wine';
+  name: string; meta: string; satisfaction: number | null;
+  photoUrl: string | null; genre: string | null;
+}
+
+export interface BubblerRecentRecord {
+  id: string; targetId: string; targetType: 'restaurant' | 'wine';
+  targetName: string; meta: string; satisfaction: number | null;
+  comment: string | null; photoUrl: string | null; visitDate: string | null;
+}
+
+export interface BubblerBubbleContext {
+  bubbleId: string; bubbleName: string; bubbleIcon: string | null;
+  rank: number | null; rankTotal: number | null; memberSince: string;
+  tasteMatchPct: number | null; tasteMatchCount: number | null;
+  tasteMatchDetail: string | null; commonTargetCount: number;
+}
+
+export interface BubblerProfileData {
+  nickname: string; handle?: string | null; avatarUrl?: string | null;
+  avatarColor?: string | null; bio?: string | null;
+  level?: number; levelTitle?: string; tasteTags?: string[];
+  categories?: { name: string; percentage: number }[];
+  avgSatisfaction?: number; scoreTendencyLabel?: string;
+  totalRecords?: number; topRegions?: string[];
+  topPicks?: BubblerPickItem[]; recentRecords?: BubblerRecentRecord[];
+  heatmap?: HeatmapCell[]; bubbleContext?: BubblerBubbleContext | null;
+  currentStreak?: number; activeDuration?: string;
+}
 
 export interface ProfileRepository {
   getUserProfile(userId: string): Promise<UserProfile>;
@@ -192,7 +229,10 @@ export interface ProfileRepository {
   getWineTypeDistribution(userId: string): Promise<WineTypeDistribution[]>;
 
   // Wrapped
-  getWrappedData(userId: string, category: 'all' | 'restaurant' | 'wine'): Promise<WrappedData>;
+  getWrappedData(userId: string, category: WrappedCategory): Promise<WrappedData>;
+
+  // 버블러 프로필
+  getBubblerProfile(userId: string, bubbleId: string | null, targetType?: 'restaurant' | 'wine'): Promise<BubblerProfileData | null>;
 }
 ```
 
@@ -203,14 +243,16 @@ export interface ProfileRepository {
 ### `src/application/hooks/use-profile.ts`
 
 ```typescript
+'use client'
+
 import useSWR from 'swr';
 import { profileRepo, xpRepo } from '@/shared/di/container';
-import { useAuth } from '@/application/hooks/use-auth';
+import { useAuth } from '@/presentation/providers/auth-provider';
 
-/** 프로필 전체 데이터 로드 (5~6 병렬 요청) */
+/** 프로필 전체 데이터 로드 (병렬 요청) */
 export function useProfile() {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
 
   // 1. 유저 프로필 기본 정보
   const { data: profile, isLoading: profileLoading } = useSWR(
@@ -266,14 +308,16 @@ export function useProfile() {
 ### `src/application/hooks/use-profile-stats.ts`
 
 ```typescript
+'use client'
+
 import useSWR from 'swr';
 import { profileRepo } from '@/shared/di/container';
-import { useAuth } from '@/application/hooks/use-auth';
+import { useAuth } from '@/presentation/providers/auth-provider';
 
-/** 식당/와인 세부 통계 (탭 전환 시 lazy load) */
+/** 식당 세부 통계 (탭 전환 시 lazy load) */
 export function useRestaurantStats() {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
 
   const { data: stats } = useSWR(userId ? ['restaurant-stats', userId] : null, ([, id]) => profileRepo.getRestaurantStats(id));
   const { data: genres } = useSWR(userId ? ['genre-dist', userId] : null, ([, id]) => profileRepo.getGenreDistribution(id));
@@ -285,9 +329,10 @@ export function useRestaurantStats() {
   return { stats, genres, scoreDist, monthlySpending, mapMarkers, scenes };
 }
 
+/** 와인 세부 통계 (탭 전환 시 lazy load) */
 export function useWineStats() {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
 
   const { data: stats } = useSWR(userId ? ['wine-stats', userId] : null, ([, id]) => profileRepo.getWineStats(id));
   const { data: varieties } = useSWR(userId ? ['variety-dist', userId] : null, ([, id]) => profileRepo.getVarietyDistribution(id));
@@ -303,18 +348,20 @@ export function useWineStats() {
 ### `src/application/hooks/use-wrapped.ts`
 
 ```typescript
+'use client'
+
 import useSWR from 'swr';
 import { profileRepo } from '@/shared/di/container';
-import { useAuth } from '@/application/hooks/use-auth';
-import type { WrappedData } from '@/domain/entities/profile';
+import { useAuth } from '@/presentation/providers/auth-provider';
+import type { WrappedData, WrappedCategory } from '@/domain/entities/profile';
 
-export function useWrapped(category: 'all' | 'restaurant' | 'wine') {
+export function useWrapped(category: WrappedCategory) {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
 
   const { data } = useSWR<WrappedData>(
     userId ? ['wrapped', userId, category] : null,
-    ([, id]) => profileRepo.getWrappedData(id, category),
+    ([, id, cat]: [string, string, WrappedCategory]) => profileRepo.getWrappedData(id, cat),
   );
 
   return { data };
@@ -329,15 +376,16 @@ export function useWrapped(category: 'all' | 'restaurant' | 'wine') {
 
 ```
 ProfileContainer
+├── AppHeader
+├── FabBack
 ├── ProfileHeader
-│   ├── AvatarWithBadge (64px 원형, 그라디언트, 이니셜, Lv.N 뱃지)
+│   ├── Avatar (64px 원형, avatarColor 배경, 이니셜, Lv.N 뱃지)
 │   └── TasteIdentityCard (AI 텍스트 + 태그 pills + 공유 버튼)
-├── ActivitySection
-│   ├── TotalLevelCard (레벨 + XP + 진행바)
-│   ├── OverviewGrid (2×2: 식당방문/와인시음/평균점수/이번달XP)
-│   ├── ActivityHeatmap (13×7 그리드 + 통계 3개)
-│   └── RecentXpList (최근 XP 4~5개)
-├── StatTabs (sticky, glassmorphism — [식당|와인])
+├── TotalLevelCard (레벨 + XP + 진행바)
+├── OverviewGrid (2×2: 식당방문/와인시음/평균점수/이번달XP)
+├── ActivityHeatmap (13×7 그리드 + 통계 3개)
+├── RecentXpList (최근 XP 4~5개)
+├── StatTabContainer → StatTabs (sticky — [식당|와인])
 │   ├── RestaurantPanel
 │   │   ├── StatSummaryCards (3열: 방문/평균점수/방문지역)
 │   │   ├── LevelSection (mini-tabs: [지역|장르])
@@ -351,8 +399,8 @@ ProfileContainer
 │       ├── StatSummaryCards (3열: 시음수/평균점수/셀러보유)
 │       ├── LevelSection (mini-tabs: [산지|품종])
 │       │   └── LevelList
-│       ├── WineRegionMap (3단계 드릴다운)
-│       ├── HorizontalBarChart (품종, 껍질 두께 순, 토글)
+│       ├── WineRegionMapSimple (국가별 바 리스트, S10에서 3단계 드릴다운 고도화 예정)
+│       ├── HorizontalBarChart (품종) + VarietyToggle (전체/마신 품종 토글)
 │       ├── VerticalBarChart (점수 분포)
 │       ├── VerticalBarChart (월별 소비, 병 수 기준)
 │       └── HorizontalBarChart (타입별 분포)
@@ -376,6 +424,10 @@ interface ProfileHeaderProps {
   profile: UserProfile;
   level: number;
   levelColor: string;
+  tasteSummary?: string | null;
+  tasteTags?: string[] | null;
+  recordCount?: number;
+  onSharePress?: () => void;
 }
 ```
 

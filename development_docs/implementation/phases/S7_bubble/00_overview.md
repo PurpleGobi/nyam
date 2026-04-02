@@ -18,14 +18,16 @@
 
 ## 산출물
 
-- [ ] 버블 domain 엔티티 + infrastructure
-- [ ] 버블 생성/가입/초대 플로우
-- [ ] 가입 정책 5종 (invite_only/closed/manual_approve/auto_approve/open)
-- [ ] 버블 상세 (피드/랭킹/멤버 탭)
-- [ ] 피드 뷰모드 (피드/카드/리스트)
-- [ ] 댓글 + 리액션 (want/check/fire)
-- [ ] 버블 역할/권한 시스템 (owner/admin/member/follower)
-- [ ] 버블 랭킹 스냅샷 크론 (주간 — bubble_ranking_snapshots)
+- [x] 버블 domain 엔티티 + infrastructure (BubbleShareRule, bubble-share-sync 포함)
+- [x] 버블 생성/가입/초대 플로우
+- [x] 가입 정책 5종 (invite_only/closed/manual_approve/auto_approve/open)
+- [x] 버블 상세 (피드/랭킹/멤버 탭)
+- [x] 피드 뷰모드 (피드/카드/리스트)
+- [x] 댓글 + 리액션 (want/check/fire)
+- [x] 버블 역할/권한 시스템 (owner/admin/member/follower)
+- [x] 버블 랭킹 스냅샷 크론 (주간 — bubble_ranking_snapshots)
+- [x] 자동 공유 규칙 시스템 (share_rule, auto_synced)
+- [x] 버블 아이콘 업로드 (uploadBubbleIcon)
 
 ---
 
@@ -57,14 +59,15 @@
 ## 완료 기준
 
 ```
-□ 버블 생성 (이름, 아이콘, 설명, 가입 조건, 공개 범위)
-□ 가입 정책 5종 동작 (invite_only/closed/manual_approve/auto_approve/open)
-□ 초대 링크 생성 → 가입 플로우
-□ 경험치 기반 가입 조건 검증 (총 XP / 활성 XP 조합)
-□ 피드 탭: 3종 뷰모드, 필터, 소팅
-□ 랭킹 탭: 주간 Top N + bubble_ranking_snapshots 크론으로 주간 스냅샷 생성 + 등락 ▲▼ 표시
-□ 멤버 탭: 목록, 역할, 초대
-□ 리액션 (want/check/fire) + 댓글 CRUD
-□ 역할별 권한 동작 (owner/admin/member/follower — AUTH.md §2 기준)
-□ content_visibility에 따른 비멤버 데이터 제한 (rating_only/rating_and_comment)
+☑ 버블 생성 (이름, 아이콘, 설명, 가입 조건, 공개 범위)
+☑ 가입 정책 5종 동작 (invite_only/closed/manual_approve/auto_approve/open)
+☑ 초대 링크 생성 → 가입 플로우
+☑ 경험치 기반 가입 조건 검증 (총 XP / 활성 XP 조합)
+☑ 피드 탭: 카드/컴팩트 뷰모드, 필터, 소팅
+☑ 랭킹 탭: 주간 Top N + bubble_ranking_snapshots 크론으로 주간 스냅샷 생성 + 등락 ▲▼ 표시
+☑ 멤버 탭: 목록, 역할, 초대
+☑ 리액션 (want/check/fire) + 댓글 CRUD
+☑ 역할별 권한 동작 (owner/admin/member/follower — AUTH.md §2 기준)
+☑ content_visibility에 따른 비멤버 데이터 제한 (rating_only/rating_and_comment)
+☑ 자동 공유 규칙 시스템 (share_rule JSONB, auto_synced 플래그, bubble-share-sync 서비스)
 ```

@@ -62,11 +62,12 @@
   --color-positive: var(--positive);
   --color-caution: var(--caution);
   --color-negative: var(--negative);
-  --color-gauge-1: var(--gauge-1);
-  --color-gauge-2: var(--gauge-2);
-  --color-gauge-3: var(--gauge-3);
-  --color-gauge-4: var(--gauge-4);
-  --color-gauge-5: var(--gauge-5);
+  --color-gauge-food-min: var(--gauge-food-min);
+  --color-gauge-food-max: var(--gauge-food-max);
+  --color-gauge-exp-min: var(--gauge-exp-min);
+  --color-gauge-exp-max: var(--gauge-exp-max);
+  --color-gauge-total-min: var(--gauge-total-min);
+  --color-gauge-total-max: var(--gauge-total-max);
   --radius-xs: var(--r-xs);
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);
@@ -122,14 +123,20 @@
   --caution: #C9A96E;
   --negative: #B87272;
 
-  /* ── §1 만족도 게이지 (5단계) ── */
-  --gauge-worst: #C4B5A8;
-  --gauge-best: #7A9BAE;
-  --gauge-1: #C4B5A8;   /* 0~20: 웜그레이 */
-  --gauge-2: #B0ADA4;   /* 21~40: 쿨그레이 */
-  --gauge-3: #9FA5A3;   /* 41~60: 세이지 */
-  --gauge-4: #889DAB;   /* 61~80: 스틸블루 */
-  --gauge-5: #7A9BAE;   /* 81~100: 슬레이트 */
+  /* ── §1 만족도 게이지 (채널 기반) ── */
+  /* 실제 색상은 shared/utils/gauge-color.ts에서 채널별로 관리 */
+  /* food: #C4B5A8 → #A83E1A (coral 계열) */
+  /* experience: #B5B0BA → #6B3FA0 (보라 계열) */
+  /* total: #C4BCA8 → #C87A0A (골드 계열) */
+  /* wine-total: #D8D0E0 → #A050D0 (밝은 보라 계열) */
+  --gauge-food-min: #C4B5A8;
+  --gauge-food-max: #A83E1A;
+  --gauge-exp-min: #B5B0BA;
+  --gauge-exp-max: #6B3FA0;
+  --gauge-total-min: #C4BCA8;
+  --gauge-total-max: #C87A0A;
+  --gauge-wine-min: #D8D0E0;
+  --gauge-wine-max: #A050D0;
 
   /* ── §1 상황 태그 색상 ── */
   --scene-solo: #7A9BAE;       /* 혼밥/혼술 */
@@ -138,6 +145,7 @@
   --scene-family: #C9A96E;     /* 가족 */
   --scene-business: #8B7396;   /* 회식/접대 */
   --scene-drinks: #B87272;     /* 술자리 */
+  --scene-decanting: #A0896C;  /* 디캔팅 */
 
   /* ── §2 Typography ── */
   --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
@@ -238,7 +246,7 @@
   html {
     font-family: var(--font);
     color: var(--text);
-    background-color: var(--bg);
+    background-color: var(--bg-page);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -253,6 +261,36 @@
    ============================================================ */
 
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 클릭 가능 요소 포인터 커서 일괄 적용 */
+button,
+a,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+label[for],
+summary {
+  cursor: pointer;
+}
+
+/* 전역 스크롤바 숨김 */
+html, body, * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+::-webkit-scrollbar {
+  display: none;
+
   .text-display {
     font-size: 36px;
     font-weight: 800;
@@ -339,39 +377,38 @@ Comfortaa는 `globals.css` 상단의 `@import url(...)` 구문으로 Google Font
 
 `src/shared/utils/gauge-color.ts`:
 
+채널별 색상 체계로 food(음식 퀄리티), experience(경험 가치), total(총점), wine-total(와인 총점)을 구분한다.
+
 ```typescript
 /**
- * 만족도 점수(0~100)를 게이지 색상으로 변환한다.
- * DESIGN_SYSTEM.md §1 만족도 게이지 5단계 색상 매핑.
- *
- * | 점수     | CSS 변수    | 색상    |
- * |----------|-------------|---------|
- * | 0~20     | --gauge-1   | #C4B5A8 |
- * | 21~40    | --gauge-2   | #B0ADA4 |
- * | 41~60    | --gauge-3   | #9FA5A3 |
- * | 61~80    | --gauge-4   | #889DAB |
- * | 81~100   | --gauge-5   | #7A9BAE |
+ * 점수(0~100)를 게이지 색상으로 변환한다.
+ * 채널별 색상 체계:
+ *   food (음식 퀄리티): 모노톤 → 강렬한 오렌지레드
+ *   experience (경험 가치): 모노톤 → 강렬한 블루
+ *   total (총점/조합): 모노톤 → 강렬한 골드
+ *   default: food와 동일 (하위 호환)
  */
 
-interface GaugeStep {
-  max: number
-  color: string
-  cssVar: string
-  tailwind: string
+export type GaugeChannel = 'food' | 'experience' | 'total' | 'wine-total' | 'default'
+
+const CHANNEL_STEPS: Record<GaugeChannel, string[]> = {
+  food:         ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
+  experience:   ['#B5B0BA', '#A08DA8', '#8B7396', '#7A5A8E', '#6B3FA0'],
+  total:        ['#C4BCA8', '#D4B85C', '#E0A820', '#D49215', '#C87A0A'],
+  'wine-total': ['#D8D0E0', '#D0B0E8', '#C090E0', '#B070D8', '#A050D0'],
+  default:      ['#C4B5A8', '#C8907A', '#C17B5E', '#B5603A', '#A83E1A'],
 }
 
-const GAUGE_STEPS: GaugeStep[] = [
-  { max: 20, color: '#C4B5A8', cssVar: '--gauge-1', tailwind: 'gauge-1' },
-  { max: 40, color: '#B0ADA4', cssVar: '--gauge-2', tailwind: 'gauge-2' },
-  { max: 60, color: '#9FA5A3', cssVar: '--gauge-3', tailwind: 'gauge-3' },
-  { max: 80, color: '#889DAB', cssVar: '--gauge-4', tailwind: 'gauge-4' },
-  { max: 100, color: '#7A9BAE', cssVar: '--gauge-5', tailwind: 'gauge-5' },
-]
+export const GAUGE_COLORS = {
+  1: '#C4B5A8',
+  2: '#E8A87C',
+  3: '#E8913A',
+  4: '#E06B20',
+  5: '#D4451A',
+} as const
 
-export function getGaugeColor(score: number): string {
-  const clamped = Math.max(0, Math.min(100, score))
-  const step = GAUGE_STEPS.find((g) => clamped <= g.max)
-  return step ? step.color : GAUGE_STEPS[4].color
+export function getGaugeColor(score: number, channel: GaugeChannel = 'default'): string {
+  return CHANNEL_STEPS[channel][getStepIndex(score)]
 }
 
 export function getGaugeCssVar(score: number): string {
@@ -550,8 +587,10 @@ export function getLevelTailwindClass(level: number): string {
 - [ ] Comfortaa 폰트 로드 확인 (DevTools Network 탭)
 - [ ] 하드코딩 색상 없음 확인: `grep -r "bg-white\|bg-black\|text-white\|text-black" src/` → 결과 없음 (허용: Tailwind 내부 파일, 소셜 버튼 등 디자인 시스템 명시 `#fff`)
 - [ ] `getGaugeColor(0)` → `#C4B5A8` 확인
-- [ ] `getGaugeColor(50)` → `#9FA5A3` 확인
-- [ ] `getGaugeColor(100)` → `#7A9BAE` 확인
+- [ ] `getGaugeColor(50)` → `#C17B5E` 확인
+- [ ] `getGaugeColor(100)` → `#A83E1A` 확인
+- [ ] `getGaugeColor(50, 'experience')` → `#8B7396` 확인
+- [ ] `getGaugeColor(100, 'total')` → `#C87A0A` 확인
 - [ ] `getLevelColor(1)` → `#7EAE8B` 확인
 - [ ] `getLevelColor(5)` → `#7A9BAE` 확인
 - [ ] `getLevelColor(10)` → `#C9A96E` 확인

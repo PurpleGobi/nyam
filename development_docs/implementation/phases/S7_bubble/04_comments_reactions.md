@@ -30,7 +30,7 @@
 
 | 레이어 | 파일 | 설명 |
 |--------|------|------|
-| application | `src/application/hooks/use-reactions.ts` | 리액션 토글/조회 로직 |
+| application | `src/application/hooks/use-reactions.ts` | 리액션 토글/조회 로직 (reactionRepo.toggle에 개별 인자 전달) |
 | application | `src/application/hooks/use-comments.ts` | 댓글 CRUD 로직 |
 | presentation/components | `src/presentation/components/bubble/reaction-buttons.tsx` | 리액션 3종 + 좋아요 버튼 |
 | presentation/components | `src/presentation/components/bubble/comment-list.tsx` | 댓글 목록 |
@@ -55,9 +55,11 @@
 
 | 유형 | reaction_type | lucide 아이콘 | 활성 색상 | 비활성 색상 | 의미 |
 |------|--------------|--------------|----------|-----------|------|
-| 원함 | `want` | bookmark-plus | `--primary` (#C17B5E) | `--text-hint` | 방문 의향 표시 |
-| 확인 | `check` | check-circle-2 | `--positive` (#7EAE8B) | `--text-hint` | 같은 곳 방문 경험 공감 |
-| 맛있어보인다 | `fire` | flame | #E55A35 | `--text-hint` | 시각적 공감 |
+| 가고싶다 | `want` | bookmark-plus | `--accent-food` | `--text-hint` | 방문 의향 표시 |
+| 다녀왔다 | `check` | check-circle-2 | `--positive` (#7EAE8B) | `--text-hint` | 같은 곳 방문 경험 공감 |
+| 불꽃 | `fire` | flame | #E55A35 | `--text-hint` | 시각적 공감 |
+
+> **참고**: `REACTION_CONFIG` 상수가 `src/domain/entities/reaction.ts`에 정의되어 아이콘/라벨/색상 매핑을 중앙 관리.
 
 ##### 액션 버튼 (리액션 행 우측)
 
@@ -68,10 +70,10 @@
 
 ##### 기타 리액션
 
-| 유형 | 대상 | 의미 |
-|------|------|------|
-| 좋아요 `like` | comment | 공감/도움 (댓글에 대한 좋아요) |
-| 찜 `bookmark` | record의 식당/와인 | wishlists INSERT 사이드이펙트 |
+| 유형 | 대상 | 의미 | 색상 |
+|------|------|------|------|
+| 좋아요 `like` | comment | 공감/도움 (댓글에 대한 좋아요) | `--negative` |
+| 저장 `bookmark` | record의 식당/와인 | wishlists INSERT 사이드이펙트 | `--accent-wine` |
 
 #### 리액션 규칙
 
@@ -240,12 +242,12 @@ interface ReactionButtonsProps {
 
 **색상 매핑**:
 
-| reactionType | 비활성 | 활성 |
-|-------------|--------|------|
-| want | `text-text-hint` | `text-primary` |
-| check | `text-text-hint` | `text-positive` |
-| fire | `text-text-hint` | `text-[#E55A35]` |
-| like | `text-text-hint` | `text-negative` |
+| reactionType | 비활성 | 활성 | REACTION_CONFIG 색상 |
+|-------------|--------|------|-------------------|
+| want | `text-text-hint` | `text-accent-food` | `var(--accent-food)` |
+| check | `text-text-hint` | `text-positive` | `var(--positive)` |
+| fire | `text-text-hint` | `text-[#E55A35]` | `#E55A35` |
+| like | `text-text-hint` | `text-negative` | `var(--negative)` |
 
 **구분선**: 리액션 3종과 좋아요+댓글 사이 `border-r border-line mx-1`
 

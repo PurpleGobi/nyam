@@ -71,6 +71,7 @@ export interface UserSettings {
   prefRecordInput: string;        // 'camera'|'search'
   prefBubbleShare: string;        // 'ask'|'auto'|'never'
   prefTempUnit: string;           // 'C'|'F'
+  prefTimezone: string | null;    // 'Asia/Seoul' 등 (미설정 시 브라우저 자동 감지)
 
   // 계정 삭제
   deletedAt: string | null;
@@ -150,15 +151,19 @@ export interface SettingsRepository {
 ### `src/application/hooks/use-settings.ts`
 
 ```typescript
+'use client'
+
 import useSWR, { useSWRConfig } from 'swr';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { settingsRepo } from '@/shared/di/container';
-import { useAuth } from '@/application/hooks/use-auth';
+import { useAuth } from '@/presentation/providers/auth-provider';
 import type { VisibilityConfig, PrivacyProfile, PrivacyRecords, DeleteMode } from '@/domain/entities/settings';
+
+const DEBOUNCE_MS = 500;
 
 export function useSettings() {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
   const { mutate } = useSWRConfig();
 
   const { data: settings, isLoading, error } = useSWR(
@@ -215,21 +220,35 @@ export function useSettings() {
     }
   }, [userId, settings, mutate]);
 
-  // ── 알림 ──
+  // ── 알림 (optimistic + debounce) ──
+
+  const notifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateNotify = useCallback(async (field: string, value: boolean) => {
-    if (!userId) return;
-    await settingsRepo.updateNotifySetting(userId, field, value);
-    mutate(['settings', userId]);
-  }, [userId, mutate]);
+    if (!userId || !settings) return;
+    const camelField = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+    mutate(['settings', userId], { ...settings, [camelField]: value }, false);
+    if (notifyTimerRef.current) clearTimeout(notifyTimerRef.current);
+    notifyTimerRef.current = setTimeout(async () => {
+      try { await settingsRepo.updateNotifySetting(userId, field, value); }
+      catch { mutate(['settings', userId]); }
+    }, DEBOUNCE_MS);
+  }, [userId, settings, mutate]);
 
-  // ── 환경설정 ──
+  // ── 환경설정 (optimistic + debounce) ──
+
+  const prefTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updatePreference = useCallback(async (field: string, value: string) => {
-    if (!userId) return;
-    await settingsRepo.updatePreference(userId, field, value);
-    mutate(['settings', userId]);
-  }, [userId, mutate]);
+    if (!userId || !settings) return;
+    const camelField = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+    mutate(['settings', userId], { ...settings, [camelField]: value }, false);
+    if (prefTimerRef.current) clearTimeout(prefTimerRef.current);
+    prefTimerRef.current = setTimeout(async () => {
+      try { await settingsRepo.updatePreference(userId, field, value); }
+      catch { mutate(['settings', userId]); }
+    }, DEBOUNCE_MS);
+  }, [userId, settings, mutate]);
 
   // ── 계정 삭제 ──
 
@@ -245,6 +264,22 @@ export function useSettings() {
     mutate(['settings', userId]);
   }, [userId, mutate]);
 
+  // ── 버블별 프라이버시 ──
+  const updateBubbleVisibility = useCallback(async (bubbleId: string, config: VisibilityConfig | null) => { ... }, [...]);
+
+  // ── 계정 정보 수정 ──
+  const updateNickname = useCallback(async (nickname: string) => { ... }, [...]);
+  const updateBio = useCallback(async (bio: string) => { ... }, [...]);
+  const updateAvatar = useCallback(async (file: File) => {
+    // Supabase Storage 업로드 → publicUrl → settingsRepo.updateAvatar
+  }, [...]);
+  const updateDndTime = useCallback(async (start: string | null, end: string | null) => { ... }, [...]);
+
+  // ── 데이터 ──
+  const exportData = useCallback(async (format: 'json' | 'csv') => { ... }, [...]);
+  const importData = useCallback(async (file: File) => { ... }, [...]);
+  const clearCache = useCallback(async () => { ... }, []);
+
   return {
     settings,
     bubbleOverrides,
@@ -254,10 +289,18 @@ export function useSettings() {
     updatePrivacyRecords,
     updateVisibilityPublic,
     updateVisibilityBubble,
+    updateBubbleVisibility,
     updateNotify,
     updatePreference,
     requestDeletion,
     cancelDeletion,
+    updateNickname,
+    updateBio,
+    updateDndTime,
+    updateAvatar,
+    exportData,
+    importData,
+    clearCache,
   };
 }
 ```
@@ -270,7 +313,8 @@ export function useSettings() {
 
 ```
 SettingsContainer
-├── nav (← 뒤로 | 설정 | 우측 여백)
+├── AppHeader
+├── FabBack
 ├── ScrollArea
 │   ├── SettingsSection [계정]
 │   │   └── SettingsCard
@@ -310,7 +354,9 @@ SettingsContainer
 │   │       ├── SettingsItem + NyamSelect (arrow-up-down, 기본 정렬)
 │   │       ├── SettingsItem + NyamSelect (camera, 기록 시 카메라)
 │   │       ├── SettingsItem + NyamSelect (share-2, 기록 후 버블 공유)
-│   │       └── SettingsItem + NyamSelect (thermometer, 와인 온도 단위)
+│   │       ├── SettingsItem + NyamSelect (thermometer, 와인 온도 단위)
+│   │       ├── SettingsItem + NyamSelect (globe, 타임존)
+│   │       └── SettingsItem (unlink, 수동 공유 항목 정리, chevron)
 │   ├── SettingsSection [데이터]
 │   │   └── SettingsCard
 │   │       ├── SettingsItem (upload, 데이터 내보내기, chevron)
@@ -326,7 +372,9 @@ SettingsContainer
 │           ├── SettingsItem (log-out, 로그아웃, chevron)
 │           └── SettingsItem (trash-2, 계정 삭제, danger 스타일, chevron)
 ├── BubblePrivacySheet (바텀시트)
-└── DeleteAccountSheet (바텀시트)
+├── DeleteAccountSheet (바텀시트)
+├── EditFieldSheet (바텀시트 — 닉네임/한줄소개 변경)
+└── DndSheet (바텀시트 — 방해 금지 시간 설정, 인라인 컴포넌트)
 ```
 
 ---
@@ -360,14 +408,14 @@ interface SettingsCardProps {
 
 ```typescript
 interface SettingsItemProps {
-  icon: string;                   // lucide 아이콘명
+  icon?: React.ReactNode;         // lucide 아이콘 JSX (예: <Pencil size={18} />)
   label: string;
   hint?: string;                  // 서브텍스트 (11px, text-hint)
   value?: string;                 // 현재값 표시
   onPress?: () => void;
   showChevron?: boolean;
   danger?: boolean;               // 빨간색 스타일 (계정 삭제)
-  disabled?: boolean;
+  subText?: string;               // 부가 설명 텍스트 (예: "30일 유예 후 영구 삭제")
   rightElement?: React.ReactNode; // Toggle | NyamSelect | 커스텀
 }
 ```
@@ -393,7 +441,7 @@ interface ToggleProps {
 - 동그라미: 20px, 흰색, transition 0.2s
 - disabled: `opacity: 0.5`, pointer-events none
 
-### 6-5. `NyamSelect` — `src/presentation/components/settings/nyam-select.tsx`
+### 6-5. `NyamSelect` — `src/presentation/components/ui/nyam-select.tsx`
 
 ```typescript
 interface NyamSelectProps {
@@ -448,8 +496,9 @@ interface PrivacyLayerProps {
 interface BubblePrivacySheetProps {
   isOpen: boolean;
   onClose: () => void;
-  bubble: BubblePrivacyOverride;
+  bubble: { id: string; name: string } | null;
   defaultConfig: VisibilityConfig;
+  currentOverride: VisibilityConfig | null;
   onSave: (override: VisibilityConfig | null) => void;
 }
 ```
@@ -524,10 +573,10 @@ interface DeleteAccountSheetProps {
 |------|---------|---------------------|
 | 랜딩 화면 | `pref_landing` | `last`→마지막 사용, `home`→홈, `bubbles`→버블, `profile`→프로필 |
 | 홈 시작 탭 | `pref_home_tab` | `last`→마지막 사용, `restaurant`→식당, `wine`→와인 |
-| 식당 서브탭 | `pref_restaurant_sub` | `last`→마지막 사용, `visited`→방문, `wishlist`→찜, `recommended`→추천, `following`→팔로잉 |
+| 식당 서브탭 | `pref_restaurant_sub` | `last`→마지막 사용, `visited`→방문, `wishlist`→찜, `following`→팔로잉 |
 | 와인 서브탭 | `pref_wine_sub` | `last`→마지막 사용, `tasted`→시음, `wishlist`→찜, `cellar`→셀러 |
 | 버블 시작 탭 | `pref_bubble_tab` | `last`→마지막 사용, `bubble`→버블, `bubbler`→버블러 |
-| 홈 보기 모드 | `pref_view_mode` | `last`→마지막 사용, `detailed`→상세, `compact`→간단, `calendar`→캘린더 |
+| 홈 보기 모드 | `pref_view_mode` | `last`→마지막 사용, `card`→상세, `list`→간단, `calendar`→캘린더 |
 
 ---
 
@@ -539,6 +588,7 @@ interface DeleteAccountSheetProps {
 | 기록 시 카메라 | `pref_record_input` | `camera`→카메라 우선, `search`→검색 우선 |
 | 기록 후 버블 공유 | `pref_bubble_share` | `ask`→매번 물어보기, `auto`→자동 공유, `never`→공유 안 함 |
 | 와인 온도 단위 | `pref_temp_unit` | `C`→°C, `F`→°F |
+| 타임존 | `pref_timezone` | IANA 타임존 목록 (`Asia/Seoul`, `America/New_York` 등) — 미설정 시 브라우저 자동 감지 |
 
 ---
 
@@ -598,8 +648,9 @@ interface DeleteAccountSheetProps {
 | `src/presentation/components/settings/settings-card.tsx` | presentation |
 | `src/presentation/components/settings/settings-item.tsx` | presentation |
 | `src/presentation/components/settings/toggle.tsx` | presentation |
-| `src/presentation/components/settings/nyam-select.tsx` | presentation |
+| `src/presentation/components/ui/nyam-select.tsx` | presentation (공용 UI) |
 | `src/presentation/components/settings/segment-control.tsx` | presentation |
+| `src/presentation/components/settings/edit-field-sheet.tsx` | presentation |
 | `src/presentation/components/settings/privacy-layer.tsx` | presentation |
 | `src/presentation/components/settings/privacy-summary.tsx` | presentation |
 | `src/presentation/components/settings/privacy-note.tsx` | presentation |

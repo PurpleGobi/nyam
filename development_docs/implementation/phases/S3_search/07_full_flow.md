@@ -61,7 +61,7 @@
 // R1: 외부 의존 0
 
 export type AddFlowStep = 'camera' | 'ai_result' | 'wine_confirm' | 'search' | 'record' | 'success'
-export type AddFlowEntryPath = 'camera' | 'search' | 'detail_fab' | 'nudge' | 'recommend'
+export type AddFlowEntryPath = 'camera' | 'search' | 'detail_fab' | 'detail'
 
 /** 대상 정보 (hook에서 실제 사용) */
 export interface AddFlowTarget {
@@ -72,8 +72,17 @@ export interface AddFlowTarget {
   isAiRecognized: boolean
 }
 
-export interface AIPreFillData { ... }
-export function determineRecordStatus(entryPath, hasRating): 'checked' | 'rated'
+export interface AIPreFillData {
+  genre?: string | null
+  suggestedScene?: string | null
+  ocrData?: { wine_name: string; vintage: string | null; producer: string | null }
+  wineType?: string | null
+  region?: string | null
+  gps?: { latitude: number; longitude: number } | null
+  capturedAt?: string | null
+}
+// 참고: determineRecordStatus()는 add-flow.ts에 정의되어 있지 않음.
+// status 결정 로직은 컨테이너(add-flow-container, search-container)에서 인라인으로 처리.
 ```
 
 ### 2. `src/application/hooks/use-add-flow.ts`

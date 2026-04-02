@@ -29,7 +29,7 @@
 | 파일 | 설명 |
 |------|------|
 | `supabase/functions/weekly-ranking-snapshot/index.ts` | Edge Function 본체 |
-| `supabase/migrations/XXX_ranking_cron.sql` | pg_cron 스케줄 등록 |
+| `supabase/migrations/019_ranking_cron.sql` | pg_cron 스케줄 등록 |
 
 ### 스코프 외
 
@@ -293,7 +293,7 @@ function calculateDelta(
 
 ### 5. pg_cron 스케줄 등록
 
-#### `supabase/migrations/XXX_ranking_cron.sql`
+#### `supabase/migrations/019_ranking_cron.sql`
 
 ```sql
 -- pg_cron 확장 활성화 (이미 활성화되어 있을 수 있음)

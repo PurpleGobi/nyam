@@ -117,6 +117,16 @@ export interface LevelUpEvent {
   color: string;
 }
 
+/** 레벨 정보 (getLevel 함수 반환 타입) */
+export interface LevelInfo {
+  level: number;
+  title: string;
+  color: string;
+  currentXp: number;
+  nextLevelXp: number;
+  progress: number;
+}
+
 /** 소셜 XP 일일 카운트 (어뷰징 방지용) */
 export interface DailySocialCounts {
   share: number;
@@ -151,13 +161,18 @@ export interface XpRepository {
   getUserExperiencesByAxisType(userId: string, axisType: AxisType): Promise<UserExperience[]>;
   getUserExperience(userId: string, axisType: AxisType, axisValue: string): Promise<UserExperience | null>;
 
+  // ── 종합 XP 조회 ──
+  getUserTotalXp(userId: string): Promise<number>;
+
   // ── 경험치 갱신 ──
   upsertUserExperience(userId: string, axisType: AxisType, axisValue: string, xpDelta: number, newLevel: number): Promise<UserExperience>;
   updateUserTotalXp(userId: string, xpDelta: number): Promise<void>;
 
   // ── XP 이력 ──
   getRecentXpHistories(userId: string, limit: number): Promise<XpHistory[]>;
+  getHistoriesByRecord(recordId: string): Promise<XpHistory[]>;
   createXpHistory(history: Omit<XpHistory, 'id' | 'createdAt'>): Promise<XpHistory>;
+  deleteByRecordId(recordId: string): Promise<void>;
 
   // ── 레벨 테이블 ──
   getLevelThresholds(): Promise<LevelThreshold[]>;
@@ -177,6 +192,9 @@ export interface XpRepository {
   // ── 보너스 ──
   hasBonusBeenGranted(userId: string, bonusType: BonusType): Promise<boolean>;
 
+  // ── 기록 XP 저장 ──
+  updateRecordQualityXp(recordId: string, xp: number): Promise<void>;
+
   // ── 통계 조회 (프로필용) ──
   getUniqueCount(userId: string, axisType: AxisType, axisValue: string): Promise<number>;
   getTotalRecordCountByAxis(userId: string, axisType: AxisType, axisValue: string): Promise<number>;
@@ -195,7 +213,7 @@ export interface XpRepository {
 
 ```typescript
 import type {
-  LevelThreshold, AxisType, DetailAxisGain, SocialAction,
+  LevelThreshold, LevelInfo, AxisType, DetailAxisGain, SocialAction,
   DailySocialCounts, Milestone,
 } from '@/domain/entities/xp';
 import type { DiningRecord } from '@/domain/entities/record';
@@ -359,14 +377,7 @@ export const BONUS_XP_MAP = {
 export function getLevel(
   totalXp: number,
   thresholds: LevelThreshold[],
-): {
-  level: number;
-  title: string;
-  color: string;
-  currentXp: number;
-  nextLevelXp: number;
-  progress: number;
-} {
+): LevelInfo {
   let currentLevel = thresholds[0];
 
   for (let i = thresholds.length - 1; i >= 0; i--) {
@@ -871,27 +882,34 @@ function mapUserMilestone(row: Record<string, unknown>): UserMilestone {
 ### `src/application/hooks/use-xp-calculation.ts`
 
 ```typescript
+'use client'
+
 import { useCallback } from 'react';
 import type { DiningRecord } from '@/domain/entities/record';
-import type { XpCalculationResult, LevelThreshold, LevelUpEvent, DetailAxisGain } from '@/domain/entities/xp';
+import type { XpCalculationResult, LevelThreshold, DetailAxisGain } from '@/domain/entities/xp';
 import {
   calculateRecordXp, getRecordXpReason, calculateDetailAxisXp,
   getCategoryForAxisType, getLevel, isDuplicateScoreBlocked,
   isDailyRecordCapReached, checkMilestoneReached, BONUS_XP_MAP,
 } from '@/domain/services/xp-calculator';
 import { xpRepo } from '@/shared/di/container';
+import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format';
 
 /**
  * XP 계산 + 적립 오케스트레이션 hook.
  *
  * 기록 저장 시 호출 순서:
- * 1. 기록 품질 판정 → XP 결정
- * 2. 같은 식당 점수 6개월 제한 체크
- * 3. 종합 XP 적립
- * 4. 세부 축 XP 적립 (user_experiences +5, 종합 미포함)
+ * 0. 일일 기록 상한 체크
+ * 1. 기록 품질 → XP 산출
+ * 2. 같은 식당/와인 점수 6개월 제한 체크
+ * 2.5. record_quality_xp 저장
+ * 2.6. 수정 모드 차액 산출
+ * 3. 종합 XP 적립 (차액만)
+ * 3.5. 첫 기록 보너스
+ * 4. 세부 축 XP 적립 (신규만 — 수정 시 이미 적립됨)
  * 5. 카테고리 XP 갱신 (세부 축 합산)
  * 6. 마일스톤 체크
- * 7. 레벨 체크 (종합+카테고리+세부) → 레벨업 알림
+ * 7. 종합 레벨 체크 → 레벨업 알림
  */
 export function useXpCalculation() {
   const processRecordXp = useCallback(async (
@@ -902,151 +920,118 @@ export function useXpCalculation() {
     wineRegion: string | null,
     wineVariety: string | null,
     thresholds: LevelThreshold[],
+    /** 수정 모드: 이전에 부여된 record_quality_xp. 차액만 적립. */
+    previousRecordXp?: number,
   ): Promise<XpCalculationResult> => {
-    const result: XpCalculationResult = {
-      totalXpGain: 0,
-      detailAxisGains: [],
-      categoryUpdates: [],
-      milestoneAchieved: [],
-      levelUps: [],
-    };
+    const isEdit = previousRecordXp !== undefined;
+    const result: XpCalculationResult = { ... };
 
-    // ── Step 0: 일일 기록 상한 체크 ──
-    const today = new Date().toISOString().split('T')[0];
-    const dailyCount = await xpRepo.getDailyRecordCount(userId, today);
-    if (isDailyRecordCapReached(dailyCount)) {
-      return result; // 상한 도달 → XP 0
+    // Step 0: 일일 기록 상한 체크 (신규만)
+    if (!isEdit) {
+      const today = todayInTz(detectBrowserTimezone());
+      const dailyCount = await xpRepo.getDailyRecordCount(userId, today);
+      if (isDailyRecordCapReached(dailyCount)) return result;
     }
 
-    // ── Step 1: 기록 품질 → XP 산출 ──
+    // Step 1~2: 기록 품질 → XP 산출 + 중복 체크
     let recordXp = calculateRecordXp(record);
-
-    // ── Step 2: 같은 식당/와인 점수 6개월 제한 ──
-    // 점수 XP(+3)만 차감. 사진/리뷰 콘텐츠 추가분은 정상 적립.
-    // 예: 풀기록(18) - 점수분(3) = 15, 사진기록(8) - 3 = 5, 점수만(3) - 3 = 0
     if (recordXp >= 3) {
       const lastScore = await xpRepo.getLastScoreDate(userId, record.targetId);
-      if (isDuplicateScoreBlocked(lastScore)) {
-        recordXp = Math.max(0, recordXp - 3);
-      }
+      if (isDuplicateScoreBlocked(lastScore)) recordXp = Math.max(0, recordXp - 3);
     }
 
-    // 차감 후 최종 XP 기준으로 reason 산출
+    // Step 2.5: record_quality_xp 저장
+    await xpRepo.updateRecordQualityXp(record.id, recordXp);
+
+    // Step 2.6: 수정 모드 차액 산출
+    const xpDelta = isEdit ? recordXp - previousRecordXp : recordXp;
     const reason = getRecordXpReason(recordXp);
 
-    // ── Step 3: 종합 XP 적립 ──
+    // Step 3: 종합 XP 적립 (차액만)
+    if (xpDelta > 0) { ... }
+
+    // Step 3.5: 첫 기록 보너스 (recordXp > 0일 때 hasBonusBeenGranted 체크)
     if (recordXp > 0) {
-      result.totalXpGain = recordXp;
-      await xpRepo.updateUserTotalXp(userId, recordXp);
-      await xpRepo.createXpHistory({
-        userId,
-        recordId: record.id,
-        axisType: null,
-        axisValue: null,
-        xpAmount: recordXp,
-        reason,
-      });
+      const hasFirstRecord = await xpRepo.hasBonusBeenGranted(userId, 'first_record');
+      if (!hasFirstRecord) { /* BONUS_XP_MAP.first_record 적립 */ }
     }
 
-    // ── Step 4: 세부 축 XP 적립 ──
-    const axisGains = calculateDetailAxisXp(record, restaurantArea, restaurantGenre, wineRegion, wineVariety);
-    for (const gain of axisGains) {
-      const existing = await xpRepo.getUserExperience(userId, gain.axisType, gain.axisValue);
-      const newXp = (existing?.totalXp ?? 0) + gain.xp;
-      const levelInfo = getLevel(newXp, thresholds);
-      const previousLevel = existing?.level ?? 1;
-
-      await xpRepo.upsertUserExperience(userId, gain.axisType, gain.axisValue, gain.xp, levelInfo.level);
-      await xpRepo.createXpHistory({
-        userId,
-        recordId: record.id,
-        axisType: gain.axisType,
-        axisValue: gain.axisValue,
-        xpAmount: gain.xp,
-        reason: 'detail_axis',
-      });
-
-      result.detailAxisGains.push(gain);
-
-      // 세부 축 레벨업 체크
-      if (levelInfo.level > previousLevel) {
-        result.levelUps.push({
-          scope: 'detail',
-          axisType: gain.axisType,
-          axisValue: gain.axisValue,
-          previousLevel,
-          newLevel: levelInfo.level,
-          title: levelInfo.title,
-          color: levelInfo.color,
-        });
-      }
-    }
-
-    // ── Step 5: 카테고리 XP 갱신 ──
-    const categoryMap = new Map<string, number>();
-    for (const gain of axisGains) {
-      const cat = getCategoryForAxisType(gain.axisType);
-      if (cat) {
-        categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + gain.xp);
-      }
-    }
-    for (const [catValue, xpDelta] of categoryMap) {
-      const existing = await xpRepo.getUserExperience(userId, 'category', catValue);
-      const newXp = (existing?.totalXp ?? 0) + xpDelta;
-      const levelInfo = getLevel(newXp, thresholds);
-      const previousLevel = existing?.level ?? 1;
-
-      await xpRepo.upsertUserExperience(userId, 'category', catValue, xpDelta, levelInfo.level);
-
-      result.categoryUpdates.push({ categoryValue: catValue as 'restaurant' | 'wine', newTotalXp: newXp });
-
-      // 카테고리 레벨업 체크
-      if (levelInfo.level > previousLevel) {
-        result.levelUps.push({
-          scope: 'category',
-          axisType: 'category',
-          axisValue: catValue,
-          previousLevel,
-          newLevel: levelInfo.level,
-          title: levelInfo.title,
-          color: levelInfo.color,
-        });
-      }
-    }
-
-    // ── Step 6: 마일스톤 체크 ──
-    for (const gain of axisGains) {
-      const uniqueCount = await xpRepo.getUniqueCount(userId, gain.axisType, gain.axisValue);
-      const milestones = await xpRepo.getMilestonesByAxisType(gain.axisType);
-
-      for (const ms of milestones) {
-        if (checkMilestoneReached(uniqueCount, ms)) {
-          const already = await xpRepo.hasAchievedMilestone(userId, ms.id, gain.axisValue);
-          if (!already) {
-            await xpRepo.createUserMilestone(userId, ms.id, gain.axisValue);
-            await xpRepo.updateUserTotalXp(userId, ms.xpReward);
-            await xpRepo.createXpHistory({
-              userId,
-              recordId: record.id,
-              axisType: gain.axisType,
-              axisValue: gain.axisValue,
-              xpAmount: ms.xpReward,
-              reason: 'milestone',
-            });
-            result.totalXpGain += ms.xpReward;
-            result.milestoneAchieved.push({ milestone: ms, axisValue: gain.axisValue });
-          }
-        }
-      }
-    }
-
-    // ── Step 7: 종합 레벨 체크 ──
-    // 종합 레벨은 users.total_xp 기반 → 호출측에서 레벨업 알림 생성
-
+    // Step 4: 세부 축 XP 적립 (신규만 — isEdit면 스킵)
+    // Step 5: 카테고리 XP 갱신
+    // Step 6: 마일스톤 체크
+    // Step 7: 종합 레벨 체크 → 호출측에서 레벨업 알림 생성
     return result;
   }, []);
 
   return { processRecordXp };
+}
+```
+
+### `src/application/hooks/use-xp-award.ts`
+
+> `useXpCalculation`의 `processRecordXp`를 감싸서 로딩 상태를 관리하고,
+> 레벨업 시 `notificationRepo.createNotification`으로 알림을 생성하는 진입점.
+
+```typescript
+'use client'
+
+import { useState, useCallback } from 'react';
+import type { DiningRecord } from '@/domain/entities/record';
+import type { XpCalculationResult, LevelThreshold } from '@/domain/entities/xp';
+import { useXpCalculation } from '@/application/hooks/use-xp-calculation';
+import { notificationRepo } from '@/shared/di/container';
+
+export function useXpAward() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { processRecordXp } = useXpCalculation();
+
+  const awardXp = useCallback(async (
+    userId: string, record: DiningRecord,
+    restaurantArea: string | null, restaurantGenre: string | null,
+    wineRegion: string | null, wineVariety: string | null,
+    thresholds: LevelThreshold[],
+    previousRecordXp?: number,
+  ): Promise<XpCalculationResult | null> => {
+    setIsLoading(true);
+    try {
+      const result = await processRecordXp(...);
+      // 레벨업 시 알림 생성
+      if (result) {
+        for (const levelUp of result.levelUps) {
+          await notificationRepo.createNotification({
+            userId, type: 'level_up',
+            title: '레벨 업!',
+            body: `${scopeLabel} Lv.${levelUp.newLevel} ${levelUp.title} 달성!`,
+            actionStatus: null, actorId: null,
+            targetType: null, targetId: null, bubbleId: null,
+          });
+        }
+      }
+      return result;
+    } finally { setIsLoading(false); }
+  }, [processRecordXp]);
+
+  return { awardXp, isLoading };
+}
+```
+
+### `src/application/hooks/use-xp.ts`
+
+> XP 조회 전용 hook — 경험치, 레벨, 최근 이력을 로드 (useState/useEffect 기반).
+
+```typescript
+'use client'
+
+import { useState, useEffect, useCallback } from 'react';
+import type { UserExperience, XpHistory, LevelThreshold, LevelInfo } from '@/domain/entities/xp';
+import { getLevel } from '@/domain/services/xp-calculator';
+import { xpRepo } from '@/shared/di/container';
+
+export function useXp(userId: string | null) {
+  // Promise.all로 getUserExperiences, getLevelThresholds, getRecentXpHistories(20), getUserTotalXp 병렬 로드
+  // getLevel(totalXp, thresholds) → levelInfo 산출
+  // refetch 콜백 제공
+  return { experiences, recentXp, thresholds, totalXp, levelInfo, isLoading, refetch };
 }
 ```
 

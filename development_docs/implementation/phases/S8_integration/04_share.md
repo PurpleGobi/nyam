@@ -1,6 +1,6 @@
 # 8.4: 기록→버블 공유
 
-> 기록을 소속 버블에 공유하는 플로우 3가지를 구현한다. 공유/취소/프라이버시 검증 포함.
+> 기록을 소속 버블에 공유하는 플로우를 구현한다. 공유/취소/프라이버시 검증 포함.
 
 ---
 
@@ -29,12 +29,13 @@
 ```
 src/presentation/components/share/share-to-bubble-sheet.tsx
 src/presentation/components/share/bubble-select-list.tsx
+src/presentation/components/bubble/share-list-sheet.tsx       ← 공유 항목 선택 시트 (필터+검색+정렬 지원)
+src/presentation/components/bubble/share-rule-editor.tsx      ← 버블 자동 공유 규칙 편집기
 src/application/hooks/use-share-record.ts
 ```
 
 ### 스코프 외
 
-- 방법 3: 필터 일괄 공유 "N개 기록 공유" (future로 SSOT 명시)
 - 외부 플랫폼 공유 (카카오톡, 인스타 등)
 - `allow_external_share` 설정 연동 (v2)
 
@@ -42,149 +43,106 @@ src/application/hooks/use-share-record.ts
 
 ## 상세 구현 지침
 
-### 1. 공유 경로 3가지 (BUBBLE.md §8)
-
-| 경로 | 트리거 | 구현 |
-|------|--------|------|
-| **방법 1** | 기록 생성 직후 → "버블에 공유" 프롬프트 | 기록 저장 성공 화면에 `<ShareToBubbleSheet>` 자동 노출 (조건부) |
-| **방법 2** | 기록 상세 → `share-2` 아이콘 탭 | 기록 상세 헤더의 공유 버튼 → `<ShareToBubbleSheet>` |
-| **방법 3** | 필터 일괄 공유 | **스코프 외 (future)** |
-
-**방법 1 자동 노출 조건**: `users.pref_bubble_share` 값에 따라:
-- `'ask'` (기본): 매번 시트 표시
-- `'auto'`: 기본 버블에 자동 공유 (시트 생략)
-- `'never'`: 시트 표시 안 함
-
-### 2. Application Layer
+### 1. Application Layer
 
 #### `src/application/hooks/use-share-record.ts`
 
 ```typescript
-interface SharedBubbleInfo {
-  bubbleId: string;
-  bubbleName: string;
-  bubbleIcon: string;
-  sharedAt: string;
+interface ShareableBubble {
+  id: string
+  name: string
+  icon: string | null
+  iconBgColor: string | null
+  isShared: boolean           // 이미 공유된 버블인지
+  canShare: boolean           // 공유 가능 여부
+  blockReason: string | null  // canShare=false 사유 (예: "비활성 멤버십")
 }
 
-interface UseShareRecordReturn {
-  /** 현재 공유된 버블 목록 */
-  sharedBubbles: SharedBubbleInfo[];
-  /** 공유 가능한 내 버블 목록 (role: owner/admin/member, status: active) */
-  availableBubbles: {
-    id: string;
-    name: string;
-    icon: string;
-    iconBgColor: string;
-    isAlreadyShared: boolean;
-  }[];
-  /** 특정 버블에 공유 */
-  shareToBubble: (bubbleId: string) => Promise<void>;
-  /** 여러 버블에 한번에 공유 */
-  shareToBubbles: (bubbleIds: string[]) => Promise<void>;
-  /** 공유 취소 */
-  cancelShare: (bubbleId: string) => Promise<void>;
-  /** 프라이버시 검증 통과 여부 */
-  canShare: boolean;
-  /** 프라이버시 차단 사유 (canShare=false일 때) */
-  blockReason: string | null;
-  isLoading: boolean;
+interface UseShareRecordResult {
+  sharedBubbles: string[]                        // 이미 공유된 버블 ID 목록
+  availableBubbles: ShareableBubble[]
+  shareToBubble: (bubbleId: string) => Promise<void>
+  shareToBubbles: (bubbleIds: string[]) => Promise<void>
+  unshareBubble: (bubbleId: string) => Promise<void>
+  canShare: boolean
+  blockReason: string | null
+  isLoading: boolean
 }
 
-export function useShareRecord(recordId: string): UseShareRecordReturn {
-  // 1. 현재 유저의 privacy_profile, privacy_records 확인
-  //    - privacy_profile === 'private' → canShare = false, blockReason = "비공개 프로필은 공유할 수 없습니다"
-  //    - privacy_records === 'shared_only'일 때는 정상 (이미 공유된 것만 외부에 보인다는 의미)
-  // 2. 내 소속 버블 목록 조회 (bubble_members WHERE user_id = me AND role IN ('owner','admin','member') AND status = 'active')
-  // 3. 이미 공유된 버블 조회 (bubble_shares WHERE record_id = recordId)
-  // 4. shareToBubble() → INSERT bubble_shares(record_id, bubble_id, shared_by)
-  //    → 성공 시 XP +1 (social_share)
-  //    → SWR mutate
-  // 5. cancelShare() → DELETE bubble_shares WHERE record_id AND bubble_id
-  //    → 고아 댓글은 유지 (BUBBLE.md §8: "달린 댓글은 고아 상태로 유지")
-}
+export function useShareRecord(
+  userId: string | null,
+  recordId: string | null,
+  targetId?: string | null,
+  targetType?: 'restaurant' | 'wine',
+): UseShareRecordResult
 ```
 
-**공유 시 포함되는 데이터** (BUBBLE.md §8 명시):
+**동작 흐름**:
+1. `settingsRepo.getUserSettings(userId)` → `privacyProfile === 'private'`이면 공유 불가
+2. `bubbleRepo.getUserBubbles(userId)` → 소속 버블 목록 조회
+3. `bubbleRepo.getRecordShares(recordId)` → 이미 공유된 버블 확인
+4. `isShared` 마킹 + `canShare` = 멤버십 status === 'active'
+5. `shareToBubble()` → `bubbleRepo.shareRecord(recordId, bubbleId, userId, targetId, targetType)` + XP
+6. `shareToBubbles()` → 각 버블에 순차적으로 공유 + XP (`awardSocialXp(userId, 'share')`)
+7. 첫 공유 시 `awardBonus(userId, 'first_share')` 보너스 XP
 
-| 포함 | 필드 |
-|------|------|
-| 식당/와인명 | `records.target_id` → restaurant/wine name |
-| 사분면 좌표 | `records.quadrant_x`, `records.quadrant_y` |
-| 만족도 | `records.satisfaction` |
-| 상황 | `records.scene` |
-| 한줄평 | `records.comment` |
-| 사진 | `record_photos` |
-| 메뉴 | `records.menus` |
-| 팁 | `records.tip` |
-| 날짜 | `records.recorded_at` |
+**XP 부여**:
+- `useSocialXp().awardSocialXp(userId, 'share')` — 공유 당 XP +1
+- `useBonusXp().awardBonus(userId, 'first_share')` — 최초 공유 보너스
 
-**버블 내에서만 공개** (프로필 방문자에게 비공개):
-| 포함 | 필드 |
-|------|------|
-| 가격 | `records.price_total` |
+**canShare 로직**:
+- `isPrivateProfile` → `false` (blockReason: "비공개 프로필은 공유할 수 없습니다")
+- `availableBubbles.some(b => b.canShare)` → 공유 가능 버블 존재 여부
+- 둘 다 아니면 blockReason: "공유 가능한 버블이 없습니다"
 
-**항상 비공개** (공유 불가, 외부 노출 절대 금지):
-| 비공개 | 필드 |
-|--------|------|
-| 동반자 이름 | `records.companions` (나만 열람) |
-
-> `records.companion_count`는 별개 — 필터/통계용 활용 가능 (BUBBLE.md §8)
-
-**버블 간 격리**: 기록 A를 버블 X에 공유해도 버블 Y에는 보이지 않음. `bubble_shares.UNIQUE(record_id, bubble_id)` 제약으로 중복 방지.
-
-### 3. Presentation Layer
+### 2. Presentation Layer
 
 #### `src/presentation/components/share/bubble-select-list.tsx`
 
 ```typescript
 interface BubbleSelectItem {
-  id: string;
-  name: string;
-  icon: string;
-  iconBgColor: string;
-  isAlreadyShared: boolean;
+  id: string
+  name: string
+  icon: string | null
+  iconBgColor: string | null
+  isShared: boolean
+  canShare: boolean
+  blockReason: string | null
 }
 
 interface BubbleSelectListProps {
-  bubbles: BubbleSelectItem[];
-  selectedIds: Set<string>;
-  onToggle: (bubbleId: string) => void;
+  bubbles: BubbleSelectItem[]
+  selectedIds: Set<string>
+  onToggle: (bubbleId: string) => void
 }
 ```
 
 **리스트 아이템 렌더링**:
 
-```
-┌──────────────────────────────────────┐
-│ [🍴40] 직장 맛집              [☑]   │  ← 체크박스 선택
-│ [🍷40] 와인 모임              [☐]   │
-│ [🏠40] 동네 맛집       공유됨  [━]   │  ← 이미 공유: 뱃지 + 체크박스 비활성
-└──────────────────────────────────────┘
-```
-
 | 요소 | 스타일 |
 |------|--------|
-| 아이콘 | 40x40px, `border-radius: 10px`, `iconBgColor` 배경, lucide 아이콘 20px 흰색 |
-| 버블명 | `font-size: 15px; font-weight: 600; color: var(--text)` |
-| "공유됨" 뱃지 | `font-size: 11px; font-weight: 600; color: var(--positive); bg: rgba(126,174,139,0.12); border-radius: 6px; padding: 2px 8px` |
-| 체크박스 | `width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border)` |
-| 체크박스 (선택) | `bg: var(--accent-social); border-color: var(--accent-social)`, 흰색 체크 아이콘 |
-| 체크박스 (비활성) | `opacity: 0.3; pointer-events: none` |
+| 아이콘 | `<BubbleIcon>` 18px in 40×40px `border-radius: 10px` 컨테이너 (`iconBgColor` 배경) |
+| 버블명 | `15px 600 var(--text)` |
+| 차단 사유 | `Lock` 10px + `11px var(--text-hint)` |
+| "공유됨" 뱃지 | `11px 600 var(--positive); bg: rgba(126,174,139,0.12); border-radius: 6px; padding: 2px 8px` |
+| 체크박스 (선택) | `22×22px; border-radius: 6px; bg: var(--accent-social); border: 2px solid var(--accent-social)`, `Check` 14px 흰색 |
+| 체크박스 (미선택) | `bg: transparent; border: 2px solid var(--border)` |
+| 비활성 (isShared 또는 !canShare) | `opacity: 0.4; pointer-events: none` |
 | 행 | `padding: 12px 0; border-bottom: 1px solid var(--border)` |
+| 빈 상태 | "가입한 버블이 없습니다" (13px var(--text-hint), py-10) |
 
 #### `src/presentation/components/share/share-to-bubble-sheet.tsx`
 
 ```typescript
 interface ShareToBubbleSheetProps {
-  recordId: string;
-  /** 시트 열림/닫힘 */
-  open: boolean;
-  onClose: () => void;
-  /** 공유 완료 콜백 */
-  onShareComplete?: (sharedBubbleIds: string[]) => void;
+  isOpen: boolean
+  onClose: () => void
+  bubbles: BubbleSelectItem[]
+  onShareMultiple: (bubbleIds: string[]) => Promise<void>
 }
 ```
+
+> **참고**: 시트는 `recordId`를 직접 받지 않는다. `bubbles`와 `onShareMultiple`을 부모에서 주입받는 순수 UI 컴포넌트 패턴.
 
 **바텀 시트 구조**:
 
@@ -204,70 +162,69 @@ interface ShareToBubbleSheetProps {
 
 | 요소 | 스타일 |
 |------|--------|
-| 시트 | S5에서 구현한 공통 `BottomSheet` 컴포넌트 사용 |
-| 제목 | `font-size: 17px; font-weight: 800; color: var(--text)` |
-| 닫기 | `x` lucide 20px, `color: var(--text-hint)` |
-| CTA 버튼 | `width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700` |
-| CTA 활성 | `bg: var(--accent-social); color: #fff` |
-| CTA 비활성 (선택 0) | `bg: var(--bg-section); color: var(--text-hint); pointer-events: none` |
+| 시트 배경 | `max-w-[480px]; border-radius: 16px 16px 0 0; bg: var(--bg-elevated); max-height: 70vh` |
+| 드래그 핸들 | `h-1 w-10 rounded-full; bg: var(--border)` |
+| 제목 | `17px 800 var(--text)` |
+| 닫기 | `X` lucide 20px `var(--text-hint)` |
+| 버블 목록 | `max-height: 40vh; overflow-y: auto` |
+| CTA 활성 | `w-full; py: 14px; border-radius: 12px; 15px 700; bg: var(--accent-social); color: #fff` |
+| CTA 비활성 | `bg: var(--bg-section); color: var(--text-hint); pointer-events: none` |
 | CTA 텍스트 | 선택 N개: "공유 (N개)", 선택 0개: "버블을 선택해주세요" |
-
-**프라이버시 차단 시**:
-- `canShare === false`이면 시트 대신 토스트: "비공개 프로필은 공유할 수 없습니다"
-- 시트 열지 않음
+| 하단 패딩 | `px-4 pb-8 pt-3` |
 
 **동작 플로우**:
 
 ```
-1. 시트 열림 → useShareRecord(recordId) 호출
-2. availableBubbles 로드 (이미 공유된 것은 isAlreadyShared=true)
-3. 유저가 체크박스로 버블 선택 (이미 공유된 버블은 선택 불가)
-4. "공유 (N개)" CTA 탭
-   → shareToBubbles(selectedIds)
-   → 각 버블에 INSERT bubble_shares
-   → XP +1 per share
-   → onShareComplete 콜백
+1. 시트 열림 → bubbles prop 렌더
+2. 유저가 체크박스로 버블 선택 (이미 공유된 버블은 선택 불가)
+3. "공유 (N개)" CTA 탭
+   → onShareMultiple(selectedIds)
+   → 완료 시 showToast("N개 버블에 공유했어요")
+   → selectedIds 초기화
    → 시트 닫힘
-   → 토스트: "N개 버블에 공유했어요"
 ```
 
-### 4. 기록 상세 통합 (방법 2)
+#### `src/presentation/components/bubble/share-list-sheet.tsx`
 
-기록 상세 페이지 헤더의 `share-2` 아이콘 탭 → `ShareToBubbleSheet` 열기.
+공유 항목 선택 시트. 식당/와인 탭 전환, 필터/소팅/검색 기능을 갖춘 전체 화면 시트.
 
 ```typescript
-// record-detail-container.tsx 내부
-const [shareOpen, setShareOpen] = useState(false);
-
-// 헤더 액션
-<IconButton icon="share-2" onClick={() => setShareOpen(true)} />
-
-// 시트
-<ShareToBubbleSheet
-  recordId={recordId}
-  open={shareOpen}
-  onClose={() => setShareOpen(false)}
-/>
+interface ShareListSheetProps {
+  isOpen: boolean
+  onClose: () => void
+  records: RecordWithTarget[]
+  isLoading: boolean
+  selectedIds: Set<string>
+  onSelectionChange: (ids: Set<string>) => void
+}
 ```
 
-### 5. 기록 성공 화면 통합 (방법 1)
+**주요 기능**:
+- `StickyTabs` (식당/와인) 전환
+- `FilterSystem` — 필터 룰 적용 (`matchesAllRules`)
+- `SortDropdown` — 정렬 (latest, score_high, score_low, name, visit_count)
+- 검색 (이름/지역/메타)
+- 전체 선택/해제
+- 체크박스 개별 선택/해제
+- 하단 확인 바: "{N}개 항목 공유 · 완료"
 
-기록 저장 성공 후 `pref_bubble_share` 설정에 따라:
+#### `src/presentation/components/bubble/share-rule-editor.tsx`
+
+버블 자동 공유 규칙 편집기. 버블 설정에서 사용.
 
 ```typescript
-// record-success 화면에서
-const { pref_bubble_share } = currentUser;
-
-useEffect(() => {
-  if (pref_bubble_share === 'ask') {
-    setShareSheetOpen(true);        // 시트 자동 표시
-  } else if (pref_bubble_share === 'auto') {
-    // 기본 버블(가장 최근 공유한 버블)에 자동 공유
-    autoShare();
-  }
-  // 'never': 아무것도 안 함
-}, []);
+interface ShareRuleEditorProps {
+  value: BubbleShareRule | null
+  onChange: (rule: BubbleShareRule | null) => void
+  focusType?: 'restaurant' | 'wine' | 'all'
+}
 ```
+
+**주요 기능**:
+- 모드 선택: "모든 항목 공유" (all) / "조건부 공유" (filtered)
+- `focusType='all'`이면 식당/와인 각각 독립된 `ConditionFilterBar` 표시
+- `focusType='restaurant'|'wine'`이면 단일 `ConditionFilterBar`
+- 규칙 ↔ FilterChipItem 변환 (`rulesToChips`, `chipsToRules`)
 
 ---
 
@@ -285,27 +242,28 @@ useEffect(() => {
 
 ```
 [기록 상세 → share-2 탭]
-  → <ShareToBubbleSheet recordId={id} />
-    → useShareRecord(recordId)
-      → 프라이버시 검증: users.privacy_profile !== 'private'
-      → 소속 버블 조회: bubble_members WHERE user_id = me
-      → 이미 공유된 버블 조회: bubble_shares WHERE record_id
-      → availableBubbles[] (isAlreadyShared 마킹)
-    → <BubbleSelectList> 렌더
-    → 유저 선택 → CTA 탭
-      → shareToBubbles([id1, id2])
-        → INSERT bubble_shares × N
-        → XP: social_share +1 × N
-        → SWR mutate (기록 상세 + 버블 피드 갱신)
-      → 토스트 "2개 버블에 공유했어요"
-      → 시트 닫힘
+  → useShareRecord(userId, recordId, targetId, targetType)
+    → 프라이버시 검증: settingsRepo.getUserSettings(userId)
+      → privacyProfile === 'private' → canShare=false
+    → 소속 버블 조회: bubbleRepo.getUserBubbles(userId)
+    → 이미 공유된 버블 조회: bubbleRepo.getRecordShares(recordId)
+    → availableBubbles[] (isShared/canShare/blockReason 마킹)
+  → <ShareToBubbleSheet
+      bubbles={availableBubbles}
+      onShareMultiple={shareToBubbles}
+    />
+  → 유저 선택 → CTA 탭
+    → shareToBubbles([id1, id2])
+      → bubbleRepo.shareRecord × N
+      → awardSocialXp(userId, 'share') × N
+      → awardBonus(userId, 'first_share')
+    → showToast "2개 버블에 공유했어요"
+    → 시트 닫힘
 
 [공유 취소]
-  → cancelShare(bubbleId)
-    → DELETE bubble_shares WHERE record_id AND bubble_id
-    → 고아 댓글 유지 (DELETE 안 함)
-    → SWR mutate
-    → 토스트 "공유가 취소되었어요"
+  → unshareBubble(bubbleId)
+    → bubbleRepo.unshareRecord(recordId, bubbleId)
+    → UI 상태 갱신 (isShared=false)
 ```
 
 ---
@@ -313,20 +271,21 @@ useEffect(() => {
 ## 검증 체크리스트
 
 ```
-□ 방법 1: 기록 성공 후 pref_bubble_share='ask' → 시트 자동 표시
-□ 방법 1: pref_bubble_share='auto' → 자동 공유 (시트 생략)
-□ 방법 1: pref_bubble_share='never' → 시트 미표시
-□ 방법 2: 기록 상세 share-2 아이콘 → 시트 열림
+□ 기록 상세 share-2 아이콘 → 시트 열림
 □ 버블 선택 리스트: 소속 버블 전체 표시
-□ 이미 공유된 버블: "공유됨" 뱃지 + 체크박스 비활성
-□ 공유 → bubble_shares INSERT 확인
-□ 공유 → XP social_share +1 확인
-□ 공유 취소 → bubble_shares DELETE 확인
-□ 공유 취소 → 고아 댓글 유지 (comments 삭제 안 됨)
-□ privacy_profile='private' → 토스트 "비공개 프로필은 공유할 수 없습니다" + 시트 미열림
-□ 동반자(companions) 절대 비공유 확인
+□ 이미 공유된 버블: "공유됨" 뱃지 + 체크박스 비활성 (opacity: 0.4)
+□ 비활성 멤버십: Lock 아이콘 + blockReason 텍스트 표시
+□ 빈 상태: "가입한 버블이 없습니다"
+□ 공유 → bubbleRepo.shareRecord 호출 확인
+□ 공유 → awardSocialXp(userId, 'share') 호출 확인
+□ 첫 공유 → awardBonus(userId, 'first_share') 호출 확인
+□ 공유 취소 → bubbleRepo.unshareRecord 호출 확인
+□ privacy_profile='private' → canShare=false, blockReason 표시
+□ 동반자(companions) 공유 데이터에 미포함 확인
 □ 가격(price_total) 버블 내에서만 표시, 프로필 방문자에게 숨김
-□ 버블 간 격리: 버블X 공유 → 버블Y에서 미노출
+□ 버블 간 격리: 버블X에 공유 → 버블Y에서 미노출
+□ ShareListSheet: 식당/와인 탭 전환, 필터/소팅/검색 동작
+□ ShareRuleEditor: all/filtered 모드 전환, ConditionFilterBar 연동
 □ 360px 레이아웃 정상
 □ R1~R5 위반 없음
 □ pnpm build / lint 통과

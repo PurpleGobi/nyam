@@ -1,7 +1,8 @@
 # S4-T04: 찜(Wishlist) CRUD
 
 > 상세 페이지 히어로(L1) 하트 버튼으로 찜 추가/해제
-> SSOT: `systems/DATA_MODEL.md` wishlists 테이블
+> **변경**: `wishlists` 테이블 대신 `lists` 테이블 사용 (status='wishlist')
+> SSOT: `systems/DATA_MODEL.md` lists 테이블
 
 ---
 
@@ -9,7 +10,7 @@
 
 | 문서 | 섹션 | 용도 |
 |------|------|------|
-| `systems/DATA_MODEL.md` | wishlists 테이블 | 스키마, UNIQUE 제약, source 필드, is_visited |
+| `systems/DATA_MODEL.md` | lists 테이블 | 스키마, status 필드 (visited/wishlist/cellar/tasted) |
 | `pages/02_RESTAURANT_DETAIL.md` | Layer 1 좋아요 버튼 | 하트 토글 UX |
 | `pages/03_WINE_DETAIL.md` | Layer 1 좋아요 버튼 | 하트 토글 UX |
 
@@ -17,135 +18,77 @@
 
 ## 선행 조건
 
-- S1 완료 (wishlists 마이그레이션)
+- S1 완료 (lists 마이그레이션)
 - S4-T01 완료 (HeroCarousel에 isWishlisted + onWishlistToggle props 존재)
 
 ---
 
-## 생성할 파일 목록
+## 파일 목록 (구현 완료)
+
+> **변경**: 별도 `wishlist` 도메인/레포지토리 없음. `lists` 테이블과 `RecordRepository` 사용.
 
 | 파일 경로 | 레이어 | 설명 |
 |-----------|--------|------|
-| `src/domain/entities/wishlist.ts` | domain | Wishlist 인터페이스 |
-| `src/domain/repositories/wishlist-repository.ts` | domain | WishlistRepository 인터페이스 |
-| `src/infrastructure/repositories/supabase-wishlist-repository.ts` | infrastructure | Supabase 구현체 |
+| `src/domain/entities/record.ts` | domain | ListItem 인터페이스 + ListStatus 타입 (visited/wishlist/cellar/tasted) |
+| `src/domain/repositories/record-repository.ts` | domain | findListByUserAndTarget, findOrCreateList, deleteList 메서드 |
+| `src/infrastructure/repositories/supabase-record-repository.ts` | infrastructure | Supabase 구현체 |
 | `src/application/hooks/use-wishlist.ts` | application | 찜 상태 조회 + 토글 |
 | `src/presentation/components/detail/wishlist-button.tsx` | presentation | 하트 버튼 (독립 사용 가능) |
 
 ---
 
-## Domain: Wishlist 엔티티
+## Domain: ListItem 엔티티 (record.ts 내)
+
+> **변경**: 별도 `wishlist.ts` 엔티티 없음. `record.ts` 내에 `ListItem` + `ListStatus` 정의.
 
 ```typescript
-// src/domain/entities/wishlist.ts
-// R1: 외부 의존 0
+// src/domain/entities/record.ts (관련 부분 발췌)
 
-/** wishlists.source */
-export type WishlistSource = 'direct' | 'bubble' | 'ai' | 'web'
+/** lists.status */
+export type ListStatus = 'visited' | 'wishlist' | 'cellar' | 'tasted'
 
-/**
- * wishlists 테이블 1:1 매핑
- * DATA_MODEL.md §2 wishlists 테이블
- *
- * UNIQUE(user_id, target_id, target_type) — 동일 대상 중복 찜 불가
- */
-export interface Wishlist {
+export interface ListItem {
   id: string
   userId: string
   targetId: string
-  targetType: 'restaurant' | 'wine'
-
-  /**
-   * 찜 출처
-   * - direct: 사용자가 직접 찜 (상세 페이지 하트)
-   * - bubble: 버블 멤버 기록 보고 찜
-   * - ai: AI 추천에서 찜
-   * - web: 외부 평점/정보 보고 찜
-   */
-  source: WishlistSource
-
-  /**
-   * source='bubble'일 때 원본 기록 ID
-   * source='ai'일 때 ai_recommendations.id 참조 가능
-   * → 찜 카드에서 "김영수 93 · 을지로 최고 바베큐" 표시용
-   */
+  targetType: RecordTargetType    // 'restaurant' | 'wine'
+  status: ListStatus
+  source: string
   sourceRecordId: string | null
-
-  /**
-   * 방문 여부.
-   * 기록 생성 시 동일 target의 wishlist.is_visited = true 자동 업데이트
-   * (트리거 또는 application layer)
-   */
-  isVisited: boolean
-
   createdAt: string
+  updatedAt: string
 }
 ```
 
 ---
 
-## Domain: WishlistRepository 인터페이스
+## Domain: RecordRepository 인터페이스 (찜 관련 메서드)
+
+> **변경**: 별도 `WishlistRepository` 없음. `RecordRepository`에 lists 관련 메서드 포함.
 
 ```typescript
-// src/domain/repositories/wishlist-repository.ts
-// R1: 외부 의존 0
+// src/domain/repositories/record-repository.ts (관련 부분 발췌)
 
-import type { Wishlist, WishlistSource } from '@/domain/entities/wishlist'
+export interface RecordRepository {
+  // ... 기록 CRUD 메서드 ...
 
-export interface WishlistRepository {
-  /**
-   * 특정 대상의 찜 여부 확인
-   * → SELECT 1 FROM wishlists WHERE user_id AND target_id AND target_type LIMIT 1
-   */
-  isWishlisted(
+  /** lists 테이블에서 사용자×대상 관계 조회 */
+  findListByUserAndTarget(
     userId: string,
     targetId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<boolean>
+    targetType: RecordTargetType,
+  ): Promise<ListItem | null>
 
-  /**
-   * 찜 추가
-   * → INSERT INTO wishlists (user_id, target_id, target_type, source)
-   * → UNIQUE 제약: 이미 존재하면 무시 (ON CONFLICT DO NOTHING)
-   */
-  add(params: {
-    userId: string
-    targetId: string
-    targetType: 'restaurant' | 'wine'
-    source: WishlistSource
-    sourceRecordId?: string
-  }): Promise<Wishlist>
-
-  /**
-   * 찜 해제
-   * → DELETE FROM wishlists WHERE user_id AND target_id AND target_type
-   */
-  remove(
+  /** lists에 찜/방문 등록 (없으면 생성, 있으면 반환) */
+  findOrCreateList(
     userId: string,
     targetId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<void>
+    targetType: RecordTargetType,
+    status: ListStatus,
+  ): Promise<ListItem>
 
-  /**
-   * 내 찜 목록 조회 (target_type별)
-   * → SELECT * FROM wishlists WHERE user_id AND target_type ORDER BY created_at DESC
-   */
-  findByUser(
-    userId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<Wishlist[]>
-
-  /**
-   * is_visited 업데이트
-   * → 기록 생성/삭제 시 호출
-   * → UPDATE wishlists SET is_visited = ? WHERE user_id AND target_id AND target_type
-   */
-  updateVisitStatus(
-    userId: string,
-    targetId: string,
-    targetType: 'restaurant' | 'wine',
-    isVisited: boolean,
-  ): Promise<void>
+  /** lists 삭제 (찜 해제) */
+  deleteList(listId: string): Promise<void>
 }
 ```
 
@@ -155,9 +98,11 @@ export interface WishlistRepository {
 
 ```typescript
 // src/application/hooks/use-wishlist.ts
+'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
+import type { RecordRepository } from '@/domain/repositories/record-repository'
+import type { ListStatus } from '@/domain/entities/record'
 
 export interface UseWishlistReturn {
   isWishlisted: boolean
@@ -166,27 +111,25 @@ export interface UseWishlistReturn {
 }
 
 /**
- * 찜 상태 조회 + 토글
+ * 찜(wishlist) 토글 — lists 테이블 기반
+ * status='wishlist' 항목의 존재 여부로 판단
  *
- * 사용처:
- * - 식당 상세 HeroCarousel (isWishlisted, onWishlistToggle)
- * - 와인 상세 HeroCarousel (isWishlisted, onWishlistToggle)
- * - 검색 결과 카드 (홈 카드에서도 재사용 가능)
+ * ※ WishlistRepository 대신 RecordRepository 사용
  */
 export function useWishlist(
   userId: string | null,
-  targetId: string,
+  targetId: string | null,
   targetType: 'restaurant' | 'wine',
-  repo: WishlistRepository,
+  repo: RecordRepository,          // ← WishlistRepository가 아닌 RecordRepository
 ): UseWishlistReturn {
-  // 1. 초기 로드: repo.isWishlisted(userId, targetId, targetType)
+  // 1. 초기 로드: repo.findListByUserAndTarget(userId, targetId, targetType)
+  //    → list?.status === 'wishlist' 이면 isWishlisted = true
   // 2. toggle:
-  //    isWishlisted === true
-  //      → repo.remove(userId, targetId, targetType)
-  //      → setIsWishlisted(false)
-  //    isWishlisted === false
-  //      → repo.add({ userId, targetId, targetType, source: 'direct' })
-  //      → setIsWishlisted(true)
+  //    isWishlisted === true (찜 해제)
+  //      → repo.findListByUserAndTarget → list.status === 'wishlist' 확인
+  //      → repo.deleteList(list.id)
+  //    isWishlisted === false (찜 추가)
+  //      → repo.findOrCreateList(userId, targetId, targetType, 'wishlist')
   // 3. 낙관적 업데이트 (UI 즉시 반영, 실패 시 롤백)
 }
 ```
@@ -229,126 +172,63 @@ interface WishlistButtonProps {
 
 ## Infrastructure: Supabase 구현체
 
+> **변경**: `supabase-wishlist-repository.ts` 파일 없음. 
+> 찜 관련 로직은 `supabase-record-repository.ts` 내 lists 관련 메서드에 포함.
+
 ```typescript
-// src/infrastructure/repositories/supabase-wishlist-repository.ts
+// src/infrastructure/repositories/supabase-record-repository.ts (관련 부분)
 
-import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
-import type { Wishlist, WishlistSource } from '@/domain/entities/wishlist'
-import { createClient } from '@/infrastructure/supabase/client'
+// findListByUserAndTarget:
+//   SELECT * FROM lists WHERE user_id AND target_id AND target_type LIMIT 1
 
-export class SupabaseWishlistRepository implements WishlistRepository {
+// findOrCreateList:
+//   SELECT or INSERT INTO lists (user_id, target_id, target_type, status, source)
 
-  async isWishlisted(
-    userId: string,
-    targetId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<boolean> {
-    // SELECT id FROM wishlists
-    // WHERE user_id = userId AND target_id = targetId AND target_type = targetType
-    // LIMIT 1
-    // → 결과 있으면 true
-  }
-
-  async add(params: {
-    userId: string
-    targetId: string
-    targetType: 'restaurant' | 'wine'
-    source: WishlistSource
-    sourceRecordId?: string
-  }): Promise<Wishlist> {
-    // INSERT INTO wishlists (user_id, target_id, target_type, source, source_record_id)
-    // ON CONFLICT (user_id, target_id, target_type) DO NOTHING
-    // RETURNING *
-    //
-    // DB 컬럼 → 엔티티 매핑:
-    // user_id → userId, target_id → targetId, target_type → targetType,
-    // source_record_id → sourceRecordId, is_visited → isVisited,
-    // created_at → createdAt
-  }
-
-  async remove(
-    userId: string,
-    targetId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<void> {
-    // DELETE FROM wishlists
-    // WHERE user_id = userId AND target_id = targetId AND target_type = targetType
-  }
-
-  async findByUser(
-    userId: string,
-    targetType: 'restaurant' | 'wine',
-  ): Promise<Wishlist[]> {
-    // SELECT * FROM wishlists
-    // WHERE user_id = userId AND target_type = targetType
-    // ORDER BY created_at DESC
-  }
-
-  async updateVisitStatus(
-    userId: string,
-    targetId: string,
-    targetType: 'restaurant' | 'wine',
-    isVisited: boolean,
-  ): Promise<void> {
-    // UPDATE wishlists
-    // SET is_visited = isVisited
-    // WHERE user_id = userId AND target_id = targetId AND target_type = targetType
-  }
-}
+// deleteList:
+//   DELETE FROM lists WHERE id = listId
 ```
 
 ---
 
 ## DI 등록
 
+> **변경**: 별도 `wishlistRepo` 없음. `recordRepo`를 통해 찜 기능 접근.
+
 ```typescript
 // src/shared/di/container.ts
-
-import { SupabaseWishlistRepository } from '@/infrastructure/repositories/supabase-wishlist-repository'
-import type { WishlistRepository } from '@/domain/repositories/wishlist-repository'
-
-export const wishlistRepo: WishlistRepository = new SupabaseWishlistRepository()
+// recordRepo가 lists 관련 메서드도 포함
+export const recordRepo: RecordRepository = new SupabaseRecordRepository()
 ```
 
 ---
 
-## is_visited 자동 업데이트
+## lists 테이블 상태 관리
 
-기록 생성/삭제 시 동일 target의 wishlist.is_visited를 자동 업데이트해야 한다.
+기록 생성 시 `findOrCreateList`로 lists에 status='visited' 항목이 자동 생성됨.
+찜은 별도로 status='wishlist' 항목을 관리.
 
-### 기록 생성 시
-
-```typescript
-// application/hooks/use-create-record.ts 내부 (S2에서 구현)
-// S2 설계(10_infra.md)에 따라 recordRepo.markWishlistVisited()로 처리
-
-// 기록 저장 성공 후:
-await recordRepo.markWishlistVisited(userId, targetId, targetType)
-```
-
-### 기록 삭제 시
+### 사용 예시 (컨테이너)
 
 ```typescript
-// application/hooks/use-record-detail.ts → deleteRecord 내부 (S4-T03)
-
-// 기록 삭제 후:
-// 같은 target의 다른 기록이 있는지 확인
-const remainingRecords = await recordRepo.findByUserAndTarget(userId, targetId, targetType)
-if (remainingRecords.length === 0) {
-  await wishlistRepo.updateVisitStatus(userId, targetId, targetType, false)
-}
+// restaurant-detail-container.tsx
+const { isWishlisted, toggle: toggleWishlist } = useWishlist(
+  user?.id ?? null,
+  restaurantId,
+  'restaurant',
+  recordRepo,    // ← WishlistRepository가 아닌 RecordRepository 전달
+)
 ```
 
 ---
 
 ## 통합 포인트
 
-| 사용처 | 컴포넌트 | Props |
-|--------|----------|-------|
-| 식당 상세 L1 | HeroCarousel | `isWishlisted`, `onWishlistToggle` |
-| 와인 상세 L1 | HeroCarousel | `isWishlisted`, `onWishlistToggle` |
+| 사용처 | hook/컴포넌트 | 방식 |
+|--------|--------------|------|
+| 식당 상세 | `useWishlist(userId, restaurantId, 'restaurant', recordRepo)` | HeroCarousel `isWishlisted` + `onWishlistToggle` |
+| 와인 상세 | `useWishlist(userId, wineId, 'wine', recordRepo)` | HeroCarousel `isWishlisted` + `onWishlistToggle` |
 | 홈 카드 (S5) | RecordCard | WishlistButton variant='card' |
-| 프로필 찜 목록 (S6) | WishlistList | findByUser 기반 목록 |
+| 프로필 (S6) | lists 테이블 조회 | findListByUserAndTarget 기반 |
 | 검색 결과 (S3) | SearchResultCard | WishlistButton variant='card' |
 
 ---
@@ -356,17 +236,17 @@ if (remainingRecords.length === 0) {
 ## RLS 정책
 
 ```sql
--- wishlists는 본인만 CRUD
-CREATE POLICY "wishlists_select_own" ON wishlists
+-- lists는 본인만 CRUD
+CREATE POLICY "lists_select_own" ON lists
   FOR SELECT USING (user_id = auth.uid());
 
-CREATE POLICY "wishlists_insert_own" ON wishlists
+CREATE POLICY "lists_insert_own" ON lists
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "wishlists_delete_own" ON wishlists
+CREATE POLICY "lists_delete_own" ON lists
   FOR DELETE USING (user_id = auth.uid());
 
-CREATE POLICY "wishlists_update_own" ON wishlists
+CREATE POLICY "lists_update_own" ON lists
   FOR UPDATE USING (user_id = auth.uid());
 ```
 

@@ -49,15 +49,21 @@
 
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
+import type { Wine } from '@/domain/entities/wine'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
+import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
+import type { WineRepository } from '@/domain/repositories/wine-repository'
+import type { XpRepository } from '@/domain/repositories/xp-repository'
+import type { AxisType } from '@/domain/entities/xp'
+import { getLevelColor } from '@/domain/services/xp-calculator'
 
 /** XP 이력 항목 */
 export interface XpEarnedItem {
-  axisType: string     // 'category' | 'area' | 'genre' | 'wine_variety' | 'wine_region'
-  axisValue: string    // '을지로', '일식', 'restaurant' 등
-  xpAmount: number     // 획득 XP
-  currentLevel: number // 현재 레벨
-  levelColor: string   // 레벨 색상 hex
+  axisType: string
+  axisValue: string
+  xpAmount: number
+  currentLevel: number
+  levelColor: string     // getLevelColor(level) 로 계산
 }
 
 /** 연결 대상 (식당 또는 와인) */
@@ -65,14 +71,18 @@ export interface LinkedTarget {
   id: string
   name: string
   targetType: 'restaurant' | 'wine'
+  /** 와인: "생산자 · 빈티지" */
+  subText: string | null
 }
 
 export interface RecordDetailState {
   record: DiningRecord | null
   photos: RecordPhoto[]
-  targetInfo: LinkedTarget | null        // 기록의 대상 (식당 또는 와인)
-  linkedItem: LinkedTarget | null        // 식당 기록→연결 와인, 와인 기록→연결 식당
-  otherRecords: DiningRecord[]           // 같은 대상의 다른 기록 (사분면 참조 점용)
+  targetInfo: LinkedTarget | null
+  /** 와인 기록인 경우 와인 전체 정보 (아로마 휠 등 표시용) */
+  wineInfo: Wine | null
+  linkedItem: LinkedTarget | null
+  otherRecords: DiningRecord[]
   xpEarned: XpEarnedItem[]
   isLoading: boolean
   error: string | null
@@ -81,39 +91,43 @@ export interface RecordDetailState {
 }
 
 export interface RecordDetailActions {
-  /** 삭제 실행 */
-  deleteRecord: () => Promise<void>
-  /** 수정 모드 진입 (기록 플로우로 이동) */
-  navigateToEdit: () => void
+  /** 삭제 실행 — 성공 시 true 반환 */
+  deleteRecord: () => Promise<boolean>
 }
 
+/**
+ * 의존성 주입 패턴: repo를 단일 파라미터가 아닌 deps 객체로 받음
+ * → 여러 레포지토리에 접근 필요 (record, restaurant, wine, xp)
+ */
 export function useRecordDetail(
   recordId: string,
-  userId: string,
-  repo: RecordRepository,
+  userId: string | null,
+  deps: {
+    recordRepo: RecordRepository
+    restaurantRepo: RestaurantRepository
+    wineRepo: WineRepository
+    xpRepo: XpRepository
+  },
 ): RecordDetailState & RecordDetailActions {
-  // 1. repo.findById(recordId) → record
-  // 2. record.targetType === 'restaurant'
-  //      → restaurantRepo.findById(record.targetId) → targetInfo
-  //    record.targetType === 'wine'
-  //      → wineRepo.findById(record.targetId) → targetInfo
-  // 3. repo.findRecordPhotos([recordId]) → photos
-  // 4. repo.findByUserAndTarget(userId, record.targetId, record.targetType) → otherRecords (현재 제외)
-  // 5. 연결 아이템:
-  //    record.linkedWineId → wineRepo.findById → linkedItem
-  //    record.linkedRestaurantId → restaurantRepo.findById → linkedItem
-  // 6. XP 이력 조회 (xp_histories WHERE record_id = recordId)
+  // 로드 과정:
+  // 1. deps.recordRepo.findById(recordId) + findPhotosByRecordId(recordId) 병렬
+  // 2. 대상 정보 / 연결 아이템 / 다른 기록 / XP 이력 병렬:
+  //    2a. record.targetType → restaurantRepo or wineRepo.findById → targetInfo
+  //        와인인 경우 wineInfo도 함께 설정
+  //    2b. record.linkedWineId or linkedRestaurantId → linkedItem
+  //    2c. recordRepo.findByUserAndTarget → otherRecords (현재 제외)
+  //    2d. xpRepo.getHistoriesByRecord + getUserExperiences → xpEarned
+  //        → levelMap 빌드 후 getLevelColor(level)로 색상 결정
   //
   // deleteRecord:
-  //   1. records DELETE (record_photos ON DELETE CASCADE 자동)
-  //   2. xp_histories DELETE WHERE record_id
-  //   3. user_experiences XP 재계산
-  //   4. users.total_xp / active_xp 재계산
-  //   5. router.back()
+  //   1. deps.recordRepo.delete(recordId) — record_photos ON DELETE CASCADE
+  //   2. xp_histories 조회 → axis별 XP 합산
+  //   3. axis별 user_experiences 차감 + level 재계산 (getLevelThresholds)
+  //   4. users.total_xp 차감
+  //   5. xp_histories 삭제
+  //   6. 성공 시 true 반환
   //
-  // navigateToEdit:
-  //   router.push(`/records/${recordId}/edit`) 또는
-  //   기록 플로우 진입 (pre-fill 데이터 전달)
+  // ※ navigateToEdit는 hook에 없음 — 컨테이너에서 router.push로 직접 처리
 }
 ```
 
@@ -464,9 +478,8 @@ interface DeleteConfirmModalProps {
 4. users.total_xp = SUM(all xp_histories.xp_amount)
 5. users.active_xp 재계산 (최근 6개월)
 6. users.record_count -= 1
-7. wishlists 업데이트: 동일 target의 is_visited 재확인
-   (다른 기록이 있으면 유지, 없으면 false)
-8. router.back()
+7. router.back()
+   (※ 실제 구현에서는 lists 업데이트 없음 — 남은 기록 수만 토스트 표시)
 ```
 
 ---

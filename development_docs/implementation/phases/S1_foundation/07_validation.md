@@ -128,7 +128,7 @@ grep -r "from '@supabase\|from '.*infrastructure\|from '@/infrastructure" src/pr
 grep -rn "supabase\|createClient\|from '@/infrastructure\|from '@/application" src/app/ --include="page.tsx"
 ```
 
-**통과 조건**: 결과 0건. page.tsx는 Container 컴포넌트를 렌더링하는 것만 허용한다. S1에서는 임시 홈 페이지이므로 단순 JSX만 있어야 한다.
+**통과 조건**: 결과 0건. page.tsx는 Container 컴포넌트를 렌더링하는 것만 허용한다. `src/app/page.tsx`는 존재하지 않으며, `src/app/(main)/page.tsx`가 홈 역할을 한다.
 
 #### 폴더 구조 확인
 
@@ -144,14 +144,17 @@ src/domain/repositories/
 src/domain/services/
 src/infrastructure/repositories/
 src/infrastructure/api/
+src/infrastructure/storage/
 src/infrastructure/supabase/
 src/application/hooks/
 src/presentation/components/
 src/presentation/containers/
+src/presentation/guards/
 src/presentation/hooks/
 src/presentation/providers/
 src/shared/di/
 src/shared/utils/
+src/shared/types/
 src/shared/constants/
 src/app/(main)/
 ```

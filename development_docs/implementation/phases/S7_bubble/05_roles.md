@@ -38,6 +38,8 @@
 | presentation/components | `src/presentation/components/bubble/bubble-stats-card.tsx` | 버블 통계 (2×2 그리드 + 주간 차트) |
 | presentation/components | `src/presentation/components/bubble/bubble-danger-zone.tsx` | 위험 영역 (삭제) |
 | presentation/containers | `src/presentation/containers/bubble-settings-container.tsx` | 설정 컨테이너 |
+| presentation/containers | `src/presentation/containers/bubble-settings-page-container.tsx` | 설정 페이지 컨테이너 |
+| app | `src/app/(main)/bubbles/[id]/settings/page.tsx` | 설정 페이지 라우트 |
 
 ### 스코프 외
 
@@ -305,7 +307,7 @@ interface UseBubbleRolesReturn {
 
 **목업 참조**: `04_bubbles_detail.html` (screen-bubble-settings)
 
-히어로의 ⚙️ 클릭 시 슬라이드 전환 (owner만 보이는 버튼).
+히어로의 ⚙️ 클릭 시 `/bubbles/[id]/settings` 라우트로 이동 (owner만 보이는 버튼).
 
 #### `bubble-settings.tsx`
 
@@ -462,7 +464,7 @@ interface BubbleDangerZoneProps {
   설정 > 멤버 관리 > 멤버 행 > 역할 변경
     → useBubbleRoles.changeRole(userId, 'admin')
       → canChangeRole() 검증 (domain service)
-      → bubbleRepo.updateMemberRole(bubbleId, userId, 'admin')
+      → bubbleRepo.updateMember(bubbleId, userId, { role: 'admin' })
 
 [멤버 제거]
   설정 > 멤버 관리 > 멤버 행 > 제거

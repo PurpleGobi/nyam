@@ -74,28 +74,13 @@ export interface CreateRestaurantInput {
   externalIds?: Record<string, string> | null
 }
 
-/** DATA_MODEL.md restaurants.genre CHECK 제약 값 */
-// RestaurantGenre 정식 정의는 S4의 src/domain/entities/restaurant.ts에서 정의
-// S3 시점에서는 genre를 string으로 받고, S4 구현 시 타입을 적용한다
-// 구현 순서: S3(검색)과 S4(상세)가 Wave 3에서 병렬이므로,
-// restaurant.ts의 RestaurantGenre 타입은 먼저 완료되는 스프린트에서 정의하고
-// 나중 스프린트에서 import한다
-export type RestaurantGenre =
-  | '한식' | '일식' | '중식'           // 동아시아
-  | '태국' | '베트남' | '인도'         // 동남아/남아시아
-  | '이탈리안' | '프렌치' | '스페인' | '지중해'  // 유럽
-  | '미국' | '멕시칸'                  // 아메리카
-  | '카페' | '바/주점' | '베이커리'     // 음료/디저트
-  | '기타'                             // 기타
+/** DATA_MODEL.md restaurants.genre CHECK 제약 값 — as const 튜플 패턴 */
+export const RESTAURANT_GENRES = [
+  '한식', '일식', '중식', '태국', '베트남', '인도', '이탈리안', '프렌치',
+  '스페인', '지중해', '미국', '멕시칸', '카페', '바/주점', '베이커리', '기타',
+] as const
 
-export const RESTAURANT_GENRES: RestaurantGenre[] = [
-  '한식', '일식', '중식',
-  '태국', '베트남', '인도',
-  '이탈리안', '프렌치', '스페인', '지중해',
-  '미국', '멕시칸',
-  '카페', '바/주점', '베이커리',
-  '기타',
-]
+export type RestaurantGenre = (typeof RESTAURANT_GENRES)[number]
 
 /** 장르 대분류 그룹 (UI 표시용 — register-form에서 그룹별 렌더링) */
 export const GENRE_GROUPS: { label: string; genres: RestaurantGenre[] }[] = [

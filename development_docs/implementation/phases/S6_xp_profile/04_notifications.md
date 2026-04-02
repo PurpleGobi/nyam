@@ -10,8 +10,8 @@
 ## 1. 구현 범위
 
 - 별도 라우트 **없음** — 헤더 벨 아이콘 클릭 시 드롭다운 팝업
-- 5개 알림 유형만 (레벨업, 버블가입신청, 팔로우요청, 버블가입승인, 팔로우수락)
-- 인라인 액션 버튼 (수락/거절)
+- 10개 알림 유형 (레벨업, 버블가입신청, 팔로우요청, 버블가입승인, 팔로우수락, 버블초대, 버블새기록, 버블멤버가입, 리액션좋아요, 댓글답글)
+- 인라인 액션 버튼 (수락/거절 — 가입신청/팔로우요청/버블초대)
 - 실시간 구독 (Supabase Realtime)
 - 미읽음 뱃지 (헤더 벨 아이콘)
 
@@ -22,13 +22,18 @@
 ### `src/domain/entities/notification.ts`
 
 ```typescript
-/** 알림 유형 (5가지만) */
+/** 알림 유형 (10종 — DB 스키마와 1:1 매칭) */
 export type NotificationType =
   | 'level_up'                // 레벨업 달성
   | 'bubble_join_request'     // 버블 가입 신청
   | 'bubble_join_approved'    // 버블 가입 승인
   | 'follow_request'          // 팔로우 요청
-  | 'follow_accepted';        // 팔로우 수락
+  | 'follow_accepted'         // 팔로우 수락
+  | 'bubble_invite'           // 버블 초대
+  | 'bubble_new_record'       // 버블 새 기록
+  | 'bubble_member_joined'    // 버블 새 멤버 가입
+  | 'reaction_like'           // 리액션 좋아요
+  | 'comment_reply';          // 댓글 답글
 
 /** 액션 상태 */
 export type ActionStatus = 'pending' | 'accepted' | 'rejected' | null;
@@ -43,6 +48,8 @@ export interface Notification {
   isRead: boolean;
   actionStatus: ActionStatus;
   actorId: string | null;         // 행위자 (가입 신청자, 팔로우 요청자)
+  targetType: string | null;      // 대상 타입 (기록, 버블 등)
+  targetId: string | null;        // 대상 ID
   bubbleId: string | null;        // 관련 버블 (가입신청/승인)
   createdAt: string;
 }
@@ -53,7 +60,7 @@ export interface NotificationTypeConfig {
   icon: string;                   // lucide 아이콘명
   iconColor: string;              // CSS variable name
   hasAction: boolean;             // 수락/거절 버튼 유무
-  navigationTarget: 'profile' | 'bubble_detail' | 'actor_profile';
+  navigationTarget: 'profile' | 'bubble_detail' | 'actor_profile' | 'record_detail';
 }
 
 /** 알림 유형 설정 테이블 */
@@ -93,6 +100,41 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     hasAction: false,
     navigationTarget: 'actor_profile',
   },
+  bubble_invite: {
+    type: 'bubble_invite',
+    icon: 'mail',
+    iconColor: 'var(--accent-social)',
+    hasAction: true,
+    navigationTarget: 'bubble_detail',
+  },
+  bubble_new_record: {
+    type: 'bubble_new_record',
+    icon: 'file-plus',
+    iconColor: 'var(--accent-food)',
+    hasAction: false,
+    navigationTarget: 'bubble_detail',
+  },
+  bubble_member_joined: {
+    type: 'bubble_member_joined',
+    icon: 'user-plus-2',
+    iconColor: 'var(--accent-social)',
+    hasAction: false,
+    navigationTarget: 'bubble_detail',
+  },
+  reaction_like: {
+    type: 'reaction_like',
+    icon: 'heart',
+    iconColor: 'var(--negative)',
+    hasAction: false,
+    navigationTarget: 'record_detail',
+  },
+  comment_reply: {
+    type: 'comment_reply',
+    icon: 'message-circle',
+    iconColor: 'var(--accent-social)',
+    hasAction: false,
+    navigationTarget: 'record_detail',
+  },
 };
 ```
 
@@ -103,7 +145,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
 ### `src/domain/repositories/notification-repository.ts`
 
 ```typescript
-import type { Notification, ActionStatus } from '@/domain/entities/notification';
+import type { Notification } from '@/domain/entities/notification';
 
 export interface NotificationRepository {
   /** 알림 목록 조회 (최대 20개, 최신순) */
@@ -144,7 +186,7 @@ import type { Notification, ActionStatus } from '@/domain/entities/notification'
 import { createClient } from '@/infrastructure/supabase/client';
 
 export class SupabaseNotificationRepository implements NotificationRepository {
-  private supabase = createClient();
+  private get supabase() { return createClient(); }
 
   async getNotifications(userId: string, limit: number): Promise<Notification[]> {
     const { data, error } = await this.supabase
@@ -202,6 +244,8 @@ export class SupabaseNotificationRepository implements NotificationRepository {
         body: notification.body,
         action_status: notification.actionStatus,
         actor_id: notification.actorId,
+        target_type: notification.targetType,
+        target_id: notification.targetId,
         bubble_id: notification.bubbleId,
       })
       .select()
@@ -248,6 +292,8 @@ function mapNotification(row: Record<string, unknown>): Notification {
     isRead: row.is_read as boolean,
     actionStatus: (row.action_status as Notification['actionStatus']) ?? null,
     actorId: (row.actor_id as string) ?? null,
+    targetType: (row.target_type as string) ?? null,
+    targetId: (row.target_id as string) ?? null,
     bubbleId: (row.bubble_id as string) ?? null,
     createdAt: row.created_at as string,
   };
@@ -261,17 +307,19 @@ function mapNotification(row: Record<string, unknown>): Notification {
 ### `src/application/hooks/use-notifications.ts`
 
 ```typescript
+'use client'
+
 import useSWR, { useSWRConfig } from 'swr';
 import { useCallback, useEffect } from 'react';
 import { notificationRepo } from '@/shared/di/container';
-import { useAuth } from '@/application/hooks/use-auth';
+import { useAuth } from '@/presentation/providers/auth-provider';
 import type { Notification } from '@/domain/entities/notification';
 
 const MAX_NOTIFICATIONS = 20;
 
 export function useNotifications() {
   const { user } = useAuth();
-  const userId = user?.id;
+  const userId = user?.id ?? null;
   const { mutate } = useSWRConfig();
 
   // 알림 목록
@@ -401,9 +449,13 @@ interface NotificationDropdownProps {
   unreadCount: number;
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
-  onAction: (id: string, action: 'accepted' | 'rejected') => void;
-  onNavigate: (notification: Notification) => void;
+  onAction: (id: string, status: 'accepted' | 'rejected') => void;
+  onNavigate?: (notification: Notification) => void;
+  position?: { top: number; right: number };
 }
+```
+
+> `PopupWindow` 공용 컴포넌트(`src/presentation/components/ui/popup-window.tsx`)를 래핑하여 사용.
 ```
 
 ### 7-2. 드롭다운 컨테이너 CSS

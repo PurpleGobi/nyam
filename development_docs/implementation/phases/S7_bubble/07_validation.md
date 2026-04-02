@@ -65,6 +65,7 @@ grep -r "from '@supabase\|from '.*infrastructure" src/presentation/
 
 # R5: app/은 라우팅만 — page.tsx는 Container 렌더링만
 # 수동 확인: src/app/(main)/bubbles/ 하위 page.tsx 파일들
+# 실제 라우트: page.tsx, create/page.tsx, [id]/page.tsx, [id]/settings/page.tsx, invite/[code]/page.tsx
 ```
 
 모든 명령의 결과가 **빈 출력** (R2 제외)이어야 통과. R2는 모든 repository 파일이 출력되면 실패 (implements 없는 파일이 있다는 뜻).
@@ -73,15 +74,17 @@ grep -r "from '@supabase\|from '.*infrastructure" src/presentation/
 
 | 검증 항목 | SSOT 문서 | 확인 방법 |
 |----------|----------|----------|
-| Bubble 엔티티 필드 | DATA_MODEL.md bubbles 테이블 | 컬럼 1:1 대응 |
-| BubbleMember 엔티티 필드 | DATA_MODEL.md bubble_members 테이블 | 컬럼 1:1 대응 |
+| Bubble 엔티티 필드 | DATA_MODEL.md bubbles 테이블 | 컬럼 1:1 대응 (createdBy nullable) |
+| BubbleMember 엔티티 필드 | DATA_MODEL.md bubble_members 테이블 | 컬럼 1:1 대응 (shareRule 포함) |
+| BubbleShare 엔티티 필드 | DATA_MODEL.md bubble_shares 테이블 | targetId/targetType 포함 |
 | Comment 엔티티 필드 | DATA_MODEL.md comments 테이블 | 컬럼 1:1 대응 |
-| Reaction 엔티티 필드 | DATA_MODEL.md reactions 테이블 | 컬럼 1:1 대응 |
+| Reaction 엔티티 필드 | DATA_MODEL.md reactions 테이블 | 컬럼 1:1 대응 (userId nullable) |
 | BubbleRankingSnapshot 필드 | DATA_MODEL.md bubble_ranking_snapshots | 컬럼 1:1 대응 |
+| BubbleShareRule | 030_bubble_share_rule.sql | share_rule JSONB, auto_synced 플래그 |
 | 가입 정책 5종 | AUTH.md §2-3 | invite_only/closed/manual_approve/auto_approve/open |
 | 역할 권한 매트릭스 | AUTH.md §2-1 | owner/admin/member/follower 권한 일치 |
 | content_visibility 2종 | BUBBLE.md §4-5 | rating_only/rating_and_comment 동작 |
-| 리액션 타입 5종 | BUBBLE.md §9 | like/bookmark/want/check/fire |
+| 리액션 타입 5종 + REACTION_CONFIG | BUBBLE.md §9 | like/bookmark/want/check/fire + 아이콘/라벨/색상 중앙 관리 |
 | 댓글 300자 제한 | BUBBLE.md §10 | VARCHAR(300) + 프론트 검증 |
 | 소셜 XP 적립 | XP_SYSTEM.md §4-3 | share+1, like+1, follower+1, mutual+2, 일일 상한 10 |
 
@@ -121,15 +124,16 @@ grep -r "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/ --include="*.ts"
 ```
 □ 360px 뷰포트에서 모든 S7 페이지 레이아웃 깨짐 없음:
   □ /bubbles — 버블 카드 리스트
+  □ /bubbles/create — 버블 생성 폼
   □ /bubbles/[id] — 히어로 + 탭
   □ /bubbles/[id] 피드 카드/컴팩트
   □ /bubbles/[id] 랭킹 포디움/리스트
   □ /bubbles/[id] 멤버 그리드 (2열 → 360px에서도 2열 유지)
-  □ /bubbles/[id]/members/[userId] — 버블러 프로필
-  □ 버블 생성 폼
+  □ /bubbles/[id]/settings — 설정 페이지
+  □ /bubbles/invite/[code] — 초대 링크 가입
   □ 가입 플로우 바텀 시트
   □ 댓글 시트
-  □ 설정 페이지
+  □ 자동 공유 규칙 편집기
 ```
 
 ---
@@ -218,7 +222,7 @@ grep -r "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/ --include="*.ts"
 ### 2-8. 댓글 + 리액션 (T7.4)
 
 ```
-□ want(bookmark-plus): --primary 색상, 토글
+□ want(bookmark-plus): --accent-food 색상, 토글
 □ check(check-circle-2): --positive 색상, 토글
 □ fire(flame): #E55A35, 토글
 □ like(heart): --negative 색상, 토글
@@ -250,11 +254,23 @@ grep -r "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/ --include="*.ts"
 □ 버블 삭제: 이름 입력 확인, CASCADE 삭제
 ```
 
-### 2-10. 랭킹 크론 (T7.6)
+### 2-10. 자동 공유 규칙
+
+```
+□ share_rule JSONB (030_bubble_share_rule.sql)
+□ auto_synced 플래그 (bubble_shares 테이블)
+□ bubble-share-sync.ts: evaluateShareRule, matchesShareRule, computeShareDiff
+□ use-bubble-auto-sync.ts: 자동 동기화 hook
+□ share-rule-editor.tsx: 규칙 편집 UI
+□ batchUpsertAutoShares / batchDeleteAutoShares 동작
+□ cleanManualShares 동작
+```
+
+### 2-11. 랭킹 크론 (T7.6)
 
 ```
 □ Edge Function 파일 존재: supabase/functions/weekly-ranking-snapshot/index.ts
-□ pg_cron 마이그레이션 존재
+□ pg_cron 마이그레이션 존재 (019_ranking_cron.sql)
 □ 스냅샷 생성: 정확한 데이터 (target별 avg_satisfaction + record_count + rank)
 □ UPSERT: 재실행 안전
 □ bubbles 주간 통계 갱신 (weekly/prev_weekly)
@@ -297,6 +313,16 @@ grep -r "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/ --include="*.ts"
 ```
 □ 본인 리액션만 CRUD (user_id = auth.uid())
 □ 버블 멤버십 검증은 application layer에서 처리
+```
+
+### 추가 마이그레이션
+
+```
+□ 006_social.sql — 소셜 테이블 기본 구조
+□ 019_ranking_cron.sql — pg_cron 스케줄 등록
+□ 025_bubble_owner_read_policy.sql — 버블 소유자 읽기 정책
+□ 030_bubble_share_rule.sql — 자동 공유 규칙 (share_rule JSONB, auto_synced)
+□ 033_bubble_member_read_rls.sql — 버블 멤버 읽기 RLS
 ```
 
 ---

@@ -20,7 +20,7 @@
 
 - S1-T01 (DB 스키마) 완료 — wines 테이블 존재
 - S3-T02 (검색 UI) 완료 — `WineSearchResult` 타입, `useSearch` hook
-- S3-T01 (카메라 AI) 완료 — `recognizeWineLabel` (gemini.ts) 사용 가능
+- S3-T01 (카메라 AI) 완료 — `recognizeWineLabel` (`ai-recognition.ts`) 사용 가능
 
 ---
 
@@ -32,8 +32,10 @@
 |-----------|--------|------|
 | `src/domain/repositories/wine-repository.ts` | domain | 검색 메서드 인터페이스 추가 |
 | `src/infrastructure/repositories/supabase-wine-repository.ts` | infrastructure | 와인 검색 구현 |
-| `src/app/api/wines/search/route.ts` | app | 와인 통합 검색 API route |
-| `src/application/hooks/use-wine-search.ts` | application | 와인 검색 + OCR 폴백 통합 hook |
+| `src/app/api/wines/search/route.ts` | app | 와인 DB 검색 API route |
+| `src/app/api/wines/search-ai/route.ts` | app | AI 와인 텍스트 검색 API route (DB 결과 부족 시 폴백) |
+| `src/app/api/wines/detail-ai/route.ts` | app | AI 와인 상세 조회 + DB 저장 API route (후보 선택 시) |
+| `src/application/hooks/use-wine-search.ts` | application | 와인 검색 + OCR 폴백 + AI 검색 통합 hook |
 
 ### 스코프 외
 
@@ -232,23 +234,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 ### 4. `src/application/hooks/use-wine-search.ts`
 
-**와인 검색 + OCR 폴백 통합**: 텍스트 검색 결과 없으면 라벨 OCR 유도
+**와인 검색 + OCR 폴백 + AI 검색 통합**
 
-> **설계 변경 사항**: `useWineSearch(userId)` 파라미터 추가, 반환 필드명 `searchResults` → `results`, `search()` 메서드 추가.
-> DI 컨테이너에서 `wineRepo.search()`를 직접 호출 (API route 경유하지 않음).
-> 이는 클라이언트에서 Supabase를 직접 호출하는 구조로, `shared/di/container`를 통해 R3 규칙을 준수함.
-> 실제 코드는 `src/application/hooks/use-wine-search.ts` 참조.
+> **설계 변경 사항**:
+> - `WineSearchCandidate` 타입 import (`@/infrastructure/api/ai-recognition`) — R3 위반 주의: 실제 코드에서는 infrastructure import이 존재함 (타입 전용)
+> - `wineRepo` DI 컨테이너에서 `search()` 직접 호출 (DB 검색)
+> - AI 검색: `searchAI()` → `/api/wines/search-ai` POST → `aiCandidates` 업데이트
+> - AI 후보 선택: `selectAiCandidate()` → `/api/wines/detail-ai` POST → DB 저장 → `WineCandidate`로 변환 → `selectedWine` 설정
+> - `isSelectingWine` 상태 추가 (AI 후보 DB 저장 진행 중)
 
 ```typescript
 // src/application/hooks/use-wine-search.ts (실제 구현 시그니처)
 
 export function useWineSearch(userId: string | null) {
   // 반환:
-  //   results: WineSearchResult[]        (텍스트 검색 결과)
+  //   results: WineSearchResult[]            (DB 검색 결과)
+  //   aiCandidates: WineSearchCandidate[]     (AI 텍스트 검색 결과)
   //   isSearching: boolean
+  //   isAiSearching: boolean                  (AI 검색 진행 중)
+  //   isSelectingWine: boolean                (AI 후보 DB 저장 진행 중)
+  //   search: (query: string) => Promise<void>
+  //   searchAI: (query: string) => Promise<void>
+  //   selectAiCandidate: (candidate: WineSearchCandidate) => Promise<void>
   //   ocrCandidates: WineCandidate[]
   //   selectedWine: WineCandidate | null
-  //   search: (query: string) => Promise<void>
   //   setOcrCandidates: (candidates: WineCandidate[]) => void
   //   selectWineCandidate: (candidate: WineCandidate) => void
   //   clearSelection: () => void
@@ -274,12 +283,13 @@ export function useWineSearch(userId: string | null) {
 ┌─ 텍스트 검색 경로 (screen-add-wine-search)
 │  ├─ 사용자 입력 "Chateau Margaux"
 │  ├─ GET /api/wines/search?q=Chateau+Margaux
-│  ├─ Nyam DB: wines.name ILIKE '%Chateau Margaux%'
-│  ├─ 결과: [{name:"Chateau Margaux", vintage:2018}, {vintage:2015}, ...]
+│  ├─ Nyam DB: wines.name/producer ILIKE '%Chateau Margaux%'
+│  ├─ 결과 < 3개 → POST /api/wines/search-ai 자동 트리거
+│  │   → AI 추천 와인 섹션 (WineSearchCandidate[])
 │  ├─ 사용자 기록 여부 뱃지 표시
 │  └─ 선택:
-│     ├─ hasRecord=true → 토스트 "이미 기록한 와인이에요" → 상세
-│     └─ hasRecord=false → status='checked' → 성공 화면
+│     ├─ DB 결과 선택 → /record 페이지 이동
+│     └─ AI 후보 선택 → POST /api/wines/detail-ai → DB 저장 → /record 이동
 │
 ├─ OCR 검색 경로 (카메라 → 라벨 인식)
 │  ├─ 01_camera_ai.md: recognizeWineLabel → WineAIResult

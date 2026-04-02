@@ -39,7 +39,9 @@
 |-----------|--------|------|
 | `src/domain/entities/camera.ts` | domain | CameraMode, OcrData 타입, AIRecognitionResult 인터페이스 |
 | `src/domain/services/ai-recognition.ts` | domain | AI 인식 결과 → 매칭 로직 인터페이스 |
-| `src/infrastructure/api/gemini.ts` | infrastructure | Gemini Vision API 호출 (식당 음식 인식, 와인 라벨 OCR) |
+| `src/shared/constants/llm-config.ts` | shared | LLM provider + model 중앙 설정 (사용처별: vision, text) |
+| `src/infrastructure/api/llm.ts` | infrastructure | LLM 호출 추상화 (`callVision`, `callText` — provider 선택은 llm-config 기반) |
+| `src/infrastructure/api/ai-recognition.ts` | infrastructure | AI 인식 로직 — 프롬프트 + 응답 파싱 (`llm.ts` 경유) |
 | `src/app/api/records/identify/route.ts` | app | API route: 이미지 → AI 인식 → 후보 반환 |
 | `src/application/hooks/use-camera-capture.ts` | application | 카메라 촬영/앨범 선택 + AI 인식 호출 |
 | `src/presentation/components/camera/camera-capture.tsx` | presentation | 카메라 뷰파인더 + 촬영 버튼 |
@@ -154,8 +156,8 @@ export type AIRecognitionResult = RestaurantAIResult | WineAIResult
 // ─── API 요청/응답 ───
 
 export interface IdentifyRequest {
-  /** base64 인코딩된 이미지 */
-  imageBase64: string
+  /** 이미지 URL (Supabase Storage 등에 업로드 후 URL 전달) */
+  imageUrl: string
   /** 식당 or 와인 */
   targetType: 'restaurant' | 'wine'
   /** 와인 카메라 모드 (와인일 때만) */
@@ -248,114 +250,52 @@ export function isConfidentMatch(candidates: RestaurantCandidate[]): boolean {
 }
 ```
 
-### 3. `src/infrastructure/api/gemini.ts`
+### 3. `src/infrastructure/api/ai-recognition.ts`
 
-**Gemini Vision API 연동**. 서버 전용 (클라이언트 노출 금지).
+**AI 인식 로직 — 프롬프트 + 응답 파싱**. LLM provider 추상화 (`llm.ts` 경유). 서버 전용.
+
+> **설계 변경 사항**:
+> - `gemini.ts` → `ai-recognition.ts`로 리네임. LLM provider 직접 호출 대신 `callVision`/`callText` 추상 함수 사용 (`@/infrastructure/api/llm`)
+> - `RestaurantRecognition`에 `searchKeywords: string[]` 필드 추가 — 카카오맵 검색용 키워드
+> - `recognizeRestaurant(imageUrl)` — imageBase64 대신 imageUrl 수신
+> - 프롬프트: "확실하지 않아도 최선의 추측", "not_food"는 음식과 전혀 무관한 사진에만
+> - JSON 파싱 실패 시 텍스트 기반 폴백 (genreHints 매핑)
+> - 와인 프롬프트: WSET 기반 대규모 제약조건 (country/region/sub_region/appellation/variety 정규화 목록)
+> - `WineLabelRecognition` 확장 필드: `subRegion`, `appellation`, `variety`, `grapeVarieties`, `abv`, `classification`, `bodyLevel`, `acidityLevel`, `sweetnessLevel`, `foodPairings`, `servingTemp`, `decanting`, `referencePriceMin/Max`, `priceReview`, `drinkingWindowStart/End`, `vivinoRating`, `criticScores`, `tastingNotes`
+> - `WineSearchCandidate` 타입 export — AI 텍스트 검색 결과용 (nameKo, labelImageUrl 포함)
 
 ```typescript
-// src/infrastructure/api/gemini.ts
-// 서버 전용 — GEMINI_API_KEY 클라이언트 노출 금지
+// src/infrastructure/api/ai-recognition.ts (실제 구현 시그니처)
 
-interface GeminiVisionRequest {
-  imageBase64: string
-  prompt: string
-}
-
-interface GeminiVisionResponse {
-  text: string
-  confidence: number
-}
-
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
-
-/**
- * Gemini Vision API 호출
- * @throws Error API 호출 실패 시
- */
-async function callGeminiVision(request: GeminiVisionRequest): Promise<GeminiVisionResponse> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured')
-  }
-
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: request.prompt },
-            {
-              inline_data: {
-                mime_type: 'image/jpeg',
-                data: request.imageBase64,
-              },
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 1024,
-      },
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-
-  return { text, confidence: data.candidates?.[0]?.avgLogProbs ?? 0 }
-}
-
-/** Gemini 응답에서 ```json ... ``` 감싸기 제거 후 파싱 */
-function safeJsonParse(text: string): Record<string, unknown> {
-  const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim()
-  try { return JSON.parse(cleaned) }
-  catch { throw new Error('AI_PARSE_ERROR') }
-}
-
-// ─── 식당 인식 ───
-
-const RESTAURANT_PROMPT = `이 음식/식당 사진을 분석해주세요. JSON으로 응답해주세요.
-{
-  "food_type": "인식된 음식 종류 (예: 초밥, 파스타, 삼겹살)",
-  "genre": "음식 장르 (한식/일식/중식/태국/베트남/인도/이탈리안/프렌치/스페인/지중해/미국/멕시칸/카페/바·주점/베이커리/기타 중 하나)",
-  "restaurant_name": "간판이 보이면 식당 이름, 없으면 null",
-  "confidence": 0.0~1.0
-}
-음식이 아닌 사진이면 {"error": "not_food"}로 응답.`
+import { callVision, callText } from '@/infrastructure/api/llm'
 
 export interface RestaurantRecognition {
   foodType: string | null
   genre: string | null
   restaurantName: string | null
+  searchKeywords: string[]        // 카카오맵 검색 키워드 (1~3개)
   confidence: number
 }
 
-export async function recognizeRestaurant(imageBase64: string): Promise<RestaurantRecognition> {
-  const response = await callGeminiVision({
-    imageBase64,
-    prompt: RESTAURANT_PROMPT,
-  })
+export async function recognizeRestaurant(imageUrl: string): Promise<RestaurantRecognition>
+export async function recognizeWineLabel(imageUrl: string): Promise<WineLabelRecognition>
+export async function recognizeWineShelf(imageUrl: string): Promise<ShelfRecognition>
+export async function recognizeWineReceipt(imageUrl: string): Promise<ReceiptRecognition>
+export async function searchWineByText(query: string): Promise<WineSearchCandidate[]>
+export async function getWineDetailByAI(name, producer, vintage): Promise<WineLabelRecognition>
 
-  const parsed = safeJsonParse(response.text)
-
-  if (parsed.error === 'not_food') {
-    throw new Error('NOT_FOOD')
-  }
-
-  return {
-    foodType: parsed.food_type ?? null,
-    genre: parsed.genre ?? null,
-    restaurantName: parsed.restaurant_name ?? null,
-    confidence: parsed.confidence ?? 0,
-  }
+/** AI 텍스트 검색 후보 (search-ai route에서 사용) */
+export interface WineSearchCandidate {
+  name: string
+  nameKo: string | null
+  producer: string | null
+  vintage: number | null
+  wineType: string | null
+  region: string | null
+  country: string | null
+  labelImageUrl: string | null
 }
+```
 
 // ─── 와인 라벨 OCR ───
 
@@ -462,191 +402,57 @@ export async function recognizeWineReceipt(imageBase64: string): Promise<Receipt
 
 ### 4. `src/app/api/records/identify/route.ts`
 
-**API Route**: 이미지 수신 → AI 인식 → 후보 반환. 서버 전용 키 사용.
+**API Route**: 이미지 URL 수신 → AI 인식 → 후보 반환. 서버 전용 키 사용.
+
+> **설계 변경 사항**:
+> - `@/infrastructure/api/gemini` → `@/infrastructure/api/ai-recognition`으로 import 경로 변경
+> - `imageBase64` → `imageUrl` (이미지 URL 수신)
+> - 식당 인식: PostGIS RPC 대신 **카카오 API**로 근처 식당 후보 검색
+>   - `searchKakaoLocal()` 사용 — 식당 이름 > 검색 키워드 > 장르 순으로 시도
+>   - 후보 ID: `kakao_{kakaoId}` prefix
+>   - `isConfidentMatch`: 식당명 인식 + 후보 존재 + matchScore >= 0.5
+> - 와인 인식 (individual 모드): `upsertWineFromAI()` — AI 인식 결과로 wines 테이블 자동 등록
+>   - 다단계 퍼지 매칭 (이름 → 핵심 키워드 → 생산자+빈티지)
+>   - 와인 데이터 대폭 확장 (region, sub_region, appellation, variety, abv, classification 등)
+> - AI 실패 시 GPS 기반 폴백: 카카오 "음식점" 검색 (반경 500m, 10건)
 
 ```typescript
-// src/app/api/records/identify/route.ts
+// src/app/api/records/identify/route.ts (실제 구현 요약)
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/infrastructure/supabase/server'
-import {
-  recognizeRestaurant,
-  recognizeWineLabel,
-  recognizeWineShelf,
-  recognizeWineReceipt,
-} from '@/infrastructure/api/gemini'
-import { rankCandidatesByGenreMatch, isConfidentMatch } from '@/domain/services/ai-recognition'
-import type {
-  IdentifyRequest,
-  IdentifyResponse,
-  RestaurantAIResult,
-  WineAIResult,
-  RestaurantCandidate,
-  WineCandidate,
-} from '@/domain/entities/camera'
+import { recognizeRestaurant, recognizeWineLabel, recognizeWineShelf, recognizeWineReceipt } from '@/infrastructure/api/ai-recognition'
+import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 
 export async function POST(request: NextRequest): Promise<NextResponse<IdentifyResponse>> {
-  const supabase = await createClient()
-
   // 인증 확인
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ success: false, result: null, error: 'UNAUTHORIZED' }, { status: 401 })
-  }
-
   const body: IdentifyRequest = await request.json()
-  const { imageBase64, targetType, cameraMode, latitude, longitude, capturedAt } = body
+  const { imageUrl, targetType, cameraMode, latitude, longitude } = body
 
-  if (!imageBase64 || !targetType) {
-    return NextResponse.json({ success: false, result: null, error: 'MISSING_FIELDS' }, { status: 400 })
+  if (targetType === 'restaurant') {
+    const recognition = await recognizeRestaurant(imageUrl)
+    // 카카오 API로 후보 검색: 식당 이름 → searchKeywords → 장르 순서
+    // rankCandidatesByGenreMatch() → rankedCandidates
+    // isConfidentMatch: restaurantName 존재 + 후보 + matchScore >= 0.5
   }
 
-  try {
-    if (targetType === 'restaurant') {
-      // ── 식당 인식 ──
-      const recognition = await recognizeRestaurant(imageBase64)
+  if (targetType === 'wine') {
+    // shelf → recognizeWineShelf → shelfData 반환
+    // receipt → recognizeWineReceipt → receiptData 반환
+    // individual:
+    //   recognizeWineLabel(imageUrl)
+    //   wineName 없음 → candidates 빈 배열, isConfidentMatch=false
+    //   wineName 있음 → upsertWineFromAI(supabase, recognition)
+    //     1단계: 정확한 이름 매칭 (ilike + vintage)
+    //     2단계: 핵심 키워드 퍼지 매칭 (Château/Domaine 접두사 제거, or 검색, 매칭 수 기반)
+    //     3단계: 생산자+빈티지 매칭
+    //     → 기존 와인 or 새 INSERT (확장 데이터 포함)
+    //   candidates[0] = upsert 결과, matchScore = confidence >= 0.5 ? 1.0 : confidence
+    //   isConfidentMatch = confidence >= 0.5
+  }
 
-      // GPS 기반 근처 식당 조회 (반경 200m)
-      let candidates: RestaurantCandidate[] = []
-
-      if (latitude && longitude) {
-        const { data: nearby } = await supabase.rpc('restaurants_within_radius', {
-          lat: latitude,
-          lng: longitude,
-          radius_meters: 200,
-        })
-
-        if (nearby) {
-          candidates = nearby.map((r: {
-            id: string
-            name: string
-            genre: string | null
-            area: string | null
-            distance: number
-          }) => ({
-            restaurantId: r.id,
-            name: r.name,
-            genre: r.genre,
-            area: r.area,
-            distance: r.distance,
-            matchScore: 0,
-          }))
-        }
-      }
-
-      // GPS+장르 교차 매칭
-      const rankedCandidates = rankCandidatesByGenreMatch(candidates, recognition.genre)
-
-      const result: RestaurantAIResult = {
-        targetType: 'restaurant',
-        detectedGenre: recognition.genre,
-        detectedName: recognition.restaurantName,
-        candidates: rankedCandidates,
-        isConfidentMatch: isConfidentMatch(rankedCandidates),
-      }
-
-      return NextResponse.json({ success: true, result })
-
-    } else {
-      // ── 와인 인식 ──
-      const mode = cameraMode ?? 'individual'
-
-      if (mode === 'shelf') {
-        const recognition = await recognizeWineShelf(imageBase64)
-        // shelf 모드: 와인 목록 반환 (DB 매칭은 클라이언트에서 개별 처리)
-        const result: WineAIResult = {
-          targetType: 'wine',
-          ocrData: { wine_name: '', vintage: null, producer: null },
-          candidates: [],
-          isConfidentMatch: false,
-          cameraMode: 'shelf',
-        }
-        // shelf OCR 데이터는 별도 필드로 반환
-        return NextResponse.json({
-          success: true,
-          result,
-          shelfData: recognition,
-        } as IdentifyResponse & { shelfData: typeof recognition })
-
-      } else if (mode === 'receipt') {
-        const recognition = await recognizeWineReceipt(imageBase64)
-        const result: WineAIResult = {
-          targetType: 'wine',
-          ocrData: { wine_name: '', vintage: null, producer: null },
-          candidates: [],
-          isConfidentMatch: false,
-          cameraMode: 'receipt',
-        }
-        return NextResponse.json({
-          success: true,
-          result,
-          receiptData: recognition,
-        } as IdentifyResponse & { receiptData: typeof recognition })
-
-      } else {
-        // individual 모드: 라벨 OCR → DB 매칭
-        const recognition = await recognizeWineLabel(imageBase64)
-
-        const ocrData = {
-          wine_name: recognition.wineName ?? '',
-          vintage: recognition.vintage ? String(recognition.vintage) : null,
-          producer: recognition.producer,
-        }
-
-        // DB에서 와인 매칭 검색
-        let candidates: WineCandidate[] = []
-
-        if (recognition.wineName) {
-          const { data: wines } = await supabase
-            .from('wines')
-            .select('id, name, producer, vintage, wine_type, region, country')
-            .or(`name.ilike.%${recognition.wineName}%,producer.ilike.%${recognition.wineName}%`)
-            .limit(10)
-
-          if (wines) {
-            candidates = wines.map((w) => ({
-              wineId: w.id,
-              name: w.name,
-              producer: w.producer,
-              vintage: w.vintage,
-              wineType: w.wine_type,
-              region: w.region,
-              country: w.country,
-              matchScore: calculateWineMatchScore(w, recognition),
-            }))
-
-            candidates.sort((a, b) => b.matchScore - a.matchScore)
-          }
-        }
-
-        const result: WineAIResult = {
-          targetType: 'wine',
-          ocrData,
-          candidates,
-          isConfidentMatch: candidates.length > 0 && candidates[0].matchScore >= 0.8,
-          cameraMode: 'individual',
-        }
-
-        return NextResponse.json({ success: true, result })
-      }
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
-
-    // 특정 에러 코드 처리
-    if (message === 'NOT_FOOD') {
-      return NextResponse.json({
-        success: false,
-        result: null,
-        error: 'NOT_FOOD',
-      }, { status: 422 })
-    }
-    if (message === 'NOT_WINE_LABEL') {
-      return NextResponse.json({
-        success: false,
-        result: null,
-        error: 'NOT_WINE_LABEL',
-      }, { status: 422 })
+  // 에러 처리:
+  //   NOT_FOOD → 422
+  //   NOT_WINE_LABEL → 422
+  //   기타 실패 + 식당 + GPS 있음 → 카카오 "음식점" 폴백 (반경 500m, 10건)
     }
 
     return NextResponse.json({
@@ -691,105 +497,40 @@ function calculateWineMatchScore(
 
 ### 5. `src/application/hooks/use-camera-capture.ts`
 
-```typescript
-// src/application/hooks/use-camera-capture.ts
+> **설계 변경 사항**: `identify` params에서 `imageBase64` → `imageUrl`로 변경 (이미지 업로드 후 URL 전달).
+> 실제 구현에서는 촬영 이미지를 먼저 Supabase Storage에 업로드한 후 URL을 identify에 전달.
 
-import { useState, useCallback } from 'react'
-import type {
-  IdentifyRequest,
-  IdentifyResponse,
-  AIRecognitionResult,
-} from '@/domain/entities/camera'
-import type { CameraMode } from '@/domain/entities/record'
+```typescript
+// src/application/hooks/use-camera-capture.ts (실제 구현 시그니처)
 
 interface UseCameraCaptureReturn {
-  /** AI 인식 진행 중 */
   isRecognizing: boolean
-  /** AI 인식 결과 */
   result: AIRecognitionResult | null
-  /** 에러 메시지 */
   error: string | null
-  /** 촬영된 이미지 base64 */
   capturedImage: string | null
-  /** 촬영/앨범 선택 후 AI 인식 실행 */
   identify: (params: {
-    imageBase64: string
+    imageUrl: string                 // 업로드된 이미지 URL (imageBase64 → imageUrl 변경)
     targetType: 'restaurant' | 'wine'
     cameraMode?: CameraMode
     latitude?: number
     longitude?: number
     capturedAt?: string
   }) => Promise<AIRecognitionResult | null>
-  /** 결과 초기화 */
   reset: () => void
 }
 
 export function useCameraCapture(): UseCameraCaptureReturn {
-  const [isRecognizing, setIsRecognizing] = useState(false)
-  const [result, setResult] = useState<AIRecognitionResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
-
-  const identify = useCallback(async (params: {
-    imageBase64: string
-    targetType: 'restaurant' | 'wine'
-    cameraMode?: CameraMode
-    latitude?: number
-    longitude?: number
-    capturedAt?: string
-  }): Promise<AIRecognitionResult | null> => {
-    setIsRecognizing(true)
-    setError(null)
-    setCapturedImage(params.imageBase64)
-
-    try {
-      const body: IdentifyRequest = {
-        imageBase64: params.imageBase64,
-        targetType: params.targetType,
-        cameraMode: params.cameraMode,
-        latitude: params.latitude,
-        longitude: params.longitude,
-        capturedAt: params.capturedAt,
-      }
-
-      const response = await fetch('/api/records/identify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      const data: IdentifyResponse = await response.json()
-
-      if (!data.success || !data.result) {
-        const errorMap: Record<string, string> = {
-          NOT_FOOD: '음식 사진을 선택해주세요',
-          NOT_WINE_LABEL: '와인 라벨을 찾지 못했어요',
-          UNAUTHORIZED: '로그인이 필요합니다',
-        }
-        setError(errorMap[data.error ?? ''] ?? '인식에 실패했습니다. 다시 시도해주세요.')
-        return null
-      }
-
-      setResult(data.result)
-      return data.result
-    } catch {
-      setError('네트워크 오류가 발생했습니다')
-      return null
-    } finally {
-      setIsRecognizing(false)
-    }
-  }, [])
-
-  const reset = useCallback(() => {
-    setResult(null)
-    setError(null)
-    setCapturedImage(null)
-    setIsRecognizing(false)
-  }, [])
-
-  return { isRecognizing, result, error, capturedImage, identify, reset }
+  // identify():
+  //   1. POST /api/records/identify { imageUrl, targetType, cameraMode, latitude, longitude }
+  //   2. 에러 처리: NOT_FOOD → "음식 사진을 선택해주세요", NOT_WINE_LABEL → "와인 라벨을 찾지 못했어요"
+  //   3. 성공 → result 설정 + AIRecognitionResult 반환
+  // ...
+  // reset(): 모든 상태 초기화
 }
+// 실제 구현: 이미지 촬영/앨범 선택 → base64 → Supabase Storage 업로드 → imageUrl 획득 → identify() 호출
+// 이 과정은 add-flow-container.tsx에서 orchestration
 ```
+
 
 ### 6. `src/presentation/components/camera/camera-capture.tsx`
 
@@ -799,20 +540,17 @@ export function useCameraCapture(): UseCameraCaptureReturn {
 import { useRef, useCallback } from 'react'
 import { Camera, ImagePlus, List, Wine, UtensilsCrossed } from 'lucide-react'
 
+// 설계 변경: onCapture(imageBase64: string) → onCapture(file: File)
+// previewUrl prop 추가 — 업로드 완료된 사진 미리보기
 interface CameraCaptureProps {
   targetType: 'restaurant' | 'wine'
-  /** 카메라 촬영 완료 콜백 (base64 이미지) */
-  onCapture: (imageBase64: string) => void
-  /** 앨범에서 추가 버튼 */
+  onCapture: (file: File) => void           // File 객체 전달 (base64 → File 변경)
   onAlbumSelect: () => void
-  /** 목록에서 추가 (식당) / 이름으로 검색 (와인) */
   onSearchFallback: () => void
-  /** 와인 전용: 진열장 모드 */
   onShelfMode?: () => void
-  /** 와인 전용: 영수증 모드 */
   onReceiptMode?: () => void
-  /** AI 인식 중 로딩 상태 */
   isRecognizing: boolean
+  previewUrl?: string | null                // 업로드 완료된 사진 미리보기 URL
 }
 
 export function CameraCapture({
@@ -838,18 +576,10 @@ export function CameraCapture({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-
-      const reader = new FileReader()
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(',')[1]
-        onCapture(base64)
-      }
-      reader.readAsDataURL(file)
-
-      // input 리셋 (같은 파일 재선택 허용)
+      onCapture(file)           // File 객체 직접 전달 (base64 변환은 컨테이너에서 처리)
       e.target.value = ''
     },
-    [onCapture]
+    [onCapture],
   )
 
   const isRestaurant = targetType === 'restaurant'
@@ -1159,17 +889,17 @@ export function AIResultDisplay({
 │  (참고: camera-container.tsx는 add-flow-container.tsx에 통합되어 삭제됨)
 │
 ├─ 촬영 or 앨범 선택
-│  └─ handleFileChange → base64 변환
+│  └─ handleFileChange → File 객체 → Storage 업로드 → imageUrl 획득
 │
 ├─ useCameraCapture.identify() 호출
-│  └─ POST /api/records/identify
+│  └─ POST /api/records/identify { imageUrl, targetType, ... }
 │     ├─ targetType='restaurant'
-│     │   ├─ recognizeRestaurant(imageBase64) → {genre, restaurantName}
-│     │   ├─ supabase.rpc('restaurants_within_radius') → 후보 목록
+│     │   ├─ recognizeRestaurant(imageUrl) → {genre, restaurantName, searchKeywords}
+│     │   ├─ searchKakaoLocal() → 카카오 API 기반 후보 검색
 │     │   └─ rankCandidatesByGenreMatch → 정렬된 후보
 │     │
 │     └─ targetType='wine'
-│         ├─ cameraMode='individual' → recognizeWineLabel → DB 매칭
+│         ├─ cameraMode='individual' → recognizeWineLabel → upsertWineFromAI → DB 등록/매칭
 │         ├─ cameraMode='shelf' → recognizeWineShelf → 와인 목록
 │         └─ cameraMode='receipt' → recognizeWineReceipt → 구매 목록
 │

@@ -9,8 +9,7 @@
 | 문서 | 섹션 | 내용 |
 |------|------|------|
 | `systems/RATING_ENGINE.md` | §8 페어링 (WSET 8카테고리 그리드) | 8개 카테고리 목록, 아이콘, 예시, AI 추천, 직접 입력 |
-| `systems/DATA_MODEL.md` | records 테이블 | `pairing_categories TEXT[]` — 와인 기록 전용 |
-| `systems/DATA_MODEL.md` | 페어링 카테고리 ENUM | 8개 값: `red_meat`, `white_meat`, `seafood`, `cheese`, `vegetable`, `spicy`, `dessert`, `charcuterie` |
+| `systems/DATA_MODEL.md` | records 테이블 | `pairing_categories TEXT[]` — 와인 기록 전용 (records는 lists에 FK 연결) |
 | `pages/05_RECORD_FLOW.md` | §4 와인 통합 기록 화면 | screen-wine-record 내 페어링 그리드 섹션 |
 | `prototype/01_home.html` | screen-wine-record | `.pairing-grid`, `.pairing-cell`, `.pairing-cell-icon`, `.pairing-cell-name`, `.pairing-cell-examples` |
 

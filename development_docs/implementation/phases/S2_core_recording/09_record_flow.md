@@ -10,7 +10,7 @@
 |------|----------|
 | `pages/05_RECORD_FLOW.md` | §3 식당 기록 플로우, §4 와인 기록 플로우, §7 성공 화면, §9 데이터 저장, §10 공통 UI |
 | `systems/RATING_ENGINE.md` | §1 핵심 개념, §2 축 정의, §7 상황 태그, §8 와인 심화 평가, §9 부가 입력 |
-| `systems/DATA_MODEL.md` | records 테이블, record_photos 테이블, wishlists 테이블 |
+| `systems/DATA_MODEL.md` | lists 테이블, records 테이블, record_photos 테이블 |
 | `systems/DESIGN_SYSTEM.md` | §1 게이지 색상, §8 점 비주얼, §15 Circle Rating |
 | `prototype/01_home.html` | `screen-rest-record`, `screen-wine-record`, `screen-add-success` |
 
@@ -40,7 +40,7 @@
 - 저장 후 성공 화면 (`screen-add-success`)
 - 기록 네비게이션 바 (`record-nav`)
 - 하단 저장 바 (sticky)
-- records 테이블 INSERT + record_photos INSERT + wishlists UPDATE 시퀀스
+- lists upsert + records INSERT + record_photos INSERT 시퀀스
 - Phase 1(필수) / Phase 2(선택) 구분 저장
 
 ### 제외 (다른 스프린트)
@@ -141,7 +141,7 @@ interface RestaurantRecordFormProps {
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
 | 2 | 사진 | `PhotoPicker` (container에서 props 주입) | Phase 2 선택 |
-| 3 | 사분면 평가 (가격×분위기 + 만족도) | `QuadrantInput type="restaurant"` | Phase 1 필수 |
+| 3 | 사분면 평가 (음식 퀄리티×경험 가치 + 만족도 자동계산) | `QuadrantInput type="restaurant"` | Phase 1 필수 |
 | 4 | 상황 태그 (6종 단일 선택) | `SceneTagSelector` | Phase 1 필수 |
 | 5 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
 | 6 | 동행자 | `CompanionInput` | Phase 2 선택 |
@@ -198,9 +198,9 @@ interface WineRecordFormProps {
 |------|------|----------|----------|
 | 1 | AI 인식 결과 헤더 | 인라인 (target props) | — |
 | 2 | 사진 | `PhotoPicker` (container에서 props 주입) | Phase 2 선택 |
-| 3 | 사분면 평가 (산미×바디 + 만족도) | `QuadrantInput type="wine"` | Phase 1 필수 |
-| 4 | 아로마 팔레트 (15섹터 3링) | `AromaWheel` | Phase 1 필수 |
-| 5 | 구조 평가 (복합성/여운/균형) | `WineStructureEval` | Phase 1 선택 |
+| 3 | 사분면 평가 (구조·완성도×즐거움·감성 + 만족도 자동계산) | `QuadrantInput type="wine"` | Phase 1 필수 |
+| 4 | 아로마 휠 (16섹터 3링, WSET Level 3) | `AromaWheel` | Phase 1 필수 |
+| 5 | 품질 평가 BLIC (균형/여운/강도/복합성) | `WineStructureEval` | Phase 1 선택 |
 | 6 | 페어링 (WSET 8카테고리) | `PairingGrid` | Phase 1 필수 |
 | 7 | 한줄 코멘트 (200자) | `<textarea maxLength={200}>` | Phase 2 선택 |
 | 8 | 가격 (병) | `<input type="number">` + "원" suffix | Phase 2 선택 |
@@ -294,7 +294,7 @@ interface RecordSaveBarProps {
 | 타입 | 필수 필드 |
 |------|----------|
 | 식당 | `axis_x`, `axis_y`, `satisfaction`, `scene` |
-| 와인 | `axis_x`, `axis_y`, `satisfaction`, `aroma_labels` (1개 이상), `pairing_categories` (1개 이상) |
+| 와인 | `axis_x`, `axis_y`, `satisfaction`, 아로마 선택 (primary/secondary/tertiary 1개 이상), `pairing_categories` (1개 이상) |
 
 ### 7. 성공 화면 (`record-success.tsx`)
 
@@ -339,7 +339,7 @@ interface RecordSuccessProps {
 // presentation/containers/record-flow-container.tsx의 handleSave
 
 async function handleSave(formData) {
-  // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
+  // 1. lists upsert + records INSERT (useCreateRecord hook)
   const record = await createRecord(input)
 
   // 2. record_photos INSERT (사진이 있으면 — 실패해도 record는 유지)
@@ -363,7 +363,7 @@ async function handleSave(formData) {
 
 | 단계 | 담당 | 실패 시 |
 |------|------|---------|
-| records INSERT + wishlists | `useCreateRecord` hook | throw → 전체 실패 |
+| lists upsert + records INSERT | `useCreateRecord` hook | throw → 전체 실패 |
 | 사진 리사이즈 + Storage 업로드 | `usePhotoUpload` hook | catch → photoError 표시, record 유지 |
 | record_photos INSERT | `PhotoRepository.savePhotos()` | catch → photoError 표시, record 유지 |
 
@@ -378,8 +378,8 @@ async function handleSave(formData) {
 interface CreateRestaurantRecordInput {
   targetId: string
   targetType: 'restaurant'
-  axisX: number                     // 0~100 (가격)
-  axisY: number                     // 0~100 (분위기)
+  axisX: number                     // 0~100 (음식 퀄리티)
+  axisY: number                     // 0~100 (경험 가치)
   satisfaction: number              // 1~100
   scene: string                     // 'solo' | 'romantic' | 'friends' | 'family' | 'business' | 'drinks'
   comment?: string                  // 200자 이내
@@ -395,15 +395,16 @@ interface CreateRestaurantRecordInput {
 interface CreateWineRecordInput {
   targetId: string
   targetType: 'wine'
-  axisX: number                     // 0~100 (산미)
-  axisY: number                     // 0~100 (바디)
+  axisX: number                     // 0~100 (구조·완성도)
+  axisY: number                     // 0~100 (즐거움·감성)
   satisfaction: number              // 1~100
-  aromaRegions: object              // JSONB (아로마 휠 좌표)
-  aromaLabels: string[]             // 선택된 아로마 이름 배열
-  aromaColor: string                // hex (가중평균 색상)
-  complexity?: number               // 0~100 (선택)
-  finish?: number                   // 0~100 (선택)
-  balance?: number                  // 0~100 (선택)
+  aromaPrimary: string[]             // 1차향 섹터 ID 배열 (Ring 1)
+  aromaSecondary: string[]           // 2차향 섹터 ID 배열 (Ring 2)
+  aromaTertiary: string[]            // 3차향 섹터 ID 배열 (Ring 3)
+  balance?: number                  // 0~100 (선택, BLIC)
+  finish?: number                   // 0~100 (선택, BLIC)
+  intensity?: number                // 0~100 (선택, BLIC)
+  complexity?: number               // 0~100 (선택, BLIC)
   autoScore?: number                // 자동산출 점수 (선택)
   pairingCategories: string[]       // ['red_meat', 'cheese', ...]
   comment?: string                  // 200자 이내
@@ -424,9 +425,8 @@ type CreateRecordInput = CreateRestaurantRecordInput | CreateWineRecordInput
 | 상세 페이지 FAB → 통합 기록 화면 → 저장 | `'rated'` | 동일 |
 | 검색/목록 → 빠른 추가 → 성공 화면 | `'checked'` | 최소 데이터 (S3에서 구현) |
 
-- S2에서 구현하는 기록 화면은 모두 `status: 'rated'`로 저장
-- `status: 'checked'`는 S3 검색/목록 경로에서 구현
-- `status: 'draft'`: 임시 저장 (현재 S2에서는 미사용, 향후 확장)
+- S2에서 구현하는 기록 화면은 lists 테이블에 `listStatus: 'visited'`(식당) 또는 `'tasted'`(와인)로 저장
+- 찜 경로: `listStatus: 'wishlist'`는 기록 생성 시 `visited`/`tasted`로 자동 승격
 
 ### 11. record-flow-container.tsx 핵심 로직
 
@@ -455,7 +455,7 @@ export function RecordFlowContainer() {
   async function handleSave(formData) {
     setPhotoError(null)
     try {
-      // 1. records INSERT + wishlists UPDATE (useCreateRecord hook)
+      // 1. lists upsert + records INSERT (useCreateRecord hook)
       const record = await createRecord(input)
 
       // 2. record_photos INSERT (사진이 있으면 — 실패해도 record 유지)
@@ -557,7 +557,7 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
     │
     ├── useCreateRecord() hook
     │     ├── recordRepo.create() → INSERT records
-    │     └── recordRepo.markWishlistVisited() → UPDATE wishlists
+    │     └── (lists 상태 승격: wishlist → visited/tasted는 create() 내부에서 처리)
     │
     ├── usePhotoUpload() hook + photoRepo (container 오케스트레이션, DEC-007)
     │     ├── uploadAll() → 리사이즈 + Storage 업로드
@@ -579,8 +579,8 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
     │     └── targetType === 'wine'
     │           └── <WineRecordForm>
     │                 ├── <QuadrantInput type="wine"> → axisX, axisY, satisfaction
-    │                 ├── <AromaWheel> → aromaRegions, aromaLabels, aromaColor
-    │                 ├── <WineStructureEval> → complexity, finish, balance (선택)
+    │                 ├── <AromaWheel> → aromaPrimary, aromaSecondary, aromaTertiary
+    │                 ├── <WineStructureEval> → balance, finish, intensity, complexity (BLIC, 선택)
     │                 │     └── autoScore 재계산 → satisfaction 자동 갱신 (수동 우선)
     │                 ├── <PairingGrid> → pairingCategories
     │                 ├── <textarea> → comment (선택)
@@ -620,14 +620,14 @@ URL 패턴: `/record?type=restaurant&targetId=xxx&name=xxx&meta=xxx`
 - [ ] records INSERT: 선택 필드 (comment, companions, total_price 등) NULL 허용
 - [ ] record_photos INSERT: 사진 있으면 photoRepo.savePhotos()로 record_id FK + url + order_index 저장
 - [ ] 사진 업로드 실패 시 record는 유지되고 성공 화면에 photoError 메시지 표시 (DEC-007)
-- [ ] wishlists UPDATE: 동일 target의 기존 찜이 있으면 `is_visited = true`
-- [ ] status = `'rated'` 저장 확인
-- [ ] 와인: wine_status = `'tasted'` 저장 확인
+- [ ] lists 상태 승격: 기존 wishlist가 있으면 visited/tasted로 자동 승격
+- [ ] 식당: listStatus = `'visited'` 저장 확인
+- [ ] 와인: listStatus = `'tasted'` 저장 확인
 - [ ] axis_x, axis_y: 0~100 범위 (`DECIMAL(5,2)`)
 - [ ] satisfaction: 1~100 범위 (`INT`)
 - [ ] scene: VARCHAR(20), 6종 중 1개 (식당만)
 - [ ] pairing_categories: TEXT[], WSET 8카테고리 키값 (와인만)
-- [ ] aroma_labels: TEXT[], 15개 섹터 이름 중 선택된 것 (와인만)
+- [ ] aroma_primary/secondary/tertiary: TEXT[], 16개 섹터 ID 중 링별 선택된 것 (와인만)
 - [ ] comment: VARCHAR(200) 초과 시 잘림 방지
 
 ### UI 검증

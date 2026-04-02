@@ -8,7 +8,7 @@
 
 | 문서 | 참조 범위 |
 |------|----------|
-| `systems/DATA_MODEL.md` §4 | bubbles, bubble_members, bubble_shares, comments, reactions, bubble_share_reads, bubble_ranking_snapshots, follows 테이블 |
+| `systems/DATA_MODEL.md` §4 | bubbles, bubble_members, bubble_shares, comments, reactions, bubble_ranking_snapshots, follows 테이블 |
 | `systems/AUTH.md` §2 | 버블 역할 4종, 가입 정책 5종, RLS 정책 |
 | `pages/08_BUBBLE.md` §3~§10 | 버블 속성, 공개수위, 리액션, 댓글 |
 | `systems/XP_SYSTEM.md` §4-3 | 소셜 XP 적립 규칙 |
@@ -17,7 +17,7 @@
 
 ## 선행 조건
 
-- S1 완료: DB 스키마 (bubbles, bubble_members, bubble_shares, comments, reactions, bubble_share_reads, bubble_ranking_snapshots 테이블)
+- S1 완료: DB 스키마 (bubbles, bubble_members, bubble_shares, comments, reactions, bubble_ranking_snapshots 테이블)
 - S6 완료: UserExperience, XpHistory, LevelThreshold 엔티티, Notification 엔티티
 
 ---
@@ -28,7 +28,7 @@
 
 | 레이어 | 파일 | 설명 |
 |--------|------|------|
-| domain | `src/domain/entities/bubble.ts` | Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot |
+| domain | `src/domain/entities/bubble.ts` | Bubble, BubbleMember, BubbleShare, BubbleShareRule, BubbleRankingSnapshot |
 | domain | `src/domain/entities/comment.ts` | Comment |
 | domain | `src/domain/entities/reaction.ts` | Reaction |
 | domain | `src/domain/repositories/bubble-repository.ts` | BubbleRepository 인터페이스 |
@@ -56,134 +56,113 @@
 #### `src/domain/entities/bubble.ts`
 
 ```typescript
-// ─── 버블 (bubbles 테이블) ───
-
-export type BubbleVisibility = 'private' | 'public';
-
-export type BubbleContentVisibility = 'rating_only' | 'rating_and_comment';
-
-export type BubbleJoinPolicy =
-  | 'invite_only'       // 비공개: 초대받은 사람만
-  | 'closed'            // 공개: 팔로우만 (가입 안 받음)
-  | 'manual_approve'    // 공개: 가입 신청 → 승인/거절
-  | 'auto_approve'      // 공개: 기준 충족 시 자동 가입
-  | 'open';             // 공개: 누구나 즉시 가입
-
-export type BubbleFocusType = 'all' | 'restaurant' | 'wine';
+export type BubbleVisibility = 'private' | 'public'
+export type BubbleContentVisibility = 'rating_only' | 'rating_and_comment'
+export type BubbleJoinPolicy = 'invite_only' | 'closed' | 'manual_approve' | 'auto_approve' | 'open'
+export type BubbleFocusType = 'all' | 'restaurant' | 'wine'
+export type BubbleMemberRole = 'owner' | 'admin' | 'member' | 'follower'
+export type BubbleMemberStatus = 'pending' | 'active' | 'rejected'
+export type BubbleShareRuleMode = 'all' | 'filtered'
 
 export interface Bubble {
-  id: string;
-  name: string;                              // VARCHAR(20)
-  description: string | null;                // VARCHAR(100)
-  focusType: BubbleFocusType;
-  area: string | null;                       // 주요 지역
-  visibility: BubbleVisibility;
-  contentVisibility: BubbleContentVisibility;
-  allowComments: boolean;
-  allowExternalShare: boolean;
-
-  // 가입 정책
-  joinPolicy: BubbleJoinPolicy;
-  minRecords: number;                        // 가입 최소 기록 수 (기본 0)
-  minLevel: number;                          // 가입 최소 레벨 (기본 0)
-  maxMembers: number | null;                 // 최대 인원 (NULL=무제한)
-  rules: string[] | null;                    // 버블 규칙 텍스트 배열
-
-  // 검색
-  isSearchable: boolean;
-  searchKeywords: string[] | null;
-
-  // 비정규화 카운트 (트리거/크론 갱신)
-  followerCount: number;
-  memberCount: number;
-  recordCount: number;
-  avgSatisfaction: number | null;            // DECIMAL(4,1)
-  lastActivityAt: string | null;
-
-  // 통계 캐시 (크론 갱신)
-  uniqueTargetCount: number;
-  weeklyRecordCount: number;
-  prevWeeklyRecordCount: number;
-
-  // 아이콘
-  icon: string | null;                       // lucide 아이콘명 또는 커스텀 이미지 URL
-  iconBgColor: string | null;                // hex (#F5EDE8 등)
-
-  // 관리
-  createdBy: string;                         // user_id
-  inviteCode: string | null;
-  inviteExpiresAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  name: string
+  description: string | null
+  focusType: BubbleFocusType
+  area: string | null
+  visibility: BubbleVisibility
+  contentVisibility: BubbleContentVisibility
+  allowComments: boolean
+  allowExternalShare: boolean
+  joinPolicy: BubbleJoinPolicy
+  minRecords: number
+  minLevel: number
+  maxMembers: number | null
+  rules: string[] | null
+  isSearchable: boolean
+  searchKeywords: string[] | null
+  followerCount: number
+  memberCount: number
+  recordCount: number
+  avgSatisfaction: number | null
+  lastActivityAt: string | null
+  uniqueTargetCount: number
+  weeklyRecordCount: number
+  prevWeeklyRecordCount: number
+  icon: string | null
+  iconBgColor: string | null
+  createdBy: string | null                   // user_id (탈퇴 시 null)
+  inviteCode: string | null
+  inviteExpiresAt: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-// ─── 버블 멤버 (bubble_members 테이블) ───
+/** 버블 멤버별 자동 공유 규칙 — 홈 FilterRule 재사용 */
+export interface BubbleShareRule {
+  mode: BubbleShareRuleMode
+  rules: Array<{
+    conjunction?: 'and' | 'or'
+    attribute: string
+    operator: string
+    value: string | number | boolean | null
+  }>
+  conjunction: 'and' | 'or'
+}
 
-export type BubbleMemberRole = 'owner' | 'admin' | 'member' | 'follower';
-
-export type BubbleMemberStatus = 'pending' | 'active' | 'rejected';
-
-/** 가시성 오버라이드 7개 키 */
+/** 가시성 오버라이드 7개 키 (users.visibility_bubble과 동일 구조) */
 export interface VisibilityOverride {
-  score: boolean;
-  comment: boolean;
-  photos: boolean;
-  level: boolean;
-  quadrant: boolean;
-  bubbles: boolean;
-  price: boolean;
+  score: boolean
+  comment: boolean
+  photos: boolean
+  level: boolean
+  quadrant: boolean
+  bubbles: boolean
+  price: boolean
 }
 
 export interface BubbleMember {
-  bubbleId: string;
-  userId: string;
-  role: BubbleMemberRole;
-  status: BubbleMemberStatus;
-  visibilityOverride: VisibilityOverride | null;   // NULL → users.visibility_bubble 사용
-
-  // 멤버 활동 캐시 (크론 갱신)
-  tasteMatchPct: number | null;                     // 0.0~100.0 (뷰어 상대)
-  commonTargetCount: number;
-  avgSatisfaction: number | null;
-  memberUniqueTargetCount: number;
-  weeklyShareCount: number;
-  badgeLabel: string | null;                        // "🧭 탐험왕" 등
-
-  joinedAt: string;
+  bubbleId: string
+  userId: string
+  role: BubbleMemberRole
+  status: BubbleMemberStatus
+  shareRule: BubbleShareRule | null          // 자동 공유 규칙 (030_bubble_share_rule.sql)
+  visibilityOverride: VisibilityOverride | null
+  tasteMatchPct: number | null
+  commonTargetCount: number
+  avgSatisfaction: number | null
+  memberUniqueTargetCount: number
+  weeklyShareCount: number
+  badgeLabel: string | null
+  joinedAt: string
 }
-
-// ─── 버블 공유 (bubble_shares 테이블) ───
 
 export interface BubbleShare {
-  id: string;
-  recordId: string;
-  bubbleId: string;
-  sharedBy: string;                                  // user_id
-  sharedAt: string;
-}
-
-// ─── 공유 읽음 (bubble_share_reads 테이블) ───
-
-export interface BubbleShareRead {
-  shareId: string;
-  userId: string;
-  readAt: string;
+  id: string
+  recordId: string
+  bubbleId: string
+  sharedBy: string
+  sharedAt: string
+  targetId: string                           // 공유 대상 식당/와인 ID
+  targetType: 'restaurant' | 'wine'
 }
 
 // ─── 랭킹 스냅샷 (bubble_ranking_snapshots 테이블) ───
 
-export type RankingTargetType = 'restaurant' | 'wine';
+export type RankingTargetType = 'restaurant' | 'wine'
 
 export interface BubbleRankingSnapshot {
-  bubbleId: string;
-  targetId: string;
-  targetType: RankingTargetType;
-  periodStart: string;                              // DATE (월요일)
-  rankPosition: number;
-  avgSatisfaction: number | null;
-  recordCount: number;
+  bubbleId: string
+  targetId: string
+  targetType: RankingTargetType
+  periodStart: string
+  rankPosition: number
+  avgSatisfaction: number | null
+  recordCount: number
 }
 ```
+
+> **참고**: `BubbleShareRead` 엔티티는 현재 코드에서 제거됨. `bubble_share_reads` 테이블은 DB에 존재하나 Entity로 매핑하지 않음.
 
 #### `src/domain/entities/comment.ts`
 
@@ -205,22 +184,25 @@ export interface Comment {
 #### `src/domain/entities/reaction.ts`
 
 ```typescript
-export type ReactionTargetType = 'record' | 'comment';
+export type ReactionTargetType = 'record' | 'comment'
 
-export type ReactionType =
-  | 'like'       // 좋아요 (heart)
-  | 'bookmark'   // 찜 → wishlists INSERT 트리거
-  | 'want'       // "가고싶다" (bookmark-plus)
-  | 'check'      // "나도가봤어" (check-circle-2)
-  | 'fire';      // "맛있어보인다" (flame)
+export type ReactionType = 'like' | 'bookmark' | 'want' | 'check' | 'fire'
 
 export interface Reaction {
-  id: string;
-  targetType: ReactionTargetType;
-  targetId: string;
-  reactionType: ReactionType;
-  userId: string;
-  createdAt: string;
+  id: string
+  targetType: ReactionTargetType
+  targetId: string
+  reactionType: ReactionType
+  userId: string | null              // 탈퇴 시 null
+  createdAt: string
+}
+
+export const REACTION_CONFIG: Record<ReactionType, { icon: string; label: string; color: string }> = {
+  want: { icon: 'bookmark-plus', label: '가고싶다', color: 'var(--accent-food)' },
+  check: { icon: 'check-circle-2', label: '다녀왔다', color: 'var(--positive)' },
+  fire: { icon: 'flame', label: '불꽃', color: '#E55A35' },
+  like: { icon: 'heart', label: '좋아요', color: 'var(--negative)' },
+  bookmark: { icon: 'bookmark', label: '저장', color: 'var(--accent-wine)' },
 }
 ```
 
@@ -229,103 +211,199 @@ export interface Reaction {
 #### `src/domain/repositories/bubble-repository.ts`
 
 ```typescript
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble';
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule } from '@/domain/entities/bubble'
+
+// ─── 헬퍼 타입 ───
+
+export interface CreateBubbleInput {
+  name: string
+  description?: string
+  focusType?: string
+  area?: string
+  visibility?: string
+  contentVisibility?: string
+  allowComments?: boolean
+  allowExternalShare?: boolean
+  joinPolicy?: string
+  minRecords?: number
+  minLevel?: number
+  maxMembers?: number
+  rules?: string[]
+  isSearchable?: boolean
+  searchKeywords?: string[]
+  icon?: string
+  iconBgColor?: string
+  createdBy: string
+}
+
+export interface BubbleFeedItem {
+  id: string
+  recordId: string
+  targetId?: string
+  bubbleId: string
+  bubbleName?: string
+  bubbleIcon?: string
+  sharedBy: string
+  authorNickname?: string
+  authorAvatar?: string | null
+  authorAvatarColor?: string | null
+  targetName?: string
+  targetType?: 'restaurant' | 'wine'
+  targetMeta?: string | null
+  targetArea?: string | null
+  targetPhotoUrl?: string | null
+  targetVintage?: number | null
+  targetWineType?: string | null
+  targetProducer?: string | null
+  targetCountry?: string | null
+  satisfaction?: number | null
+  axisX?: number | null
+  axisY?: number | null
+  comment?: string | null
+  scene?: string | null
+  visitDate?: string | null
+  listStatus?: string | null
+  sharedAt: string
+}
+
+export interface BubbleShareForTarget extends BubbleFeedItem {
+  contentVisibility?: 'rating_only' | 'rating_and_comment'
+  authorLevel?: number
+  authorLevelTitle?: string
+  likeCount?: number
+  commentCount?: number
+}
+
+export interface UserBubbleMembership {
+  bubbleId: string
+  bubbleName?: string
+  bubbleIcon?: string | null
+  bubbleIconBgColor?: string | null
+  status: string
+  shareRule: BubbleShareRule | null
+}
+
+export interface MutualRecordItem {
+  recordId: string
+  targetId?: string
+  targetName?: string
+  targetType?: 'restaurant' | 'wine'
+  satisfaction?: number | null
+  comment?: string | null
+  visitDate?: string | null
+  authorNickname?: string
+  authorAvatar?: string | null
+  authorAvatarColor?: string | null
+  createdAt: string
+}
 
 export interface BubbleRepository {
   // ─── Bubble CRUD ───
-  create(bubble: Omit<Bubble, 'id' | 'createdAt' | 'updatedAt' | 'followerCount' | 'memberCount' | 'recordCount' | 'avgSatisfaction' | 'lastActivityAt' | 'uniqueTargetCount' | 'weeklyRecordCount' | 'prevWeeklyRecordCount'>): Promise<Bubble>;
-  getById(id: string): Promise<Bubble | null>;
-  update(id: string, data: Partial<Omit<Bubble, 'id' | 'createdAt' | 'createdBy'>>): Promise<Bubble>;
-  delete(id: string): Promise<void>;
+  create(input: CreateBubbleInput): Promise<Bubble>
+  findById(id: string): Promise<Bubble | null>
+  findByUserId(userId: string): Promise<Bubble[]>
+  findPublic(options?: {
+    search?: string
+    focusType?: string
+    area?: string
+    sortBy?: 'latest' | 'members' | 'records' | 'activity'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Bubble[]; total: number }>
+  update(id: string, data: Partial<Bubble>): Promise<Bubble>
+  delete(id: string): Promise<void>
 
-  // ─── 검색/탐색 ───
-  getByInviteCode(code: string): Promise<Bubble | null>;
-  getPublicBubbles(options: {
-    search?: string;
-    focusType?: string;
-    area?: string;
-    sortBy?: 'latest' | 'members' | 'records' | 'activity';
-    limit?: number;
-    offset?: number;
-  }): Promise<{ data: Bubble[]; total: number }>;
-  getUserBubbles(userId: string): Promise<Bubble[]>;
-
-  // ─── BubbleMember CRUD ───
-  addMember(member: Omit<BubbleMember, 'tasteMatchPct' | 'commonTargetCount' | 'avgSatisfaction' | 'memberUniqueTargetCount' | 'weeklyShareCount' | 'badgeLabel' | 'joinedAt'>): Promise<BubbleMember>;
-  getMember(bubbleId: string, userId: string): Promise<BubbleMember | null>;
+  // ─── BubbleMember ───
   getMembers(bubbleId: string, options?: {
-    role?: BubbleMemberRole;
-    status?: BubbleMemberStatus;
-    sortBy?: 'taste_match' | 'records' | 'level' | 'recent';
-    limit?: number;
-    offset?: number;
-  }): Promise<{ data: BubbleMember[]; total: number }>;
-  getPendingMembers(bubbleId: string): Promise<BubbleMember[]>;
-  updateMemberRole(bubbleId: string, userId: string, role: BubbleMemberRole): Promise<void>;
-  updateMemberStatus(bubbleId: string, userId: string, status: BubbleMemberStatus): Promise<void>;
-  removeMember(bubbleId: string, userId: string): Promise<void>;
+    role?: BubbleMemberRole
+    status?: BubbleMemberStatus
+    sortBy?: 'taste_match' | 'records' | 'level' | 'recent'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleMember[]; total: number }>
+  getMember(bubbleId: string, userId: string): Promise<BubbleMember | null>
+  getPendingMembers(bubbleId: string): Promise<BubbleMember[]>
+  addMember(bubbleId: string, userId: string, role: string, status: string): Promise<BubbleMember>
+  updateMember(bubbleId: string, userId: string, data: Partial<BubbleMember>): Promise<void>
+  removeMember(bubbleId: string, userId: string): Promise<void>
 
-  // ─── BubbleShare CRUD ───
-  shareRecord(share: Omit<BubbleShare, 'id' | 'sharedAt'>): Promise<BubbleShare>;
-  unshareRecord(recordId: string, bubbleId: string): Promise<void>;
+  // ─── BubbleShare ───
   getShares(bubbleId: string, options?: {
-    targetType?: 'restaurant' | 'wine';
-    sharedBy?: string;
-    period?: 'week' | 'month' | '3months' | 'all';
-    minSatisfaction?: number;
-    sortBy?: 'newest' | 'reactions' | 'score' | 'member';
-    limit?: number;
-    offset?: number;
-  }): Promise<{ data: BubbleShare[]; total: number }>;
-  getSharesByRecord(recordId: string): Promise<BubbleShare[]>;
-
-  // ─── BubbleShareRead ───
-  markShareRead(shareId: string, userId: string): Promise<void>;
-  getShareReads(shareId: string): Promise<BubbleShareRead[]>;
+    targetType?: 'restaurant' | 'wine'
+    sharedBy?: string
+    period?: 'week' | 'month' | '3months' | 'all'
+    minSatisfaction?: number
+    sortBy?: 'newest' | 'reactions' | 'score' | 'member'
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleShare[]; total: number }>
+  getEnrichedShares(bubbleId: string, options?: {
+    limit?: number
+    offset?: number
+  }): Promise<{ data: BubbleFeedItem[]; total: number }>
+  addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  removeShare(shareId: string): Promise<void>
 
   // ─── BubbleRankingSnapshot ───
   getRankings(bubbleId: string, options: {
-    targetType: 'restaurant' | 'wine';
-    periodStart?: string;
-    limit?: number;
-  }): Promise<BubbleRankingSnapshot[]>;
-  getPreviousRankings(bubbleId: string, targetType: 'restaurant' | 'wine', periodStart: string): Promise<BubbleRankingSnapshot[]>;
-  insertRankingSnapshots(snapshots: BubbleRankingSnapshot[]): Promise<void>;
+    targetType: 'restaurant' | 'wine'
+    periodStart?: string
+    limit?: number
+  }): Promise<BubbleRankingSnapshot[]>
+  getPreviousRankings(bubbleId: string, targetType: 'restaurant' | 'wine', periodStart: string): Promise<BubbleRankingSnapshot[]>
+  insertRankingSnapshots(snapshots: BubbleRankingSnapshot[]): Promise<void>
 
   // ─── 초대 코드 ───
-  generateInviteCode(bubbleId: string, expiresAt: string | null): Promise<string>;
-  validateInviteCode(code: string): Promise<{ valid: boolean; bubble: Bubble | null; expired: boolean }>;
+  findByInviteCode(code: string): Promise<Bubble | null>
+  generateInviteCode(bubbleId: string, expiresAt?: string | null): Promise<string>
+  validateInviteCode(code: string): Promise<{ valid: boolean; bubble: Bubble | null; expired: boolean }>
+
+  // ─── S8 추가 메서드 ───
+  getSharesForTarget(targetId: string, targetType: string, bubbleIds: string[]): Promise<BubbleShareForTarget[]>
+  getFeedFromBubbles(userId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleFeedItem[]>
+  getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]>
+  getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
+  getRecordShares(recordId: string): Promise<BubbleShare[]>
+  shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  unshareRecord(recordId: string, bubbleId: string): Promise<void>
+
+  // ─── 자동 공유 동기화 ───
+  updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>
+  batchUpsertAutoShares(records: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void>
+  batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
+  getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
+  cleanManualShares(userId: string): Promise<number>
 }
 ```
 
 #### `src/domain/repositories/comment-repository.ts`
 
 ```typescript
-import type { Comment } from '@/domain/entities/comment';
+import type { Comment } from '@/domain/entities/comment'
 
 export interface CommentRepository {
-  create(comment: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment>;
-  getById(id: string): Promise<Comment | null>;
+  getById(id: string): Promise<Comment | null>
   getByTarget(targetType: string, targetId: string, bubbleId: string, options?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<{ data: Comment[]; total: number }>;
-  delete(id: string, userId: string): Promise<void>;   // 본인만 삭제
-  getCountByTarget(targetType: string, targetId: string, bubbleId: string): Promise<number>;
+    limit?: number
+    offset?: number
+  }): Promise<{ data: Comment[]; total: number }>
+  getCountByTarget(targetType: string, targetId: string, bubbleId: string): Promise<number>
+  create(params: { targetType: string; targetId: string; bubbleId: string; userId: string; content: string; isAnonymous: boolean }): Promise<Comment>
+  delete(commentId: string, userId: string): Promise<void>   // 본인만 삭제
 }
 ```
 
 #### `src/domain/repositories/reaction-repository.ts`
 
 ```typescript
-import type { Reaction, ReactionType, ReactionTargetType } from '@/domain/entities/reaction';
+import type { Reaction, ReactionType } from '@/domain/entities/reaction'
 
 export interface ReactionRepository {
-  toggle(reaction: Omit<Reaction, 'id' | 'createdAt'>): Promise<{ added: boolean }>;
-  getByTarget(targetType: ReactionTargetType, targetId: string): Promise<Reaction[]>;
-  getCountsByTarget(targetType: ReactionTargetType, targetId: string): Promise<Record<ReactionType, number>>;
-  getUserReactions(userId: string, targetType: ReactionTargetType, targetIds: string[]): Promise<Reaction[]>;
-  getDailySocialXpCount(userId: string, date: string): Promise<number>;
+  getByTarget(targetType: string, targetId: string): Promise<Reaction[]>
+  toggle(targetType: string, targetId: string, reactionType: ReactionType, userId: string): Promise<{ added: boolean }>
+  getCountsByTarget(targetType: string, targetId: string): Promise<Record<ReactionType, number>>
+  getUserReactions(userId: string, targetType: string, targetIds: string[]): Promise<Reaction[]>
+  getDailySocialXpCount(userId: string, date: string): Promise<number>
 }
 ```
 
@@ -334,41 +412,15 @@ export interface ReactionRepository {
 #### `src/infrastructure/repositories/supabase-bubble-repository.ts`
 
 ```typescript
-import type { BubbleRepository } from '@/domain/repositories/bubble-repository';
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleShareRead, BubbleRankingSnapshot } from '@/domain/entities/bubble';
-import { createClient } from '@/infrastructure/supabase/client';
+import { createClient } from '@/infrastructure/supabase/client'
+import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
+import { getLevelTitle } from '@/domain/services/xp-calculator'
 ```
 
-**DB → Entity 변환 규칙 (snake_case → camelCase)**:
+**필드 매핑**: `BUBBLE_FIELD_MAP`과 `MEMBER_FIELD_MAP` 딕셔너리로 camelCase ↔ snake_case 변환 구현. `toEntityRow()` 헬퍼로 Entity → DB 변환, `toBubble()`/`toBubbleMember()` 함수로 DB → Entity 변환.
 
-| DB 컬럼 | Entity 필드 |
-|---------|------------|
-| `focus_type` | `focusType` |
-| `content_visibility` | `contentVisibility` |
-| `allow_comments` | `allowComments` |
-| `allow_external_share` | `allowExternalShare` |
-| `join_policy` | `joinPolicy` |
-| `min_records` | `minRecords` |
-| `min_level` | `minLevel` |
-| `max_members` | `maxMembers` |
-| `is_searchable` | `isSearchable` |
-| `search_keywords` | `searchKeywords` |
-| `follower_count` | `followerCount` |
-| `member_count` | `memberCount` |
-| `record_count` | `recordCount` |
-| `avg_satisfaction` | `avgSatisfaction` |
-| `last_activity_at` | `lastActivityAt` |
-| `unique_target_count` | `uniqueTargetCount` |
-| `weekly_record_count` | `weeklyRecordCount` |
-| `prev_weekly_record_count` | `prevWeeklyRecordCount` |
-| `icon_bg_color` | `iconBgColor` |
-| `created_by` | `createdBy` |
-| `invite_code` | `inviteCode` |
-| `invite_expires_at` | `inviteExpiresAt` |
-| `created_at` | `createdAt` |
-| `updated_at` | `updatedAt` |
-
-**변환 헬퍼**:
+**변환 헬퍼 (실제 코드)**:
 
 ```typescript
 function toBubble(row: Record<string, unknown>): Bubble {
@@ -389,22 +441,22 @@ function toBubble(row: Record<string, unknown>): Bubble {
     rules: row.rules as string[] | null,
     isSearchable: row.is_searchable as boolean,
     searchKeywords: row.search_keywords as string[] | null,
-    followerCount: row.follower_count as number,
-    memberCount: row.member_count as number,
-    recordCount: row.record_count as number,
+    followerCount: (row.follower_count as number) ?? 0,
+    memberCount: (row.member_count as number) ?? 0,
+    recordCount: (row.record_count as number) ?? 0,
     avgSatisfaction: row.avg_satisfaction as number | null,
     lastActivityAt: row.last_activity_at as string | null,
-    uniqueTargetCount: row.unique_target_count as number,
-    weeklyRecordCount: row.weekly_record_count as number,
-    prevWeeklyRecordCount: row.prev_weekly_record_count as number,
+    uniqueTargetCount: (row.unique_target_count as number) ?? 0,
+    weeklyRecordCount: (row.weekly_record_count as number) ?? 0,
+    prevWeeklyRecordCount: (row.prev_weekly_record_count as number) ?? 0,
     icon: row.icon as string | null,
     iconBgColor: row.icon_bg_color as string | null,
-    createdBy: row.created_by as string,
+    createdBy: row.created_by as string | null,
     inviteCode: row.invite_code as string | null,
     inviteExpiresAt: row.invite_expires_at as string | null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
-  };
+  }
 }
 
 function toBubbleMember(row: Record<string, unknown>): BubbleMember {
@@ -413,15 +465,28 @@ function toBubbleMember(row: Record<string, unknown>): BubbleMember {
     userId: row.user_id as string,
     role: row.role as BubbleMemberRole,
     status: row.status as BubbleMemberStatus,
+    shareRule: row.share_rule as BubbleShareRule | null,
     visibilityOverride: row.visibility_override as VisibilityOverride | null,
     tasteMatchPct: row.taste_match_pct as number | null,
-    commonTargetCount: row.common_target_count as number,
+    commonTargetCount: (row.common_target_count as number) ?? 0,
     avgSatisfaction: row.avg_satisfaction as number | null,
-    memberUniqueTargetCount: row.member_unique_target_count as number,
-    weeklyShareCount: row.weekly_share_count as number,
+    memberUniqueTargetCount: (row.member_unique_target_count as number) ?? 0,
+    weeklyShareCount: (row.weekly_share_count as number) ?? 0,
     badgeLabel: row.badge_label as string | null,
     joinedAt: row.joined_at as string,
-  };
+  }
+}
+
+function toBubbleShare(row: Record<string, unknown>): BubbleShare {
+  return {
+    id: row.id as string,
+    recordId: row.record_id as string,
+    bubbleId: row.bubble_id as string,
+    sharedBy: row.shared_by as string,
+    sharedAt: row.shared_at as string,
+    targetId: row.target_id as string,
+    targetType: row.target_type as 'restaurant' | 'wine',
+  }
 }
 ```
 
@@ -430,9 +495,11 @@ function toBubbleMember(row: Record<string, unknown>): BubbleMember {
 1. `create()`: INSERT 후 createdBy를 owner로 `bubble_members`에도 INSERT (role='owner', status='active')
 2. `generateInviteCode()`: 8자 랜덤 영숫자 (`crypto.randomUUID().slice(0, 8)`)
 3. `validateInviteCode()`: invite_expires_at 체크, 만료된 코드는 `expired: true` 반환
-4. `getShares()`: bubble_shares JOIN records JOIN (restaurants | wines) — targetType에 따라
-5. Entity → DB 변환 시 camelCase → snake_case 역변환 필수
-6. `getPublicBubbles()`: `visibility = 'public' AND is_searchable = true` 조건 기본
+4. `getEnrichedShares()`: bubble_shares JOIN records JOIN (restaurants | wines) — targetType에 따라 BubbleFeedItem 반환
+5. Entity → DB 변환 시 `toEntityRow()` + `BUBBLE_FIELD_MAP` 활용
+6. `findPublic()`: `visibility = 'public' AND is_searchable = true` 조건 기본
+7. `addShare()`: recordId, bubbleId, sharedBy, targetId, targetType 개별 인자
+8. 자동 공유 동기화: `updateShareRule()`, `batchUpsertAutoShares()`, `batchDeleteAutoShares()`, `getAutoSharedRecordIds()`, `cleanManualShares()`
 
 #### `src/infrastructure/repositories/supabase-comment-repository.ts`
 
@@ -500,17 +567,19 @@ function toReaction(row: Record<string, unknown>): Reaction {
 #### `src/shared/di/container.ts` 추가 사항
 
 ```typescript
-import { SupabaseBubbleRepository } from '@/infrastructure/repositories/supabase-bubble-repository';
-import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabase-comment-repository';
-import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository';
-import type { BubbleRepository } from '@/domain/repositories/bubble-repository';
-import type { CommentRepository } from '@/domain/repositories/comment-repository';
-import type { ReactionRepository } from '@/domain/repositories/reaction-repository';
+import { SupabaseBubbleRepository } from '@/infrastructure/repositories/supabase-bubble-repository'
+import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabase-comment-repository'
+import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository'
+import type { BubbleRepository } from '@/domain/repositories/bubble-repository'
+import type { CommentRepository } from '@/domain/repositories/comment-repository'
+import type { ReactionRepository } from '@/domain/repositories/reaction-repository'
 
-export const bubbleRepo: BubbleRepository = new SupabaseBubbleRepository();
-export const commentRepo: CommentRepository = new SupabaseCommentRepository();
-export const reactionRepo: ReactionRepository = new SupabaseReactionRepository();
+export const bubbleRepo: BubbleRepository = new SupabaseBubbleRepository()
+export const commentRepo: CommentRepository = new SupabaseCommentRepository()
+export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 ```
+
+**추가 유틸리티**: `uploadBubbleIcon(file, userId)` — 버블 아이콘 이미지를 256x256 WebP로 리사이즈 후 `avatars` 버킷에 업로드.
 
 ---
 
@@ -532,31 +601,36 @@ export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 
 ```
 [생성]
-  UI → useBubbleCreate() → bubbleRepo.create()
+  UI → useBubbleCreate() → bubbleRepo.create(input: CreateBubbleInput)
     → INSERT bubbles + INSERT bubble_members(role='owner')
     → return Bubble
 
 [멤버 가입]
-  UI → useBubbleJoin() → bubbleRepo.addMember(status='pending'|'active')
+  UI → useBubbleJoin() → bubbleRepo.addMember(bubbleId, userId, role, status)
     → INSERT bubble_members
     → (auto_approve) XP/기록 수 검증 → status='active'
     → (manual_approve) status='pending' → 알림 → owner 승인
     → (open) status='active' 즉시
 
 [기록 공유]
-  UI → useBubbleShare() → bubbleRepo.shareRecord()
+  UI → useShareRecord() → bubbleRepo.addShare(recordId, bubbleId, sharedBy, targetId, targetType)
     → INSERT bubble_shares
     → bubbles.record_count++ (트리거)
     → bubbles.last_activity_at = NOW() (트리거)
 
+[자동 공유 동기화]
+  use-bubble-auto-sync → bubble-share-sync.evaluateShareRule()
+    → computeShareDiff(shouldShareIds, currentlySharedIds)
+    → bubbleRepo.batchUpsertAutoShares() / batchDeleteAutoShares()
+
 [리액션 토글]
-  UI → useReaction() → reactionRepo.toggle()
+  UI → useReactions() → reactionRepo.toggle(targetType, targetId, reactionType, userId)
     → INSERT or DELETE reactions
     → (bookmark 추가 시) wishlists INSERT (application layer)
     → (like 추가 시) 소셜 XP +1 (일일 상한 10 체크)
 
 [댓글 작성]
-  UI → useComment() → commentRepo.create()
+  UI → useComments() → commentRepo.create({ targetType, targetId, bubbleId, userId, content, isAnonymous })
     → INSERT comments
     → 알림: comment_reply → author
 ```
@@ -566,19 +640,20 @@ export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 ## 검증 체크리스트
 
 ```
-□ domain/entities/bubble.ts — Bubble, BubbleMember, BubbleShare, BubbleShareRead, BubbleRankingSnapshot 타입 정의
-□ domain/entities/comment.ts — Comment 타입 정의
-□ domain/entities/reaction.ts — Reaction, ReactionType 타입 정의
-□ domain/repositories/ — BubbleRepository, CommentRepository, ReactionRepository 인터페이스
-□ infrastructure/repositories/ — 3개 Supabase 구현체, implements 키워드 사용
-□ shared/di/container.ts — 3개 repository 등록
-□ R1: domain에 React/Supabase/Next import 없음
-□ R2: infrastructure에 implements 키워드 존재
-□ R3: application에 infrastructure 직접 import 없음
-□ snake_case → camelCase 변환 정확
-□ Bubble 엔티티 필드가 DATA_MODEL.md bubbles 테이블 컬럼과 1:1 대응
-□ BubbleMember 엔티티 필드가 bubble_members 테이블 컬럼과 1:1 대응
-□ pnpm build 에러 없음
-□ pnpm lint 경고 0개
-□ any / as any / @ts-ignore / ! 0개
+☑ domain/entities/bubble.ts — Bubble, BubbleMember, BubbleShare, BubbleShareRule, BubbleRankingSnapshot 타입 정의
+☑ domain/entities/comment.ts — Comment 타입 정의
+☑ domain/entities/reaction.ts — Reaction, ReactionType, REACTION_CONFIG 타입 정의
+☑ domain/repositories/ — BubbleRepository, CommentRepository, ReactionRepository 인터페이스
+☑ domain/services/bubble-share-sync.ts — evaluateShareRule, matchesShareRule, computeShareDiff
+☑ infrastructure/repositories/ — 3개 Supabase 구현체, implements 키워드 사용
+☑ shared/di/container.ts — 3개 repository 등록 + uploadBubbleIcon 유틸리티
+☑ R1: domain에 React/Supabase/Next import 없음
+☑ R2: infrastructure에 implements 키워드 존재
+☑ R3: application에 infrastructure 직접 import 없음
+☑ snake_case → camelCase 변환 정확 (BUBBLE_FIELD_MAP, MEMBER_FIELD_MAP)
+☑ BubbleShare에 targetId/targetType 필드 포함
+☑ BubbleMember에 shareRule 필드 포함
+☑ Reaction.userId nullable (탈퇴 처리)
+☑ pnpm build 에러 없음
+☑ pnpm lint 경고 0개
 ```

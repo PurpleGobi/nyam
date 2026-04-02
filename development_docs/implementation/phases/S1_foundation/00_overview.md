@@ -55,6 +55,7 @@
 □ Supabase 연결 + 모든 테이블 생성 확인 (P1+P2 전체)
 □ RLS 테스트 (인증 없이 접근 차단)
 □ 소셜 로그인/로그아웃 4종 (구글/카카오/네이버/애플) 동작
+□ AuthProvider + AuthGuard + ToastProvider 적용
 □ 디자인 토큰 CSS 변수 적용 (DESIGN_SYSTEM.md §1 전체)
 □ src/ 폴더 구조가 CLAUDE.md 클린 아키텍처와 일치
 ```

@@ -1,6 +1,6 @@
-# S4-T01: 식당 상세 페이지 — L1~L8
+# S4-T01: 식당 상세 페이지
 
-> Route: `/restaurants/[id]`
+> Route: `/restaurants/[id]?bubble=[bubbleId]`
 > 목업: `prototype/02_detail_restaurant.html`
 > SSOT: `pages/02_RESTAURANT_DETAIL.md`, `systems/DATA_MODEL.md`, `systems/RATING_ENGINE.md`, `systems/DESIGN_SYSTEM.md`
 
@@ -10,8 +10,8 @@
 
 | 문서 | 섹션 | 용도 |
 |------|------|------|
-| `pages/02_RESTAURANT_DETAIL.md` | 전체 | L1~L8 + 빈 상태 + 뷰 모드 3종 |
-| `systems/DATA_MODEL.md` | restaurants, records, wishlists, record_photos | 테이블 컬럼, FK 관계 |
+| `pages/02_RESTAURANT_DETAIL.md` | 전체 | 식당 상세 스펙 |
+| `systems/DATA_MODEL.md` | restaurants, records, lists, record_photos | 테이블 컬럼, FK 관계 |
 | `systems/RATING_ENGINE.md` | §2 사분면 축, §4 점 비주얼, §6 배경 레퍼런스, §7 상황 태그 | 사분면 + dot 크기/색상 |
 | `systems/DESIGN_SYSTEM.md` | 만족도 게이지, 씬 태그 색상 | CSS 토큰 |
 | `prototype/02_detail_restaurant.html` | 전체 | 비주얼 레퍼런스 |
@@ -27,25 +27,33 @@
 
 ---
 
-## 생성할 파일 목록
+## 파일 목록 (구현 완료)
 
 | 파일 경로 | 레이어 | 설명 |
 |-----------|--------|------|
-| `src/domain/entities/restaurant.ts` | domain | Restaurant 인터페이스 (S1에서 정의, 본 태스크에서 확인/보완) |
-| `src/domain/repositories/restaurant-repository.ts` | domain | RestaurantRepository 인터페이스 (S1에서 정의, 본 태스크에서 확인/보완) |
+| `src/domain/entities/restaurant.ts` | domain | Restaurant 인터페이스 + GENRE_MAJOR_CATEGORIES + ALL_GENRES |
+| `src/domain/repositories/restaurant-repository.ts` | domain | RestaurantRepository 인터페이스 (검색/등록 + 상세 페이지 메서드) |
 | `src/infrastructure/repositories/supabase-restaurant-repository.ts` | infrastructure | Supabase 구현체 |
 | `src/application/hooks/use-restaurant-detail.ts` | application | 상세 데이터 fetch + 파생 상태 |
-| `src/presentation/components/detail/hero-carousel.tsx` | presentation | L1 히어로 캐러셀 (식당/와인 공통) |
-| `src/presentation/components/detail/score-cards.tsx` | presentation | L3 점수 카드 3슬롯 (공통) |
-| `src/presentation/components/detail/bubble-expand-panel.tsx` | presentation | L3b 버블 확장 패널 (공통) |
-| `src/presentation/components/detail/badge-row.tsx` | presentation | L4 뱃지 행 (공통) |
-| `src/presentation/components/detail/record-timeline.tsx` | presentation | L5 기록 타임라인 (공통) |
-| `src/presentation/components/detail/quadrant-display.tsx` | presentation | L6 포지션 맵 (공통) |
-| `src/presentation/components/detail/restaurant-info.tsx` | presentation | L7 실용 정보 (식당 전용) |
-| `src/presentation/components/detail/connected-items.tsx` | presentation | L8 연결 아이템 가로 스크롤 (공통) |
-| `src/presentation/components/detail/detail-fab.tsx` | presentation | FAB 2개 (뒤로 + 추가) (공통) |
+| `src/application/hooks/use-restaurant-stats.ts` | application | 식당 통계 (프로필 페이지용) |
+| `src/presentation/components/detail/hero-carousel.tsx` | presentation | 히어로 캐러셀 (식당/와인 공통) — 썸네일 없음 |
+| `src/presentation/components/detail/score-cards.tsx` | presentation | 점수 카드 2슬롯 (내점수 + 버블) — nyam 점수 슬롯 제거됨 |
+| `src/presentation/components/detail/bubble-expand-panel.tsx` | presentation | 버블 확장 패널 (공통) |
+| `src/presentation/components/detail/badge-row.tsx` | presentation | 뱃지 행 (공통) |
+| `src/presentation/components/detail/record-timeline.tsx` | presentation | 기록 타임라인 (공통) |
+| `src/presentation/components/detail/axis-level-badge.tsx` | presentation | 축 레벨 뱃지 (지역/장르 레벨 표시) |
+| `src/presentation/components/detail/bubble-record-section.tsx` | presentation | 버블 기록 섹션 |
+| `src/presentation/components/detail/bubble-record-card.tsx` | presentation | 버블 기록 카드 |
+| `src/presentation/components/detail/bubble-filter-chips.tsx` | presentation | 버블 필터 칩 |
+| `src/presentation/components/detail/restaurant-info.tsx` | presentation | 실용 정보 (식당 전용) |
+| `src/presentation/components/detail/connected-items.tsx` | presentation | 연결 아이템 가로 스크롤 (공통) |
+| `src/presentation/components/detail/detail-fab.tsx` | presentation | FAB 2개 (뒤로 + 추가) — variant prop 포함 |
+| `src/presentation/components/layout/fab-actions.tsx` | presentation | 수정/삭제/공유 액션 FAB |
+| `src/presentation/components/share/share-to-bubble-sheet.tsx` | presentation | 버블 공유 바텀시트 |
 | `src/presentation/containers/restaurant-detail-container.tsx` | presentation | 컨테이너 (hook 조합 + 레이아웃) |
 | `src/app/(main)/restaurants/[id]/page.tsx` | app | 라우팅 전용 |
+
+**참고**: `quadrant-display.tsx` 는 사용하지 않음. 사분면은 `RatingInput` 컴포넌트를 `readOnly` 모드로 재사용.
 
 ---
 
@@ -64,8 +72,8 @@ export type RestaurantGenre =
   | '카페' | '바/주점' | '베이커리'     // 음료/디저트
   | '기타'                             // 기타
 
-/** restaurants.price_range: 1~4 */
-export type PriceRange = 1 | 2 | 3 | 4
+/** restaurants.price_range: 1~3 */
+export type PriceRange = 1 | 2 | 3
 
 /** 영업시간 JSONB */
 export interface BusinessHours {
@@ -108,7 +116,7 @@ export interface Restaurant {
   address: string | null
   country: string           // NOT NULL DEFAULT '한국'
   city: string              // NOT NULL DEFAULT '서울'
-  area: string | null       // 생활권 동네명
+  area: string[] | null     // 생활권 동네명 (배열)
   district: string | null   // 구
   genre: RestaurantGenre | null
   priceRange: PriceRange | null
@@ -155,6 +163,13 @@ import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 export interface RestaurantRepository {
+  // ─── S3: 검색/등록 ───
+  search(query: string, userId: string): Promise<RestaurantSearchResult[]>
+  findNearby(lat: number, lng: number, radiusMeters: number, userId: string): Promise<NearbyRestaurant[]>
+  create(input: CreateRestaurantInput): Promise<{ id: string; name: string; isExisting: boolean }>
+
+  // ─── S4: 상세 페이지 ───
+
   /** 식당 단건 조회 */
   findById(id: string): Promise<Restaurant | null>
 
@@ -164,7 +179,7 @@ export interface RestaurantRepository {
   /** 기록별 사진 (order_index ASC) */
   findRecordPhotos(recordIds: string[]): Promise<Map<string, RecordPhoto[]>>
 
-  /** 사분면 표시용: 내가 리뷰한 모든 식당의 평균 좌표 (최대 12개) */
+  /** 사분면 표시용: 내가 리뷰한 다른 식당들의 평균 좌표 (최대 12개) */
   findQuadrantRefs(userId: string, excludeId: string): Promise<QuadrantRefDot[]>
 
   /** 연결된 와인 목록 (linked_wine_id가 있는 기록의 와인) */
@@ -210,6 +225,7 @@ export interface BubbleScoreRow {
 ```typescript
 // src/application/hooks/use-restaurant-detail.ts
 // R3: domain 인터페이스에만 의존. infrastructure 직접 사용 금지.
+'use client'
 
 import { useState, useEffect } from 'react'
 import type { Restaurant } from '@/domain/entities/restaurant'
@@ -221,8 +237,8 @@ import type {
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
-import type { NyamScoreBreakdown } from '@/domain/services/nyam-score'
-import { calcNyamScore } from '@/domain/services/nyam-score'
+
+export type RestaurantViewMode = 'my_records' | 'recommend' | 'bubble_review'
 
 /** Hook 반환값 */
 export interface RestaurantDetailState {
@@ -239,13 +255,12 @@ export interface RestaurantDetailState {
   myAvgScore: number | null           // 내 기록 평균 만족도
   visitCount: number                   // 방문 횟수
   latestVisitDate: string | null       // 최근 방문일
-  nyamScoreBreakdown: NyamScoreBreakdown | null
   bubbleAvgScore: number | null        // 버블 전체 평균
   bubbleCount: number                  // 참여 버블 수
-  viewMode: 'my_records' | 'recommend' | 'bubble_review'
+  viewMode: RestaurantViewMode
 }
 
-// NyamScoreBreakdown: domain/services/nyam-score.ts에서 정의 및 import
+// ※ nyamScoreBreakdown은 제거됨 — nyam 점수는 DB 저장값 사용
 
 export function useRestaurantDetail(
   restaurantId: string,
@@ -254,26 +269,34 @@ export function useRestaurantDetail(
 ): RestaurantDetailState {
   // 구현:
   // 1. repo.findById(restaurantId) → restaurant
-  // 2. repo.findMyRecords(restaurantId, userId) → myRecords
-  // 3. repo.findRecordPhotos(recordIds) → recordPhotos
-  // 4. repo.findQuadrantRefs(userId, restaurantId) → quadrantRefs (2개+ 리뷰 시만)
-  // 5. repo.findLinkedWines(restaurantId, userId) → linkedWines
-  // 6. repo.findBubbleScores(restaurantId, userId) → bubbleScores
+  // 2. userId 없으면 여기서 리턴 (기본 정보만)
+  // 3. Promise.allSettled로 병렬 실행:
+  //    - repo.findMyRecords(restaurantId, userId) → myRecords
+  //    - repo.findBubbleScores(restaurantId, userId) → bubbleScores
+  // 4. myRecords 있을 때만 병렬:
+  //    - repo.findRecordPhotos(recordIds) → recordPhotos
+  //    - repo.findQuadrantRefs(userId, restaurantId) → quadrantRefs
+  //    - repo.findLinkedWines(restaurantId, userId) → linkedWines
   //
   // 파생값 계산:
-  // - myAvgScore: myRecords의 satisfaction 평균 (null 제외)
+  // - myAvgScore: scoredRecords(satisfaction !== null)의 평균 (Math.round)
+  // - visitCount: myRecords.length
+  // - latestVisitDate: myRecords[0].visitDate ?? createdAt
+  // - bubbleAvgScore: scoredBubbles(avgScore !== null)의 평균
+  // - bubbleCount: bubbleScores.length
   // - viewMode: myRecords.length > 0 ? 'my_records' : bubbleScores.length > 0 ? 'bubble_review' : 'recommend'
-  // - nyamScoreBreakdown: calcNyamScore(restaurant)
 }
 ```
 
 ### nyam 점수 산출 로직 (순수 함수, domain/services/)
 
+> **참고**: `use-restaurant-detail` hook에서는 nyamScoreBreakdown을 계산하지 않음.
+> nyam 점수는 DB의 `restaurants.nyam_score` 값을 그대로 사용.
+> `calcNyamScore`는 `domain/services/nyam-score.ts`에 순수 함수로 존재하며, DB 갱신 시 서버에서 사용.
+
 ```typescript
 // src/domain/services/nyam-score.ts
 // R1: 외부 의존 0
-
-// NyamScoreBreakdown은 이 파일에서 직접 정의 (서비스 반환 타입 co-locate)
 
 /**
  * nyam 점수 산출
@@ -339,8 +362,6 @@ interface HeroCarouselProps {
   photos: string[]
   /** 사진 없을 때 fallback 아이콘 */
   fallbackIcon: 'restaurant' | 'wine'
-  /** 히어로 썸네일 */
-  thumbnail: HeroThumbnailData | null
   /** 좋아요 상태 */
   isWishlisted: boolean
   /** 좋아요 토글 콜백 */
@@ -348,18 +369,10 @@ interface HeroCarouselProps {
   /** 공유 콜백 */
   onShare: () => void
 }
-
-interface HeroThumbnailData {
-  /** 식당: 장르 아이콘 (lucide), 와인: wine 아이콘 */
-  icon: string
-  /** 식당명 또는 와인명 */
-  name: string
-  /** 대표 사진 URL (배경) */
-  backgroundUrl: string | null
-  /** 식당: 160×110px (가로), 와인: 110×160px (세로) */
-  orientation: 'horizontal' | 'vertical'
-}
 ```
+
+> **참고**: 초기 설계의 히어로 썸네일(HeroThumbnailData)은 구현에서 제거됨.
+> thumbnail/orientation prop 없음. 사진 클릭 시 팝업(전체화면) 기능으로 대체.
 
 **스펙:**
 
@@ -368,32 +381,16 @@ interface HeroThumbnailData {
 | 높이 | `h-56` (224px) |
 | 사진 없음 | `var(--bg-elevated)` + fallbackIcon (28px, `--text-hint`) |
 | 스와이프 | 좌우 터치/마우스 드래그 |
-| 자동 전환 | 4초 간격, `transform 0.4s ease` |
-| dot indicator | 일반 6x6px 원 (`rgba(255,255,255,0.5)`), 활성 16x6px pill (`#fff`, border-radius 3px), 하단 중앙 |
-| 그라디언트 오버레이 | 하단 80px, `linear-gradient(transparent, rgba(0,0,0,0.4))` |
-
-**히어로 썸네일 (hero-thumb):**
-
-| 속성 | 식당 | 와인 |
-|------|------|------|
-| 위치 | 캐러셀 좌하단 `bottom: 14px; left: 16px` | 동일 |
-| 크기 | 160x110px (가로) | 110x160px (세로) |
-| border-radius | 12px | 6px |
-| 내용 | 장르 아이콘 28px + 식당명 11px weight 800 uppercase | 와인 아이콘 + 와인명 (세로 배치) |
-| 배경 | 대표 사진 cover | 대표 사진 또는 라벨 이미지 cover |
-| 테두리 | `2.5px solid rgba(255,255,255,0.85)` + `box-shadow: 0 2px 12px rgba(0,0,0,0.25)` | 동일 |
-| 숨김 동작 | 캐러셀 클릭 → 좌측 슬라이드아웃 (0.35s cubic-bezier(0.4,0,0.2,1)), 바깥 클릭 → 복귀 | 동일 |
+| dot indicator | 일반/활성 구분, 하단 중앙 |
+| 사진 탭 | 풀스크린 팝업 |
 
 **좋아요/공유 버튼:**
 
 | 속성 | 값 |
 |------|---|
-| 위치 | 캐러셀 우하단 `bottom: 10px; right: 12px` |
-| 배경 | 없음 |
-| 아이콘 색상 | `rgba(255,255,255,0.85)` |
+| 위치 | 캐러셀 우하단 |
 | 좋아요 활성 | `#FF6038` (brand) |
 | 아이콘 | `heart` (20px), `share-2` (20px) |
-| gap | 12px |
 
 ---
 
@@ -423,7 +420,10 @@ interface DetailInfoHeaderProps {
 
 ---
 
-### Layer 3: 점수 카드 (`score-cards.tsx`)
+### 점수 카드 (`score-cards.tsx`)
+
+> **변경사항**: 초기 설계의 3슬롯(내점수/nyam/버블)에서 **2슬롯(내점수 + 버블)**로 변경됨.
+> nyam 점수 슬롯은 제거되었으며, nyamScore/nyamSubText/bubbleCount prop 없음.
 
 ```typescript
 interface ScoreCardsProps {
@@ -431,11 +431,8 @@ interface ScoreCardsProps {
   accentColor: string
   myScore: number | null
   mySubText: string          // '3회 방문' | '미방문' | '2회 시음' | '미시음'
-  nyamScore: number | null
-  nyamSubText: string        // '웹+명성' | 'Vivino+WS'
   bubbleScore: number | null
-  bubbleSubText: string      // '평균 · 3개' | ''
-  bubbleCount: number        // 우상단 카운트 뱃지 숫자 (0이면 비표시)
+  bubbleSubText: string      // '리뷰 N개' | ''
   onBubbleCardTap: () => void
   isBubbleExpanded: boolean
 }
@@ -445,39 +442,17 @@ interface ScoreCardsProps {
 
 ```
 flex: 1 (균등 분할)
-display: flex, gap: 8px
-bg: var(--bg-card)
-border: 1px solid var(--border)
-border-radius: 10px
-padding: 8px 10px
-min-height: 56px
-text-align: center
+display: flex, gap: 8px → 2px
+padding: 0 20px 10px
 ```
 
-| 요소 | 스타일 |
-|------|--------|
-| 라벨 | 9px, weight 600, `var(--text-hint)`, letter-spacing 0.02em |
-| 점수 (값 있음) | 24px, weight 800, `var(--accent-food)` |
-| 점수 (빈) | 18px, `var(--border-bold)`, "---" 표시 |
-| 부가 텍스트 | 9px, `var(--text-hint)` |
-
-**버블 카드 카운트 뱃지:**
-
-| 속성 | 값 |
-|------|---|
-| 위치 | 우상단 `top: -4px; right: -4px` |
-| 크기 | 16px 원형 |
-| 배경 | `var(--accent-social)` |
-| 텍스트 | 흰색, 9px, weight 700 |
-| 테두리 | `1.5px solid var(--bg)` |
-
-**3가지 상태별 값:**
-
-| 상태 | 내 점수 카드 | nyam 카드 | 버블 카드 |
-|------|------------|----------|----------|
-| 내 기록 있음 | 평균 점수 / "N회 방문" | nyam 점수 / "웹+명성" | 버블 평균 / "평균 · N개" + 카운트 뱃지 |
-| 미방문 + 버블 없음 | "---" / "미방문" | nyam 점수 / "웹+명성" | "---" / 빈 상태 |
-| 미방문 + 버블 있음 | "---" / "미방문" | nyam 점수 / "웹+명성" | 버블 평균 / "N개 버블" + 카운트 뱃지 |
+**버블 모드 동작:**
+- 버블 모드(`bubbleId != null`) 시 카드 의미가 반전됨:
+  - 좌측 카드 = 버블 평균 점수 / "버블 평균 · N명"
+  - 우측 카드 = 내 점수 / "나 · N회"
+- 일반 모드:
+  - 좌측 카드 = 내 점수 / "N회 방문" or "미방문"
+  - 우측 카드 = 버블 점수 / "리뷰 N개"
 
 ---
 
@@ -597,9 +572,13 @@ interface RecordTimelineProps {
 
 ---
 
-### Layer 6: 내 식당 지도 (사분면) (`quadrant-display.tsx`)
+### 사분면: 내 식당 지도 (RatingInput readOnly)
+
+> **변경**: `QuadrantDisplay` 대신 `RatingInput` 컴포넌트를 readOnly 모드로 사용.
+> avg/recent 모드 전환 + 참조 dot 탭 시 네비게이션 + 롱프레스로 포커스 전환.
 
 ```typescript
+// 참고: 실제로는 RatingInput을 사용. 아래는 개념적 props.
 interface QuadrantDisplayProps {
   /** 현재 대상 이름 */
   currentName: string
@@ -729,6 +708,7 @@ interface ConnectedItemCard {
 interface DetailFabProps {
   onBack: () => void
   onAdd: () => void
+  variant?: 'food' | 'wine'  // 기본 'food'
 }
 ```
 
@@ -753,28 +733,15 @@ z-index: 85
 
 ---
 
-### 앱 헤더 (top-fixed)
+### 앱 헤더 (`app-header.tsx`)
+
+> **변경사항**: `DetailHeader` 전용 컴포넌트 대신 공통 `AppHeader` 사용.
+> `from` 파라미터 기반 뒤로 라벨 로직은 제거됨 — 일반 앱 헤더를 그대로 사용.
 
 ```typescript
-interface DetailHeaderProps {
-  /** ?from= 쿼리 파라미터 */
-  from: 'home' | 'profile' | 'bubble' | 'search' | 'recommend'
-}
+// src/presentation/components/layout/app-header.tsx
+// 공통 앱 헤더 컴포넌트 — 모든 페이지에서 동일하게 사용
 ```
-
-| from 값 | 표시 텍스트 | 뒤로 이동 경로 |
-|---------|-----------|--------------|
-| `home` (기본) | 홈 | `/` |
-| `profile` | 프로필 | `/profile` |
-| `bubble` | 버블 | `/bubbles/[id]` |
-| `search` | 검색 | `/` (검색 상태 유지) |
-| `recommend` | 추천 | `/` (추천 탭) |
-
-**스타일:**
-- 배경: `rgba(248,246,243,0.55)` + `backdrop-filter: blur(20px) saturate(1.5)`
-- 그림자: `0 1px 12px rgba(0,0,0,0.08)`
-- 좌측: `chevron-left` + 경로명 텍스트 (16px, weight 600)
-- 우측: bubbles 링크, 알림 벨, 아바타
 
 ---
 
@@ -784,33 +751,59 @@ interface DetailHeaderProps {
 // src/presentation/containers/restaurant-detail-container.tsx
 // R4: shared/di 경유, infrastructure 직접 import 금지
 
-import { restaurantRepo } from '@/shared/di/container'
-import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
+interface RestaurantDetailContainerProps {
+  restaurantId: string
+  bubbleId: string | null   // 버블 모드 (URL ?bubble= 파라미터)
+}
 
-export function RestaurantDetailContainer({ id }: { id: string }) {
-  // 1. useAuth() → userId
-  // 2. useRestaurantDetail(id, userId, restaurantRepo) → state
-  // 3. 뷰 모드 판별 (state.viewMode)
-  // 4. 레이아웃 조합:
-  //    scroll-content (padding-top: 80px)
-  //    ├─ HeroCarousel        ← Layer 1
-  //    ├─ .detail-info        ← Layer 2+3+뱃지
-  //    │   ├─ DetailInfoHeader
-  //    │   ├─ ScoreCards + BubbleExpandPanel
-  //    │   └─ BadgeRow
-  //    ├─ .section            ← Layer 5 (나의 기록)
-  //    ├─ .divider (8px)
-  //    ├─ .section            ← Layer 6 (사분면) — 리뷰 2+만
-  //    ├─ .divider (8px)
-  //    ├─ .section            ← Layer 7 (실용 정보)
-  //    ├─ .divider (8px)
-  //    ├─ .section            ← Layer 8 (연결 와인) — 있을 때만
-  //    ├─ .divider (8px)
-  //    ├─ .section            ← Layer 9 (버블 기록 — S4에서 빈 상태만)
-  //    └─ 하단 80px spacer
+export function RestaurantDetailContainer({ restaurantId, bubbleId }: RestaurantDetailContainerProps) {
+  // 사용하는 hooks:
+  // - useAuth() → user
+  // - useRestaurantDetail(restaurantId, userId, restaurantRepo) → state
+  // - useWishlist(userId, restaurantId, 'restaurant', recordRepo) → isWishlisted, toggle
+  // - useAxisLevel(userId, [{axisType:'genre', axisValue}, {axisType:'area', axisValue}]) → axisLevels
+  // - useShareRecord(userId, activeRecordId) → availableBubbles, shareToBubbles, canShare
+  // - useBubbleDetail(bubbleId, userId) → bubbleInfo (버블 모드)
+  // - useBubbleFeed(bubbleId, ...) → 버블 멤버 공유 (버블 모드)
+  //
+  // 주요 상태:
+  // - quadrantMode: 'avg' | 'recent' (사분면 평균/최근 전환)
+  // - focusedRecordIdx: 최근 모드에서 포커스된 기록
+  // - bubbleExpanded: 버블 확장 패널 토글
+  //
+  // 레이아웃:
+  //    AppHeader (공통 앱 헤더)
+  //    [BubbleMiniHeader — 버블 모드일 때만]
+  //    HeroCarousel (사진 / 찜 / 공유)
+  //    ├─ 기본정보 (이름, 가격대, 지역 cascade, 장르 cascade + AxisLevelBadge)
+  //    ├─ ScoreCards (2슬롯) + BubbleExpandPanel
+  //    ├─ BadgeRow (미슐랭/블루리본/TV)
+  //    ├─ Divider
+  //    ├─ 사분면 (RatingInput readOnly, avg/recent 모드 전환)
+  //    │   - 버블 모드: 멤버 평가 dots
+  //    │   - 일반 모드: 내 평가 + 참조 dots
+  //    ├─ Divider
+  //    ├─ RecordTimeline (나의 기록 타임라인)
+  //    ├─ Divider
+  //    ├─ BubbleRecordSection (버블 기록)
+  //    ├─ Divider
+  //    ├─ RestaurantInfo (주소, 영업시간, 전화, 메뉴, 외부 링크)
+  //    └─ spacer
   //    DetailFab (뒤로 + 추가)
+  //    FabActions (수정/삭제 — 기록 있을 때만)
+  //    DeleteConfirmModal
+  //    ShareToBubbleSheet
 }
 ```
+
+**참고**: 초기 설계와의 차이점:
+- `QuadrantDisplay` 대신 `RatingInput` readOnly 모드 사용
+- 점수 카드 3슬롯 → 2슬롯 (nyam 점수 슬롯 제거)
+- `DetailInfoHeader` 대신 인라인 JSX로 지역/장르 cascade 렌더링
+- `FabActions`(수정/삭제/공유) 추가 — FAB 영역에 기록 액션 포함
+- `BubbleRecordSection` 추가 — 버블 기록 표시
+- 버블 모드(`bubbleId`) 지원 — `BubbleMiniHeader` + 멤버 사분면 표시
+- `useAxisLevel` hook으로 지역/장르 레벨 뱃지 표시
 
 ---
 
@@ -834,7 +827,7 @@ export function RestaurantDetailContainer({ id }: { id: string }) {
 
 | 섹션 | 빈 상태 | 처리 |
 |------|---------|------|
-| 점수 카드 | 3슬롯 유지, 값만 "---" (18px, `var(--border-bold)`) | 레이아웃 불변 |
+| 점수 카드 | 2슬롯 유지, 값만 "—" 표시 | 레이아웃 불변 |
 | 기록 | `search` 아이콘 + "아직 방문 기록이 없어요" + CTA | padding 40px 20px |
 | 사분면 | 섹션 숨김 | 리뷰 2개+ 시 표시 |
 | 사진 (히어로) | `var(--bg-elevated)` + 장르 아이콘 | --- |
@@ -856,24 +849,35 @@ export function RestaurantDetailContainer({ id }: { id: string }) {
 | 사진 | record_photos WHERE record_id IN (기록 IDs), ORDER BY order_index | 실시간 |
 | 연결 와인 | records.linked_wine_id → wines | 실시간 |
 | 뱃지 | restaurants.michelin_stars, has_blue_ribbon, media_appearances | 2주 캐시 |
-| 찜 상태 | wishlists WHERE user_id AND target_id AND target_type='restaurant' | 실시간 |
+| 찜 상태 | lists WHERE user_id AND target_id AND target_type='restaurant' AND status='wishlist' | 실시간 |
 
 ---
 
 ## 라우팅
 
+```typescript
+// src/app/(main)/restaurants/[id]/page.tsx
+
+interface Props {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ bubble?: string }>
+}
+
+export default async function RestaurantDetailPage({ params, searchParams }: Props) {
+  const { id } = await params
+  const { bubble } = await searchParams
+  return <RestaurantDetailContainer restaurantId={id} bubbleId={bubble ?? null} />
+}
+```
+
 ```
 /restaurants/[id]
-  ?from=home (기본)
-  ?from=profile
-  ?from=bubble
-  ?from=search
-  ?from=recommend
+  ?bubble=[bubbleId]  ← 버블 모드 진입
 
 진입 경로:
   ← 홈 카드 탭
   ← 프로필 최근 기록
-  ← 버블 상세 식당 리뷰
+  ← 버블 상세 식당 리뷰 (?bubble= 파라미터 포함)
   ← 검색 결과 탭
   ← 추천 결과 탭
 

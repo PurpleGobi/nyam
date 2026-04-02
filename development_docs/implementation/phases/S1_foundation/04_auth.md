@@ -32,11 +32,13 @@
 | `src/infrastructure/supabase/auth-mapper.ts` | Supabase → domain 타입 매퍼 | infrastructure |
 | `src/shared/di/auth-mappers.ts` | auth-mapper re-export (조합 루트) | shared/di |
 | `src/application/hooks/use-auth-actions.ts` | signInWithOAuth, signOut 비즈니스 로직 | application |
-| `src/app/auth/login/page.tsx` | 로그인 페이지 (LoginContainer만 렌더링, R5) | app |
-| `src/app/auth/callback/route.ts` | OAuth 콜백 핸들러 (code → session 교환) | app |
+| `src/app/auth/login/page.tsx` | 로그인 페이지 (Suspense + LoginContainer, R5) | app |
+| `src/app/auth/callback/route.ts` | OAuth 콜백 핸들러 (code → session 교환 + 프로필 자동 생성) | app |
 | `src/middleware.ts` | 세션 리프레시 + 보호 라우트 리다이렉트 | app |
-| `src/presentation/containers/login-container.tsx` | 로그인 페이지 컨테이너 (use-auth 훅 + LoginButtons) | presentation |
+| `src/presentation/containers/login-container.tsx` | 로그인 페이지 컨테이너 (use-auth 훅 + LoginButtons + redirect 처리) | presentation |
 | `src/presentation/providers/auth-provider.tsx` | 인증 상태 React Context (shared/di 경유) | presentation |
+| `src/presentation/guards/auth-guard.tsx` | 인증 가드 (미인증 시 로그인 리다이렉트) | presentation |
+| `src/presentation/components/ui/toast.tsx` | Toast 알림 프로바이더 | presentation |
 | `supabase/migrations/013_auth_trigger.sql` | auth.users → public.users 자동 INSERT 트리거 | DB |
 
 ### 생성하지 않는 것
@@ -143,10 +145,10 @@ export interface User {
   dnd_end: string | null
   pref_landing: 'last' | 'home' | 'bubbles' | 'profile'
   pref_home_tab: 'last' | 'restaurant' | 'wine'
-  pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'recommended' | 'following'
+  pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'following'
   pref_wine_sub: 'last' | 'tasted' | 'wishlist' | 'cellar'
   pref_bubble_tab: 'last' | 'bubble' | 'bubbler'
-  pref_view_mode: 'last' | 'detailed' | 'compact' | 'calendar'
+  pref_view_mode: 'last' | 'card' | 'list' | 'calendar'
   pref_default_sort: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
   pref_record_input: 'camera' | 'search'
   pref_bubble_share: 'ask' | 'auto' | 'never'
@@ -234,17 +236,19 @@ export function mapSupabaseSession(session: SupabaseSession): AuthSession {
 ```typescript
 import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
 export function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
   return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }
 ```
+
+> **lazy init**: 환경변수를 함수 내부에서 읽어 모듈 로드 시점의 에러를 방지한다.
 
 ### 5. `src/infrastructure/supabase/server.ts`
 
@@ -252,36 +256,36 @@ export function createClient() {
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
 export async function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
   const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            )
-          } catch {
-            // Server Component에서 호출 시 쿠키 설정 불가 — 무시
-            // middleware.ts에서 세션 리프레시 담당
-          }
-        },
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          )
+        } catch {
+          // Server Component에서 호출 시 쿠키 설정 불가 — 무시
+        }
       },
     },
-  )
+  })
 }
 ```
+
+> **lazy init**: 환경변수를 함수 내부에서 읽어 모듈 로드 시점의 에러를 방지한다.
 
 ### 6. `src/middleware.ts`
 
@@ -289,7 +293,7 @@ export async function createClient() {
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_ROUTES = ['/auth/login', '/auth/callback', '/onboarding']
+const PUBLIC_ROUTES = ['/auth/login', '/auth/callback', '/onboarding', '/design-system', '/bubbles/invite']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -371,13 +375,37 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = '/'
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      // 프로필 존재 확인 → 없으면 생성 (첫 가입)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single()
+
+        if (!existingProfile) {
+          const meta = user.user_metadata
+          await supabase.from('users').insert({
+            id: user.id,
+            email: user.email,
+            nickname: (meta?.name ?? meta?.full_name ?? meta?.preferred_username ?? '냠유저').slice(0, 20),
+            avatar_url: meta?.avatar_url ?? null,
+            auth_provider: user.app_metadata?.provider ?? 'google',
+            auth_provider_id: user.app_metadata?.provider_id ?? user.id,
+            privacy_profile: 'bubble_only',
+            privacy_records: 'shared_only',
+          })
+        }
+      }
+
       const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
 
@@ -391,44 +419,52 @@ export async function GET(request: Request) {
     }
   }
 
-  // 에러 발생 시 로그인 페이지로 리다이렉트 (에러 파라미터 포함)
   return NextResponse.redirect(`${origin}/auth/login?error=callback_failed`)
 }
 ```
 
+> **프로필 자동 생성**: 13_auth_trigger.sql의 트리거와 별도로, 콜백에서도 프로필 존재 여부를 확인하고 없으면 생성한다. 트리거 실패 시 안전망 역할을 한다.
+
 ### 8. `src/app/auth/login/page.tsx`
 
 ```typescript
+import { Suspense } from 'react'
 import { LoginContainer } from '@/presentation/containers/login-container'
 
 export default function LoginPage() {
-  return <LoginContainer />
+  return (
+    <Suspense>
+      <LoginContainer />
+    </Suspense>
+  )
 }
 ```
 
-> **R5 준수**: page.tsx는 Container 렌더링만 수행한다. 서버 사이드 인증 체크는 `middleware.ts`에서 처리한다 (인증된 사용자의 `/auth/login` 접근 시 `middleware.ts`가 `/`로 리다이렉트).
+> **R5 준수**: page.tsx는 Container 렌더링만 수행한다. `Suspense`로 감싸는 이유는 LoginContainer 내부에서 `useSearchParams()`를 사용하기 때문이다 (Next.js App Router 요구사항). 서버 사이드 인증 체크는 `middleware.ts`에서 처리한다.
 
 ### 8-1. `src/presentation/containers/login-container.tsx`
 
 ```typescript
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { LoginButtons } from '@/presentation/components/auth/login-buttons'
 import { useAuthActions } from '@/application/hooks/use-auth-actions'
 import type { AuthProvider } from '@/domain/entities/auth'
 
 export function LoginContainer() {
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get('redirect')
   const { signInWithOAuth } = useAuthActions()
 
   const handleLogin = (provider: AuthProvider) => {
-    signInWithOAuth(provider)
+    signInWithOAuth(provider, redirectPath ?? undefined)
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background" style={{ padding: '60px 32px 40px' }}>
+    <div className="content-auth flex min-h-dvh flex-col items-center justify-center bg-background" style={{ padding: '60px 32px 40px' }}>
       <div style={{ height: '44px' }} />
 
-      {/* 로고 */}
       <h1
         className="logo-gradient"
         style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px', marginBottom: '10px' }}
@@ -436,7 +472,6 @@ export function LoginContainer() {
         nyam
       </h1>
 
-      {/* 서브텍스트 */}
       <p
         style={{
           fontSize: '14px',
@@ -450,12 +485,10 @@ export function LoginContainer() {
         낯선 별점 천 개보다, 믿을만한 한 명의 기록.
       </p>
 
-      {/* 소셜 로그인 버튼 */}
       <div style={{ width: '100%', marginBottom: '32px' }}>
         <LoginButtons onLogin={handleLogin} />
       </div>
 
-      {/* 이용약관 */}
       <p style={{ fontSize: '11px', color: 'var(--text-hint)', textAlign: 'center', lineHeight: 1.6 }}>
         가입 시{' '}
         <a href="#" style={{ color: 'var(--text-sub)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
@@ -471,6 +504,8 @@ export function LoginContainer() {
   )
 }
 ```
+
+> **redirect 처리**: `useSearchParams()`로 `?redirect=` 쿼리를 읽어 로그인 후 원래 페이지로 돌아갈 수 있다. `Suspense` 래핑 필요 (page.tsx에서 처리).
 
 ### 8-2. `src/infrastructure/supabase/auth-service.ts`
 
@@ -526,7 +561,9 @@ import { signInWithProvider, signOutUser } from '@/shared/di/container'
 import type { AuthProvider } from '@/domain/entities/auth'
 
 export function useAuthActions() {
-  const signInWithOAuth = async (provider: AuthProvider) => {
+  const signInWithOAuth = async (provider: AuthProvider, nextPath?: string) => {
+    const next = nextPath ?? '/'
+    sessionStorage.setItem('auth_redirect_next', next)
     const redirectTo = `${window.location.origin}/auth/callback`
     const { error } = await signInWithProvider(provider, redirectTo)
     if (error) throw error
@@ -540,7 +577,8 @@ export function useAuthActions() {
 }
 ```
 
-> **R3 준수**: application 레이어는 shared/di/container를 통해 infrastructure 기능을 받으며, infrastructure를 직접 import하지 않는다. OAuth 호출은 infrastructure의 `auth-service.ts`에 캡슐화되어 타입 캐스트가 application 레이어에 노출되지 않는다.
+> **R3 준수**: application 레이어는 shared/di/container를 통해 infrastructure 기능을 받으며, infrastructure를 직접 import하지 않는다.
+> **redirect 지원**: `nextPath`를 `sessionStorage`에 저장하여 OAuth 콜백 후 원래 페이지로 돌아갈 수 있다.
 > **네이밍**: `useAuthActions`는 인증 액션(signIn, signOut)을 담당하고, `useAuth`는 presentation의 AuthProvider에서 현재 사용자 상태를 반환한다.
 
 ### 9. `src/presentation/components/auth/login-buttons.tsx`
@@ -670,10 +708,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const client = clientRef.current
 
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await client.auth.getSession()
-      if (initialSession) {
-        setSession(mapSupabaseSession(initialSession))
-        setUser(mapSupabaseUser(initialSession.user))
+      const { data: { user: verifiedUser } } = await client.auth.getUser()
+      if (verifiedUser) {
+        const { data: { session: currentSession } } = await client.auth.getSession()
+        if (currentSession) {
+          setSession(mapSupabaseSession(currentSession))
+          setUser(mapSupabaseUser(verifiedUser))
+        }
       }
       setIsLoading(false)
     }
@@ -728,13 +769,14 @@ export function useAuth() {
 >
 > **lazy init + useRef**: `getSupabaseClient()`를 `useRef`에 저장하여 컴포넌트 리렌더링 시 클라이언트 재생성을 방지하면서, 모듈 수준 싱글턴의 SSR 상태 공유 문제를 회피한다.
 
-### 11. `src/app/layout.tsx`에 AuthProvider 래핑
+### 11. `src/app/layout.tsx`에 AuthProvider + ToastProvider 래핑
 
-`AuthProvider`를 루트 레이아웃에 추가한다.
+`AuthProvider`와 `ToastProvider`를 루트 레이아웃에 추가한다.
 
 ```typescript
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/presentation/providers/auth-provider'
+import { ToastProvider } from '@/presentation/components/ui/toast'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -758,13 +800,54 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <body className="font-sans bg-background text-foreground antialiased">
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>
   )
 }
 ```
+
+### 11-1. `src/presentation/guards/auth-guard.tsx`
+
+인증되지 않은 사용자를 로그인 페이지로 리다이렉트하는 클라이언트 가드 컴포넌트. `(main)` 레이아웃에서 사용된다.
+
+```typescript
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/presentation/providers/auth-provider'
+
+export function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/auth/login')
+    }
+  }, [user, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-food)] border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  return <>{children}</>
+}
+```
+
+> **이중 보호**: `middleware.ts`(서버)와 `AuthGuard`(클라이언트) 양쪽에서 인증을 체크한다. middleware는 초기 요청을 차단하고, AuthGuard는 클라이언트 사이드 네비게이션을 보호한다.
 
 ### 12. `supabase/migrations/013_auth_trigger.sql`
 

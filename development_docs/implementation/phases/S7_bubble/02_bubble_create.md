@@ -32,17 +32,22 @@
 | 레이어 | 파일 | 설명 |
 |--------|------|------|
 | domain | `src/domain/services/bubble-join-service.ts` | 가입 조건 검증 순수 함수 |
+| domain | `src/domain/services/bubble-share-sync.ts` | 자동 공유 규칙 평가 + diff 계산 |
 | application | `src/application/hooks/use-bubble-create.ts` | 버블 생성 로직 |
 | application | `src/application/hooks/use-bubble-join.ts` | 가입 신청/승인/거절 로직 |
 | application | `src/application/hooks/use-invite-link.ts` | 초대 링크 생성/검증 |
+| application | `src/application/hooks/use-bubble-auto-sync.ts` | 자동 공유 규칙 동기화 |
+| application | `src/application/hooks/use-share-record.ts` | 기록 공유/해제 |
 | presentation | `src/presentation/components/bubble/bubble-create-form.tsx` | 생성 폼 UI |
 | presentation | `src/presentation/components/bubble/join-policy-selector.tsx` | 가입 정책 4종 카드 선택 |
 | presentation | `src/presentation/components/bubble/invite-link-generator.tsx` | 초대 링크 생성 UI |
 | presentation | `src/presentation/components/bubble/join-flow.tsx` | 가입 신청 + 양방향 프리뷰 |
 | presentation | `src/presentation/components/bubble/bubble-discover-sheet.tsx` | 버블 탐색 바텀 시트 |
 | presentation | `src/presentation/components/bubble/bubble-preview-popup.tsx` | 발견 팝업 (미리보기) |
+| presentation | `src/presentation/components/bubble/share-rule-editor.tsx` | 자동 공유 규칙 편집기 |
 | presentation | `src/presentation/containers/bubble-create-container.tsx` | 생성 폼 컨테이너 |
 | presentation | `src/presentation/containers/bubble-join-container.tsx` | 가입 플로우 컨테이너 |
+| app | `src/app/(main)/bubbles/create/page.tsx` | 생성 폼 라우트 |
 
 ### 스코프 외
 
@@ -204,12 +209,12 @@ interface JoinBubbleInput {
 // - cancelJoin(bubbleId): 본인이 가입 신청 취소
 
 // 승인 시:
-//   - updateMemberStatus(bubbleId, userId, 'active')
+//   - updateMember(bubbleId, userId, 'active')
 //   - 알림 생성: bubble_join_approved → 신청자
 //   - bubbles.member_count++ (트리거)
 
 // 거절 시:
-//   - updateMemberStatus(bubbleId, userId, 'rejected')
+//   - updateMember(bubbleId, userId, 'rejected')
 //   - 알림: 없음 (거절은 조용히)
 ```
 
@@ -462,10 +467,10 @@ interface BubbleDiscoverSheetProps {
      → 알림: bubble_join_request → owner/admin
   5. Owner → 알림/설정에서 신청 확인
      → "승인" → useBubbleJoin.approveJoin()
-       → updateMemberStatus('active')
+       → updateMember('active')
        → 알림: bubble_join_approved → 신청자
      → "거절" → useBubbleJoin.rejectJoin()
-       → updateMemberStatus('rejected')
+       → updateMember('rejected')
 
 [가입 플로우 — auto_approve]
   useBubbleJoin.join()

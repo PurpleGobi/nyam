@@ -1,6 +1,6 @@
 # 08: 사진 업로드 + Storage (Photo Upload)
 
-> 카메라 촬영/갤러리 선택 → 리사이즈(WebP 1200px) → Supabase Storage 업로드 → record_photos 테이블 저장. 최대 10장, 순서 추적.
+> 카메라 촬영/갤러리 선택 → 리사이즈(WebP 800px, quality 0.7) → Supabase Storage 업로드 → record_photos 테이블 저장. 최대 10장, 순서 추적.
 
 ---
 
@@ -29,7 +29,7 @@
 
 | 파일 | 레이어 | 역할 |
 |------|--------|------|
-| `src/domain/entities/record-photo.ts` | domain | 기존 record-photo.ts에 PendingPhoto 인터페이스와 PHOTO_CONSTANTS 상수를 **추가**한다 (인터페이스 덮어쓰기 아님) |
+| `src/domain/entities/record-photo.ts` | domain | RecordPhoto, PendingPhoto, PHOTO_CONSTANTS (isPublic 필드 포함) |
 | `src/domain/repositories/photo-repository.ts` | domain | PhotoRepository 인터페이스 |
 | `src/infrastructure/storage/image-upload.ts` | infrastructure | Supabase Storage 업로드/삭제 구현 |
 | `src/infrastructure/repositories/supabase-photo-repository.ts` | infrastructure | record_photos 테이블 CRUD |
@@ -52,46 +52,32 @@
 **파일**: `src/domain/entities/record-photo.ts`
 
 ```typescript
-/** record_photos 테이블 엔티티 */
 export interface RecordPhoto {
   id: string
   recordId: string
-  url: string
+  url: string                // Supabase Storage (800px webp)
   orderIndex: number
+  isPublic: boolean          // 공개 여부 (기본값 true)
   createdAt: string
 }
 
-/** 업로드 전 클라이언트 사진 (미리보기용) */
 export interface PendingPhoto {
-  /** 클라이언트 임시 ID (UUID v4) */
   id: string
-  /** 원본 File 객체 */
   file: File
-  /** 미리보기 URL (URL.createObjectURL) */
   previewUrl: string
-  /** 그리드 내 순서 (0-based) */
   orderIndex: number
-  /** 업로드 상태 */
   status: 'pending' | 'uploading' | 'uploaded' | 'error'
-  /** 업로드 완료 후 Storage URL */
   uploadedUrl?: string
+  isPublic: boolean          // 공개 여부 (기본값 true)
 }
 
-/** 사진 관련 상수 */
 export const PHOTO_CONSTANTS = {
-  /** 기록당 최대 사진 수 */
   MAX_PHOTOS: 10,
-  /** 리사이즈 최대 너비 (px) */
-  MAX_WIDTH: 1200,
-  /** WebP 품질 (0~1) */
-  QUALITY: 0.8,
-  /** 출력 MIME 타입 */
+  MAX_WIDTH: 800,            // 리사이즈 최대 너비 (px) — 기존 1200에서 변경
+  QUALITY: 0.7,              // WebP 품질 — 기존 0.8에서 변경
   OUTPUT_FORMAT: 'image/webp' as const,
-  /** Storage 버킷명 */
   BUCKET_NAME: 'record-photos',
-  /** 허용 입력 MIME 타입 */
   ACCEPTED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
-  /** 최대 파일 크기 (10MB, 리사이즈 전) */
   MAX_FILE_SIZE: 10 * 1024 * 1024,
 } as const
 ```
@@ -104,13 +90,9 @@ export const PHOTO_CONSTANTS = {
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 export interface PhotoRepository {
-  /** record_photos에 INSERT (배치) */
-  savePhotos(recordId: string, photos: { url: string; orderIndex: number }[]): Promise<RecordPhoto[]>
-  /** record_photos에서 조회 (order_index ASC) */
+  savePhotos(recordId: string, photos: { url: string; orderIndex: number; isPublic?: boolean }[]): Promise<RecordPhoto[]>
   getPhotosByRecordId(recordId: string): Promise<RecordPhoto[]>
-  /** record_photos에서 DELETE (단건) */
   deletePhoto(photoId: string): Promise<void>
-  /** record_photos에서 DELETE (전체 — record 삭제 시 CASCADE로 처리되므로 직접 호출 드묾) */
   deletePhotosByRecordId(recordId: string): Promise<void>
 }
 ```
@@ -125,7 +107,7 @@ import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 
 /**
  * 이미지를 리사이즈하여 WebP Blob으로 변환.
- * Canvas API 사용. max 1200px width, quality 0.8.
+ * Canvas API 사용. max 800px width, quality 0.7.
  */
 export async function resizeImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -669,7 +651,7 @@ function handleGallerySelect(e: React.ChangeEvent<HTMLInputElement>) {
     │
     ├─ 각 사진별:
     │   ├─ status → 'uploading'
-    │   ├─ resizeImage(file) → WebP Blob (max 1200px, quality 0.8)
+    │   ├─ resizeImage(file) → WebP Blob (max 800px, quality 0.7)
     │   ├─ uploadImage(userId, recordId, blob, fileId)
     │   │     └─ Storage path: {userId}/{recordId}/{uuid}.webp
     │   ├─ status → 'uploaded', uploadedUrl 설정
@@ -686,9 +668,8 @@ function handleGallerySelect(e: React.ChangeEvent<HTMLInputElement>) {
 ### 전체 기록 저장 시퀀스에서의 위치 (RECORD_FLOW.md §9)
 
 ```
-1. records INSERT (status='rated' or 'checked')  ← recordId 확정
+1. lists upsert + records INSERT                  ← recordId 확정
 2. record_photos INSERT (사진 있으면)              ← 이 태스크
-3. wishlists UPDATE (찜 있었으면 is_visited=true)
 4. XP 적립 (rated일 때만)
 5. 레벨 체크 → 레벨업 알림
 ```
@@ -782,7 +763,7 @@ export const photoRepo: PhotoRepository = new SupabasePhotoRepository()
 □ R3 준수 — use-photo-upload.ts가 domain 인터페이스에만 의존
 □ R4 준수 — photo-picker.tsx에 infrastructure/Supabase import 없음
 □ R5 준수 — DI container에서만 infrastructure import
-□ 리사이즈 — max 1200px width, WebP, quality 0.8
+□ 리사이즈 — max 800px width, WebP, quality 0.7
 □ Storage 경로 — {userId}/{recordId}/{uuid}.webp 형식
 □ 최대 장수 — 10장 초과 시 추가 불가
 □ 타입 필터 — jpeg, png, webp, heic, heif만 허용
