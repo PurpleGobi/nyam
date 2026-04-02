@@ -86,7 +86,16 @@ export interface MutualRecordItem {
   createdAt: string
 }
 
+export interface SearchUserResult {
+  id: string
+  nickname: string
+  handle: string | null
+  avatarUrl: string | null
+  avatarColor: string | null
+}
+
 export interface BubbleRepository {
+  searchUsers(query: string, excludeIds?: string[], limit?: number): Promise<SearchUserResult[]>
   create(input: CreateBubbleInput): Promise<Bubble>
   findById(id: string): Promise<Bubble | null>
   findByUserId(userId: string): Promise<Bubble[]>

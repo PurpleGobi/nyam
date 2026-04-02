@@ -9,6 +9,7 @@ import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleInviteMember } from '@/application/hooks/use-bubble-invite-member'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import type { Bubble, BubbleMemberRole, BubbleShareRule, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
@@ -29,6 +30,10 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
+  const {
+    searchResults: inviteSearchResults, isSearching: isInviteSearching,
+    isInviting, invitedIds, searchUsers: inviteSearch, inviteUser,
+  } = useBubbleInviteMember(bubbleId)
 
   const [pendingMembers, setPendingMembers] = useState<PendingMemberInfo[]>([])
   const [currentBubble, setCurrentBubble] = useState<Bubble>(bubble)
@@ -92,6 +97,14 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     router.push('/bubbles')
   }
 
+  // 멤버 초대
+  const existingMemberIds = pendingMembers.map((m) => m.userId)
+  const handleInviteUser = async (targetUserId: string) => {
+    if (!userId) return
+    const nickname = user?.nickname ?? '사용자'
+    await inviteUser(targetUserId, userId, currentBubble.name, nickname)
+  }
+
   const handleApprove = async (userId: string) => {
     await approveJoin(userId)
     setPendingVersion((v) => v + 1)
@@ -117,6 +130,13 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           pendingMembers={pendingMembers}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
+          inviteSearchResults={inviteSearchResults}
+          isInviteSearching={isInviteSearching}
+          isInviting={isInviting}
+          invitedIds={invitedIds}
+          onInviteSearch={inviteSearch}
+          onInviteUser={handleInviteUser}
+          existingMemberIds={existingMemberIds}
           shareRule={memberLoaded ? shareRule : undefined}
           onShareRuleChange={handleShareRuleChange}
           visibilityOverride={memberLoaded ? visibilityOverride : undefined}

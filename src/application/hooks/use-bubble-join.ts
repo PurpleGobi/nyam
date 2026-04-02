@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import type { Bubble, BubbleMember, BubbleShareRule } from '@/domain/entities/bubble'
 import { checkJoinEligibility, type JoinApplicantProfile, type JoinEligibility } from '@/domain/services/bubble-join-service'
-import { bubbleRepo } from '@/shared/di/container'
+import { bubbleRepo, notificationRepo } from '@/shared/di/container'
 
 const DEFAULT_SHARE_RULE: BubbleShareRule = { mode: 'all', rules: [], conjunction: 'and' }
 
@@ -46,6 +46,21 @@ export function useBubbleJoin() {
       // active 멤버 → 기본 공유 규칙 설정 (모든 항목 공유)
       if (status === 'active') {
         await bubbleRepo.updateShareRule(bubbleId, userId, DEFAULT_SHARE_RULE)
+      }
+
+      // pending 상태 (manual_approve) → 버블 owner에게 가입 요청 알림
+      if (status === 'pending' && bubble.createdBy) {
+        notificationRepo.createNotification({
+          userId: bubble.createdBy,
+          type: 'bubble_join_request',
+          title: `"${bubble.name}" 버블에 새 가입 신청이 왔어요`,
+          body: '승인 또는 거절을 선택해주세요.',
+          actionStatus: 'pending',
+          actorId: userId,
+          targetType: 'bubble',
+          targetId: bubbleId,
+          bubbleId,
+        }).catch(() => {})
       }
 
       return { success: true, member, eligibility }

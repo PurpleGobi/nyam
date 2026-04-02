@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Users, User, Compass, ArrowUpDown, Search, X } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
+import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
@@ -37,6 +38,13 @@ export function BubbleListContainer() {
   const [now] = useState(() => Date.now())
   const { bubbles, isLoading } = useBubbleList(user?.id ?? null)
 
+  // 탐색 데이터: 유저 지역 추출 + 이미 가입한 버블 제외
+  const userAreas = useMemo(
+    () => [...new Set(bubbles.map((b) => b.area).filter(Boolean))] as string[],
+    [bubbles],
+  )
+  const excludeIds = useMemo(() => bubbles.map((b) => b.id), [bubbles])
+
   const [contentTab, _setContentTab] = useState<ContentTab>(() => {
     if (typeof window === 'undefined') return 'bubbles'
     const stored = sessionStorage.getItem('nyam_bubble_tab')
@@ -54,6 +62,8 @@ export function BubbleListContainer() {
   const [isSearchOpen, setSearchOpen] = useState(false)
   const [isDiscoverOpen, setDiscoverOpen] = useState(false)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+
+  const { recommended, nearby, trending, newest } = useBubbleDiscover(userAreas, excludeIds, isDiscoverOpen)
 
   // 조건 칩 필터
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
@@ -361,10 +371,10 @@ export function BubbleListContainer() {
       <BubbleDiscoverSheet
         isOpen={isDiscoverOpen}
         onClose={() => setDiscoverOpen(false)}
-        recommended={[]}
-        nearby={[]}
-        trending={[]}
-        newest={[]}
+        recommended={recommended}
+        nearby={nearby}
+        trending={trending}
+        newest={newest}
         onSelectBubble={(bubble) => {
           setDiscoverOpen(false)
           router.push(`/bubbles/${bubble.id}`)

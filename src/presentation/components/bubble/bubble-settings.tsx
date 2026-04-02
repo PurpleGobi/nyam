@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Info, ShieldCheck, Eye, EyeOff, Users, BarChart3, AlertTriangle, Share2 } from 'lucide-react'
+import { Info, ShieldCheck, Eye, EyeOff, Users, BarChart3, AlertTriangle, Share2, UserPlus } from 'lucide-react'
 import type { Bubble, BubbleContentVisibility, BubbleJoinPolicy, BubbleShareRule, BubbleMemberRole, VisibilityOverride } from '@/domain/entities/bubble'
 import { JoinPolicySelector } from '@/presentation/components/bubble/join-policy-selector'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
 import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
+import { MemberInviteSection } from '@/presentation/components/bubble/member-invite-section'
+import type { SearchUserResult } from '@/domain/repositories/bubble-repository'
 
 interface BubbleSettingsProps {
   bubble: Bubble
@@ -26,6 +28,14 @@ interface BubbleSettingsProps {
   // 정보 공개 범위
   visibilityOverride?: VisibilityOverride | null
   onVisibilityChange?: (override: VisibilityOverride | null) => void
+  // 멤버 초대
+  inviteSearchResults?: SearchUserResult[]
+  isInviteSearching?: boolean
+  isInviting?: boolean
+  invitedIds?: Set<string>
+  onInviteSearch?: (query: string, excludeIds: string[]) => void
+  onInviteUser?: (userId: string) => void
+  existingMemberIds?: string[]
   // 통계
   stats: {
     weeklyRecordCount: number
@@ -38,6 +48,8 @@ export function BubbleSettings({
   bubble, myRole, onSave, onDelete, isLoading,
   pendingMembers, onApproveJoin, onRejectJoin, onViewAllPending,
   shareRule, onShareRuleChange,
+  inviteSearchResults, isInviteSearching, isInviting, invitedIds,
+  onInviteSearch, onInviteUser, existingMemberIds,
   visibilityOverride, onVisibilityChange,
   stats,
 }: BubbleSettingsProps) {
@@ -201,6 +213,21 @@ export function BubbleSettings({
           value={visibilityOverride}
           onChange={onVisibilityChange}
         />
+      )}
+
+      {/* ── Owner + Admin: 멤버 초대 ── */}
+      {showMemberManagement && onInviteSearch && onInviteUser && (
+        <Section title="멤버 초대" icon={<UserPlus size={16} style={{ color: 'var(--accent-social)' }} />}>
+          <MemberInviteSection
+            searchResults={inviteSearchResults ?? []}
+            isSearching={isInviteSearching ?? false}
+            isInviting={isInviting ?? false}
+            invitedIds={invitedIds ?? new Set()}
+            onSearch={onInviteSearch}
+            onInvite={onInviteUser}
+            existingMemberIds={existingMemberIds ?? []}
+          />
+        </Section>
       )}
 
       {/* ── Owner + Admin: 멤버 관리 ── */}

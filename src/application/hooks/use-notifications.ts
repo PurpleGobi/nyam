@@ -2,9 +2,11 @@
 
 import useSWR, { useSWRConfig } from 'swr'
 import { useCallback, useEffect } from 'react'
-import { notificationRepo } from '@/shared/di/container'
+import { notificationRepo, bubbleRepo } from '@/shared/di/container'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import type { Notification } from '@/domain/entities/notification'
+
+const DEFAULT_SHARE_RULE = { mode: 'all' as const, rules: [] as never[], conjunction: 'and' as const }
 
 const MAX_NOTIFICATIONS = 20
 
@@ -66,6 +68,11 @@ export function useNotifications() {
     action: 'accepted' | 'rejected',
   ) => {
     if (!userId) return
+
+    // 알림 객체 찾기 (사이드 이펙트용)
+    const notification = (notifications ?? []).find((n) => n.id === notificationId)
+
+    // 낙관적 UI 업데이트
     mutate(
       ['notifications', userId],
       (prev: Notification[] | undefined) =>
@@ -82,7 +89,12 @@ export function useNotifications() {
       false,
     )
     await notificationRepo.updateActionStatus(notificationId, action)
-  }, [userId, mutate])
+
+    // 알림 유형별 사이드 이펙트
+    if (notification) {
+      await executeNotificationSideEffect(notification, action, userId)
+    }
+  }, [userId, mutate, notifications])
 
   return {
     notifications: notifications ?? [],
@@ -91,5 +103,59 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     handleAction,
+  }
+}
+
+/** 알림 수락/거절 시 실제 비즈니스 로직 실행 */
+async function executeNotificationSideEffect(
+  notification: Notification,
+  action: 'accepted' | 'rejected',
+  currentUserId: string,
+) {
+  const { type, bubbleId, actorId } = notification
+
+  // bubble_join_request: owner가 가입 신청 수락/거절
+  if (type === 'bubble_join_request' && bubbleId && actorId) {
+    if (action === 'accepted') {
+      await bubbleRepo.updateMember(bubbleId, actorId, { status: 'active' } as Partial<import('@/domain/entities/bubble').BubbleMember>)
+      await bubbleRepo.updateShareRule(bubbleId, actorId, DEFAULT_SHARE_RULE)
+      // 신청자에게 승인 알림
+      notificationRepo.createNotification({
+        userId: actorId,
+        type: 'bubble_join_approved',
+        title: '버블 가입이 승인되었어요!',
+        body: null,
+        actionStatus: null,
+        actorId: currentUserId,
+        targetType: 'bubble',
+        targetId: bubbleId,
+        bubbleId,
+      }).catch(() => {})
+    } else {
+      await bubbleRepo.updateMember(bubbleId, actorId, { status: 'rejected' } as Partial<import('@/domain/entities/bubble').BubbleMember>)
+    }
+  }
+
+  // bubble_invite: 초대받은 사람이 수락/거절
+  if (type === 'bubble_invite' && bubbleId) {
+    if (action === 'accepted') {
+      await bubbleRepo.addMember(bubbleId, currentUserId, 'member', 'active')
+      await bubbleRepo.updateShareRule(bubbleId, currentUserId, DEFAULT_SHARE_RULE)
+      // owner에게 가입 알림
+      if (actorId) {
+        notificationRepo.createNotification({
+          userId: actorId,
+          type: 'bubble_member_joined',
+          title: '초대한 멤버가 버블에 가입했어요!',
+          body: null,
+          actionStatus: null,
+          actorId: currentUserId,
+          targetType: 'bubble',
+          targetId: bubbleId,
+          bubbleId,
+        }).catch(() => {})
+      }
+    }
+    // rejected → 아무것도 안 함 (멤버 추가 안 됨)
   }
 }

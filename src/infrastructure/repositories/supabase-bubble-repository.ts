@@ -1,5 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
-import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem } from '@/domain/repositories/bubble-repository'
+import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem, SearchUserResult } from '@/domain/repositories/bubble-repository'
 import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
@@ -106,6 +106,27 @@ function toBubbleShare(row: Record<string, unknown>): BubbleShare {
 
 export class SupabaseBubbleRepository implements BubbleRepository {
   private get supabase() { return createClient() }
+
+  async searchUsers(query: string, excludeIds?: string[], limit = 10): Promise<SearchUserResult[]> {
+    if (!query.trim()) return []
+    const term = `%${query.trim()}%`
+    let q = this.supabase
+      .from('users')
+      .select('id, nickname, handle, email, avatar_url, avatar_color')
+      .or(`nickname.ilike.${term},handle.ilike.${term},email.ilike.${term}`)
+      .limit(limit)
+    if (excludeIds && excludeIds.length > 0) {
+      q = q.not('id', 'in', `(${excludeIds.join(',')})`)
+    }
+    const { data } = await q
+    return (data ?? []).map((r) => ({
+      id: r.id as string,
+      nickname: r.nickname as string,
+      handle: r.handle as string | null,
+      avatarUrl: r.avatar_url as string | null,
+      avatarColor: r.avatar_color as string | null,
+    }))
+  }
 
   async create(input: CreateBubbleInput): Promise<Bubble> {
     const { data, error } = await this.supabase.from('bubbles').insert({

@@ -54,23 +54,26 @@ export class SupabaseNotificationRepository implements NotificationRepository {
   }
 
   async createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>): Promise<Notification> {
-    const { data, error } = await this.supabase
-      .from('notifications')
-      .insert({
-        user_id: notification.userId,
-        notification_type: notification.type,
-        title: notification.title,
-        body: notification.body,
-        action_status: notification.actionStatus,
-        actor_id: notification.actorId,
-        target_type: notification.targetType,
-        target_id: notification.targetId,
-        bubble_id: notification.bubbleId,
-      })
-      .select()
-      .single()
+    const row = {
+      user_id: notification.userId,
+      notification_type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      action_status: notification.actionStatus,
+      actor_id: notification.actorId,
+      target_type: notification.targetType,
+      target_id: notification.targetId,
+      bubble_id: notification.bubbleId,
+    }
+    // 다른 유저에게 알림 보낼 때 RLS로 인해 INSERT 후 SELECT 불가 → select 생략
+    const { error } = await this.supabase.from('notifications').insert(row)
     if (error) throw error
-    return mapNotification(data)
+    return {
+      id: '',
+      ...notification,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    }
   }
 
   subscribeToNotifications(
