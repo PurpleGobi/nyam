@@ -51,6 +51,8 @@ export interface BubbleShareRule {
     attribute: string
     operator: string
     value: string | number | boolean | null
+    /** focusType='all' 시 식당/와인 규칙 구분 */
+    domain?: 'restaurant' | 'wine'
   }>
   conjunction: 'and' | 'or'
 }

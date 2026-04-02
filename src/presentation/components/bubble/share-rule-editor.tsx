@@ -24,9 +24,6 @@ interface ShareRuleEditorProps {
 
 type ShareRuleItem = BubbleShareRule['rules'][number]
 
-const restaurantKeySet = new Set(RESTAURANT_FILTER_ATTRIBUTES.map((a) => a.key))
-const wineKeySet = new Set(WINE_FILTER_ATTRIBUTES.map((a) => a.key))
-
 /** rules → FilterChipItem[] */
 function rulesToChips(rules: ShareRuleItem[], attributes: FilterAttribute[]): FilterChipItem[] {
   return rules.map((r, i) => {
@@ -42,14 +39,15 @@ function rulesToChips(rules: ShareRuleItem[], attributes: FilterAttribute[]): Fi
   })
 }
 
-/** FilterChipItem[] → rules */
-function chipsToRules(chips: FilterChipItem[]): ShareRuleItem[] {
+/** FilterChipItem[] → rules (domain 스탬프 포함) */
+function chipsToRules(chips: FilterChipItem[], domain?: 'restaurant' | 'wine'): ShareRuleItem[] {
   return chips
     .filter((c): c is ConditionChip => !isAdvancedChip(c))
     .map((c) => ({
       attribute: c.attribute,
       operator: c.operator || 'eq',
       value: c.value,
+      ...(domain ? { domain } : {}),
     }))
 }
 
@@ -57,13 +55,13 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
   const mode = value?.mode ?? 'all'
   const allRules = value?.rules ?? []
 
-  // 식당/와인 규칙을 완전 분리 — 각각 독립적으로 memo
+  // 식당/와인 규칙을 domain 필드로 완전 분리
   const restaurantRules = useMemo(
-    () => allRules.filter((r) => restaurantKeySet.has(r.attribute)),
+    () => allRules.filter((r) => r.domain === 'restaurant'),
     [allRules],
   )
   const wineRules = useMemo(
-    () => allRules.filter((r) => wineKeySet.has(r.attribute)),
+    () => allRules.filter((r) => r.domain === 'wine'),
     [allRules],
   )
 
@@ -96,7 +94,7 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
   const handleRestaurantChipsChange = useCallback((newChips: FilterChipItem[]) => {
     onChange({
       mode: 'filtered',
-      rules: [...chipsToRules(newChips), ...wineRulesRef.current],
+      rules: [...chipsToRules(newChips, 'restaurant'), ...wineRulesRef.current],
       conjunction,
     })
   }, [onChange, conjunction])
@@ -105,24 +103,25 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
   const handleWineChipsChange = useCallback((newChips: FilterChipItem[]) => {
     onChange({
       mode: 'filtered',
-      rules: [...restaurantRulesRef.current, ...chipsToRules(newChips)],
+      rules: [...restaurantRulesRef.current, ...chipsToRules(newChips, 'wine')],
       conjunction,
     })
   }, [onChange, conjunction])
 
   /** focusType 단일 */
+  const singleDomain = focusType === 'wine' ? 'wine' as const : 'restaurant' as const
   const singleAttributes = focusType === 'wine' ? WINE_FILTER_ATTRIBUTES : RESTAURANT_FILTER_ATTRIBUTES
   const singleChips = useMemo(
-    () => rulesToChips(focusType === 'wine' ? wineRules : restaurantRules, singleAttributes),
-    [focusType, wineRules, restaurantRules, singleAttributes],
+    () => rulesToChips(allRules.filter((r) => !r.domain || r.domain === singleDomain), singleAttributes),
+    [allRules, singleDomain, singleAttributes],
   )
   const handleSingleChipsChange = useCallback((newChips: FilterChipItem[]) => {
     onChange({
       mode: 'filtered',
-      rules: chipsToRules(newChips),
+      rules: chipsToRules(newChips, singleDomain),
       conjunction,
     })
-  }, [onChange, conjunction])
+  }, [onChange, conjunction, singleDomain])
 
   const noop = useCallback(() => {}, [])
 

@@ -7,6 +7,23 @@ import type { FilterRule } from '@/domain/entities/saved-filter'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 
 /**
+ * 레코드의 targetType에 해당하는 domain 규칙만 추출
+ * domain 없는 레거시 규칙은 모든 레코드에 적용 (하위 호환)
+ */
+function getRulesForRecord(
+  allRules: BubbleShareRule['rules'],
+  recordTargetType: string | undefined,
+): FilterRule[] {
+  const domainedRules = allRules.filter((r) => r.domain != null)
+  const genericRules = allRules.filter((r) => r.domain == null) as FilterRule[]
+
+  if (domainedRules.length === 0) return genericRules
+
+  const myDomainRules = domainedRules.filter((r) => r.domain === recordTargetType) as FilterRule[]
+  return [...myDomainRules, ...genericRules]
+}
+
+/**
  * 공유 규칙에 따라 공유해야 할 recordId 목록을 반환
  */
 export function evaluateShareRule(
@@ -19,10 +36,14 @@ export function evaluateShareRule(
     return records.map((r) => r.id)
   }
 
-  // mode === 'filtered'
-  const filterRules = shareRule.rules as FilterRule[]
+  // mode === 'filtered' — 도메인별 규칙 분리 적용
   return records
-    .filter((record) => matchesAllRules(record, filterRules, shareRule.conjunction))
+    .filter((record) => {
+      const targetType = record.targetType as string | undefined
+      const relevantRules = getRulesForRecord(shareRule.rules, targetType)
+      if (relevantRules.length === 0) return true  // 해당 도메인 규칙 없음 → 제한 없음
+      return matchesAllRules(record, relevantRules, shareRule.conjunction)
+    })
     .map((r) => r.id)
 }
 
@@ -35,7 +56,10 @@ export function matchesShareRule(
 ): boolean {
   if (!shareRule) return false
   if (shareRule.mode === 'all') return true
-  return matchesAllRules(record, shareRule.rules as FilterRule[], shareRule.conjunction)
+  const targetType = record.targetType as string | undefined
+  const relevantRules = getRulesForRecord(shareRule.rules, targetType)
+  if (relevantRules.length === 0) return true  // 해당 도메인 규칙 없음 → 제한 없음
+  return matchesAllRules(record, relevantRules, shareRule.conjunction)
 }
 
 /**
