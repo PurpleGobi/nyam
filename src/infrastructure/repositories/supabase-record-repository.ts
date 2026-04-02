@@ -71,6 +71,9 @@ function mapDbToPhoto(row: any): RecordPhoto {
     url: row.url,
     orderIndex: row.order_index,
     isPublic: row.is_public ?? false,
+    exifLat: row.exif_lat ?? null,
+    exifLng: row.exif_lng ?? null,
+    capturedAt: row.captured_at ?? null,
     createdAt: row.created_at,
   }
 }

@@ -21,6 +21,15 @@ export interface RecordPhoto {
   /** 공개 여부 (기본값 true — 공개) */
   isPublic: boolean
 
+  /** EXIF 촬영 위치 (위도) */
+  exifLat: number | null
+
+  /** EXIF 촬영 위치 (경도) */
+  exifLng: number | null
+
+  /** EXIF 촬영 시각 — ISO datetime */
+  capturedAt: string | null
+
   /** 생성 시각 — ISO datetime */
   createdAt: string
 }

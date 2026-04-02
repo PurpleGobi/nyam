@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import {
-  recognizeRestaurant,
   recognizeWineLabel,
   recognizeWineShelf,
   recognizeWineReceipt,
 } from '@/infrastructure/api/ai-recognition'
 import type { WineLabelRecognition } from '@/infrastructure/api/ai-recognition'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
-import { rankCandidatesByGenreMatch, isConfidentMatch } from '@/domain/services/ai-recognition'
+import { isConfidentMatch } from '@/domain/services/ai-recognition'
 import type {
   IdentifyRequest,
   IdentifyResponse,
@@ -154,45 +153,41 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
 
   try {
     if (targetType === 'restaurant') {
-      const recognition = await recognizeRestaurant(imageUrl)
-
-      let candidates: RestaurantCandidate[] = []
-
-      // 카카오 API로 검색: 식당 이름 > 검색 키워드 > 장르 순으로 시도
-      const searchQueries: string[] = []
-      if (recognition.restaurantName) searchQueries.push(recognition.restaurantName)
-      if (recognition.searchKeywords.length > 0) searchQueries.push(...recognition.searchKeywords)
-      if (recognition.genre) searchQueries.push(recognition.genre)
-
-      for (const query of searchQueries) {
-        if (candidates.length >= 5) break
-        const kakaoResults = await searchKakaoLocal(query, latitude, longitude, {
-          radius: 1000,
-          size: 5,
-        })
-        for (const k of kakaoResults) {
-          if (candidates.some((c) => c.name === k.name)) continue
-          candidates.push({
-            restaurantId: `kakao_${k.kakaoId}`,
-            name: k.name,
-            genre: k.category ?? null,
-            area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
-            distance: latitude && longitude
-              ? haversineDistance(latitude, longitude, k.lat, k.lng)
-              : 0,
-            matchScore: 0,
-          })
+      // GPS 100m 반경 내 식당 검색 (AI 이미지 인식 없음)
+      if (!latitude || !longitude) {
+        const result: RestaurantAIResult = {
+          targetType: 'restaurant',
+          detectedGenre: null,
+          detectedName: null,
+          candidates: [],
+          isConfidentMatch: false,
         }
+        return NextResponse.json({ success: true, result })
       }
 
-      const rankedCandidates = rankCandidatesByGenreMatch(candidates, recognition.genre)
+      const kakaoResults = await searchKakaoLocal('음식점', latitude, longitude, {
+        radius: 100,
+        size: 15,
+      })
+
+      const candidates: RestaurantCandidate[] = kakaoResults.map((k) => ({
+        restaurantId: `kakao_${k.kakaoId}`,
+        name: k.name,
+        genre: k.category ?? null,
+        area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
+        distance: haversineDistance(latitude, longitude, k.lat, k.lng),
+        matchScore: 0,
+      }))
+
+      // 거리순 정렬
+      candidates.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0))
 
       const result: RestaurantAIResult = {
         targetType: 'restaurant',
-        detectedGenre: recognition.genre,
-        detectedName: recognition.restaurantName,
-        candidates: rankedCandidates,
-        isConfidentMatch: recognition.restaurantName != null && rankedCandidates.length > 0 && rankedCandidates[0].matchScore >= 0.5,
+        detectedGenre: null,
+        detectedName: null,
+        candidates,
+        isConfidentMatch: false,
       }
 
       return NextResponse.json({ success: true, result })
@@ -281,29 +276,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
     }
     if (message === 'NOT_WINE_LABEL') {
       return NextResponse.json({ success: false, result: null, error: 'NOT_WINE_LABEL' }, { status: 422 })
-    }
-
-    // AI 실패 시 GPS 기반 폴백 결과 반환
-    if (targetType === 'restaurant' && latitude && longitude) {
-      try {
-        const fallbackResults = await searchKakaoLocal('음식점', latitude, longitude, { radius: 500, size: 10 })
-        const fallbackCandidates: RestaurantCandidate[] = fallbackResults.map((k) => ({
-          restaurantId: `kakao_${k.kakaoId}`,
-          name: k.name,
-          genre: k.category ?? null,
-          area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
-          distance: haversineDistance(latitude, longitude, k.lat, k.lng),
-          matchScore: 0,
-        }))
-        const fallbackResult: RestaurantAIResult = {
-          targetType: 'restaurant',
-          detectedGenre: null,
-          detectedName: null,
-          candidates: fallbackCandidates,
-          isConfidentMatch: false,
-        }
-        return NextResponse.json({ success: true, result: fallbackResult })
-      } catch {}
     }
 
     return NextResponse.json({ success: false, result: null, error: message }, { status: 500 })

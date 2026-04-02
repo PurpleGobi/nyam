@@ -9,13 +9,16 @@ export class SupabasePhotoRepository implements PhotoRepository {
 
   async savePhotos(
     recordId: string,
-    photos: { url: string; orderIndex: number; isPublic?: boolean }[],
+    photos: { url: string; orderIndex: number; isPublic?: boolean; exifLat?: number | null; exifLng?: number | null; capturedAt?: string | null }[],
   ): Promise<RecordPhoto[]> {
     const rows = photos.map((p) => ({
       record_id: recordId,
       url: p.url,
       order_index: p.orderIndex,
       is_public: p.isPublic ?? false,
+      exif_lat: p.exifLat ?? null,
+      exif_lng: p.exifLng ?? null,
+      captured_at: p.capturedAt ?? null,
     }))
 
     const { data, error } = await this.supabase
@@ -30,6 +33,9 @@ export class SupabasePhotoRepository implements PhotoRepository {
       url: row.url,
       orderIndex: row.order_index,
       isPublic: row.is_public ?? false,
+      exifLat: row.exif_lat ?? null,
+      exifLng: row.exif_lng ?? null,
+      capturedAt: row.captured_at ?? null,
       createdAt: row.created_at,
     }))
   }
@@ -48,6 +54,9 @@ export class SupabasePhotoRepository implements PhotoRepository {
       url: row.url,
       orderIndex: row.order_index,
       isPublic: row.is_public ?? false,
+      exifLat: row.exif_lat ?? null,
+      exifLng: row.exif_lng ?? null,
+      capturedAt: row.captured_at ?? null,
       createdAt: row.created_at,
     }))
   }

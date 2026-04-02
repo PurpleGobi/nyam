@@ -136,6 +136,9 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
         url: row.url,
         orderIndex: row.order_index,
         isPublic: (row as Record<string, unknown>).is_public as boolean ?? false,
+        exifLat: (row as Record<string, unknown>).exif_lat as number | null ?? null,
+        exifLng: (row as Record<string, unknown>).exif_lng as number | null ?? null,
+        capturedAt: (row as Record<string, unknown>).captured_at as string | null ?? null,
         createdAt: row.created_at,
       })
       result.set(row.record_id, photos)

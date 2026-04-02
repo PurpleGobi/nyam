@@ -12,6 +12,7 @@ import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { photoRepo, imageService } from '@/shared/di/container'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
+import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
@@ -53,6 +54,7 @@ function AddFlowInner() {
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
   // Phase 1 업로드 상태: 사진은 즉시 업로드, 기록 미완료 시 삭제
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null)
+  const [tempExif, setTempExif] = useState<{ lat: number | null; lng: number | null; capturedAt: string | null }>({ lat: null, lng: null, capturedAt: null })
   const [recordCompleted, setRecordCompleted] = useState(false)
   const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -111,12 +113,18 @@ function AddFlowInner() {
   const uploadCapturedPhoto = useCallback(async (recordId: string) => {
     if (!tempPhotoUrl) return
     try {
-      await photoRepo.savePhotos(recordId, [{ url: tempPhotoUrl, orderIndex: 0 }])
+      await photoRepo.savePhotos(recordId, [{
+        url: tempPhotoUrl,
+        orderIndex: 0,
+        exifLat: tempExif.lat,
+        exifLng: tempExif.lng,
+        capturedAt: tempExif.capturedAt,
+      }])
       setRecordCompleted(true)
     } catch {
       // DB 저장 실패해도 record는 유지
     }
-  }, [tempPhotoUrl])
+  }, [tempPhotoUrl, tempExif])
 
   const goBack = useCallback(() => {
     const prev = hookGoBack()
@@ -153,9 +161,22 @@ function AddFlowInner() {
     [uploadFile],
   )
 
-  /** 카메라/앨범 캡처 → 1단계: resize+upload → 2단계: URL로 LLM 호출 */
+  /** 카메라/앨범 캡처 → 1단계: EXIF GPS 추출 + resize+upload → 2단계: API 호출 */
   const handleCapture = useCallback(
     async (file: File) => {
+      // ── 0단계: EXIF GPS 추출 (1~5ms, 리사이즈 전 원본에서) ──
+      const exif = await extractExifFromFile(file)
+      const photoGps = exif.gps
+        ? { latitude: exif.gps.latitude, longitude: exif.gps.longitude }
+        : null
+
+      // EXIF 데이터 보관
+      setTempExif({
+        lat: photoGps?.latitude ?? null,
+        lng: photoGps?.longitude ?? null,
+        capturedAt: exif.capturedAt,
+      })
+
       // ── 1단계: resizeImage → Storage 업로드 → URL ──
       const photoUrl = await uploadFile(file)
       if (!photoUrl) {
@@ -164,7 +185,10 @@ function AddFlowInner() {
       }
       setTempPhotoUrl(photoUrl)
 
-      // ── 2단계: URL로 LLM 호출 ──
+      // GPS 우선순위: EXIF GPS > navigator GPS
+      const coords = photoGps ?? gps
+
+      // ── 2단계: 와인은 AI 라벨 인식 ──
       if (targetType === 'wine') {
         const aiResult = await identify({
           imageUrl: photoUrl,
@@ -198,56 +222,17 @@ function AddFlowInner() {
         return
       }
 
-      // ── 식당: LLM 호출 ──
+      // ── 식당: GPS 100m 내 근처 식당 검색 ──
       const aiResult = await identify({
         imageUrl: photoUrl,
         targetType,
-        latitude: gps?.latitude,
-        longitude: gps?.longitude,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
       })
-      if (!aiResult) {
-        pushStep('search')
-        return
-      }
 
       if (targetType === 'restaurant') {
-        const restResult = aiResult as RestaurantAIResult
-        if (restResult.isConfidentMatch && restResult.candidates.length > 0) {
-          const top = restResult.candidates[0]
-          let targetId = top.restaurantId
-
-          // 카카오 ID → DB 등록
-          if (targetId.startsWith('kakao_')) {
-            try {
-              const res = await fetch('/api/restaurants', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: top.name, area: top.area, genre: top.genre }),
-              })
-              const data = await res.json()
-              if (data.id) targetId = data.id
-            } catch {}
-          }
-
-          if (targetId.startsWith('kakao_')) {
-            pushStep('search')
-          } else {
-            setTarget({
-              id: targetId,
-              name: top.name,
-              type: 'restaurant' as const,
-              meta: [top.genre, top.area].filter(Boolean).join(' · '),
-              isAiRecognized: true,
-            })
-            try {
-              sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
-                genre: restResult.detectedGenre,
-                foodType: top.genre,
-              }))
-            } catch {}
-            pushStep('record')
-          }
-        } else if (restResult.candidates.length > 0) {
+        const restResult = aiResult as RestaurantAIResult | null
+        if (restResult && restResult.candidates.length > 0) {
           pushStep('ai_result')
         } else {
           pushStep('search')

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import type { PendingPhoto } from '@/domain/entities/record-photo'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { imageService } from '@/shared/di/container'
+import { extractExifFromFile } from '@/shared/utils/exif-parser'
 
 interface UsePhotoUploadReturn {
   photos: PendingPhoto[]
@@ -14,7 +15,7 @@ interface UsePhotoUploadReturn {
   replacePhoto: (photoId: string, newFile: File) => void
   reorderPhotos: (fromIndex: number, toIndex: number) => void
   togglePublic: (photoId: string) => void
-  uploadAll: (userId: string, recordId: string) => Promise<{ url: string; orderIndex: number; isPublic: boolean }[]>
+  uploadAll: (userId: string, recordId: string) => Promise<{ url: string; orderIndex: number; isPublic: boolean; exifLat?: number | null; exifLng?: number | null; capturedAt?: string | null }[]>
   isUploading: boolean
   error: string | null
   isMaxReached: boolean
@@ -130,7 +131,7 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
       setIsUploading(true)
       setError(null)
 
-      const results: { url: string; orderIndex: number; isPublic: boolean }[] = []
+      const results: { url: string; orderIndex: number; isPublic: boolean; exifLat?: number | null; exifLng?: number | null; capturedAt?: string | null }[] = []
 
       for (const photo of photos) {
         if (photo.status === 'uploaded' && photo.uploadedUrl) {
@@ -143,6 +144,9 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
             prev.map((p) => (p.id === photo.id ? { ...p, status: 'uploading' as const } : p)),
           )
 
+          // EXIF 추출 (리사이즈 전 원본에서)
+          const exif = await extractExifFromFile(photo.file)
+
           const blob = await imageService.resizeImage(photo.file)
           const url = await imageService.uploadImage(userId, recordId, blob, photo.id)
 
@@ -151,7 +155,14 @@ export function usePhotoUpload(): UsePhotoUploadReturn {
               p.id === photo.id ? { ...p, status: 'uploaded' as const, uploadedUrl: url } : p,
             ),
           )
-          results.push({ url, orderIndex: photo.orderIndex, isPublic: photo.isPublic })
+          results.push({
+            url,
+            orderIndex: photo.orderIndex,
+            isPublic: photo.isPublic,
+            exifLat: exif.gps?.latitude ?? null,
+            exifLng: exif.gps?.longitude ?? null,
+            capturedAt: exif.capturedAt,
+          })
         } catch {
           setPhotos((prev) =>
             prev.map((p) => (p.id === photo.id ? { ...p, status: 'error' as const } : p)),

@@ -65,7 +65,7 @@ export function CameraCapture({
             {isRecognizing && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
                 <div className="h-8 w-8 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                <p className="mt-3 text-[13px] font-medium text-white">와인 검색 중...</p>
+                <p className="mt-3 text-[13px] font-medium text-white">{isRestaurant ? '식당 검색 중...' : '와인 검색 중...'}</p>
               </div>
             )}
           </>
