@@ -77,9 +77,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   )
 
   // 세부 축 레벨 (장르, 지역)
+  const areaAxisValue = restaurant?.area?.[0] ?? restaurant?.district ?? null
   const axisLevels = useAxisLevel(user?.id ?? null, [
     { axisType: 'genre', axisValue: restaurant?.genre ?? null },
-    { axisType: 'area', axisValue: restaurant?.area?.[0] ?? null },
+    { axisType: 'area', axisValue: areaAxisValue },
   ])
 
   // 버블 공유 hook — activeRecordId는 focusedRecord 이후에 계산
@@ -350,8 +351,8 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                     <span>{restaurant.district}</span>
                   </>
                 )}
-                {axisLevels.find((al) => al.axisValue === restaurant.area?.[0]) && (
-                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.area?.[0])!.level} />
+                {axisLevels.find((al) => al.axisValue === areaAxisValue) && (
+                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === areaAxisValue)!.level} />
                 )}
               </div>
             )}
