@@ -2,22 +2,19 @@
 // R1: 외부 의존 0
 
 /**
- * 와인 구조 평가 값 객체
- * RATING_ENGINE.md §8 구조 평가 (Structure)
+ * 와인 품질 평가 값 객체 (BLIC)
+ * RATING_ENGINE.md §8 품질 평가 (Quality)
  *
- * 3개 슬라이더, 모두 0~100 범위
- * records.complexity, records.finish, records.balance에 각각 매핑
+ * 4개 슬라이더, 모두 0~100 범위
+ * records.balance, records.finish, records.intensity, records.complexity에 각각 매핑
  */
 export interface WineStructure {
   /**
-   * 복합성: 0~100
-   * 라벨: 1차향(과일/꽃) ← → 2차향(발효) ← → 3차향(숙성)
-   * AI 초기값: 아로마 휠 선택 링 수 기반
-   *   - 1링만 선택 → ~30
-   *   - 2링 선택 → ~60
-   *   - 3링 선택 → ~85
+   * 균형: 0~100
+   * 0 = 불균형 (산미·타닌·알코올 등이 돌출)
+   * 100 = 완벽한 조화 (모든 요소가 어우러짐)
    */
-  complexity: number
+  balance: number
 
   /**
    * 여운: 0~100 (내부값)
@@ -27,11 +24,21 @@ export interface WineStructure {
   finish: number
 
   /**
-   * 균형: 0~100
-   * 0 = 불균형 (산미·타닌·알코올 등이 돌출)
-   * 100 = 완벽한 조화 (모든 요소가 어우러짐)
+   * 강도: 0~100
+   * 향과 맛의 집중도
+   * 0 = 연한/희미 ← → 100 = 강렬/집중
    */
-  balance: number
+  intensity: number
+
+  /**
+   * 복합성: 0~100
+   * 라벨: 1차향(과일/꽃) ← → 2차향(발효) ← → 3차향(숙성)
+   * AI 초기값: 아로마 휠 선택 링 수 기반
+   *   - 1링만 선택 → ~30
+   *   - 2링 선택 → ~60
+   *   - 3링 선택 → ~85
+   */
+  complexity: number
 }
 
 /**

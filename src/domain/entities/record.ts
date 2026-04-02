@@ -67,12 +67,13 @@ export interface DiningRecord {
   // 와인 전용
   cameraMode: CameraMode | null
   ocrData: Record<string, unknown> | null
-  aromaRegions: Record<string, unknown> | null
-  aromaLabels: string[] | null
-  aromaColor: string | null
+  aromaPrimary: string[]
+  aromaSecondary: string[]
+  aromaTertiary: string[]
   complexity: number | null
   finish: number | null
   balance: number | null
+  intensity: number | null
   autoScore: number | null
 
   // 메타
@@ -145,12 +146,13 @@ export interface CreateRecordInput {
   hasExifGps?: boolean
   isExifVerified?: boolean
   // 와인 전용
-  aromaRegions?: Record<string, unknown> | null
-  aromaLabels?: string[] | null
-  aromaColor?: string | null
+  aromaPrimary?: string[]
+  aromaSecondary?: string[]
+  aromaTertiary?: string[]
   complexity?: number | null
   finish?: number | null
   balance?: number | null
+  intensity?: number | null
   autoScore?: number | null
 }
 

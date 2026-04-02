@@ -3,7 +3,6 @@
 import { useCallback, useRef } from 'react'
 import type { AromaSectorId, AromaSelection, AromaRing } from '@/domain/entities/aroma'
 import { AROMA_SECTORS, RING_LABELS } from '@/shared/constants/aroma-sectors'
-import { calculateAromaColor } from '@/shared/utils/aroma-color'
 import { AromaSector } from '@/presentation/components/record/aroma-sector'
 
 interface AromaWheelProps {
@@ -16,7 +15,7 @@ const CX = 150
 const CY = 150
 
 const RING_CONFIG = {
-  1: { outer: 140, inner: 100, count: 8, startAngle: -90, step: 45 },
+  1: { outer: 140, inner: 100, count: 9, startAngle: -90, step: 40 },
   2: { outer: 100, inner: 65, count: 4, startAngle: -67.5, step: 90 },
   3: { outer: 65, inner: 20, count: 3, startAngle: -90, step: 120 },
 } as const
@@ -92,13 +91,31 @@ function buildSectorPaths() {
 
 const SECTOR_PATHS = buildSectorPaths()
 
+/** 모든 활성 섹터 ID를 AromaSelection에서 추출 */
+function getAllActiveIds(sel: AromaSelection): AromaSectorId[] {
+  return [...sel.primary, ...sel.secondary, ...sel.tertiary]
+}
+
+/** 섹터 ID가 활성인지 확인 */
+function isActive(sel: AromaSelection, id: AromaSectorId): boolean {
+  return sel.primary.includes(id) || sel.secondary.includes(id) || sel.tertiary.includes(id)
+}
+
 /** 선택된 향을 1차/2차/3차 링별로 그룹화 */
-function groupByRing(activeIds: AromaSectorId[]) {
+function groupByRing(sel: AromaSelection) {
   const groups: { ring: AromaRing; label: string; sectors: { id: AromaSectorId; nameKo: string; hex: string }[] }[] = []
 
-  for (const ring of [1, 2, 3] as AromaRing[]) {
-    const sectors = AROMA_SECTORS
-      .filter((s) => s.ring === ring && activeIds.includes(s.id))
+  const ringData: [AromaRing, AromaSectorId[]][] = [
+    [1, sel.primary],
+    [2, sel.secondary],
+    [3, sel.tertiary],
+  ]
+
+  for (const [ring, ids] of ringData) {
+    if (ids.length === 0) continue
+    const sectors = ids
+      .map((id) => AROMA_SECTORS.find((s) => s.id === id))
+      .filter((s): s is (typeof AROMA_SECTORS)[number] => s !== undefined)
       .map((s) => ({ id: s.id, nameKo: s.nameKo, hex: s.hex }))
     if (sectors.length > 0) {
       groups.push({ ring, label: RING_LABELS[ring], sectors })
@@ -107,26 +124,30 @@ function groupByRing(activeIds: AromaSectorId[]) {
   return groups
 }
 
+/** 섹터의 ring에 따라 올바른 배열에 추가/제거 */
+function toggleInSelection(sel: AromaSelection, sectorId: AromaSectorId): AromaSelection {
+  const sector = AROMA_SECTORS.find((s) => s.id === sectorId)
+  if (!sector) return sel
+
+  const newSel = { primary: [...sel.primary], secondary: [...sel.secondary], tertiary: [...sel.tertiary] }
+  const key = sector.ring === 1 ? 'primary' : sector.ring === 2 ? 'secondary' : 'tertiary'
+  const arr = newSel[key]
+  const idx = arr.indexOf(sectorId)
+  if (idx >= 0) {
+    arr.splice(idx, 1)
+  } else {
+    arr.push(sectorId)
+  }
+  return newSel
+}
+
 export function AromaWheel({ value, onChange, readOnly = false }: AromaWheelProps) {
   const isDraggingRef = useRef(false)
 
   const toggleSector = useCallback(
     (sectorId: AromaSectorId) => {
       if (readOnly || !onChange) return
-      const newRegions = { ...value.regions }
-      if (newRegions[sectorId]) {
-        delete newRegions[sectorId]
-      } else {
-        newRegions[sectorId] = true
-      }
-
-      const activeIds = Object.keys(newRegions) as AromaSectorId[]
-      const labels = activeIds
-        .map((id) => AROMA_SECTORS.find((s) => s.id === id)?.nameKo)
-        .filter(Boolean) as string[]
-      const color = calculateAromaColor(activeIds) ?? ''
-
-      onChange({ regions: newRegions, labels, color })
+      onChange(toggleInSelection(value, sectorId))
     },
     [value, onChange, readOnly],
   )
@@ -143,19 +164,19 @@ export function AromaWheel({ value, onChange, readOnly = false }: AromaWheelProp
   const handlePointerEnter = useCallback(
     (sectorId: AromaSectorId) => {
       if (readOnly || !isDraggingRef.current) return
-      if (!value.regions[sectorId]) {
+      if (!isActive(value, sectorId)) {
         toggleSector(sectorId)
       }
     },
-    [value.regions, toggleSector, readOnly],
+    [value, toggleSector, readOnly],
   )
 
   const handlePointerUp = useCallback(() => {
     isDraggingRef.current = false
   }, [])
 
-  const activeIds = Object.keys(value.regions) as AromaSectorId[]
-  const ringGroups = groupByRing(activeIds)
+  const activeIds = getAllActiveIds(value)
+  const ringGroups = groupByRing(value)
 
   return (
     <div className="flex w-full flex-col items-center">
@@ -177,7 +198,7 @@ export function AromaWheel({ value, onChange, readOnly = false }: AromaWheelProp
             sector={sector}
             pathData={pathData}
             labelPosition={labelPosition}
-            isActive={!!value.regions[sector.id]}
+            isActive={isActive(value, sector.id)}
             readOnly={readOnly}
             onPointerDown={() => handlePointerDown(sector.id)}
             onPointerEnter={() => handlePointerEnter(sector.id)}

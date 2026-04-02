@@ -206,6 +206,12 @@ export interface WineLabelRecognition {
   vivinoRating: number | null
   criticScores: { RP?: number; WS?: number; JR?: number; JH?: number } | null
   tastingNotes: string | null
+  aromaPrimary: string[]
+  aromaSecondary: string[]
+  aromaTertiary: string[]
+  balance: number | null
+  finish: number | null
+  intensity: number | null
   confidence: number
 }
 
@@ -245,6 +251,12 @@ function parseWineLabelResponse(parsed: Record<string, unknown>): WineLabelRecog
       ? parsed.critic_scores as { RP?: number; WS?: number; JR?: number; JH?: number }
       : null,
     tastingNotes: (parsed.tasting_notes as string) ?? null,
+    aromaPrimary: Array.isArray(parsed.aroma_primary) ? (parsed.aroma_primary as string[]) : [],
+    aromaSecondary: Array.isArray(parsed.aroma_secondary) ? (parsed.aroma_secondary as string[]) : [],
+    aromaTertiary: Array.isArray(parsed.aroma_tertiary) ? (parsed.aroma_tertiary as string[]) : [],
+    balance: parsed.balance != null ? Number(parsed.balance) : null,
+    finish: parsed.finish != null ? Number(parsed.finish) : null,
+    intensity: parsed.intensity != null ? Number(parsed.intensity) : null,
     confidence: (parsed.confidence as number) ?? 0,
   }
 }
@@ -363,6 +375,12 @@ const WINE_DETAIL_PROMPT = (name: string, producer: string | null, vintage: numb
   - verdict: "buy"(구매) / "conditional_buy"(조건부 구매) / "avoid"(비추천) 중 하나.
   - summary: 왜 그런 판단인지 한국어 1~2문장.
   - alternatives: 같은 가격대에서 더 나은 대안 와인 2개. [{name, price}]. 대안 불필요 시 빈 배열.
+[aroma_primary] 1차향(포도 유래). 반드시 다음 ID만 사용: "citrus","apple_pear","tropical","stone_fruit","red_berry","dark_berry","floral","white_floral","herb". 이 와인에서 기대되는 1차향을 배열로. 없으면 [].
+[aroma_secondary] 2차향(양조 유래). 반드시 다음 ID만 사용: "butter","vanilla","spice","toast". 이 와인에서 기대되는 2차향을 배열로. 없으면 [].
+[aroma_tertiary] 3차향(숙성 유래). 반드시 다음 ID만 사용: "leather","earth","nut". 이 와인에서 기대되는 3차향을 배열로. 숙성이 짧은 영 와인은 [].
+[balance] 정수 0~100. 이 와인의 일반적인 균형감. 산미·타닌·알코올·과실의 조화. 모르면 null.
+[finish] 정수 0~100. 여운의 길이. 0=매우짧음, 50=보통, 100=매우긴여운. 모르면 null.
+[intensity] 정수 0~100. 향과 맛의 강도/집중도. 0=연함, 50=보통, 100=강렬. 모르면 null.
 
 ■ JSON 응답:
 {
@@ -392,6 +410,12 @@ const WINE_DETAIL_PROMPT = (name: string, producer: string | null, vintage: numb
   "vivino_rating": "number|null",
   "critic_scores": {"RP":"number","WS":"number"}|null,
   "tasting_notes": "이 와인의 포지셔닝(어떤 상황/가격대에서 빛나는지)과 기대할 수 있는 핵심 향·맛을 한국어 1문장으로. 예: '가성비 칠레 블렌드로 블랙커런트와 삼나무 향이 특징이며 스테이크와 잘 어울림'",
+  "aroma_primary": ["string sector IDs"],
+  "aroma_secondary": ["string sector IDs"],
+  "aroma_tertiary": ["string sector IDs"],
+  "balance": "number(0-100)|null",
+  "finish": "number(0-100)|null",
+  "intensity": "number(0-100)|null",
   "confidence": "number(0-1)"
 }`
 }

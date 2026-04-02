@@ -95,6 +95,12 @@ function RecordFlowInner() {
     tastingNotes?: string
     foodPairings?: string[]
     priceReview?: PriceReview
+    aromaPrimary?: string[]
+    aromaSecondary?: string[]
+    aromaTertiary?: string[]
+    balance?: number
+    finish?: number
+    intensity?: number
   } | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
@@ -201,13 +207,38 @@ function RecordFlowInner() {
           foodPairings: wine.foodPairings.length > 0 ? wine.foodPairings : undefined,
           priceReview: wine.priceReview ?? undefined,
         })
+
+        // AI 향/품질 평가 로드 (신규 기록 시에만, 편집 시에는 기존 기록값 사용)
+        if (!editRecordId) {
+          try {
+            const aiRes = await fetch('/api/wines/detail-ai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: wine.name, producer: wine.producer, vintage: wine.vintage }),
+            })
+            const aiData = await aiRes.json()
+            if (!cancelled && aiData.success && aiData.wine) {
+              setWineData((prev) => prev ? {
+                ...prev,
+                aromaPrimary: aiData.wine.aromaPrimary?.length > 0 ? aiData.wine.aromaPrimary : undefined,
+                aromaSecondary: aiData.wine.aromaSecondary?.length > 0 ? aiData.wine.aromaSecondary : undefined,
+                aromaTertiary: aiData.wine.aromaTertiary?.length > 0 ? aiData.wine.aromaTertiary : undefined,
+                balance: aiData.wine.balance ?? undefined,
+                finish: aiData.wine.finish ?? undefined,
+                intensity: aiData.wine.intensity ?? undefined,
+              } : prev)
+            }
+          } catch {
+            // AI 조회 실패 시 무시 — 사용자가 직접 입력
+          }
+        }
       } catch {
         // 조회 실패 시 URL param 폴백
       }
     }
     loadWine()
     return () => { cancelled = true }
-  }, [targetType, state.targetId])
+  }, [targetType, state.targetId, editRecordId])
 
   // 이전 기록 참조 점 로드
   const userId = user?.id
@@ -312,12 +343,13 @@ function RecordFlowInner() {
             privateNote: (formData.privateNote as string) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
-            aromaRegions: (formData.aromaRegions as Record<string, unknown>) ?? null,
-            aromaLabels: (formData.aromaLabels as string[]) ?? null,
-            aromaColor: (formData.aromaColor as string) ?? null,
+            aromaPrimary: (formData.aromaPrimary as string[]) ?? [],
+            aromaSecondary: (formData.aromaSecondary as string[]) ?? [],
+            aromaTertiary: (formData.aromaTertiary as string[]) ?? [],
             complexity: (formData.complexity as number) ?? null,
             finish: (formData.finish as number) ?? null,
             balance: (formData.balance as number) ?? null,
+            intensity: (formData.intensity as number) ?? null,
             autoScore: (formData.autoScore as number) ?? null,
             mealTime: (formData.mealTime as DiningRecord['mealTime']) ?? null,
             visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
@@ -414,12 +446,13 @@ function RecordFlowInner() {
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
             visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
-            aromaRegions: (formData.aromaRegions as Record<string, unknown>) ?? null,
-            aromaLabels: (formData.aromaLabels as string[]) ?? null,
-            aromaColor: (formData.aromaColor as string) ?? null,
+            aromaPrimary: (formData.aromaPrimary as string[]) ?? [],
+            aromaSecondary: (formData.aromaSecondary as string[]) ?? [],
+            aromaTertiary: (formData.aromaTertiary as string[]) ?? [],
             complexity: (formData.complexity as number) ?? null,
             finish: (formData.finish as number) ?? null,
             balance: (formData.balance as number) ?? null,
+            intensity: (formData.intensity as number) ?? null,
             autoScore: (formData.autoScore as number) ?? null,
             hasExifGps,
             isExifVerified,
@@ -614,12 +647,13 @@ function RecordFlowInner() {
     axisX: editingRecord.axisX ?? null,
     axisY: editingRecord.axisY ?? null,
     satisfaction: editingRecord.satisfaction ?? null,
-    aromaRegions: editingRecord.aromaRegions ?? null,
-    aromaLabels: editingRecord.aromaLabels ?? null,
-    aromaColor: editingRecord.aromaColor ?? null,
+    aromaPrimary: editingRecord.aromaPrimary ?? [],
+    aromaSecondary: editingRecord.aromaSecondary ?? [],
+    aromaTertiary: editingRecord.aromaTertiary ?? [],
     complexity: editingRecord.complexity ?? null,
     finish: editingRecord.finish ?? null,
     balance: editingRecord.balance ?? null,
+    intensity: editingRecord.intensity ?? null,
     pairingCategories: editingRecord.pairingCategories as string[] | null,
     comment: editingRecord.comment ?? null,
     purchasePrice: editingRecord.purchasePrice ?? null,
@@ -658,7 +692,7 @@ function RecordFlowInner() {
         />
       ) : (
         <WineRecordForm
-          key={editRecordId ?? (wineData ? 'wine-loaded' : 'wine-init')}
+          key={editRecordId ?? (wineData?.aromaPrimary ? 'wine-ai' : wineData ? 'wine-loaded' : 'wine-init')}
           target={{
             id: state.targetId,
             name: state.targetName,
@@ -690,6 +724,12 @@ function RecordFlowInner() {
             tastingNotes: wineData?.tastingNotes,
             foodPairings: wineData?.foodPairings,
             priceReview: wineData?.priceReview,
+            aromaPrimary: wineData?.aromaPrimary,
+            aromaSecondary: wineData?.aromaSecondary,
+            aromaTertiary: wineData?.aromaTertiary,
+            balance: wineData?.balance,
+            finish: wineData?.finish,
+            intensity: wineData?.intensity,
             isAiRecognized: !!wineData,
           }}
           referenceRecords={isEditMode ? [] : referenceRecords}

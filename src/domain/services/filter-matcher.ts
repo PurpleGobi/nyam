@@ -73,7 +73,7 @@ const FIELD_MAP: Record<string, string> = {
   price_range: 'priceRange',
   menu_type: 'menuType',
   pairing_categories: 'pairingCategories',
-  aroma_labels: 'aromaLabels',
+  aroma_labels: 'aromaPrimary',
   body_level: 'bodyLevel',
   area: 'targetArea',
   country: 'country',

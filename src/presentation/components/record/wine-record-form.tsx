@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import { Wine, Sparkles, Lock, GlassWater, CalendarRange, Thermometer, UtensilsCrossed, Grape, Info, X, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 import { WINE_TYPE_COLORS } from '@/domain/entities/wine'
 import type { WineType, PriceReview } from '@/domain/entities/wine'
-import type { AromaSelection, AromaRing } from '@/domain/entities/aroma'
+import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import type { PairingCategory } from '@/domain/entities/record'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
@@ -18,7 +18,6 @@ import { LinkSearchSheet } from '@/presentation/components/record/link-search-sh
 import type { LinkSearchResult } from '@/presentation/components/record/link-search-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
-import { AROMA_SECTORS } from '@/shared/constants/aroma-sectors'
 import {
   WINE_COUNTRIES, WINE_REGIONS, WINE_SUB_REGIONS, WINE_APPELLATIONS, WINE_TYPES,
   WINE_VARIETIES_BY_TYPE, ITALIAN_VARIETIES,
@@ -52,6 +51,12 @@ interface WineTarget {
   tastingNotes?: string
   foodPairings?: string[]
   priceReview?: PriceReview
+  aromaPrimary?: string[]
+  aromaSecondary?: string[]
+  aromaTertiary?: string[]
+  balance?: number
+  finish?: number
+  intensity?: number
   isAiRecognized?: boolean
 }
 
@@ -85,12 +90,13 @@ interface CreateWineRecordInput {
   axisX: number
   axisY: number
   satisfaction: number
-  aromaRegions: Record<string, unknown> | null
-  aromaLabels: string[] | null
-  aromaColor: string | null
+  aromaPrimary: string[]
+  aromaSecondary: string[]
+  aromaTertiary: string[]
   complexity?: number
   finish?: number
   balance?: number
+  intensity?: number
   autoScore?: number
   pairingCategories: string[]
   comment?: string
@@ -107,12 +113,13 @@ interface WineInitialData {
   axisX: number | null
   axisY: number | null
   satisfaction: number | null
-  aromaRegions: Record<string, unknown> | null
-  aromaLabels: string[] | null
-  aromaColor: string | null
+  aromaPrimary: string[]
+  aromaSecondary: string[]
+  aromaTertiary: string[]
   complexity: number | null
   finish: number | null
   balance: number | null
+  intensity: number | null
   pairingCategories: string[] | null
   comment: string | null
   purchasePrice: number | null
@@ -134,14 +141,12 @@ interface WineRecordFormProps {
   isDeleting?: boolean
 }
 
-function countActiveRings(regions: AromaSelection['regions']): number {
-  const activeIds = Object.keys(regions)
-  const activeRings = new Set<AromaRing>()
-  for (const id of activeIds) {
-    const sector = AROMA_SECTORS.find((s) => s.id === id)
-    if (sector) activeRings.add(sector.ring)
-  }
-  return activeRings.size
+function countActiveRings(sel: AromaSelection): number {
+  let count = 0
+  if (sel.primary.length > 0) count++
+  if (sel.secondary.length > 0) count++
+  if (sel.tertiary.length > 0) count++
+  return count
 }
 
 export function WineRecordForm({
@@ -210,14 +215,15 @@ export function WineRecordForm({
   const [saveHint, setSaveHint] = useState(false)
   const quadrantSectionRef = useRef<HTMLElement>(null)
   const [aroma, setAroma] = useState<AromaSelection>({
-    regions: (initialData?.aromaRegions as AromaSelection['regions']) ?? {},
-    labels: initialData?.aromaLabels ?? [],
-    color: initialData?.aromaColor ?? null,
+    primary: (initialData?.aromaPrimary ?? target.aromaPrimary ?? []) as AromaSectorId[],
+    secondary: (initialData?.aromaSecondary ?? target.aromaSecondary ?? []) as AromaSectorId[],
+    tertiary: (initialData?.aromaTertiary ?? target.aromaTertiary ?? []) as AromaSectorId[],
   })
   const [structure, setStructure] = useState<WineStructure>({
+    balance: initialData?.balance ?? target.balance ?? 50,
+    finish: initialData?.finish ?? target.finish ?? 50,
+    intensity: initialData?.intensity ?? target.intensity ?? 50,
     complexity: initialData?.complexity ?? 30,
-    finish: initialData?.finish ?? 50,
-    balance: initialData?.balance ?? 50,
   })
   const [autoScore, setAutoScore] = useState<number | null>(null)
   const [pairingCategories, setPairingCategories] = useState<PairingCategory[]>(
@@ -238,7 +244,7 @@ export function WineRecordForm({
   const [showPriceReview, setShowPriceReview] = useState(false)
   const isManualOverrideRef = useRef(false)
 
-  const aromaRingCount = countActiveRings(aroma.regions)
+  const aromaRingCount = countActiveRings(aroma)
 
   const isEditMode = !!onDelete
   const isValid = isEditMode || quadrantTouched
@@ -286,12 +292,13 @@ export function WineRecordForm({
       axisX: quadrant.x,
       axisY: quadrant.y,
       satisfaction: Math.round((quadrant.x + quadrant.y) / 2),
-      aromaRegions: Object.keys(aroma.regions).length > 0 ? aroma.regions as Record<string, unknown> : null,
-      aromaLabels: aroma.labels.length > 0 ? aroma.labels : null,
-      aromaColor: aroma.color ?? null,
+      aromaPrimary: aroma.primary,
+      aromaSecondary: aroma.secondary,
+      aromaTertiary: aroma.tertiary,
       complexity: structure.complexity,
       finish: structure.finish,
       balance: structure.balance,
+      intensity: structure.intensity,
       autoScore: autoScore ?? undefined,
       pairingCategories,
       comment: comment || undefined,
@@ -554,7 +561,7 @@ export function WineRecordForm({
 
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          구조 평가 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+          품질 평가 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
         </h3>
         <WineStructureEval
           value={structure}

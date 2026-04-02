@@ -28,12 +28,13 @@ function mapDbToRecord(row: any): DiningRecord {
     isExifVerified: row.is_exif_verified ?? false,
     cameraMode: row.camera_mode ?? null,
     ocrData: row.ocr_data as Record<string, unknown> | null,
-    aromaRegions: row.aroma_regions as Record<string, unknown> | null,
-    aromaLabels: row.aroma_labels ?? null,
-    aromaColor: row.aroma_color ?? null,
+    aromaPrimary: (row.aroma_primary as string[]) ?? [],
+    aromaSecondary: (row.aroma_secondary as string[]) ?? [],
+    aromaTertiary: (row.aroma_tertiary as string[]) ?? [],
     complexity: row.complexity ?? null,
     finish: row.finish ?? null,
     balance: row.balance ?? null,
+    intensity: row.intensity ?? null,
     autoScore: row.auto_score ?? null,
     privateNote: row.private_note ?? null,
     companionCount: row.companion_count ?? null,
@@ -208,12 +209,13 @@ export class SupabaseRecordRepository implements RecordRepository {
         has_exif_gps: input.hasExifGps ?? false,
         is_exif_verified: input.isExifVerified ?? false,
         camera_mode: input.cameraMode ?? null,
-        aroma_regions: input.aromaRegions ?? null,
-        aroma_labels: input.aromaLabels ?? null,
-        aroma_color: input.aromaColor ?? null,
+        aroma_primary: input.aromaPrimary ?? [],
+        aroma_secondary: input.aromaSecondary ?? [],
+        aroma_tertiary: input.aromaTertiary ?? [],
         complexity: input.complexity ?? null,
         finish: input.finish ?? null,
         balance: input.balance ?? null,
+        intensity: input.intensity ?? null,
         auto_score: input.autoScore ?? null,
         private_note: input.privateNote ?? null,
         companion_count: input.companionCount ?? null,
@@ -423,12 +425,13 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (data.companions !== undefined) updateData.companions = data.companions
     if (data.privateNote !== undefined) updateData.private_note = data.privateNote
     if (data.cameraMode !== undefined) updateData.camera_mode = data.cameraMode
-    if (data.aromaRegions !== undefined) updateData.aroma_regions = data.aromaRegions
-    if (data.aromaLabels !== undefined) updateData.aroma_labels = data.aromaLabels
-    if (data.aromaColor !== undefined) updateData.aroma_color = data.aromaColor
+    if (data.aromaPrimary !== undefined) updateData.aroma_primary = data.aromaPrimary
+    if (data.aromaSecondary !== undefined) updateData.aroma_secondary = data.aromaSecondary
+    if (data.aromaTertiary !== undefined) updateData.aroma_tertiary = data.aromaTertiary
     if (data.complexity !== undefined) updateData.complexity = data.complexity
     if (data.finish !== undefined) updateData.finish = data.finish
     if (data.balance !== undefined) updateData.balance = data.balance
+    if (data.intensity !== undefined) updateData.intensity = data.intensity
     if (data.autoScore !== undefined) updateData.auto_score = data.autoScore
     if (data.hasExifGps !== undefined) updateData.has_exif_gps = data.hasExifGps
     if (data.isExifVerified !== undefined) updateData.is_exif_verified = data.isExifVerified

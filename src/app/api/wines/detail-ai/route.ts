@@ -93,7 +93,15 @@ async function upsertWineFromAI(
 
 export interface WineDetailAIResponse {
   success: boolean
-  wine: { id: string; name: string; isExisting: boolean } | null
+  wine: {
+    id: string; name: string; isExisting: boolean
+    aromaPrimary?: string[]
+    aromaSecondary?: string[]
+    aromaTertiary?: string[]
+    balance?: number | null
+    finish?: number | null
+    intensity?: number | null
+  } | null
   error?: string
 }
 
@@ -120,7 +128,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<WineDetai
     // 2단계: LLM에게 상세 정보 요청 → DB upsert
     const recognition = await getWineDetailByName(name, producer, vintage)
     const wine = await upsertWineFromAI(supabase, recognition)
-    return NextResponse.json({ success: true, wine })
+    return NextResponse.json({ success: true, wine: {
+      ...wine,
+      aromaPrimary: recognition.aromaPrimary,
+      aromaSecondary: recognition.aromaSecondary,
+      aromaTertiary: recognition.aromaTertiary,
+      balance: recognition.balance,
+      finish: recognition.finish,
+      intensity: recognition.intensity,
+    } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
     return NextResponse.json({ success: false, wine: null, error: message }, { status: 500 })

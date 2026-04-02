@@ -27,7 +27,7 @@ import { DeleteConfirmModal } from '@/presentation/components/record/delete-conf
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
 import { useToast } from '@/presentation/components/ui/toast'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
-import type { AromaSelection } from '@/domain/entities/aroma'
+import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 
 interface WineDetailContainerProps {
@@ -233,42 +233,34 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
   // ─── 향 휠 합산 ───
   const mergedAroma: AromaSelection = useMemo(() => {
-    const regions: Record<string, number> = {}
-    const labelSet = new Set<string>()
-    let colorR = 0, colorG = 0, colorB = 0, colorCount = 0
+    const primarySet = new Set<string>()
+    const secondarySet = new Set<string>()
+    const tertiarySet = new Set<string>()
     for (const r of myRecords) {
-      if (r.aromaRegions) {
-        for (const [key, val] of Object.entries(r.aromaRegions as Record<string, number>)) {
-          regions[key] = Math.max(regions[key] ?? 0, val)
-        }
-      }
-      if (r.aromaLabels) for (const l of r.aromaLabels) labelSet.add(l)
-      if (r.aromaColor) {
-        const hex = r.aromaColor.replace('#', '')
-        colorR += parseInt(hex.substring(0, 2), 16)
-        colorG += parseInt(hex.substring(2, 4), 16)
-        colorB += parseInt(hex.substring(4, 6), 16)
-        colorCount++
-      }
+      for (const id of r.aromaPrimary) primarySet.add(id)
+      for (const id of r.aromaSecondary) secondarySet.add(id)
+      for (const id of r.aromaTertiary) tertiarySet.add(id)
     }
-    const avgColor = colorCount > 0
-      ? `#${Math.round(colorR / colorCount).toString(16).padStart(2, '0')}${Math.round(colorG / colorCount).toString(16).padStart(2, '0')}${Math.round(colorB / colorCount).toString(16).padStart(2, '0')}`
-      : null
-    return { regions, labels: [...labelSet], color: avgColor }
+    return {
+      primary: [...primarySet] as AromaSectorId[],
+      secondary: [...secondarySet] as AromaSectorId[],
+      tertiary: [...tertiarySet] as AromaSectorId[],
+    }
   }, [myRecords])
 
-  // ─── 구조 평가 평균 ───
+  // ─── 품질 평가 평균 ───
   const mergedStructure: WineStructure = useMemo(() => {
     const recordsWithComplexity = myRecords.filter((r) => r.complexity !== null)
-    if (recordsWithComplexity.length === 0) return { complexity: 30, finish: 50, balance: 50 }
+    if (recordsWithComplexity.length === 0) return { balance: 50, finish: 50, intensity: 50, complexity: 30 }
     return {
-      complexity: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.complexity ?? 30), 0) / recordsWithComplexity.length),
-      finish: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.finish ?? 50), 0) / recordsWithComplexity.length),
       balance: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.balance ?? 50), 0) / recordsWithComplexity.length),
+      finish: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.finish ?? 50), 0) / recordsWithComplexity.length),
+      intensity: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.intensity ?? 50), 0) / recordsWithComplexity.length),
+      complexity: Math.round(recordsWithComplexity.reduce((s, r) => s + (r.complexity ?? 30), 0) / recordsWithComplexity.length),
     }
   }, [myRecords])
 
-  const hasAromaData = Object.keys(mergedAroma.regions).length > 0
+  const hasAromaData = mergedAroma.primary.length > 0 || mergedAroma.secondary.length > 0 || mergedAroma.tertiary.length > 0
   const hasStructureData = myRecords.some((r) => r.complexity !== null)
 
   // ─── 히어로 사진 ───
@@ -595,7 +587,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   onChange={() => {}}
                   readOnly
                   referencePoints={quadrantMode === 'avg'
-                    ? [...allRecordDots, ...quadrantRefs].map((d) => ({
+                    ? quadrantRefs.map((d) => ({
                         x: d.avgAxisX,
                         y: d.avgAxisY,
                         satisfaction: d.avgSatisfaction,
@@ -635,11 +627,11 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                 </div>
               )}
 
-              {/* 구조 평가 — 기록할 때 쓰는 슬라이더 그대로 */}
+              {/* 품질 평가 — 기록할 때 쓰는 슬라이더 그대로 */}
               {hasStructureData && (
                 <div>
                   <p className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-                    구조 평가
+                    품질 평가
                     <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>평균</span>
                   </p>
                   <WineStructureEval
