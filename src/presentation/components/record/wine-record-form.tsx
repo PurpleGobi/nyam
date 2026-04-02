@@ -584,22 +584,22 @@ export function WineRecordForm({
         />
       </section>
 
-      {/* ════ 섹션5: 테이스팅 노트 ════ */}
+      {/* ════ 섹션5: 한줄평 ════ */}
       <section className="px-4 py-4">
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-          테이스팅 노트 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
+          한줄평 <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)' }}>선택</span>
         </h3>
         <textarea
           maxLength={200}
-          value={tastingNotes || comment}
-          onChange={(e) => { setTastingNotes(e.target.value); setComment(e.target.value) }}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
           placeholder="이 와인을 한마디로?"
           rows={2}
           className="nyam-input w-full resize-none"
           style={{ backgroundColor: 'var(--bg-card)' }}
         />
         <span className="mt-1 block text-right" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-          {(tastingNotes || comment).length}/200
+          {comment.length}/200
         </span>
       </section>
 
