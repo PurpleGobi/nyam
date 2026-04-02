@@ -25,10 +25,10 @@
 | api/providers/ | 1 | gemini.ts (Gemini Vision) | 안정 |
 | storage/ | 1 | image-upload.ts | 안정 |
 
-### application/hooks/ (비즈니스 로직 훅, 57개)
+### application/hooks/ (비즈니스 로직 훅, 58개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
 - 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats
-- 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking 등
+- 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubblers-list 등
 - 소셜: use-follow, use-comments, use-reactions, use-share-record
 - XP/프로필: use-xp, use-xp-award, use-profile, use-wrapped
 - 기타: use-discover, use-home-records, use-search, use-notifications, use-onboarding
@@ -58,7 +58,7 @@
 - onboarding/, design-system/
 
 ## supabase/
-- migrations/ (42개, 000~041): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조
+- migrations/ (44개, 000~044): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정
 - functions/ (3): process-account-deletion, refresh-active-xp, weekly-ranking-snapshot
 
 ## DI 등록 현황 (container.ts)

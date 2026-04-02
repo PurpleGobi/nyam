@@ -2,10 +2,13 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, User, Compass, ArrowUpDown, Search, X } from 'lucide-react'
+import { Users, User, Compass, ArrowUpDown, Search, X, MapPin } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
+import { useBubblersList } from '@/application/hooks/use-bubblers-list'
+import type { BubblerItem } from '@/application/hooks/use-bubblers-list'
+import { getLevelColor } from '@/domain/services/xp-calculator'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
@@ -44,6 +47,10 @@ export function BubbleListContainer() {
     [bubbles],
   )
   const excludeIds = useMemo(() => bubbles.map((b) => b.id), [bubbles])
+
+  // 버블러 목록: 모든 버블의 멤버 (자기 제외) 합산
+  const bubblerInput = useMemo(() => bubbles.map((b) => ({ id: b.id, name: b.name })), [bubbles])
+  const { bubblers, isLoading: bubblersLoading } = useBubblersList(user?.id ?? null, bubblerInput)
 
   const [contentTab, _setContentTab] = useState<ContentTab>(() => {
     if (typeof window === 'undefined') return 'bubbles'
@@ -347,20 +354,32 @@ export function BubbleListContainer() {
 
       {contentTab === 'bubblers' && (
         <>
-          <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-            <div
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
-              style={{ backgroundColor: 'var(--accent-social-light)' }}
-            >
-              <User size={32} style={{ color: 'var(--accent-social)' }} />
+          {bubblersLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
             </div>
-            <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-              아직 버블러가 없어요
-            </p>
-            <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-              버블에 가입하면 버블러를 만날 수 있어요
-            </p>
-          </div>
+          ) : bubblers.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+              <div
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
+                style={{ backgroundColor: 'var(--accent-social-light)' }}
+              >
+                <User size={32} style={{ color: 'var(--accent-social)' }} />
+              </div>
+              <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
+                아직 버블러가 없어요
+              </p>
+              <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
+                버블에 가입하면 버블러를 만날 수 있어요
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 px-4 pb-4">
+              {bubblers.map((b) => (
+                <BubblerCard key={b.userId} bubbler={b} onClick={() => router.push(`/users/${b.userId}`)} />
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -381,5 +400,65 @@ export function BubbleListContainer() {
         }}
       />
     </div>
+  )
+}
+
+/* ──── 버블러 카드 ──── */
+function BubblerCard({ bubbler, onClick }: { bubbler: BubblerItem; onClick: () => void }) {
+  const levelColor = getLevelColor(bubbler.level)
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="card flex items-center gap-3 rounded-xl px-3 py-3 text-left"
+    >
+      {/* 아바타 */}
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
+        style={{
+          backgroundColor: bubbler.avatarColor ?? 'var(--accent-social-light)',
+          color: '#FFFFFF',
+        }}
+      >
+        {bubbler.nickname.charAt(0)}
+      </div>
+
+      {/* 정보 */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+            {bubbler.nickname}
+          </p>
+          <span
+            className="shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold"
+            style={{ backgroundColor: `${levelColor}18`, color: levelColor }}
+          >
+            Lv.{bubbler.level}
+          </span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          <span>기록 {bubbler.totalRecords}곳</span>
+          {bubbler.avgSatisfaction != null && (
+            <>
+              <span>·</span>
+              <span>평균 {bubbler.avgSatisfaction.toFixed(1)}</span>
+            </>
+          )}
+          <span>·</span>
+          <span className="truncate">{bubbler.sharedBubbleNames.join(', ')}</span>
+        </div>
+      </div>
+
+      {/* 공유 버블 수 뱃지 */}
+      {bubbler.sharedBubbleCount > 1 && (
+        <span
+          className="flex shrink-0 items-center gap-0.5 rounded-full px-2 py-1 text-[10px] font-semibold"
+          style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+        >
+          <Users size={10} />
+          {bubbler.sharedBubbleCount}
+        </span>
+      )}
+    </button>
   )
 }

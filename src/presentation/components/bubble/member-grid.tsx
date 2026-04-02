@@ -36,11 +36,13 @@ export function MemberGrid({ members, onMemberClick, onFollowToggle }: MemberGri
   return (
     <div className="grid grid-cols-2 gap-3">
       {members.map((m) => (
-        <button
+        <div
           key={m.userId}
-          type="button"
+          role="button"
+          tabIndex={0}
           onClick={() => onMemberClick(m.userId)}
-          className="relative flex flex-col items-center gap-1.5 rounded-xl p-3"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onMemberClick(m.userId) }}
+          className="relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl p-3"
           style={{
             backgroundColor: m.isMe ? 'var(--accent-social-light)' : 'var(--bg-card)',
             border: m.isMe ? '2px solid var(--accent-social)' : '1px solid var(--border)',
@@ -128,7 +130,7 @@ export function MemberGrid({ members, onMemberClick, onFollowToggle }: MemberGri
               나
             </span>
           )}
-        </button>
+        </div>
       ))}
     </div>
   )
