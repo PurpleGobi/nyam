@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import type { GaugeChannel } from '@/shared/utils/gauge-color'
 
 interface QuadrantRefDotProps {
@@ -12,19 +12,53 @@ interface QuadrantRefDotProps {
   channel?: GaugeChannel
   isActive?: boolean
   onSelect?: () => void
+  onLongPress?: () => void
 }
 
 const DOT_SIZE = 20
+const LONG_PRESS_MS = 500
 
-export function QuadrantRefDot({ x, y, satisfaction, name, isActive, onSelect }: QuadrantRefDotProps) {
+export function QuadrantRefDot({ x, y, satisfaction, name, isActive, onSelect, onLongPress }: QuadrantRefDotProps) {
   const active = isActive ?? false
   const totalScore = satisfaction
   const baseOpacity = 0.15 + (totalScore / 100) * 0.45
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didLongPress = useRef(false)
 
-  const handleTap = useCallback((e: React.PointerEvent) => {
+  const clearTimer = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
-    onSelect?.()
-  }, [onSelect])
+    didLongPress.current = false
+    if (onLongPress) {
+      (e.target as Element).setPointerCapture(e.pointerId)
+      longPressTimer.current = setTimeout(() => {
+        didLongPress.current = true
+        navigator?.vibrate?.(20)
+        onLongPress()
+      }, LONG_PRESS_MS)
+    }
+  }, [onLongPress])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    clearTimer()
+    if ((e.target as Element).hasPointerCapture(e.pointerId)) {
+      (e.target as Element).releasePointerCapture(e.pointerId)
+    }
+    if (!didLongPress.current) {
+      onSelect?.()
+    }
+  }, [onSelect, clearTimer])
+
+  const handlePointerCancel = useCallback(() => {
+    clearTimer()
+  }, [clearTimer])
 
   return (
     <div
@@ -54,7 +88,10 @@ export function QuadrantRefDot({ x, y, satisfaction, name, isActive, onSelect }:
           pointerEvents: 'auto',
           cursor: 'pointer',
         }}
-        onPointerDown={handleTap}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerCancel}
       />
       <span
         style={{

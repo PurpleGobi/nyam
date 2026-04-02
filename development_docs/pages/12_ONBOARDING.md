@@ -5,10 +5,6 @@
 > 목표: 30초 안에 완료, 텅 빈 앱 방지, 첫 버블 생성 유도
 > route: /onboarding
 > prototype: `prototype/00_onboarding.html`
->
-> **⚠️ IA.md 동기화 필요**: 00_IA.md의 온보딩 Step 3이 "경험치 설명"으로 되어 있으나,
-> 실제 플로우(프로토타입+본 문서)는 "로그인→인트로→**맛집 등록(지역선택+식당체크)**→버블생성→버블탐색→홈".
-> 00_IA.md의 온보딩 항목과 S9 산출물 설명을 본 문서에 맞춰 갱신 필요.
 
 ---
 
@@ -16,149 +12,198 @@
 
 ### 화면 레이아웃 (Step 1~3 공통)
 
+컨테이너(`OnboardingContainer`)가 `StepLayout`으로 공통 레이아웃을 제공하고,
+각 Step 컴포넌트가 하단 카드 영역의 children으로 렌더링된다.
+각 Step 컴포넌트는 카드 영역 내에 자체 헤더(타이틀/서브타이틀)와 콘텐츠를 포함하며,
+하단에 고정 CTA 버튼(`fixed bottom`)을 별도로 갖는다.
+
 ```
 ┌──────────────────────────────┐
 │  ┃━━━━┃━━━━┃━━━━┃            │  ← 스텝 진행 바 (3칸)
 │                              │     padding: 54px 28px 0
 ├──────────────────────────────┤
 │                              │
-│  큰 타이틀 (24px, bold)       │  ← 상단 ~28%: 멘트 구간
+│  큰 타이틀 (24px, bold)       │  ← 상단 ~28%: 멘트 구간 (StepLayout)
 │  서브텍스트 (13px)            │     세로 중앙 정렬
 │                              │
 ├──────────────────────────────┤
 │  ┌ bg-card, radius 24px ──┐ │  ← 하단 ~72%: 인터랙티브 UI
-│  │                         │ │     border-top: 1px solid border
-│  │  (각 Step별 콘텐츠)      │ │     scroll-content (overflow-y)
+│  │  (각 Step 컴포넌트)      │ │     border-top: 1px solid border
+│  │   자체 헤더 + 콘텐츠     │ │     scroll-content (overflow-y)
 │  │                         │ │
-│  │  하단 고정 안내 텍스트    │ │  ← sticky bottom
+│  │  하단 고정 안내 텍스트    │ │  ← sticky bottom (StepLayout hint)
 │  └─────────────────────────┘ │
-│ (fab-back)         (fab-fwd) │  ← FAB 네비게이션
+│                              │
+│ ┌─────────────────────────┐  │  ← 고정 CTA 버튼 (Step 컴포넌트)
+│ │  N개 등록 완료 / 건너뛰기  │  │     fixed bottom, background: var(--bg)
+│ └─────────────────────────┘  │
+│ (fab-back)         (fab-fwd) │  ← FAB 네비게이션 (컨테이너)
 └──────────────────────────────┘
 ```
 
-### 스텝 진행 바 (ob-steps)
+### 스텝 진행 바 (step-progress)
 
 - 3칸 고정 (Step 1 기록 / Step 2 버블 생성 / Step 3 버블 탐색)
-- 레이아웃: `display:flex`, `gap:6px`, `margin-top:16px`
+- CSS 클래스: `.step-progress` (컨테이너), `.step-bar` (각 바)
+- 레이아웃: `display:flex`, `gap:6px`
 - 각 바: `flex:1`, `height:3px`, `border-radius:2px`
 
-| 상태 | 스타일 |
-|------|--------|
-| **active** | `background:var(--accent-food)` |
-| **done** | `background:var(--accent-food)`, `opacity:0.45` |
-| **pending** | `background:var(--border)` |
+| 상태 | CSS 클래스 | 스타일 |
+|------|-----------|--------|
+| **active (현재)** | `.step-bar.current` | `background:var(--accent-food)` |
+| **done (완료)** | `.step-bar.complete` | `background:var(--accent-food)`, `opacity:0.45` |
+| **pending (대기)** | `.step-bar` (기본) | `background:var(--border)` |
+
+- 컴포넌트: `OnboardingProgress` (`currentStep: number`, `totalSteps: number`)
+- `currentStep`은 0-based 인덱스 (record=0, bubble=1, explore=2)
+- 컨테이너 래퍼: `padding: 54px 28px 0` (상태바 회피 + 좌우 여백)
+- 컴포넌트 내부: `.step-progress` 클래스 (`px-6 py-3` = `padding: 12px 24px`)
 
 ### FAB 네비게이션
 
-Step 1~3에만 존재. 로그인/인트로 화면에는 FAB 없음.
+Step 1~3에만 존재. 인트로 화면에서는 렌더링되지 않음.
+컨테이너(`OnboardingContainer`)에서 `<FabBack>`, `<FabForward>` 컴포넌트를 렌더링.
 
 | 요소 | 위치 | 크기 | 스타일 |
 |------|------|------|--------|
-| **fab-back** | `left:16px`, `bottom:28px` | 44×44px 원형 | `background:rgba(248,246,243,0.88)`, `backdrop-filter:blur(12px)`, `border:1px solid var(--border)`, `box-shadow:0 2px 12px rgba(0,0,0,0.12)` |
-| **fab-forward** | `right:16px`, `bottom:28px` | 44×44px 원형 | `background:var(--accent-food)`, `color:#fff`, `box-shadow:0 3px 16px rgba(193,123,94,0.4)`, 보더 없음 |
+| **fab-back** | `left:max(16px, calc(50% - 480px + 16px))`, `bottom:16px` | 44×44px 원형 | `background:rgba(248,246,243,0.88)`, `backdrop-filter:blur(12px)`, `border:1px solid var(--border)`, `box-shadow:0 2px 12px rgba(0,0,0,0.12)` |
+| **fab-forward** | `right:max(16px, calc(50% - 480px + 16px))`, `bottom:28px` | 44×44px 원형 | `background:var(--accent-food)`, `color:#fff`, `box-shadow:0 3px 16px rgba(193,123,94,0.4)`, 보더 없음 |
 
-- 공통: `position:absolute`, `z-index:85`, `border-radius:50%`
-- 아이콘: chevron-left / chevron-right (SVG inline, `22×22px`)
+> `max()` 함수: 모바일에서는 16px, 넓은 화면에서는 콘텐츠 영역(960px) 기준으로 정렬.
+
+- 공통: `position:fixed`, `z-index:85`, `border-radius:50%`
+- 아이콘: lucide `ChevronLeft` / `ChevronRight` (`22×22px`)
 - `:active` → `transform:scale(0.9)`, `transition:0.15s`
+- `:disabled` (fab-forward) → `opacity:0.4`, `cursor:not-allowed`
+- 다크모드: `fab-back` → `background:rgba(42,39,37,0.92)`, `border-color:var(--border-bold)`
+- `fab-forward`는 `variant` prop으로 `'food'`(기본) / `'wine'` 지원
 
-### 상단 멘트 구간
+### 전체 컨테이너
+
+Step 1~3 공통 래퍼: `content-auth relative flex min-h-dvh flex-col`, `background:var(--bg)`
+- `.content-auth`: `width:100%`, `max-width:480px`, `margin:0 auto` (모바일 중앙 정렬)
+
+### 상단 멘트 구간 (StepLayout)
 
 | 항목 | 스타일 |
 |------|--------|
-| 컨테이너 | `flex:0 0 28%`, `padding:0 28px`, `justify-content:center` |
+| 컨테이너 | `flex:0 0 28%`, `display:flex`, `flex-direction:column`, `justify-content:center`, `padding:0 28px` |
 | 타이틀 | `font-size:24px`, `font-weight:700`, `line-height:1.45`, `letter-spacing:-0.4px`, `color:var(--text)` |
 | 서브텍스트 | `font-size:13px`, `color:var(--text-sub)`, `margin-top:10px`, `line-height:1.7` |
 
-### 하단 인터랙티브 영역
+### 하단 인터랙티브 영역 (StepLayout 카드)
 
 | 항목 | 스타일 |
 |------|--------|
-| 컨테이너 | `flex:1`, `background:var(--bg-card)`, `border-radius:24px 24px 0 0`, `border-top:1px solid var(--border)` |
+| 컨테이너 | `flex:1`, `overflow-y:auto`, `background:var(--bg-card)`, `border-radius:24px 24px 0 0`, `border-top:1px solid var(--border)`, `scrollbar-width:none` |
 | 내부 패딩 | `padding:0 24px`, 상단 여백 `height:20px` (빈 div) |
-| 스크롤 | `overflow-y:auto`, `scrollbar-width:none`, `-webkit-overflow-scrolling:touch` |
 | sticky 안내 | `position:sticky`, `bottom:0`, `padding:14px 0 20px`, `background:var(--bg-card)` |
-| 안내 텍스트 | `font-size:12px`, `font-style:italic`, `color:var(--text-hint)`, `text-align:center`, `line-height:1.5` |
+| 안내 텍스트 | `font-size:12px`, `font-style:italic`, `color:var(--text-hint)`, `text-align:center`, `line-height:1.5`, `margin:0` |
 
-### 화면 전환 애니메이션
+### 각 Step 하단 고정 CTA 버튼
 
-| 방향 | 현재 화면 | 다음/이전 화면 | duration |
-|------|----------|-------------|----------|
-| **앞으로** | `.slide-out` → `translateX(-100%)` | `.hidden` 제거 → `.active` → `translateX(0)` | `0.35s cubic-bezier(0.4, 0, 0.2, 1)` |
-| **뒤로** | `slideOutRight` (`0→100%`) | `slideInLeft` (`-100%→0`) | `0.3s forwards` |
+각 Step 컴포넌트(`RestaurantRegisterStep`, `BubbleCreateStep`, `BubbleExploreStep`)가 자체적으로 하단에 고정 CTA 버튼을 갖는다.
 
-- 전환 후 이전 화면 → `.hidden` (`translateX(100%)`) 으로 정리 (350ms 후)
-- 히스토리 스택으로 뒤로가기 관리 (`screenHistory[]`)
+| 항목 | 스타일 |
+|------|--------|
+| 컨테이너 | `position:fixed`, `bottom:0`, `left:0`, `right:0`, `padding:16px 24px 32px`, `background:var(--bg)` |
+| 버튼 | `.btn-primary`, `width:100%`, `border-radius:12px`, `padding:14px 0`, lucide `ArrowRight` 아이콘 포함 |
+
+### 화면 전환
+
+- React 조건부 렌더링 (`step === 'record'` 등)으로 화면 교체
+- `history` 배열로 뒤로가기 관리 (`pushStep`, `goBack`)
+- CSS 슬라이드 애니메이션 없음 (즉시 전환)
 
 ### 하지 않는 것
 - ❌ step dots / 원형 인디케이터 — 바 형태만 사용
 - ❌ 고스트 텍스트 "← 이전" / pill 모양 "다음 →" — FAB 원형 버튼으로 통일
-- ❌ 건너뛰기 텍스트 링크 — 모든 스텝 0개 선택으로 진행 가능하므로 불필요
 
 ---
 
 ## 1. 플로우 총괄
 
 ```
-screen-login   로그인
-  소셜 로그인 (카카오/구글/네이버/애플) → 닉네임 자동 설정
+/auth/login       로그인
+  소셜 로그인 (Google/카카오/네이버/Apple) → 닉네임 자동 설정
+       ↓ (auth callback → 홈 `/` 리다이렉트)
+       ↓ (온보딩 미완료 시 앱 내에서 /onboarding으로 유도 — 현재 자동 리다이렉트 미구현)
+/onboarding        (PUBLIC_ROUTE — 미인증 상태에서도 접근 가능)
+  step='intro'     인트로
+    앱 가치 헤드라인 → "시작하기 →" 텍스트 버튼
        ↓
-screen-intro   인트로
-  앱 가치 헤드라인 → "시작하기 →" 텍스트 버튼
+  step='record'    Step 1/3 — 맛집 등록
+    지역 필 선택(6개 지역) → 해당 지역 맛집 리스트 → 토글 등록
+    검색 인풋으로 직접 검색 가능
        ↓
-screen-record  Step 1/3 — 맛집 등록
-  지역 드롭다운 → 해당 지역 맛집 리스트 → [등록] 버튼
-  지도앱 가져오기 (네이버/구글) — v1 비활성
-  직접 검색 가능
+  step='bubble'    Step 2/3 — 버블 생성
+    템플릿 카드 (가족/친구/직장동료) → 탭하여 생성
        ↓
-screen-bubble  Step 2/3 — 버블 생성
-  템플릿 카드 (가족/친구/직장동료) → [추가]
-  초대하기 → 링크 복사
+  step='explore'   Step 3/3 — 버블 탐색
+    공개 버블 카드 리스트 → "시작하기" 버튼
        ↓
-screen-explore Step 3/3 — 버블 탐색
-  공개 버블 카드 리스트 → 탭하면 상세 바텀시트
-       ↓
-01_home.html   홈 진입
+  /                홈 진입 (awardBonus → router.push('/'))
 ```
 
 ### 네비게이션 경로
 
-| 화면 | fab-back 목적지 | fab-forward 목적지 |
-|------|----------------|-------------------|
-| screen-login | — (없음) | — (없음) |
-| screen-intro | — (없음) | — (없음, 텍스트 CTA) |
-| screen-record | screen-intro (히스토리 스택) | screen-bubble |
-| screen-bubble | screen-record | screen-explore |
-| screen-explore | screen-bubble | 홈 진입 (`01_home.html`) |
+| 화면 | fab-back 목적지 | fab-forward 목적지 | 하단 CTA |
+|------|----------------|-------------------|----------|
+| intro | — (없음) | — (없음) | "시작하기 →" 텍스트 버튼 |
+| record | intro (히스토리 스택) | bubble | "N개 등록 완료" 또는 "건너뛰기" (`goForward`) |
+| bubble | record | explore | "다음" 또는 "건너뛰기" (`goForward`) |
+| explore | bubble | 홈 (`/`, XP 미지급) | "시작하기" (`onComplete`, XP 지급 후 홈) |
+
+### 상태 관리
+
+컨테이너(`OnboardingContainer`)가 모든 상태를 직접 관리 (로컬 `useState`):
+
+| 상태 | 타입 | 설명 |
+|------|------|------|
+| `step` | `'intro' \| 'record' \| 'bubble' \| 'explore'` | 현재 화면 |
+| `history` | `OnboardingStep[]` | 네비게이션 히스토리 스택 |
+| `area` | `OnboardingArea` | 선택한 지역 (기본: `ONBOARDING_AREAS[0]` = '을지로') |
+| `searchQuery` | `string` | 검색 입력값 |
+| `registeredIds` | `Set<string>` | 등록한 식당 ID 집합 |
+| `createdBubbleIds` | `string[]` | 생성한 버블 이름 목록 |
+
+> 참고: `use-onboarding.ts`, `use-onboarding-restaurants.ts`, `use-onboarding-bubbles.ts` 훅이
+> `application/hooks/`에 정의되어 있지만, 현재 컨테이너에서는 **사용하지 않고** 직접 상태를 관리한다.
+> 이 훅들은 향후 DB 연동 시 활용 예정.
+
+### 라우팅 설정
+
+- `src/middleware.ts`: `/onboarding`은 `PUBLIC_ROUTES`에 포함 (미인증 상태에서도 접근 가능)
+- `src/shared/constants/navigation.ts`: `type: 'independent'`, `redirectTo: '/'` (탭 바 밖 독립 플로우)
 
 ### 중도 이탈 처리
-- 온보딩 중 앱 종료 시 → 다음 진입 때 마지막 화면부터 재개 (서버에 `onboarding_step` 저장)
-- 인트로까지만 본 경우 → screen-record부터 시작
+- 현재 구현: 서버 저장 없음. 앱 종료 시 상태 초기화.
 - 0개 등록/0개 생성으로 끝까지 진행 가능 → 빈 홈 상태로 진입
 
 ---
 
-## 2. 로그인 화면 (screen-login)
+## 2. 로그인 화면 (/auth/login)
 
 ```
 ┌──────────────────────────────┐
-│  (44px 상단 여백 — 상태바)     │
+│  (상단 여백)                   │
 │                              │
-│           nyam               │  ← Comfortaa 42px, 그라디언트
+│           nyam               │  ← Comfortaa 42px, logo-gradient
 │                              │
 │  낯선 별점 천 개보다,          │  ← 14px, text-sub
 │  믿을만한 한 명의 기록.        │
 │                              │
 │  ┌──────────────────────────┐│
-│  │ G  Google로 시작          ││  ← bg-card, border:1px solid border
+│  │ G  Google로 시작하기       ││  ← bg-card, border
 │  └──────────────────────────┘│
 │  ┌──────────────────────────┐│
-│  │ 💬 카카오로 시작           ││  ← #FEE500, color:#3C1E1E
+│  │ 💬 카카오로 시작하기        ││  ← #FEE500, color:#3C1E1E
 │  └──────────────────────────┘│
 │  ┌──────────────────────────┐│
-│  │ N  네이버로 시작           ││  ← #03C75A, color:#fff
+│  │ N  네이버로 시작하기        ││  ← #03C75A, color:#fff
 │  └──────────────────────────┘│
 │  ┌──────────────────────────┐│
-│  │   Apple로 시작           ││  ← #1D1D1F, color:#fff
+│  │   Apple로 시작하기        ││  ← #1D1D1F, color:#fff
 │  └──────────────────────────┘│
 │                              │
 │  가입 시 이용약관 및           │  ← 11px, text-hint
@@ -166,31 +211,42 @@ screen-explore Step 3/3 — 버블 탐색
 └──────────────────────────────┘
 ```
 
+### 구현 구조
+
+- `src/app/auth/login/page.tsx` → `<Suspense>` + `<LoginContainer />`
+- `src/presentation/containers/login-container.tsx` → `<LoginButtons />`
+- `src/presentation/components/auth/login-buttons.tsx` → 4개 소셜 버튼
+
 ### 상세 규격
 
 | 항목 | 스타일 |
 |------|--------|
-| 레이아웃 | `flex-direction:column`, `align-items:center`, `justify-content:center` |
-| 패딩 | `padding:60px 32px 40px` |
-| 상단 여백 | `height:44px` (Dynamic Island 회피) |
-| 로고 | `font-family:'Comfortaa'`, `42px`, `font-weight:700`, `letter-spacing:-1px`, `margin-bottom:10px` |
-| 로고 색상 | `linear-gradient(135deg, #FF6038, #8B7396)`, `-webkit-background-clip:text` |
-| 태그라인 | `14px`, `color:var(--text-sub)`, `text-align:center`, `line-height:1.6`, `margin-bottom:48px`, `min-height:2.4em` |
-| 소셜 버튼 컨테이너 | `width:100%`, `flex-direction:column`, `gap:10px`, `margin-bottom:32px` |
-| 소셜 버튼 | `height:48px`, `border-radius:12px`, `font-size:14px`, `font-weight:600`, `gap:8px` |
-| 소셜 아이콘 | `20×20px`, 각 서비스 공식 아이콘/이모지 |
-| `:active` | `transform:scale(0.97)`, `opacity:0.85` |
-| 하단 약관 | `11px`, `color:var(--text-hint)`, `line-height:1.6` |
-| 약관 링크 | `color:var(--text-sub)`, `text-decoration:underline`, `text-underline-offset:2px` |
+| 레이아웃 | `flex-direction:column`, `align-items:center`, `justify-content:center`, `min-h-dvh` |
+| 배경 | `bg-background` |
+| 로고 | `font-family:'Comfortaa'`, `42px`, `font-weight:700`, `letter-spacing:-1px`, `.logo-gradient` 클래스 |
+| 태그라인 | `14px`, `color:var(--text-sub)`, `text-align:center`, `margin-bottom:48px` |
+| 소셜 버튼 컨테이너 | `max-width:320px`, `mx-auto`, `flex-direction:column`, `gap:3px` |
+| 소셜 버튼 | `.btn-social` + 프로바이더명 클래스, 인라인 SVG 아이콘 `20×20px` |
+| 하단 약관 | `11px`, `color:var(--text-hint)`, 링크 `color:var(--text-sub)`, `text-decoration:underline`, `text-underline-offset:2px` |
 
 ### 동작
-- 어떤 소셜 버튼이든 탭 → Auth 처리 → `screen-intro`로 전환
-- 닉네임은 소셜 프로필에서 자동 설정 (Settings에서 변경 가능)
+- 소셜 버튼 탭 → `signInWithOAuth(provider, redirect)` 호출 → OAuth 처리
 - FAB 없음, 스텝 진행 바 없음
+
+### Auth Callback (/auth/callback)
+
+| 단계 | 동작 |
+|------|------|
+| 1 | OAuth `code` 수신 → `supabase.auth.exchangeCodeForSession(code)` |
+| 2 | 인증 성공 → `supabase.auth.getUser()` |
+| 3 | `users` 테이블에 프로필 존재 확인 |
+| 4 (신규) | 프로필 생성: `id`, `email`, `nickname` (메타에서 추출, 최대 20자, 폴백: '냠유저'), `avatar_url`, `auth_provider` (폴백: 'google'), `auth_provider_id`, `privacy_profile: 'bubble_only'`, `privacy_records: 'shared_only'` |
+| 5 | 홈(`/`)으로 리다이렉트 |
+| 에러 | `/auth/login?error=callback_failed`로 리다이렉트 |
 
 ---
 
-## 3. 인트로 화면 (screen-intro)
+## 3. 인트로 화면 (step='intro')
 
 ```
 ┌──────────────────────────────┐
@@ -209,20 +265,25 @@ screen-explore Step 3/3 — 버블 탐색
 └──────────────────────────────┘
 ```
 
+### 컴포넌트
+
+`OnboardingIntro` (`onNext: () => void`)
+
 ### 상세 규격
 
 | 항목 | 스타일 |
 |------|--------|
 | 콘텐츠 컨테이너 | `flex:1`, `justify-content:center`, `align-items:center`, `padding:0 36px` |
+| 전체 컨테이너 | `min-h-dvh`, `flex-col`, `background:var(--bg)` |
 | 헤드라인 | `26px`, `font-weight:700`, `line-height:1.5`, `letter-spacing:-0.4px`, `text-align:center`, `color:var(--text)` |
 | 서브텍스트 | `14px`, `color:var(--text-sub)`, `line-height:1.8`, `margin-top:16px`, `text-align:center` |
 | CTA 컨테이너 | `padding:0 24px 56px`, `flex-shrink:0`, `text-align:center` |
 | CTA 버튼 | `background:none`, `border:none`, `15px`, `font-weight:600`, `color:var(--accent-food)`, `padding:12px 24px`, `letter-spacing:-0.1px` |
-| CTA press | `opacity:0.5` (mousedown/touchstart), `opacity:1` (mouseup/touchend) |
+| CTA press | `transition-opacity`, `active:opacity-50` (Tailwind) |
 
 ### 규칙
 - 스텝 진행 바 없음, FAB 없음
-- "시작하기 →" 탭 → `screen-record` (Step 1)
+- "시작하기 →" 탭 → `pushStep('record')` → Step 1
 
 ### 하지 않는 것
 - ❌ 기록 유형 선택 (맛집/와인 토글 카드) — 온보딩 진입 장벽 제거
@@ -231,609 +292,593 @@ screen-explore Step 3/3 — 버블 탐색
 
 ---
 
-## 4. Step 1/3: 맛집 등록 (screen-record)
+## 4. Step 1/3: 맛집 등록 (step='record')
+
+### StepLayout 멘트
+
+| 항목 | 텍스트 |
+|------|--------|
+| 타이틀 | "기록할 때마다, 당신의 미식 경험치가 쌓여요." |
+| 서브텍스트 | "경험치를 통해 레벨이 올라가고, 레벨은 사용자의 전문분야(지역, 장르)를 보여줍니다." |
+| hint | "지금은 등록만 하고, 나중에 식당평가 기록을 완성해 주세요." |
+
+### Step 내부 레이아웃
 
 ```
 ┌──────────────────────────────┐
 │  ┃━━━━┃────┃────┃            │  ← Step 1 active
 ├──────────────────────────────┤
-│  기록할 때마다,               │
+│  기록할 때마다,               │  ← StepLayout 타이틀
 │  당신의 미식 경험치가 쌓여요.  │
-│  경험치를 통해 레벨이 올라가고, │
+│  경험치를 통해 레벨이 올라가고, │  ← StepLayout 서브텍스트
 │  레벨은 사용자의 전문분야       │
 │  (지역, 장르)를 보여줍니다.    │
 ├──────────────────────────────┤
 │ ┌─ bg-card ─────────────────┐│
 │ │                            ││
-│ │ 지도에서 가져오기 [N] [G]   ││  ← 네이버/구글 지도 연동
-│ │ ───────────────────────── ││  ← 1px 구분선
-│ │ [을지로 ▼]  [🔍 직접 검색  ]││  ← 드롭다운 + 검색 (한 줄)
+│ │  자주 가는 맛집을 등록하세요 ││  ← Step 컴포넌트 자체 헤더 (20px, bold)
+│ │  가본 적 있는 식당을 선택... ││  ← 14px, text-sub
 │ │                            ││
-│ │  을지면옥              [등록]││  ← 식당 행
-│ │  ─────────────────────────││
-│ │  스시코우지            [등록]││
-│ │  ─────────────────────────││
-│ │  을지다락              [등록]││
-│ │  ─────────────────────────││
-│ │  을지OB맥주            [등록]││
+│ │  [을지로][광화문][성수]...   ││  ← AreaSelect 필 (rounded-full)
+│ │                            ││
+│ │  [🔍 식당 검색             ]││  ← OnboardingSearch
+│ │                            ││
+│ │  ┌─ restaurant card ─────┐ ││  ← 식당 카드 (토글 버튼)
+│ │  │ [🍴] 을지면옥  한식 (✓)│ ││
+│ │  └───────────────────────┘ ││
+│ │  ┌─ restaurant card ─────┐ ││
+│ │  │ [🍴] 스시코우지 일식 (+)│ ││
+│ │  └───────────────────────┘ ││
 │ │                            ││
 │ │  지금은 등록만 하고,        ││  ← sticky 하단 안내
 │ │  나중에 식당평가 기록을      ││
 │ │  완성해 주세요.             ││
 │ └────────────────────────────┘│
-│ (◁)                     (▷)  │
-└──────────────────────────────┘
-```
-
-### 4-1. 지도에서 가져오기
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `display:flex`, `align-items:center`, `gap:12px`, `margin-bottom:16px` |
-| 안내 텍스트 | "지도에서 가져오기", `font-size:13px`, `color:var(--text-sub)`, `white-space:nowrap` |
-| 버튼 공통 | `36×36px`, `border-radius:10px`, `border:1px solid var(--border)`, `background:white` |
-| 네이버 | 내부 "N" 텍스트, `font-weight:800`, `color:#03C75A`, `font-family:sans-serif` |
-| 구글 | Google G 로고 SVG (`18×18px`) |
-| 동작 | 탭 → alert "네이버지도 연동은 출시 후 지원됩니다" / "구글지도 연동은 출시 후 지원됩니다" |
-| 구분선 | `height:1px`, `background:var(--border)`, `margin-bottom:16px` |
-
-> v1에서는 비활성. v2에서 네이버 지도 저장 목록 / Google Maps 저장 목록 임포트 구현 예정.
-
-### 4-2. 지역 드롭다운 (nyam-select)
-
-드롭다운과 검색 인풋이 한 줄에 배치. `display:flex`, `gap:8px`, `margin-bottom:14px`.
-
-**셀렉트 버튼**:
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `position:relative`, `display:inline-block`, `flex-shrink:0` |
-| 버튼 | `display:flex`, `align-items:center`, `gap:6px`, `padding:7px 12px`, `border-radius:10px`, `border:1px solid var(--border)`, `background:var(--bg-card)`, `min-width:100px` |
-| 텍스트 | `font-size:13px`, `font-weight:500`, `color:var(--text)`, `flex:1` |
-| 화살표 | lucide `chevron-down` (`16×16px`), `color:var(--text-hint)` |
-| hover | `border-color:var(--border-bold)` |
-| open 상태 | `border-color:var(--accent-food)`, 화살표 `rotate(180deg)` |
-
-**드롭다운 메뉴**:
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `position:absolute`, `top:calc(100% + 4px)`, `left:0`, `right:0` |
-| 배경 | `background:var(--bg-elevated)`, `border:1px solid var(--border)`, `border-radius:12px`, `box-shadow:0 8px 28px rgba(0,0,0,0.12)`, `padding:4px`, `z-index:100` |
-| 항목 | `padding:9px 12px`, `border-radius:8px`, `font-size:13px`, `font-weight:500`, `width:100%`, `text-align:left` |
-| 항목 hover | `background:var(--bg)` |
-| 선택됨 | `color:var(--accent-food)`, `font-weight:600` |
-| 닫기 | 외부 클릭 시 자동 닫힘 (document click listener) |
-
-**지역 목록** (온보딩 시드 6개):
-`을지로`, `광화문`, `성수`, `강남`, `홍대`, `이태원`
-
-- 기본 선택: `을지로` (첫 진입 시 자동 렌더)
-- 지역 변경 → 해당 지역 맛집 리스트로 교체
-- 이미 등록한 식당의 "완료" 상태는 지역 전환 후에도 유지 (전역 Set)
-- **재진입 동작**: screen-record로 네비게이션할 때마다 `selectRecordArea('을지로')` 호출 → 드롭다운이 을지로로 리셋됨. 등록 완료 상태는 전역 Set으로 유지되므로 데이터 손실 없음
-- 선택한 지역은 `users.preferred_areas`에 저장하지 않음 (온보딩 시드용, 실제 동네 설정은 Settings에서)
-
-### 4-3. 검색 인풋 (ob-search)
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `position:relative`, `flex:1` |
-| 인풋 | `width:100%`, `padding:9px 12px 9px 34px`, `border-radius:12px`, `border:1.5px solid var(--border)`, `background:var(--bg-card)`, `font-size:13px`, `color:var(--text)` |
-| 포커스 | `border-color:var(--accent-food)` |
-| 아이콘 | lucide `search` (`14×14px`), `color:var(--text-hint)`, `position:absolute`, `left:14px`, `top:50%`, `transform:translateY(-50%)` |
-| placeholder | "직접 검색" |
-
-**검색 결과 드롭다운**:
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `position:absolute`, `top:100%`, `left:0`, `right:0`, `z-index:20`, `margin-top:4px` |
-| 배경 | `background:white`, `border:1px solid var(--border)`, `border-radius:10px`, `box-shadow:0 8px 24px rgba(0,0,0,0.1)` |
-| 결과 행 | `padding:10px 16px`, `display:flex`, `align-items:center`, `gap:10px`, `border-bottom:1px solid var(--border)` |
-| 표시 조건 | 인풋 비어 있으면 숨김, 텍스트 입력 시 표시 |
-| 매칭 로직 | 식당 이름 또는 장르에 쿼리 포함 (includes). 매칭 결과 없으면 전체 목록 표시 (fallback) |
-| 닫기 | `onblur` → `setTimeout(200ms)` 후 숨김 (클릭 이벤트 선처리 위한 딜레이) |
-
-### 4-4. 식당 리스트
-
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `display:flex`, `flex-direction:column` (동적 렌더) |
-| 행 | `display:flex`, `align-items:center`, `padding:11px 0`, `border-bottom:1px solid var(--border)`, `gap:10px` |
-| 식당 이름 | `flex:1`, `font-size:14px`, `font-weight:500`, `color:var(--text)` |
-| 등록 버튼 | `color:var(--accent-food)`, `font-size:13px`, `font-weight:600`, `background:none`, `border:none`, `padding:4px 0`, `white-space:nowrap` |
-| 등록 완료 | 텍스트 "완료", `color:var(--text-hint)`, `pointer-events:none` |
-| `:active` (버튼) | `opacity:0.5` |
-
-**지역별 시드 데이터**:
-
-| 지역 | 식당 목록 |
-|------|----------|
-| 을지로 | 을지면옥 (한식), 스시코우지 (일식), 을지다락 (바/주점), 을지OB맥주 (한식) |
-| 광화문 | 미진 (한식), 토속촌 (한식), 광화문국밥 (한식) |
-| 성수 | 레스토랑 오르되브르 (이탈리안), 카페 어니언 (카페), 다운타우너 (미국) |
-| 강남 | 도쿄등심 (일식), 스시사이토 (일식), 한신포차 (한식) |
-| 홍대 | 피자알볼로 (이탈리안), 르뱅앤블레 (프렌치), 옥동식 (한식) |
-| 이태원 | 포잉 (기타), 레바논익스프레스 (지중해), 그리디키친 (미국) |
-
-> 시드 데이터는 실제 DB restaurants 테이블에 존재하는 식당이어야 함. 온보딩 빌드 시 시드 마이그레이션 필요.
-
-**검색 전용 시드** (지역 리스트에 없는 추가 결과):
-`백종원의 역전우동 (일식)`, `스시효 (일식)`
-
-### 4-5. 인터랙션 규칙
-
-| 항목 | 규칙 |
-|------|------|
-| 등록 | 탭 → 버튼 텍스트 "등록" → "완료", `.registered` 클래스 추가 |
-| 중복 방지 | 전역 `Set<string>` (식당 이름 기준). 이미 등록된 식당은 `pointer-events:none` |
-| 지역 전환 | 드롭다운 변경 → 리스트 리렌더. 등록 완료 상태는 전역 Set으로 유지 |
-| 검색 등록 | 검색 결과 행의 등록 버튼도 동일한 전역 Set에 추가 |
-| 0개 등록 | fab-forward 진행 가능 (강제 아님) |
-| XP | 식당 등록 시 XP 팝업 없음. 이름만 등록 = 종합 XP 0 (XP_SYSTEM § 4-1) |
-
-### 4-6. 데이터 저장
-
-```sql
--- 식당 등록 (이름만, 평가 없음)
-INSERT INTO records (user_id, target_id, target_type, status)
-VALUES (:user_id, :restaurant_id, 'restaurant', 'checked');
--- axis_x, axis_y, satisfaction, scene, comment = 모두 NULL
--- record_quality_xp = 0
-```
-
-> `status = 'checked'` 사용 (DATA_MODEL.md 정의: `'checked' | 'rated' | 'draft'`). 본 기록 플로우(RECORD_FLOW)에서 사분면/상황태그 보충 시 `'rated'`로 변경.
-
-### 4-7. 하단 고정 안내
-
-```
-지금은 등록만 하고,
-나중에 식당평가 기록을 완성해 주세요.
-```
-
----
-
-## 5. Step 2/3: 버블 생성 (screen-bubble)
-
-```
-┌──────────────────────────────┐
-│  ┃━━━━┃━━━━┃────┃            │  ← Step 1 done(0.45), Step 2 active
-├──────────────────────────────┤
-│  내가 인정하는 미식가들끼리     │
-│  숨겨진 맛집을 공유해요.       │
-│  가족, 친구, 동료 —            │
-│  나만의 버블을 만들어보세요.    │
-├──────────────────────────────┤
-│ ┌─ bg-card ─────────────────┐│
-│ │                            ││
-│ │ ┌────────────────────────┐ ││
-│ │ │ [🏠] 가족         [추가] │ ││  ← bubble-template 카드
-│ │ │      우리 가족만의 맛집   │ ││
-│ │ └────────────────────────┘ ││
-│ │ ┌────────────────────────┐ ││
-│ │ │ [👥] 친구         [추가] │ ││
-│ │ │      친구들과 찐맛집 공유 │ ││
-│ │ └────────────────────────┘ ││
-│ │ ┌────────────────────────┐ ││
-│ │ │ [💼] 직장동료     [추가] │ ││
-│ │ │      점심 맛집 같이 모으기│ ││
-│ │ └────────────────────────┘ ││
-│ │                            ││
-│ │        초대하기 →           ││  ← accent-social 텍스트 버튼
-│ │                            ││
-│ │  세부 사항은 나중에          ││  ← sticky 하단 안내
-│ │  언제든 변경할 수 있어요.    ││
+│ ┌ 2개 등록 완료          →  ┐ │  ← 고정 CTA 버튼
 │ └────────────────────────────┘│
 │ (◁)                     (▷)  │
 └──────────────────────────────┘
 ```
 
-### 5-1. 버블 템플릿 카드 (bubble-template)
+### 4-1. 컴포넌트
+
+`RestaurantRegisterStep` (Props):
+
+| Prop | 타입 | 설명 |
+|------|------|------|
+| `area` | `OnboardingArea` | 현재 선택된 지역 |
+| `onAreaChange` | `(area) => void` | 지역 변경 |
+| `searchQuery` | `string` | 검색 입력값 |
+| `onSearchChange` | `(query) => void` | 검색 변경 |
+| `restaurants` | `OnboardingSeedRestaurant[]` | 표시할 식당 목록 |
+| `registeredIds` | `Set<string>` | 등록된 식당 ID 집합 |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `onRegister` | `(id) => void` | 식당 등록 |
+| `onUnregister` | `(id) => void` | 식당 등록 해제 |
+| `onNext` | `() => void` | 다음 스텝 |
+
+### 4-2. 지역 필 선택 (AreaSelect)
+
+**드롭다운이 아닌 가로 필(pill) 배열** 방식으로 구현.
 
 | 항목 | 스타일 |
 |------|--------|
-| 카드 | `background:var(--bg-card)`, `border-radius:16px`, `border:2px solid var(--border)`, `padding:16px`, `cursor:pointer` |
-| 레이아웃 | `display:flex`, `align-items:center`, `gap:14px` |
-| 카드 목록 간격 | `gap:10px`, `margin-bottom:16px` |
-| `:active` | `transform:scale(0.98)` |
-| `transition` | `all 0.2s` |
+| 컨테이너 | `display:flex`, `flex-wrap:wrap`, `gap:8px` |
+| 각 필 | `rounded-full`, `padding:8px 16px`, `font-size:13px`, `font-weight:600`, `transition-colors` |
+| **선택됨** | `background:var(--accent-food)`, `color:#FFFFFF`, `border:none` |
+| **미선택** | `background:var(--bg-card)`, `color:var(--text-sub)`, `border:1px solid var(--border)` |
 
-**아이콘 영역 (bt-icon)**:
+**지역 목록** (6개):
+`을지로`, `광화문`, `성수`, `강남`, `홍대`, `이태원`
+
+- 기본 선택: `ONBOARDING_AREAS[0]` = `을지로`
+- 지역 변경 → 해당 지역 맛집 리스트로 교체
+- 등록 완료 상태는 전역 `Set<string>`으로 지역 전환 후에도 유지
+
+### 4-3. 검색 인풋 (OnboardingSearch)
 
 | 항목 | 스타일 |
 |------|--------|
-| 크기 | `48×48px`, `border-radius:14px`, `flex-shrink:0` |
-| 배경 | `background:var(--bg-page)` |
-| 아이콘 | lucide, `22×22px`, 색상은 템플릿별 상이 |
+| 컨테이너 | `.card` 클래스, `display:flex`, `align-items:center`, `gap:8px`, `rounded-xl`, `padding:10px 12px` |
+| 아이콘 | lucide `Search` (`16×16px`), `color:var(--text-hint)` |
+| 인풋 | `flex:1`, `bg-transparent`, `font-size:14px`, `color:var(--text)`, `outline:none` |
+| placeholder | "식당 검색", `color:var(--text-hint)` |
+| 지우기 | lucide `X` (`14×14px`), `color:var(--text-hint)` — 텍스트 있을 때만 표시 |
 
-**텍스트 영역 (bt-info)**:
+> 검색 결과 드롭다운 없음. 인라인 인풋만 제공.
+> 현재 컨테이너에서 `searchQuery`를 관리하지만 시드 데이터 필터링은 미구현 (하드코딩 데이터 사용).
+> `use-onboarding-restaurants` 훅에서는 2글자 이상 입력 시 `onboardingRepo.searchSeedRestaurants()` 호출하도록 준비되어 있음.
+
+### 4-4. 식당 리스트 (카드 형태)
+
+| 항목 | 스타일 |
+|------|--------|
+| 컨테이너 | `flex-col`, `gap:8px` |
+| 카드 | `display:flex`, `align-items:center`, `gap:12px`, `rounded-xl`, `padding:12px`, `active:scale-[0.98]`, `transition-colors` |
+| **미등록** 카드 | `background:var(--bg-card)`, `border:1px solid var(--border)` |
+| **등록됨** 카드 | `background:var(--accent-food-light)`, `border:1px solid var(--accent-food)` |
+
+**사진/아이콘 영역**:
+
+| 항목 | 스타일 |
+|------|--------|
+| 크기 | `48×48px`, `rounded-lg`, `flex-shrink:0` |
+| 배경 | `background:var(--bg-elevated)` |
+| 사진 있음 | `<Image>`, `object-cover`, `rounded-lg` |
+| 사진 없음 | lucide `UtensilsCrossed` (`20×20px`), `color:var(--text-hint)` |
+
+**텍스트 영역**:
+
+| 항목 | 스타일 |
+|------|--------|
+| 식당 이름 | `font-size:14px`, `font-weight:600`, `color:var(--text)` |
+| 장르 · 지역 | `font-size:12px`, `color:var(--text-hint)`, `margin-top:2px` |
+
+**토글 버튼 (우측)**:
+
+| 상태 | 스타일 |
+|------|--------|
+| 미등록 | `28×28px` 원형, `background:var(--bg-elevated)`, `border:1px solid var(--border)`, lucide `Plus` (`14px`, `color:var(--text-hint)`) |
+| 등록됨 | `28×28px` 원형, `background:var(--accent-food)`, `border:none`, lucide `Check` (`14px`, `color:#FFFFFF`) |
+
+- 클릭 → 토글 (등록/등록 해제)
+- 등록 해제 가능 (전역 Set에서 삭제)
+
+**로딩 상태**: 5개 스켈레톤 (`h-16`, `animate-pulse`, `rounded-xl`, `bg:var(--bg-card)`)
+
+**빈 상태**: "검색 결과가 없습니다" 또는 "이 지역의 식당이 없습니다" (`13px`, `color:var(--text-hint)`)
+
+### 4-5. 시드 데이터
+
+현재 컨테이너에 **인라인 하드코딩**된 시드 데이터 사용 (DB 미연동):
+
+| 지역 | 식당 목록 |
+|------|----------|
+| 을지로 | 을지면옥 (한식), 스시코우지 (일식), 을지다락 (카페), 을지OB맥주 (바/주점) |
+| 광화문 | 토속촌삼계탕 (한식), 경복궁 쌈밥집 (한식) |
+| 성수 | 성수동 카페거리 (카페), 뚝섬 숯불갈비 (한식) |
+| 강남 | 봉피양 (한식), 스시 쵸우 (일식) |
+| 홍대 | 연남토마 (이탈리안) |
+| 이태원 | 하동관 (한식) |
+
+> `src/shared/constants/onboarding-seeds.ts`에도 별도의 시드 데이터(`SEED_RESTAURANTS`)가 정의되어 있으나,
+> 현재 컨테이너에서는 사용하지 않음. 향후 통합 예정.
+>
+> constants 시드 데이터 (지역별 3개씩):
+> 을지로: 을지로골뱅이, 을지다락, 양미옥 / 광화문: 토속촌, 광화문미진, 정식당
+> 성수: 도토리, 센터커피, 떡볶이공장 / 강남: 본초밥, 봉피양, 리베
+> 홍대: 키친크래프트, 제순식당, 메이사스 / 이태원: 라일락, 한남동 도피오, 플랜트
+
+### 4-6. 인터랙션 규칙
+
+| 항목 | 규칙 |
+|------|------|
+| 등록 | 카드 탭 → 배경색 + 보더 변경, Plus → Check 아이콘 변경 |
+| 등록 해제 | 등록된 카드 재탭 → 원래 상태로 복원 (토글) |
+| 중복 방지 | 전역 `Set<string>` (식당 ID 기준) |
+| 지역 전환 | 필 변경 → 리스트 교체. 등록 상태는 Set으로 유지 |
+| 0개 등록 | CTA 버튼 "건너뛰기"로 진행 가능 |
+| N개 등록 | CTA 버튼 "N개 등록 완료"로 표시 |
+| XP | 식당 등록 시 XP 없음 (팝업 없음) |
+
+### 4-7. 하단 고정 CTA
+
+| 상태 | 버튼 텍스트 |
+|------|-----------|
+| 0개 등록 | "건너뛰기" + `→` 아이콘 |
+| N개 등록 | "N개 등록 완료" + `→` 아이콘 |
+
+- `.btn-primary` 스타일, `width:100%`, `rounded-xl`, `padding:14px 0`
+- lucide `ArrowRight` (`16px`) 아이콘 포함
+
+### 4-8. 데이터 저장
+
+현재 컨테이너는 **로컬 상태만 관리** (DB 저장 미연동).
+`registeredIds` Set에 추가/삭제만 하고 서버 호출 없음.
+
+`use-onboarding-restaurants` 훅과 `SupabaseOnboardingRepository`에 DB 저장 로직이 준비되어 있음:
+
+```sql
+-- 식당 등록 (lists 테이블에 upsert, Supabase .upsert() 사용)
+INSERT INTO lists (user_id, target_id, target_type, status, source)
+VALUES (:user_id, :restaurant_id, 'restaurant', 'visited', 'onboarding')
+ON CONFLICT (user_id, target_id, target_type)
+DO UPDATE SET status = 'visited', source = 'onboarding';
+```
+
+> `lists` 테이블 사용 (`records` 테이블 아님). `status='visited'`, `source='onboarding'`.
+
+---
+
+## 5. Step 2/3: 버블 생성 (step='bubble')
+
+### StepLayout 멘트
+
+| 항목 | 텍스트 |
+|------|--------|
+| 타이틀 | "내가 인정하는 미식가들끼리 숨겨진 맛집을 공유해요." |
+| 서브텍스트 | "가족, 친구, 동료 — 나만의 버블을 만들어보세요." |
+| hint | "세부 사항은 나중에 언제든 변경할 수 있어요." |
+
+### Step 내부 레이아웃
+
+```
+┌──────────────────────────────┐
+│  ┃━━━━┃━━━━┃────┃            │  ← Step 1 done(0.45), Step 2 active
+├──────────────────────────────┤
+│  내가 인정하는 미식가들끼리     │  ← StepLayout 타이틀
+│  숨겨진 맛집을 공유해요.       │
+│  가족, 친구, 동료 — 나만의     │  ← StepLayout 서브텍스트
+│  버블을 만들어보세요.          │
+├──────────────────────────────┤
+│ ┌─ bg-card ─────────────────┐│
+│ │                            ││
+│ │  나만의 버블을 만들어보세요  ││  ← Step 헤더 (20px, bold)
+│ │  가족, 친구, 직장 동료와...  ││  ← 14px, text-sub
+│ │                            ││
+│ │ ┌────────────────────────┐ ││
+│ │ │ [🏠] 우리 가족 맛집      │ ││  ← bubble-template 카드
+│ │ │      가족끼리 공유하는... │ ││
+│ │ │      👥 초대 전용        │ ││
+│ │ └────────────────────────┘ ││
+│ │ ┌────────────────────────┐ ││
+│ │ │ [🍺] 친구들 맛집        │ ││
+│ │ │      친구들과 발견한...   │ ││
+│ │ │      👥 초대 전용        │ ││
+│ │ └────────────────────────┘ ││
+│ │ ┌────────────────────────┐ ││
+│ │ │ [💼] 직장 동료 맛집      │ ││
+│ │ │      회사 근처 점심...    │ ││
+│ │ │      👥 초대 전용        │ ││
+│ │ └────────────────────────┘ ││
+│ │                            ││
+│ │  세부 사항은 나중에          ││  ← sticky 하단 안내
+│ │  언제든 변경할 수 있어요.    ││
+│ └────────────────────────────┘│
+│ ┌ 다음 / 건너뛰기        →  ┐ │  ← 고정 CTA 버튼
+│ └────────────────────────────┘│
+│ (◁)                     (▷)  │
+└──────────────────────────────┘
+```
+
+### 5-1. 컴포넌트
+
+`BubbleCreateStep` (Props):
+
+| Prop | 타입 | 설명 |
+|------|------|------|
+| `templates` | `OnboardingBubbleTemplate[]` | 템플릿 목록 |
+| `createdBubbleIds` | `string[]` | 생성된 버블 이름 목록 |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `onCreateBubble` | `(template) => void` | 생성 콜백 |
+| `onNext` | `() => void` | 다음 스텝 |
+
+### 5-2. 버블 템플릿 카드
+
+| 항목 | 스타일 |
+|------|--------|
+| 카드 | `rounded-2xl`, `padding:16px`, `transition-all`, `active:scale-[0.98]` |
+| 레이아웃 | `display:flex`, `align-items:center`, `gap:16px` |
+| 카드 목록 간격 | `gap:12px` |
+| **미생성** | `background:var(--bg-card)`, `border:1.5px solid var(--border)` |
+| **생성됨** | `background:var(--accent-social-light)`, `border:1.5px solid var(--accent-social)`, `opacity:0.6`, `disabled` |
+
+**아이콘 영역**:
+
+| 항목 | 스타일 |
+|------|--------|
+| 크기 | `56×56px`, `rounded-2xl`, `flex-shrink:0` |
+| 배경 | 각 템플릿의 `iconBgColor` |
+| 아이콘 | 텍스트/이모지, `font-size:24px` (lucide 아이콘 아님) |
+
+**텍스트 영역**:
 
 | 항목 | 스타일 |
 |------|--------|
 | 이름 | `font-size:15px`, `font-weight:700`, `color:var(--text)` |
 | 설명 | `font-size:12px`, `color:var(--text-sub)`, `margin-top:2px` |
+| 정책 뱃지 | lucide `Users` (`11px`, `color:var(--text-hint)`) + "초대 전용" (`10px`, `color:var(--text-hint)`), `margin-top:6px` |
 
-**추가 버튼 (ob-register-btn)**: 식당 등록 버튼과 동일 스타일 (Section 4-4).
+**생성 완료 표시**:
+- 우측에 체크 아이콘: `28×28px` 원형, `background:var(--accent-social)`, lucide `Check` (`14px`, `color:#FFFFFF`)
 
-### 5-2. 템플릿 데이터
+### 5-3. 템플릿 데이터
 
-| 이름 | lucide 아이콘 | 아이콘 색상 | 설명 |
-|------|-------------|-----------|------|
-| 가족 | `home` | `var(--accent-food)` (#C17B5E) | 우리 가족만의 맛집 지도 |
-| 친구 | `users` | `var(--accent-social)` (#7A9BAE) | 친구들과 찐맛집 공유 |
-| 직장동료 | `briefcase` | `var(--caution)` (#C9A96E) | 점심 맛집 같이 모으기 |
+`src/shared/constants/onboarding-seeds.ts`의 `BUBBLE_TEMPLATES`:
 
-### 5-3. 초대하기 버튼
+| 이름 | 아이콘 (텍스트) | 아이콘 배경색 | 설명 |
+|------|---------------|-------------|------|
+| 우리 가족 맛집 | `home` | `#FF6038` (주황) | 가족끼리 공유하는 맛집 리스트 |
+| 친구들 맛집 | `beer` | `#7A9BAE` (블루) | 친구들과 발견한 맛집 모음 |
+| 직장 동료 맛집 | `briefcase` | `#8B7396` (퍼플) | 회사 근처 점심 맛집 공유 |
 
-| 항목 | 스타일 |
-|------|--------|
-| 컨테이너 | `text-align:center`, `margin-bottom:16px` |
-| 텍스트 | "초대하기 →" |
-| 스타일 | `background:none`, `border:none`, `font-size:14px`, `font-weight:600`, `color:var(--accent-social)`, `padding:8px 16px` |
-| press | `opacity:0.5` (mousedown), `opacity:1` (mouseup) |
-| 동작 | 클립보드에 초대 링크 복사 → alert "초대 링크가 복사되었습니다" |
-
-> 실제 구현 시: `bubbles.invite_code` 생성 → 딥링크 URL 조립 → 클립보드 복사 → 토스트 표시
+공통: `joinPolicy: 'invite_only'`, `focusType: 'all'`
 
 ### 5-4. 인터랙션 규칙
 
 | 항목 | 규칙 |
 |------|------|
-| 추가 | 탭 → "완료"로 변경, `.registered` 클래스 추가, "+5 XP" 팝업 표시 (첫 버블 생성 보너스 § 4-4). 2개째부터는 실제 XP 0이지만 팝업 동일 표시 |
-| 중복 | 전역 `Set<string>` (버블 이름 기준), 이미 생성된 템플릿은 `pointer-events:none` |
-| 0개 생성 | fab-forward 진행 가능 |
-| 커스텀 이름 | 온보딩에서는 불가. 홈 진입 후 버블 설정에서 이름/설명 변경 |
-| `.selected` 상태 | CSS에 정의되어 있으나 목업 JS에서 미사용. 향후 선택 피드백으로 활용 가능 |
+| 생성 | 카드 탭 → 배경색/보더 변경 (accent-social), 우측 Check 아이콘 표시, disabled 처리 |
+| 순차 생성 | `idx < createdBubbleIds.length`로 판별 (인덱스 순서대로) |
+| 중복 | 이미 생성된 템플릿은 `disabled`, `opacity:0.6` |
+| 0개 생성 | CTA "건너뛰기"로 진행 가능 |
+| XP 팝업 | **없음** (현재 구현에 XP 팝업 미포함) |
+| 초대하기 | **없음** (현재 구현에 초대 기능 미포함) |
 
-**XP 팝업 애니메이션** (버블 추가 시):
-
-| 항목 | 스타일 |
-|------|--------|
-| 요소 | `position:fixed`, `z-index:999`, `pointer-events:none` |
-| 텍스트 | "+5 XP", `font-size:13px`, `font-weight:800`, `color:var(--brand)` (#FF6038) |
-| 위치 | 버튼의 `getBoundingClientRect()` 기준 상단 |
-| 애니메이션 | `0→40%`: `translateY(0→-18px)`, `scale(1→1.2)`, `opacity:1` → `40→100%`: `translateY(-40px)`, `scale(0.7)`, `opacity:0` |
-| duration | `0.9s ease`, 종료 후 DOM 제거 |
+> `XpPopup` 컴포넌트가 `src/presentation/components/onboarding/xp-popup.tsx`에 정의되어 있지만,
+> 현재 온보딩 플로우에서 사용되지 않음.
 
 ### 5-5. 데이터 저장
 
-```sql
--- 버블 생성 (온보딩 템플릿 기반, 디폴트 설정)
-INSERT INTO bubbles (
-  id, name, description, icon, icon_bg_color,
-  focus_type,
-  visibility, join_policy, content_visibility,
-  created_by, invite_code, created_at
-) VALUES (
-  gen_random_uuid(),
-  :template_name,          -- '가족' | '친구' | '직장동료'
-  :template_desc,          -- '우리 가족만의 맛집 지도' | '친구들과 찐맛집 공유' | '점심 맛집 같이 모으기'
-  :template_icon,          -- 'home' | 'users' | 'briefcase'
-  NULL,                    -- icon_bg_color: 온보딩에서는 미설정, 프론트에서 디폴트 렌더
-  'all',                   -- focus_type: 식당+와인 제한 없음
-  'private',               -- 기본: 비공개
-  'invite_only',           -- 기본: 초대 전용
-  'rating_and_comment',    -- 기본: 양방향
-  :user_id,
-  :generated_invite_code,  -- nanoid(12) 등
-  NOW()
-);
+현재 컨테이너는 **로컬 상태만 관리**:
+- `onCreateBubble` 콜백에서 `createdBubbleIds`에 템플릿 이름(`t.name`)만 추가
+- DB 저장 미연동 (실제 bubbles 테이블 insert 없음)
 
--- 생성자를 owner로 등록
-INSERT INTO bubble_members (bubble_id, user_id, role, status, joined_at)
-VALUES (:bubble_id, :user_id, 'owner', 'active', NOW());
-```
+`use-onboarding-bubbles` 훅에 DB 연동 로직이 준비되어 있음:
+- `bubbleRepo.create()` 호출하여 실제 버블 생성
+- 생성 시 `name`, `description`, `icon`, `iconBgColor`, `joinPolicy`, `focusType`, `createdBy` 전달
 
-> `bubbles.created_by` 사용 (DATA_MODEL 기준). `owner_id` 필드는 존재하지 않음.
-> `bubbles.description`에 템플릿 설명 문구 저장. 사용자가 나중에 버블 설정에서 변경 가능.
-> 온보딩 버블은 `visibility='private'`, `join_policy='invite_only'`로 생성.
+### 5-6. 하단 고정 CTA
 
-### 5-6. 하단 고정 안내
-
-```
-세부 사항은 나중에 언제든 변경할 수 있어요.
-```
+| 상태 | 버튼 텍스트 |
+|------|-----------|
+| 0개 생성 | "건너뛰기" + `→` 아이콘 |
+| 1개+ 생성 | "다음" + `→` 아이콘 |
 
 ---
 
-## 6. Step 3/3: 버블 탐색 (screen-explore)
+## 6. Step 3/3: 버블 탐색 (step='explore')
+
+### StepLayout 멘트
+
+| 항목 | 텍스트 |
+|------|--------|
+| 타이틀 | "경험을 쌓으면, 맛잘알들의 세계가 열려요." |
+| 서브텍스트 | "레벨이 오를수록 더 많은 버블에 들어가 모르는 맛잘알들과도 맛집을 나눌 수 있어요." |
+| hint | "내가 만든 버블은 가입 조건을 직접 설정해서, 원하는 사람들과만 맛집을 공유할 수 있어요." |
+
+### Step 내부 레이아웃
 
 ```
 ┌──────────────────────────────┐
 │  ┃━━━━┃━━━━┃━━━━┃            │  ← Step 1,2 done, Step 3 active
 ├──────────────────────────────┤
-│  경험을 쌓으면,               │
+│  경험을 쌓으면,               │  ← StepLayout 타이틀
 │  맛잘알들의 세계가 열려요.     │
-│  레벨이 오를수록 더 많은 버블에 │
+│  레벨이 오를수록 더 많은 버블에 │  ← StepLayout 서브텍스트
 │  들어가 모르는 맛잘알들과도     │
 │  맛집을 나눌 수 있어요.        │
 ├──────────────────────────────┤
 │ ┌─ bg-card ─────────────────┐│
 │ │                            ││
+│ │  인기 버블을 둘러보세요      ││  ← Step 헤더 (20px, bold)
+│ │  다양한 커뮤니티에서 맛집... ││  ← 14px, text-sub
+│ │                            ││
 │ │ ┌ explore-card ───────────┐││
-│ │ │ [🏢] 삼성전자 DX...      │││  ← 탐색 카드
-│ │ │      멤버 23명 · 87개    │││     탭 → 바텀시트
-│ │ │                 Lv.2 이상│││
+│ │ │ [🗺] 서울 맛집 탐험대     │││  ← 탐색 카드
+│ │ │      서울 전역의 숨은...  │││
+│ │ │      👥 128명            │││
 │ │ └─────────────────────────┘││
 │ │ ┌ explore-card ───────────┐││
-│ │ │ [💪] 클린식단 헬스맵      │││
-│ │ │      멤버 14명 · 53개    │││
-│ │ │                 Lv.3 이상│││
+│ │ │ [🍷] 와인 입문자 모임     │││
+│ │ │      와인을 처음 시작...  │││
+│ │ │      👥 85명             │││
 │ │ └─────────────────────────┘││
 │ │ ┌ explore-card ───────────┐││
-│ │ │ [🍻] 회식은 내가 잡는다   │││
-│ │ │      멤버 19명 · 112개   │││
-│ │ │                 Lv.4 이상│││
+│ │ │ [✨] 파인다이닝 클럽      │││  ← opacity:0.5 (Lv.3 잠금)
+│ │ │      특별한 날을 위한...  │││
+│ │ │      👥 42명  Lv.3 이상  │││
 │ │ └─────────────────────────┘││
 │ │ ┌ explore-card ───────────┐││
-│ │ │ [🌿] 서울 비건 맛집지도   │││
-│ │ │      멤버 27명 · 94개    │││
-│ │ │                 Lv.3 이상│││
+│ │ │ [💎] 동네 보석 찾기       │││  ← 잠금 해제 (Lv.1 = userLevel)
+│ │ │      내 동네 숨은 맛집... │││
+│ │ │      👥 67명  Lv.1 이상  │││
 │ │ └─────────────────────────┘││
 │ │                            ││
 │ │  내가 만든 버블은 가입 조건을 ││  ← sticky 하단 안내
 │ │  직접 설정해서, 원하는 사람들 ││
 │ │  과만 맛집을 공유할 수 있어요.││
 │ └────────────────────────────┘│
+│ ┌ 시작하기                →  ┐ │  ← 고정 CTA 버튼
+│ └────────────────────────────┘│
 │ (◁)                     (▷)  │  ← ▷ = 홈 진입
 └──────────────────────────────┘
 ```
 
-### 6-1. 탐색 카드 (explore-card)
+### 6-1. 컴포넌트
+
+`BubbleExploreStep` (Props):
+
+| Prop | 타입 | 설명 |
+|------|------|------|
+| `seedBubbles` | `OnboardingSeedBubble[]` | 공개 버블 목록 |
+| `userLevel` | `number` | 사용자 레벨 (현재 하드코딩: 1) |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `onBubblePress` | `(bubble) => void` | 카드 클릭 콜백 |
+| `onComplete` | `() => void` | 완료 콜백 |
+
+### 6-2. 탐색 카드 (explore-card)
 
 | 항목 | 스타일 |
 |------|--------|
-| 카드 | `background:var(--bg-card)`, `border-radius:16px`, `border:1px solid var(--border)`, `padding:16px`, `cursor:pointer` |
-| 레이아웃 | `display:flex`, `align-items:center`, `gap:14px` |
-| 카드 목록 | `flex-direction:column`, `gap:10px` |
-| `transition` | `all 0.15s` |
+| 카드 | `rounded-2xl`, `padding:16px`, `background:var(--bg-card)`, `border:1px solid var(--border)`, `active:scale-[0.98]`, `transition-colors` |
+| 레이아웃 | `display:flex`, `align-items:center`, `gap:12px` |
+| 카드 목록 | `flex-col`, `gap:12px` |
+| **잠금** (minLevel > userLevel) | `opacity:0.5` |
 
-**아바타 (ec-avatar)**:
-
-| 항목 | 스타일 |
-|------|--------|
-| 크기 | `48×48px`, `border-radius:14px`, `flex-shrink:0` |
-| 배경 | `background:var(--bg-page)` |
-| 아이콘 | lucide, `22×22px`, `color:var(--text-sub)` |
-
-**정보 (ec-info)**:
+**아이콘 영역**:
 
 | 항목 | 스타일 |
 |------|--------|
-| 이름 | `font-size:15px`, `font-weight:700`, `color:var(--text)` |
-| 메타 | `font-size:12px`, `color:var(--text-sub)`, `margin-top:2px`, "멤버 N명 · 맛집 N개 공유중" |
+| 크기 | `48×48px`, `rounded-xl`, `flex-shrink:0` |
+| 배경 | 각 버블의 `iconBgColor` |
+| 아이콘 | 텍스트/이모지, `font-size:20px` |
 
-**레벨 표시**:
-- `font-size:11px`, `font-weight:600`, `color:var(--text-hint)`, `white-space:nowrap`
-- 우측 정렬 (flex item)
-- 형식: "Lv.N 이상"
-
-### 6-2. 시드 버블 데이터
-
-| 이름 | lucide 아이콘 | 멤버 | 최대 | 맛집 | 최소레벨 | 설명 | 공개여부 | 유형 | 시작일 | 활성도 | 기록주기 |
-|------|-------------|------|------|------|---------|------|---------|------|--------|--------|---------|
-| 삼성전자 DX사업부 맛집 | `building-2` | 23 | 40 | 87 | 2 | 수원·영통 점심 맛집 & 회식 장소 공유 | 멤버만 | 양방향 | 2025.08 | 매우 활발 | 1.5일마다 |
-| 클린식단 헬스맵 | `dumbbell` | 14 | 25 | 53 | 3 | 고단백 저지방 식단 맛집만 · 닭가슴살 말고 진짜 맛집 | 공개 | 양방향 | 2025.10 | 활발 | 2.4일마다 |
-| 회식은 내가 잡는다 | `beer` | 19 | 30 | 112 | 4 | 단체석·코스·2차까지 검증된 회식 맛집만 | 공개 | 양방향 | 2025.05 | 매우 활발 | 1.8일마다 |
-| 서울 비건 맛집지도 | `leaf` | 27 | 50 | 94 | 3 | 100% 비건 · 비건옵션 맛집 큐레이션 | 공개 | 양방향 | 2025.04 | 매우 활발 | 1.3일마다 |
-
-**DB 필드 매핑**:
-
-| 목업 표시 | DB 필드 | 값 |
-|----------|---------|-----|
-| "멤버만" | `bubbles.visibility` | `'private'` |
-| "공개" | `bubbles.visibility` | `'public'` |
-| "양방향" | `bubbles.content_visibility` | `'rating_and_comment'` |
-| "일방향" | `bubbles.content_visibility` | `'rating_only'` |
-| 멤버 수 | `bubbles.member_count` | 비정규화 캐시 (owner+admin+member) |
-| 맛집 수 ("N개 공유중") | `bubbles.record_count` | 비정규화 캐시 (총 기록 수). `unique_target_count`(고유 장소 수)와 구분 — 카드에는 record_count 표시 |
-| 최소 레벨 | `bubbles.min_level` | 가입 기준 |
-
-**가입 조건 매핑**:
-
-| 목업 표시 | DB 필드 매핑 |
-|----------|-------------|
-| "관리자 승인 필요" | `join_policy = 'manual_approve'` |
-| "즉시 가입 가능" | `join_policy = 'auto_approve'` (min 조건 충족 시) 또는 `'open'` |
-| "최소 기록 N개 이상" | `bubbles.min_records = N` |
-| "최소 Lv.N 이상" | `bubbles.min_level = N` |
-
-### 6-3. 바텀시트 상세 팝업
-
-카드 탭 시 올라오는 바텀시트. 가입하지 않고 미리보기만 가능.
-
-```
-┌──────────────────────────────┐
-│  ── 핸들 ──              [×] │
-│  [아이콘] 삼성전자 DX사업부 맛집│  ← popup-header
-│           수원·영통 점심 맛집  │     아이콘: 50×50px
-│           [멤버만] [양방향]    │     pill 태그
-│                              │
-│  ┌────────┐ ┌────────┐       │  ← popup-stats-grid (2×2)
-│  │시작일   │ │가입자   │       │
-│  │2025.08  │ │23명     │       │
-│  │         │ │17자리남음│       │
-│  └────────┘ └────────┘       │
-│  ┌────────┐ ┌────────┐       │
-│  │활성도   │ │공유 맛집│       │
-│  │매우 활발│ │87개     │       │
-│  │1.5일마다│ │         │       │
-│  └────────┘ └────────┘       │
-│                              │
-│  🛡️ 가입 조건                 │  ← popup-section-title
-│  ┌ popup-info-list ─────────┐│
-│  │ 🛡/⚡ 관리자 승인/즉시 가입 ││  ← shield-check or zap
-│  │ ✓ 최소 기록 N개 이상       ││  ← check-circle
-│  │ ✓ 최소 Lv.N 이상          ││
-│  │ 👥 현재 N/M명 (여유 K자리) ││  ← users icon
-│  └──────────────────────────┘│
-│                              │
-│  👁️ 가입 시 공개 범위          │
-│  ┌ popup-info-list ─────────┐│
-│  │ 🔓 내 기록이 멤버에게 공개  ││  선택한 기록만
-│  │ 🔓 프로필·레벨·뱃지        ││  항상 공개
-│  │ 🔒 사분면·점수 상세         ││  비공개
-│  └──────────────────────────┘│
-└──────────────────────────────┘
-```
-
-**오버레이 & 시트**:
+**정보 영역**:
 
 | 항목 | 스타일 |
 |------|--------|
-| 오버레이 | `position:absolute`, `top:0`, `left:0`, `right:0`, `bottom:0`, `background:rgba(0,0,0,0.45)`, `z-index:90`, `align-items:flex-end`, `border-radius:42px`, `overflow:hidden` |
-| 표시/숨김 | `display:none` ↔ `display:flex` (`.show` 클래스) |
-| 시트 | `width:100%`, `max-height:75%`, `background:var(--bg-elevated)`, `border-radius:20px 20px 0 0`, `overflow-y:auto` |
-| 애니메이션 | `slideUp 0.3s ease` (`translateY(100%)` → `translateY(0)`) |
-| 닫기 | 오버레이 탭 (시트 외부) 또는 X 버튼. 시트 내부 탭은 `stopPropagation` |
+| 이름 행 | `display:flex`, `align-items:center`, `gap:8px` |
+| 이름 | `font-size:14px`, `font-weight:700`, `color:var(--text)` |
+| 잠금 아이콘 | lucide `Lock` (`12px`, `color:var(--text-hint)`) — 잠긴 경우만 |
+| 설명 | `font-size:12px`, `color:var(--text-sub)`, `line-clamp-1`, `margin-top:2px` |
+| 메타 행 | `margin-top:4px`, `display:flex`, `align-items:center`, `gap:12px` |
+| 멤버 수 | lucide `Users` (`11px`) + "N명" (`10px`, `color:var(--text-hint)`) |
+| 레벨 | "Lv.N 이상" (`10px`, `color:var(--text-hint)`) — minLevel > 0인 경우만 |
 
-**핸들**: `36×4px`, `border-radius:2px`, `background:var(--border-bold)`, `margin:10px auto 6px`
+**로딩 상태**: 4개 스켈레톤 (`h-20`, `animate-pulse`, `rounded-xl`)
 
-**헤더 (popup-header)**:
+**빈 상태**: "아직 공개 버블이 없어요" (`13px`, `color:var(--text-hint)`)
+
+### 6-3. 시드 버블 데이터
+
+`src/shared/constants/onboarding-seeds.ts`의 `SEED_BUBBLES`:
+
+| 이름 | 아이콘 (텍스트) | 아이콘 배경 | 멤버 | 최소레벨 | 가입정책 | 설명 |
+|------|---------------|-----------|------|---------|---------|------|
+| 서울 맛집 탐험대 | `map` | `#FF6038` | 128 | 0 | `open` | 서울 전역의 숨은 맛집을 발굴하는 모임 |
+| 와인 입문자 모임 | `wine` | `#8B7396` | 85 | 0 | `open` | 와인을 처음 시작하는 사람들의 정보 공유 |
+| 파인다이닝 클럽 | `sparkles` | `#C9A96E` | 42 | 3 | `auto_approve` | 특별한 날을 위한 파인다이닝 리뷰 |
+| 동네 보석 찾기 | `gem` | `#7EAE8B` | 67 | 1 | `open` | 내 동네 숨은 맛집을 공유해요 |
+
+> 사용자 레벨이 1로 하드코딩되어 있으므로:
+> - 서울 맛집 탐험대 (Lv.0) → 잠금 해제
+> - 와인 입문자 모임 (Lv.0) → 잠금 해제
+> - 파인다이닝 클럽 (Lv.3) → 잠금 (opacity:0.5)
+> - 동네 보석 찾기 (Lv.1) → 잠금 해제
+
+### 6-4. 바텀시트 팝업
+
+`BubbleExplorePopup` 컴포넌트가 정의되어 있으나 **현재 온보딩 플로우에서 연결되지 않음**.
+컨테이너에서 `onBubblePress={() => {}}` (빈 함수)로 전달.
+
+**컴포넌트 스펙** (향후 연결 시):
 
 | 항목 | 스타일 |
 |------|--------|
-| 레이아웃 | `display:flex`, `align-items:flex-start`, `gap:12px`, `padding:8px 20px 12px` |
-| 아이콘 | `50×50px`, `border-radius:14px`, `background:var(--bg-page)`, lucide `24×24px`, `color:var(--text-sub)` |
-| 이름 | `font-size:17px`, `font-weight:700`, `color:var(--text)` |
-| 설명 | `font-size:12px`, `color:var(--text-sub)`, `margin-top:2px` |
-| 닫기 버튼 | `background:none`, `border:none`, `color:var(--text-hint)`, lucide `x` (`20×20px`) |
+| 오버레이 | `.bottom-sheet-overlay`, `z-index:50` |
+| 시트 | `.bottom-sheet`, `max-width:480px`, `padding-bottom:32px` |
+| 헤더 | "버블 상세" (`15px`, `bold`), lucide `X` (`20px`) 닫기 버튼 |
+| 아이콘 | `64×64px`, `rounded-2xl`, `font-size:28px`, 배경색 적용 |
+| 이름 | `18px`, `bold`, `margin-top:12px` |
+| 설명 | `13px`, `text-sub`, `text-align:center`, `line-height:1.6` |
+| 메타 | lucide `Users` + 멤버 수, lucide `Lock` + 레벨 요구 |
 
-**pill 태그**: `margin-top:6px`, `display:flex`, `gap:4px`
+**상태별 액션**:
 
-| 타입 | 배경 | 텍스트색 |
-|------|------|---------|
-| 공개 | `#E8F0EB` | `var(--positive)` |
-| 멤버만 | `var(--bg-page)` | `var(--text-hint)` |
-| 양방향 | `var(--accent-social-light)` | `var(--accent-social)` |
+| 상태 | UI |
+|------|-----|
+| 잠금 (레벨 부족) | "레벨이 부족합니다 (현재 Lv.N)" (`accent-wine` 색), "닫기" 버튼 |
+| 가입 가능 (open/auto_approve) | "가입하기" 버튼 (`accent-social` 배경) |
+| 승인 필요 | "승인 대기 필요" 버튼 (비활성) |
 
-- `font-size:10px`, `padding:2px 8px`, `border-radius:100px`, `font-weight:600`
-
-**통계 그리드 (popup-stats-grid)**:
-
-| 항목 | 스타일 |
-|------|--------|
-| 그리드 | `display:grid`, `grid-template-columns:1fr 1fr`, `gap:8px`, `padding:0 20px 16px` |
-| 카드 | `background:var(--bg)`, `border:1px solid var(--border)`, `border-radius:12px`, `padding:12px` |
-| 라벨 | `font-size:11px`, `color:var(--text-sub)`, `margin-bottom:4px`, lucide 아이콘 `12×12px` |
-| 값 (숫자) | `font-size:18px`, `font-weight:700`, `color:var(--text)` |
-| 값 (텍스트) | `font-size:15px` (`.popup-stat-value-sm`) |
-| 보조 텍스트 | `font-size:10px`, `color:var(--text-hint)`, `margin-top:2px` |
-
-| 위치 | 라벨 | lucide 아이콘 | 값 예시 | 보조 |
-|------|------|-------------|---------|------|
-| 좌상 | 시작일 | `calendar` | 2025.08 (sm) | — |
-| 우상 | 가입자 | `users` | 23명 | "17자리 남음" |
-| 좌하 | 활성도 | `activity` | 매우 활발 (sm) | "1.5일마다 기록" |
-| 우하 | 공유 맛집 | `utensils` | 87개 | — | → `bubbles.record_count` |
-
-**섹션 타이틀 (popup-section-title)**:
-- `font-size:13px`, `font-weight:600`, `color:var(--text)`, `padding:12px 20px 8px`, `gap:6px`
-- 아이콘: `14×14px`, `color:var(--text-sub)`
-- 가입 조건 아이콘: lucide `shield-check`
-- 공개 범위 아이콘: lucide `eye`
-
-**정보 행 (popup-info-row)**:
-- `display:flex`, `align-items:center`, `gap:8px`, `font-size:12px`, `color:var(--text)`
-- 아이콘: `14×14px`, `flex-shrink:0`
-- 우측 보조 텍스트: `font-size:10px`, `color:var(--text-hint)`, `margin-left:auto`
-
-**가입 조건 아이콘/색상**:
-
-| 조건 | lucide 아이콘 | 색상 |
-|------|-------------|------|
-| 관리자 승인 필요 | `shield-check` | `var(--positive)` |
-| 즉시 가입 가능 | `zap` | `var(--caution)` |
-| 최소 기록/레벨 충족 | `check-circle` | `var(--positive)` |
-| 현재 인원 | `users` | `var(--text-hint)`, 텍스트 `color:var(--text-sub)` |
-
-**공개 범위 (고정, 모든 버블 동일)**:
-
-| 항목 | lucide 아이콘 | 색상 | 보조 |
-|------|-------------|------|------|
-| 내 기록이 멤버에게 공개 | `unlock` | `var(--accent-social)` | "선택한 기록만" |
-| 프로필 · 레벨 · 뱃지 | `unlock` | `var(--accent-social)` | "항상 공개" |
-| 사분면 · 점수 상세 | `lock` | `var(--text-hint)` | "비공개" |
-
-### 6-4. 인터랙션 규칙
+### 6-5. 인터랙션 규칙
 
 | 항목 | 규칙 |
 |------|------|
-| 카드 탭 | 바텀시트 열림 → `lucide.createIcons()` 호출 (동적 렌더 아이콘 초기화) |
-| 바텀시트 닫기 | 오버레이 탭 (시트 외부) 또는 X 버튼 |
-| 가입 액션 | 온보딩에서는 **미리보기만** (가입 불가 — 신규 유저는 레벨 부족). 가입 버튼 없음 |
-| fab-forward | → 홈 진입 (`01_home.html`로 네비게이션) |
+| 카드 탭 | 현재 동작 없음 (빈 함수) |
+| 바텀시트 | 미연결 |
+| CTA "시작하기" | `onComplete` → `awardBonus(userId, 'onboard')` → `router.push('/')` |
+| fab-forward | `goForward` → `router.push('/')` (**awardBonus 미호출** — CTA와 다름) |
+| 가입 액션 | 온보딩에서는 가입 불가 |
 
-### 6-5. 하단 고정 안내
+> ⚠️ CTA 버튼과 fab-forward의 완료 동작이 다름:
+> CTA는 `onComplete` 핸들러를 사용하여 XP 보너스를 지급한 뒤 홈으로 이동하지만,
+> fab-forward는 `goForward`를 사용하여 XP 보너스 없이 바로 홈으로 이동함.
 
-```
-내가 만든 버블은 가입 조건을 직접 설정해서,
-원하는 사람들과만 맛집을 공유할 수 있어요.
-```
+### 6-6. 하단 고정 CTA
 
-> 안내 텍스트 `line-height:1.7` (다른 스텝의 `1.5`와 다름 — 3줄이므로 더 넓게)
+- 항상 "시작하기" + `→` 아이콘 표시
+- 탭 → `onComplete` → `awardBonus(userId, 'onboard')` → `router.push('/')`
 
 ---
 
 ## 7. 온보딩 데이터 저장 요약
 
-### 7-1. 식당 등록 (Step 1)
+### 7-1. 현재 구현 상태
+
+컨테이너는 **로컬 상태만 관리**하며, 아래 두 가지만 서버와 통신:
+
+| 동작 | 구현 |
+|------|------|
+| 온보딩 완료 XP | `useBonusXp().awardBonus(userId, 'onboard')` — Step 3 완료 시 호출 |
+| 홈 리다이렉트 | `router.push('/')` |
+
+식당 등록, 버블 생성은 현재 DB에 저장되지 않음 (UI 상태만).
+
+### 7-2. 준비된 인프라 (향후 DB 연동용)
+
+**도메인 레이어**:
+- `OnboardingRepository` 인터페이스 (`domain/repositories/onboarding-repository.ts`)
+- `onboarding-xp.ts` 서비스 (XP 계산 함수)
+
+**인프라 레이어**:
+- `SupabaseOnboardingRepository` (`infrastructure/repositories/supabase-onboarding-repository.ts`)
+
+**식당 등록** (준비됨):
 
 ```sql
-INSERT INTO records (user_id, target_id, target_type, status)
-VALUES (:user_id, :restaurant_id, 'restaurant', 'checked');
--- satisfaction, axis_x, axis_y, scene, comment = NULL
--- record_quality_xp = 0
--- 본 기록 플로우에서 사분면 보충 시 status → 'rated', XP 적립 시작
+-- lists 테이블에 upsert (Supabase .upsert() 사용)
+INSERT INTO lists (user_id, target_id, target_type, status, source)
+VALUES (:user_id, :restaurant_id, 'restaurant', 'visited', 'onboarding')
+ON CONFLICT (user_id, target_id, target_type)
+DO UPDATE SET status = 'visited', source = 'onboarding';
 ```
 
-### 7-2. 버블 생성 (Step 2)
+**식당 등록 해제** (준비됨):
 
 ```sql
-INSERT INTO bubbles (id, name, description, icon, focus_type, visibility, join_policy, content_visibility, created_by, invite_code)
-VALUES (gen_random_uuid(), :name, :desc, :icon, 'all', 'private', 'invite_only', 'rating_and_comment', :user_id, :invite_code);
-
-INSERT INTO bubble_members (bubble_id, user_id, role, status)
-VALUES (:bubble_id, :user_id, 'owner', 'active');
+DELETE FROM lists
+WHERE user_id = :user_id AND target_id = :restaurant_id AND target_type = 'restaurant';
 ```
+
+**버블 생성** (준비됨):
+- `bubbleRepo.create()` 호출 (name, description, icon, iconBgColor, joinPolicy, focusType, createdBy)
+
+**시드 버블 조회** (준비됨):
+
+```sql
+SELECT id, name, description, icon, icon_bg_color, member_count, min_level, join_policy
+FROM bubbles
+WHERE visibility = 'public' AND is_searchable = true
+ORDER BY member_count DESC
+LIMIT 10;
+```
+
+**온보딩 완료** (준비됨):
+
+```sql
+UPDATE users SET updated_at = NOW() WHERE id = :user_id;
+```
+
+> 현재는 `onboarding_completed` 컬럼이 아닌 `updated_at`만 갱신.
 
 ### 7-3. 온보딩 XP 정리
 
-온보딩 중 트리거되는 XP를 XP_SYSTEM.md 기준으로 정확히 정리한다.
+**도메인 서비스** (`onboarding-xp.ts`):
 
-**기록 XP (§ 4-1)**:
+| 함수 | 반환값 | 비고 |
+|------|--------|------|
+| `ONBOARDING_COMPLETION_XP` | 10 | 상수 |
+| `calculateOnboardingBubbleXp(isFirstBubble)` | 첫 버블: 10, 이후: 5 | 미사용 |
+| `calculateOnboardingRegisterXp()` | 3 | 미사용 |
 
-| 시점 | 종합 XP | 근거 |
-|------|---------|------|
-| 식당 등록 (개당) | 0 | 이름만 등록 (`status='checked'`) = 0 XP |
+**실제 구현된 XP**:
 
-**일회성 보너스 XP (§ 4-4)** — 온보딩 중 트리거 가능:
+| 시점 | XP | 구현 |
+|------|-----|------|
+| 온보딩 완료 (Step 3 → 홈) | `awardBonus(userId, 'onboard')` | `useBonusXp` 훅 |
 
-| 보너스 | 종합 XP | 트리거 시점 |
-|--------|---------|-----------|
-| 온보딩 완료 | +10 | Step 3 → 홈 진입 시 |
-| 첫 버블 생성 | +5 | Step 2에서 첫 번째 버블 [추가] 시 |
-| 첫 기록 | +5 | 온보딩 후 첫 `status='rated'` 기록 완성 시 (온보딩 중에는 checked이므로 미트리거) |
-| 첫 버블 공유 | +3 | 온보딩 후 첫 공유 시 (온보딩 중에는 미트리거) |
+> `calculateOnboardingBubbleXp`, `calculateOnboardingRegisterXp`는 정의되어 있지만
+> 현재 온보딩 플로우에서 호출되지 않음.
 
-**온보딩 완료 시 최대 종합 XP**: 10 (온보딩 완료) + 5 (첫 버블 생성) = **15 XP**
+### 7-4. Application Hooks (미사용, 준비됨)
 
-> - 목업은 XP_SYSTEM과 정합: 식당 등록 시 XP 팝업 없음 (0 XP), 버블 생성 시 "+5 XP" 팝업 표시.
-> - 버블 생성 XP 팝업은 모든 추가에 동일하게 표시되나, 실제 종합 XP는 첫 번째만 +5 보너스 적립.
-
-### 7-4. users 테이블 업데이트
-
-```sql
--- 온보딩 완료 시
-UPDATE users
-SET onboarding_completed = true,
-    updated_at = NOW()
-WHERE id = :user_id;
-```
-
-> DATA_MODEL에 `onboarding_completed` 필드가 없다면 마이그레이션 추가 필요:
-> `ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT false;`
+| 훅 | 용도 | 상태 |
+|-----|------|------|
+| `useOnboarding` | 온보딩 전체 상태 관리 (5-screen: intro→restaurant_register→bubble_create→bubble_explore→complete) | 미사용 |
+| `useOnboardingRestaurants` | 식당 조회/등록/해제 (DB 연동, 기본 지역: '강남') | 미사용 |
+| `useOnboardingBubbles` | 버블 조회/생성 (DB 연동) | 미사용 |
 
 ---
 
@@ -844,29 +889,33 @@ WHERE id = :user_id;
 | 항목 | 방식 | 목적 |
 |------|------|------|
 | 앱 소개 | 인트로 헤드라인 1줄 + 서브텍스트 | 앱 정체성 전달 |
-| 맛집 등록 | 지역 드롭다운 → 리스트 → [등록] / 직접 검색 | 콜드스타트 해소, records 씨딩 |
-| 버블 생성 | 템플릿 카드 → [추가] + 초대 링크 | 소셜 기능 첫 경험, 초대 루프 |
-| 버블 미리보기 | 공개 버블 탐색 + 상세 바텀시트 | 레벨업 동기 부여 |
-| XP/레벨 소개 | Step 1 헤드라인 "경험치가 쌓여요" | 핵심 메커니즘 인지 |
-| 일회성 보너스 XP | 온보딩 완료 +10, 첫 버블 생성 +5 | 초기 레벨업 부스트 (최대 15 XP) |
+| 맛집 등록 | 지역 필 선택 → 카드 리스트 → 토글 등록 / 검색 | 콜드스타트 해소 |
+| 버블 생성 | 템플릿 카드 → 탭하여 생성 | 소셜 기능 첫 경험 |
+| 버블 미리보기 | 공개 버블 카드 리스트 (레벨 잠금 표시) | 레벨업 동기 부여 |
+| XP/레벨 소개 | Step 1 StepLayout 멘트 "경험치가 쌓여요" | 핵심 메커니즘 인지 |
+| 완료 XP | `awardBonus(userId, 'onboard')` | 초기 부스트 |
 
 ### 안 하는 것
 
 | 항목 | 이유 |
 |------|------|
 | 맛집/와인 타입 선택 토글 | 진입 장벽 제거. 앱에서 자연스럽게 탐색 |
-| 전국 지도 기반 동네 선택 | 복잡도 축소. 드롭다운으로 단순화 |
+| 지도 기반 가져오기 (네이버/구글) | 미구현 |
 | 만족도 게이지 / 사분면 평가 | 온보딩은 등록만. 평가는 RECORD_FLOW에서 |
 | 가봤음 / 가보고싶음 구분 | 단순 "등록"으로 통일 |
-| 와인 온보딩 (사진 인식) | v1 스코프 외. 앱 진입 후 별도 플로우 |
+| 와인 온보딩 (사진 인식) | 스코프 외. 앱 진입 후 별도 플로우 |
 | 위시리스트 생성 | 온보딩 복잡도 축소 |
 | 프로필/닉네임 설정 | 소셜 로그인에서 자동 설정. Settings에서 변경 |
 | 취향 카드 (2지선다) | 기록 데이터에서 자연스럽게 파악 |
-| 건너뛰기 링크 | 모든 스텝 0개로 진행 가능하므로 불필요 |
+| 초대하기 버튼 | 미구현 (향후 추가 가능) |
+| 바텀시트 버블 상세 | 컴포넌트 존재하나 미연결 |
+| 개별 XP 팝업 | 컴포넌트 존재하나 미연결 |
 
 ---
 
 ## 9. 넛지 시스템 (온보딩 이후 Week 1~2)
+
+> 아래는 설계 스펙. 현재 미구현.
 
 ### 넛지 유형 & 우선순위
 
@@ -896,6 +945,7 @@ WHERE id = :user_id;
 
 ## 10. 기능 해금 (기록 수 기반)
 
+> 아래는 설계 스펙. 현재 미구현.
 > 여기서 "기록"은 `status='rated'` (사분면 보충 완료)인 records만 카운트.
 
 | 기록 수 | 해금 | 사용자 경험 |
@@ -911,6 +961,8 @@ WHERE id = :user_id;
 
 ## 11. 성공 지표
 
+> 아래는 설계 스펙. 현재 미구현.
+
 | 지표 | 목표 |
 |------|------|
 | 온보딩 완료율 (가입 → Step 3 완료) | > 80% |
@@ -921,3 +973,50 @@ WHERE id = :user_id;
 | 넛지→기록 전환 | > 15% |
 | 버블 생성율 (온보딩 중 1개+) | > 70% |
 | 버블 초대 전환율 (초대 링크 생성) | > 30% |
+
+---
+
+## 12. 파일 구조 요약
+
+```
+src/
+├── app/
+│   ├── auth/
+│   │   ├── login/page.tsx                          # 로그인 페이지 → LoginContainer
+│   │   └── callback/route.ts                       # OAuth 콜백 (프로필 생성 + 홈 리다이렉트)
+│   └── onboarding/page.tsx                         # 온보딩 페이지 → OnboardingContainer
+├── domain/
+│   ├── entities/onboarding.ts                      # 타입: OnboardingScreen, OnboardingState, OnboardingSeedRestaurant, OnboardingBubbleTemplate, OnboardingSeedBubble, OnboardingArea
+│   ├── repositories/onboarding-repository.ts       # 인터페이스: OnboardingRepository
+│   └── services/onboarding-xp.ts                   # XP 계산: ONBOARDING_COMPLETION_XP, calculateOnboardingBubbleXp, calculateOnboardingRegisterXp
+├── infrastructure/
+│   └── repositories/supabase-onboarding-repository.ts  # Supabase 구현체 (lists, bubbles, users 테이블)
+├── application/
+│   └── hooks/
+│       ├── use-onboarding.ts                       # 전체 상태 관리 (미사용)
+│       ├── use-onboarding-restaurants.ts            # 식당 DB 연동 (미사용)
+│       └── use-onboarding-bubbles.ts               # 버블 DB 연동 (미사용)
+├── presentation/
+│   ├── containers/
+│   │   ├── onboarding-container.tsx                 # 메인 오케스트레이터 (로컬 상태 관리)
+│   │   └── login-container.tsx                     # 로그인 페이지
+│   └── components/
+│       ├── onboarding/
+│       │   ├── onboarding-intro.tsx                 # 인트로 화면
+│       │   ├── restaurant-register-step.tsx          # Step 1: 맛집 등록
+│       │   ├── bubble-create-step.tsx               # Step 2: 버블 생성
+│       │   ├── bubble-explore-step.tsx              # Step 3: 버블 탐색
+│       │   ├── area-select.tsx                      # 지역 필 선택
+│       │   ├── onboarding-search.tsx                # 검색 인풋
+│       │   ├── onboarding-progress.tsx              # 진행 바
+│       │   ├── xp-popup.tsx                        # XP 팝업 (미사용)
+│       │   └── bubble-explore-popup.tsx             # 버블 상세 바텀시트 (미사용)
+│       ├── auth/
+│       │   └── login-buttons.tsx                   # 소셜 로그인 버튼 (4종)
+│       └── layout/
+│           ├── fab-back.tsx                        # 뒤로 FAB
+│           └── fab-forward.tsx                     # 앞으로 FAB
+└── shared/
+    └── constants/
+        └── onboarding-seeds.ts                     # 시드 데이터: BUBBLE_TEMPLATES, SEED_BUBBLES, SEED_RESTAURANTS
+```

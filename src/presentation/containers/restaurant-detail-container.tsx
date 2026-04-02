@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { MapPin, UtensilsCrossed } from 'lucide-react'
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -12,7 +13,7 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
-import { restaurantRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { restaurantRepo, recordRepo, xpRepo, bubbleRepo } from '@/shared/di/container'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -25,20 +26,11 @@ import { BubbleRecordSection } from '@/presentation/components/detail/bubble-rec
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
-import { Toast } from '@/presentation/components/ui/toast'
+import { useToast } from '@/presentation/components/ui/toast'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
 
 
-function getGenreChain(genre: string | null): string | null {
-  if (!genre) return null
-  for (const [major, subs] of Object.entries(GENRE_MAJOR_CATEGORIES)) {
-    if (subs.includes(genre as never)) {
-      return major === genre ? genre : `${major} > ${genre}`
-    }
-  }
-  return genre
-}
 
 interface RestaurantDetailContainerProps {
   restaurantId: string
@@ -57,7 +49,9 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
+  const [focusedRecordIdx, setFocusedRecordIdx] = useState(0) // 최근 뷰에서 포커스된 기록 (0 = 최신)
+  const { showToast } = useToast()
 
   const {
     restaurant,
@@ -88,11 +82,8 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     { axisType: 'area', axisValue: restaurant?.area?.[0] ?? null },
   ])
 
-  // 최신 기록 ID (하단 액션 대상)
-  const latestRecordId = myRecords[0]?.id ?? null
-
-  // 버블 공유 hook (최신 기록 대상)
-  const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, latestRecordId)
+  // 버블 공유 hook — activeRecordId는 focusedRecord 이후에 계산
+  const latestRecordIdFallback = myRecords[0]?.id ?? null
 
   // 뱃지 빌드
   const badges: BadgeItem[] = []
@@ -147,7 +138,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   // 사분면 현재 dot (이 식당 내 모든 방문의 평균)
   const allRecordsWithAxis = myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
-  const currentDot = allRecordsWithAxis.length > 0
+  const avgDot = allRecordsWithAxis.length > 0
     ? {
         axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisX!, 0) / allRecordsWithAxis.length),
         axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisY!, 0) / allRecordsWithAxis.length),
@@ -155,7 +146,37 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       }
     : null
 
+  // 최근 기록 dot
+  const sortedRecords = useMemo(() =>
+    [...allRecordsWithAxis].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [allRecordsWithAxis],
+  )
+  const focusedRecord = sortedRecords[focusedRecordIdx] ?? sortedRecords[0] ?? null
+  const focusedDot = focusedRecord
+    ? { axisX: focusedRecord.axisX!, axisY: focusedRecord.axisY!, satisfaction: focusedRecord.satisfaction! }
+    : null
+  const otherRecordRefs = useMemo(() =>
+    sortedRecords
+      .map((r, i) => ({ r, i }))
+      .filter(({ i }) => i !== focusedRecordIdx)
+      .map(({ r, i }) => ({
+        x: r.axisX!,
+        y: r.axisY!,
+        satisfaction: r.satisfaction!,
+        name: r.visitDate ?? r.createdAt.split('T')[0],
+        score: r.satisfaction!,
+        _refIdx: i, // 롱프레스 시 focus 전환용
+      })),
+    [sortedRecords, focusedRecordIdx],
+  )
 
+  const currentDot = quadrantMode === 'recent' && focusedDot ? focusedDot : avgDot
+
+  // 액션 대상 기록 ID (최근 뷰에서는 포커스된 기록, 평균 뷰에서는 최신 기록)
+  const activeRecordId = quadrantMode === 'recent' && focusedRecord
+    ? focusedRecord.id
+    : latestRecordIdFallback
+  const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, activeRecordId)
 
   // 연결 와인 이름 맵 (타임라인용)
   const linkedWineNames = useMemo(() => {
@@ -174,29 +195,32 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   }, [router, restaurantId, restaurant])
 
   const handleEdit = useCallback(() => {
-    if (!latestRecordId) return
+    if (!activeRecordId) return
     const meta = [restaurant?.genre, restaurant?.area].filter(Boolean).join(' · ')
     router.push(
-      `/record?type=restaurant&targetId=${restaurantId}&name=${encodeURIComponent(restaurant?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${latestRecordId}&from=detail`,
+      `/record?type=restaurant&targetId=${restaurantId}&name=${encodeURIComponent(restaurant?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${activeRecordId}&from=detail`,
     )
-  }, [latestRecordId, restaurant, restaurantId, router])
+  }, [activeRecordId, restaurant, restaurantId, router])
 
   const handleShare = useCallback(() => {
     if (!canShare) {
-      setToastMsg(blockReason ?? '비공개 프로필은 공유할 수 없습니다')
+      showToast(blockReason ?? '비공개 프로필은 공유할 수 없습니다')
     } else {
       setShowShareSheet(true)
     }
   }, [canShare, blockReason])
 
   const handleDelete = useCallback(async () => {
-    if (!latestRecordId || !user) return
+    if (!activeRecordId || !user) return
     setIsDeleting(true)
     try {
-      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
-      const histories = await xpRepo.getHistoriesByRecord(latestRecordId)
+      // 삭제 전 정보 수집 (CASCADE 삭제 대비)
+      const [histories, shares] = await Promise.all([
+        xpRepo.getHistoriesByRecord(activeRecordId),
+        bubbleRepo.getRecordShares(activeRecordId).catch(() => []),
+      ])
 
-      await recordRepo.delete(latestRecordId)
+      await recordRepo.delete(activeRecordId)
 
       // XP 차감 (best-effort: 레코드는 이미 삭제됨)
       try {
@@ -204,21 +228,31 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           let totalXpToDeduct = 0
           for (const h of histories) totalXpToDeduct += h.xpAmount
           await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-          await xpRepo.deleteByRecordId(latestRecordId)
+          await xpRepo.deleteByRecordId(activeRecordId)
         }
       } catch {
         // CASCADE로 이미 삭제된 경우 무시
       }
 
       setShowDeleteConfirm(false)
-      setToastMsg('기록이 삭제되었습니다')
-      setTimeout(() => router.replace('/'), 800)
+      showToast('기록이 삭제되었습니다')
+      if (shares.length > 0) {
+        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      }
+
+      // 같은 식당의 남은 기록 수 확인
+      const remaining = await recordRepo.findByUserAndTarget(user.id, restaurantId).catch(() => [])
+      if (remaining.length > 0) {
+        showToast(`이 식당의 기록이 ${remaining.length}건 남아있습니다`)
+      }
+
+      router.replace('/')
     } catch {
-      setToastMsg('삭제에 실패했습니다')
+      showToast('삭제에 실패했습니다')
     } finally {
       setIsDeleting(false)
     }
-  }, [latestRecordId, user, router])
+  }, [activeRecordId, user, router, restaurantId, showToast])
 
   const handlePageShare = useCallback(() => {
     if (navigator.share) {
@@ -245,7 +279,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     )
   }
 
-  const genreChain = getGenreChain(restaurant.genre)
   const mySubText = myRecords.length > 0 ? `${myRecords.length}회 방문` : '미방문'
   const bubbleSubText = bubbleCount > 0 ? `리뷰 ${bubbleCount}개` : ''
   return (
@@ -275,29 +308,92 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           onShare={handlePageShare}
         />
 
-        {/* ─── 1. 이름 + 분류 + 가격대 ─── */}
+        {/* ─── 1. 이름 + 지역 + 장르 + 가격대 ─── */}
         <div>
-          <div style={{ padding: '14px 20px 8px' }}>
+          <section style={{ padding: '14px 20px 0' }}>
             <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
               {restaurant.name}
             </h1>
 
-            <div className="mt-1 flex items-center gap-1.5">
-              {genreChain && (
-                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                  {genreChain}
+            {restaurant.priceRange && (
+              <div className="mt-0.5">
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-food)' }}>
+                  {restaurant.priceRange === 1 ? '저가' : restaurant.priceRange === 2 ? '중간' : '고가'}
                 </span>
-              )}
-              {restaurant.priceRange && (
-                <>
-                  {genreChain && <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>·</span>}
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-food)' }}>
-                    {restaurant.priceRange === 1 ? '저가' : restaurant.priceRange === 2 ? '중간' : '고가'}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+
+            <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '10px 0' }} />
+
+            {/* 지역 cascade: country › city › area › district */}
+            {(restaurant.country || restaurant.city) && (
+              <div className="flex flex-wrap items-center gap-1 py-1" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '12px', fontWeight: 700, backgroundColor: 'color-mix(in srgb, var(--accent-food) 12%, transparent)', color: 'var(--accent-food)' }}>
+                  <MapPin size={11} />
+                  {restaurant.country}
+                </span>
+                {restaurant.city && (
+                  <>
+                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                    <span>{restaurant.city}</span>
+                  </>
+                )}
+                {restaurant.area && restaurant.area.length > 0 && (
+                  <>
+                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                    <span>{restaurant.area[0]}</span>
+                  </>
+                )}
+                {restaurant.district && (
+                  <>
+                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                    <span>{restaurant.district}</span>
+                  </>
+                )}
+                {axisLevels.find((al) => al.axisValue === restaurant.area?.[0]) && (
+                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.area?.[0])!.level} />
+                )}
+              </div>
+            )}
+
+            {/* 장르 cascade: 대분류 › 소분류 */}
+            {restaurant.genre && (
+              <div className="flex flex-wrap items-center gap-1 py-1">
+                {(() => {
+                  const major = Object.entries(GENRE_MAJOR_CATEGORIES).find(([, subs]) => subs.includes(restaurant.genre as never))?.[0]
+                  const showMajor = major && major !== restaurant.genre
+                  return (
+                    <>
+                      {showMajor && (
+                        <>
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium"
+                            style={{ backgroundColor: 'color-mix(in srgb, var(--accent-food) 10%, transparent)', color: 'var(--accent-food)' }}
+                          >
+                            <UtensilsCrossed size={11} />
+                            {major}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>›</span>
+                        </>
+                      )}
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--accent-food) 10%, transparent)', color: 'var(--accent-food)' }}
+                      >
+                        {!showMajor && <UtensilsCrossed size={11} />}
+                        {restaurant.genre}
+                      </span>
+                    </>
+                  )
+                })()}
+                {axisLevels.find((al) => al.axisValue === restaurant.genre) && (
+                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.genre)!.level} />
+                )}
+              </div>
+            )}
+
+            <div style={{ height: '8px' }} />
+          </section>
 
           {/* ─── 2. 스코어카드 + 버블 확장 + 뱃지 ─── */}
           <ScoreCards
@@ -359,7 +455,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 나의 평가
                 <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
-                  {myRecords.length}회 방문 평균
+                  {quadrantMode === 'avg'
+                    ? `${myRecords.length}회 방문`
+                    : `최근 방문${focusedRecord?.visitDate ? ` · ${focusedRecord.visitDate}` : ''}`
+                  }
                 </span>
               </h3>
               <RatingInput
@@ -367,13 +466,31 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                 value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
                 onChange={() => {}}
                 readOnly
-                referencePoints={quadrantRefs.map((d) => ({
-                  x: d.avgAxisX,
-                  y: d.avgAxisY,
-                  satisfaction: d.avgSatisfaction,
-                  name: d.targetName,
-                  score: d.avgSatisfaction,
-                }))}
+                referencePoints={quadrantMode === 'avg'
+                  ? quadrantRefs.map((d) => ({
+                      x: d.avgAxisX,
+                      y: d.avgAxisY,
+                      satisfaction: d.avgSatisfaction,
+                      name: d.targetName,
+                      score: d.avgSatisfaction,
+                      targetId: d.targetId,
+                      targetType: 'restaurant' as const,
+                    }))
+                  : otherRecordRefs
+                }
+                onRefNavigate={quadrantMode === 'avg'
+                  ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
+                  : undefined
+                }
+                onRefLongPress={quadrantMode === 'recent'
+                  ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
+                  : undefined
+                }
+                quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
+                onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
+                  setQuadrantMode(mode)
+                  setFocusedRecordIdx(0)
+                } : undefined}
               />
             </section>
           </>
@@ -382,13 +499,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         <Divider />
 
         {/* ─── 4. 나의 기록 타임라인 ─── */}
-        {axisLevels.length > 0 && myRecords.length > 0 && (
-          <div className="flex items-center gap-1.5 px-5 pt-4">
-            {axisLevels.map((al) => (
-              <AxisLevelBadge key={al.axisValue} axisLabel={al.axisValue} level={al.level} />
-            ))}
-          </div>
-        )}
         <RecordTimeline
           records={myRecords}
           recordPhotos={recordPhotos}
@@ -455,11 +565,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         onShareMultiple={shareToBubbles}
       />
 
-      <Toast
-        message={toastMsg ?? ''}
-        visible={!!toastMsg}
-        onHide={() => setToastMsg(null)}
-      />
     </div>
   )
 }

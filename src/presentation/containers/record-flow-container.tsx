@@ -14,36 +14,30 @@ import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { validateExifGps } from '@/domain/services/exif-validator'
 import { useXpAward } from '@/application/hooks/use-xp-award'
 import { useXp } from '@/application/hooks/use-xp'
-import { photoRepo, recordRepo, xpRepo, imageService, restaurantRepo, wineRepo } from '@/shared/di/container'
+import { photoRepo, recordRepo, xpRepo, imageService, restaurantRepo, wineRepo, bubbleRepo } from '@/shared/di/container'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
-import { RecordSuccess } from '@/presentation/components/record/record-success'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
-import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
-import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useSettings } from '@/application/hooks/use-settings'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
-import { Toast } from '@/presentation/components/ui/toast'
-
-type RecordFlowStep = 'form' | 'success'
+import { useToast } from '@/presentation/components/ui/toast'
 
 interface RecordFlowState {
-  step: RecordFlowStep
   targetType: RecordTargetType
   targetId: string
   targetName: string
   targetMeta: string
-  savedRecordId: string | null
 }
 
 function RecordFlowInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { createRecord, isLoading: isRecordLoading } = useCreateRecord()
   const { photos, initExistingPhotos, addFiles, removePhoto, replacePhoto, reorderPhotos, togglePublic, uploadAll, isUploading } = usePhotoUpload()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
@@ -57,21 +51,15 @@ function RecordFlowInner() {
   const targetLng = searchParams.get('lng') ? Number(searchParams.get('lng')) : null
 
   const [state, setState] = useState<RecordFlowState>({
-    step: 'form',
     targetType,
     targetId: searchParams.get('targetId') ?? '',
     targetName: searchParams.get('name') ?? '',
     targetMeta: searchParams.get('meta') ?? '',
-    savedRecordId: null,
   })
 
-  const [photoError, setPhotoError] = useState<string | null>(null)
-  const [exifWarning, setExifWarning] = useState<string | null>(null)
   const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
-  const [showShareSheet, setShowShareSheet] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [genreHint, setGenreHint] = useState<string | null>(null)
   const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
 
@@ -93,12 +81,7 @@ function RecordFlowInner() {
     } catch {}
   }, [])
 
-  const { availableBubbles, shareToBubbles, canShare } = useShareRecord(
-    user?.id ?? null,
-    state.savedRecordId,
-  )
   const { settings } = useSettings()
-  const prefBubbleShare = settings?.prefBubbleShare ?? 'ask'
   const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
   const [recentCompanions, setRecentCompanions] = useState<string[]>([])
   const [wineData, setWineData] = useState<{
@@ -115,20 +98,6 @@ function RecordFlowInner() {
   } | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
   const isLoading = isRecordLoading || isUploading
-
-  // pref_bubble_share 분기: 'ask' → 시트 표시, 'auto' → 자동 공유, 'never' → 미표시
-  useEffect(() => {
-    if (state.step !== 'success' || !state.savedRecordId) return
-    if (prefBubbleShare === 'ask' && availableBubbles.length > 0 && canShare) {
-      setShowShareSheet(true)
-    } else if (prefBubbleShare === 'auto' && availableBubbles.length > 0 && canShare) {
-      const shareableIds = availableBubbles.filter((b) => !b.isShared && b.canShare).map((b) => b.id)
-      if (shareableIds.length > 0) {
-        shareToBubbles(shareableIds.slice(0, 1))
-      }
-    }
-    // 'never': 아무 동작 없음
-  }, [state.step, state.savedRecordId, prefBubbleShare, availableBubbles, canShare, shareToBubbles])
 
   const isEditMode = !!editRecordId
 
@@ -327,8 +296,6 @@ function RecordFlowInner() {
   const handleSave = useCallback(
     async (formData: { targetId: string; targetType: RecordTargetType; [key: string]: unknown }) => {
       if (!user) return
-      setPhotoError(null)
-
       try {
         let savedRecord: DiningRecord
 
@@ -423,9 +390,6 @@ function RecordFlowInner() {
                 exifData.capturedAt,
               )
               isExifVerified = validation.isWithinRadius
-              if (validation.warningMessage) {
-                setExifWarning(validation.warningMessage)
-              }
             }
           }
 
@@ -492,7 +456,7 @@ function RecordFlowInner() {
                 await photoRepo.savePhotos(savedRecord.id, uploadedPhotos)
               }
             } catch {
-              setPhotoError('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
+              showToast('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
             }
           }
         }
@@ -533,7 +497,7 @@ function RecordFlowInner() {
           .then((syncResult) => {
             if (syncResult.sharedTo.length > 0) {
               const names = syncResult.sharedTo.map((b) => b.bubbleName).join(', ')
-              setToastMsg(`${names}에 공유됨`)
+              showToast(`${names}에 공유됨`)
             }
           })
           .catch(() => {})
@@ -552,11 +516,9 @@ function RecordFlowInner() {
           return
         }
 
-        setState((prev) => ({
-          ...prev,
-          step: 'success',
-          savedRecordId: savedRecord.id,
-        }))
+        // 신규 기록 완료 → 토스트 + 홈 이동
+        showToast('기록이 추가되었습니다')
+        router.replace('/')
       } catch {
         // useCreateRecord 내부에서 error state 처리
       }
@@ -565,13 +527,15 @@ function RecordFlowInner() {
   )
 
   const handleBack = useCallback(() => router.back(), [router])
-  const handleClose = useCallback(() => router.push('/'), [router])
   const handleDelete = useCallback(async () => {
     if (!editRecordId || !user) return
     setIsDeleting(true)
     try {
-      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
-      const histories = await xpRepo.getHistoriesByRecord(editRecordId)
+      // 삭제 전 정보 수집 (CASCADE 삭제 대비)
+      const [histories, shares] = await Promise.all([
+        xpRepo.getHistoriesByRecord(editRecordId),
+        bubbleRepo.getRecordShares(editRecordId).catch(() => []),
+      ])
 
       await recordRepo.delete(editRecordId)
 
@@ -588,52 +552,30 @@ function RecordFlowInner() {
       }
 
       setShowDeleteConfirm(false)
-      setToastMsg('기록이 삭제되었습니다')
-      setTimeout(() => router.replace('/'), 800)
+      showToast('기록이 삭제되었습니다')
+      if (shares.length > 0) {
+        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      }
+
+      // 같은 대상의 남은 기록 수 확인
+      const remaining = await recordRepo.findByUserAndTarget(user.id, state.targetId).catch(() => [])
+      if (remaining.length > 0) {
+        showToast(`이 ${state.targetType === 'wine' ? '와인' : '식당'}의 기록이 ${remaining.length}건 남아있습니다`)
+      }
+
+      router.replace('/')
     } catch {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
-      setToastMsg('삭제에 실패했습니다. 다시 시도해주세요.')
+      showToast('삭제에 실패했습니다. 다시 시도해주세요.')
     }
-  }, [editRecordId, user, router])
-  const handleAddMore = useCallback(() => {
-    const prefix = state.targetType === 'wine' ? 'wines' : 'restaurants'
-    router.push(`/${prefix}/${state.targetId}`)
-  }, [router, state.targetType, state.targetId])
-  const handleAddAnother = useCallback(() => {
-    router.push(`/add?type=${state.targetType}`)
-  }, [router, state.targetType])
-
+  }, [editRecordId, user, router, state.targetId, state.targetType, showToast])
   // 수정 모드 로딩
   if (isEditLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center" style={{ color: 'var(--text-hint)' }}>
         <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-food)] border-t-transparent" />
       </div>
-    )
-  }
-
-  if (state.step === 'success') {
-    return (
-      <>
-        <RecordSuccess
-          variant={state.targetType === 'wine' ? 'wine' : 'food'}
-          targetName={state.targetName}
-          targetMeta={state.targetMeta}
-          photoError={photoError}
-          exifWarning={exifWarning}
-          onAddMore={handleAddMore}
-          onAddAnother={handleAddAnother}
-          onGoHome={handleClose}
-          onShareToBubble={prefBubbleShare !== 'never' && availableBubbles.length > 0 && canShare ? () => setShowShareSheet(true) : undefined}
-        />
-        <ShareToBubbleSheet
-          isOpen={showShareSheet}
-          onClose={() => setShowShareSheet(false)}
-          bubbles={availableBubbles}
-          onShareMultiple={shareToBubbles}
-        />
-      </>
     )
   }
 
@@ -771,7 +713,6 @@ function RecordFlowInner() {
         />
       )}
 
-      <Toast message={toastMsg ?? ''} visible={!!toastMsg} onHide={() => setToastMsg(null)} />
     </div>
   )
 }

@@ -17,7 +17,7 @@ import { NyamCard } from '@/presentation/components/ui/nyam-card'
 import { FilterChip, FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { FilterTab } from '@/presentation/components/ui/filter-tab'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
-import { Toast } from '@/presentation/components/ui/toast'
+import { useToast } from '@/presentation/components/ui/toast'
 import { EmptyState } from '@/presentation/components/ui/empty-state'
 import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
 import { IconButton } from '@/presentation/components/ui/icon-button'
@@ -103,7 +103,7 @@ export default function DesignSystemPage() {
   const [chipName, setChipName] = useState('광화문 맛집')
   const [activeTab, setActiveTab] = useState<'food' | 'wine'>('food')
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [toastVisible, setToastVisible] = useState(false)
+  const { showToast } = useToast()
   const [filterActive, setFilterActive] = useState(false)
   const [sortActive, setSortActive] = useState(false)
   const [searchActive, setSearchActive] = useState(false)
@@ -855,8 +855,7 @@ export default function DesignSystemPage() {
           <LoadingState message="와인을 찾고 있어요..." />
         </NyamCard>
         <Sub title="Toast" />
-        <button type="button" className="btn-primary" onClick={() => setToastVisible(true)}>토스트 보기</button>
-        <Toast message="이미 등록한 와인이에요" visible={toastVisible} onHide={() => setToastVisible(false)} />
+        <button type="button" className="btn-primary" onClick={() => showToast('이미 등록한 와인이에요')}>토스트 보기</button>
       </Section>
 
       {/* ── 13. Spacing & Radius ── */}

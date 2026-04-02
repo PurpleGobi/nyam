@@ -30,13 +30,19 @@ interface RatingInputProps {
     satisfaction: number
     name: string
     score: number
+    targetId?: string
+    targetType?: 'restaurant' | 'wine'
   }>
   showHint?: boolean
   hideDot?: boolean
   readOnly?: boolean
+  onRefNavigate?: (targetId: string, targetType: 'restaurant' | 'wine') => void
+  onRefLongPress?: (refIndex: number) => void
+  quadrantMode?: 'avg' | 'recent'
+  onQuadrantModeChange?: (mode: 'avg' | 'recent') => void
 }
 
-export function RatingInput({ type, value, onChange, referencePoints, showHint, hideDot, readOnly }: RatingInputProps) {
+export function RatingInput({ type, value, onChange, referencePoints, showHint, hideDot, readOnly, onRefNavigate, onRefLongPress, quadrantMode, onQuadrantModeChange }: RatingInputProps) {
   return (
     <QuadrantInput
       type={type}
@@ -46,6 +52,10 @@ export function RatingInput({ type, value, onChange, referencePoints, showHint, 
       showHint={showHint}
       hideDot={hideDot}
       readOnly={readOnly}
+      onRefNavigate={onRefNavigate}
+      onRefLongPress={onRefLongPress}
+      quadrantMode={quadrantMode}
+      onQuadrantModeChange={onQuadrantModeChange}
     />
   )
 }

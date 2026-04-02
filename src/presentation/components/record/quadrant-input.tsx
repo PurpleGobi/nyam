@@ -16,12 +16,21 @@ interface QuadrantInputProps {
     satisfaction: number
     name: string
     score: number
+    targetId?: string
+    targetType?: 'restaurant' | 'wine'
   }>
   showHint?: boolean
   /** true면 현재 dot 숨김 (터치 전 상태) */
   hideDot?: boolean
   /** true면 모든 인터랙션 비활성 (상세페이지 읽기 전용) */
   readOnly?: boolean
+  /** 참조 dot 롱프레스 시 상세페이지로 이동 콜백 */
+  onRefNavigate?: (targetId: string, targetType: 'restaurant' | 'wine') => void
+  /** 참조 dot 롱프레스 시 인덱스 기반 콜백 (onRefNavigate보다 우선) */
+  onRefLongPress?: (refIndex: number) => void
+  /** 사분면 평균/최근 모드 */
+  quadrantMode?: 'avg' | 'recent'
+  onQuadrantModeChange?: (mode: 'avg' | 'recent') => void
 }
 
 const DOT_SIZE = 20
@@ -56,11 +65,16 @@ const QUADRANT_LABELS = {
   },
 } as const
 
-export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false, readOnly = false }: QuadrantInputProps) {
+export function QuadrantInput({ type, value, onChange, referencePoints = [], showHint = false, hideDot = false, readOnly = false, onRefNavigate, onRefLongPress, quadrantMode, onQuadrantModeChange }: QuadrantInputProps) {
   const quadrantRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [selectedRefIdx, setSelectedRefIdx] = useState<number | null>(null)
   const [showLabels, setShowLabels] = useState(false)
+  const prevMode = useRef(quadrantMode)
+  if (prevMode.current !== quadrantMode) {
+    prevMode.current = quadrantMode
+    if (selectedRefIdx !== null) setSelectedRefIdx(null)
+  }
 
   // 겹친 점 순환: 같은 위치의 점들을 찾아 다음 점으로 이동
   const OVERLAP_THRESHOLD = 5 // %단위, 이 범위 내면 겹친 것으로 판단
@@ -204,10 +218,8 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               사분면을 터치하여<br />만족도를 표시해주세요
             </HintBubble>
           )}
-          {/* info 토글 버튼 — 사분면 우측 상단 바깥 */}
-          <button
-            type="button"
-            onClick={() => setShowLabels((v) => !v)}
+          {/* 사분면 우측 상단 버튼들 */}
+          <div
             style={{
               position: 'absolute',
               top: '-28px',
@@ -215,21 +227,73 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               zIndex: 25,
               display: 'flex',
               alignItems: 'center',
-              gap: '3px',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: showLabels ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'var(--bg-elevated)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-              opacity: showLabels ? 1 : 0.7,
+              gap: '4px',
             }}
           >
-            <Info size={11} style={{ color: showLabels ? '#fff' : 'var(--text-sub)' }} />
-            <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? '#fff' : 'var(--text-sub)' }}>
-              가이드
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowLabels((v) => !v)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: showLabels ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'var(--bg-elevated)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                opacity: showLabels ? 1 : 0.7,
+              }}
+            >
+              <Info size={11} style={{ color: showLabels ? '#fff' : 'var(--text-sub)' }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? '#fff' : 'var(--text-sub)' }}>
+                가이드
+              </span>
+            </button>
+            {quadrantMode && onQuadrantModeChange && (
+              <button
+                type="button"
+                onClick={() => onQuadrantModeChange(quadrantMode === 'avg' ? 'recent' : 'avg')}
+                style={{
+                  display: 'flex',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    transition: 'all 0.15s',
+                    backgroundColor: quadrantMode === 'avg' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
+                    color: quadrantMode === 'avg' ? '#fff' : 'var(--text-hint)',
+                    borderRadius: quadrantMode === 'avg' ? '6px' : 0,
+                  }}
+                >
+                  평균
+                </span>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    transition: 'all 0.15s',
+                    backgroundColor: quadrantMode === 'recent' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
+                    color: quadrantMode === 'recent' ? '#fff' : 'var(--text-hint)',
+                    borderRadius: quadrantMode === 'recent' ? '6px' : 0,
+                  }}
+                >
+                  최근
+                </span>
+              </button>
+            )}
+          </div>
           {/* 사분면 박스 */}
           <div
             ref={quadrantRef}
@@ -295,6 +359,13 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 channel={type === 'wine' ? 'wine-total' : 'total'}
                 isActive={selectedRefIdx === i}
                 onSelect={() => handleRefSelect(i)}
+                onLongPress={
+                  onRefLongPress
+                    ? () => onRefLongPress(i)
+                    : onRefNavigate && point.targetId && point.targetType
+                      ? () => onRefNavigate(point.targetId!, point.targetType!)
+                      : undefined
+                }
               />
             ))}
 
@@ -311,7 +382,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 backgroundColor: totalColor,
                 boxShadow: `0 0 ${6 + totalScore * 0.2}px ${3 + totalScore * 0.1}px ${totalColor}${totalScore > 60 ? 'B0' : '60'}`,
                 transition: 'left 0.08s ease-out, bottom 0.08s ease-out, background-color 0.15s ease-out, box-shadow 0.15s ease-out',
-                cursor: 'grab',
+                cursor: readOnly ? 'default' : 'grab',
                 touchAction: 'none',
                 zIndex: 10,
               }}

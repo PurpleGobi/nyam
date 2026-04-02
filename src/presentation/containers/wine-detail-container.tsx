@@ -12,8 +12,10 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
-import { wineRepo, recordRepo, xpRepo } from '@/shared/di/container'
+import { wineRepo, recordRepo, xpRepo, bubbleRepo } from '@/shared/di/container'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
+import { ScoreCards } from '@/presentation/components/detail/score-cards'
+import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { RatingInput } from '@/presentation/components/record/rating-input'
@@ -23,7 +25,7 @@ import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
-import { Toast } from '@/presentation/components/ui/toast'
+import { useToast } from '@/presentation/components/ui/toast'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import type { AromaSelection } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
@@ -54,8 +56,11 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
+  const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
+  const { showToast } = useToast()
   const [showPriceReview, setShowPriceReview] = useState(false)
+  const [bubbleExpanded, setBubbleExpanded] = useState(false)
 
   const {
     wine,
@@ -63,16 +68,17 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     recordPhotos,
     quadrantRefs,
     linkedRestaurants,
+    bubbleScores,
     isLoading,
     tastingCount,
     latestTastingDate,
+    myAvgScore,
+    bubbleAvgScore,
   } = useWineDetail(wineId, user?.id ?? null, wineRepo)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null, wineId, 'wine', recordRepo,
   )
-
-  const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, selectedRecordId)
 
   // 세부 축 레벨 (산지, 품종)
   const bestVariety = wine?.variety ?? (wine?.grapeVarieties?.[0]?.name ?? null)
@@ -80,56 +86,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     { axisType: 'wine_region', axisValue: wine?.region ?? null },
     { axisType: 'wine_variety', axisValue: bestVariety },
   ])
-
-  // ─── 기록 액션 ───
-  const handleRecordEdit = useCallback(() => {
-    const rid = selectedRecordId ?? myRecords[0]?.id
-    if (!rid) return
-    const meta = [wine?.wineType ? WINE_TYPE_LABELS[wine.wineType] : null, wine?.region].filter(Boolean).join(' · ')
-    router.push(
-      `/record?type=wine&targetId=${wineId}&name=${encodeURIComponent(wine?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${rid}&from=detail`,
-    )
-  }, [selectedRecordId, myRecords, wine, wineId, router])
-
-  const handleRecordShare = useCallback(() => {
-    if (!canShare) {
-      setToastMsg(blockReason ?? '비공개 프로필은 공유할 수 없습니다')
-    } else {
-      setShowShareSheet(true)
-    }
-  }, [canShare, blockReason])
-
-  const handleRecordDelete = useCallback(async () => {
-    if (!selectedRecordId || !user) return
-    setIsDeleting(true)
-    try {
-      // XP 이력을 레코드 삭제 전에 조회 (CASCADE 삭제 대비)
-      const histories = await xpRepo.getHistoriesByRecord(selectedRecordId)
-
-      await recordRepo.delete(selectedRecordId)
-
-      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
-      try {
-        if (histories.length > 0) {
-          let totalXpToDeduct = 0
-          for (const h of histories) totalXpToDeduct += h.xpAmount
-          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-          await xpRepo.deleteByRecordId(selectedRecordId)
-        }
-      } catch {
-        // CASCADE로 이미 삭제된 경우 무시
-      }
-
-      setShowDeleteConfirm(false)
-      setSelectedRecordId(null)
-      setToastMsg('기록이 삭제되었습니다')
-      setTimeout(() => router.replace('/'), 800)
-    } catch {
-      setToastMsg('삭제에 실패했습니다')
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [selectedRecordId, user, router])
 
   // ─── 버블 모드 ───
   const isBubbleMode = bubbleId != null
@@ -166,8 +122,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   }, [bubbleMemberShares])
 
   // ─── 사분면: 모든 방문 dot ───
-  const allRecordDots = myRecords
+  const allRecordsWithAxis = myRecords
     .filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
+  const allRecordDots = allRecordsWithAxis
     .map((r) => ({
       targetId: r.id,
       targetName: r.visitDate ?? r.createdAt.split('T')[0],
@@ -176,13 +133,103 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       avgSatisfaction: r.satisfaction!,
     }))
 
-  const currentDot = allRecordDots.length > 0
+  const avgDot = allRecordDots.length > 0
     ? {
         axisX: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisX, 0) / allRecordDots.length),
         axisY: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisY, 0) / allRecordDots.length),
         satisfaction: Math.round(allRecordDots.reduce((s, d) => s + d.avgSatisfaction, 0) / allRecordDots.length),
       }
     : null
+
+  // 최근 기록 dot
+  const sortedRecords = useMemo(() =>
+    [...allRecordsWithAxis].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [allRecordsWithAxis],
+  )
+  const focusedRecord = sortedRecords[focusedRecordIdx] ?? sortedRecords[0] ?? null
+  const focusedDot = focusedRecord
+    ? { axisX: focusedRecord.axisX!, axisY: focusedRecord.axisY!, satisfaction: focusedRecord.satisfaction! }
+    : null
+  const otherRecordRefs = useMemo(() =>
+    sortedRecords
+      .map((r, i) => ({ r, i }))
+      .filter(({ i }) => i !== focusedRecordIdx)
+      .map(({ r, i }) => ({
+        x: r.axisX!,
+        y: r.axisY!,
+        satisfaction: r.satisfaction!,
+        name: r.visitDate ?? r.createdAt.split('T')[0],
+        score: r.satisfaction!,
+        _refIdx: i,
+      })),
+    [sortedRecords, focusedRecordIdx],
+  )
+
+  const currentDot = quadrantMode === 'recent' && focusedDot ? focusedDot : avgDot
+
+  const activeRecordId = quadrantMode === 'recent' && focusedRecord
+    ? focusedRecord.id
+    : selectedRecordId ?? myRecords[0]?.id ?? null
+  const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, activeRecordId)
+
+  // ─── 기록 액션 ───
+  const handleRecordEdit = useCallback(() => {
+    if (!activeRecordId) return
+    const meta = [wine?.wineType ? WINE_TYPE_LABELS[wine.wineType] : null, wine?.region].filter(Boolean).join(' · ')
+    router.push(
+      `/record?type=wine&targetId=${wineId}&name=${encodeURIComponent(wine?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${activeRecordId}&from=detail`,
+    )
+  }, [activeRecordId, wine, wineId, router])
+
+  const handleRecordShare = useCallback(() => {
+    if (!canShare) {
+      showToast(blockReason ?? '비공개 프로필은 공유할 수 없습니다')
+    } else {
+      setShowShareSheet(true)
+    }
+  }, [canShare, blockReason])
+
+  const handleRecordDelete = useCallback(async () => {
+    if (!activeRecordId || !user) return
+    setIsDeleting(true)
+    try {
+      const [histories, shares] = await Promise.all([
+        xpRepo.getHistoriesByRecord(activeRecordId),
+        bubbleRepo.getRecordShares(activeRecordId).catch(() => []),
+      ])
+
+      await recordRepo.delete(activeRecordId)
+
+      try {
+        if (histories.length > 0) {
+          let totalXpToDeduct = 0
+          for (const h of histories) totalXpToDeduct += h.xpAmount
+          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
+          await xpRepo.deleteByRecordId(activeRecordId)
+        }
+      } catch {
+        // CASCADE로 이미 삭제된 경우 무시
+      }
+
+      setShowDeleteConfirm(false)
+      setSelectedRecordId(null)
+      showToast('기록이 삭제되었습니다')
+      if (shares.length > 0) {
+        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      }
+
+      const remaining = await recordRepo.findByUserAndTarget(user.id, wineId).catch(() => [])
+      if (remaining.length > 0) {
+        showToast(`이 와인의 기록이 ${remaining.length}건 남아있습니다`)
+      }
+
+      router.replace('/')
+    } catch {
+      showToast('삭제에 실패했습니다')
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [activeRecordId, user, router, wineId, showToast])
 
   // ─── 향 휠 합산 ───
   const mergedAroma: AromaSelection = useMemo(() => {
@@ -371,7 +418,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
           <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '10px 0' }} />
 
-          {/* 2행: Country › Region › Sub-region */}
+          {/* 2행: Country › Region › Sub-region + 산지 레벨 */}
           {(wine.country || wine.region) && (
             <div className="flex flex-wrap items-center gap-1 py-1" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
               {wine.country && (
@@ -392,10 +439,13 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   <span>{wine.subRegion ?? wine.appellation}</span>
                 </>
               )}
+              {axisLevels.find((al) => al.axisValue === wine.region) && (
+                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === wine.region)!.level} />
+              )}
             </div>
           )}
 
-          {/* 3행: 품종 칩 */}
+          {/* 3행: 품종 칩 + 품종 레벨 */}
           {mainVariety && (
             <div className="flex flex-wrap items-center gap-1 py-1">
               {wine.grapeVarieties.length > 0 ? (
@@ -420,6 +470,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   <Grape size={11} />
                   {mainVariety}
                 </span>
+              )}
+              {axisLevels.find((al) => al.axisValue === bestVariety) && (
+                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === bestVariety)!.level} />
               )}
             </div>
           )}
@@ -481,21 +534,42 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
           <div style={{ height: '8px' }} />
         </section>
 
+        {/* ─── 스코어카드 + 버블 확장 ─── */}
+        <ScoreCards
+          accentColor="--accent-wine"
+          myScore={isBubbleMode ? bubbleMemberAvg : myAvgScore}
+          mySubText={isBubbleMode ? `버블 평균 · ${bubbleMemberShares.filter((s) => s.satisfaction != null).length}명` : (tastingCount > 0 ? `${tastingCount}회 시음` : '미시음')}
+          bubbleScore={isBubbleMode ? myAvgScore : bubbleAvgScore}
+          bubbleSubText={isBubbleMode ? (tastingCount > 0 ? `나 · ${tastingCount}회` : '미시음') : (bubbleScores.length > 0 ? `${bubbleScores.length}개 버블` : '')}
+          onBubbleCardTap={() => setBubbleExpanded(!bubbleExpanded)}
+          isBubbleExpanded={bubbleExpanded}
+        />
+
+        {!isBubbleMode && (
+          <BubbleExpandPanel
+            isOpen={bubbleExpanded}
+            bubbleScores={bubbleScores.map((b) => ({
+              bubbleId: b.bubbleId,
+              bubbleName: b.bubbleName,
+              icon: b.bubbleIcon,
+              iconBgColor: b.bubbleColor,
+              ratingCount: b.memberCount,
+              avgScore: b.avgScore,
+            }))}
+            accentColor="--accent-wine"
+          />
+        )}
+
         <Divider />
 
         {/* ════════════════════════════════════════
             나의 기록
            ════════════════════════════════════════ */}
         <section style={{ padding: '16px 20px' }}>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>나의 기록</h3>
-              {axisLevels.length > 0 && myRecords.length > 0 && axisLevels.map((al) => (
-                <AxisLevelBadge key={al.axisValue} axisLabel={al.axisValue} level={al.level} />
-              ))}
-            </div>
+          <div className="mb-4 flex items-center gap-2">
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>나의 기록</h3>
             <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
-              {tastingCount > 0 ? `${tastingCount}회 시음 · ${latestTastingDate ?? ''}` : '아직 기록이 없어요'}
+              {tastingCount > 0 ? `${tastingCount}회 시음` : '아직 기록이 없어요'}
             </span>
           </div>
 
@@ -520,13 +594,31 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
                   onChange={() => {}}
                   readOnly
-                  referencePoints={[...allRecordDots, ...quadrantRefs].map((d) => ({
-                    x: d.avgAxisX,
-                    y: d.avgAxisY,
-                    satisfaction: d.avgSatisfaction,
-                    name: d.targetName,
-                    score: d.avgSatisfaction,
-                  }))}
+                  referencePoints={quadrantMode === 'avg'
+                    ? [...allRecordDots, ...quadrantRefs].map((d) => ({
+                        x: d.avgAxisX,
+                        y: d.avgAxisY,
+                        satisfaction: d.avgSatisfaction,
+                        name: d.targetName,
+                        score: d.avgSatisfaction,
+                        targetId: d.targetId,
+                        targetType: 'wine' as const,
+                      }))
+                    : otherRecordRefs
+                  }
+                  onRefNavigate={quadrantMode === 'avg'
+                    ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
+                    : undefined
+                  }
+                  onRefLongPress={quadrantMode === 'recent'
+                    ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
+                    : undefined
+                  }
+                  quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
+                  onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
+                    setQuadrantMode(mode)
+                    setFocusedRecordIdx(0)
+                  } : undefined}
                 />
               ) : null}
 
@@ -659,8 +751,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         bubbles={availableBubbles}
         onShareMultiple={shareToBubbles}
       />
-      <Toast message={toastMsg ?? ''} visible={!!toastMsg} onHide={() => setToastMsg(null)} />
-
       {/* 가격 분석 팝업 */}
       {showPriceReview && wine.priceReview && (
         <>

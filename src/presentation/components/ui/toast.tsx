@@ -1,34 +1,52 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
 
-interface ToastProps {
+/* ── 타입 ── */
+interface ToastItem {
+  id: number
   message: string
-  visible: boolean
-  duration?: number
-  onHide?: () => void
 }
 
-export function Toast({ message, visible, duration = 2000, onHide }: ToastProps) {
-  const [show, setShow] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+interface ToastContextValue {
+  showToast: (message: string, duration?: number) => void
+}
 
-  const dismiss = useCallback(() => {
-    setShow(false)
-    onHide?.()
-  }, [onHide])
+/* ── Context ── */
+const ToastContext = createContext<ToastContextValue | null>(null)
 
-  useEffect(() => {
-    if (!visible) return
-    const frame = requestAnimationFrame(() => setShow(true))
-    timerRef.current = setTimeout(dismiss, duration)
-    return () => {
-      cancelAnimationFrame(frame)
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [visible, duration, dismiss])
+export function useToast() {
+  const ctx = useContext(ToastContext)
+  if (!ctx) throw new Error('useToast must be used within ToastProvider')
+  return ctx
+}
 
-  if (!show) return null
+/* ── Provider ── */
+let nextId = 0
 
-  return <div className="toast">{message}</div>
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+
+  const showToast = useCallback((message: string, duration = 2000) => {
+    const id = ++nextId
+    setToasts((prev) => [...prev, { id, message }])
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id))
+    }, duration)
+  }, [])
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      {toasts.length > 0 && (
+        <div className="toast-container">
+          {toasts.map((t) => (
+            <div key={t.id} className="toast">
+              {t.message}
+            </div>
+          ))}
+        </div>
+      )}
+    </ToastContext.Provider>
+  )
 }
