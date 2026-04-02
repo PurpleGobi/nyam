@@ -21,10 +21,20 @@ function luminance(hex: string): number {
   return 0.299 * r + 0.587 * g + 0.114 * b
 }
 
-const FONT_SIZE: Record<number, { active: number; inactive: number }> = {
-  1: { active: 12, inactive: 11 },
-  2: { active: 10, inactive: 9 },
-  3: { active: 9, inactive: 8 },
+/** 링별 기본 폰트 사이즈 */
+const BASE_SIZE: Record<number, number> = { 1: 11, 2: 10, 3: 9 }
+
+/** 글자 수 기반 동적 사이즈 (줄바꿈 후 가장 긴 파트 기준) */
+function getFontSize(ring: number, nameKo: string, active: boolean): number {
+  const base = BASE_SIZE[ring] ?? 11
+  const parts = nameKo.split('/')
+  const longest = Math.max(...parts.map((p) => p.length))
+  // 긴 이름은 축소
+  let size = base
+  if (ring === 1 && longest >= 4) size = base - 1
+  if (ring === 2 && longest >= 3) size = base - 1
+  if (active) size += 1
+  return size
 }
 
 export function AromaSector({
@@ -38,16 +48,15 @@ export function AromaSector({
 }: AromaSectorProps) {
   const fillColor = sector.hex
   const fillOpacity = isActive ? 1.0 : 0.05
-  const fs = FONT_SIZE[sector.ring] ?? FONT_SIZE[1]
-  const fontSize = isActive ? fs.active : fs.inactive
+  const fontSize = getFontSize(sector.ring, sector.nameKo, isActive)
 
   // 활성 시 배경 밝기에 따라 텍스트 색상 결정
   const textColor = isActive
     ? (luminance(sector.hex) > 0.55 ? '#1a1a1a' : '#ffffff')
     : 'var(--text)'
 
-  // Ring 3만 줄바꿈 (/ 기준) — Ring 1, 2는 공간 충분
-  const nameParts = sector.ring === 3 ? sector.nameKo.split('/') : [sector.nameKo]
+  // '/' 기준 줄바꿈 (모든 링)
+  const nameParts = sector.nameKo.split('/')
 
   return (
     <g

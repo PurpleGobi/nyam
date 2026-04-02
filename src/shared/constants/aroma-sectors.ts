@@ -17,7 +17,7 @@ export const AROMA_SECTORS: readonly AromaSectorMeta[] = [
   // Ring 2 — 2차향 (양조 유래), 4 sectors, 90° each
   { id: 'butter', ring: 2, nameKo: '버터/크림', nameEn: 'Butter/Cream (MLF)', hex: '#fde68a' },
   { id: 'vanilla', ring: 2, nameKo: '바닐라', nameEn: 'Vanilla/Cedar (Oak)', hex: '#d97706' },
-  { id: 'spice', ring: 2, nameKo: '오크향신료', nameEn: 'Clove/Cinnamon (Oak)', hex: '#991b1b' },
+  { id: 'spice', ring: 2, nameKo: '오크/향신료', nameEn: 'Clove/Cinnamon (Oak)', hex: '#991b1b' },
   { id: 'toast', ring: 2, nameKo: '토스트', nameEn: 'Toast/Smoke (Lees/Oak)', hex: '#b45309' },
   // Ring 3 — 3차향 (숙성 유래), 3 sectors, 120° each
   { id: 'leather', ring: 3, nameKo: '가죽/담배', nameEn: 'Leather/Tobacco', hex: '#78350f' },
