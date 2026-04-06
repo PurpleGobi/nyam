@@ -646,7 +646,7 @@ export function HomeContainer() {
           onSearchClear={() => setSearchQuery('')}
           onStatsToggle={() => setIsStatsOpen(!isStatsOpen)}
           isStatsOpen={isStatsOpen}
-          canShowStats={canShowStats && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant')}
+          canShowStats={canShowStats && !isFollowingMode}
           accentType={accentType}
         />
 
@@ -701,7 +701,7 @@ export function HomeContainer() {
         )}
 
         {/* 통계 패널 — 아이콘으로 토글 (지도/팔로잉 모드에서는 숨김) */}
-        {isStatsOpen && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
+        {isStatsOpen && !isFollowingMode && canShowStats && (
           <div className="px-4 pt-2 md:px-8">
             <div className="flex flex-col gap-5">
               {activeTab === 'restaurant' && (
