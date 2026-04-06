@@ -11,39 +11,6 @@ const EMPTY_ICONS = {
   wine: Wine,
 } as const
 
-/** 상황 태그 색상 — 영문 키 (DB 저장값) + 한글 키 (레거시) 모두 지원 */
-const SCENE_COLORS: Record<string, string> = {
-  solo: 'var(--scene-solo, #7A9BAE)',
-  romantic: 'var(--scene-romantic, #B8879B)',
-  friends: 'var(--scene-friends, #7EAE8B)',
-  family: 'var(--scene-family, #C9A96E)',
-  business: 'var(--scene-business, #8B7396)',
-  drinks: 'var(--scene-drinks, #B87272)',
-  '혼밥/혼술': 'var(--scene-solo, #7A9BAE)',
-  '데이트': 'var(--scene-romantic, #B8879B)',
-  '친구/모임': 'var(--scene-friends, #7EAE8B)',
-  '가족': 'var(--scene-family, #C9A96E)',
-  '회식/접대': 'var(--scene-business, #8B7396)',
-  '술자리': 'var(--scene-drinks, #B87272)',
-}
-
-/** 와인 상황 태그 칩 색상 — 영문 키 + 한글 키 */
-const WINE_SCENE_COLORS: Record<string, string> = {
-  solo: '#7A9BAE',
-  romantic: '#B8879B',
-  gathering: '#7EAE8B',
-  pairing: '#C9A96E',
-  gift: '#8B7396',
-  tasting: '#B87272',
-  decanting: '#A0896C',
-  '혼술': '#7A9BAE',
-  '데이트': '#B8879B',
-  '모임': '#7EAE8B',
-  '페어링': '#C9A96E',
-  '선물': '#8B7396',
-  '시음': '#B87272',
-  '디캔팅': '#A0896C',
-}
 
 /** 영문 씬 값 → 한글 라벨 변환 */
 const SCENE_LABELS: Record<string, string> = {
@@ -121,7 +88,6 @@ export function RecordTimeline({
 
   const EmptyIcon = EMPTY_ICONS[emptyIcon] ?? Search
   const isWine = targetType === 'wine'
-  const sceneColors = isWine ? { ...SCENE_COLORS, ...WINE_SCENE_COLORS } : SCENE_COLORS
   const sceneLabels = isWine ? { ...SCENE_LABELS, ...WINE_SCENE_LABELS } : SCENE_LABELS
 
   return (
@@ -159,9 +125,7 @@ export function RecordTimeline({
           />
 
           {records.map((record, i) => {
-            const dotColor = record.scene
-              ? (sceneColors[record.scene] ?? `var(${accentColor})`)
-              : `var(${accentColor})`
+            const dotColor = `var(${accentColor})`
             const photos = recordPhotos.get(record.id) ?? []
             const displayDate = record.visitDate ?? record.createdAt.split('T')[0]
 

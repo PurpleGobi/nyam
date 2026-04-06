@@ -9,6 +9,7 @@ import type { RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { GroupedTarget } from '@/domain/entities/grouped-target'
 import type { ScoreSource } from '@/domain/entities/score'
 import { groupRecordsByTarget } from '@/domain/services/record-grouper'
+import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
@@ -37,6 +38,7 @@ import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 // StatsToggle card removed — stats now toggled via icon in HomeTabs
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
+import { useUserCoords } from '@/application/hooks/use-user-coords'
 
 // --- Heavy components: lazy-loaded (only fetched when actually rendered) ---
 const CalendarView = dynamic(() => import('@/presentation/components/home/calendar-view').then(m => ({ default: m.CalendarView })), { ssr: false })
@@ -53,7 +55,7 @@ const VarietalChart = dynamic(() => import('@/presentation/components/home/varie
 const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-type-chart').then(m => ({ default: m.WineTypeChart })), { ssr: false })
 
 function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | undefined {
-  if (!source || source === 'wishlist') return undefined
+  if (!source || source === 'bookmark') return undefined
   const map: Record<string, ScoreSource> = {
     mine: 'my',
     following: 'following',
@@ -63,27 +65,17 @@ function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | unde
   return map[source]
 }
 
-const FALLBACK_SOURCE_PRIORITY: Record<string, number> = {
-  mine: 0,
-  following: 1,
-  bubble: 2,
-  public: 3,
-  wishlist: 4,
+/** group.averageSource → ScoreSource 매핑 */
+function averageSourceToScoreSource(source?: string): ScoreSource | undefined {
+  if (!source) return undefined
+  return mapRecordSourceToScoreSource(source as RecordSource)
 }
 
-/** 그룹 내 source 우선순위 기반 대표 점수의 source 반환 */
-function getBestScoreSource(group: GroupedTarget): RecordSource | undefined {
-  const withScore = group.allRecords.filter((r) => r.satisfaction != null)
-  if (withScore.length === 0) return group.allRecords[0]?.source
-  const best = [...withScore].sort((a, b) => {
-    const pa = FALLBACK_SOURCE_PRIORITY[a.source ?? 'wishlist'] ?? 99
-    const pb = FALLBACK_SOURCE_PRIORITY[b.source ?? 'wishlist'] ?? 99
-    return pa - pb
-  })[0]
-  return best?.source
-}
-
-function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
+function sortRecords(
+  records: RecordWithTarget[],
+  sort: SortOption,
+  userCoords?: { lat: number; lng: number } | null,
+): RecordWithTarget[] {
   const sorted = [...records]
   switch (sort) {
     case 'latest':
@@ -106,10 +98,26 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
       }
       return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
     }
+    case 'distance': {
+      if (!userCoords) return sorted
+      return sorted.sort((a, b) => {
+        const distA = a.targetLat != null && a.targetLng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, a.targetLat, a.targetLng)
+          : Infinity
+        const distB = b.targetLat != null && b.targetLng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, b.targetLat, b.targetLng)
+          : Infinity
+        return distA - distB
+      })
+    }
   }
 }
 
-function sortGroupedTargets(groups: GroupedTarget[], sort: SortOption): GroupedTarget[] {
+function sortGroupedTargets(
+  groups: GroupedTarget[],
+  sort: SortOption,
+  userCoords?: { lat: number; lng: number } | null,
+): GroupedTarget[] {
   const sorted = [...groups]
   switch (sort) {
     case 'latest':
@@ -127,6 +135,18 @@ function sortGroupedTargets(groups: GroupedTarget[], sort: SortOption): GroupedT
       return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count':
       return sorted.sort((a, b) => b.visitCount - a.visitCount)
+    case 'distance': {
+      if (!userCoords) return sorted
+      return sorted.sort((a, b) => {
+        const distA = a.targetLat != null && a.targetLng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, a.targetLat, a.targetLng)
+          : Infinity
+        const distB = b.targetLat != null && b.targetLng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, b.targetLat, b.targetLng)
+          : Infinity
+        return distA - distB
+      })
+    }
   }
 }
 
@@ -145,6 +165,15 @@ function applyFilterRules(records: RecordWithTarget[], rules: FilterRule[], conj
   return records.filter((record) =>
     matchesAllRules(record as unknown as Record<string, unknown>, rules, conjunction),
   )
+}
+
+/** 와인탭 소팅 옵션 (거리순 미포함) */
+const WINE_SORT_LABELS: Partial<Record<SortOption, string>> = {
+  latest: '최신순',
+  score_high: '점수 높은순',
+  score_low: '점수 낮은순',
+  name: '이름순',
+  visit_count: '방문 많은순',
 }
 
 const MEAL_TIME_LABELS: Record<string, string> = {
@@ -171,6 +200,9 @@ export function HomeContainer() {
     initialTab: settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined,
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
+
+  // 거리순 소팅 시에만 위치 좌표 요청
+  const userCoords = useUserCoords(currentSort === 'distance' || activeTab === 'restaurant')
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
@@ -240,7 +272,7 @@ export function HomeContainer() {
       const vals = String(chip.value).split(',')
       for (const v of vals) {
         const trimmed = v.trim()
-        if (trimmed === 'visited' || trimmed === 'wishlist' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
+        if (trimmed === 'visited' || trimmed === 'bookmark' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
           views.push(trimmed)
         }
       }
@@ -353,14 +385,14 @@ export function HomeContainer() {
   // 그룹화 + 소팅 (카드/리스트/맵 뷰용)
   const allGroupedTargets = useMemo(() => {
     const grouped = groupRecordsByTarget(filteredRecords)
-    return sortGroupedTargets(grouped, currentSort)
-  }, [filteredRecords, currentSort])
+    return sortGroupedTargets(grouped, currentSort, userCoords)
+  }, [filteredRecords, currentSort, userCoords])
 
   // 캘린더 뷰용 개별 레코드 (소팅 적용)
   const allSortedRecords = useMemo(() => {
     if (viewMode !== 'calendar') return []
-    return sortRecords(filteredRecords, currentSort)
-  }, [filteredRecords, currentSort, viewMode])
+    return sortRecords(filteredRecords, currentSort, userCoords)
+  }, [filteredRecords, currentSort, viewMode, userCoords])
 
   // 페이지네이션: 카드 5개, 리스트/지도 10개
   const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
@@ -500,7 +532,7 @@ export function HomeContainer() {
               axisY={group.axisY}
               accentType={activeTab}
               visitCount={group.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(getBestScoreSource(group))}
+              scoreSource={averageSourceToScoreSource(group.averageSource)}
               onClick={() =>
                 router.push(
                   `/${group.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${group.targetId}`,
@@ -516,8 +548,20 @@ export function HomeContainer() {
     if (displayGrouped.length === 0) return renderEmptyState()
     return (
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-        {displayGrouped.map((group) =>
-          activeTab === 'wine' ? (
+        {displayGrouped.map((group) => {
+          // 소스 우선순위에 따른 최신 기록일 + 기록 갯수
+          const src = group.averageSource
+          const srcRecords = (!src || src === 'mine')
+            ? group.allRecords.filter((r) => !r.source || r.source === 'mine')
+            : group.allRecords.filter((r) => r.source === src)
+          const latestSrcRecord = srcRecords.length > 0
+            ? [...srcRecords].sort((a, b) => (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt))[0]
+            : null
+          const sourceDate = latestSrcRecord?.visitDate ?? group.visitDate
+          const sourceCount = srcRecords.length > 0 ? srcRecords.length : group.visitCount
+          const scoreSource = averageSourceToScoreSource(group.averageSource)
+
+          return activeTab === 'wine' ? (
             <WineCard
               key={group.targetId}
               id={group.latestRecordId}
@@ -525,8 +569,10 @@ export function HomeContainer() {
                 id: group.targetId,
                 name: group.targetName,
                 wineType: '',
-                variety: group.targetMeta ?? null,
-                region: group.targetArea ?? null,
+                vintage: group.vintage ?? null,
+                country: group.country ?? null,
+                variety: group.variety ?? group.targetMeta ?? null,
+                region: group.region ?? group.targetArea ?? null,
                 photoUrl: group.targetPhotoUrl,
               }}
               myRecord={{
@@ -537,6 +583,9 @@ export function HomeContainer() {
                 listStatus: group.listStatus ?? 'tasted',
                 purchasePrice: group.allRecords[0]?.purchasePrice ?? null,
               }}
+              latestDate={sourceDate}
+              visitCount={sourceCount}
+              scoreSource={scoreSource}
             />
           ) : (
             <RecordCard
@@ -545,24 +594,21 @@ export function HomeContainer() {
               targetId={group.targetId}
               targetType={group.targetType}
               name={group.targetName}
-              meta={[group.targetMeta, group.targetArea, group.visitDate].filter(Boolean).join(' · ')}
+              meta={[group.targetMeta, group.targetArea].filter(Boolean).join(' · ')}
               photoUrl={group.targetPhotoUrl}
               satisfaction={group.satisfaction}
               axisX={group.axisX}
               axisY={group.axisY}
               status={group.listStatus ?? 'visited'}
-              visitCount={group.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(getBestScoreSource(group))}
-              sources={[
-                {
-                  type: 'me',
-                  label: '나',
-                  detail: `${group.satisfaction ?? '-'} · ${group.visitDate ?? ''}`,
-                },
-              ]}
+              visitCount={sourceCount}
+              scoreSource={scoreSource}
+              latestDate={sourceDate}
+              distanceKm={userCoords && group.targetLat != null && group.targetLng != null
+                ? haversineDistance(userCoords.lat, userCoords.lng, group.targetLat, group.targetLng)
+                : null}
             />
-          ),
-        )}
+          )
+        })}
       </div>
     )
   }
@@ -593,14 +639,14 @@ export function HomeContainer() {
           onMapToggle={toggleMap}
           onSortToggle={toggleSort}
           isSortOpen={isSortOpen}
-          onSearchToggle={() => router.push('/discover')}
+          onSearchToggle={toggleSearch}
           isSearchOpen={isSearchOpen}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onSearchClear={() => setSearchQuery('')}
           onStatsToggle={() => setIsStatsOpen(!isStatsOpen)}
           isStatsOpen={isStatsOpen}
-          canShowStats={canShowStats && !isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant')}
+          canShowStats={canShowStats && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant')}
           accentType={accentType}
         />
 
@@ -610,6 +656,7 @@ export function HomeContainer() {
               currentSort={currentSort}
               onSortChange={handleSortChange}
               accentType={accentType}
+              labels={activeTab === 'wine' ? WINE_SORT_LABELS : undefined}
             />
           </div>
         )}
@@ -653,8 +700,8 @@ export function HomeContainer() {
           />
         )}
 
-        {/* 통계 패널 — 아이콘으로 토글 (캘린더/지도/팔로잉 모드에서는 숨김) */}
-        {isStatsOpen && !isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
+        {/* 통계 패널 — 아이콘으로 토글 (지도/팔로잉 모드에서는 숨김) */}
+        {isStatsOpen && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2 md:px-8">
             <div className="flex flex-col gap-5">
               {activeTab === 'restaurant' && (

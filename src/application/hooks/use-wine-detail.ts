@@ -78,7 +78,7 @@ export function useWineDetail(
         // 3. records 유무와 무관한 fetch (항상 실행)
         const [followingResult, nyamResult, scoresResult, publicResult] = await Promise.allSettled([
           repo.findFollowingRecordsByTarget(wineId, userId),
-          repo.findPublicSatisfactionAvg(wineId),
+          repo.findPublicSatisfactionAvg(wineId, userId),
           repo.findBubbleScores(wineId, userId),
           repo.findPublicRecordsByTarget(wineId, userId),
         ])
@@ -87,12 +87,19 @@ export function useWineDetail(
         setPublicRecords(publicResult.status === 'fulfilled' ? publicResult.value : [])
         setNyamData(nyamResult.status === 'fulfilled' ? nyamResult.value : null)
 
-        // 4. records가 있을 때만 추가 fetch
-        if (records.length > 0) {
+        // 4. 모든 소스 기록의 사진, 사분면, 연결 식당
+        const fetchedFollowing = followingResult.status === 'fulfilled' ? followingResult.value : []
+        const fetchedPublic = publicResult.status === 'fulfilled' ? publicResult.value : []
+        const allRecordIds = [
+          ...records.map((r) => r.id),
+          ...fetchedFollowing.map((r) => r.id),
+          ...fetchedPublic.map((r) => r.id),
+        ]
+        if (allRecordIds.length > 0) {
           const [photosRes, refsRes, linkedRes] = await Promise.allSettled([
-            repo.findRecordPhotos(records.map((r) => r.id)),
-            repo.findQuadrantRefs(userId, wineId),
-            repo.findLinkedRestaurants(wineId, userId),
+            repo.findRecordPhotos(allRecordIds),
+            records.length > 0 ? repo.findQuadrantRefs(userId, wineId) : Promise.resolve([]),
+            records.length > 0 ? repo.findLinkedRestaurants(wineId, userId) : Promise.resolve([]),
           ])
           if (photosRes.status === 'fulfilled') setRecordPhotos(photosRes.value)
           if (refsRes.status === 'fulfilled') setQuadrantRefs(refsRes.value)

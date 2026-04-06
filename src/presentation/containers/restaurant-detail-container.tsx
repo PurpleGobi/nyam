@@ -7,13 +7,14 @@ import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
-import { useWishlist } from '@/application/hooks/use-wishlist'
+import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
 import { useTargetScores } from '@/application/hooks/use-target-scores'
+import type { ScoreSource } from '@/domain/entities/score'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
@@ -39,7 +40,7 @@ interface RestaurantDetailContainerProps {
 
 
 function Divider() {
-  return <div style={{ height: '8px', backgroundColor: '#F0EDE8' }} />
+  return <div style={{ height: '8px', backgroundColor: 'var(--bg-elevated)' }} />
 }
 
 export function RestaurantDetailContainer({ restaurantId, bubbleId }: RestaurantDetailContainerProps) {
@@ -91,7 +92,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     nyamCount,
   })
 
-  const { isWishlisted, toggle: toggleWishlist } = useWishlist(
+  const { isBookmarked, toggle: toggleBookmark } = useBookmark(
     user?.id ?? null,
     restaurantId,
     'restaurant',
@@ -153,14 +154,20 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   // 버블 평균 점수
   // 사분면 현재 dot (이 식당 내 모든 방문의 평균)
-  const allRecordsWithAxis = myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
-  const avgDot = allRecordsWithAxis.length > 0
-    ? {
-        axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisX!, 0) / allRecordsWithAxis.length),
-        axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisY!, 0) / allRecordsWithAxis.length),
-        satisfaction: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.satisfaction!, 0) / allRecordsWithAxis.length),
-      }
-    : null
+  const allRecordsWithAxis = useMemo(
+    () => myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null),
+    [myRecords],
+  )
+  const avgDot = useMemo(
+    () => allRecordsWithAxis.length > 0
+      ? {
+          axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisX!, 0) / allRecordsWithAxis.length),
+          axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisY!, 0) / allRecordsWithAxis.length),
+          satisfaction: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.satisfaction!, 0) / allRecordsWithAxis.length),
+        }
+      : null,
+    [allRecordsWithAxis],
+  )
 
   // 최근 기록 dot
   const sortedRecords = useMemo(() =>
@@ -188,8 +195,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   // visits 모드에서 selectedSource에 따른 타인 micro dot
   const visitsRefPoints = useMemo(() => {
-    // 내 기록 ref dots (selectedSources에 'my'가 있을 때)
-    const myRefs = selectedSources.includes('my') ? otherRecordRefs : []
+    // 내 기록 micro dots (selectedSources에 'my'가 있을 때)
+    const myMicroDots = selectedSources.includes('my')
+      ? otherRecordRefs.map((r) => ({ ...r, isMicroDot: true as const }))
+      : []
 
     // 타인 micro dots
     type MicroSource = { axisX: number | null; axisY: number | null; satisfaction: number | null }
@@ -198,12 +207,16 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     if (selectedSources.includes('following')) {
       microRecords.push(...followingRecords.filter((r) => r.axisX != null && r.axisY != null))
     }
-    // bubble: bubbleScores에 axisX/axisY 없으므로 현재 미지원
+    if (selectedSources.includes('bubble')) {
+      for (const b of bubbleScores) {
+        microRecords.push(...b.dots.map((d) => ({ axisX: d.axisX as number | null, axisY: d.axisY as number | null, satisfaction: d.satisfaction as number | null })))
+      }
+    }
     if (selectedSources.includes('nyam')) {
       microRecords.push(...publicRecords.filter((r) => r.axisX != null && r.axisY != null))
     }
 
-    const microDots = microRecords.slice(0, 20).map((r) => ({
+    const microDots = microRecords.slice(0, 30).map((r) => ({
       x: r.axisX ?? 50,
       y: r.axisY ?? 50,
       satisfaction: r.satisfaction ?? 50,
@@ -212,10 +225,43 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       isMicroDot: true,
     }))
 
-    return [...myRefs, ...microDots]
-  }, [selectedSources, otherRecordRefs, followingRecords, publicRecords])
+    return [...myMicroDots, ...microDots]
+  }, [selectedSources, otherRecordRefs, followingRecords, bubbleScores, publicRecords])
 
-  const currentDot = quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot
+  // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
+  const followingAxisRecords = useMemo(
+    () => followingRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
+    [followingRecords],
+  )
+  const bubbleAxisRecords = useMemo(
+    () => bubbleScores.flatMap((b) => b.dots),
+    [bubbleScores],
+  )
+  const publicAxisRecords = useMemo(
+    () => publicRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
+    [publicRecords],
+  )
+  const fallbackDot = useMemo(() => {
+    if (avgDot) return null
+    const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
+      ['following', followingAxisRecords],
+      ['bubble', bubbleAxisRecords],
+      ['nyam', publicAxisRecords],
+    ]
+    const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
+    if (!match) return null
+    const [, dots] = match
+    return {
+      axisX: Math.round(dots.reduce((s, d) => s + d.axisX, 0) / dots.length),
+      axisY: Math.round(dots.reduce((s, d) => s + d.axisY, 0) / dots.length),
+      satisfaction: Math.round(dots.reduce((s, d) => s + d.satisfaction, 0) / dots.length),
+    }
+  }, [avgDot, selectedSources, followingAxisRecords, bubbleAxisRecords, publicAxisRecords])
+
+  const mySelected = selectedSources.includes('my')
+  const currentDot = mySelected
+    ? (quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot)
+    : null
 
   // 액션 대상 기록 ID (최근 뷰에서는 포커스된 기록, 평균 뷰에서는 최신 기록)
   const activeRecordId = quadrantMode === 'visits' && focusedRecord
@@ -253,7 +299,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     } else {
       setShowShareSheet(true)
     }
-  }, [canShare, blockReason])
+  }, [canShare, blockReason, showToast])
 
   const handleDelete = useCallback(async () => {
     if (!activeRecordId || !user) return
@@ -280,17 +326,30 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       navigator.share({ title: restaurant?.name, url: window.location.href })
     }
   }, [restaurant])
-  // 히어로 사진
+  // 히어로 사진: 소스 우선순위(나→팔로잉→공개) 기준 최신 사진
   const heroPhotos = useMemo(() => {
     if (!restaurant) return []
+    const getPhotosFromRecords = (records: typeof myRecords) => {
+      const urls: string[] = []
+      const sorted = [...records].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      for (const record of sorted) {
+        const photos = recordPhotos.get(record.id)
+        if (photos) {
+          for (const p of photos) urls.push(p.url)
+        }
+      }
+      return urls
+    }
+    // 소스 우선순위: 나 → 팔로잉 → 공개
+    const sources = [myRecords, followingRecords, publicRecords]
+    for (const records of sources) {
+      const urls = getPhotosFromRecords(records)
+      if (urls.length > 0) return urls
+    }
     const base = restaurant.photos ?? []
     if (base.length > 0) return base
-    const urls: string[] = []
-    recordPhotos.forEach((photos) => {
-      for (const p of photos) urls.push(p.url)
-    })
-    return urls
-  }, [restaurant, recordPhotos])
+    return []
+  }, [restaurant, myRecords, followingRecords, publicRecords, recordPhotos])
 
   if (isLoading || !restaurant) {
     return (
@@ -322,8 +381,8 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="restaurant"
-          isWishlisted={isWishlisted}
-          onWishlistToggle={toggleWishlist}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={toggleBookmark}
           onShare={handlePageShare}
         />
 
@@ -369,7 +428,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                     <span>{restaurant.district}</span>
                   </>
                 )}
-                {axisLevels.find((al) => al.axisValue === areaAxisValue) && (
+                {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === areaAxisValue) && (
                   <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === areaAxisValue)!.level} />
                 )}
               </div>
@@ -405,7 +464,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                     </>
                   )
                 })()}
-                {axisLevels.find((al) => al.axisValue === restaurant.genre) && (
+                {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === restaurant.genre) && (
                   <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.genre)!.level} />
                 )}
               </div>
@@ -414,7 +473,9 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
             <div style={{ height: '8px' }} />
           </section>
 
-          {/* ─── 2. 스코어카드 + 버블 확장 + 뱃지 ─── */}
+          {/* ─── 2. 뱃지 + 스코어카드 ─── */}
+          <BadgeRow badges={badges} />
+
           <ScoreCards
             accentColor="--accent-food"
             cards={scoreCards}
@@ -422,8 +483,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
             onToggle={toggleSource}
             toggleActive={isCardToggleActive}
           />
-
-          <BadgeRow badges={badges} />
         </div>
 
         {/* ─── 3. 평가 사분면 ─── */}
@@ -450,24 +509,35 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
               />
             </section>
           </>
-        ) : viewMode === 'my_records' && currentDot ? (
+        ) : (currentDot || visitsRefPoints.length > 0) ? (
           <>
             <Divider />
             <section style={{ padding: '16px 20px' }}>
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
-                나의 평가
+                {(() => {
+                  const SOURCE_PRIORITY: ScoreSource[] = ['my', 'following', 'bubble', 'nyam']
+                  const LABELS: Record<ScoreSource, string> = { my: '나의 평가', following: '팔로잉 평가', bubble: '버블 평가', nyam: 'nyam 평가' }
+                  const top = SOURCE_PRIORITY.find((s) => selectedSources.includes(s)) ?? 'my'
+                  return LABELS[top]
+                })()}
                 <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
-                  {quadrantMode === 'compare'
+                  {viewMode === 'my_records' && quadrantMode === 'compare'
                     ? `${myRecords.length}회 방문`
-                    : `최근 방문${focusedRecord?.visitDate ? ` · ${focusedRecord.visitDate}` : ''}`
+                    : viewMode === 'my_records'
+                      ? `최근 방문${focusedRecord?.visitDate ? ` · ${focusedRecord.visitDate}` : ''}`
+                      : `${visitsRefPoints.length}개 기록`
                   }
                 </span>
               </h3>
               <RatingInput
                 type="restaurant"
-                value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
+                value={currentDot
+                  ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
+                  : { x: 50, y: 50 }
+                }
                 onChange={() => {}}
                 readOnly
+                hideDot={!currentDot}
                 referencePoints={quadrantMode === 'compare'
                   ? quadrantRefs.map((d) => ({
                       x: d.avgAxisX,

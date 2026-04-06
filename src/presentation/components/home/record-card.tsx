@@ -38,7 +38,7 @@ export interface RecordCardProps {
   satisfaction: number | null
   axisX: number | null
   axisY: number | null
-  status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+  status: 'visited' | 'bookmark' | 'cellar' | 'tasted'
   sources?: SourceInfo[]
   badges?: BadgeInfo[]
   likeCount?: number
@@ -48,6 +48,8 @@ export interface RecordCardProps {
   onShareClick?: () => void
   visitCount?: number
   scoreSource?: ScoreSource
+  latestDate?: string | null
+  distanceKm?: number | null
 }
 
 export function RecordCard({
@@ -69,6 +71,8 @@ export function RecordCard({
   onShareClick,
   visitCount,
   scoreSource,
+  latestDate,
+  distanceKm,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -84,7 +88,7 @@ export function RecordCard({
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        minHeight: '190px',
+        minHeight: '170px',
       }}
     >
       <div className="relative w-[46%] shrink-0">
@@ -124,14 +128,11 @@ export function RecordCard({
 
       <div className="flex flex-1 flex-col p-3.5" style={{ minWidth: 0 }}>
         <p className="truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>{name}</p>
-        <p className="mb-2.5 text-[12px]" style={{ color: 'var(--text-sub)' }}>
+        <p className="mb-2.5 truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
           {meta}
-          {visitCount != null && visitCount > 1 && (
-            <span
-              className="ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold"
-              style={{ backgroundColor: 'var(--bg-elevated)', color: accentColor }}
-            >
-              {visitCount}회
+          {distanceKm != null && (
+            <span style={{ color: 'var(--text-hint)' }}>
+              {' · '}{distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)}km`}
             </span>
           )}
         </p>
@@ -171,15 +172,10 @@ export function RecordCard({
               )}
             </div>
 
-            {sources && sources.length > 0 && (
-              <div className="flex flex-col gap-1">
-                {sources.map((src, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-sub)' }}>
-                    <SourceTag type={src.type}>{src.label}</SourceTag>
-                    <span className="min-w-0 flex-1 truncate">{src.detail}</span>
-                  </div>
-                ))}
-              </div>
+            {(latestDate || (visitCount != null && visitCount > 0)) && (
+              <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
+                {[latestDate, visitCount != null && visitCount > 0 ? `${visitCount}회` : null].filter(Boolean).join(' · ')}
+              </p>
             )}
           </>
         )}

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Wine } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
+import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
+import type { ScoreSource } from '@/domain/entities/score'
 
 export interface WineBubbleMember {
   nickname: string
@@ -18,6 +20,8 @@ export interface WineCardProps {
     id: string
     name: string
     wineType: string
+    vintage: number | null
+    country: string | null
     variety: string | null
     region: string | null
     photoUrl: string | null
@@ -27,13 +31,16 @@ export interface WineCardProps {
     axisX: number | null
     axisY: number | null
     visitDate: string | null
-    listStatus: 'visited' | 'tasted' | 'cellar' | 'wishlist'
+    listStatus: 'visited' | 'tasted' | 'cellar' | 'bookmark'
     purchasePrice: number | null
   } | null
   bubbleMembers?: WineBubbleMember[]
+  visitCount?: number
+  latestDate?: string | null
+  scoreSource?: ScoreSource
 }
 
-export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
+export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource }: WineCardProps) {
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
@@ -43,7 +50,7 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
   const visibleMembers = sortedMembers.slice(0, 2)
   const extraCount = sortedMembers.length - 2
 
-  const meta = [wine.wineType, wine.variety, wine.region].filter(Boolean).join(' · ')
+  const meta = [wine.vintage, wine.country, wine.variety].filter(Boolean).join(' · ')
 
   return (
     <button
@@ -73,7 +80,7 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
         <p className="truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>
           {wine.name}
         </p>
-        <p className="mb-2.5 text-[12px]" style={{ color: 'var(--text-sub)' }}>{meta}</p>
+        <p className="mb-2.5 truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>{meta}</p>
 
         <div className="mb-2.5 flex items-center gap-2.5">
           {hasQuadrant && (
@@ -85,14 +92,25 @@ export function WineCard({ wine, myRecord, bubbleMembers }: WineCardProps) {
             />
           )}
           {myRecord?.satisfaction != null && (
-            <span
-              className="text-[32px] font-extrabold leading-none"
-              style={{ color: 'var(--accent-wine)' }}
-            >
-              {myRecord.satisfaction}
-            </span>
+            <div className="flex items-baseline gap-1">
+              <span
+                className="text-[32px] font-extrabold leading-none"
+                style={{ color: 'var(--accent-wine)' }}
+              >
+                {myRecord.satisfaction}
+              </span>
+              {scoreSource && scoreSource !== 'my' && (
+                <ScoreSourceBadge source={scoreSource} />
+              )}
+            </div>
           )}
         </div>
+
+        {(latestDate || (visitCount != null && visitCount > 0)) && (
+          <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
+            {[latestDate, visitCount != null && visitCount > 0 ? `${visitCount}회` : null].filter(Boolean).join(' · ')}
+          </p>
+        )}
 
         {isCellar && (
           <div className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-sub)' }}>

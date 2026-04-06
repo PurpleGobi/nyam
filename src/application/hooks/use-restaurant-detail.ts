@@ -84,7 +84,7 @@ export function useRestaurantDetail(
           repo.findPublicRecordsByTarget(restaurantId, userId),
           repo.findBubbleScores(restaurantId, userId),
           repo.findFollowingRecordsByTarget(restaurantId, userId),
-          repo.findPublicSatisfactionAvg(restaurantId),
+          repo.findPublicSatisfactionAvg(restaurantId, userId),
         ])
         if (cancelled) return
         const records = recordsResult.status === 'fulfilled' ? recordsResult.value : []
@@ -97,9 +97,10 @@ export function useRestaurantDetail(
         const fetchedNyamData = nyamResult.status === 'fulfilled' ? nyamResult.value : null
         setNyamData(fetchedNyamData)
 
-        // 3. 내 기록 + 타인 공개 기록의 사진, 사분면, 연결 와인
+        // 3. 모든 소스 기록의 사진, 사분면, 연결 와인
         const allRecordIds = [
           ...records.map((rec) => rec.id),
+          ...fetchedFollowingRecords.map((rec) => rec.id),
           ...fetchedPublicRecords.map((rec) => rec.id),
         ]
         if (allRecordIds.length > 0) {

@@ -73,7 +73,7 @@ export function HomeTabs({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
-              placeholder="이름으로 검색"
+              placeholder={foodActive ? '식당 이름으로 검색' : '와인 이름으로 검색'}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -105,14 +105,14 @@ export function HomeTabs({
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
-              <ViewIcon size={20} />
-            </button>
             {foodActive && (
               <button type="button" onClick={onMapToggle} className={`icon-button ${isMapView ? 'active map' : ''}`} title="지도">
                 <Map size={20} />
               </button>
             )}
+            <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
+              <ViewIcon size={20} />
+            </button>
             <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`} title="정렬">
               <ArrowUpDown size={20} />
             </button>

@@ -6,13 +6,14 @@ import { MapPin, Grape, Thermometer, GlassWater, CalendarRange, UtensilsCrossed,
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
-import { useWishlist } from '@/application/hooks/use-wishlist'
+import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
 import { useTargetScores } from '@/application/hooks/use-target-scores'
+import type { ScoreSource } from '@/domain/entities/score'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -29,6 +30,8 @@ import { useToast } from '@/presentation/components/ui/toast'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
+import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
+import { BubbleRecordSection } from '@/presentation/components/detail/bubble-record-section'
 
 interface WineDetailContainerProps {
   wineId: string
@@ -79,6 +82,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     followingCount,
     nyamAvgScore,
     nyamCount,
+    viewMode,
   } = useWineDetail(wineId, user?.id ?? null)
 
   const {
@@ -99,7 +103,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     nyamCount,
   })
 
-  const { isWishlisted, toggle: toggleWishlist } = useWishlist(
+  const { isBookmarked, toggle: toggleBookmark } = useBookmark(
     user?.id ?? null, wineId, 'wine',
   )
 
@@ -139,24 +143,31 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   }, [bubbleMemberShares, user?.id])
 
   // ─── 사분면: 모든 방문 dot ───
-  const allRecordsWithAxis = myRecords
-    .filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
-  const allRecordDots = allRecordsWithAxis
-    .map((r) => ({
+  const allRecordsWithAxis = useMemo(
+    () => myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null),
+    [myRecords],
+  )
+  const allRecordDots = useMemo(
+    () => allRecordsWithAxis.map((r) => ({
       targetId: r.id,
       targetName: r.visitDate ?? r.createdAt.split('T')[0],
       avgAxisX: r.axisX!,
       avgAxisY: r.axisY!,
       avgSatisfaction: r.satisfaction!,
-    }))
+    })),
+    [allRecordsWithAxis],
+  )
 
-  const avgDot = allRecordDots.length > 0
-    ? {
-        axisX: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisX, 0) / allRecordDots.length),
-        axisY: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisY, 0) / allRecordDots.length),
-        satisfaction: Math.round(allRecordDots.reduce((s, d) => s + d.avgSatisfaction, 0) / allRecordDots.length),
-      }
-    : null
+  const avgDot = useMemo(
+    () => allRecordDots.length > 0
+      ? {
+          axisX: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisX, 0) / allRecordDots.length),
+          axisY: Math.round(allRecordDots.reduce((s, d) => s + d.avgAxisY, 0) / allRecordDots.length),
+          satisfaction: Math.round(allRecordDots.reduce((s, d) => s + d.avgSatisfaction, 0) / allRecordDots.length),
+        }
+      : null,
+    [allRecordDots],
+  )
 
   // 최근 기록 dot
   const sortedRecords = useMemo(() =>
@@ -184,7 +195,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
   // visits 모드에서 selectedSources에 따른 타인 micro dot (멀티셀렉트)
   const visitsRefPoints = useMemo(() => {
-    const myRefs = selectedSources.includes('my') ? otherRecordRefs : []
+    const myMicroDots = selectedSources.includes('my')
+      ? otherRecordRefs.map((r) => ({ ...r, isMicroDot: true as const }))
+      : []
 
     type MicroSource = { axisX: number | null; axisY: number | null; satisfaction: number | null }
     const microRecords: MicroSource[] = []
@@ -192,12 +205,16 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     if (selectedSources.includes('following')) {
       microRecords.push(...followingRecords.filter((r) => r.axisX != null && r.axisY != null))
     }
-    // bubble: bubbleScores에 axisX/axisY 없으므로 현재 미지원
+    if (selectedSources.includes('bubble')) {
+      for (const b of bubbleScores) {
+        microRecords.push(...b.dots.map((d) => ({ axisX: d.axisX as number | null, axisY: d.axisY as number | null, satisfaction: d.satisfaction as number | null })))
+      }
+    }
     if (selectedSources.includes('nyam')) {
       microRecords.push(...publicRecords.filter((r) => r.axisX != null && r.axisY != null))
     }
 
-    const microDots = microRecords.slice(0, 20).map((r) => ({
+    const microDots = microRecords.slice(0, 30).map((r) => ({
       x: r.axisX ?? 50,
       y: r.axisY ?? 50,
       satisfaction: r.satisfaction ?? 50,
@@ -206,10 +223,43 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       isMicroDot: true,
     }))
 
-    return [...myRefs, ...microDots]
-  }, [selectedSources, otherRecordRefs, followingRecords, publicRecords])
+    return [...myMicroDots, ...microDots]
+  }, [selectedSources, otherRecordRefs, followingRecords, bubbleScores, publicRecords])
 
-  const currentDot = quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot
+  // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
+  const followingAxisRecords = useMemo(
+    () => followingRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
+    [followingRecords],
+  )
+  const bubbleAxisRecords = useMemo(
+    () => bubbleScores.flatMap((b) => b.dots),
+    [bubbleScores],
+  )
+  const publicAxisRecords = useMemo(
+    () => publicRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
+    [publicRecords],
+  )
+  const fallbackDot = useMemo(() => {
+    if (avgDot) return null
+    const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
+      ['following', followingAxisRecords],
+      ['bubble', bubbleAxisRecords],
+      ['nyam', publicAxisRecords],
+    ]
+    const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
+    if (!match) return null
+    const [, dots] = match
+    return {
+      axisX: Math.round(dots.reduce((s, d) => s + d.axisX, 0) / dots.length),
+      axisY: Math.round(dots.reduce((s, d) => s + d.axisY, 0) / dots.length),
+      satisfaction: Math.round(dots.reduce((s, d) => s + d.satisfaction, 0) / dots.length),
+    }
+  }, [avgDot, selectedSources, followingAxisRecords, bubbleAxisRecords, publicAxisRecords])
+
+  const mySelected = selectedSources.includes('my')
+  const currentDot = mySelected
+    ? (quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot)
+    : null
 
   const activeRecordId = quadrantMode === 'visits' && focusedRecord
     ? focusedRecord.id
@@ -286,15 +336,36 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const hasAromaData = mergedAroma.primary.length > 0 || mergedAroma.secondary.length > 0 || mergedAroma.tertiary.length > 0
   const hasStructureData = myRecords.some((r) => r.complexity !== null)
 
-  // ─── 히어로 사진 ───
+  // ─── 히어로 사진: 소스 우선순위(나→팔로잉→공개) 기준 최신 사진 ───
   const heroPhotos = useMemo(() => {
     if (!wine) return []
+    const getPhotosFromRecords = (records: typeof myRecords) => {
+      const urls: string[] = []
+      const sorted = [...records].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      for (const record of sorted) {
+        const photos = recordPhotos.get(record.id)
+        if (photos) {
+          for (const p of photos) urls.push(p.url)
+        }
+      }
+      return urls
+    }
+    const sources = [myRecords, followingRecords, publicRecords]
+    for (const records of sources) {
+      const urls = getPhotosFromRecords(records)
+      if (urls.length > 0) return urls
+    }
     if (wine.photos.length > 0) return wine.photos
     if (wine.labelImageUrl) return [wine.labelImageUrl]
-    const urls: string[] = []
-    recordPhotos.forEach((photos) => { for (const p of photos) urls.push(p.url) })
-    return urls
-  }, [wine, recordPhotos])
+    return []
+  }, [wine, myRecords, followingRecords, publicRecords, recordPhotos])
+
+  // 연결 식당 이름 맵 (RecordTimeline용)
+  const linkedRestaurantNames = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const r of linkedRestaurants) map.set(r.restaurantId, r.restaurantName)
+    return map
+  }, [linkedRestaurants])
 
   // ─── 콜백 ───
   const handleBack = useCallback(() => router.back(), [router])
@@ -357,8 +428,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="wine"
-          isWishlisted={isWishlisted}
-          onWishlistToggle={toggleWishlist}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={toggleBookmark}
           onShare={handlePageShare}
         />
 
@@ -454,7 +525,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   <span>{wine.subRegion ?? wine.appellation}</span>
                 </>
               )}
-              {axisLevels.find((al) => al.axisValue === wine.region) && (
+              {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === wine.region) && (
                 <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === wine.region)!.level} />
               )}
             </div>
@@ -486,7 +557,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   {mainVariety}
                 </span>
               )}
-              {axisLevels.find((al) => al.axisValue === bestVariety) && (
+              {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === bestVariety) && (
                 <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === bestVariety)!.level} />
               )}
             </div>
@@ -558,172 +629,155 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
           toggleActive={isCardToggleActive}
         />
 
+        {/* ─── 평가 사분면 (독립 섹션) ─── */}
+        {isBubbleMode && bubbleRefPoints.length > 0 ? (
+          <>
+            <Divider />
+            <section style={{ padding: '16px 20px' }}>
+              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                버블 멤버 평가
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
+                  {bubbleRefPoints.length}명
+                </span>
+              </h3>
+              <RatingInput
+                type="wine"
+                value={currentDot
+                  ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
+                  : { x: 50, y: 50 }
+                }
+                onChange={() => {}}
+                readOnly
+                hideDot={!currentDot}
+                referencePoints={bubbleRefPoints}
+              />
+            </section>
+          </>
+        ) : (currentDot || visitsRefPoints.length > 0) ? (
+          <>
+            <Divider />
+            <section style={{ padding: '16px 20px' }}>
+              <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
+                {(() => {
+                  const SOURCE_PRIORITY: ScoreSource[] = ['my', 'following', 'bubble', 'nyam']
+                  const LABELS: Record<ScoreSource, string> = { my: '나의 평가', following: '팔로잉 평가', bubble: '버블 평가', nyam: 'nyam 평가' }
+                  const top = SOURCE_PRIORITY.find((s) => selectedSources.includes(s)) ?? 'my'
+                  return LABELS[top]
+                })()}
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
+                  {viewMode === 'my_records' && quadrantMode === 'compare'
+                    ? `${myRecords.length}회 시음`
+                    : viewMode === 'my_records'
+                      ? `최근 시음${focusedRecord?.visitDate ? ` · ${focusedRecord.visitDate}` : ''}`
+                      : `${visitsRefPoints.length}개 기록`
+                  }
+                </span>
+              </h3>
+              <RatingInput
+                type="wine"
+                value={currentDot
+                  ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
+                  : { x: 50, y: 50 }
+                }
+                onChange={() => {}}
+                readOnly
+                hideDot={!currentDot}
+                referencePoints={quadrantMode === 'compare'
+                  ? quadrantRefs.map((d) => ({
+                      x: d.avgAxisX,
+                      y: d.avgAxisY,
+                      satisfaction: d.avgSatisfaction,
+                      name: d.targetName,
+                      score: d.avgSatisfaction,
+                      targetId: d.targetId,
+                      targetType: 'wine' as const,
+                    }))
+                  : visitsRefPoints
+                }
+                onRefNavigate={quadrantMode === 'compare'
+                  ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
+                  : undefined
+                }
+                onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('my')
+                  ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
+                  : undefined
+                }
+                quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
+                onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
+                  setQuadrantMode(mode)
+                  setFocusedRecordIdx(0)
+                } : undefined}
+              />
+            </section>
+          </>
+        ) : null}
+
+        {/* ─── [와인 전용] 아로마휠 + 품질평가 ─── */}
+        {(hasAromaData || hasStructureData) && (
+          <>
+            <Divider />
+            <section style={{ padding: '16px 20px' }}>
+              <div className="flex flex-col gap-6">
+                {hasAromaData && (
+                  <div>
+                    <p className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
+                      향 프로필
+                      <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>
+                        {tastingCount}회 누적
+                      </span>
+                    </p>
+                    <AromaWheel value={mergedAroma} readOnly />
+                  </div>
+                )}
+                {hasStructureData && (
+                  <div>
+                    <p className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
+                      품질 평가
+                      <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>평균</span>
+                    </p>
+                    <WineStructureEval
+                      value={mergedStructure}
+                      onChange={() => {}}
+                      aromaRingCount={0}
+                      onAutoScoreChange={() => {}}
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
         <Divider />
 
-        {/* ════════════════════════════════════════
-            나의 기록
-           ════════════════════════════════════════ */}
-        <section style={{ padding: '16px 20px' }}>
-          <div className="mb-4 flex items-center gap-2">
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>나의 기록</h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-hint)' }}>
-              {tastingCount > 0 ? `${tastingCount}회 시음` : '아직 기록이 없어요'}
-            </span>
-          </div>
-
-          {(tastingCount > 0 || (isBubbleMode && bubbleRefPoints.length > 0)) && (
-            <div className="flex flex-col gap-6">
-              {/* 사분면 — 버블 모드: 멤버 dots / 일반 모드: 내 기록 dots */}
-              {isBubbleMode && bubbleRefPoints.length > 0 ? (
-                <RatingInput
-                  type="wine"
-                  value={currentDot
-                    ? { x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }
-                    : { x: 50, y: 50 }
-                  }
-                  onChange={() => {}}
-                  readOnly
-                  hideDot={!currentDot}
-                  referencePoints={bubbleRefPoints}
-                />
-              ) : currentDot ? (
-                <RatingInput
-                  type="wine"
-                  value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
-                  onChange={() => {}}
-                  readOnly
-                  referencePoints={quadrantMode === 'compare'
-                    ? quadrantRefs.map((d) => ({
-                        x: d.avgAxisX,
-                        y: d.avgAxisY,
-                        satisfaction: d.avgSatisfaction,
-                        name: d.targetName,
-                        score: d.avgSatisfaction,
-                        targetId: d.targetId,
-                        targetType: 'wine' as const,
-                      }))
-                    : visitsRefPoints
-                  }
-                  onRefNavigate={quadrantMode === 'compare'
-                    ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
-                    : undefined
-                  }
-                  onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('my')
-                    ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
-                    : undefined
-                  }
-                  quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
-                  onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
-                    setQuadrantMode(mode)
-                    setFocusedRecordIdx(0)
-                  } : undefined}
-                />
-              ) : null}
-
-              {/* 향 휠 */}
-              {hasAromaData && (
-                <div>
-                  <p className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-                    향 프로필
-                    <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>
-                      {tastingCount}회 누적
-                    </span>
-                  </p>
-                  <AromaWheel value={mergedAroma} readOnly />
-                </div>
-              )}
-
-              {/* 품질 평가 — 기록할 때 쓰는 슬라이더 그대로 */}
-              {hasStructureData && (
-                <div>
-                  <p className="mb-2" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-sub)' }}>
-                    품질 평가
-                    <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '6px' }}>평균</span>
-                  </p>
-                  <WineStructureEval
-                    value={mergedStructure}
-                    onChange={() => {}}
-                    aromaRingCount={0}
-                    onAutoScoreChange={() => {}}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+        {/* ─── 나의 기록 타임라인 ─── */}
+        <RecordTimeline
+          records={myRecords}
+          recordPhotos={recordPhotos}
+          accentColor="--accent-wine"
+          sectionTitle="나의 기록"
+          sectionMeta={tastingCount > 0 ? `시음 ${tastingCount}회 · ${latestTastingDate ?? ''}` : ''}
+          emptyIcon="wine"
+          emptyTitle="아직 시음 기록이 없어요"
+          emptyDescription="우하단 + 버튼으로 첫 기록을 남겨보세요"
+          targetType="wine"
+          linkedRestaurantNames={linkedRestaurantNames}
+          onLinkedRestaurantTap={(id) => router.push(`/restaurants/${id}`)}
+          onRecordTap={(recordId) => {
+            setSelectedRecordId(recordId)
+            const meta = [wine?.wineType ? WINE_TYPE_LABELS[wine.wineType] : null, wine?.region].filter(Boolean).join(' · ')
+            router.push(
+              `/record?type=wine&targetId=${wineId}&name=${encodeURIComponent(wine?.name ?? '')}&meta=${encodeURIComponent(meta)}&edit=${recordId}&from=detail`,
+            )
+          }}
+        />
 
         <Divider />
 
-        {/* ════════════════════════════════════════
-            기록 히스토리
-           ════════════════════════════════════════ */}
-        <section style={{ padding: '16px 20px' }}>
-          <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>기록 히스토리</h3>
+        {/* ─── 버블 기록 ─── */}
+        <BubbleRecordSection targetId={wineId} targetType="wine" />
 
-          {myRecords.length === 0 ? (
-            <p className="py-6 text-center" style={{ fontSize: '13px', color: 'var(--text-hint)' }}>
-              아직 기록이 없어요
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {myRecords.map((record) => {
-                const photos = recordPhotos.get(record.id)
-                const firstPhoto = photos?.[0]?.url
-                const linkedName = record.linkedRestaurantId
-                  ? linkedRestaurants.find((r) => r.restaurantId === record.linkedRestaurantId)?.restaurantName
-                  : null
-
-                return (
-                  <button
-                    type="button"
-                    key={record.id}
-                    onClick={() => { setSelectedRecordId(record.id); handleRecordEdit() }}
-                    className="flex w-full items-start gap-3 rounded-xl p-3 text-left"
-                    style={{ backgroundColor: 'var(--bg-card)' }}
-                  >
-                    {firstPhoto && (
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={firstPhoto} alt="" className="h-full w-full object-cover" loading="lazy" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                          {record.visitDate ?? record.createdAt.split('T')[0]}
-                        </span>
-                        {record.satisfaction !== null && (
-                          <span
-                            className="rounded-full px-2 py-0.5"
-                            style={{
-                              fontSize: '11px', fontWeight: 700,
-                              backgroundColor: 'color-mix(in srgb, var(--accent-wine) 12%, transparent)',
-                              color: 'var(--accent-wine)',
-                            }}
-                          >
-                            {record.satisfaction}점
-                          </span>
-                        )}
-                      </div>
-                      {record.comment && (
-                        <p className="mt-1 line-clamp-2" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                          {record.comment}
-                        </p>
-                      )}
-                      {linkedName && (
-                        <p className="mt-1" style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
-                          📍 {linkedName}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        <div style={{ height: '80px' }} />
+        <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />
       </div>
 
       {/* FAB + 액션 버튼 — 같은 높이 */}
