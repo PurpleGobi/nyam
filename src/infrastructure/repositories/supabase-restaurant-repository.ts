@@ -116,6 +116,19 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
   }
 
+  async findPublicRecordsByTarget(restaurantId: string, excludeUserId: string): Promise<DiningRecord[]> {
+    const { data, error } = await this.supabase
+      .from('records')
+      .select('*')
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+      .neq('user_id', excludeUserId)
+      .order('visit_date', { ascending: false, nullsFirst: false })
+
+    if (error) throw new Error(`공개 기록 조회 실패: ${error.message}`)
+    return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
+  }
+
   async findRecordPhotos(recordIds: string[]): Promise<Map<string, RecordPhoto[]>> {
     const result = new Map<string, RecordPhoto[]>()
     if (recordIds.length === 0) return result
@@ -392,5 +405,43 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
 
     if (error) throw new Error(`식당 등록 실패: ${error.message}`)
     return { id: data.id, name: data.name, isExisting: false }
+  }
+
+  // ─── 점수 체계: 팔로잉/공개 ───
+
+  async findFollowingRecordsByTarget(restaurantId: string, userId: string): Promise<DiningRecord[]> {
+    const { data: followRows } = await this.supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', userId)
+      .eq('status', 'accepted')
+    if (!followRows || followRows.length === 0) return []
+    const followingIds = followRows.map((f) => f.following_id)
+
+    const { data, error } = await this.supabase
+      .from('records')
+      .select('*')
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+      .in('user_id', followingIds)
+      .not('satisfaction', 'is', null)
+      .order('visit_date', { ascending: false })
+    if (error) throw new Error(`Following records by target 조회 실패: ${error.message}`)
+    return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
+  }
+
+  async findPublicSatisfactionAvg(restaurantId: string): Promise<{ avg: number; count: number } | null> {
+    const { data, error } = await this.supabase
+      .from('records')
+      .select('satisfaction, users!inner(is_public)')
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+      .eq('users.is_public', true)
+      .not('satisfaction', 'is', null)
+    if (error) throw new Error(`Public satisfaction 조회 실패: ${error.message}`)
+    if (!data || data.length === 0) return null
+
+    const sum = data.reduce((s, r) => s + (r.satisfaction ?? 0), 0)
+    return { avg: Math.round(sum / data.length), count: data.length }
   }
 }

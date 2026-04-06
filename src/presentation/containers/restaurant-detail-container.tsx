@@ -13,11 +13,11 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
+import { useTargetScores } from '@/application/hooks/use-target-scores'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
-import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { BadgeRow } from '@/presentation/components/detail/badge-row'
 import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
@@ -45,10 +45,8 @@ function Divider() {
 export function RestaurantDetailContainer({ restaurantId, bubbleId }: RestaurantDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [bubbleExpanded, setBubbleExpanded] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
-  const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0) // 최근 뷰에서 포커스된 기록 (0 = 최신)
   const { showToast } = useToast()
   const { deleteRecord, isDeleting } = useDeleteRecord()
@@ -60,14 +58,38 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     quadrantRefs,
     linkedWines,
     bubbleScores,
+    followingRecords,
+    publicRecords,
     isLoading,
     myAvgScore,
     visitCount,
     latestVisitDate,
     bubbleAvgScore,
     bubbleCount,
+    followingAvgScore,
+    followingCount,
+    nyamAvgScore,
+    nyamCount,
     viewMode,
   } = useRestaurantDetail(restaurantId, user?.id ?? null)
+
+  const {
+    cards: scoreCards,
+    selectedSources,
+    quadrantMode,
+    toggleSource,
+    setQuadrantMode,
+    isCardToggleActive,
+  } = useTargetScores({
+    myAvgScore,
+    myCount: visitCount,
+    followingAvgScore,
+    followingCount,
+    bubbleAvgScore,
+    bubbleCount,
+    nyamAvgScore,
+    nyamCount,
+  })
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null,
@@ -130,12 +152,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   }, [bubbleMemberShares, user?.id])
 
   // 버블 평균 점수
-  const bubbleMemberAvg = useMemo(() => {
-    const rated = bubbleMemberShares.filter((s) => s.satisfaction != null)
-    if (rated.length === 0) return null
-    return Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
-  }, [bubbleMemberShares])
-
   // 사분면 현재 dot (이 식당 내 모든 방문의 평균)
   const allRecordsWithAxis = myRecords.filter((r) => r.axisX !== null && r.axisY !== null && r.satisfaction !== null)
   const avgDot = allRecordsWithAxis.length > 0
@@ -170,10 +186,39 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     [sortedRecords, focusedRecordIdx],
   )
 
-  const currentDot = quadrantMode === 'recent' && focusedDot ? focusedDot : avgDot
+  // visits 모드에서 selectedSource에 따른 타인 micro dot
+  const visitsRefPoints = useMemo(() => {
+    // 내 기록 ref dots (selectedSources에 'my'가 있을 때)
+    const myRefs = selectedSources.includes('my') ? otherRecordRefs : []
+
+    // 타인 micro dots
+    type MicroSource = { axisX: number | null; axisY: number | null; satisfaction: number | null }
+    const microRecords: MicroSource[] = []
+
+    if (selectedSources.includes('following')) {
+      microRecords.push(...followingRecords.filter((r) => r.axisX != null && r.axisY != null))
+    }
+    // bubble: bubbleScores에 axisX/axisY 없으므로 현재 미지원
+    if (selectedSources.includes('nyam')) {
+      microRecords.push(...publicRecords.filter((r) => r.axisX != null && r.axisY != null))
+    }
+
+    const microDots = microRecords.slice(0, 20).map((r) => ({
+      x: r.axisX ?? 50,
+      y: r.axisY ?? 50,
+      satisfaction: r.satisfaction ?? 50,
+      name: '',
+      score: r.satisfaction ?? 50,
+      isMicroDot: true,
+    }))
+
+    return [...myRefs, ...microDots]
+  }, [selectedSources, otherRecordRefs, followingRecords, publicRecords])
+
+  const currentDot = quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot
 
   // 액션 대상 기록 ID (최근 뷰에서는 포커스된 기록, 평균 뷰에서는 최신 기록)
-  const activeRecordId = quadrantMode === 'recent' && focusedRecord
+  const activeRecordId = quadrantMode === 'visits' && focusedRecord
     ? focusedRecord.id
     : latestRecordIdFallback
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, activeRecordId)
@@ -255,8 +300,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     )
   }
 
-  const mySubText = myRecords.length > 0 ? `${myRecords.length}회 방문` : '미방문'
-  const bubbleSubText = bubbleCount > 0 ? `리뷰 ${bubbleCount}개` : ''
   return (
     <div className="content-detail relative min-h-dvh" style={{ backgroundColor: 'var(--bg)' }}>
       <AppHeader />
@@ -374,28 +417,11 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           {/* ─── 2. 스코어카드 + 버블 확장 + 뱃지 ─── */}
           <ScoreCards
             accentColor="--accent-food"
-            myScore={isBubbleMode ? bubbleMemberAvg : myAvgScore}
-            mySubText={isBubbleMode ? `버블 평균 · ${bubbleMemberShares.filter((s) => s.satisfaction != null).length}명` : mySubText}
-            bubbleScore={isBubbleMode ? myAvgScore : bubbleAvgScore}
-            bubbleSubText={isBubbleMode ? (myRecords.length > 0 ? `나 · ${myRecords.length}회` : '미방문') : bubbleSubText}
-            onBubbleCardTap={() => setBubbleExpanded(!bubbleExpanded)}
-            isBubbleExpanded={bubbleExpanded}
+            cards={scoreCards}
+            selectedSources={selectedSources}
+            onToggle={toggleSource}
+            toggleActive={isCardToggleActive}
           />
-
-          {!isBubbleMode && (
-            <BubbleExpandPanel
-              isOpen={bubbleExpanded}
-              bubbleScores={bubbleScores.map((b) => ({
-                bubbleId: b.bubbleId,
-                bubbleName: b.bubbleName,
-                icon: b.bubbleIcon,
-                iconBgColor: b.bubbleColor,
-                ratingCount: b.memberCount,
-                avgScore: b.avgScore,
-              }))}
-              accentColor="--accent-food"
-            />
-          )}
 
           <BadgeRow badges={badges} />
         </div>
@@ -431,7 +457,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 나의 평가
                 <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
-                  {quadrantMode === 'avg'
+                  {quadrantMode === 'compare'
                     ? `${myRecords.length}회 방문`
                     : `최근 방문${focusedRecord?.visitDate ? ` · ${focusedRecord.visitDate}` : ''}`
                   }
@@ -442,7 +468,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                 value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
                 onChange={() => {}}
                 readOnly
-                referencePoints={quadrantMode === 'avg'
+                referencePoints={quadrantMode === 'compare'
                   ? quadrantRefs.map((d) => ({
                       x: d.avgAxisX,
                       y: d.avgAxisY,
@@ -452,13 +478,13 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                       targetId: d.targetId,
                       targetType: 'restaurant' as const,
                     }))
-                  : otherRecordRefs
+                  : visitsRefPoints
                 }
-                onRefNavigate={quadrantMode === 'avg'
+                onRefNavigate={quadrantMode === 'compare'
                   ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
                   : undefined
                 }
-                onRefLongPress={quadrantMode === 'recent'
+                onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('my')
                   ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
                   : undefined
                 }

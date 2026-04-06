@@ -1,57 +1,43 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { DiningRecord, RecordTargetType } from '@/domain/entities/record'
+import type { RecordTargetType, RecordWithTarget } from '@/domain/entities/record'
 import type { HomeTab } from '@/domain/entities/home-state'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
+import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { recordRepo } from '@/shared/di/container'
 
-export type HomeRecordItem = DiningRecord
+export type ViewType = 'visited' | 'wishlist' | 'bubble' | 'following' | 'public'
 
 const PAGE_SIZE = 20
 
 function applyFilters(
-  records: DiningRecord[],
+  records: RecordWithTarget[],
   filters: FilterRule[],
   conjunction: 'and' | 'or',
-): DiningRecord[] {
+): RecordWithTarget[] {
   if (filters.length === 0) return records
-
-  return records.filter((record) => {
-    const results = filters.map((rule) => {
-      const val = (record as unknown as Record<string, unknown>)[rule.attribute]
-      switch (rule.operator) {
-        case 'eq': return val === rule.value
-        case 'neq': return val !== rule.value
-        case 'gt': return typeof val === 'number' && typeof rule.value === 'number' && val > rule.value
-        case 'gte': return typeof val === 'number' && typeof rule.value === 'number' && val >= rule.value
-        case 'lt': return typeof val === 'number' && typeof rule.value === 'number' && val < rule.value
-        case 'lte': return typeof val === 'number' && typeof rule.value === 'number' && val <= rule.value
-        case 'contains': return typeof val === 'string' && typeof rule.value === 'string' && val.includes(rule.value)
-        case 'not_contains': return typeof val === 'string' && typeof rule.value === 'string' && !val.includes(rule.value)
-        case 'is_null': return val == null
-        case 'is_not_null': return val != null
-        default: return true
-      }
-    })
-
-    return conjunction === 'and'
-      ? results.every(Boolean)
-      : results.some(Boolean)
-  })
+  return records.filter((record) =>
+    matchesAllRules(record as unknown as Record<string, unknown>, filters, conjunction),
+  )
 }
 
-function applySort(records: DiningRecord[], sort: SortOption): DiningRecord[] {
+function applySort(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
   switch (sort) {
     case 'latest':
-      return sorted.sort((a, b) => (b.visitDate ?? '').localeCompare(a.visitDate ?? ''))
+      return sorted.sort((a, b) => {
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
+        if (dateA !== dateB) return dateB.localeCompare(dateA)
+        return b.createdAt.localeCompare(a.createdAt)
+      })
     case 'score_high':
       return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
     case 'score_low':
       return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
-      return sorted.sort((a, b) => a.targetId.localeCompare(b.targetId)) // TODO: targetName 필요 (RecordWithTarget 전환 시 수정)
+      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
     case 'visit_count': {
       const visitCounts = new Map<string, number>()
       for (const r of records) {
@@ -67,36 +53,67 @@ function applySort(records: DiningRecord[], sort: SortOption): DiningRecord[] {
 export function useHomeRecords(params: {
   userId: string | null
   tab: HomeTab
-  chipId: string | null
+  viewTypes: ViewType[]
   filters: FilterRule[]
   sort: SortOption
   conjunction: 'and' | 'or'
 }): {
-  records: HomeRecordItem[]
+  records: RecordWithTarget[]
   isLoading: boolean
   totalCount: number
   loadMore: () => void
   hasMore: boolean
 } {
-  const { userId, tab, chipId, filters, sort, conjunction } = params
-  const [allRecords, setAllRecords] = useState<DiningRecord[]>([])
+  const { userId, tab, viewTypes, filters, sort, conjunction } = params
+  const [allRecords, setAllRecords] = useState<RecordWithTarget[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
+
+  // viewTypes 배열의 안정적 비교를 위한 직렬화 키
+  const viewTypesKey = useMemo(() => JSON.stringify(viewTypes.slice().sort()), [viewTypes])
 
   const fetchRecords = useCallback(async () => {
     if (!userId) return
     setIsLoading(true)
     try {
       const targetType: RecordTargetType = tab
-      const data = await recordRepo.findByUserId(userId, targetType)
-      setAllRecords(data)
+      const ALL_VIEWS: ViewType[] = ['visited', 'wishlist', 'bubble', 'following', 'public']
+      const views: ViewType[] = viewTypes.length > 0 ? viewTypes : ALL_VIEWS
+
+      const promises = views.map((view) => {
+        switch (view) {
+          case 'visited':
+            return recordRepo.findByUserIdWithTarget(userId, targetType)
+          case 'wishlist':
+            return recordRepo.findWishlistTargetRecords(userId, targetType)
+          case 'bubble':
+            return recordRepo.findBubbleSharedRecords(userId, targetType)
+          case 'following':
+            return recordRepo.findFollowingRecords(userId, targetType)
+          case 'public':
+            return recordRepo.findPublicRecords(userId, targetType)
+        }
+      })
+
+      const results = await Promise.all(promises)
+      const merged = results.flat()
+
+      // record.id 기준 중복 제거
+      const seen = new Map<string, RecordWithTarget>()
+      for (const r of merged) {
+        if (!seen.has(r.id)) seen.set(r.id, r)
+      }
+      const deduped = Array.from(seen.values())
+
+      setAllRecords(deduped)
       setPage(1)
     } catch {
       setAllRecords([])
     } finally {
       setIsLoading(false)
     }
-  }, [userId, tab])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, tab, viewTypesKey])
 
   useEffect(() => {
     fetchRecords()
@@ -104,7 +121,7 @@ export function useHomeRecords(params: {
 
   useEffect(() => {
     setPage(1)
-  }, [chipId, filters, sort])
+  }, [filters, sort])
 
   const processed = useMemo(() => {
     const filtered = applyFilters(allRecords, filters, conjunction)

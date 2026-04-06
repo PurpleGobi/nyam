@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-02
+> 마지막 갱신: 2026-04-06
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -12,9 +12,9 @@
 ### domain/ (순수 비즈니스 로직, 외부 의존 0)
 | 경로 | 파일 수 | 역할 | 상태 |
 |------|---------|------|------|
-| entities/ | 30 | 타입 정의 (record, restaurant, wine, bubble, xp 등) | 안정 |
+| entities/ | 31 | 타입 정의 (record, restaurant, wine, bubble, xp, score 등) | 안정 |
 | repositories/ | 15 | 인터페이스 (RecordRepository, BubbleRepository 등) | 안정 |
-| services/ | 16 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher 등) | 안정 |
+| services/ | 17 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback 등) | 안정 |
 
 ### infrastructure/ (외부 시스템 구현체)
 | 경로 | 파일 수 | 역할 | 상태 |
@@ -25,9 +25,9 @@
 | api/providers/ | 1 | gemini.ts (Gemini Vision) | 안정 |
 | storage/ | 1 | image-upload.ts | 안정 |
 
-### application/hooks/ (비즈니스 로직 훅, 58개)
+### application/hooks/ (비즈니스 로직 훅, 59개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
-- 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats
+- 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats, use-target-scores
 - 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubblers-list 등
 - 소셜: use-follow, use-comments, use-reactions, use-share-record
 - XP/프로필: use-xp, use-xp-award, use-profile, use-wrapped
@@ -37,7 +37,7 @@
 | 경로 | 역할 | 상태 |
 |------|------|------|
 | containers/ (23) | 페이지별 hook+조합 (home, record-flow, bubble-detail 등) | 안정 |
-| components/ (20 dirs) | 순수 UI (add-flow, bubble, camera, charts, detail, discover, home, record, search 등) | 안정, 일부 WIP |
+| components/ (20 dirs) | 순수 UI (add-flow, bubble, camera, charts, detail, discover, home, record, search 등) + score-source-badge | 안정, 일부 WIP |
 | hooks/ (3) | UI 전용 (use-back-navigation, use-dropdown, use-referrer) | 안정 |
 | providers/ (1) | auth-provider.tsx | 안정 |
 | guards/ | 라우트 가드 | 안정 |

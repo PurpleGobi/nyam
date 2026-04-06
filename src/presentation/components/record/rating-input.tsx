@@ -32,14 +32,15 @@ interface RatingInputProps {
     score: number
     targetId?: string
     targetType?: 'restaurant' | 'wine'
+    isMicroDot?: boolean
   }>
   showHint?: boolean
   hideDot?: boolean
   readOnly?: boolean
   onRefNavigate?: (targetId: string, targetType: 'restaurant' | 'wine') => void
   onRefLongPress?: (refIndex: number) => void
-  quadrantMode?: 'avg' | 'recent'
-  onQuadrantModeChange?: (mode: 'avg' | 'recent') => void
+  quadrantMode?: 'visits' | 'compare'
+  onQuadrantModeChange?: (mode: 'visits' | 'compare') => void
 }
 
 export function RatingInput({ type, value, onChange, referencePoints, showHint, hideDot, readOnly, onRefNavigate, onRefLongPress, quadrantMode, onQuadrantModeChange }: RatingInputProps) {

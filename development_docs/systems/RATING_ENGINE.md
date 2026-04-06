@@ -87,7 +87,16 @@
 - `가이드` 버튼 → 사분면 영역 라벨(4분면 설명) 토글 표시
 
 ### 사분면 모드 (상세 페이지)
-- **평균** / **최근** 모드 전환 가능 (상세 페이지에서 참조 점 표시 방식 변경)
+
+배타적 토글 (radio), 기본 = **방문기록**:
+
+| 모드 | 값 | 내용 |
+|------|-----|------|
+| **방문기록** | `visits` | 해당 대상의 나(20px) + 타인 dot(~2px, 분포 파악용). 4종 점수 카드로 그룹 선택 |
+| **다른 대상 비교** | `compare` | 내가 리뷰한 다른 대상의 ref dots (기존 방식) |
+
+- 방문기록 모드: 점수 카드 토글 활성 → 선택한 그룹(나/팔로잉/버블/nyam)의 dot 표시
+- 비교 모드: 점수 카드 토글 비활성
 
 ---
 
@@ -469,7 +478,47 @@ linked_wine_id       UUID     -- 식당→와인 연결
 
 ---
 
-## 11. 코드 구조 참조
+## 11. 4종 점수 시스템
+
+하나의 대상(식당/와인)에 대해 4가지 점수 소스:
+
+| 점수 | 소스 | 산출 |
+|------|------|------|
+| **나의 점수** | 해당 대상에 대한 내 records | satisfaction 평균 |
+| **팔로잉 점수** | follows accepted 유저들의 해당 대상 records | satisfaction 평균 |
+| **버블 점수** | 내 버블 멤버들의 해당 대상 shared records | satisfaction 평균 |
+| **nyam 점수** | is_public=true 유저들의 해당 대상 records | satisfaction 평균 |
+
+> 기존 `calcNyamScore()`는 **외부 평점** 가중평균 (네이버/카카오/구글). 위 "nyam 점수"와는 별개 개념.
+
+### 신뢰도 폴백 (홈 리스트)
+```
+나 → 팔로잉 → 버블 → nyam (첫 번째 non-null 값)
+```
+- 첫 번째로 존재하는 점수만 표시
+- 출처 뱃지로 종류 구분: 나/팔로잉/버블/nyam
+
+### 상세 페이지 점수 카드
+```
+[ 나 85 ] [ 팔로잉 78 ] [ 버블 82 ] [ nyam 74 ]
+  3회 방문    2명 평균     5명 평균    42명 평균
+```
+- 4카드가 **토글 버튼** 역할 — 탭하면 사분면에 해당 그룹 dot 표시
+- 선택된 카드: accent border 강조
+- 점수 없는 카드: `—` + 비활성
+
+### 코드 구조
+| 분류 | 파일 경로 |
+|------|----------|
+| 점수 타입 | `src/domain/entities/score.ts` |
+| 폴백 서비스 | `src/domain/services/score-fallback.ts` |
+| 점수 카드 hook | `src/application/hooks/use-target-scores.ts` |
+| 점수 카드 UI | `src/presentation/components/detail/score-cards.tsx` |
+| 출처 뱃지 | `src/presentation/components/home/score-source-badge.tsx` |
+
+---
+
+## 12. 코드 구조 참조
 
 | 분류 | 파일 경로 |
 |------|----------|

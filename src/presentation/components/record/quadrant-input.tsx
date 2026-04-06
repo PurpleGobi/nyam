@@ -18,6 +18,7 @@ interface QuadrantInputProps {
     score: number
     targetId?: string
     targetType?: 'restaurant' | 'wine'
+    isMicroDot?: boolean
   }>
   showHint?: boolean
   /** true면 현재 dot 숨김 (터치 전 상태) */
@@ -28,9 +29,9 @@ interface QuadrantInputProps {
   onRefNavigate?: (targetId: string, targetType: 'restaurant' | 'wine') => void
   /** 참조 dot 롱프레스 시 인덱스 기반 콜백 (onRefNavigate보다 우선) */
   onRefLongPress?: (refIndex: number) => void
-  /** 사분면 평균/최근 모드 */
-  quadrantMode?: 'avg' | 'recent'
-  onQuadrantModeChange?: (mode: 'avg' | 'recent') => void
+  /** 사분면 방문기록/비교 모드 */
+  quadrantMode?: 'visits' | 'compare'
+  onQuadrantModeChange?: (mode: 'visits' | 'compare') => void
 }
 
 const DOT_SIZE = 20
@@ -254,7 +255,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             {quadrantMode && onQuadrantModeChange && (
               <button
                 type="button"
-                onClick={() => onQuadrantModeChange(quadrantMode === 'avg' ? 'recent' : 'avg')}
+                onClick={() => onQuadrantModeChange(quadrantMode === 'compare' ? 'visits' : 'compare')}
                 style={{
                   display: 'flex',
                   borderRadius: '6px',
@@ -271,12 +272,12 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                     fontSize: '10px',
                     fontWeight: 600,
                     transition: 'all 0.15s',
-                    backgroundColor: quadrantMode === 'avg' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
-                    color: quadrantMode === 'avg' ? '#fff' : 'var(--text-hint)',
-                    borderRadius: quadrantMode === 'avg' ? '6px' : 0,
+                    backgroundColor: quadrantMode === 'compare' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
+                    color: quadrantMode === 'compare' ? '#fff' : 'var(--text-hint)',
+                    borderRadius: quadrantMode === 'compare' ? '6px' : 0,
                   }}
                 >
-                  평균
+                  비교
                 </span>
                 <span
                   style={{
@@ -284,12 +285,12 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                     fontSize: '10px',
                     fontWeight: 600,
                     transition: 'all 0.15s',
-                    backgroundColor: quadrantMode === 'recent' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
-                    color: quadrantMode === 'recent' ? '#fff' : 'var(--text-hint)',
-                    borderRadius: quadrantMode === 'recent' ? '6px' : 0,
+                    backgroundColor: quadrantMode === 'visits' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
+                    color: quadrantMode === 'visits' ? '#fff' : 'var(--text-hint)',
+                    borderRadius: quadrantMode === 'visits' ? '6px' : 0,
                   }}
                 >
-                  최근
+                  방문기록
                 </span>
               </button>
             )}
@@ -348,7 +349,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
             </span>
 
             {/* 참조 점 — 메인 dot과 동일 채널 색상 */}
-            {referencePoints.slice(0, 12).map((point, i) => (
+            {referencePoints.slice(0, referencePoints.some((p) => p.isMicroDot) ? 20 : 12).map((point, i) => (
               <QuadrantRefDot
                 key={i}
                 x={point.x}
@@ -358,6 +359,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 score={point.score}
                 channel={type === 'wine' ? 'wine-total' : 'total'}
                 isActive={selectedRefIdx === i}
+                isMicroDot={point.isMicroDot}
                 onSelect={() => handleRefSelect(i)}
                 onLongPress={
                   onRefLongPress

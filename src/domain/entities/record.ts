@@ -91,7 +91,7 @@ export interface DiningRecord {
 
 // ─── 대상 정보 포함 기록 (홈 피드용) ───
 
-export type RecordSource = 'mine' | 'following' | 'bubble'
+export type RecordSource = 'mine' | 'following' | 'bubble' | 'public' | 'wishlist'
 
 export interface RecordWithTarget extends DiningRecord {
   targetName: string
@@ -116,6 +116,10 @@ export interface RecordWithTarget extends DiningRecord {
   vintage?: number | null
   // list 정보
   listStatus?: ListStatus
+  // 작성자 정보 (Viewer Context)
+  authorId?: string | null
+  authorNickname?: string | null
+  authorAvatarUrl?: string | null
 }
 
 // ─── 기록 생성 입력 타입 ───

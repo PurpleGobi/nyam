@@ -8,6 +8,8 @@ import { PlaceBadge } from '@/presentation/components/home/place-badge'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import type { SourceType } from '@/presentation/components/home/source-tag'
 import type { BadgeType } from '@/presentation/components/home/place-badge'
+import type { ScoreSource } from '@/domain/entities/score'
+import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
 
 export interface SourceInfo {
   type: SourceType
@@ -45,6 +47,7 @@ export interface RecordCardProps {
   sharedBubbles?: SharedBubbleChip[]
   onShareClick?: () => void
   visitCount?: number
+  scoreSource?: ScoreSource
 }
 
 export function RecordCard({
@@ -65,6 +68,7 @@ export function RecordCard({
   sharedBubbles,
   onShareClick,
   visitCount,
+  scoreSource,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -153,12 +157,17 @@ export function RecordCard({
                 />
               )}
               {satisfaction != null && (
-                <span
-                  className="text-[32px] font-extrabold leading-none"
-                  style={{ color: isNotMine ? 'var(--text-hint)' : accentColor }}
-                >
-                  {satisfaction}
-                </span>
+                <div className="flex items-baseline gap-1">
+                  <span
+                    className="text-[32px] font-extrabold leading-none"
+                    style={{ color: isNotMine ? 'var(--text-hint)' : accentColor }}
+                  >
+                    {satisfaction}
+                  </span>
+                  {scoreSource && scoreSource !== 'my' && (
+                    <ScoreSourceBadge source={scoreSource} />
+                  )}
+                </div>
               )}
             </div>
 

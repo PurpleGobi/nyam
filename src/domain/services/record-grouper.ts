@@ -4,9 +4,18 @@
 import type { RecordWithTarget } from '@/domain/entities/record'
 import type { GroupedTarget } from '@/domain/entities/grouped-target'
 
+/** source 우선순위: mine > following > bubble > public > wishlist */
+const SOURCE_PRIORITY: Record<string, number> = {
+  mine: 0,
+  following: 1,
+  bubble: 2,
+  public: 3,
+  wishlist: 4,
+}
+
 /**
  * RecordWithTarget[] → GroupedTarget[] 변환
- * targetId별 그룹화, 최신 방문 기록 기준 데이터 집계
+ * targetId별 그룹화, source 우선순위 → 최신 기록 기준 데이터 집계
  */
 export function groupRecordsByTarget(records: RecordWithTarget[]): GroupedTarget[] {
   const map = new Map<string, RecordWithTarget[]>()
@@ -32,6 +41,20 @@ export function groupRecordsByTarget(records: RecordWithTarget[]): GroupedTarget
     })
     const latest = sorted[0]
 
+    // 대표 점수: source 우선순위 기반 폴백 (나 > 팔로잉 > 버블 > 공개)
+    const bestScoreRecord = [...group]
+      .filter((r) => r.satisfaction != null)
+      .sort((a, b) => {
+        const pa = SOURCE_PRIORITY[a.source ?? 'wishlist'] ?? 99
+        const pb = SOURCE_PRIORITY[b.source ?? 'wishlist'] ?? 99
+        if (pa !== pb) return pa - pb
+        // 같은 source면 최신 우선
+        const dateA = a.visitDate ?? ''
+        const dateB = b.visitDate ?? ''
+        if (dateA !== dateB) return dateB.localeCompare(dateA)
+        return b.createdAt.localeCompare(a.createdAt)
+      })[0]
+
     result.push({
       targetId,
       targetType: latest.targetType,
@@ -43,9 +66,9 @@ export function groupRecordsByTarget(records: RecordWithTarget[]): GroupedTarget
       targetLng: latest.targetLng,
 
       latestRecordId: latest.id,
-      satisfaction: latest.satisfaction,
-      axisX: latest.axisX,
-      axisY: latest.axisY,
+      satisfaction: bestScoreRecord?.satisfaction ?? latest.satisfaction,
+      axisX: bestScoreRecord?.axisX ?? latest.axisX,
+      axisY: bestScoreRecord?.axisY ?? latest.axisY,
       scene: latest.scene,
       visitDate: latest.visitDate,
       listStatus: latest.listStatus,

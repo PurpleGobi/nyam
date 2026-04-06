@@ -6,11 +6,23 @@
 
 ---
 
+### 2026-04-06 #12 — 점수 체계 재설계 + Viewer Context + 후속 완료
+- **영역**: domain/(entities/score+record, services/score-fallback+record-grouper, repositories/restaurant+wine), infrastructure/supabase-*-repository, application/use-restaurant-detail+use-wine-detail+use-target-scores, presentation/(score-cards+record-card+compact-list-item+calendar-day-detail+score-source-badge+quadrant-input+quadrant-ref-dot+rating-input+restaurant-detail-container+wine-detail-container+home-container), RATING_ENGINE.md
+- **맥락**: (1) 4종 점수(나/팔로잉/버블/nyam) 카드 UI + 신뢰도 폴백 순수 함수. (2) 사분면 모드 avg/recent → visits/compare. (3) visits 모드에서 selectedSource별 micro dot(4px) 렌더링 — followingRecords/publicRecords 개별 fetch + QuadrantRefDot isMicroDot. (4) 홈 리스트 source 우선순위 폴백 (record-grouper에서 bestScore 선택). (5) CalendarDayDetail/ScoreSourceBadge 스타일 개선. 신규 4 + 수정 25개.
+- **미완료**: bubble dot 미표시 (BubbleScoreRow에 avgAxisX/Y 없음 — DB view/RPC 필요), lint pre-existing 2건 (quadrant-input refs + detail-container deps)
+- **다음**: bubble dot을 위한 bubble_shares 확장 or DB view, pre-existing lint 정리
+
+### 2026-04-06 #11 — 프라이버시 모델 재설계
+- **영역**: supabase/migrations/047, domain/entities/settings+user, infrastructure/supabase-settings+follow-repository, application/use-settings+use-share-record, presentation/settings-container+privacy-summary, AUTH.md+DATA_MODEL.md
+- **맥락**: privacy_profile+privacy_records 2개 → is_public(boolean)+follow_policy(4종) 통합. "기본 비공개, 팔로워/버블 오버라이드" 모델. RLS 8개 교체 + records_followers 신규 (follow_policy!=blocked 조건 포함). 설정 UI를 전체공개 토글+팔로우 정책 선택으로 교체. 비공개 유저도 버블 공유 허용.
+- **미완료**: 팔로우 요청/승인 플로우 (pending→accepted), conditional 조건 평가 로직, 보기 필터별 데이터 페칭
+- **다음**: 팔로우 승인제 구현, 보기 필터 데이터 페칭 연동
+
 ### 2026-04-06 #10 — 홈 필터 시스템 재구성 + Write-Behind Cache 영속화
 - **영역**: domain/entities/filter-config, condition-chip, filter-matcher, infrastructure/supabase-filter-state-repository, application/hooks/use-persisted-filter-state, presentation/home-container, condition-filter-bar, supabase/migrations/046
 - **맥락**: (1) 식당탭 필터 재구성: 상태→보기(멀티셀렉트OR), 위치(구)+생활권→위치 통합(내 위치+행정구역/생활권 탭), 순서 재배치(10종). (2) 필터 상태 Write-Behind Cache: localStorage 즉시 + debounce 1500ms Supabase + visibilitychange flush + timestamp 비교 복원. (3) R4 리팩토링: presentation에서 shared/di import 제거, application hooks로 이동.
-- **미완료**: 보기 필터의 "버블"/"전체" 데이터 페칭 미연동 (UI만), "내 위치" GPS 연동 미구현 (UI만), 와인탭 필터 순서/통합 미적용
-- **다음**: 버블/전체 기록 데이터 페칭 연동, GPS 내 위치 기능 연동, 브라우저 QA
+- **미완료**: 보기 필터의 "버블"/"공개" 데이터 페칭 미연동 (UI만), "내 위치" GPS 연동 미구현 (UI만), 와인탭 필터 순서/통합 미적용
+- **다음**: 프라이버시 재설계 → 완료(#11)
 
 ### 2026-04-03 #9 — 버블 멤버 카운트/통계 트리거 수정 + 버블러 탭 구현
 - **영역**: supabase/migrations/044, application/hooks/use-bubblers-list, presentation/containers/bubble-list-container
@@ -54,14 +66,4 @@
 - **미완료**: 없음
 - **다음**: 없음
 
-### 2026-04-02 #2 — 사분면 ref dot 롱프레스 + 평균/최근 토글
-- **영역**: presentation/components/charts/quadrant, application/hooks
-- **맥락**: 사분면 차트에서 ref dot 롱프레스 시 해당 기록으로 네비게이션. 평균/최근 토글 추가.
-- **미완료**: 없음
-- **다음**: 없음
 
-### 2026-04-02 #1 — LLM 중앙 관리 + 와인 기록 파이프라인 리팩토링
-- **영역**: shared/constants/llm-config, infrastructure/api/llm, app/api/wines
-- **맥락**: LLM 호출을 중앙 설정 파일로 통합. 와인 기록 시 가격 분석 기능 추가.
-- **미완료**: 없음
-- **다음**: 없음

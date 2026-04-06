@@ -33,6 +33,9 @@ export interface WineRepository {
   /** 와인의 내 기록 목록 (visit_date DESC) */
   findMyRecords(wineId: string, userId: string): Promise<DiningRecord[]>
 
+  /** 해당 와인의 타인 공개 기록 (RLS가 is_public 필터링, dot 표시용) */
+  findPublicRecordsByTarget(wineId: string, excludeUserId: string): Promise<DiningRecord[]>
+
   /** 기록별 사진 */
   findRecordPhotos(recordIds: string[]): Promise<Map<string, RecordPhoto[]>>
 
@@ -44,4 +47,10 @@ export interface WineRepository {
 
   /** 버블 점수 집계 */
   findBubbleScores(wineId: string, userId: string): Promise<BubbleScoreRow[]>
+
+  /** 팔로잉 유저들의 해당 와인 기록 (satisfaction 있는 것만) */
+  findFollowingRecordsByTarget(wineId: string, userId: string): Promise<DiningRecord[]>
+
+  /** 공개 사용자의 해당 와인 satisfaction 평균 + 인원수 */
+  findPublicSatisfactionAvg(wineId: string): Promise<{ avg: number; count: number } | null>
 }

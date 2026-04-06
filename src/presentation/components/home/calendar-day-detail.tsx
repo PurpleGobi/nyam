@@ -1,6 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import type { ScoreSource } from '@/domain/entities/score'
+import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
 
 interface CalendarDayDetailProps {
   date: string
@@ -11,6 +13,7 @@ interface CalendarDayDetailProps {
     id: string
     targetType: 'restaurant' | 'wine'
     targetId: string
+    scoreSource?: ScoreSource
   }[]
   accentType: 'restaurant' | 'wine'
 }
@@ -60,12 +63,17 @@ export function CalendarDayDetail({ date, records, accentType }: CalendarDayDeta
             {record.name}
           </span>
 
-          <span
-            className="shrink-0 text-[16px] font-bold"
-            style={{ color: record.score != null ? accentColor : 'var(--text-hint)' }}
-          >
-            {record.score ?? '—'}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span
+              className="text-[16px] font-bold tabular-nums"
+              style={{ color: record.score != null ? accentColor : 'var(--text-hint)' }}
+            >
+              {record.score ?? '—'}
+            </span>
+            {record.score != null && record.scoreSource && record.scoreSource !== 'my' && (
+              <ScoreSourceBadge source={record.scoreSource} />
+            )}
+          </div>
         </button>
       ))}
     </div>

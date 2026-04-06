@@ -34,6 +34,12 @@ export interface WineDetailState {
   nyamScoreBreakdown: WineNyamScoreBreakdown | null
   bubbleAvgScore: number | null
   bubbleCount: number
+  followingAvgScore: number | null
+  followingCount: number
+  followingRecords: DiningRecord[]
+  publicRecords: DiningRecord[]
+  nyamAvgScore: number | null
+  nyamCount: number
   viewMode: 'my_records' | 'recommend' | 'bubble_review'
 }
 
@@ -48,6 +54,9 @@ export function useWineDetail(
   const [quadrantRefs, setQuadrantRefs] = useState<QuadrantRefDot[]>([])
   const [linkedRestaurants, setLinkedRestaurants] = useState<LinkedRestaurantCard[]>([])
   const [bubbleScores, setBubbleScores] = useState<BubbleScoreRow[]>([])
+  const [followingRecords, setFollowingRecords] = useState<DiningRecord[]>([])
+  const [publicRecords, setPublicRecords] = useState<DiningRecord[]>([])
+  const [nyamData, setNyamData] = useState<{ avg: number; count: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,21 +75,28 @@ export function useWineDetail(
         const records = await repo.findMyRecords(wineId, userId)
         setMyRecords(records)
 
-        // 3. 기록별 사진 + 사분면 + 연결식당 + 버블 (각각 독립 실행)
+        // 3. records 유무와 무관한 fetch (항상 실행)
+        const [followingResult, nyamResult, scoresResult, publicResult] = await Promise.allSettled([
+          repo.findFollowingRecordsByTarget(wineId, userId),
+          repo.findPublicSatisfactionAvg(wineId),
+          repo.findBubbleScores(wineId, userId),
+          repo.findPublicRecordsByTarget(wineId, userId),
+        ])
+        if (scoresResult.status === 'fulfilled') setBubbleScores(scoresResult.value)
+        setFollowingRecords(followingResult.status === 'fulfilled' ? followingResult.value : [])
+        setPublicRecords(publicResult.status === 'fulfilled' ? publicResult.value : [])
+        setNyamData(nyamResult.status === 'fulfilled' ? nyamResult.value : null)
+
+        // 4. records가 있을 때만 추가 fetch
         if (records.length > 0) {
-          const [photosRes, refsRes, linkedRes, scoresRes] = await Promise.allSettled([
+          const [photosRes, refsRes, linkedRes] = await Promise.allSettled([
             repo.findRecordPhotos(records.map((r) => r.id)),
             repo.findQuadrantRefs(userId, wineId),
             repo.findLinkedRestaurants(wineId, userId),
-            repo.findBubbleScores(wineId, userId),
           ])
           if (photosRes.status === 'fulfilled') setRecordPhotos(photosRes.value)
           if (refsRes.status === 'fulfilled') setQuadrantRefs(refsRes.value)
           if (linkedRes.status === 'fulfilled') setLinkedRestaurants(linkedRes.value)
-          if (scoresRes.status === 'fulfilled') setBubbleScores(scoresRes.value)
-        } else {
-          const scores = await repo.findBubbleScores(wineId, userId)
-          setBubbleScores(scores)
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : '데이터 로딩 실패')
@@ -115,10 +131,19 @@ export function useWineDetail(
 
   const bubbleWithScores = bubbleScores.filter((b) => b.avgScore !== null)
   const bubbleAvgScore = bubbleWithScores.length > 0
-    ? Math.round(bubbleWithScores.reduce((sum, b) => sum + b.avgScore!, 0) / bubbleWithScores.length)
+    ? Math.round(bubbleWithScores.reduce((sum, b) => sum + (b.avgScore ?? 0), 0) / bubbleWithScores.length)
     : null
 
   const bubbleCount = bubbleScores.length
+
+  const scoredFollowing = followingRecords.filter((r) => r.satisfaction !== null)
+  const followingAvgScore = scoredFollowing.length > 0
+    ? Math.round(scoredFollowing.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / scoredFollowing.length)
+    : null
+  const followingCount = scoredFollowing.length
+
+  const nyamAvgScore = nyamData?.avg ?? null
+  const nyamCount = nyamData?.count ?? 0
 
   const viewMode: WineDetailState['viewMode'] =
     myRecords.length > 0 ? 'my_records'
@@ -132,6 +157,8 @@ export function useWineDetail(
     quadrantRefs,
     linkedRestaurants,
     bubbleScores,
+    followingRecords,
+    publicRecords,
     isLoading,
     error,
     myAvgScore,
@@ -140,6 +167,10 @@ export function useWineDetail(
     nyamScoreBreakdown,
     bubbleAvgScore,
     bubbleCount,
+    followingAvgScore,
+    followingCount,
+    nyamAvgScore,
+    nyamCount,
     viewMode,
   }
 }

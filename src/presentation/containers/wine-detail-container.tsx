@@ -12,10 +12,10 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
+import { useTargetScores } from '@/application/hooks/use-target-scores'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
-import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { RatingInput } from '@/presentation/components/record/rating-input'
@@ -55,12 +55,10 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
-  const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
   const { showToast } = useToast()
   const { deleteRecord, isDeleting } = useDeleteRecord()
   const [showPriceReview, setShowPriceReview] = useState(false)
-  const [bubbleExpanded, setBubbleExpanded] = useState(false)
 
   const {
     wine,
@@ -69,12 +67,37 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     quadrantRefs,
     linkedRestaurants,
     bubbleScores,
+    followingRecords,
+    publicRecords,
     isLoading,
     tastingCount,
     latestTastingDate,
     myAvgScore,
     bubbleAvgScore,
+    bubbleCount,
+    followingAvgScore,
+    followingCount,
+    nyamAvgScore,
+    nyamCount,
   } = useWineDetail(wineId, user?.id ?? null)
+
+  const {
+    cards: scoreCards,
+    selectedSources,
+    quadrantMode,
+    toggleSource,
+    setQuadrantMode,
+    isCardToggleActive,
+  } = useTargetScores({
+    myAvgScore,
+    myCount: tastingCount,
+    followingAvgScore,
+    followingCount,
+    bubbleAvgScore,
+    bubbleCount,
+    nyamAvgScore,
+    nyamCount,
+  })
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null, wineId, 'wine',
@@ -114,12 +137,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         }
       })
   }, [bubbleMemberShares, user?.id])
-
-  const bubbleMemberAvg = useMemo(() => {
-    const rated = bubbleMemberShares.filter((s) => s.satisfaction != null)
-    if (rated.length === 0) return null
-    return Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
-  }, [bubbleMemberShares])
 
   // ─── 사분면: 모든 방문 dot ───
   const allRecordsWithAxis = myRecords
@@ -165,9 +182,36 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     [sortedRecords, focusedRecordIdx],
   )
 
-  const currentDot = quadrantMode === 'recent' && focusedDot ? focusedDot : avgDot
+  // visits 모드에서 selectedSources에 따른 타인 micro dot (멀티셀렉트)
+  const visitsRefPoints = useMemo(() => {
+    const myRefs = selectedSources.includes('my') ? otherRecordRefs : []
 
-  const activeRecordId = quadrantMode === 'recent' && focusedRecord
+    type MicroSource = { axisX: number | null; axisY: number | null; satisfaction: number | null }
+    const microRecords: MicroSource[] = []
+
+    if (selectedSources.includes('following')) {
+      microRecords.push(...followingRecords.filter((r) => r.axisX != null && r.axisY != null))
+    }
+    // bubble: bubbleScores에 axisX/axisY 없으므로 현재 미지원
+    if (selectedSources.includes('nyam')) {
+      microRecords.push(...publicRecords.filter((r) => r.axisX != null && r.axisY != null))
+    }
+
+    const microDots = microRecords.slice(0, 20).map((r) => ({
+      x: r.axisX ?? 50,
+      y: r.axisY ?? 50,
+      satisfaction: r.satisfaction ?? 50,
+      name: '',
+      score: r.satisfaction ?? 50,
+      isMicroDot: true,
+    }))
+
+    return [...myRefs, ...microDots]
+  }, [selectedSources, otherRecordRefs, followingRecords, publicRecords])
+
+  const currentDot = quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot
+
+  const activeRecordId = quadrantMode === 'visits' && focusedRecord
     ? focusedRecord.id
     : selectedRecordId ?? myRecords[0]?.id ?? null
   const { availableBubbles, shareToBubbles, canShare, blockReason } = useShareRecord(user?.id ?? null, activeRecordId)
@@ -187,7 +231,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     } else {
       setShowShareSheet(true)
     }
-  }, [canShare, blockReason])
+  }, [canShare, blockReason, showToast])
 
   const handleRecordDelete = useCallback(async () => {
     if (!activeRecordId || !user) return
@@ -508,28 +552,11 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         {/* ─── 스코어카드 + 버블 확장 ─── */}
         <ScoreCards
           accentColor="--accent-wine"
-          myScore={isBubbleMode ? bubbleMemberAvg : myAvgScore}
-          mySubText={isBubbleMode ? `버블 평균 · ${bubbleMemberShares.filter((s) => s.satisfaction != null).length}명` : (tastingCount > 0 ? `${tastingCount}회 시음` : '미시음')}
-          bubbleScore={isBubbleMode ? myAvgScore : bubbleAvgScore}
-          bubbleSubText={isBubbleMode ? (tastingCount > 0 ? `나 · ${tastingCount}회` : '미시음') : (bubbleScores.length > 0 ? `${bubbleScores.length}개 버블` : '')}
-          onBubbleCardTap={() => setBubbleExpanded(!bubbleExpanded)}
-          isBubbleExpanded={bubbleExpanded}
+          cards={scoreCards}
+          selectedSources={selectedSources}
+          onToggle={toggleSource}
+          toggleActive={isCardToggleActive}
         />
-
-        {!isBubbleMode && (
-          <BubbleExpandPanel
-            isOpen={bubbleExpanded}
-            bubbleScores={bubbleScores.map((b) => ({
-              bubbleId: b.bubbleId,
-              bubbleName: b.bubbleName,
-              icon: b.bubbleIcon,
-              iconBgColor: b.bubbleColor,
-              ratingCount: b.memberCount,
-              avgScore: b.avgScore,
-            }))}
-            accentColor="--accent-wine"
-          />
-        )}
 
         <Divider />
 
@@ -565,7 +592,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   value={{ x: currentDot.axisX, y: currentDot.axisY, satisfaction: currentDot.satisfaction }}
                   onChange={() => {}}
                   readOnly
-                  referencePoints={quadrantMode === 'avg'
+                  referencePoints={quadrantMode === 'compare'
                     ? quadrantRefs.map((d) => ({
                         x: d.avgAxisX,
                         y: d.avgAxisY,
@@ -575,13 +602,13 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                         targetId: d.targetId,
                         targetType: 'wine' as const,
                       }))
-                    : otherRecordRefs
+                    : visitsRefPoints
                   }
-                  onRefNavigate={quadrantMode === 'avg'
+                  onRefNavigate={quadrantMode === 'compare'
                     ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
                     : undefined
                   }
-                  onRefLongPress={quadrantMode === 'recent'
+                  onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('my')
                     ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
                     : undefined
                   }

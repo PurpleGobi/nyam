@@ -5,6 +5,8 @@ import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
 import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
 import { formatRelativeDate } from '@/shared/utils/date-format'
+import type { ScoreSource } from '@/domain/entities/score'
+import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
 
 interface CompactListItemProps {
   rank: number
@@ -21,6 +23,7 @@ interface CompactListItemProps {
   memberCount?: number
   latestReviewAt?: string | null
   visitCount?: number
+  scoreSource?: ScoreSource
 }
 
 export function CompactListItem({
@@ -37,6 +40,7 @@ export function CompactListItem({
   memberCount,
   latestReviewAt,
   visitCount,
+  scoreSource,
 }: CompactListItemProps) {
   const isTop3 = rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
@@ -98,9 +102,14 @@ export function CompactListItem({
             ? <BubbleQuadrant dots={bubbleDots} size={48} />
             : <MiniQuadrant axisX={axisX!} axisY={axisY!} satisfaction={score!} accentColor={accentColor} size={48} />
         )}
-        <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
-          {score != null ? score : '—'}
-        </span>
+        <div className="flex flex-col items-end">
+          <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
+            {score != null ? score : '—'}
+          </span>
+          {score != null && scoreSource && scoreSource !== 'my' && (
+            <ScoreSourceBadge source={scoreSource} />
+          )}
+        </div>
       </div>
     </button>
   )

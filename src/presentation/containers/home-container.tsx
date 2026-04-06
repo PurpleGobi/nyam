@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
-import type { RecordWithTarget } from '@/domain/entities/record'
+import type { RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { GroupedTarget } from '@/domain/entities/grouped-target'
+import type { ScoreSource } from '@/domain/entities/score'
 import { groupRecordsByTarget } from '@/domain/services/record-grouper'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import { useRecordsWithTarget } from '@/application/hooks/use-records'
+import { useHomeRecords } from '@/application/hooks/use-home-records'
+import type { ViewType } from '@/application/hooks/use-home-records'
 import { useHomeState } from '@/application/hooks/use-home-state'
 import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
@@ -49,6 +51,37 @@ const SceneChart = dynamic(() => import('@/presentation/components/home/scene-ch
 const WineRegionMap = dynamic(() => import('@/presentation/components/home/wine-region-map').then(m => ({ default: m.WineRegionMap })), { ssr: false })
 const VarietalChart = dynamic(() => import('@/presentation/components/home/varietal-chart').then(m => ({ default: m.VarietalChart })), { ssr: false })
 const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-type-chart').then(m => ({ default: m.WineTypeChart })), { ssr: false })
+
+function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | undefined {
+  if (!source || source === 'wishlist') return undefined
+  const map: Record<string, ScoreSource> = {
+    mine: 'my',
+    following: 'following',
+    bubble: 'bubble',
+    public: 'nyam',
+  }
+  return map[source]
+}
+
+const FALLBACK_SOURCE_PRIORITY: Record<string, number> = {
+  mine: 0,
+  following: 1,
+  bubble: 2,
+  public: 3,
+  wishlist: 4,
+}
+
+/** 그룹 내 source 우선순위 기반 대표 점수의 source 반환 */
+function getBestScoreSource(group: GroupedTarget): RecordSource | undefined {
+  const withScore = group.allRecords.filter((r) => r.satisfaction != null)
+  if (withScore.length === 0) return group.allRecords[0]?.source
+  const best = [...withScore].sort((a, b) => {
+    const pa = FALLBACK_SOURCE_PRIORITY[a.source ?? 'wishlist'] ?? 99
+    const pb = FALLBACK_SOURCE_PRIORITY[b.source ?? 'wishlist'] ?? 99
+    return pa - pb
+  })[0]
+  return best?.source
+}
 
 function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
   const sorted = [...records]
@@ -139,10 +172,6 @@ export function HomeContainer() {
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
 
-  const { records: restaurantRecords } = useRecordsWithTarget(user?.id ?? null, 'restaurant')
-  const { records: wineRecords } = useRecordsWithTarget(user?.id ?? null, 'wine')
-  const records = activeTab === 'wine' ? wineRecords : restaurantRecords
-
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
@@ -201,6 +230,40 @@ export function HomeContainer() {
     }
     handleChipsChange(nextChips)
   }, [conditionChips, handleChipsChange])
+
+  // ── conditionChips에서 view 값 추출 ──
+  const viewTypes: ViewType[] = useMemo(() => {
+    const views: ViewType[] = []
+    for (const chip of conditionChips) {
+      if (isAdvancedChip(chip)) continue
+      if (chip.attribute !== 'view') continue
+      const vals = String(chip.value).split(',')
+      for (const v of vals) {
+        const trimmed = v.trim()
+        if (trimmed === 'visited' || trimmed === 'wishlist' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
+          views.push(trimmed)
+        }
+      }
+    }
+    return views
+  }, [conditionChips])
+
+  // view 칩은 데이터 소스 변경용이므로 filterRules에서 제외
+  const nonViewFilterRules = useMemo(() => {
+    return filterRules.filter((r) => r.attribute !== 'view')
+  }, [filterRules])
+
+  // ── useHomeRecords: view 기반 서버 데이터 페칭 ──
+  const {
+    records,
+  } = useHomeRecords({
+    userId: user?.id ?? null,
+    tab: activeTab,
+    viewTypes,
+    filters: nonViewFilterRules,
+    sort: currentSort,
+    conjunction,
+  })
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)
@@ -281,13 +344,13 @@ export function HomeContainer() {
     toggleSort()
   }, [setCurrentSort, toggleSort])
 
-  // 필터/검색 적용된 레코드 (그룹화 전)
+  // 필터/검색 적용된 레코드 (그룹화 전) — view 칩은 이미 서버에서 처리됨
   const filteredRecords = useMemo(() => {
     let result = records
-    result = applyFilterRules(result, filterRules, conjunction)
+    result = applyFilterRules(result, nonViewFilterRules, conjunction)
     result = searchRecords(result, searchQuery)
     return result
-  }, [records, filterRules, conjunction, searchQuery])
+  }, [records, nonViewFilterRules, conjunction, searchQuery])
 
   // 그룹화 + 소팅 (카드/리스트/맵 뷰용)
   const allGroupedTargets = useMemo(() => {
@@ -310,11 +373,13 @@ export function HomeContainer() {
     currentRecordPage * pageSize,
   )
 
-  // 필터/탭/뷰모드 변경 시 페이지 리셋
+  // 필터/탭/뷰모드 변경 시 페이지 리셋 (useEffect 대신 렌더 중 비교)
   const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
-  useEffect(() => {
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey)
+  if (prevPageResetKey !== pageResetKey) {
+    setPrevPageResetKey(pageResetKey)
     setCurrentRecordPage(1)
-  }, [pageResetKey])
+  }
 
   // 캘린더 레코드
   const { days: calendarDays } = useCalendarRecords({
@@ -405,6 +470,7 @@ export function HomeContainer() {
                 mealTime: MEAL_TIME_LABELS[r.mealTime ?? ''] ?? '',
                 name: r.targetName,
                 score: r.satisfaction,
+                scoreSource: mapRecordSourceToScoreSource(r.source),
                 id: r.id,
                 targetType: r.targetType,
                 targetId: r.targetId,
@@ -433,6 +499,7 @@ export function HomeContainer() {
               axisY={group.axisY}
               accentType={activeTab}
               visitCount={group.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(getBestScoreSource(group))}
               onClick={() =>
                 router.push(
                   `/${group.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${group.targetId}`,
@@ -484,6 +551,7 @@ export function HomeContainer() {
               axisY={group.axisY}
               status={group.listStatus ?? 'visited'}
               visitCount={group.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(getBestScoreSource(group))}
               sources={[
                 {
                   type: 'me',

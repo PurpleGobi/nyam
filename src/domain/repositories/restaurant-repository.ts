@@ -24,6 +24,9 @@ export interface RestaurantRepository {
   /** 식당의 내 기록 목록 (visit_date DESC) */
   findMyRecords(restaurantId: string, userId: string): Promise<DiningRecord[]>
 
+  /** 해당 식당의 타인 공개 기록 (RLS가 is_public 필터링) */
+  findPublicRecordsByTarget(restaurantId: string, excludeUserId: string): Promise<DiningRecord[]>
+
   /** 기록별 사진 (order_index ASC) */
   findRecordPhotos(recordIds: string[]): Promise<Map<string, RecordPhoto[]>>
 
@@ -35,6 +38,12 @@ export interface RestaurantRepository {
 
   /** 버블 점수 집계 (유저가 속한 버블에서 이 식당의 평균점) */
   findBubbleScores(restaurantId: string, userId: string): Promise<BubbleScoreRow[]>
+
+  /** 팔로잉 유저들의 해당 식당 기록 (satisfaction 있는 것만) */
+  findFollowingRecordsByTarget(restaurantId: string, userId: string): Promise<DiningRecord[]>
+
+  /** 공개 사용자의 해당 식당 satisfaction 평균 + 인원수 */
+  findPublicSatisfactionAvg(restaurantId: string): Promise<{ avg: number; count: number } | null>
 }
 
 /** 사분면 참조 점 */
