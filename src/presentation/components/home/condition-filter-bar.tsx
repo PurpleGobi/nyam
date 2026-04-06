@@ -187,13 +187,17 @@ export function ConditionFilterBar({
     setCascadingState(null)
   }, [chips, onChipsChange])
 
-  /** multi-select 적용 → 쉼표 결합 칩 생성 */
-  const handleMultiSelectApply = useCallback(() => {
-    if (!multiSelectState) return
-    const { attribute: attr, selected } = multiSelectState
+  /** multi-select에서 editingChipId를 추적하는 ref (실시간 적용에 필요) */
+  const multiSelectChipIdRef = useRef<string | null>(null)
+
+  /** multi-select 실시간 적용 — 체크 토글할 때마다 칩을 즉시 업데이트 */
+  const applyMultiSelectImmediate = useCallback((attr: FilterAttribute, selected: Set<string>) => {
     if (selected.size === 0) {
-      setMultiSelectState(null)
-      setIsAddOpen(false)
+      // 전부 해제 → 칩 제거
+      if (multiSelectChipIdRef.current) {
+        onChipsChange(chips.filter((c) => c.id !== multiSelectChipIdRef.current))
+        multiSelectChipIdRef.current = null
+      }
       return
     }
     const selectedValues = Array.from(selected)
@@ -202,17 +206,19 @@ export function ConditionFilterBar({
       .map((v) => attr.options?.find((o) => o.value === v)?.label ?? v)
       .join(', ')
 
-    // 기존 칩 편집인지 신규인지
-    if (editingChipId) {
+    if (multiSelectChipIdRef.current) {
+      // 기존 칩 업데이트
       onChipsChange(chips.map((c) =>
-        c.id === editingChipId
+        c.id === multiSelectChipIdRef.current
           ? { ...c, value: combinedValue, displayLabel: combinedLabel }
           : c,
       ))
-      setEditingChipId(null)
     } else {
+      // 신규 칩 생성
+      const newId = generateChipId()
+      multiSelectChipIdRef.current = newId
       const newChip: ConditionChip = {
-        id: generateChipId(),
+        id: newId,
         attribute: attr.key,
         operator: 'eq',
         value: combinedValue,
@@ -220,9 +226,7 @@ export function ConditionFilterBar({
       }
       onChipsChange([...chips, newChip])
     }
-    setMultiSelectState(null)
-    setIsAddOpen(false)
-  }, [multiSelectState, editingChipId, chips, onChipsChange])
+  }, [chips, onChipsChange])
 
   /** location 선택: 내 위치 또는 구/생활권 선택 → 칩 생성 */
   const handleLocationSelect = useCallback((value: string, displayLabel: string, filterKey?: string) => {
@@ -401,6 +405,7 @@ export function ConditionFilterBar({
     const msAttr = attributes.find((a) => a.key === chip.attribute && a.type === 'multi-select')
     if (msAttr) {
       const currentValues = new Set(String(chip.value).split(',').map((v) => v.trim()))
+      multiSelectChipIdRef.current = chip.id
       setMultiSelectState({ attribute: msAttr, selected: currentValues })
       return
     }
@@ -573,14 +578,16 @@ export function ConditionFilterBar({
         </Popover>
       )}
 
-      {/* ── multi-select 체크박스 팝오버 ── */}
+      {/* ── multi-select 체크박스 팝오버 (실시간 적용) ── */}
       {multiSelectState && (
         <Popover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={() => {
-          handleMultiSelectApply()
+          setMultiSelectState(null)
+          setIsAddOpen(false)
+          multiSelectChipIdRef.current = null
         }}>
           <button
             type="button"
-            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null) }}
+            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); multiSelectChipIdRef.current = null }}
             className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
             style={{ color: 'var(--text-hint)' }}
           >
@@ -588,27 +595,16 @@ export function ConditionFilterBar({
           </button>
           {multiSelectState.attribute.options?.map((opt) => {
             const isChecked = multiSelectState.selected.has(opt.value)
-            const isPublicOption = opt.value === 'public'
             return (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => {
-                  setMultiSelectState((prev) => {
-                    if (!prev) return null
-                    const next = new Set(prev.selected)
-                    if (isPublicOption) {
-                      // "공개" 선택 → 다른 모두 해제 (공개는 단독 선택)
-                      next.clear()
-                      next.add('public')
-                    } else {
-                      // 개별 항목 → "공개" 해제
-                      next.delete('public')
-                      if (isChecked) next.delete(opt.value)
-                      else next.add(opt.value)
-                    }
-                    return { ...prev, selected: next }
-                  })
+                  const next = new Set(multiSelectState.selected)
+                  if (isChecked) next.delete(opt.value)
+                  else next.add(opt.value)
+                  setMultiSelectState({ ...multiSelectState, selected: next })
+                  applyMultiSelectImmediate(multiSelectState.attribute, next)
                 }}
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
                 style={{ color: 'var(--text)' }}
@@ -618,15 +614,6 @@ export function ConditionFilterBar({
               </button>
             )
           })}
-          <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
-          <button
-            type="button"
-            onClick={handleMultiSelectApply}
-            className="flex w-full items-center justify-center px-3 py-2 text-[13px] font-medium"
-            style={{ color: accent }}
-          >
-            적용
-          </button>
         </Popover>
       )}
 

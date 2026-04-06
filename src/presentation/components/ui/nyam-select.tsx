@@ -31,11 +31,9 @@ export function NyamSelect({ options, value, onChange, placeholder, disabled = f
   const [isOpen, setIsOpen] = useState(false)
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
-  const [style, setStyle] = useState<React.CSSProperties>({})
   const [maxH, setMaxH] = useState<number>(400)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const matched = options.find((o) => o.value === value)
@@ -49,61 +47,47 @@ export function NyamSelect({ options, value, onChange, placeholder, disabled = f
     setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
   }, [])
 
-  // 드롭다운 위치·크기 계산
-  useEffect(() => {
-    if (!isOpen || !buttonRef.current) return
+  /** 포탈 DOM이 마운트될 때 ref callback으로 즉시 위치 계산 */
+  const positionDropdown = useCallback((dd: HTMLDivElement | null) => {
+    if (!dd || !buttonRef.current) return
     const btn = buttonRef.current.getBoundingClientRect()
     const vw = window.innerWidth
     const vh = window.innerHeight
 
-    // ── 상하 방향 결정 ──
+    // 상하 방향 결정
     const spaceBelow = vh - btn.bottom - EDGE_MARGIN
     const spaceAbove = btn.top - EDGE_MARGIN
-    // 항목 전체가 아래에 들어가는지 체크, 안 되면 더 넓은 쪽 선택
-    const estTotal = options.length * ITEM_HEIGHT_EST + 8 // padding
+    const estTotal = options.length * ITEM_HEIGHT_EST + 8
     const dropUp = spaceBelow < Math.min(estTotal, MIN_HEIGHT) && spaceAbove > spaceBelow
 
     const availableH = dropUp ? spaceAbove : spaceBelow
-    const computedMaxH = Math.max(MIN_HEIGHT, availableH - GAP)
-    setMaxH(computedMaxH)
+    setMaxH(Math.max(MIN_HEIGHT, availableH - GAP))
 
-    // ── 좌우 정렬 ──
-    // 원칙: 좌측 정렬. 오른쪽이 잘릴 때만 우측 정렬
-    // 드롭다운 예상 폭: 항목 최대 길이 기반이지만 렌더 전엔 모르므로 넉넉히 추정
-    // max-content로 렌더되니, 일단 left로 놓고 렌더 후 보정
-    const pos: React.CSSProperties = {
-      position: 'fixed',
-      zIndex: 300,
-      width: 'max-content',
-      minWidth: btn.width,
-    }
+    // 1차: 좌측 정렬로 임시 배치 (실제 너비 측정용)
+    dd.style.position = 'fixed'
+    dd.style.zIndex = '300'
+    dd.style.width = 'max-content'
+    dd.style.minWidth = `${btn.width}px`
+    dd.style.left = `${btn.left}px`
+    dd.style.visibility = 'hidden'
 
     if (dropUp) {
-      pos.bottom = vh - btn.top + GAP
+      dd.style.bottom = `${vh - btn.top + GAP}px`
+      dd.style.top = 'auto'
     } else {
-      pos.top = btn.bottom + GAP
+      dd.style.top = `${btn.bottom + GAP}px`
+      dd.style.bottom = 'auto'
     }
 
-    // 좌측 정렬 기본
-    pos.left = btn.left
+    // 2차: 실제 너비 측정 후 좌우 보정
+    const ddRect = dd.getBoundingClientRect()
+    if (ddRect.right > vw - EDGE_MARGIN) {
+      dd.style.left = `${Math.max(EDGE_MARGIN, vw - EDGE_MARGIN - ddRect.width)}px`
+    }
 
-    setStyle(pos)
-
-    // 렌더 후 우측 오버플로 보정
-    requestAnimationFrame(() => {
-      const dd = dropdownRef.current
-      if (!dd) return
-      const ddRect = dd.getBoundingClientRect()
-
-      // 우측으로 넘치면 → 오른쪽 끝을 화면에 맞춤
-      if (ddRect.right > vw - EDGE_MARGIN) {
-        const correctedLeft = Math.max(EDGE_MARGIN, vw - EDGE_MARGIN - ddRect.width)
-        setStyle((prev) => ({ ...prev, left: correctedLeft }))
-      }
-
-      checkScroll()
-    })
-  }, [isOpen, options.length, checkScroll])
+    // 최종: 보이기
+    dd.style.visibility = 'visible'
+  }, [options.length])
 
   // 바깥 클릭으로 닫기
   useEffect(() => {
@@ -111,7 +95,9 @@ export function NyamSelect({ options, value, onChange, placeholder, disabled = f
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node
       if (containerRef.current?.contains(target)) return
-      if (dropdownRef.current?.contains(target)) return
+      // 포탈 내부 클릭도 무시 — 포탈은 body에 있으므로 data 속성으로 식별
+      const portalEl = document.querySelector('[data-nyam-dropdown]')
+      if (portalEl?.contains(target)) return
       setIsOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -141,9 +127,9 @@ export function NyamSelect({ options, value, onChange, placeholder, disabled = f
 
       {isOpen && createPortal(
         <div
-          ref={dropdownRef}
+          ref={positionDropdown}
+          data-nyam-dropdown
           className="nyam-dropdown"
-          style={style}
         >
           {canScrollUp && (
             <div className="nyam-dropdown-scroll-hint top">

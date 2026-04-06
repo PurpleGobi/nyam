@@ -37,8 +37,7 @@ export function chipsToFilterRules(chips: FilterChipItem[]): FilterRule[] {
     if (isAdvancedChip(chip)) {
       rules.push(...chip.rules)
     } else {
-      // view:public / status:all 은 후속 데이터 페칭까지 스킵
-      if (chip.attribute === 'view' && String(chip.value) === 'public') continue
+      // status:all 은 필터 없음
       if (chip.attribute === 'status' && String(chip.value) === 'all') continue
       // location:nearby는 후속 GPS 구현까지 스킵
       if (chip.attribute === 'location' && String(chip.value) === 'nearby') continue

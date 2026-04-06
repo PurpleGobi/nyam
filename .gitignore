@@ -50,3 +50,4 @@ public/workbox-*.js.map
 
 # claude
 .claude/mcp.json
+.gstack/

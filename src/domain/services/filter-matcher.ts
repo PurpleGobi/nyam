@@ -175,16 +175,17 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view/status=following → source 필드로 매칭 ──
-  if ((attribute === 'status' || attribute === 'view') && String(value) === 'following') {
+  // ── 가상 속성: view=bubble / view=public / view=following → 서버 쿼리로 처리됨 ──
+  // 클라이언트 필터에 도달하면 이미 서버가 필터링한 데이터이므로 통과
+  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'public' || String(value) === 'following')) {
+    return true
+  }
+
+  // ── 가상 속성: status=following → source 필드로 매칭 (레거시 호환) ──
+  if (attribute === 'status' && String(value) === 'following') {
     const source = record.source ?? record['source']
     const matches = source === 'following'
     return operator === 'eq' ? matches : !matches
-  }
-
-  // ── 가상 속성: view=bubble / view=public → 모든 레코드 통과 (후속 데이터 페칭까지) ──
-  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'public')) {
-    return true
   }
 
   // ── 배열 속성: area (생활권, TEXT[]) ──
