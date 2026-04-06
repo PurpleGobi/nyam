@@ -22,7 +22,6 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/bubbles':                   { depth: 0, parent: null,           type: 'stack' },
 
   // ── D1: 홈 계열 ────────────────────────────────────────────
-  '/discover':                  { depth: 1, parent: '/',            type: 'stack' },
   '/search':                    { depth: 1, parent: '/',            type: 'stack' },
   '/restaurants/[id]':          { depth: 1, parent: '/',            type: 'stack' },
   '/wines/[id]':                { depth: 1, parent: '/',            type: 'stack' },

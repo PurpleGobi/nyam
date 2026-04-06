@@ -10,7 +10,6 @@ import { SupabaseNotificationRepository } from '@/infrastructure/repositories/su
 import { SupabaseBubbleRepository } from '@/infrastructure/repositories/supabase-bubble-repository'
 import { SupabaseFollowRepository } from '@/infrastructure/repositories/supabase-follow-repository'
 import { SupabaseSavedFilterRepository } from '@/infrastructure/repositories/supabase-saved-filter-repository'
-import { SupabaseDiscoverRepository } from '@/infrastructure/repositories/supabase-discover-repository'
 import { SupabaseProfileRepository } from '@/infrastructure/repositories/supabase-profile-repository'
 import { SupabaseSettingsRepository } from '@/infrastructure/repositories/supabase-settings-repository'
 import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabase-comment-repository'
@@ -28,7 +27,6 @@ import type { NotificationRepository } from '@/domain/repositories/notification-
 import type { BubbleRepository } from '@/domain/repositories/bubble-repository'
 import type { FollowRepository } from '@/domain/repositories/follow-repository'
 import type { SavedFilterRepository } from '@/domain/repositories/saved-filter-repository'
-import type { DiscoverRepository } from '@/domain/repositories/discover-repository'
 import type { ProfileRepository } from '@/domain/repositories/profile-repository'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { CommentRepository } from '@/domain/repositories/comment-repository'
@@ -53,7 +51,6 @@ export const notificationRepo: NotificationRepository = new SupabaseNotification
 export const bubbleRepo: BubbleRepository = new SupabaseBubbleRepository()
 export const followRepo: FollowRepository = new SupabaseFollowRepository()
 export const savedFilterRepo: SavedFilterRepository = new SupabaseSavedFilterRepository()
-export const discoverRepo: DiscoverRepository = new SupabaseDiscoverRepository()
 export const profileRepo: ProfileRepository = new SupabaseProfileRepository()
 export const settingsRepo: SettingsRepository = new SupabaseSettingsRepository()
 export const commentRepo: CommentRepository = new SupabaseCommentRepository()
