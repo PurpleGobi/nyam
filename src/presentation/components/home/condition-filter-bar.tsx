@@ -588,7 +588,7 @@ export function ConditionFilterBar({
           </button>
           {multiSelectState.attribute.options?.map((opt) => {
             const isChecked = multiSelectState.selected.has(opt.value)
-            const isAllOption = opt.value === 'all'
+            const isPublicOption = opt.value === 'public'
             return (
               <button
                 key={opt.value}
@@ -597,13 +597,13 @@ export function ConditionFilterBar({
                   setMultiSelectState((prev) => {
                     if (!prev) return null
                     const next = new Set(prev.selected)
-                    if (isAllOption) {
-                      // "전체" 선택 → 다른 모두 해제
+                    if (isPublicOption) {
+                      // "공개" 선택 → 다른 모두 해제 (공개는 단독 선택)
                       next.clear()
-                      next.add('all')
+                      next.add('public')
                     } else {
-                      // 개별 항목 → "전체" 해제
-                      next.delete('all')
+                      // 개별 항목 → "공개" 해제
+                      next.delete('public')
                       if (isChecked) next.delete(opt.value)
                       else next.add(opt.value)
                     }

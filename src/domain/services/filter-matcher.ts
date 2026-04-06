@@ -182,8 +182,8 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view=bubble / view=all → 모든 레코드 통과 (후속 데이터 페칭까지) ──
-  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'all')) {
+  // ── 가상 속성: view=bubble / view=public → 모든 레코드 통과 (후속 데이터 페칭까지) ──
+  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'public')) {
     return true
   }
 

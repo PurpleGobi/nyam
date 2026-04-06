@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-06 #10 — 홈 필터 시스템 재구성 + Write-Behind Cache 영속화
+- **영역**: domain/entities/filter-config, condition-chip, filter-matcher, infrastructure/supabase-filter-state-repository, application/hooks/use-persisted-filter-state, presentation/home-container, condition-filter-bar, supabase/migrations/046
+- **맥락**: (1) 식당탭 필터 재구성: 상태→보기(멀티셀렉트OR), 위치(구)+생활권→위치 통합(내 위치+행정구역/생활권 탭), 순서 재배치(10종). (2) 필터 상태 Write-Behind Cache: localStorage 즉시 + debounce 1500ms Supabase + visibilitychange flush + timestamp 비교 복원. (3) R4 리팩토링: presentation에서 shared/di import 제거, application hooks로 이동.
+- **미완료**: 보기 필터의 "버블"/"전체" 데이터 페칭 미연동 (UI만), "내 위치" GPS 연동 미구현 (UI만), 와인탭 필터 순서/통합 미적용
+- **다음**: 버블/전체 기록 데이터 페칭 연동, GPS 내 위치 기능 연동, 브라우저 QA
+
 ### 2026-04-03 #9 — 버블 멤버 카운트/통계 트리거 수정 + 버블러 탭 구현
 - **영역**: supabase/migrations/044, application/hooks/use-bubblers-list, presentation/containers/bubble-list-container
 - **맥락**: (1) member_count 트리거가 RLS에 막혀 비-owner INSERT 시 카운트 미갱신 → SECURITY DEFINER 적용. (2) 멤버별 통계(member_unique_target_count, weekly_share_count, avg_satisfaction) 갱신 트리거 없음 → bubble_shares INSERT/DELETE 시 자동 재계산 추가. (3) 기존 데이터 일괄 재계산. (4) 버블러 탭이 하드코딩 빈 상태 → useBubblersList 훅 + BubblerCard 구현.

@@ -164,7 +164,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: 'wishlist', label: '찜' },
       { value: 'following', label: '팔로잉' },
       { value: 'bubble', label: '버블' },
-      { value: 'all', label: '전체' },
+      { value: 'public', label: '공개' },
     ],
   },
   {
