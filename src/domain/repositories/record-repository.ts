@@ -16,7 +16,7 @@ export interface RecordRepository {
   /** lists upsert — 이미 존재하면 반환, 없으면 생성 */
   findOrCreateList(userId: string, targetId: string, targetType: RecordTargetType, status: ListStatus): Promise<ListItem>
 
-  /** list status 변경 (e.g. wishlist → visited) */
+  /** list status 변경 (e.g. bookmark → visited) */
   updateListStatus(listId: string, status: ListStatus): Promise<void>
 
   /** 사용자의 list 항목 조회 (status 필터) */
@@ -27,6 +27,9 @@ export interface RecordRepository {
 
   /** list 삭제 (연결된 records도 CASCADE 삭제) */
   deleteList(listId: string): Promise<void>
+
+  /** 북마크(찜) 토글 — list가 없으면 생성, 있으면 is_bookmarked 토글 */
+  toggleBookmark(userId: string, targetId: string, targetType: RecordTargetType, bookmarked: boolean): Promise<void>
 
   // ─── Record (방문/시음 1회) ───
 

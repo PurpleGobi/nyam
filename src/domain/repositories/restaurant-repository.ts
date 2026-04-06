@@ -43,7 +43,7 @@ export interface RestaurantRepository {
   findFollowingRecordsByTarget(restaurantId: string, userId: string): Promise<DiningRecord[]>
 
   /** 공개 사용자의 해당 식당 satisfaction 평균 + 인원수 */
-  findPublicSatisfactionAvg(restaurantId: string): Promise<{ avg: number; count: number } | null>
+  findPublicSatisfactionAvg(restaurantId: string, excludeUserId?: string): Promise<{ avg: number; count: number } | null>
 }
 
 /** 사분면 참조 점 */
@@ -64,6 +64,13 @@ export interface LinkedWineCard {
   satisfaction: number | null
 }
 
+/** 버블 내 개별 기록 (사분면 dot용) */
+export interface BubbleRecordDot {
+  axisX: number
+  axisY: number
+  satisfaction: number
+}
+
 /** 버블 점수 행 */
 export interface BubbleScoreRow {
   bubbleId: string
@@ -72,4 +79,6 @@ export interface BubbleScoreRow {
   bubbleColor: string | null
   memberCount: number
   avgScore: number | null
+  /** 사분면 dot 표시용 개별 기록 좌표 */
+  dots: BubbleRecordDot[]
 }

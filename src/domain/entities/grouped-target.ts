@@ -25,6 +25,9 @@ export interface GroupedTarget {
   listStatus: ListStatus | undefined
   createdAt: string
 
+  // 대표 평균 점수의 출처 source (나→팔로잉→버블→공개 폴백)
+  averageSource?: string
+
   // 집계
   visitCount: number
   allRecords: RecordWithTarget[]

@@ -56,6 +56,7 @@ function mapDbToListItem(row: any): ListItem {
     targetId: row.target_id,
     targetType: row.target_type,
     status: row.status,
+    isBookmarked: row.is_bookmarked ?? false,
     source: row.source ?? 'direct',
     sourceRecordId: row.source_record_id ?? null,
     createdAt: row.created_at,
@@ -174,6 +175,36 @@ export class SupabaseRecordRepository implements RecordRepository {
     if (error) throw new Error(`List 삭제 실패: ${error.message}`)
   }
 
+  async toggleBookmark(
+    userId: string,
+    targetId: string,
+    targetType: RecordTargetType,
+    bookmarked: boolean,
+  ): Promise<void> {
+    const existing = await this.findListByUserAndTarget(userId, targetId, targetType)
+    if (existing) {
+      // 기존 list 항목이 있으면 is_bookmarked만 업데이트
+      const { error } = await this.supabase
+        .from('lists')
+        .update({ is_bookmarked: bookmarked, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+      if (error) throw new Error(`북마크 토글 실패: ${error.message}`)
+    } else if (bookmarked) {
+      // list 항목이 없으면 bookmark status로 생성
+      const { error } = await this.supabase
+        .from('lists')
+        .insert({
+          user_id: userId,
+          target_id: targetId,
+          target_type: targetType,
+          status: 'bookmark',
+          is_bookmarked: true,
+          source: 'direct',
+        })
+      if (error) throw new Error(`북마크 생성 실패: ${error.message}`)
+    }
+  }
+
   // ─── Record ───
 
   async create(input: CreateRecordInput): Promise<DiningRecord> {
@@ -186,7 +217,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     )
 
     // 방문 기록 생성 시 list status를 visited/tasted로 승격
-    if (list.status === 'wishlist' && (input.listStatus === 'visited' || input.listStatus === 'tasted')) {
+    if (list.status === 'bookmark' && (input.listStatus === 'visited' || input.listStatus === 'tasted')) {
       await this.updateListStatus(list.id, input.listStatus)
     }
 
@@ -437,18 +468,18 @@ export class SupabaseRecordRepository implements RecordRepository {
 
   // ─── 보기 필터별 조회 (타인 기록) ───
 
-  async findWishlistTargetRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
-    // 1) 내 wishlists에서 target_id 목록 조회
+  async findBookmarkTargetRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
+    // 1) 내 bookmarks에서 target_id 목록 조회
     let listQuery = this.supabase
       .from('lists')
       .select('target_id')
       .eq('user_id', userId)
-      .eq('status', 'wishlist')
+      .eq('status', 'bookmark')
     if (targetType) listQuery = listQuery.eq('target_type', targetType)
-    const { data: myWishlists } = await listQuery
-    if (!myWishlists || myWishlists.length === 0) return []
+    const { data: myBookmarks } = await listQuery
+    if (!myBookmarks || myBookmarks.length === 0) return []
 
-    const targetIds = myWishlists.map((w) => w.target_id)
+    const targetIds = myBookmarks.map((w) => w.target_id)
 
     // 2) 해당 target에 대한 타인의 records 조회 (lists JOIN 없이 — 타인 데이터)
     let query = this.supabase
@@ -459,9 +490,9 @@ export class SupabaseRecordRepository implements RecordRepository {
       .order('visit_date', { ascending: false })
     if (targetType) query = query.eq('target_type', targetType)
     const { data, error } = await query
-    if (error) throw new Error(`Wishlist records 조회 실패: ${error.message}`)
+    if (error) throw new Error(`Bookmark records 조회 실패: ${error.message}`)
 
-    return this.enrichRecordsWithTarget(data ?? [], userId, 'wishlist')
+    return this.enrichRecordsWithTarget(data ?? [], userId, 'bookmark')
   }
 
   async findBubbleSharedRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
@@ -568,26 +599,76 @@ export class SupabaseRecordRepository implements RecordRepository {
           if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
           return { rows: data ?? [], source: 'mine' as RecordSource }
         }
-        case 'wishlist': {
-          const listQuery = this.supabase
+        case 'bookmark': {
+          // 찜은 is_bookmarked=true인 lists를 표시 (status와 무관)
+          const { data: myBookmarks, error: listError } = await this.supabase
             .from('lists')
-            .select('target_id')
+            .select('id, target_id, target_type, status, created_at, updated_at')
             .eq('user_id', userId)
-            .eq('status', 'wishlist')
+            .eq('is_bookmarked', true)
             .eq('target_type', targetType)
-          const { data: myWishlists } = await listQuery
-          if (!myWishlists || myWishlists.length === 0) return { rows: [], source: 'wishlist' as RecordSource }
-          const targetIds = myWishlists.map((w) => w.target_id)
-          const query = this.supabase
+            .order('created_at', { ascending: false })
+          if (listError) throw new Error(`Bookmark 조회 실패: ${listError.message}`)
+          if (!myBookmarks || myBookmarks.length === 0) return { rows: [], source: 'bookmark' as RecordSource }
+
+          const bookmarkTargetIds = myBookmarks.map((b) => b.target_id)
+
+          // 찜한 대상 중 내 기록이 있는 것은 실제 records를 가져옴
+          const { data: myRecords } = await this.supabase
             .from('records')
-            .select('*')
-            .in('target_id', targetIds)
-            .neq('user_id', userId)
+            .select('*, lists!inner(status)')
+            .eq('user_id', userId)
             .eq('target_type', targetType)
+            .in('target_id', bookmarkTargetIds)
             .order('visit_date', { ascending: false })
-          const { data, error } = await query
-          if (error) throw new Error(`Wishlist records 조회 실패: ${error.message}`)
-          return { rows: data ?? [], source: 'wishlist' as RecordSource }
+
+          const recordedTargetIds = new Set((myRecords ?? []).map((r) => r.target_id))
+
+          // 기록이 없는 찜 대상은 가상 row로 변환
+          const fakeRows = myBookmarks
+            .filter((b) => !recordedTargetIds.has(b.target_id))
+            .map((w) => ({
+              id: `bookmark-${w.id}`,
+              list_id: w.id,
+              user_id: userId,
+              target_id: w.target_id,
+              target_type: w.target_type,
+              axis_x: null,
+              axis_y: null,
+              satisfaction: null,
+              scene: null,
+              comment: null,
+              total_price: null,
+              purchase_price: null,
+              visit_date: null,
+              meal_time: null,
+              has_exif_gps: false,
+              is_exif_verified: false,
+              camera_mode: null,
+              ocr_data: null,
+              aroma_primary: [],
+              aroma_secondary: [],
+              aroma_tertiary: [],
+              complexity: null,
+              finish: null,
+              balance: null,
+              intensity: null,
+              auto_score: null,
+              private_note: null,
+              companion_count: null,
+              companions: null,
+              linked_restaurant_id: null,
+              linked_wine_id: null,
+              menu_tags: null,
+              pairing_categories: null,
+              record_quality_xp: 0,
+              score_updated_at: null,
+              created_at: w.created_at,
+              updated_at: w.updated_at,
+              lists: { status: w.status },
+            }))
+
+          return { rows: [...(myRecords ?? []), ...fakeRows], source: 'bookmark' as RecordSource }
         }
         case 'bubble': {
           const { data: memberships } = await this.supabase
@@ -658,9 +739,9 @@ export class SupabaseRecordRepository implements RecordRepository {
 
     const results = await Promise.all(promises)
 
-    // 2) 모든 raw rows를 하나로 합침 — 중복 시 우선순위: mine > following > bubble > public > wishlist
+    // 2) 모든 raw rows를 하나로 합침 — 중복 시 우선순위: mine > following > bubble > public > bookmark
     const SOURCE_PRIORITY: Record<string, number> = {
-      mine: 0, following: 1, bubble: 2, public: 3, wishlist: 4,
+      mine: 0, following: 1, bubble: 2, public: 3, bookmark: 4,
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rowMap: Supabase raw row, enrichRecordsWithTarget과 동일 패턴
     const rowMap = new Map<string, { row: any; source: RecordSource }>()

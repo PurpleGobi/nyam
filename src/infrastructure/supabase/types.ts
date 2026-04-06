@@ -42,8 +42,8 @@ export interface Database {
           dnd_end: string | null
           pref_landing: 'last' | 'home' | 'bubbles' | 'profile'
           pref_home_tab: 'last' | 'restaurant' | 'wine'
-          pref_restaurant_sub: 'last' | 'visited' | 'wishlist' | 'following'
-          pref_wine_sub: 'last' | 'tasted' | 'wishlist' | 'cellar'
+          pref_restaurant_sub: 'last' | 'visited' | 'bookmark' | 'following'
+          pref_wine_sub: 'last' | 'tasted' | 'bookmark' | 'cellar'
           pref_bubble_tab: 'last' | 'bubble' | 'bubbler'
           pref_view_mode: 'last' | 'card' | 'list' | 'calendar'
           pref_default_sort: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
@@ -91,8 +91,8 @@ export interface Database {
           dnd_end?: string | null
           pref_landing?: 'last' | 'home' | 'bubbles' | 'profile'
           pref_home_tab?: 'last' | 'restaurant' | 'wine'
-          pref_restaurant_sub?: 'last' | 'visited' | 'wishlist' | 'following'
-          pref_wine_sub?: 'last' | 'tasted' | 'wishlist' | 'cellar'
+          pref_restaurant_sub?: 'last' | 'visited' | 'bookmark' | 'following'
+          pref_wine_sub?: 'last' | 'tasted' | 'bookmark' | 'cellar'
           pref_bubble_tab?: 'last' | 'bubble' | 'bubbler'
           pref_view_mode?: 'last' | 'card' | 'list' | 'calendar'
           pref_default_sort?: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
@@ -140,8 +140,8 @@ export interface Database {
           dnd_end?: string | null
           pref_landing?: 'last' | 'home' | 'bubbles' | 'profile'
           pref_home_tab?: 'last' | 'restaurant' | 'wine'
-          pref_restaurant_sub?: 'last' | 'visited' | 'wishlist' | 'following'
-          pref_wine_sub?: 'last' | 'tasted' | 'wishlist' | 'cellar'
+          pref_restaurant_sub?: 'last' | 'visited' | 'bookmark' | 'following'
+          pref_wine_sub?: 'last' | 'tasted' | 'bookmark' | 'cellar'
           pref_bubble_tab?: 'last' | 'bubble' | 'bubbler'
           pref_view_mode?: 'last' | 'card' | 'list' | 'calendar'
           pref_default_sort?: 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
@@ -366,7 +366,7 @@ export interface Database {
           user_id: string
           target_id: string
           target_type: 'restaurant' | 'wine'
-          status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          status: 'visited' | 'bookmark' | 'cellar' | 'tasted'
           source: string
           source_record_id: string | null
           created_at: string
@@ -377,7 +377,7 @@ export interface Database {
           user_id: string
           target_id: string
           target_type: 'restaurant' | 'wine'
-          status: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          status: 'visited' | 'bookmark' | 'cellar' | 'tasted'
           source?: string
           source_record_id?: string | null
           created_at?: string
@@ -388,7 +388,7 @@ export interface Database {
           user_id?: string
           target_id?: string
           target_type?: 'restaurant' | 'wine'
-          status?: 'visited' | 'wishlist' | 'cellar' | 'tasted'
+          status?: 'visited' | 'bookmark' | 'cellar' | 'tasted'
           source?: string
           source_record_id?: string | null
           created_at?: string

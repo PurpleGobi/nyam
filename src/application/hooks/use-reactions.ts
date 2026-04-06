@@ -72,13 +72,13 @@ export function useReactions({
     try {
       const result = await reactionRepo.toggle(targetType, targetId, reactionType, userId)
 
-      // bookmark + added → lists INSERT (status='wishlist', source='bubble')
+      // bookmark + added → lists INSERT (source='bubble')
       if (result.added && reactionType === 'bookmark' && bookmarkTarget) {
         await recordRepo.findOrCreateList(
           userId,
           bookmarkTarget.targetId,
           bookmarkTarget.targetType,
-          'wishlist',
+          'bookmark',
         )
       }
 

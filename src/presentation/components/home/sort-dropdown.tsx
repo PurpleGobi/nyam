@@ -7,7 +7,7 @@ interface SortDropdownProps<T extends string = SortOption> {
   currentSort: T
   onSortChange: (sort: T) => void
   accentType: 'food' | 'wine' | 'social'
-  labels?: Record<T, string>
+  labels?: Partial<Record<T, string>>
 }
 
 const DEFAULT_SORT_LABELS: Record<SortOption, string> = {
@@ -16,6 +16,7 @@ const DEFAULT_SORT_LABELS: Record<SortOption, string> = {
   score_low: '점수 낮은순',
   name: '이름순',
   visit_count: '방문 많은순',
+  distance: '거리순',
 }
 
 const ACCENT_MAP = {

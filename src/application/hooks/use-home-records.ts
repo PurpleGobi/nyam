@@ -5,18 +5,18 @@ import type { RecordTargetType, RecordWithTarget, RecordSource } from '@/domain/
 import type { HomeTab } from '@/domain/entities/home-state'
 import { recordRepo } from '@/shared/di/container'
 
-export type ViewType = 'visited' | 'wishlist' | 'bubble' | 'following' | 'public'
+export type ViewType = 'visited' | 'bookmark' | 'bubble' | 'following' | 'public'
 
 /** ViewType → RecordSource 매핑 ('visited' → 'mine') */
 const VIEW_TO_SOURCE: Record<ViewType, RecordSource> = {
   visited: 'mine',
-  wishlist: 'wishlist',
+  bookmark: 'bookmark',
   bubble: 'bubble',
   following: 'following',
   public: 'public',
 }
 
-const ALL_VIEWS: ViewType[] = ['visited', 'wishlist', 'bubble', 'following', 'public']
+const ALL_VIEWS: ViewType[] = ['visited', 'bookmark', 'bubble', 'following', 'public']
 
 export function useHomeRecords(params: {
   userId: string | null

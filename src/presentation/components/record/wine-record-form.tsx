@@ -87,9 +87,10 @@ interface CreateWineRecordInput {
     criticScores: { RP?: number; WS?: number } | null
     tastingNotes: string | null
   }
-  axisX: number
-  axisY: number
-  satisfaction: number
+  axisX?: number | null
+  axisY?: number | null
+  satisfaction?: number | null
+  listStatus?: 'tasted' | 'cellar'
   aromaPrimary: string[]
   aromaSecondary: string[]
   aromaTertiary: string[]
@@ -310,6 +311,47 @@ export function WineRecordForm({
       linkedRestaurantId: linkedRestaurant?.id,
     })
   }, [isValid, producer, vintage, region, subRegion, appellation, country, varieties, wineType, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
+
+  const buildWineMetaUpdate = useCallback(() => ({
+    vintage: vintage ? Number(vintage) : null,
+    producer: producer || null,
+    region: region || null,
+    subRegion: subRegion || null,
+    appellation: appellation || null,
+    country: country || null,
+    variety: varieties[0]?.name || null,
+    abv: abv ? Number(abv) : null,
+    bodyLevel: bodyLevel ? Number(bodyLevel) : null,
+    acidityLevel: acidityLevel ? Number(acidityLevel) : null,
+    sweetnessLevel: sweetnessLevel ? Number(sweetnessLevel) : null,
+    classification: classification || null,
+    servingTemp: servingTemp || null,
+    decanting: decanting || null,
+    referencePriceMin: referencePriceMin ? Number(referencePriceMin) : null,
+    referencePriceMax: referencePriceMax ? Number(referencePriceMax) : null,
+    drinkingWindowStart: drinkingWindowStart ? Number(drinkingWindowStart) : null,
+    drinkingWindowEnd: drinkingWindowEnd ? Number(drinkingWindowEnd) : null,
+    vivinoRating: vivinoRating ? Number(vivinoRating) : null,
+    criticScores: (criticRP || criticWS) ? { RP: criticRP ? Number(criticRP) : undefined, WS: criticWS ? Number(criticWS) : undefined } : null,
+    tastingNotes: tastingNotes || null,
+  }), [vintage, producer, region, subRegion, appellation, country, varieties, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes])
+
+  const handleQuickSave = useCallback(async (status: 'tasted' | 'cellar') => {
+    await onSave({
+      targetId: target.id,
+      targetType: 'wine',
+      wineMetaUpdate: buildWineMetaUpdate(),
+      listStatus: status,
+      axisX: null,
+      axisY: null,
+      satisfaction: null,
+      aromaPrimary: [],
+      aromaSecondary: [],
+      aromaTertiary: [],
+      pairingCategories: [],
+      visitDate,
+    })
+  }, [target.id, onSave, buildWineMetaUpdate, visitDate])
 
   // 인라인 입력 공통 스타일
   const fi = 'min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] font-medium outline-none'
@@ -549,7 +591,35 @@ export function WineRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           테이스팅
         </h3>
-        <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+        <div className="relative">
+          <div className="absolute flex gap-2" style={{ top: '-28px', left: '120px', zIndex: 20 }}>
+            <button
+              type="button"
+              onClick={() => handleQuickSave('cellar')}
+              disabled={isLoading}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--accent-wine) 10%, transparent)',
+                color: 'var(--accent-wine)',
+              }}
+            >
+              셀러에 보관
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickSave('tasted')}
+              disabled={isLoading}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--accent-wine) 10%, transparent)',
+                color: 'var(--accent-wine)',
+              }}
+            >
+              아직이에요
+            </button>
+          </div>
+          <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+        </div>
       </section>
 
       <section className="px-4 py-4">

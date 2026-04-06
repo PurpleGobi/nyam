@@ -1,7 +1,7 @@
 'use client'
 
 interface NyamCardProps {
-  state?: 'default' | 'visited' | 'confirmed' | 'wishlisted'
+  state?: 'default' | 'visited' | 'confirmed' | 'bookmarked'
   children: React.ReactNode
   className?: string
   style?: React.CSSProperties

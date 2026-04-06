@@ -354,24 +354,24 @@ html, body, * {
 }
 
 /* 찜 하트 애니메이션 */
-@keyframes wishlist-add-anim {
+@keyframes bookmark-add-anim {
   0% { transform: scale(0); }
   60% { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
 
-@keyframes wishlist-remove-anim {
+@keyframes bookmark-remove-anim {
   0% { transform: scale(1); }
   50% { transform: scale(0.8); }
   100% { transform: scale(1); }
 }
 
-.wishlist-add {
-  animation: wishlist-add-anim 0.3s ease-out;
+.bookmark-add {
+  animation: bookmark-add-anim 0.3s ease-out;
 }
 
-.wishlist-remove {
-  animation: wishlist-remove-anim 0.2s ease;
+.bookmark-remove {
+  animation: bookmark-remove-anim 0.2s ease;
 }
 
 /* Notification dropdown */
@@ -927,7 +927,7 @@ html, body, * {
   background: var(--accent-wine-light);
 }
 
-.card.wishlisted {
+.card.bookmarked {
   border-color: var(--caution);
   background: #FBF8F1;
 }
@@ -1954,12 +1954,12 @@ html, body, * {
   border-color: #4A3555;
 }
 
-[data-theme="dark"] .card.wishlisted {
+[data-theme="dark"] .card.bookmarked {
   background: #2E2A1E;
   border-color: #5A4A2A;
 }
 
-/* ── 화면 전환 애니메이션 (Home ↔ Discover) ── */
+/* ── 화면 전환 애니메이션 ── */
 
 @keyframes slide-in-right {
   from { transform: translateX(100%); }

@@ -161,31 +161,44 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view/status=visited → listStatus로 매칭 ──
-  if ((attribute === 'status' || attribute === 'view') && String(value) === 'visited') {
+  // ── 가상 속성: view=visited → listStatus로 매칭 ──
+  if (attribute === 'view' && String(value) === 'visited') {
     const listStatus = String(record.listStatus ?? '')
     const matches = listStatus === 'visited' || listStatus === 'tasted'
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view/status=wishlist → listStatus로 매칭 ──
-  if ((attribute === 'status' || attribute === 'view') && String(value) === 'wishlist') {
+  // ���─ 가상 속성: view=tasted → listStatus로 매칭 (와인) ──
+  if (attribute === 'view' && String(value) === 'tasted') {
     const listStatus = String(record.listStatus ?? '')
-    const matches = listStatus === 'wishlist'
+    const matches = listStatus === 'tasted'
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view=bubble / view=public / view=following → 서버 쿼리로 처리됨 ──
-  // 클라이언트 필터에 도달하면 이미 서버가 필터링한 데이터이므로 통과
+  // ── 가상 속성: view=bookmark → source가 bookmark이면 매칭 ──
+  if (attribute === 'view' && String(value) === 'bookmark') {
+    const matches = record.source === 'bookmark'
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // ── 가상 속성: view=cellar → listStatus로 매칭 (와인) ──
+  if (attribute === 'view' && String(value) === 'cellar') {
+    const listStatus = String(record.listStatus ?? '')
+    const matches = listStatus === 'cellar'
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // ── ���상 속성: view=unrated → 점수 미입력 기록 ──
+  if (attribute === 'view' && String(value) === 'unrated') {
+    const axisX = record.axisX ?? record['axis_x']
+    const matches = axisX == null
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // ── 가상 속성: view=bubble / view=public / view=following → 서버 쿼리로 처리�� ──
+  // 클라이언트 필터에 도달하면 이미 서버가 필터���한 데이터이므로 통과
   if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'public' || String(value) === 'following')) {
     return true
-  }
-
-  // ── 가상 속성: status=following → source 필드로 매칭 (레거시 호환) ──
-  if (attribute === 'status' && String(value) === 'following') {
-    const source = record.source ?? record['source']
-    const matches = source === 'following'
-    return operator === 'eq' ? matches : !matches
   }
 
   // ── 배열 속성: area (생활권, TEXT[]) ──

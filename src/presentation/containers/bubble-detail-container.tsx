@@ -42,7 +42,7 @@ interface BubbleDetailContainerProps {
 type ContentTab = 'restaurant' | 'wine'
 type SubPage = 'list' | 'ranking' | 'members'
 
-const SORT_LABELS: Record<SortOption, string> = {
+const SORT_LABELS: Partial<Record<SortOption, string>> = {
   latest: '최신순',
   score_high: '점수 높은순',
   score_low: '점수 낮은순',

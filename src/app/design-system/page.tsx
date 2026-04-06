@@ -438,8 +438,8 @@ export default function DesignSystemPage() {
           </div>
         </NyamCard>
 
-        <Sub title="Wishlisted" />
-        <NyamCard state="wishlisted" className="p-4" style={{ maxWidth: '380px' }}>
+        <Sub title="Bookmarked" />
+        <NyamCard state="bookmarked" className="p-4" style={{ maxWidth: '380px' }}>
           <div className="card-top" style={{ gap: '12px' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: 'var(--r-md)', background: '#FBF8F1', border: '1px solid var(--caution)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--caution)' }}>
               <Heart size={20} />

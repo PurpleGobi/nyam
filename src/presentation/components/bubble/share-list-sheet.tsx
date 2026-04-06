@@ -40,6 +40,8 @@ function sortRecords(records: RecordWithTarget[], sort: SortOption): RecordWithT
       }
       return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
     }
+    case 'distance':
+      return sorted
   }
 }
 

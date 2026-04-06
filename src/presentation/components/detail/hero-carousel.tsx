@@ -2,22 +2,22 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Share2, UtensilsCrossed, Wine } from 'lucide-react'
-import { WishlistButton } from '@/presentation/components/detail/wishlist-button'
+import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
 
 interface HeroCarouselProps {
   photos: string[]
   fallbackIcon: 'restaurant' | 'wine'
-  isWishlisted: boolean
-  onWishlistToggle: () => void
+  isBookmarked: boolean
+  onBookmarkToggle: () => void
   onShare: () => void
 }
 
 export function HeroCarousel({
   photos,
   fallbackIcon,
-  isWishlisted,
-  onWishlistToggle,
+  isBookmarked,
+  onBookmarkToggle,
   onShare,
 }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -162,9 +162,9 @@ export function HeroCarousel({
             <Share2 size={20} style={{ color: 'rgba(255,255,255,0.85)' }} />
           </button>
           <span onClick={(e) => e.stopPropagation()}>
-            <WishlistButton
-              isWishlisted={isWishlisted}
-              onToggle={onWishlistToggle}
+            <BookmarkButton
+              isBookmarked={isBookmarked}
+              onToggle={onBookmarkToggle}
               variant="hero"
               size={20}
             />

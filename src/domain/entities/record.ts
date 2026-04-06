@@ -7,7 +7,7 @@
 export type RecordTargetType = 'restaurant' | 'wine'
 
 /** lists.status */
-export type ListStatus = 'visited' | 'wishlist' | 'cellar' | 'tasted'
+export type ListStatus = 'visited' | 'bookmark' | 'cellar' | 'tasted'
 
 /** records.camera_mode */
 export type CameraMode = 'individual' | 'shelf' | 'receipt'
@@ -28,6 +28,7 @@ export interface ListItem {
   targetId: string
   targetType: RecordTargetType
   status: ListStatus
+  isBookmarked: boolean
   source: string
   sourceRecordId: string | null
   createdAt: string
@@ -91,7 +92,7 @@ export interface DiningRecord {
 
 // ─── 대상 정보 포함 기록 (홈 피드용) ───
 
-export type RecordSource = 'mine' | 'following' | 'bubble' | 'public' | 'wishlist'
+export type RecordSource = 'mine' | 'following' | 'bubble' | 'public' | 'bookmark'
 
 export interface RecordWithTarget extends DiningRecord {
   targetName: string

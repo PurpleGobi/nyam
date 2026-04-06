@@ -3,36 +3,36 @@
 import { useRef, useCallback } from 'react'
 import { Heart } from 'lucide-react'
 
-interface WishlistButtonProps {
-  isWishlisted: boolean
+interface BookmarkButtonProps {
+  isBookmarked: boolean
   onToggle: () => void
   /** 히어로 위치에서는 흰색 아이콘, 카드에서는 기본 색상 */
   variant?: 'hero' | 'card'
   size?: number
 }
 
-export function WishlistButton({
-  isWishlisted,
+export function BookmarkButton({
+  isBookmarked,
   onToggle,
   variant = 'card',
   size = 20,
-}: WishlistButtonProps) {
+}: BookmarkButtonProps) {
   const btnRef = useRef<HTMLButtonElement>(null)
 
   const handleClick = useCallback(() => {
     const el = btnRef.current
     if (el) {
-      el.classList.remove('wishlist-add', 'wishlist-remove')
+      el.classList.remove('bookmark-add', 'bookmark-remove')
       // Force reflow to restart animation
       void el.offsetWidth
-      el.classList.add(isWishlisted ? 'wishlist-remove' : 'wishlist-add')
+      el.classList.add(isBookmarked ? 'bookmark-remove' : 'bookmark-add')
     }
     onToggle()
-  }, [isWishlisted, onToggle])
+  }, [isBookmarked, onToggle])
 
   const color = variant === 'hero'
-    ? (isWishlisted ? '#FF6038' : 'rgba(255,255,255,0.85)')
-    : (isWishlisted ? '#FF6038' : 'var(--text-hint)')
+    ? (isBookmarked ? '#FF6038' : 'rgba(255,255,255,0.85)')
+    : (isBookmarked ? '#FF6038' : 'var(--text-hint)')
 
   return (
     <button
@@ -44,7 +44,7 @@ export function WishlistButton({
       <Heart
         size={size}
         style={{ color }}
-        fill={isWishlisted ? color : 'transparent'}
+        fill={isBookmarked ? color : 'transparent'}
       />
     </button>
   )

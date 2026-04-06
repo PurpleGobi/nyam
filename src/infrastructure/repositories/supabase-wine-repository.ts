@@ -264,18 +264,23 @@ export class SupabaseWineRepository implements WineRepository {
 
     const { data: shares } = await this.supabase
       .from('bubble_shares')
-      .select('bubble_id, record_id, records!inner(satisfaction)')
+      .select('bubble_id, record_id, records!inner(satisfaction, axis_x, axis_y, user_id)')
       .in('bubble_id', bubbleIds)
       .eq('records.target_id' as string, wineId)
       .eq('records.target_type' as string, 'wine')
+      .neq('records.user_id' as string, userId)
 
-    const scoreMap = new Map<string, { total: number; count: number }>()
+    const scoreMap = new Map<string, { total: number; count: number; dots: Array<{ axisX: number; axisY: number; satisfaction: number }> }>()
     for (const s of shares ?? []) {
-      const sat = (s.records as unknown as { satisfaction: number | null })?.satisfaction
+      const rec = s.records as unknown as { satisfaction: number | null; axis_x: number | null; axis_y: number | null }
+      const sat = rec?.satisfaction
       if (sat === null || sat === undefined) continue
-      const g = scoreMap.get(s.bubble_id) ?? { total: 0, count: 0 }
+      const g = scoreMap.get(s.bubble_id) ?? { total: 0, count: 0, dots: [] }
       g.total += sat
       g.count += 1
+      if (rec.axis_x != null && rec.axis_y != null) {
+        g.dots.push({ axisX: rec.axis_x, axisY: rec.axis_y, satisfaction: sat })
+      }
       scoreMap.set(s.bubble_id, g)
     }
 
@@ -289,6 +294,7 @@ export class SupabaseWineRepository implements WineRepository {
           bubbleColor: b.icon_bg_color,
           memberCount: g?.count ?? 0,
           avgScore: g ? Math.round(g.total / g.count) : null,
+          dots: g?.dots ?? [],
         }
       })
       .filter((b) => b.memberCount > 0)
@@ -391,14 +397,18 @@ export class SupabaseWineRepository implements WineRepository {
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
   }
 
-  async findPublicSatisfactionAvg(wineId: string): Promise<{ avg: number; count: number } | null> {
-    const { data, error } = await this.supabase
+  async findPublicSatisfactionAvg(wineId: string, excludeUserId?: string): Promise<{ avg: number; count: number } | null> {
+    let query = this.supabase
       .from('records')
       .select('satisfaction, users!inner(is_public)')
       .eq('target_id', wineId)
       .eq('target_type', 'wine')
       .eq('users.is_public', true)
       .not('satisfaction', 'is', null)
+    if (excludeUserId) {
+      query = query.neq('user_id', excludeUserId)
+    }
+    const { data, error } = await query
     if (error) throw new Error(`Public satisfaction 조회 실패: ${error.message}`)
     if (!data || data.length === 0) return null
 

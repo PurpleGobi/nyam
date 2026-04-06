@@ -4,13 +4,13 @@
 import type { RecordWithTarget } from '@/domain/entities/record'
 import type { GroupedTarget } from '@/domain/entities/grouped-target'
 
-/** source 우선순위: mine > following > bubble > public > wishlist */
+/** source 우선순위: mine > following > bubble > public > bookmark */
 const SOURCE_PRIORITY: Record<string, number> = {
   mine: 0,
   following: 1,
   bubble: 2,
   public: 3,
-  wishlist: 4,
+  bookmark: 4,
 }
 
 /**
@@ -41,19 +41,41 @@ export function groupRecordsByTarget(records: RecordWithTarget[]): GroupedTarget
     })
     const latest = sorted[0]
 
-    // 대표 점수: source 우선순위 기반 폴백 (나 > 팔로잉 > 버블 > 공개)
-    const bestScoreRecord = [...group]
-      .filter((r) => r.satisfaction != null)
-      .sort((a, b) => {
-        const pa = SOURCE_PRIORITY[a.source ?? 'wishlist'] ?? 99
-        const pb = SOURCE_PRIORITY[b.source ?? 'wishlist'] ?? 99
-        if (pa !== pb) return pa - pb
-        // 같은 source면 최신 우선
-        const dateA = a.visitDate ?? ''
-        const dateB = b.visitDate ?? ''
-        if (dateA !== dateB) return dateB.localeCompare(dateA)
-        return b.createdAt.localeCompare(a.createdAt)
-      })[0]
+    // 대표 점수: source 우선순위 폴백 (나→팔로잉→버블→공개)
+    // 가장 우선순위 높은 source의 records가 있으면 그 source의 평균을 사용
+    const scored = group.filter((r) => r.satisfaction != null)
+    let bestSatisfaction: number | null = null
+    let bestAxisX: number | null = null
+    let bestAxisY: number | null = null
+    let bestSource: string | undefined
+
+    if (scored.length > 0) {
+      // source별 그룹화
+      const bySource = new Map<string, typeof scored>()
+      for (const r of scored) {
+        const src = r.source ?? 'bookmark'
+        const arr = bySource.get(src)
+        if (arr) arr.push(r)
+        else bySource.set(src, [r])
+      }
+      // 우선순위 순서대로 확인 → 첫 번째 존재하는 source의 평균
+      const priorityOrder = ['mine', 'following', 'bubble', 'public', 'bookmark']
+      for (const src of priorityOrder) {
+        const srcRecords = bySource.get(src)
+        if (srcRecords && srcRecords.length > 0) {
+          bestSource = src
+          bestSatisfaction = Math.round(
+            srcRecords.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / srcRecords.length,
+          )
+          const withAxis = srcRecords.filter((r) => r.axisX != null && r.axisY != null)
+          if (withAxis.length > 0) {
+            bestAxisX = Math.round(withAxis.reduce((sum, r) => sum + (r.axisX ?? 0), 0) / withAxis.length)
+            bestAxisY = Math.round(withAxis.reduce((sum, r) => sum + (r.axisY ?? 0), 0) / withAxis.length)
+          }
+          break
+        }
+      }
+    }
 
     result.push({
       targetId,
@@ -66,9 +88,10 @@ export function groupRecordsByTarget(records: RecordWithTarget[]): GroupedTarget
       targetLng: latest.targetLng,
 
       latestRecordId: latest.id,
-      satisfaction: bestScoreRecord?.satisfaction ?? latest.satisfaction,
-      axisX: bestScoreRecord?.axisX ?? latest.axisX,
-      axisY: bestScoreRecord?.axisY ?? latest.axisY,
+      satisfaction: bestSatisfaction ?? latest.satisfaction,
+      axisX: bestAxisX ?? latest.axisX,
+      axisY: bestAxisY ?? latest.axisY,
+      averageSource: bestSource,
       scene: latest.scene,
       visitDate: latest.visitDate,
       listStatus: latest.listStatus,

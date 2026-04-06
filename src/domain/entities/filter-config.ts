@@ -161,7 +161,8 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     type: 'multi-select',
     options: [
       { value: 'visited', label: '방문' },
-      { value: 'wishlist', label: '찜' },
+      { value: 'bookmark', label: '찜' },
+      { value: 'unrated', label: '미평가' },
       { value: 'following', label: '팔로잉' },
       { value: 'bubble', label: '버블' },
       { value: 'public', label: '공개' },
@@ -398,13 +399,17 @@ export const BUBBLER_FILTER_ATTRIBUTES: FilterAttribute[] = [
 
 export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
-    key: 'status',
-    label: '상태',
-    type: 'select',
+    key: 'view',
+    label: '보기',
+    type: 'multi-select',
     options: [
       { value: 'tasted', label: '시음' },
-      { value: 'wishlist', label: '찜' },
+      { value: 'bookmark', label: '찜' },
       { value: 'cellar', label: '셀러' },
+      { value: 'unrated', label: '미평가' },
+      { value: 'following', label: '팔로잉' },
+      { value: 'bubble', label: '버블' },
+      { value: 'public', label: '공개' },
     ],
   },
   {

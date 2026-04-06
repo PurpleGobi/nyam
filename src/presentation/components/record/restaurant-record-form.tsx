@@ -31,10 +31,10 @@ interface CreateRestaurantRecordInput {
   targetType: 'restaurant'
   genre?: string
   priceRange?: number | null
-  axisX: number
-  axisY: number
-  satisfaction: number
-  scene: string
+  axisX?: number | null
+  axisY?: number | null
+  satisfaction?: number | null
+  scene?: string | null
   comment?: string
   companions?: string[]
   companionCount?: number
@@ -161,6 +161,19 @@ export function RestaurantRecordForm({
     })
   }, [isValid, quadrant, scene, comment, companions, privateNote, menuTags, totalPrice, visitDate, target.id, onSave, linkedWine, selectedGenre, priceRange])
 
+  const handleQuickSave = useCallback(async () => {
+    await onSave({
+      targetId: target.id,
+      targetType: 'restaurant',
+      genre: selectedGenre ?? undefined,
+      axisX: null,
+      axisY: null,
+      satisfaction: null,
+      scene: null,
+      visitDate,
+    })
+  }, [target.id, onSave, selectedGenre, visitDate])
+
   return (
     <div className="flex flex-col overflow-x-hidden pb-24">
       {/* AI 인식 결과 헤더 */}
@@ -258,7 +271,23 @@ export function RestaurantRecordForm({
         <h3 className="mb-3" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           어떤 곳이었나요?
         </h3>
-        <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+        <div className="relative">
+          <div className="absolute flex gap-2" style={{ top: '-28px', left: '120px', zIndex: 20 }}>
+            <button
+              type="button"
+              onClick={handleQuickSave}
+              disabled={isLoading}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--accent-food) 10%, transparent)',
+                color: 'var(--accent-food)',
+              }}
+            >
+              아직이에요
+            </button>
+          </div>
+          <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+        </div>
         <div className="mt-4">
           <PriceLevelSelector value={priceRange} onChange={setPriceRange} />
         </div>

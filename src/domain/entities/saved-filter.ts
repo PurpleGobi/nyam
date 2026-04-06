@@ -10,7 +10,7 @@ export interface FilterRule {
   value: string | number | boolean | null
 }
 
-export type SortOption = 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count'
+export type SortOption = 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count' | 'distance'
 
 export type BubbleSortOption = 'activity' | 'members' | 'records' | 'name'
 

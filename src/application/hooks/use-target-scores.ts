@@ -3,7 +3,7 @@
 // src/application/hooks/use-target-scores.ts
 // R3: domain 인터페이스에만 의존. infrastructure 직접 사용 금지.
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { TargetScores, ScoreSource } from '@/domain/entities/score'
 import { getScoreFallback } from '@/domain/services/score-fallback'
 import type { DiningRecord } from '@/domain/entities/record'
@@ -37,11 +37,6 @@ export function useTargetScores(params: UseTargetScoresParams) {
     nyamAvgScore, nyamCount,
   } = params
 
-  const [state, setState] = useState<ScoreCardState>({
-    selectedSources: ['my'],
-    quadrantMode: 'visits',
-  })
-
   const scores: TargetScores = useMemo(() => ({
     my: myAvgScore !== null ? { avg: myAvgScore, count: myCount } : null,
     following: followingAvgScore !== null ? { avg: followingAvgScore, count: followingCount } : null,
@@ -50,6 +45,22 @@ export function useTargetScores(params: UseTargetScoresParams) {
   }), [myAvgScore, myCount, followingAvgScore, followingCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount])
 
   const fallback = useMemo(() => getScoreFallback(scores), [scores])
+
+  const [state, setState] = useState<ScoreCardState>({
+    selectedSources: [fallback?.source ?? 'my'],
+    quadrantMode: 'visits',
+  })
+
+  // 데이터 로딩 후 최초 1회 fallback 소스로 초기화
+  const initializedRef = useRef(false)
+  useEffect(() => {
+    if (initializedRef.current || !fallback) return
+    initializedRef.current = true
+    setState((prev) => ({
+      ...prev,
+      selectedSources: [fallback.source],
+    }))
+  }, [fallback])
 
   // 카드 데이터 배열 (ScoreCards 컴포넌트에 직접 전달)
   const cards = useMemo(() => [
