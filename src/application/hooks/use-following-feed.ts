@@ -28,6 +28,7 @@ type SourceFilter = 'all' | 'bubble' | 'mutual'
 interface UseFollowingFeedOptions {
   userId: string | null
   targetType: 'restaurant' | 'wine'
+  enabled?: boolean
 }
 
 interface UseFollowingFeedResult {
@@ -39,13 +40,13 @@ interface UseFollowingFeedResult {
   totalCount: number
 }
 
-export function useFollowingFeed({ userId, targetType }: UseFollowingFeedOptions): UseFollowingFeedResult {
+export function useFollowingFeed({ userId, targetType, enabled = true }: UseFollowingFeedOptions): UseFollowingFeedResult {
   const [allItems, setAllItems] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
   const fetchFeed = useCallback(async () => {
-    if (!userId) return
+    if (!userId || !enabled) return
     setIsLoading(true)
     try {
       const [bubbleShares, mutualFollows] = await Promise.all([
@@ -105,7 +106,7 @@ export function useFollowingFeed({ userId, targetType }: UseFollowingFeedOptions
     } finally {
       setIsLoading(false)
     }
-  }, [userId, targetType])
+  }, [userId, targetType, enabled])
 
   useEffect(() => {
     fetchFeed()

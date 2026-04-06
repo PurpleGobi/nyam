@@ -549,6 +549,178 @@ export class SupabaseRecordRepository implements RecordRepository {
     return this.enrichRecordsWithTarget(data ?? [], userId, 'public')
   }
 
+  async findHomeRecords(
+    userId: string,
+    targetType: RecordTargetType,
+    views: RecordSource[],
+  ): Promise<RecordWithTarget[]> {
+    // 1) 각 view별 raw rows를 병렬로 수집 (enrich 없이)
+    const promises = views.map(async (view) => {
+      switch (view) {
+        case 'mine': {
+          const query = this.supabase
+            .from('records')
+            .select('*, lists!inner(status)')
+            .eq('user_id', userId)
+            .eq('target_type', targetType)
+            .order('visit_date', { ascending: false })
+          const { data, error } = await query
+          if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
+          return { rows: data ?? [], source: 'mine' as RecordSource }
+        }
+        case 'wishlist': {
+          const listQuery = this.supabase
+            .from('lists')
+            .select('target_id')
+            .eq('user_id', userId)
+            .eq('status', 'wishlist')
+            .eq('target_type', targetType)
+          const { data: myWishlists } = await listQuery
+          if (!myWishlists || myWishlists.length === 0) return { rows: [], source: 'wishlist' as RecordSource }
+          const targetIds = myWishlists.map((w) => w.target_id)
+          const query = this.supabase
+            .from('records')
+            .select('*')
+            .in('target_id', targetIds)
+            .neq('user_id', userId)
+            .eq('target_type', targetType)
+            .order('visit_date', { ascending: false })
+          const { data, error } = await query
+          if (error) throw new Error(`Wishlist records 조회 실패: ${error.message}`)
+          return { rows: data ?? [], source: 'wishlist' as RecordSource }
+        }
+        case 'bubble': {
+          const { data: memberships } = await this.supabase
+            .from('bubble_members')
+            .select('bubble_id')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+          if (!memberships || memberships.length === 0) return { rows: [], source: 'bubble' as RecordSource }
+          const bubbleIds = memberships.map((m) => m.bubble_id)
+          const shareQuery = this.supabase
+            .from('bubble_shares')
+            .select('record_id')
+            .in('bubble_id', bubbleIds)
+            .neq('shared_by', userId)
+            .eq('target_type', targetType)
+          const { data: shares } = await shareQuery
+          if (!shares || shares.length === 0) return { rows: [], source: 'bubble' as RecordSource }
+          const recordIds = [...new Set(shares.map((s) => s.record_id))]
+          const query = this.supabase
+            .from('records')
+            .select('*')
+            .in('id', recordIds)
+            .eq('target_type', targetType)
+            .order('visit_date', { ascending: false })
+          const { data, error } = await query
+          if (error) throw new Error(`Bubble records 조회 실패: ${error.message}`)
+          return { rows: data ?? [], source: 'bubble' as RecordSource }
+        }
+        case 'following': {
+          const { data: followRows } = await this.supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', userId)
+            .eq('status', 'accepted')
+          if (!followRows || followRows.length === 0) return { rows: [], source: 'following' as RecordSource }
+          const followingIds = followRows.map((f) => f.following_id)
+          const query = this.supabase
+            .from('records')
+            .select('*')
+            .in('user_id', followingIds)
+            .eq('target_type', targetType)
+            .order('visit_date', { ascending: false })
+          const { data, error } = await query
+          if (error) throw new Error(`Following records 조회 실패: ${error.message}`)
+          return { rows: data ?? [], source: 'following' as RecordSource }
+        }
+        case 'public': {
+          const { data: publicUsers } = await this.supabase
+            .from('users')
+            .select('id')
+            .eq('is_public', true)
+            .neq('id', userId)
+          if (!publicUsers || publicUsers.length === 0) return { rows: [], source: 'public' as RecordSource }
+          const publicUserIds = publicUsers.map((u) => u.id)
+          const query = this.supabase
+            .from('records')
+            .select('*')
+            .in('user_id', publicUserIds)
+            .eq('target_type', targetType)
+            .order('visit_date', { ascending: false })
+            .limit(50)
+          const { data, error } = await query
+          if (error) throw new Error(`Public records 조회 실패: ${error.message}`)
+          return { rows: data ?? [], source: 'public' as RecordSource }
+        }
+      }
+    })
+
+    const results = await Promise.all(promises)
+
+    // 2) 모든 raw rows를 하나로 합침 — 중복 시 우선순위: mine > following > bubble > public > wishlist
+    const SOURCE_PRIORITY: Record<string, number> = {
+      mine: 0, following: 1, bubble: 2, public: 3, wishlist: 4,
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rowMap: Supabase raw row, enrichRecordsWithTarget과 동일 패턴
+    const rowMap = new Map<string, { row: any; source: RecordSource }>()
+    for (const result of results) {
+      for (const row of result.rows) {
+        const existing = rowMap.get(row.id)
+        if (!existing || (SOURCE_PRIORITY[result.source] ?? 99) < (SOURCE_PRIORITY[existing.source] ?? 99)) {
+          rowMap.set(row.id, { row, source: result.source })
+        }
+      }
+    }
+
+    // 3) 통합된 rows를 한 번에 enrich
+    const allEntries = Array.from(rowMap.values())
+    if (allEntries.length === 0) return []
+
+    const mergedRows = allEntries.map((e) => e.row)
+    const enriched = await this.enrichRecordsWithTarget(mergedRows, userId, 'mine')
+
+    // source 오버라이드
+    const sourceMap = new Map<string, RecordSource>()
+    for (const entry of allEntries) {
+      sourceMap.set(entry.row.id, entry.source)
+    }
+    return enriched.map((r) => ({
+      ...r,
+      source: sourceMap.get(r.id) ?? r.source,
+    }))
+  }
+
+  async findFollowingTargetIds(
+    userId: string,
+    targetIds: string[],
+    targetType: RecordTargetType,
+  ): Promise<Set<string>> {
+    if (targetIds.length === 0) return new Set()
+
+    const { data: followRows } = await this.supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', userId)
+      .eq('status', 'accepted')
+
+    if (!followRows || followRows.length === 0) return new Set()
+
+    const followingUserIds = followRows.map((f) => f.following_id)
+    const { data: followingRecords } = await this.supabase
+      .from('records')
+      .select('target_id')
+      .in('user_id', followingUserIds)
+      .in('target_id', targetIds)
+      .eq('target_type', targetType)
+
+    const result = new Set<string>()
+    for (const fr of followingRecords ?? []) {
+      result.add(fr.target_id)
+    }
+    return result
+  }
+
   async findByUserAndTarget(userId: string, targetId: string): Promise<DiningRecord[]> {
     const { data, error } = await this.supabase
       .from('records')

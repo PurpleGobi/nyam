@@ -260,9 +260,6 @@ export function HomeContainer() {
     userId: user?.id ?? null,
     tab: activeTab,
     viewTypes,
-    filters: nonViewFilterRules,
-    sort: currentSort,
-    conjunction,
   })
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
@@ -306,6 +303,7 @@ export function HomeContainer() {
   const followingFeed = useFollowingFeed({
     userId: user?.id ?? null,
     targetType: activeTab,
+    enabled: isFollowingMode,
   })
 
   const handleFollowingSelect = useCallback(() => {
@@ -381,10 +379,13 @@ export function HomeContainer() {
     setCurrentRecordPage(1)
   }
 
-  // 캘린더 레코드
+  // 캘린더 레코드 — 본인 기록(visited)만 사용
+  const visitedRecords = useMemo(() =>
+    records.filter((r) => r.source === 'mine' || r.source === 'following'),
+    [records],
+  )
   const { days: calendarDays } = useCalendarRecords({
-    userId: user?.id ?? null,
-    tab: activeTab,
+    records: visitedRecords,
     year: calYear,
     month: calMonth,
   })

@@ -12,7 +12,7 @@
 ### domain/ (순수 비즈니스 로직, 외부 의존 0)
 | 경로 | 파일 수 | 역할 | 상태 |
 |------|---------|------|------|
-| entities/ | 31 | 타입 정의 (record, restaurant, wine, bubble, xp, score 등) | 안정 |
+| entities/ | 32 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar 등) | 안정 |
 | repositories/ | 15 | 인터페이스 (RecordRepository, BubbleRepository 등) | 안정 |
 | services/ | 17 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback 등) | 안정 |
 

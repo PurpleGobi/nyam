@@ -2,7 +2,7 @@
 // R1: domain 인터페이스 — 외부 의존 0
 // infrastructure에서 implements로 구현
 
-import type { DiningRecord, ListItem, ListStatus, RecordTargetType, CreateRecordInput, RecordWithTarget } from '@/domain/entities/record'
+import type { DiningRecord, ListItem, ListStatus, RecordTargetType, CreateRecordInput, RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 /**
@@ -54,4 +54,20 @@ export interface RecordRepository {
   findPhotosByRecordId(recordId: string): Promise<RecordPhoto[]>
 
   deletePhoto(id: string): Promise<void>
+
+  // ─── 홈 피드 최적화 ───
+
+  /** 홈 피드용 통합 조회 — views에 해당하는 소스를 1회 enrich */
+  findHomeRecords(
+    userId: string,
+    targetType: RecordTargetType,
+    views: RecordSource[],
+  ): Promise<RecordWithTarget[]>
+
+  /** visited records의 target 중 팔로잉 유저도 기록한 targetId Set 반환 */
+  findFollowingTargetIds(
+    userId: string,
+    targetIds: string[],
+    targetType: RecordTargetType,
+  ): Promise<Set<string>>
 }

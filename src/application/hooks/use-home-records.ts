@@ -1,114 +1,80 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { RecordTargetType, RecordWithTarget } from '@/domain/entities/record'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import type { RecordTargetType, RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { HomeTab } from '@/domain/entities/home-state'
-import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
-import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { recordRepo } from '@/shared/di/container'
 
 export type ViewType = 'visited' | 'wishlist' | 'bubble' | 'following' | 'public'
 
-const PAGE_SIZE = 20
-
-function applyFilters(
-  records: RecordWithTarget[],
-  filters: FilterRule[],
-  conjunction: 'and' | 'or',
-): RecordWithTarget[] {
-  if (filters.length === 0) return records
-  return records.filter((record) =>
-    matchesAllRules(record as unknown as Record<string, unknown>, filters, conjunction),
-  )
+/** ViewType → RecordSource 매핑 ('visited' → 'mine') */
+const VIEW_TO_SOURCE: Record<ViewType, RecordSource> = {
+  visited: 'mine',
+  wishlist: 'wishlist',
+  bubble: 'bubble',
+  following: 'following',
+  public: 'public',
 }
 
-function applySort(records: RecordWithTarget[], sort: SortOption): RecordWithTarget[] {
-  const sorted = [...records]
-  switch (sort) {
-    case 'latest':
-      return sorted.sort((a, b) => {
-        const dateA = a.visitDate ?? ''
-        const dateB = b.visitDate ?? ''
-        if (dateA !== dateB) return dateB.localeCompare(dateA)
-        return b.createdAt.localeCompare(a.createdAt)
-      })
-    case 'score_high':
-      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
-    case 'score_low':
-      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
-    case 'name':
-      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
-    case 'visit_count': {
-      const visitCounts = new Map<string, number>()
-      for (const r of records) {
-        visitCounts.set(r.targetId, (visitCounts.get(r.targetId) ?? 0) + 1)
-      }
-      return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
-    }
-    default:
-      return sorted
-  }
-}
+const ALL_VIEWS: ViewType[] = ['visited', 'wishlist', 'bubble', 'following', 'public']
 
 export function useHomeRecords(params: {
   userId: string | null
   tab: HomeTab
   viewTypes: ViewType[]
-  filters: FilterRule[]
-  sort: SortOption
-  conjunction: 'and' | 'or'
 }): {
   records: RecordWithTarget[]
   isLoading: boolean
-  totalCount: number
-  loadMore: () => void
-  hasMore: boolean
 } {
-  const { userId, tab, viewTypes, filters, sort, conjunction } = params
+  const { userId, tab, viewTypes } = params
   const [allRecords, setAllRecords] = useState<RecordWithTarget[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [page, setPage] = useState(1)
+
+  // 탭별 캐시 (stale-while-revalidate)
+  const cacheRef = useRef<Map<string, RecordWithTarget[]>>(new Map())
 
   // viewTypes 배열의 안정적 비교를 위한 직렬화 키
   const viewTypesKey = useMemo(() => JSON.stringify(viewTypes.slice().sort()), [viewTypes])
 
   const fetchRecords = useCallback(async () => {
     if (!userId) return
-    setIsLoading(true)
+    const targetType: RecordTargetType = tab
+    const views: ViewType[] = viewTypes.length > 0 ? viewTypes : ALL_VIEWS
+    const sources = views.map((v) => VIEW_TO_SOURCE[v])
+
+    const cacheKey = `${tab}:${viewTypesKey}`
+    const cached = cacheRef.current.get(cacheKey)
+
+    // 즉시 탭 전환: 캐시 히트 → 캐시 데이터 표시, 미스 → 빈 배열 (이전 탭 잔상 방지)
+    setAllRecords(cached ?? [])
+    setIsLoading(!cached)
+
+    // 배경에서 최신 데이터 fetch + 팔로잉 source 태깅을 단일 흐름으로 처리 (flickering 방지)
     try {
-      const targetType: RecordTargetType = tab
-      const ALL_VIEWS: ViewType[] = ['visited', 'wishlist', 'bubble', 'following', 'public']
-      const views: ViewType[] = viewTypes.length > 0 ? viewTypes : ALL_VIEWS
+      let deduped = await recordRepo.findHomeRecords(userId, targetType, sources)
 
-      const promises = views.map((view) => {
-        switch (view) {
-          case 'visited':
-            return recordRepo.findByUserIdWithTarget(userId, targetType)
-          case 'wishlist':
-            return recordRepo.findWishlistTargetRecords(userId, targetType)
-          case 'bubble':
-            return recordRepo.findBubbleSharedRecords(userId, targetType)
-          case 'following':
-            return recordRepo.findFollowingRecords(userId, targetType)
-          case 'public':
-            return recordRepo.findPublicRecords(userId, targetType)
+      // 팔로잉 source 태깅 (별도 useEffect가 아닌 fetch 내 통합 — 단일 setAllRecords)
+      const mineTargetIds = [...new Set(
+        deduped.filter((r) => r.source === 'mine').map((r) => r.targetId),
+      )]
+      if (mineTargetIds.length > 0) {
+        const followingIds = await recordRepo.findFollowingTargetIds(userId, mineTargetIds, tab)
+        if (followingIds.size > 0) {
+          deduped = deduped.map((r) =>
+            r.source === 'mine' && followingIds.has(r.targetId)
+              ? { ...r, source: 'following' as const }
+              : r,
+          )
         }
-      })
-
-      const results = await Promise.all(promises)
-      const merged = results.flat()
-
-      // record.id 기준 중복 제거
-      const seen = new Map<string, RecordWithTarget>()
-      for (const r of merged) {
-        if (!seen.has(r.id)) seen.set(r.id, r)
       }
-      const deduped = Array.from(seen.values())
 
-      setAllRecords(deduped)
-      setPage(1)
+      cacheRef.current.set(cacheKey, deduped)
+      // 캐시와 동일한 데이터면 re-render 방지
+      if (!cached || deduped.length !== cached.length || deduped.some((r, i) => r.id !== cached[i]?.id)) {
+        setAllRecords(deduped)
+      }
     } catch {
-      setAllRecords([])
+      if (!cached) setAllRecords([])
     } finally {
       setIsLoading(false)
     }
@@ -119,22 +85,5 @@ export function useHomeRecords(params: {
     fetchRecords()
   }, [fetchRecords])
 
-  useEffect(() => {
-    setPage(1)
-  }, [filters, sort])
-
-  const processed = useMemo(() => {
-    const filtered = applyFilters(allRecords, filters, conjunction)
-    return applySort(filtered, sort)
-  }, [allRecords, filters, sort, conjunction])
-
-  const totalCount = processed.length
-  const records = processed.slice(0, page * PAGE_SIZE)
-  const hasMore = records.length < totalCount
-
-  const loadMore = useCallback(() => {
-    if (hasMore) setPage((p) => p + 1)
-  }, [hasMore])
-
-  return { records, isLoading, totalCount, loadMore, hasMore }
+  return { records: allRecords, isLoading }
 }

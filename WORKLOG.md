@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-06 #13 — 홈 탭 전환 성능 최적화
+- **영역**: domain/entities/calendar(신규), domain/repositories/record-repository, infrastructure/supabase-record-repository, application/hooks/(use-home-records, use-calendar-records, use-following-feed), presentation/(calendar-view, home-container)
+- **맥락**: 탭 전환 시 Supabase 쿼리 42개→19개(55% 감소). findHomeRecords 통합 호출 + 탭 캐시(stale-while-revalidate) + 캘린더 records 재사용(추가 쿼리 0) + 팔로잉 lazy fetch. CalendarDayData를 domain으로 이동하여 R3 위반 해결.
+- **미완료**: calendar-view.tsx text-white 2건 시맨틱 토큰 교체 (pre-existing), bubble dot DB view 미구현
+- **다음**: bubble dot을 위한 DB view/RPC, pre-existing lint 정리, text-white 토큰 교체
+
 ### 2026-04-06 #12 — 점수 체계 재설계 + Viewer Context + 후속 완료
 - **영역**: domain/(entities/score+record, services/score-fallback+record-grouper, repositories/restaurant+wine), infrastructure/supabase-*-repository, application/use-restaurant-detail+use-wine-detail+use-target-scores, presentation/(score-cards+record-card+compact-list-item+calendar-day-detail+score-source-badge+quadrant-input+quadrant-ref-dot+rating-input+restaurant-detail-container+wine-detail-container+home-container), RATING_ENGINE.md
 - **맥락**: (1) 4종 점수(나/팔로잉/버블/nyam) 카드 UI + 신뢰도 폴백 순수 함수. (2) 사분면 모드 avg/recent → visits/compare. (3) visits 모드에서 selectedSource별 micro dot(4px) 렌더링 — followingRecords/publicRecords 개별 fetch + QuadrantRefDot isMicroDot. (4) 홈 리스트 source 우선순위 폴백 (record-grouper에서 bestScore 선택). (5) CalendarDayDetail/ScoreSourceBadge 스타일 개선. 신규 4 + 수정 25개.
@@ -59,11 +65,5 @@
 - **맥락**: 모든 링에 '/' 줄바꿈 적용 + 글자 수 기반 동적 폰트 사이즈. 시인성 개선 연속작업.
 - **미완료**: 없음
 - **다음**: 없음 (아로마 휠 시리즈 완료)
-
-### 2026-04-02 #3 — WSET 기준 아로마 휠 재구조화 + BLIC 품질 평가
-- **영역**: domain/entities/aroma, shared/constants/aroma-sectors, migration 041
-- **맥락**: WSET 표준 아로마 휠 3링 구조 + 품질 평가(BLIC) 시스템 도입 + AI 자동 채움 파이프라인.
-- **미완료**: 없음
-- **다음**: 없음
 
 

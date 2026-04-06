@@ -2,12 +2,8 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-export interface CalendarDayData {
-  date: string
-  photoUrl: string | null
-  topScore: number | null
-  recordCount: number
-}
+import type { CalendarDayData } from '@/domain/entities/calendar'
+export type { CalendarDayData }
 
 interface CalendarViewProps {
   year: number
