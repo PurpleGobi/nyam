@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { LayoutGrid, List, CalendarDays, Map, ArrowUpDown, Search, X } from 'lucide-react'
+import { LayoutGrid, List, CalendarDays, Map, ArrowUpDown, Search, X, BarChart2 } from 'lucide-react'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import type { HomeTab, ViewMode } from '@/domain/entities/home-state'
 
@@ -20,6 +20,10 @@ interface HomeTabsProps {
   searchQuery: string
   onSearchQueryChange: (q: string) => void
   onSearchClear: () => void
+  onStatsToggle?: () => void
+  isStatsOpen?: boolean
+  canShowStats?: boolean
+  accentType?: 'food' | 'wine'
 }
 
 const VIEW_ICONS: Record<Exclude<ViewMode, 'map'>, typeof LayoutGrid> = {
@@ -40,6 +44,7 @@ export function HomeTabs({
   onSortToggle, isSortOpen,
   onSearchToggle, isSearchOpen,
   searchQuery, onSearchQueryChange, onSearchClear,
+  onStatsToggle, isStatsOpen = false, canShowStats = false, accentType = 'food',
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
   const isMapView = viewMode === 'map'
@@ -114,6 +119,38 @@ export function HomeTabs({
             <button type="button" onClick={onSearchToggle} className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`} title="검색">
               <Search size={20} />
             </button>
+            {canShowStats && onStatsToggle && (
+              <button
+                type="button"
+                onClick={onStatsToggle}
+                className="stats-icon-button"
+                title="통계"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  backgroundColor: isStatsOpen
+                    ? (accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)')
+                    : 'transparent',
+                  border: isStatsOpen
+                    ? 'none'
+                    : `1.5px solid ${accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'}`,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <BarChart2
+                  size={16}
+                  style={{
+                    color: isStatsOpen
+                      ? 'white'
+                      : (accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'),
+                  }}
+                />
+              </button>
+            )}
           </div>
         )
       }

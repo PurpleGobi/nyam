@@ -59,7 +59,7 @@ CREATE TABLE users (
 
   -- 프라이버시
   privacy_profile VARCHAR(20) NOT NULL DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private'
-  privacy_records VARCHAR(20) NOT NULL DEFAULT 'shared_only',  -- 'all' | 'shared_only'
+  privacy_records VARCHAR(20) NOT NULL DEFAULT 'shared_only',  -- 'all' | 'followers_only' | 'shared_only'
   visibility_public JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}',
   visibility_bubble JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":true,"price":true}',
 
@@ -109,7 +109,7 @@ CREATE TABLE users (
 
   CONSTRAINT chk_users_auth_provider       CHECK (auth_provider IN ('kakao','google','apple','naver')),
   CONSTRAINT chk_users_privacy_profile     CHECK (privacy_profile IN ('public','bubble_only','private')),
-  CONSTRAINT chk_users_privacy_records     CHECK (privacy_records IN ('all','shared_only')),
+  CONSTRAINT chk_users_privacy_records     CHECK (privacy_records IN ('all','followers_only','shared_only')),
   CONSTRAINT chk_users_delete_mode         CHECK (delete_mode IS NULL OR delete_mode IN ('anonymize','hard_delete')),
   CONSTRAINT chk_users_pref_landing        CHECK (pref_landing IN ('last','home','bubbles','profile')),
   CONSTRAINT chk_users_pref_home_tab       CHECK (pref_home_tab IN ('last','restaurant','wine')),
@@ -153,6 +153,11 @@ CREATE TABLE restaurants (
   michelin_stars INT,              -- NULL or 1,2,3
   has_blue_ribbon BOOLEAN NOT NULL DEFAULT false,
   media_appearances JSONB,         -- TV출연 등 [{"show":"흑백요리사","season":"S1","year":2024}]
+
+  -- 비정규화 캐시
+  specialty TEXT,                   -- 대표 메뉴/특색 (AI 추출)
+  external_avg NUMERIC,            -- 외부 평점 평균 (naver+kakao+google 가중 평균)
+  record_count INT NOT NULL DEFAULT 0,  -- nyam 내 총 기록 수
 
   -- nyam 종합 점수
   nyam_score NUMERIC,              -- 0~100. NULL이면 아직 미산출
@@ -205,7 +210,9 @@ CREATE TABLE wines (
   serving_temp VARCHAR(20),        -- "16-18°C"
   decanting VARCHAR(30),            -- "2시간 권장" 등
 
-  reference_price INT,              -- 참고 시세 (원)
+  reference_price_min INT,           -- 참고 시세 최저 (원)
+  reference_price_max INT,           -- 참고 시세 최고 (원)
+  price_review JSONB,                -- AI 가격 분석 리뷰 {"verdict":"buy"|"conditional_buy"|"avoid","summary":"...","alternatives":[...]}
   drinking_window_start INT,        -- 음용 적기 시작 연도
   drinking_window_end INT,          -- 음용 적기 종료 연도
 
@@ -1201,3 +1208,5 @@ ALTER TABLE bubble_shares ENABLE ROW LEVEL SECURITY;
 | `nudge_fatigue` | 031 | — |
 | `grape_variety_profiles` | 031 | — |
 | `ai_recommendations` | 031 | — |
+
+> **⚠️ 주의**: `supabase/functions/process-account-deletion/index.ts` Edge Function이 삭제된 테이블명(`xp_histories`, `user_experiences`, `user_milestones`, `wishlists`, `nudge_history`, `nudge_fatigue`)을 아직 참조하고 있음. 해당 함수 업데이트 필요.

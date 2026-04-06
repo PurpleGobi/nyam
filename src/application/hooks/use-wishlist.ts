@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { RecordRepository } from '@/domain/repositories/record-repository'
+import { recordRepo } from '@/shared/di/container'
 import type { ListStatus } from '@/domain/entities/record'
 
 export interface UseWishlistReturn {
@@ -18,17 +18,16 @@ export function useWishlist(
   userId: string | null,
   targetId: string | null,
   targetType: 'restaurant' | 'wine',
-  repo: RecordRepository,
 ): UseWishlistReturn {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (!userId || !targetId) return
-    repo.findListByUserAndTarget(userId, targetId, targetType).then((list) => {
+    recordRepo.findListByUserAndTarget(userId, targetId, targetType).then((list) => {
       setIsWishlisted(list?.status === 'wishlist')
     })
-  }, [userId, targetId, targetType, repo])
+  }, [userId, targetId, targetType])
 
   const toggle = useCallback(async () => {
     if (!userId || !targetId || isLoading) return
@@ -40,20 +39,20 @@ export function useWishlist(
     try {
       if (prev) {
         // 찜 해제: list 삭제
-        const list = await repo.findListByUserAndTarget(userId, targetId, targetType)
+        const list = await recordRepo.findListByUserAndTarget(userId, targetId, targetType)
         if (list && list.status === 'wishlist') {
-          await repo.deleteList(list.id)
+          await recordRepo.deleteList(list.id)
         }
       } else {
         // 찜 추가
-        await repo.findOrCreateList(userId, targetId, targetType, 'wishlist' as ListStatus)
+        await recordRepo.findOrCreateList(userId, targetId, targetType, 'wishlist' as ListStatus)
       }
     } catch {
       setIsWishlisted(prev)
     } finally {
       setIsLoading(false)
     }
-  }, [userId, targetId, targetType, isWishlisted, isLoading, repo])
+  }, [userId, targetId, targetType, isWishlisted, isLoading])
 
   return { isWishlisted, isLoading, toggle }
 }

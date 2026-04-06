@@ -40,7 +40,7 @@ nyam/
 
 ## 작업 루프
 
-세션 종료 시: WORKLOG.md에 작업 엔트리 추가/갱신 (10개 초과 시 가장 오래된 것 삭제).
+**커밋할 때마다** WORKLOG.md에 작업 엔트리 추가/갱신 (10개 초과 시 가장 오래된 것 삭제).
 
 
 ## 기술 스택
@@ -73,7 +73,7 @@ app → presentation → application → domain ← infrastructure
 | **R1** | domain은 외부 의존 0. React/Supabase/Next import 불가 | `grep -r "from 'react\|from '@supabase\|from 'next" src/domain/` |
 | **R2** | infrastructure는 domain 인터페이스를 `implements`로 구현 | `grep -rL "implements" src/infrastructure/repositories/` |
 | **R3** | application은 domain 인터페이스에만 의존. 구현체 직접 사용 금지 | `grep -r "from '.*infrastructure" src/application/` |
-| **R4** | presentation은 application hooks + shared/di만. Supabase/infrastructure 직접 금지 | `grep -r "from '@supabase\|from '.*infrastructure" src/presentation/` |
+| **R4** | presentation은 application hooks만. shared/di/infrastructure/Supabase 직접 금지 (domain type import는 허용) | `grep -r "from '@supabase\|from '.*infrastructure\|from '.*shared/di" src/presentation/` |
 | **R5** | app/은 라우팅만. page.tsx는 Container 렌더링만 | 수동 확인 |
 
 ### src/ 폴더 구조
@@ -100,8 +100,11 @@ import { SupabaseRestaurantRepository } from '@/infrastructure/repositories/...'
 import type { RestaurantRepository } from '@/domain/repositories/...'
 export const restaurantRepo: RestaurantRepository = new SupabaseRestaurantRepository()
 
-// presentation/containers/ — shared/di에서 받으므로 R4 준수
+// application/hooks/ — shared/di에서 repo를 가져와 비즈니스 로직 수행
 import { restaurantRepo } from '@/shared/di/container'
+
+// presentation/containers/ — application hooks만 사용 (shared/di 직접 접근 금지)
+import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 ```
 
 ### 기능 구현 순서
@@ -213,7 +216,7 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 ## 문서화 의무
 
 ### WORKLOG.md 갱신 규칙
-- **갱신 트리거**: 세션 종료 시, 의미 있는 작업 단위 완료 시
+- **갱신 트리거**: **커밋할 때마다** (세션 종료를 자동 감지할 수 없으므로, 커밋 시점에 반드시 갱신)
 - **엔트리 형식**: 날짜 + 번호 + 제목 / 영역 / 맥락 / 미완료 / 다음 (4줄 이내)
 - **롤링**: 최대 10개. 11번째 추가 시 가장 오래된 것 삭제
 - **불변 규칙**: 미완료 항목이 있으면 반드시 기록. "없음"이라도 명시

@@ -3,8 +3,6 @@
 import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType, CreateRecordInput, DiningRecord } from '@/domain/entities/record'
-import type { PriceReview } from '@/domain/entities/wine'
-import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
 import type { AddFlowEntryPath } from '@/domain/entities/add-flow'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
@@ -14,7 +12,13 @@ import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { validateExifGps } from '@/domain/services/exif-validator'
 import { useXpAward } from '@/application/hooks/use-xp-award'
 import { useXp } from '@/application/hooks/use-xp'
-import { photoRepo, recordRepo, xpRepo, imageService, restaurantRepo, wineRepo, bubbleRepo } from '@/shared/di/container'
+import { useDeleteRecord } from '@/application/hooks/use-delete-record'
+import { usePhotoManagement } from '@/application/hooks/use-photo-management'
+import { useRecordEditor } from '@/application/hooks/use-record-editor'
+import { useRecordReferences } from '@/application/hooks/use-record-references'
+import { useRecordUpdate } from '@/application/hooks/use-record-update'
+import { useTargetMeta } from '@/application/hooks/use-target-meta'
+import { useWineMeta } from '@/application/hooks/use-wine-meta'
 import { PHOTO_CONSTANTS } from '@/domain/entities/record-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -57,9 +61,7 @@ function RecordFlowInner() {
     targetMeta: searchParams.get('meta') ?? '',
   })
 
-  const [editingRecord, setEditingRecord] = useState<DiningRecord | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [genreHint, setGenreHint] = useState<string | null>(null)
   const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
 
@@ -82,222 +84,54 @@ function RecordFlowInner() {
   }, [])
 
   const { settings } = useSettings()
-  const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
-  const [recentCompanions, setRecentCompanions] = useState<string[]>([])
-  const [wineData, setWineData] = useState<{
-    wineType?: string; region?: string; subRegion?: string; appellation?: string
-    country?: string; variety?: string; grapeVarieties?: Array<{ name: string; pct: number }>
-    producer?: string; vintage?: number; abv?: number
-    bodyLevel?: number; acidityLevel?: number; sweetnessLevel?: number
-    classification?: string; servingTemp?: string; decanting?: string
-    referencePriceMin?: number; referencePriceMax?: number; drinkingWindowStart?: number; drinkingWindowEnd?: number
-    vivinoRating?: number; criticScores?: { RP?: number; WS?: number; JR?: number; JH?: number }
-    tastingNotes?: string
-    foodPairings?: string[]
-    priceReview?: PriceReview
-    aromaPrimary?: string[]
-    aromaSecondary?: string[]
-    aromaTertiary?: string[]
-    balance?: number
-    finish?: number
-    intensity?: number
-  } | null>(null)
-  const [isEditLoading, setIsEditLoading] = useState(!!editRecordId)
-  const isLoading = isRecordLoading || isUploading
+  const { deleteRecord, isDeleting } = useDeleteRecord()
+  const { savePhotos, deletePhoto: deletePhotoById, getPhotosByRecordId, deleteImage } = usePhotoManagement()
+  const { updateRecord } = useRecordUpdate()
+  const { fetchTargetXpMeta } = useTargetMeta()
 
   const isEditMode = !!editRecordId
 
-  // 수정 모드: 기존 기록 + 사진 + 대상(식당/와인) 정보 로드
+  // 수정 모드: 기존 기록 + 사진 + 대상 정보 로드
+  const { record: editingRecord, photos: editPhotos, targetMeta: editorTargetMeta, isLoading: isEditLoading } = useRecordEditor(editRecordId)
+
+  // 수정 모드 기록 로드 완료 시 state 반영
   useEffect(() => {
-    if (!editRecordId) return
-    let cancelled = false
-    const recordIdToLoad = editRecordId
-
-    async function loadRecord() {
-      try {
-        const [record, existingPhotos] = await Promise.all([
-          recordRepo.findById(recordIdToLoad),
-          photoRepo.getPhotosByRecordId(recordIdToLoad),
-        ])
-        if (cancelled || !record) return
-        setEditingRecord(record)
-
-        // 대상(식당/와인) 정보 로드 → target.genre, state.targetName/Meta 반영
-        let targetName = ''
-        let targetMeta = ''
-        if (record.targetType === 'restaurant') {
-          const restaurant = await restaurantRepo.findById(record.targetId)
-          if (restaurant) {
-            targetName = restaurant.name
-            targetMeta = [restaurant.genre, restaurant.area].filter(Boolean).join(' · ')
-          }
-        } else {
-          const wine = await wineRepo.findById(record.targetId)
-          if (wine) {
-            targetName = wine.name
-            targetMeta = [wine.wineType, wine.region, wine.country].filter(Boolean).join(' · ')
-          }
-        }
-
-        setState((prev) => ({
-          ...prev,
-          targetId: record.targetId,
-          targetType: record.targetType,
-          targetName: targetName || prev.targetName,
-          targetMeta: targetMeta || prev.targetMeta,
-        }))
-        // 기존 사진을 PhotoPicker에 표시
-        if (existingPhotos.length > 0) {
-          initExistingPhotos(
-            existingPhotos.map((p) => ({
-              id: p.id,
-              url: p.url,
-              orderIndex: p.orderIndex,
-              isPublic: p.isPublic,
-            })),
-          )
-        }
-      } finally {
-        if (!cancelled) setIsEditLoading(false)
-      }
+    if (!editorTargetMeta || !editingRecord) return
+    setState((prev) => ({
+      ...prev,
+      targetId: editingRecord.targetId,
+      targetType: editingRecord.targetType,
+      targetName: editorTargetMeta.targetName || prev.targetName,
+      targetMeta: editorTargetMeta.targetMeta || prev.targetMeta,
+    }))
+    // 기존 사진을 PhotoPicker에 표시
+    if (editPhotos.length > 0) {
+      initExistingPhotos(
+        editPhotos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          orderIndex: p.orderIndex,
+          isPublic: p.isPublic,
+        })),
+      )
     }
-    loadRecord()
-    return () => { cancelled = true }
-  }, [editRecordId, initExistingPhotos])
+  }, [editorTargetMeta, editingRecord, editPhotos, initExistingPhotos])
 
-  // 와인 타입일 때 wines 테이블에서 메타 자동 채움
-  useEffect(() => {
-    if (targetType !== 'wine' || !state.targetId) return
-    let cancelled = false
-    async function loadWine() {
-      try {
-        const wine = await wineRepo.findById(state.targetId)
-        if (cancelled || !wine) return
-        // 품종: variety가 있으면 그대로, 없으면 grape_varieties에서 비중 최고 선택
-        let bestVariety = wine.variety ?? undefined
-        if (!bestVariety && wine.grapeVarieties.length > 0) {
-          const sorted = [...wine.grapeVarieties].sort((a, b) => b.pct - a.pct)
-          bestVariety = sorted[0].name
-        }
+  // 이전 기록 참조점 + 최근 동행자
+  const { referenceRecords, recentCompanions } = useRecordReferences(
+    user?.id ?? null,
+    state.targetId || null,
+    editRecordId,
+  )
 
-        setWineData({
-          wineType: wine.wineType,
-          region: wine.region ?? undefined,
-          subRegion: wine.subRegion ?? undefined,
-          appellation: wine.appellation ?? undefined,
-          country: wine.country ?? undefined,
-          variety: bestVariety,
-          grapeVarieties: wine.grapeVarieties.length > 0 ? wine.grapeVarieties : undefined,
-          producer: wine.producer ?? undefined,
-          vintage: wine.vintage ?? undefined,
-          abv: wine.abv ?? undefined,
-          bodyLevel: wine.bodyLevel ?? undefined,
-          acidityLevel: wine.acidityLevel ?? undefined,
-          sweetnessLevel: wine.sweetnessLevel ?? undefined,
-          classification: wine.classification ?? undefined,
-          servingTemp: wine.servingTemp ?? undefined,
-          decanting: wine.decanting ?? undefined,
-          referencePriceMin: wine.referencePriceMin ?? undefined,
-          referencePriceMax: wine.referencePriceMax ?? undefined,
-          drinkingWindowStart: wine.drinkingWindowStart ?? undefined,
-          drinkingWindowEnd: wine.drinkingWindowEnd ?? undefined,
-          vivinoRating: wine.vivinoRating ?? undefined,
-          criticScores: wine.criticScores ?? undefined,
-          tastingNotes: wine.tastingNotes ?? undefined,
-          foodPairings: wine.foodPairings.length > 0 ? wine.foodPairings : undefined,
-          priceReview: wine.priceReview ?? undefined,
-        })
+  // 와인 메타 자동채움
+  const { wineData, setWineData } = useWineMeta(
+    state.targetId || null,
+    targetType,
+    editRecordId,
+  )
 
-        // AI 향/품질 평가 로드 (신규 기록 시에만, 편집 시에는 기존 기록값 사용)
-        if (!editRecordId) {
-          try {
-            const aiRes = await fetch('/api/wines/detail-ai', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: wine.name, producer: wine.producer, vintage: wine.vintage }),
-            })
-            const aiData = await aiRes.json()
-            if (!cancelled && aiData.success && aiData.wine) {
-              setWineData((prev) => prev ? {
-                ...prev,
-                aromaPrimary: aiData.wine.aromaPrimary?.length > 0 ? aiData.wine.aromaPrimary : undefined,
-                aromaSecondary: aiData.wine.aromaSecondary?.length > 0 ? aiData.wine.aromaSecondary : undefined,
-                aromaTertiary: aiData.wine.aromaTertiary?.length > 0 ? aiData.wine.aromaTertiary : undefined,
-                balance: aiData.wine.balance ?? undefined,
-                finish: aiData.wine.finish ?? undefined,
-                intensity: aiData.wine.intensity ?? undefined,
-              } : prev)
-            }
-          } catch {
-            // AI 조회 실패 시 무시 — 사용자가 직접 입력
-          }
-        }
-      } catch {
-        // 조회 실패 시 URL param 폴백
-      }
-    }
-    loadWine()
-    return () => { cancelled = true }
-  }, [targetType, state.targetId, editRecordId])
-
-  // 이전 기록 참조 점 로드
-  const userId = user?.id
-  useEffect(() => {
-    if (!userId || !state.targetId) return
-    let cancelled = false
-
-    async function loadPreviousRecords() {
-      try {
-        const records = await recordRepo.findByUserAndTarget(userId!, state.targetId)
-        if (cancelled) return
-        const refs: QuadrantReferencePoint[] = records
-          .filter((r) => r.axisX !== null && r.axisY !== null && r.id !== editRecordId)
-          .slice(0, 12)
-          .map((r) => ({
-            x: r.axisX ?? 50,
-            y: r.axisY ?? 50,
-            satisfaction: r.satisfaction ?? 50,
-            name: r.visitDate ?? '',
-            score: r.satisfaction ?? 50,
-          }))
-        setReferenceRecords(refs)
-      } catch {
-        // 참조 점 로드 실패 시 무시 — 핵심 기능 아님
-      }
-    }
-    loadPreviousRecords()
-    return () => { cancelled = true }
-  }, [userId, state.targetId, editRecordId])
-
-  // 최근 동행자 목록 로드 (전체 기록에서 추출)
-  useEffect(() => {
-    if (!userId) return
-    let cancelled = false
-
-    async function loadRecentCompanions() {
-      try {
-        const records = await recordRepo.findByUserId(userId!)
-        if (cancelled) return
-        const freq = new Map<string, number>()
-        for (const r of records) {
-          if (r.companions) {
-            for (const name of r.companions) {
-              freq.set(name, (freq.get(name) ?? 0) + 1)
-            }
-          }
-        }
-        const sorted = [...freq.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .map(([name]) => name)
-          .slice(0, 10)
-        setRecentCompanions(sorted)
-      } catch {
-        // 최근 동행자 로드 실패 시 무시
-      }
-    }
-    loadRecentCompanions()
-    return () => { cancelled = true }
-  }, [userId])
+  const isLoading = isRecordLoading || isUploading
 
   // sessionStorage에서 촬영 사진 URL + AI prefill 읽기
   const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
@@ -358,18 +192,18 @@ function RecordFlowInner() {
             linkedWineId: formData.linkedWineId as string | undefined,
             linkedRestaurantId: formData.linkedRestaurantId as string | undefined,
           }
-          savedRecord = await recordRepo.update(editRecordId, updateData)
+          savedRecord = await updateRecord(editRecordId, updateData)
 
           // 수정 모드 사진 처리
-          const dbPhotos = await photoRepo.getPhotosByRecordId(editRecordId)
+          const dbPhotos = await getPhotosByRecordId(editRecordId)
           const dbIds = new Set(dbPhotos.map((p) => p.id))
           const currentIds = new Set(photos.map((p) => p.id))
 
           // 1. 유저가 삭제한 기존 사진 → DB + Storage 삭제
           for (const dp of dbPhotos) {
             if (!currentIds.has(dp.id)) {
-              await imageService.deleteImage(dp.url).catch(() => {})
-              await photoRepo.deletePhoto(dp.id)
+              await deleteImage(dp.url).catch(() => {})
+              await deletePhotoById(dp.id)
             }
           }
 
@@ -378,8 +212,8 @@ function RecordFlowInner() {
             if (dbIds.has(p.id) && p.status === 'pending') {
               const dbPhoto = dbPhotos.find((dp) => dp.id === p.id)
               if (dbPhoto) {
-                await imageService.deleteImage(dbPhoto.url).catch(() => {})
-                await photoRepo.deletePhoto(p.id)
+                await deleteImage(dbPhoto.url).catch(() => {})
+                await deletePhotoById(p.id)
               }
             }
           }
@@ -393,7 +227,7 @@ function RecordFlowInner() {
             const existingUrls = new Set(dbPhotos.map((p) => p.url))
             const newResults = uploadResults.filter((r) => !existingUrls.has(r.url))
             if (newResults.length > 0) {
-              await photoRepo.savePhotos(editRecordId, newResults)
+              await savePhotos(editRecordId, newResults)
             }
           }
 
@@ -486,7 +320,7 @@ function RecordFlowInner() {
             try {
               const uploadedPhotos = await uploadAll(user.id, savedRecord.id)
               if (uploadedPhotos.length > 0) {
-                await photoRepo.savePhotos(savedRecord.id, uploadedPhotos)
+                await savePhotos(savedRecord.id, uploadedPhotos)
               }
             } catch {
               showToast('사진 업로드에 실패했습니다. 상세 페이지에서 다시 추가할 수 있습니다.')
@@ -496,31 +330,11 @@ function RecordFlowInner() {
 
         // ── XP 적립 ──
         if (thresholds.length > 0) {
-          let area: string | null = null
-          let genre: string | null = null
-          let region: string | null = null
-          let variety: string | null = null
-
-          if (savedRecord.targetType === 'restaurant') {
-            const restaurant = await restaurantRepo.findById(savedRecord.targetId)
-            area = restaurant?.area?.[0] ?? null
-            genre = restaurant?.genre ?? null
-          } else {
-            const wine = await wineRepo.findById(savedRecord.targetId)
-            region = wine?.region ?? null
-            // 품종: variety 또는 grape_varieties 비중 최고
-            if (wine?.variety) {
-              variety = wine.variety
-            } else if (wine && wine.grapeVarieties.length > 0) {
-              const sorted = [...wine.grapeVarieties].sort((a, b) => b.pct - a.pct)
-              variety = sorted[0].name
-            }
-          }
-
+          const targetXpMeta = await fetchTargetXpMeta(savedRecord.targetId, savedRecord.targetType)
           const previousXp = isEditMode ? (editingRecord?.recordQualityXp ?? 0) : undefined
           awardXp(
             user.id, savedRecord,
-            area, genre, region, variety,
+            targetXpMeta.area, targetXpMeta.genre, targetXpMeta.region, targetXpMeta.variety,
             thresholds, previousXp,
           ).catch(() => {})
         }
@@ -556,53 +370,30 @@ function RecordFlowInner() {
         // useCreateRecord 내부에서 error state 처리
       }
     },
-    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone],
+    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta],
   )
 
   const handleBack = useCallback(() => router.back(), [router])
   const handleDelete = useCallback(async () => {
     if (!editRecordId || !user) return
-    setIsDeleting(true)
     try {
-      // 삭제 전 정보 수집 (CASCADE 삭제 대비)
-      const [histories, shares] = await Promise.all([
-        xpRepo.getHistoriesByRecord(editRecordId),
-        bubbleRepo.getRecordShares(editRecordId).catch(() => []),
-      ])
-
-      await recordRepo.delete(editRecordId)
-
-      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
-      try {
-        if (histories.length > 0) {
-          let totalXpToDeduct = 0
-          for (const h of histories) totalXpToDeduct += h.xpAmount
-          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-          await xpRepo.deleteByRecordId(editRecordId)
-        }
-      } catch {
-        // CASCADE로 이미 삭제된 경우 무시
-      }
+      const result = await deleteRecord(editRecordId, user.id, state.targetId, state.targetType)
 
       setShowDeleteConfirm(false)
       showToast('기록이 삭제되었습니다')
-      if (shares.length > 0) {
-        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      if (result.sharesCount > 0) {
+        showToast(`${result.sharesCount}개 버블 공유도 함께 삭제되었습니다`)
       }
-
-      // 같은 대상의 남은 기록 수 확인
-      const remaining = await recordRepo.findByUserAndTarget(user.id, state.targetId).catch(() => [])
-      if (remaining.length > 0) {
-        showToast(`이 ${state.targetType === 'wine' ? '와인' : '식당'}의 기록이 ${remaining.length}건 남아있습니다`)
+      if (result.remainingCount > 0) {
+        showToast(`이 ${state.targetType === 'wine' ? '와인' : '식당'}의 기록이 ${result.remainingCount}건 남아있습니다`)
       }
 
       router.replace('/')
     } catch {
-      setIsDeleting(false)
       setShowDeleteConfirm(false)
       showToast('삭제에 실패했습니다. 다시 시도해주세요.')
     }
-  }, [editRecordId, user, router, state.targetId, state.targetType, showToast])
+  }, [editRecordId, user, router, state.targetId, state.targetType, showToast, deleteRecord])
   // 수정 모드 로딩
   if (isEditLoading) {
     return (

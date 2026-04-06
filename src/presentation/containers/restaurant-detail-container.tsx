@@ -13,7 +13,7 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
-import { restaurantRepo, recordRepo, xpRepo, bubbleRepo } from '@/shared/di/container'
+import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
@@ -48,10 +48,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   const [bubbleExpanded, setBubbleExpanded] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0) // 최근 뷰에서 포커스된 기록 (0 = 최신)
   const { showToast } = useToast()
+  const { deleteRecord, isDeleting } = useDeleteRecord()
 
   const {
     restaurant,
@@ -67,13 +67,12 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     bubbleAvgScore,
     bubbleCount,
     viewMode,
-  } = useRestaurantDetail(restaurantId, user?.id ?? null, restaurantRepo)
+  } = useRestaurantDetail(restaurantId, user?.id ?? null)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
     user?.id ?? null,
     restaurantId,
     'restaurant',
-    recordRepo,
   )
 
   // 세부 축 레벨 (장르, 지역)
@@ -213,47 +212,23 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   const handleDelete = useCallback(async () => {
     if (!activeRecordId || !user) return
-    setIsDeleting(true)
     try {
-      // 삭제 전 정보 수집 (CASCADE 삭제 대비)
-      const [histories, shares] = await Promise.all([
-        xpRepo.getHistoriesByRecord(activeRecordId),
-        bubbleRepo.getRecordShares(activeRecordId).catch(() => []),
-      ])
-
-      await recordRepo.delete(activeRecordId)
-
-      // XP 차감 (best-effort: 레코드는 이미 삭제됨)
-      try {
-        if (histories.length > 0) {
-          let totalXpToDeduct = 0
-          for (const h of histories) totalXpToDeduct += h.xpAmount
-          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-          await xpRepo.deleteByRecordId(activeRecordId)
-        }
-      } catch {
-        // CASCADE로 이미 삭제된 경우 무시
-      }
+      const result = await deleteRecord(activeRecordId, user.id, restaurantId, 'restaurant')
 
       setShowDeleteConfirm(false)
-      showToast('기록이 삭제되었습니다')
-      if (shares.length > 0) {
-        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      showToast('기록이 삭제���었습니다')
+      if (result.sharesCount > 0) {
+        showToast(`${result.sharesCount}개 버블 공유도 함께 삭제되었습니다`)
       }
-
-      // 같은 식당의 남은 기록 수 확인
-      const remaining = await recordRepo.findByUserAndTarget(user.id, restaurantId).catch(() => [])
-      if (remaining.length > 0) {
-        showToast(`이 식당의 기록이 ${remaining.length}건 남아있습니다`)
+      if (result.remainingCount > 0) {
+        showToast(`이 식당의 기록이 ${result.remainingCount}건 ���아있습니다`)
       }
 
       router.replace('/')
     } catch {
-      showToast('삭제에 실패했습니다')
-    } finally {
-      setIsDeleting(false)
+      showToast('삭제에 실패했습니���')
     }
-  }, [activeRecordId, user, router, restaurantId, showToast])
+  }, [activeRecordId, user, router, restaurantId, showToast, deleteRecord])
 
   const handlePageShare = useCallback(() => {
     if (navigator.share) {

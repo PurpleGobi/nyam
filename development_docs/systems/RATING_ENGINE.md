@@ -439,7 +439,7 @@ comment       VARCHAR(200)    -- 한줄 코멘트
 total_price   INT             -- 식당: 1인 가격
 purchase_price INT            -- 와인: 병 가격
 visit_date    DATE            -- 방문/시음일
-meal_time     VARCHAR(20)     -- breakfast|lunch|dinner|snack
+meal_time     VARCHAR(10)     -- breakfast|lunch|dinner|snack
 
 -- 와인 아로마 (TEXT[] 배열)
 aroma_primary   TEXT[]        -- Ring 1 섹터 ID 배열
@@ -457,7 +457,8 @@ auto_score  INT               -- 자동 산출 만족도
 pairing_categories TEXT[]     -- 와인: WSET 8카테고리
 menu_tags          TEXT[]     -- 식당: 메뉴 태그
 
--- 동반자
+-- 동반자 & 메모
+private_note    TEXT          -- 비공개 메모 (본인만 열람)
 companion_count INT           -- 필터/통계용
 companions      TEXT[]        -- 비공개, 본인만 열람
 

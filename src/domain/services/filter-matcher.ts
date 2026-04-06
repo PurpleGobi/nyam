@@ -161,18 +161,30 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: status=visited → listStatus로 매칭 ──
-  if (attribute === 'status' && String(value) === 'visited') {
+  // ── 가상 속성: view/status=visited → listStatus로 매칭 ──
+  if ((attribute === 'status' || attribute === 'view') && String(value) === 'visited') {
     const listStatus = String(record.listStatus ?? '')
     const matches = listStatus === 'visited' || listStatus === 'tasted'
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: status=following → source 필드로 매칭 ──
-  if (attribute === 'status' && String(value) === 'following') {
+  // ── 가상 속성: view/status=wishlist → listStatus로 매칭 ──
+  if ((attribute === 'status' || attribute === 'view') && String(value) === 'wishlist') {
+    const listStatus = String(record.listStatus ?? '')
+    const matches = listStatus === 'wishlist'
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // ── 가상 속성: view/status=following → source 필드로 매칭 ──
+  if ((attribute === 'status' || attribute === 'view') && String(value) === 'following') {
     const source = record.source ?? record['source']
     const matches = source === 'following'
     return operator === 'eq' ? matches : !matches
+  }
+
+  // ── 가상 속성: view=bubble / view=all → 모든 레코드 통과 (후속 데이터 페칭까지) ──
+  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'all')) {
+    return true
   }
 
   // ── 배열 속성: area (생활권, TEXT[]) ──
@@ -199,6 +211,7 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
 
 /**
  * FilterRule 배열을 레코드에 대해 평가
+ * rule-level conjunction이 있으면 attribute별 그룹핑 + 그룹 내 OR / 그룹 간 AND
  */
 export function matchesAllRules(
   record: Record<string, unknown>,
@@ -206,6 +219,30 @@ export function matchesAllRules(
   conjunction: 'and' | 'or',
 ): boolean {
   if (rules.length === 0) return true
+
+  // rule-level conjunction이 있으면 attribute별 그룹핑
+  const hasRuleLevelConjunction = rules.some((r) => r.conjunction === 'or')
+
+  if (hasRuleLevelConjunction) {
+    // attribute별로 그룹핑
+    const groups = new Map<string, FilterRule[]>()
+    for (const rule of rules) {
+      const key = rule.attribute
+      const existing = groups.get(key) ?? []
+      existing.push(rule)
+      groups.set(key, existing)
+    }
+    // 각 그룹: 내부에 or가 있으면 OR, 아니면 AND. 그룹 간은 AND.
+    for (const [, groupRules] of groups) {
+      const isOrGroup = groupRules.some((r) => r.conjunction === 'or')
+      const groupResults = groupRules.map((r) => matchRule(record, r))
+      const groupPass = isOrGroup ? groupResults.some(Boolean) : groupResults.every(Boolean)
+      if (!groupPass) return false
+    }
+    return true
+  }
+
+  // 기존 로직: 전체 conjunction 적용
   const results = rules.map((rule) => matchRule(record, rule))
   return conjunction === 'and' ? results.every(Boolean) : results.some(Boolean)
 }

@@ -20,6 +20,7 @@ import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
+import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -31,7 +32,7 @@ import type { MapRecord } from '@/presentation/components/home/map-view'
 import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
 import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-import { StatsToggle } from '@/presentation/components/home/stats-toggle'
+// StatsToggle card removed — stats now toggled via icon in HomeTabs
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 
@@ -147,18 +148,46 @@ export function HomeContainer() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const [prevTab, setPrevTab] = useState(activeTab)
 
-  // 탭 전환 시 칩 초기화
+  // ── Write-Behind Cache: 칩 상태 저장/복원 ──
+  const { loadState, saveState } = usePersistedFilterState(user?.id ?? null)
+  const [initializedTabs, setInitializedTabs] = useState<Set<string>>(new Set())
+
+  // 초기 마운트 + 탭 전환 시 저장된 칩 복원
+  useEffect(() => {
+    if (!user?.id) return
+
+    let cancelled = false
+    void loadState(activeTab).then((chips) => {
+      if (cancelled) return
+      setInitializedTabs((prev) => {
+        if (prev.has(activeTab)) return prev
+        const next = new Set(prev)
+        next.add(activeTab)
+        return next
+      })
+      setConditionChips(chips)
+      const rules = chipsToFilterRules(chips)
+      setFilterRules(rules)
+    })
+
+    return () => { cancelled = true }
+  }, [activeTab, user?.id, loadState, setFilterRules])
+
+  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 (useEffect에서 복원 예정)
   if (prevTab !== activeTab) {
     setPrevTab(activeTab)
-    setConditionChips([])
+    if (!initializedTabs.has(activeTab)) {
+      setConditionChips([])
+    }
   }
 
-  // 칩 변경 → filterRules 동기화
+  // 칩 변경 → filterRules 동기화 + 저장
   const handleChipsChange = useCallback((chips: FilterChipItem[]) => {
     setConditionChips(chips)
     const rules = chipsToFilterRules(chips)
     setFilterRules(rules)
-  }, [setFilterRules])
+    saveState(activeTab, chips)
+  }, [setFilterRules, saveState, activeTab])
 
   // Advanced Filter 적용
   const handleAdvancedApply = useCallback((chip: AdvancedFilterChip) => {
@@ -500,6 +529,10 @@ export function HomeContainer() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onSearchClear={() => setSearchQuery('')}
+          onStatsToggle={() => setIsStatsOpen(!isStatsOpen)}
+          isStatsOpen={isStatsOpen}
+          canShowStats={canShowStats && !isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant')}
+          accentType={accentType}
         />
 
         {!isCalendarMode && isSortOpen && (
@@ -551,93 +584,85 @@ export function HomeContainer() {
           />
         )}
 
-        {/* 통계 패널 — 캘린더/지도/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
+        {/* 통계 패널 — 아이콘으로 토글 (캘린더/지도/팔로잉 모드에서는 숨김) */}
+        {isStatsOpen && !isCalendarMode && !isFollowingMode && !(viewMode === 'map' && activeTab === 'restaurant') && canShowStats && (
           <div className="px-4 pt-2 md:px-8">
-            <StatsToggle
-              isOpen={isStatsOpen}
-              onToggle={() => setIsStatsOpen(!isStatsOpen)}
-              label="통계"
-            />
+            <div className="flex flex-col gap-5">
+              {activeTab === 'restaurant' && (
+                <>
+                  <WorldMapChart
+                    cities={restaurantStats.cityStats}
+                    totalCountries={totalCountries}
+                    totalPlaces={restaurantStats.cityStats.length}
+                  />
 
-            {isStatsOpen && (
-              <div className="mt-3 flex flex-col gap-5">
-                {activeTab === 'restaurant' && (
-                  <>
-                    <WorldMapChart
-                      cities={restaurantStats.cityStats}
-                      totalCountries={totalCountries}
-                      totalPlaces={restaurantStats.cityStats.length}
-                    />
-
-                    {restaurantStats.genreStats.length > 0 && (
-                      <div>
-                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>장르</p>
-                        <GenreChart genres={restaurantStats.genreStats} />
-                      </div>
-                    )}
-
+                  {restaurantStats.genreStats.length > 0 && (
                     <div>
-                      <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
-                      <ScoreDistribution
-                        buckets={restaurantStats.scoreBuckets}
-                        accentColor="var(--accent-food)"
-                      />
+                      <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>장르</p>
+                      <GenreChart genres={restaurantStats.genreStats} />
                     </div>
+                  )}
 
-                    <MonthlyChart
-                      months={restaurantStats.monthlyStats}
-                      totalAmount={restaurantStats.totalSpending}
+                  <div>
+                    <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
+                    <ScoreDistribution
+                      buckets={restaurantStats.scoreBuckets}
                       accentColor="var(--accent-food)"
-                      unit="곳"
                     />
+                  </div>
 
-                    {restaurantStats.sceneStats.length > 0 && (
+                  <MonthlyChart
+                    months={restaurantStats.monthlyStats}
+                    totalAmount={restaurantStats.totalSpending}
+                    accentColor="var(--accent-food)"
+                    unit="곳"
+                  />
+
+                  {restaurantStats.sceneStats.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>상황</p>
+                      <SceneChart scenes={restaurantStats.sceneStats} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeTab === 'wine' && (
+                <>
+                  <PdLockOverlay minRecords={5} currentCount={wineStats.totalRecordCount}>
+                    <WineRegionMap data={wineStats.countryStats} />
+                  </PdLockOverlay>
+
+                  <PdLockOverlay minRecords={10} currentCount={wineStats.totalRecordCount}>
+                    <div className="flex flex-col gap-5">
                       <div>
-                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>상황</p>
-                        <SceneChart scenes={restaurantStats.sceneStats} />
+                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>품종</p>
+                        <VarietalChart varieties={wineStats.varietalStats} />
                       </div>
-                    )}
-                  </>
-                )}
-
-                {activeTab === 'wine' && (
-                  <>
-                    <PdLockOverlay minRecords={5} currentCount={wineStats.totalRecordCount}>
-                      <WineRegionMap data={wineStats.countryStats} />
-                    </PdLockOverlay>
-
-                    <PdLockOverlay minRecords={10} currentCount={wineStats.totalRecordCount}>
-                      <div className="flex flex-col gap-5">
-                        <div>
-                          <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>품종</p>
-                          <VarietalChart varieties={wineStats.varietalStats} />
-                        </div>
-                        <div>
-                          <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
-                          <ScoreDistribution
-                            buckets={wineStats.scoreBuckets}
-                            accentColor="var(--accent-wine)"
-                          />
-                        </div>
-                      </div>
-                    </PdLockOverlay>
-
-                    <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount}>
-                      <div className="flex flex-col gap-5">
-                        <MonthlyChart
-                          months={wineStats.monthlyStats}
-                          totalAmount={wineStats.totalSpending}
+                      <div>
+                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
+                        <ScoreDistribution
+                          buckets={wineStats.scoreBuckets}
                           accentColor="var(--accent-wine)"
-                          unit="병"
                         />
-                        <WineTypeChart types={wineStats.wineTypeStats} />
                       </div>
-                    </PdLockOverlay>
-                  </>
-                )}
-              </div>
-            )}
+                    </div>
+                  </PdLockOverlay>
+
+                  <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount}>
+                    <div className="flex flex-col gap-5">
+                      <MonthlyChart
+                        months={wineStats.monthlyStats}
+                        totalAmount={wineStats.totalSpending}
+                        accentColor="var(--accent-wine)"
+                        unit="병"
+                      />
+                      <WineTypeChart types={wineStats.wineTypeStats} />
+                    </div>
+                  </PdLockOverlay>
+                </>
+              )}
+            </div>
           </div>
         )}
 

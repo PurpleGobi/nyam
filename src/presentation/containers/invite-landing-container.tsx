@@ -1,13 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users } from 'lucide-react'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
-import { bubbleRepo } from '@/shared/di/container'
-import type { Bubble } from '@/domain/entities/bubble'
+import { useInviteValidation } from '@/application/hooks/use-invite-validation'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 
@@ -18,20 +16,8 @@ interface InviteLandingContainerProps {
 export function InviteLandingContainer({ inviteCode }: InviteLandingContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [bubble, setBubble] = useState<Bubble | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isExpired, setIsExpired] = useState(false)
+  const { bubble, isExpired, isLoading } = useInviteValidation(inviteCode)
   const { requestJoin, isLoading: isJoining } = useBubbleJoin()
-
-  useEffect(() => {
-    bubbleRepo.validateInviteCode(inviteCode).then(({ valid, bubble: b, expired }) => {
-      if (valid && b) {
-        setBubble(b)
-      }
-      setIsExpired(expired)
-      setIsLoading(false)
-    })
-  }, [inviteCode])
 
   const handleJoin = async () => {
     if (!bubble || !user) return

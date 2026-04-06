@@ -5,9 +5,9 @@ import type { SavedFilter, FilterRule } from '@/domain/entities/saved-filter'
 import { savedFilterRepo } from '@/shared/di/container'
 
 const RESTAURANT_PRESETS: { name: string; rules: FilterRule[] }[] = [
-  { name: '방문', rules: [{ attribute: 'status', operator: 'eq', value: 'visited' }] },
-  { name: '찜', rules: [{ attribute: 'status', operator: 'eq', value: 'wishlist' }] },
-  { name: '팔로잉', rules: [{ attribute: 'status', operator: 'eq', value: 'following' }] },
+  { name: '방문', rules: [{ attribute: 'view', operator: 'eq', value: 'visited' }] },
+  { name: '찜', rules: [{ attribute: 'view', operator: 'eq', value: 'wishlist' }] },
+  { name: '팔로잉', rules: [{ attribute: 'view', operator: 'eq', value: 'following' }] },
 ]
 
 const WINE_PRESETS: { name: string; rules: FilterRule[] }[] = [

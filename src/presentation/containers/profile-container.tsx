@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/application/hooks/use-profile'
 import { getLevel } from '@/domain/services/xp-calculator'
-import { xpRepo } from '@/shared/di/container'
-import type { UserExperience, Milestone } from '@/domain/entities/xp'
+import { useProfileLevelStats } from '@/application/hooks/use-profile-level-stats'
+import type { UserExperience } from '@/domain/entities/xp'
 import { ProfileHeader } from '@/presentation/components/profile/profile-header'
 import { TotalLevelCard } from '@/presentation/components/profile/total-level-card'
 import { OverviewGrid } from '@/presentation/components/profile/overview-grid'
@@ -47,31 +47,7 @@ export function ProfileContainer() {
   }, [experiences])
 
   // LevelDetailSheet 통계 데이터
-  const [levelDetailStats, setLevelDetailStats] = useState<{
-    uniqueCount: number
-    totalRecords: number
-    revisitCount: number
-    xpBreakdown: Record<string, number>
-    nextMilestone: { milestone: Milestone; currentCount: number } | null
-  }>({ uniqueCount: 0, totalRecords: 0, revisitCount: 0, xpBreakdown: {}, nextMilestone: null })
-
-  const fetchLevelDetailStats = useCallback(async (exp: UserExperience) => {
-    if (!profile) return
-    const [uniqueCount, totalRecords, revisitCount, xpBreakdown] = await Promise.all([
-      xpRepo.getUniqueCount(profile.id, exp.axisType, exp.axisValue),
-      xpRepo.getTotalRecordCountByAxis(profile.id, exp.axisType, exp.axisValue),
-      xpRepo.getRevisitCountByAxis(profile.id, exp.axisType, exp.axisValue),
-      xpRepo.getXpBreakdownByAxis(profile.id, exp.axisType, exp.axisValue),
-    ])
-    const nextMilestone = await xpRepo.getNextMilestone(exp.axisType, 'record_count', totalRecords)
-    setLevelDetailStats({
-      uniqueCount,
-      totalRecords,
-      revisitCount,
-      xpBreakdown,
-      nextMilestone: nextMilestone ? { milestone: nextMilestone, currentCount: totalRecords } : null,
-    })
-  }, [profile])
+  const { stats: levelDetailStats, fetchStats: fetchLevelDetailStats } = useProfileLevelStats(profile?.id ?? null)
 
   const handleLevelItemPress = (exp: UserExperience) => {
     setSelectedExperience(exp)

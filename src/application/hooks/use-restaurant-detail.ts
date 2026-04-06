@@ -8,11 +8,11 @@ import type { Restaurant } from '@/domain/entities/restaurant'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type {
-  RestaurantRepository,
   QuadrantRefDot,
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
+import { restaurantRepo } from '@/shared/di/container'
 
 /** 뷰 모드 */
 export type RestaurantViewMode = 'my_records' | 'recommend' | 'bubble_review'
@@ -40,8 +40,8 @@ export interface RestaurantDetailState {
 export function useRestaurantDetail(
   restaurantId: string,
   userId: string | null,
-  repo: RestaurantRepository,
 ): RestaurantDetailState {
+  const repo = restaurantRepo
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [myRecords, setMyRecords] = useState<DiningRecord[]>([])
   const [recordPhotos, setRecordPhotos] = useState<Map<string, RecordPhoto[]>>(new Map())

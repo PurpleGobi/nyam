@@ -124,6 +124,18 @@
 
 > 상세 매트릭스 → `pages/11_SETTINGS.md` §2~§6
 
+### 3-0. 검색 & 팔로우 정책
+
+| 항목 | 정책 | 근거 |
+|------|------|------|
+| **유저 검색** | 자유 (인증 사용자 누구나) | 버블 초대, 팔로우에 필수. `privacy_profile`과 무관하게 검색 가능 (RLS: `users_authenticated_search`) |
+| **팔로우** | 자유 (승인 없이 즉시 수락) | 진입장벽 최소화. `follows.status` 기본값 `'accepted'` |
+| **프로필 열람** | `privacy_profile` 설정에 따라 제한 | §3-1 참조 |
+| **기록 열람** | `privacy_records` 설정에 따라 제한 | §3-2 참조 |
+
+> **설계 원칙**: 검색·팔로우는 항상 자유. 공개 범위 제한은 **콘텐츠 열람** 단계에서만 적용.
+> `follows.status`의 `'pending'`/`'rejected'`는 향후 승인제 팔로우 도입 시를 위한 예약 값이며, 현재는 사용하지 않음.
+
 ### 3-1. 프로필 공개 범위
 
 > DB: `users.privacy_profile`
@@ -134,17 +146,22 @@
 | `bubble_only` (기본값) | 같은 버블 멤버만 프로필 열람 |
 | `private` | 나만 열람, 버블 공유 불가 |
 
+> **참고**: 버블 멤버 초대를 위한 유저 검색 RLS(§4-1 `users_authenticated_search`)가 `privacy_profile`과 무관하게 인증 사용자에게 SELECT를 허용하므로, 위 제한은 RLS가 아닌 **application layer**에서 강제됨.
+
 ### 3-2. 기록 공개 범위
 
 > DB: `users.privacy_records`
 
 | 값 | 의미 |
 |----|------|
-| `all` | 프로필 방문자에게 전체 기록 공개 |
-| `shared_only` (기본값) | 버블에 공유한 기록만 해당 멤버에게 노출 |
+| `all` | 프로필 방문자 누구에게나 전체 기록 공개 |
+| `followers_only` | 나를 팔로우한 사용자에게만 기록 공개 |
+| `shared_only` (기본값) | 버블에 공유한 기록만 해당 버블 멤버에게 노출 |
 
 > `privacy_profile = 'private'`이면 프로필 자체가 비공개이므로 기록도 접근 불가.
-> `privacy_records`에 별도 `'private'` 값은 없음 (DATA_MODEL 참조).
+>
+> **설계 판단**: 리스트별(식당/와인 분리) 세분화는 하지 않음 — 계정 단위 1개 설정으로 충분.
+> 설정 UI 복잡도와 "쉽고 빠르게" 원칙 사이의 균형. 사용자 피드백에 따라 v2+ 에서 세분화 가능.
 
 ### 3-3. 가시성 토글 3계층
 
@@ -180,17 +197,20 @@
 
 ## 4. RLS 정책
 
-> 전체 25개 테이블에 RLS 활성화. **총 58개 정책**.
+> 전체 25개 테이블에 RLS 활성화. **총 60개 정책**.
 > 기본 구현: `supabase/migrations/012_rls.sql` (55개)
-> 추가: `025_bubble_owner_read_policy.sql` (+1), `033_bubble_member_read_rls.sql` (+2)
+> 추가: `025_bubble_owner_read_policy.sql` (+1), `033_bubble_member_read_rls.sql` (+2), `042_users_search_policy.sql` (+1), `043_notifications_insert_policy.sql` (+1)
 > 수정: `034_rls_security_fixes.sql` (bm_insert_self 교체 + 보안 트리거)
 
-### 4-1. users (3 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `users_own` | ALL | `id = auth.uid()` |
-| `users_public` | SELECT | `privacy_profile = 'public'` |
-| `users_bubble` | SELECT | `privacy_profile = 'bubble_only'` + 같은 버블 active 멤버 |
+### 4-1. users (4 정책)
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `users_own` | ALL | `id = auth.uid()` | 012 |
+| `users_public` | SELECT | `privacy_profile = 'public'` | 012 |
+| `users_bubble` | SELECT | `privacy_profile = 'bubble_only'` + 같은 버블 active 멤버 | 012 |
+| `users_authenticated_search` | SELECT | 인증된 사용자 (`auth.uid() IS NOT NULL`) — 버블 멤버 초대 시 유저 검색용 | 042 |
+
+> **주의**: `users_authenticated_search`(042)는 `privacy_profile` 무관하게 모든 인증 사용자에게 SELECT 허용. 이로 인해 `users_public`/`users_bubble`의 프라이버시 필터링은 RLS 레벨에서 사실상 무력화됨. §3-1의 프로필 공개 범위(`bubble_only`, `private`) 제한은 **application layer**에서 쿼리 조건 또는 SELECT 컬럼 제한(`id`, `nickname`, `handle`, `email`, `avatar_url`, `avatar_color`)으로 구현 필요.
 
 ### 4-2. restaurants (3 정책)
 | 정책 | 동작 | 조건 |
@@ -221,7 +241,7 @@
 | `records_bubble_shared` | SELECT | 작성자 `privacy_profile!='private'` + `bubble_shares` 경유 공유된 기록 | 012 |
 | `records_bubble_member_read` | SELECT | 같은 버블 active 멤버의 기록 열람 | 033 |
 
-> **주의**: `companions` 필드는 RLS(row-level)로는 컬럼 단위 제한이 불가하여, SELECT 통과 시 다른 사용자에게도 노출될 수 있음. 비공개 처리는 **application layer**에서 구현 필요 (§3-5 "동반자 정보 무조건 비공개" 원칙).
+> **주의**: `companions`, `private_note` 필드는 RLS(row-level)로는 컬럼 단위 제한이 불가하여, SELECT 통과 시 다른 사용자에게도 노출될 수 있음. 비공개 처리는 **application layer**에서 구현 필요 (§3-5 "동반자 정보 무조건 비공개" 원칙).
 
 ### 4-6. record_photos (3 정책)
 | 정책 | 동작 | 조건 | 구현 |
@@ -313,10 +333,11 @@
 | `um_own` | ALL | 본인 |
 | `um_read_public` | SELECT | public 프로필 사용자 |
 
-### 4-19. notifications (1 정책)
-| 정책 | 동작 | 조건 |
-|------|------|------|
-| `notif_own` | ALL | 본인만 |
+### 4-19. notifications (2 정책)
+| 정책 | 동작 | 조건 | 구현 |
+|------|------|------|------|
+| `notif_own` | ALL | 본인만 | 012 |
+| `notif_create_for_others` | INSERT | 인증 + `actor_id = auth.uid()` (버블 초대/가입 요청 등 타인에게 알림 생성) | 043 |
 
 ### 4-20. nudge (2 정책)
 | 정책 | 동작 | 조건 |
@@ -351,7 +372,7 @@
 
 | 테이블 | 정책 수 | 핵심 규칙 |
 |--------|---------|----------|
-| users | 3 | 본인 전체, public/bubble_only SELECT |
+| users | 4 | 본인 전체, public/bubble_only SELECT, 인증 사용자 검색 |
 | restaurants | 3 | 인증된 사용자 읽기/쓰기 |
 | wines | 3 | 인증된 사용자 읽기/쓰기 |
 | grape_variety_profiles | 1 | 읽기 전용 참조 |
@@ -370,13 +391,13 @@
 | level_thresholds | 1 | 읽기 전용 |
 | milestones | 1 | 읽기 전용 |
 | user_milestones | 2 | 본인 전체, public 읽기 |
-| notifications | 1 | 본인만 |
+| notifications | 2 | 본인 전체, 인증 사용자 알림 생성(actor=self) |
 | nudge_history | 1 | 본인만 |
 | nudge_fatigue | 1 | 본인만 |
 | wishlists | 1 | 본인만 |
 | saved_filters | 1 | 본인만 |
 | ai_recommendations | 1 | 본인만 |
-| **합계** | **58** | |
+| **합계** | **60** | |
 
 ---
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import type { Bubble } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember } from '@/domain/entities/bubble'
 import type { CreateBubbleInput } from '@/domain/repositories/bubble-repository'
 import { bubbleRepo } from '@/shared/di/container'
 import { useBonusXp } from '@/application/hooks/use-bonus-xp'
@@ -83,5 +83,14 @@ export function useBubbleCreate() {
     }
   }, [awardBonus])
 
-  return { createBubble, isLoading }
+  /** 버블 생성 직후 owner 멤버 정보 업데이트 (visibilityOverride 등) */
+  const updateMemberAfterCreate = useCallback(async (
+    bubbleId: string,
+    userId: string,
+    data: Partial<BubbleMember>,
+  ): Promise<void> => {
+    await bubbleRepo.updateMember(bubbleId, userId, data)
+  }, [])
+
+  return { createBubble, updateMemberAfterCreate, isLoading }
 }

@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, X, SlidersHorizontal, Check } from 'lucide-react'
-import type { FilterAttribute, CascadingOption } from '@/domain/entities/filter-config'
+import { Plus, X, SlidersHorizontal, Check, MapPin } from 'lucide-react'
+import type { FilterAttribute, CascadingOption, LocationTab } from '@/domain/entities/filter-config'
 import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
 import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL } from '@/domain/entities/condition-chip'
 import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
@@ -115,6 +115,20 @@ export function ConditionFilterBar({
     currentOptions: CascadingOption[]
   } | null>(null)
 
+  // multi-select 체크박스 상태
+  const [multiSelectState, setMultiSelectState] = useState<{
+    attribute: FilterAttribute
+    selected: Set<string>
+  } | null>(null)
+
+  // location 팝오버 상태
+  const [locationState, setLocationState] = useState<{
+    attribute: FilterAttribute
+    tabIndex: number
+    level: number       // 0: 도시, 1: 구/생활권
+    city: string | null
+  } | null>(null)
+
   const accent = accentType === 'wine' ? 'var(--accent-wine)' : accentType === 'social' ? 'var(--accent-social)' : 'var(--accent-food)'
   const wineClass = accentType === 'wine' ? 'wine' : accentType === 'social' ? 'social' : ''
 
@@ -172,6 +186,64 @@ export function ConditionFilterBar({
     setIsAddOpen(false)
     setCascadingState(null)
   }, [chips, onChipsChange])
+
+  /** multi-select 적용 → 쉼표 결합 칩 생성 */
+  const handleMultiSelectApply = useCallback(() => {
+    if (!multiSelectState) return
+    const { attribute: attr, selected } = multiSelectState
+    if (selected.size === 0) {
+      setMultiSelectState(null)
+      setIsAddOpen(false)
+      return
+    }
+    const selectedValues = Array.from(selected)
+    const combinedValue = selectedValues.join(',')
+    const combinedLabel = selectedValues
+      .map((v) => attr.options?.find((o) => o.value === v)?.label ?? v)
+      .join(', ')
+
+    // 기존 칩 편집인지 신규인지
+    if (editingChipId) {
+      onChipsChange(chips.map((c) =>
+        c.id === editingChipId
+          ? { ...c, value: combinedValue, displayLabel: combinedLabel }
+          : c,
+      ))
+      setEditingChipId(null)
+    } else {
+      const newChip: ConditionChip = {
+        id: generateChipId(),
+        attribute: attr.key,
+        operator: 'eq',
+        value: combinedValue,
+        displayLabel: combinedLabel,
+      }
+      onChipsChange([...chips, newChip])
+    }
+    setMultiSelectState(null)
+    setIsAddOpen(false)
+  }, [multiSelectState, editingChipId, chips, onChipsChange])
+
+  /** location 선택: 내 위치 또는 구/생활권 선택 → 칩 생성 */
+  const handleLocationSelect = useCallback((value: string, displayLabel: string, filterKey?: string) => {
+    if (!locationState) return
+    const newChip: ConditionChip = {
+      id: editingChipId ?? generateChipId(),
+      attribute: 'location',
+      operator: 'eq',
+      value,
+      displayLabel,
+      filterKey,
+    }
+    if (editingChipId) {
+      onChipsChange(chips.map((c) => c.id === editingChipId ? newChip : c))
+      setEditingChipId(null)
+    } else {
+      onChipsChange([...chips, newChip])
+    }
+    setLocationState(null)
+    setIsAddOpen(false)
+  }, [locationState, editingChipId, chips, onChipsChange])
 
   /** cascading-select 값 선택 → 선택된 칩 + 나머지 레벨 "전체" 칩 일괄 생성 */
   const handleCascadingSelect = useCallback((opt: CascadingOption) => {
@@ -306,11 +378,46 @@ export function ConditionFilterBar({
     setSelectedAttribute(null)
     setEditingChipId(null)
     setCascadingState(null)
+    setMultiSelectState(null)
+    setLocationState(null)
   }, [])
+
+  /** 칩 클릭 → 토글 or 편집 팝오버 */
+  const handleChipClick = useCallback((chip: ConditionChip) => {
+    if (editingChipId === chip.id) {
+      // 토글 해제 → 모든 팝오버 닫기
+      closeAll()
+      return
+    }
+    // 새 칩 편집 시작: 이전 상태 초기화
+    setEditingChipId(chip.id)
+    setIsAddOpen(false)
+    setSelectedAttribute(null)
+    setCascadingState(null)
+    setMultiSelectState(null)
+    setLocationState(null)
+
+    // multi-select 칩이면 바로 multiSelectState 활성화
+    const msAttr = attributes.find((a) => a.key === chip.attribute && a.type === 'multi-select')
+    if (msAttr) {
+      const currentValues = new Set(String(chip.value).split(',').map((v) => v.trim()))
+      setMultiSelectState({ attribute: msAttr, selected: currentValues })
+      return
+    }
+    // location 칩이면 바로 locationState 활성화
+    if (chip.attribute === 'location') {
+      const locAttr = attributes.find((a) => a.key === 'location' && a.type === 'location')
+      if (locAttr) {
+        setLocationState({ attribute: locAttr, tabIndex: 0, level: 0, city: null })
+      }
+    }
+  }, [editingChipId, attributes, closeAll])
 
   const handleAddClick = useCallback(() => {
     setEditingChipId(null)
     setCascadingState(null)
+    setMultiSelectState(null)
+    setLocationState(null)
     setIsAddOpen((prev) => {
       if (prev) setSelectedAttribute(null)
       return !prev
@@ -336,12 +443,7 @@ export function ConditionFilterBar({
               type="button"
               className={`filter-chip ${isAllPlaceholder ? '' : 'active'} ${wineClass}`}
               style={isAllPlaceholder ? { opacity: 0.6, borderStyle: 'dashed' } : undefined}
-              onClick={() => {
-                setEditingChipId((prev) => prev === chip.id ? null : chip.id)
-                setIsAddOpen(false)
-                setSelectedAttribute(null)
-                setCascadingState(null)
-              }}
+              onClick={() => handleChipClick(chip)}
             >
               <span style={{ opacity: 0.7, fontSize: '11px' }}>{attrLabel}</span>
               {chip.displayLabel}
@@ -395,7 +497,7 @@ export function ConditionFilterBar({
       )}
 
       {/* ── 속성 선택 팝오버 (Portal) ── */}
-      {isAddOpen && !selectedAttribute && !cascadingState && (
+      {isAddOpen && !selectedAttribute && !cascadingState && !multiSelectState && !locationState && (
         <Popover anchorRef={addBtnRef} align="right" onClose={closeAll}>
           <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
             속성 선택
@@ -407,6 +509,17 @@ export function ConditionFilterBar({
               onClick={() => {
                 if (attr.type === 'cascading-select' && attr.cascadingOptions) {
                   setCascadingState({ attribute: attr, level: 0, currentOptions: attr.cascadingOptions })
+                } else if (attr.type === 'location') {
+                  setLocationState({ attribute: attr, tabIndex: 0, level: 0, city: null })
+                } else if (attr.type === 'multi-select') {
+                  // 편집 중인 칩이 있으면 기존 value 파싱
+                  const existingChip = editingChipId
+                    ? conditionChips.find((c) => c.id === editingChipId && c.attribute === attr.key)
+                    : null
+                  const initialSelected = existingChip
+                    ? new Set(String(existingChip.value).split(',').map((v) => v.trim()))
+                    : new Set<string>()
+                  setMultiSelectState({ attribute: attr, selected: initialSelected })
                 } else {
                   setSelectedAttribute(attr)
                 }
@@ -436,7 +549,7 @@ export function ConditionFilterBar({
       )}
 
       {/* ── 값 선택 팝오버 (일반 select) ── */}
-      {isAddOpen && selectedAttribute && !cascadingState && (
+      {isAddOpen && selectedAttribute && selectedAttribute.type !== 'multi-select' && !cascadingState && (
         <Popover anchorRef={addBtnRef} align="right" onClose={closeAll}>
           <button
             type="button"
@@ -459,6 +572,161 @@ export function ConditionFilterBar({
           ))}
         </Popover>
       )}
+
+      {/* ── multi-select 체크박스 팝오버 ── */}
+      {multiSelectState && (
+        <Popover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={() => {
+          handleMultiSelectApply()
+        }}>
+          <button
+            type="button"
+            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null) }}
+            className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            ← {multiSelectState.attribute.label}
+          </button>
+          {multiSelectState.attribute.options?.map((opt) => {
+            const isChecked = multiSelectState.selected.has(opt.value)
+            const isAllOption = opt.value === 'all'
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setMultiSelectState((prev) => {
+                    if (!prev) return null
+                    const next = new Set(prev.selected)
+                    if (isAllOption) {
+                      // "전체" 선택 → 다른 모두 해제
+                      next.clear()
+                      next.add('all')
+                    } else {
+                      // 개별 항목 → "전체" 해제
+                      next.delete('all')
+                      if (isChecked) next.delete(opt.value)
+                      else next.add(opt.value)
+                    }
+                    return { ...prev, selected: next }
+                  })
+                }}
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                style={{ color: 'var(--text)' }}
+              >
+                <span>{opt.label}</span>
+                {isChecked && <Check size={14} style={{ color: accent }} />}
+              </button>
+            )
+          })}
+          <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+          <button
+            type="button"
+            onClick={handleMultiSelectApply}
+            className="flex w-full items-center justify-center px-3 py-2 text-[13px] font-medium"
+            style={{ color: accent }}
+          >
+            적용
+          </button>
+        </Popover>
+      )}
+
+      {/* ── location 팝오버 ── */}
+      {locationState && (() => {
+        const { attribute: locAttr, tabIndex, level, city } = locationState
+        const tabs: LocationTab[] = locAttr.locationTabs ?? []
+        const currentTab = tabs[tabIndex]
+
+        // 도시 선택 후 → 구/생활권 목록
+        if (level === 1 && city && currentTab) {
+          const cityOption = currentTab.cascadingOptions.find((o) => o.value === city)
+          const subOptions = cityOption?.children ?? []
+          return (
+            <Popover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={closeAll}>
+              <button
+                type="button"
+                onClick={() => setLocationState((prev) => prev ? { ...prev, level: 0, city: null } : null)}
+                className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
+                style={{ color: 'var(--text-hint)' }}
+              >
+                ← {city}
+              </button>
+              {subOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleLocationSelect(opt.value, opt.label, currentTab.fieldKey)}
+                  className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </Popover>
+          )
+        }
+
+        // 기본: 내 위치 + 탭 + 도시 목록
+        return (
+          <Popover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={closeAll}>
+            <button
+              type="button"
+              onClick={() => { setLocationState(null); setSelectedAttribute(null) }}
+              className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
+              style={{ color: 'var(--text-hint)' }}
+            >
+              ← {locAttr.label}
+            </button>
+            {/* 내 위치 버튼 */}
+            <button
+              type="button"
+              onClick={() => handleLocationSelect('nearby', '내 주변')}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] font-medium transition-colors"
+              style={{ color: accent }}
+            >
+              <MapPin size={14} />
+              내 위치 (반경 1km)
+            </button>
+            <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+            {/* 탭 전환 */}
+            {tabs.length > 1 && (
+              <div className="flex gap-0 px-3 pb-1">
+                {tabs.map((tab, idx) => (
+                  <button
+                    key={tab.fieldKey}
+                    type="button"
+                    onClick={() => setLocationState((prev) => prev ? { ...prev, tabIndex: idx, level: 0, city: null } : null)}
+                    className="flex-1 py-1.5 text-center text-[12px] font-medium"
+                    style={{
+                      color: idx === tabIndex ? accent : 'var(--text-hint)',
+                      borderBottom: idx === tabIndex ? `2px solid ${accent}` : '2px solid transparent',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* 도시 목록 */}
+            {currentTab?.cascadingOptions.map((cityOpt) => (
+              <button
+                key={cityOpt.value}
+                type="button"
+                onClick={() => {
+                  if (cityOpt.children && cityOpt.children.length > 0) {
+                    setLocationState((prev) => prev ? { ...prev, level: 1, city: cityOpt.value } : null)
+                  } else {
+                    handleLocationSelect(cityOpt.value, cityOpt.label, currentTab.fieldKey)
+                  }
+                }}
+                className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
+                style={{ color: 'var(--text)' }}
+              >
+                {cityOpt.label}
+              </button>
+            ))}
+          </Popover>
+        )
+      })()}
 
       {/* ── cascading-select 초기 선택 팝오버 (레벨 0) ── */}
       {isAddOpen && cascadingState && (
@@ -548,6 +816,14 @@ export function ConditionFilterBar({
               )}
             </Popover>
           )
+        }
+
+        // multi-select / location 칩은 onClick에서 직접 팝오버 상태를 설정하므로 여기서는 스킵
+        if (attributes.find((a) => a.key === chip.attribute && a.type === 'multi-select')) {
+          return null
+        }
+        if (chip.attribute === 'location') {
+          return null
         }
 
         // 일반 select 칩 편집

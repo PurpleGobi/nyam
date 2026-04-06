@@ -40,6 +40,7 @@ function getOperatorsForType(type: FilterAttributeType) {
     case 'select':
     case 'multi-select':
     case 'cascading-select':
+    case 'location':
       return SELECT_OPERATORS
     case 'range':
       return RANGE_OPERATORS

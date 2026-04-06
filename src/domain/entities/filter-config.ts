@@ -2,7 +2,7 @@
 // R1: 외부 의존 0
 // SSOT: pages/06_HOME.md §3-1 (식당), §4-0 (와인)
 
-export type FilterAttributeType = 'select' | 'multi-select' | 'range' | 'text' | 'cascading-select'
+export type FilterAttributeType = 'select' | 'multi-select' | 'range' | 'text' | 'cascading-select' | 'location'
 
 export interface FilterAttributeOption {
   value: string
@@ -16,6 +16,14 @@ export interface CascadingOption {
   children?: CascadingOption[]
 }
 
+/** location 타입 전용: 탭별 캐스케이딩 구성 */
+export interface LocationTab {
+  label: string                    // '행정구역' | '생활권'
+  fieldKey: string                 // 'district' | 'area' — filterKey로 사용
+  cascadingLabels: string[]        // ['도시', '구'] 또는 ['도시', '생활권']
+  cascadingOptions: CascadingOption[]  // 도시 레벨부터 시작 (국가 자동 선택)
+}
+
 export interface FilterAttribute {
   key: string
   label: string
@@ -27,6 +35,10 @@ export interface FilterAttribute {
   cascadingLabels?: string[]
   /** cascading-select 전용: 각 레벨의 실제 DB 필드 키 (예: ['country','city','district']) */
   cascadingFieldKeys?: string[]
+  /** location 타입 전용: 탭별 캐스케이딩 구성 */
+  locationTabs?: LocationTab[]
+  /** location 타입 전용: 기본 국가 (자동 선택) */
+  defaultCountry?: string
 }
 
 // ─── 위치 캐스케이딩 트리 ───
@@ -141,28 +153,18 @@ const LOCATION_AREA_TREE: CascadingOption[] = [
 
 // ─── 식당 필터 속성 ───
 
+// 순서: 보기, 음식종류, 위치, 가격대, 상황, 점수, 명성, 대표메뉴, 시기, 동반자
 export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
-    key: 'status',
-    label: '상태',
-    type: 'select',
+    key: 'view',
+    label: '보기',
+    type: 'multi-select',
     options: [
       { value: 'visited', label: '방문' },
       { value: 'wishlist', label: '찜' },
       { value: 'following', label: '팔로잉' },
-    ],
-  },
-  {
-    key: 'scene',
-    label: '상황',
-    type: 'select',
-    options: [
-      { value: 'solo', label: '혼밥' },
-      { value: 'romantic', label: '데이트' },
-      { value: 'friends', label: '친구' },
-      { value: 'family', label: '가족' },
-      { value: 'business', label: '회식' },
-      { value: 'drinks', label: '술자리' },
+      { value: 'bubble', label: '버블' },
+      { value: 'all', label: '전체' },
     ],
   },
   {
@@ -189,20 +191,62 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     ],
   },
   {
-    key: 'district',
+    key: 'location',
     label: '위치',
-    type: 'cascading-select',
-    cascadingLabels: ['국가', '도시', '구'],
-    cascadingFieldKeys: ['country', 'city', 'district'],
-    cascadingOptions: LOCATION_DISTRICT_TREE,
+    type: 'location',
+    defaultCountry: '한국',
+    locationTabs: [
+      {
+        label: '행정구역',
+        fieldKey: 'district',
+        cascadingLabels: ['도시', '구'],
+        cascadingOptions: [
+          { value: '서울', label: '서울', children: SEOUL_DISTRICTS },
+          { value: '부산', label: '부산', children: [
+            { value: '해운대구', label: '해운대구' },
+            { value: '수영구', label: '수영구' },
+            { value: '부산진구', label: '부산진구' },
+            { value: '중구', label: '중구' },
+            { value: '남구', label: '남구' },
+          ]},
+          { value: '제주', label: '제주', children: [
+            { value: '제주시', label: '제주시' },
+            { value: '서귀포시', label: '서귀포시' },
+          ]},
+        ],
+      },
+      {
+        label: '생활권',
+        fieldKey: 'area',
+        cascadingLabels: ['도시', '생활권'],
+        cascadingOptions: [
+          { value: '서울', label: '서울', children: SEOUL_AREAS },
+        ],
+      },
+    ],
   },
   {
-    key: 'area',
-    label: '생활권',
-    type: 'cascading-select',
-    cascadingLabels: ['국가', '도시', '생활권'],
-    cascadingFieldKeys: ['country', 'city', 'area'],
-    cascadingOptions: LOCATION_AREA_TREE,
+    key: 'price_range',
+    label: '가격대',
+    type: 'select',
+    options: [
+      { value: '1', label: '저가' },
+      { value: '2', label: '중간' },
+      { value: '3', label: '고가' },
+    ],
+  },
+  {
+    key: 'scene',
+    label: '상황',
+    type: 'select',
+    options: [
+      { value: 'solo', label: '혼밥' },
+      { value: 'romantic', label: '데이트' },
+      { value: 'friends', label: '친구' },
+      { value: 'family', label: '가족' },
+      { value: 'business', label: '회식' },
+      { value: 'drinks', label: '술자리' },
+    ],
   },
   {
     key: 'satisfaction',
@@ -213,29 +257,6 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: '80', label: '80~89' },
       { value: '70', label: '70~79' },
       { value: '69', label: '~69' },
-    ],
-  },
-  {
-    key: 'visit_date',
-    label: '시기',
-    type: 'select',
-    options: [
-      { value: '1w', label: '최근 1주' },
-      { value: '1m', label: '1개월' },
-      { value: '3m', label: '3개월' },
-      { value: '6m', label: '6개월' },
-      { value: '1y', label: '1년+' },
-    ],
-  },
-  {
-    key: 'companion_count',
-    label: '동반자',
-    type: 'select',
-    options: [
-      { value: '1', label: '혼자' },
-      { value: '2', label: '2인' },
-      { value: '3-4', label: '3~4인' },
-      { value: '5+', label: '5인+' },
     ],
   },
   {
@@ -262,13 +283,26 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     ],
   },
   {
-    key: 'price_range',
-    label: '가격대',
+    key: 'visit_date',
+    label: '시기',
     type: 'select',
     options: [
-      { value: '1', label: '저가' },
-      { value: '2', label: '중간' },
-      { value: '3', label: '고가' },
+      { value: '1w', label: '최근 1주' },
+      { value: '1m', label: '1개월' },
+      { value: '3m', label: '3개월' },
+      { value: '6m', label: '6개월' },
+      { value: '1y', label: '1년+' },
+    ],
+  },
+  {
+    key: 'companion_count',
+    label: '동반자',
+    type: 'select',
+    options: [
+      { value: '1', label: '혼자' },
+      { value: '2', label: '2인' },
+      { value: '3-4', label: '3~4인' },
+      { value: '5+', label: '5인+' },
     ],
   },
 ]

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { Bubble } from '@/domain/entities/bubble'
+import { useState } from 'react'
 import type { JoinApplicantProfile } from '@/domain/services/bubble-join-service'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleLookup } from '@/application/hooks/use-bubble-lookup'
 import { JoinFlow } from '@/presentation/components/bubble/join-flow'
-import { bubbleRepo } from '@/shared/di/container'
 
 interface BubbleJoinContainerProps {
   bubbleId: string
@@ -22,13 +21,8 @@ export function BubbleJoinContainer({ bubbleId, isOpen, onClose, onSuccess }: Bu
   const { requestJoin, follow, isLoading } = useBubbleJoin()
   const { records } = useRecordsWithTarget(user?.id ?? null)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
-  const [bubble, setBubble] = useState<Bubble | null>(null)
+  const { bubble } = useBubbleLookup(isOpen ? bubbleId : null)
   const [eligibilityError, setEligibilityError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isOpen || !bubbleId) return
-    bubbleRepo.findById(bubbleId).then(setBubble)
-  }, [isOpen, bubbleId])
 
   if (!bubble || !user) return null
 

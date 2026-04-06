@@ -37,18 +37,35 @@ export function chipsToFilterRules(chips: FilterChipItem[]): FilterRule[] {
     if (isAdvancedChip(chip)) {
       rules.push(...chip.rules)
     } else {
-      // status:all은 필터 없음
-      if (chip.attribute === 'status' && chip.value === 'all') continue
+      // view:all / status:all 은 필터 없음
+      if ((chip.attribute === 'view' || chip.attribute === 'status') && String(chip.value) === 'all') continue
+      // location:nearby는 후속 GPS 구현까지 스킵
+      if (chip.attribute === 'location' && String(chip.value) === 'nearby') continue
       // cascading "전체" 칩은 필터에서 제외
       if (chip.value === CASCADING_ALL) continue
+
       // filterKey 우선, 없으면 cascading base key, 아니면 attribute 그대로
       const attribute = chip.filterKey
         ?? (isCascadingKey(chip.attribute) ? getCascadingBaseKey(chip.attribute) : chip.attribute)
-      rules.push({
-        attribute,
-        operator: chip.operator,
-        value: chip.value,
-      })
+
+      // multi-select: 쉼표 value → 복수 OR rules
+      if (String(chip.value).includes(',')) {
+        const values = String(chip.value).split(',')
+        for (const v of values) {
+          rules.push({
+            conjunction: 'or',
+            attribute,
+            operator: chip.operator,
+            value: v.trim(),
+          })
+        }
+      } else {
+        rules.push({
+          attribute,
+          operator: chip.operator,
+          value: chip.value,
+        })
+      }
     }
   }
   return rules

@@ -6,18 +6,19 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleIconUpload } from '@/application/hooks/use-bubble-icon-upload'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
-import { uploadBubbleIcon, bubbleRepo } from '@/shared/di/container'
 
 export function BubbleCreateContainer() {
   const router = useRouter()
   const { user } = useAuth()
-  const { createBubble, isLoading: isCreating } = useBubbleCreate()
+  const { createBubble, updateMemberAfterCreate, isLoading: isCreating } = useBubbleCreate()
   const { records } = useRecordsWithTarget(user?.id ?? null)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
+  const { upload: uploadIcon } = useBubbleIconUpload()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (data: {
@@ -51,7 +52,7 @@ export function BubbleCreateContainer() {
       })
 
       // 정보공개 범위 → bubble_members.visibility_override (이 버블 개별)
-      await bubbleRepo.updateMember(result.bubble.id, user.id, {
+      await updateMemberAfterCreate(result.bubble.id, user.id, {
         visibilityOverride: data.privacy.visibilityOverride,
       })
 
@@ -70,8 +71,8 @@ export function BubbleCreateContainer() {
 
   const handleUploadPhoto = useCallback(async (file: File): Promise<string> => {
     if (!user) throw new Error('Not authenticated')
-    return uploadBubbleIcon(file, user.id)
-  }, [user])
+    return uploadIcon(file, user.id)
+  }, [user, uploadIcon])
 
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">

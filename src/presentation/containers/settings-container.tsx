@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
-import { bubbleRepo } from '@/shared/di/container'
+import { useCleanManualShares } from '@/application/hooks/use-clean-manual-shares'
 import { SettingsSection } from '@/presentation/components/settings/settings-section'
 import { SettingsCard } from '@/presentation/components/settings/settings-card'
 import { SettingsItem } from '@/presentation/components/settings/settings-item'
@@ -140,7 +140,7 @@ export function SettingsContainer() {
     exportData, importData, clearCache,
   } = useSettings()
 
-  const [isCleaningManualShares, setIsCleaningManualShares] = useState(false)
+  const { cleanShares, isLoading: isCleaningManualShares } = useCleanManualShares()
   const [manualShareCleanResult, setManualShareCleanResult] = useState<string | null>(null)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
@@ -462,14 +462,11 @@ export function SettingsContainer() {
               showChevron
               onPress={async () => {
                 if (isCleaningManualShares) return
-                setIsCleaningManualShares(true)
                 try {
-                  const count = await bubbleRepo.cleanManualShares(user?.id ?? '')
+                  const count = await cleanShares(user?.id ?? '')
                   setManualShareCleanResult(count > 0 ? `${count}건 삭제됨` : '정리할 항목 없음')
                 } catch {
                   setManualShareCleanResult('정리 실패')
-                } finally {
-                  setIsCleaningManualShares(false)
                 }
               }}
             />

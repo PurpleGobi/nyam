@@ -5,7 +5,8 @@ import type { Wine } from '@/domain/entities/wine'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { QuadrantRefDot, BubbleScoreRow } from '@/domain/repositories/restaurant-repository'
-import type { LinkedRestaurantCard, WineRepository } from '@/domain/repositories/wine-repository'
+import type { LinkedRestaurantCard } from '@/domain/repositories/wine-repository'
+import { wineRepo } from '@/shared/di/container'
 
 export interface WineNyamScoreBreakdown {
   vivinoRating: number | null
@@ -39,8 +40,8 @@ export interface WineDetailState {
 export function useWineDetail(
   wineId: string,
   userId: string | null,
-  repo: WineRepository,
 ): WineDetailState {
+  const repo = wineRepo
   const [wine, setWine] = useState<Wine | null>(null)
   const [myRecords, setMyRecords] = useState<DiningRecord[]>([])
   const [recordPhotos, setRecordPhotos] = useState<Map<string, RecordPhoto[]>>(new Map())

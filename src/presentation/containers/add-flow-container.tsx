@@ -10,7 +10,7 @@ import { useAddFlow } from '@/application/hooks/use-add-flow'
 import { useCameraCapture } from '@/application/hooks/use-camera-capture'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
-import { photoRepo, imageService } from '@/shared/di/container'
+import { usePhotoManagement } from '@/application/hooks/use-photo-management'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -51,6 +51,7 @@ function AddFlowInner() {
   const { isRecognizing, result, identify, reset: resetCamera } = useCameraCapture()
   const { createRecord, isLoading: isQuickAdding } = useCreateRecord()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
+  const { savePhotos: savePhotoRecords, deleteImage, resizeAndUploadImage } = usePhotoManagement()
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
   // Phase 1 업로드 상태: 사진은 즉시 업로드, 기록 미완료 시 삭제
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null)
@@ -86,7 +87,7 @@ function AddFlowInner() {
     const completed = recordCompleted
     return () => {
       if (url && !completed) {
-        imageService.deleteImage(url).catch(() => {})
+        deleteImage(url).catch(() => {})
       }
     }
   }, [tempPhotoUrl, recordCompleted])
@@ -113,7 +114,7 @@ function AddFlowInner() {
   const uploadCapturedPhoto = useCallback(async (recordId: string) => {
     if (!tempPhotoUrl) return
     try {
-      await photoRepo.savePhotos(recordId, [{
+      await savePhotoRecords(recordId, [{
         url: tempPhotoUrl,
         orderIndex: 0,
         exifLat: tempExif.lat,
@@ -137,13 +138,12 @@ function AddFlowInner() {
   const uploadFile = useCallback(async (file: File): Promise<string | null> => {
     if (!user) return null
     try {
-      const resizedBlob = await imageService.resizeImage(file)
       const fileId = crypto.randomUUID()
-      return await imageService.uploadImage(user.id, 'pending', resizedBlob, fileId)
+      return await resizeAndUploadImage(file, user.id, 'pending', fileId)
     } catch {
       return null
     }
-  }, [user])
+  }, [user, resizeAndUploadImage])
 
   const handleShelfMode = useCallback(
     async (file: File) => {

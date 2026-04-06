@@ -16,6 +16,7 @@ import { SupabaseSettingsRepository } from '@/infrastructure/repositories/supaba
 import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabase-comment-repository'
 import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository'
 import { SupabaseOnboardingRepository } from '@/infrastructure/repositories/supabase-onboarding-repository'
+import { SupabaseFilterStateRepository } from '@/infrastructure/repositories/supabase-filter-state-repository'
 import { resizeImage, uploadImage, deleteImage } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
@@ -33,6 +34,7 @@ import type { SettingsRepository } from '@/domain/repositories/settings-reposito
 import type { CommentRepository } from '@/domain/repositories/comment-repository'
 import type { ReactionRepository } from '@/domain/repositories/reaction-repository'
 import type { OnboardingRepository } from '@/domain/repositories/onboarding-repository'
+import type { FilterStateRepository } from '@/domain/repositories/filter-state-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -57,6 +59,7 @@ export const settingsRepo: SettingsRepository = new SupabaseSettingsRepository()
 export const commentRepo: CommentRepository = new SupabaseCommentRepository()
 export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 export const onboardingRepo: OnboardingRepository = new SupabaseOnboardingRepository()
+export const filterStateRepo: FilterStateRepository = new SupabaseFilterStateRepository()
 
 /** Upload a bubble icon image: resize to 256x256 WebP, store in avatars bucket */
 export async function uploadBubbleIcon(file: File, userId: string): Promise<string> {

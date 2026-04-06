@@ -12,7 +12,7 @@ import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { BubbleMiniHeader } from '@/presentation/components/bubble/bubble-mini-header'
-import { wineRepo, recordRepo, xpRepo, bubbleRepo } from '@/shared/di/container'
+import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
 import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
@@ -55,10 +55,10 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [quadrantMode, setQuadrantMode] = useState<'avg' | 'recent'>('avg')
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
   const { showToast } = useToast()
+  const { deleteRecord, isDeleting } = useDeleteRecord()
   const [showPriceReview, setShowPriceReview] = useState(false)
   const [bubbleExpanded, setBubbleExpanded] = useState(false)
 
@@ -74,10 +74,10 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     latestTastingDate,
     myAvgScore,
     bubbleAvgScore,
-  } = useWineDetail(wineId, user?.id ?? null, wineRepo)
+  } = useWineDetail(wineId, user?.id ?? null)
 
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(
-    user?.id ?? null, wineId, 'wine', recordRepo,
+    user?.id ?? null, wineId, 'wine',
   )
 
   // 세부 축 레벨 (산지, 품종)
@@ -191,45 +191,24 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
   const handleRecordDelete = useCallback(async () => {
     if (!activeRecordId || !user) return
-    setIsDeleting(true)
     try {
-      const [histories, shares] = await Promise.all([
-        xpRepo.getHistoriesByRecord(activeRecordId),
-        bubbleRepo.getRecordShares(activeRecordId).catch(() => []),
-      ])
-
-      await recordRepo.delete(activeRecordId)
-
-      try {
-        if (histories.length > 0) {
-          let totalXpToDeduct = 0
-          for (const h of histories) totalXpToDeduct += h.xpAmount
-          await xpRepo.updateUserTotalXp(user.id, -totalXpToDeduct)
-          await xpRepo.deleteByRecordId(activeRecordId)
-        }
-      } catch {
-        // CASCADE로 이미 삭제된 경우 무시
-      }
+      const result = await deleteRecord(activeRecordId, user.id, wineId, 'wine')
 
       setShowDeleteConfirm(false)
       setSelectedRecordId(null)
       showToast('기록이 삭제되었습니다')
-      if (shares.length > 0) {
-        showToast(`${shares.length}개 버블 공유도 함께 삭제되었습니다`)
+      if (result.sharesCount > 0) {
+        showToast(`${result.sharesCount}개 버블 공유도 함께 삭제되었습니다`)
       }
-
-      const remaining = await recordRepo.findByUserAndTarget(user.id, wineId).catch(() => [])
-      if (remaining.length > 0) {
-        showToast(`이 와인의 기록이 ${remaining.length}건 남아있습니다`)
+      if (result.remainingCount > 0) {
+        showToast(`이 와인의 기록이 ${result.remainingCount}건 남아있습니다`)
       }
 
       router.replace('/')
     } catch {
       showToast('삭제에 실패했습니다')
-    } finally {
-      setIsDeleting(false)
     }
-  }, [activeRecordId, user, router, wineId, showToast])
+  }, [activeRecordId, user, router, wineId, showToast, deleteRecord])
 
   // ─── 향 휠 합산 ───
   const mergedAroma: AromaSelection = useMemo(() => {
