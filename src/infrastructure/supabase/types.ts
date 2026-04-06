@@ -28,8 +28,10 @@ export interface Database {
           taste_tags: string[] | null
           taste_updated_at: string | null
           preferred_areas: string[] | null
-          privacy_profile: 'public' | 'bubble_only' | 'private'
-          privacy_records: 'all' | 'shared_only'
+          is_public: boolean
+          follow_policy: 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
+          follow_min_records: number | null
+          follow_min_level: number | null
           visibility_public: Json
           visibility_bubble: Json
           notify_push: boolean
@@ -75,8 +77,10 @@ export interface Database {
           taste_tags?: string[] | null
           taste_updated_at?: string | null
           preferred_areas?: string[] | null
-          privacy_profile?: 'public' | 'bubble_only' | 'private'
-          privacy_records?: 'all' | 'shared_only'
+          is_public?: boolean
+          follow_policy?: 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
+          follow_min_records?: number | null
+          follow_min_level?: number | null
           visibility_public?: Json
           visibility_bubble?: Json
           notify_push?: boolean
@@ -122,8 +126,10 @@ export interface Database {
           taste_tags?: string[] | null
           taste_updated_at?: string | null
           preferred_areas?: string[] | null
-          privacy_profile?: 'public' | 'bubble_only' | 'private'
-          privacy_records?: 'all' | 'shared_only'
+          is_public?: boolean
+          follow_policy?: 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
+          follow_min_records?: number | null
+          follow_min_level?: number | null
           visibility_public?: Json
           visibility_bubble?: Json
           notify_push?: boolean

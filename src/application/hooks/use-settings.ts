@@ -4,7 +4,7 @@ import useSWR, { useSWRConfig } from 'swr'
 import { useCallback, useRef } from 'react'
 import { settingsRepo } from '@/shared/di/container'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import type { VisibilityConfig, PrivacyProfile, PrivacyRecords, DeleteMode } from '@/domain/entities/settings'
+import type { VisibilityConfig, FollowPolicy, DeleteMode } from '@/domain/entities/settings'
 
 const DEBOUNCE_MS = 500
 
@@ -25,21 +25,31 @@ export function useSettings() {
 
   // ── 프라이버시 ──
 
-  const updatePrivacyProfile = useCallback(async (value: PrivacyProfile) => {
+  const updateIsPublic = useCallback(async (value: boolean) => {
     if (!userId || !settings) return
-    mutate(['settings', userId], { ...settings, privacyProfile: value }, false)
+    mutate(['settings', userId], { ...settings, isPublic: value }, false)
     try {
-      await settingsRepo.updatePrivacyProfile(userId, value)
+      await settingsRepo.updateIsPublic(userId, value)
     } catch {
       mutate(['settings', userId])
     }
   }, [userId, settings, mutate])
 
-  const updatePrivacyRecords = useCallback(async (value: PrivacyRecords) => {
+  const updateFollowPolicy = useCallback(async (value: FollowPolicy) => {
     if (!userId || !settings) return
-    mutate(['settings', userId], { ...settings, privacyRecords: value }, false)
+    mutate(['settings', userId], { ...settings, followPolicy: value }, false)
     try {
-      await settingsRepo.updatePrivacyRecords(userId, value)
+      await settingsRepo.updateFollowPolicy(userId, value)
+    } catch {
+      mutate(['settings', userId])
+    }
+  }, [userId, settings, mutate])
+
+  const updateFollowConditions = useCallback(async (minRecords: number | null, minLevel: number | null) => {
+    if (!userId || !settings) return
+    mutate(['settings', userId], { ...settings, followMinRecords: minRecords, followMinLevel: minLevel }, false)
+    try {
+      await settingsRepo.updateFollowConditions(userId, minRecords, minLevel)
     } catch {
       mutate(['settings', userId])
     }
@@ -182,8 +192,9 @@ export function useSettings() {
     bubbleOverrides,
     isLoading,
     error,
-    updatePrivacyProfile,
-    updatePrivacyRecords,
+    updateIsPublic,
+    updateFollowPolicy,
+    updateFollowConditions,
     updateVisibilityPublic,
     updateVisibilityBubble,
     updateBubbleVisibility,

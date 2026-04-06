@@ -15,7 +15,6 @@ import { SettingsSection } from '@/presentation/components/settings/settings-sec
 import { SettingsCard } from '@/presentation/components/settings/settings-card'
 import { SettingsItem } from '@/presentation/components/settings/settings-item'
 import { Toggle } from '@/presentation/components/settings/toggle'
-import { SegmentControl } from '@/presentation/components/settings/segment-control'
 import { PrivacyLayer } from '@/presentation/components/settings/privacy-layer'
 import { PrivacySummary } from '@/presentation/components/settings/privacy-summary'
 import { PrivacyNote } from '@/presentation/components/settings/privacy-note'
@@ -28,15 +27,11 @@ import { FabBack } from '@/presentation/components/layout/fab-back'
 import type { VisibilityConfig, DeleteMode, BubblePrivacyOverride } from '@/domain/entities/settings'
 import { TIMEZONE_OPTIONS, detectBrowserTimezone } from '@/shared/utils/date-format'
 
-const PRIVACY_PROFILE_OPTIONS = [
-  { value: 'public', label: '전체 공개' },
-  { value: 'bubble_only', label: '버블만' },
-  { value: 'private', label: '비공개' },
-]
-
-const PRIVACY_RECORDS_OPTIONS = [
-  { value: 'shared_only', label: '공유한 기록만' },
-  { value: 'all', label: '모든 기록' },
+const FOLLOW_POLICY_OPTIONS = [
+  { value: 'blocked', label: '차단' },
+  { value: 'auto_approve', label: '자동 승인' },
+  { value: 'manual_approve', label: '승인제' },
+  { value: 'conditional', label: '조건부' },
 ]
 
 const LANDING_OPTIONS = [
@@ -132,7 +127,7 @@ export function SettingsContainer() {
   const { signOut, user } = useAuth()
   const {
     settings, bubbleOverrides, isLoading,
-    updatePrivacyProfile, updatePrivacyRecords,
+    updateIsPublic, updateFollowPolicy, updateFollowConditions,
     updateVisibilityPublic, updateVisibilityBubble,
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
@@ -219,38 +214,72 @@ export function SettingsContainer() {
         <SettingsSection title="프라이버시">
           <SettingsCard padding>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '10px' }}>
-              기본 공개 대상
+              공개 범위
             </div>
-            <SegmentControl
-              options={PRIVACY_PROFILE_OPTIONS}
-              value={settings.privacyProfile}
-              onChange={(v) => updatePrivacyProfile(v as 'public' | 'bubble_only' | 'private')}
-              variant="privacy"
+            <SettingsItem
+              icon={<Globe size={18} />}
+              label="전체 공개"
+              rightElement={<Toggle checked={settings.isPublic} onChange={(v) => updateIsPublic(v)} />}
             />
 
-            {settings.privacyProfile !== 'private' && (
+            {!settings.isPublic && (
               <div style={{ marginTop: '14px' }}>
                 <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '8px' }}>
-                  기록은 어디까지?
+                  팔로우 허용 정책
                 </div>
-                <SegmentControl
-                  options={PRIVACY_RECORDS_OPTIONS}
-                  value={settings.privacyRecords}
-                  onChange={(v) => updatePrivacyRecords(v as 'all' | 'shared_only')}
+                <NyamSelect
+                  options={FOLLOW_POLICY_OPTIONS}
+                  value={settings.followPolicy}
+                  onChange={(v) => updateFollowPolicy(v as 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional')}
                 />
+
+                {settings.followPolicy === 'conditional' && (
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '12px' }}>
+                    <label className="flex-1">
+                      <span className="mb-1 block" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>최소 기록 수</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={settings.followMinRecords ?? ''}
+                        placeholder="제한 없음"
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : Number(e.target.value)
+                          updateFollowConditions(val, settings.followMinLevel)
+                        }}
+                        className="w-full rounded-lg px-3 py-2"
+                        style={{ fontSize: '14px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                      />
+                    </label>
+                    <label className="flex-1">
+                      <span className="mb-1 block" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>최소 레벨</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={settings.followMinLevel ?? ''}
+                        placeholder="제한 없음"
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : Number(e.target.value)
+                          updateFollowConditions(settings.followMinRecords, val)
+                        }}
+                        className="w-full rounded-lg px-3 py-2"
+                        style={{ fontSize: '14px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
             )}
 
             <PrivacySummary
-              privacyProfile={settings.privacyProfile}
-              privacyRecords={settings.privacyRecords}
+              isPublic={settings.isPublic}
+              followPolicy={settings.followPolicy}
             />
           </SettingsCard>
         </SettingsSection>
 
         {/* 전체에게 보이는 항목 (전체 공개일 때만) */}
         <PrivacyLayer
-          visible={settings.privacyProfile === 'public'}
+          visible={settings.isPublic}
           dotColor="var(--positive)"
           title="전체에게 보이는 항목"
           note="프로필 방문자·검색 결과 등에서 모든 사용자에게 보이는 범위"
@@ -275,9 +304,9 @@ export function SettingsContainer() {
           ))}
         </PrivacyLayer>
 
-        {/* 버블 멤버 기본 공개 (전체/버블만 시) */}
+        {/* 버블 멤버 기본 공개 (항상 표시 -- 비공개여도 버블 공유 허용) */}
         <PrivacyLayer
-          visible={settings.privacyProfile !== 'private'}
+          visible={true}
           dotColor="var(--accent-social)"
           title="버블 멤버 기본 공개"
           note="모든 버블의 기본값입니다. 아래에서 버블별로 다르게 설정할 수 있습니다."
@@ -297,9 +326,9 @@ export function SettingsContainer() {
           ))}
         </PrivacyLayer>
 
-        {/* 버블별 설정 */}
+        {/* 버블별 설정 (항상 표시 -- 비공개여도 버블 공유 허용) */}
         <PrivacyLayer
-          visible={settings.privacyProfile !== 'private'}
+          visible={true}
           dotColor="var(--caution)"
           title="버블별 설정"
         >
@@ -344,8 +373,8 @@ export function SettingsContainer() {
           )}
         </PrivacyLayer>
 
-        {/* 프라이버시 안내 */}
-        {settings.privacyProfile !== 'private' && (
+        {/* 프라이버시 안내 (항상 표시) */}
+        {(
           <div style={{ padding: '8px 24px 0' }}>
             <PrivacyNote />
           </div>

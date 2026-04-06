@@ -29,8 +29,8 @@ export async function GET(request: Request) {
             avatar_url: meta?.avatar_url ?? null,
             auth_provider: user.app_metadata?.provider ?? 'google',
             auth_provider_id: user.app_metadata?.provider_id ?? user.id,
-            privacy_profile: 'bubble_only',
-            privacy_records: 'shared_only',
+            is_public: false,
+            follow_policy: 'blocked',
           })
         }
       }

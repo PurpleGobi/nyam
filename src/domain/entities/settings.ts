@@ -12,11 +12,8 @@ export interface VisibilityConfig {
   price: boolean
 }
 
-/** 프라이버시 프로필 공개 범위 */
-export type PrivacyProfile = 'public' | 'bubble_only' | 'private'
-
-/** 기록 공개 범위 */
-export type PrivacyRecords = 'all' | 'shared_only'
+/** 팔로우 허용 정책 */
+export type FollowPolicy = 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
 
 /** 계정 삭제 모드 */
 export type DeleteMode = 'anonymize' | 'hard_delete'
@@ -29,8 +26,10 @@ export interface UserSettings {
   avatarUrl: string | null
 
   // 프라이버시
-  privacyProfile: PrivacyProfile
-  privacyRecords: PrivacyRecords
+  isPublic: boolean
+  followPolicy: FollowPolicy
+  followMinRecords: number | null
+  followMinLevel: number | null
   visibilityPublic: VisibilityConfig
   visibilityBubble: VisibilityConfig
 

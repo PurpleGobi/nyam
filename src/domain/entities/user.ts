@@ -1,7 +1,6 @@
 import type { AuthProvider } from './auth'
 
-export type PrivacyProfile = 'public' | 'bubble_only' | 'private'
-export type PrivacyRecords = 'all' | 'shared_only'
+export type FollowPolicy = 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
 
 export interface User {
   id: string
@@ -15,8 +14,10 @@ export interface User {
   taste_tags: string[] | null
   taste_updated_at: string | null
   preferred_areas: string[] | null
-  privacy_profile: PrivacyProfile
-  privacy_records: PrivacyRecords
+  is_public: boolean
+  follow_policy: FollowPolicy
+  follow_min_records: number | null
+  follow_min_level: number | null
   visibility_public: VisibilityConfig
   visibility_bubble: VisibilityConfig
   notify_push: boolean

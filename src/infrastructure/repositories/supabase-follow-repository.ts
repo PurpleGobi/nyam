@@ -6,19 +6,31 @@ export class SupabaseFollowRepository implements FollowRepository {
   private get supabase() { return createClient() }
 
   async follow(followerId: string, followingId: string): Promise<Follow> {
-    // privacy_profile='private' 차단
+    // follow_policy 기반 팔로우 정책 확인
     const { data: target } = await this.supabase
       .from('users')
-      .select('privacy_profile')
+      .select('is_public, follow_policy')
       .eq('id', followingId)
       .single()
-    if (target?.privacy_profile === 'private') {
-      throw new Error('비공개 프로필은 팔로우할 수 없습니다')
+
+    if (!target?.is_public && target?.follow_policy === 'blocked') {
+      throw new Error('팔로우가 차단된 프로필입니다')
+    }
+
+    // follow_policy에 따른 status 결정
+    let status: FollowStatus = 'pending'
+    if (target?.is_public || target?.follow_policy === 'auto_approve') {
+      status = 'accepted'
+    } else if (target?.follow_policy === 'manual_approve') {
+      status = 'pending'
+    } else if (target?.follow_policy === 'conditional') {
+      // conditional 로직은 후속 구현. 보수적으로 pending 처리
+      status = 'pending'
     }
 
     const { data, error } = await this.supabase
       .from('follows')
-      .insert({ follower_id: followerId, following_id: followingId, status: 'accepted' })
+      .insert({ follower_id: followerId, following_id: followingId, status })
       .select()
       .single()
     if (error) throw new Error(`팔로우 실패: ${error.message}`)

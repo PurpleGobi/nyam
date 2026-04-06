@@ -128,40 +128,37 @@
 
 | 항목 | 정책 | 근거 |
 |------|------|------|
-| **유저 검색** | 자유 (인증 사용자 누구나) | 버블 초대, 팔로우에 필수. `privacy_profile`과 무관하게 검색 가능 (RLS: `users_authenticated_search`) |
-| **팔로우** | 자유 (승인 없이 즉시 수락) | 진입장벽 최소화. `follows.status` 기본값 `'accepted'` |
-| **프로필 열람** | `privacy_profile` 설정에 따라 제한 | §3-1 참조 |
-| **기록 열람** | `privacy_records` 설정에 따라 제한 | §3-2 참조 |
+| **유저 검색** | 자유 (인증 사용자 누구나) | 버블 초대, 팔로우에 필수. `is_public`과 무관하게 검색 가능 (RLS: `users_authenticated_search`) |
+| **팔로우** | `follow_policy`에 따라 차단/자동승인/승인제/조건부 | §3-2 참조 |
+| **프로필 열람** | `is_public` + 팔로우 관계에 따라 제한 | §3-1 참조 |
+| **기록 열람** | `is_public` + 팔로우 관계 + 버블 공유에 따라 제한 | §3-1 참조 |
 
-> **설계 원칙**: 검색·팔로우는 항상 자유. 공개 범위 제한은 **콘텐츠 열람** 단계에서만 적용.
-> `follows.status`의 `'pending'`/`'rejected'`는 향후 승인제 팔로우 도입 시를 위한 예약 값이며, 현재는 사용하지 않음.
+> **설계 원칙**: "기본은 비공개, 허용한 관계에만 열린다". 검색은 자유, 콘텐츠 접근은 관계 기반.
 
-### 3-1. 프로필 공개 범위
+### 3-1. 공개 범위
 
-> DB: `users.privacy_profile`
-
-| 값 | 의미 |
-|----|------|
-| `public` | 모든 사용자에게 프로필 공개, 팔로우 가능 |
-| `bubble_only` (기본값) | 같은 버블 멤버만 프로필 열람 |
-| `private` | 나만 열람, 버블 공유 불가 |
-
-> **참고**: 버블 멤버 초대를 위한 유저 검색 RLS(§4-1 `users_authenticated_search`)가 `privacy_profile`과 무관하게 인증 사용자에게 SELECT를 허용하므로, 위 제한은 RLS가 아닌 **application layer**에서 강제됨.
-
-### 3-2. 기록 공개 범위
-
-> DB: `users.privacy_records`
+> DB: `users.is_public` (BOOLEAN, 기본 false)
 
 | 값 | 의미 |
 |----|------|
-| `all` | 프로필 방문자 누구에게나 전체 기록 공개 |
-| `followers_only` | 나를 팔로우한 사용자에게만 기록 공개 |
-| `shared_only` (기본값) | 버블에 공유한 기록만 해당 버블 멤버에게 노출 |
+| `true` | 모든 사용자에게 프로필/기록 공개, 누구나 팔로우 가능 |
+| `false` (기본값) | 비공개. 팔로우 정책(`follow_policy`)에 따라 허용된 팔로워 + 버블 공유만 접근 |
 
-> `privacy_profile = 'private'`이면 프로필 자체가 비공개이므로 기록도 접근 불가.
->
-> **설계 판단**: 리스트별(식당/와인 분리) 세분화는 하지 않음 — 계정 단위 1개 설정으로 충분.
-> 설정 UI 복잡도와 "쉽고 빠르게" 원칙 사이의 균형. 사용자 피드백에 따라 v2+ 에서 세분화 가능.
+> **참고**: `is_public = false`여도 버블 공유는 허용. 버블 가입 자체가 공유 허용 의사 표현이므로.
+
+### 3-2. 팔로우 허용 정책
+
+> DB: `users.follow_policy` (VARCHAR(20), 기본 'blocked')
+
+| 값 | 의미 |
+|----|------|
+| `blocked` | 팔로우 불가 (비공개 + 팔로우 차단) |
+| `auto_approve` | 팔로우 요청 즉시 수락 |
+| `manual_approve` | 팔로우 요청 대기 → 유저가 승인/거절 |
+| `conditional` | 조건 충족 시 자동 수락, 미충족 시 대기 |
+
+> `is_public = true`이면 `follow_policy` 무시 (누구나 자유 팔로우).
+> `conditional`일 때 조건: `follow_min_records` (최소 기록 수), `follow_min_level` (최소 레벨). NULL이면 해당 조건 없음.
 
 ### 3-3. 가시성 토글 3계층
 
@@ -188,7 +185,8 @@
 
 ### 3-5. 핵심 원칙
 
-- `privacy_profile = 'private'` → 어떤 버블이든 **공유 자체 차단** (프로필 비공개 = 공유 불가)
+- 비공개(`is_public = false`)여도 버블 공유는 허용 (버블 가입 자체가 허용 의사)
+- `follow_policy = 'blocked'`이면 팔로우 불가, 기존 팔로워에게도 기록 비공개 (RLS `records_followers`에서 차단)
 - 동반자 정보(`records.companions`)는 **무조건 비공개** (나만 열람, 토글 없음)
 - 추천 알고리즘은 설정과 무관하게 **내 모든 기록을 내부적으로 사용**
 - 식당/와인 상세 **익명 집계**(평균 점수, 사분면 분포)에는 항상 포함
@@ -206,11 +204,11 @@
 | 정책 | 동작 | 조건 | 구현 |
 |------|------|------|------|
 | `users_own` | ALL | `id = auth.uid()` | 012 |
-| `users_public` | SELECT | `privacy_profile = 'public'` | 012 |
-| `users_bubble` | SELECT | `privacy_profile = 'bubble_only'` + 같은 버블 active 멤버 | 012 |
+| `users_public` | SELECT | `is_public = true` | 047 |
+| `users_bubble` | SELECT | `NOT is_public` + 같은 버블 active 멤버 | 047 |
 | `users_authenticated_search` | SELECT | 인증된 사용자 (`auth.uid() IS NOT NULL`) — 버블 멤버 초대 시 유저 검색용 | 042 |
 
-> **주의**: `users_authenticated_search`(042)는 `privacy_profile` 무관하게 모든 인증 사용자에게 SELECT 허용. 이로 인해 `users_public`/`users_bubble`의 프라이버시 필터링은 RLS 레벨에서 사실상 무력화됨. §3-1의 프로필 공개 범위(`bubble_only`, `private`) 제한은 **application layer**에서 쿼리 조건 또는 SELECT 컬럼 제한(`id`, `nickname`, `handle`, `email`, `avatar_url`, `avatar_color`)으로 구현 필요.
+> **주의**: `users_authenticated_search`(042)는 `is_public` 무관하게 모든 인증 사용자에게 SELECT 허용. 이로 인해 `users_public`/`users_bubble`의 프라이버시 필터링은 RLS 레벨에서 사실상 무력화됨. 프로필 공개 범위 제한은 **application layer**에서 쿼리 조건 또는 SELECT 컬럼 제한으로 구현 필요.
 
 ### 4-2. restaurants (3 정책)
 | 정책 | 동작 | 조건 |
@@ -236,9 +234,9 @@
 | 정책 | 동작 | 조건 | 구현 |
 |------|------|------|------|
 | `records_own` | ALL | `user_id = auth.uid()` | 012 |
-| `records_public` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile='public'` | 012 |
-| `records_bubble_all` | SELECT | 작성자 `privacy_records='all'` + `privacy_profile!='private'` + 같은 버블 | 012 |
-| `records_bubble_shared` | SELECT | 작성자 `privacy_profile!='private'` + `bubble_shares` 경유 공유된 기록 | 012 |
+| `records_public` | SELECT | 작성자 `is_public = true` | 047 |
+| `records_bubble_shared` | SELECT | `bubble_shares` 경유 공유된 기록 (privacy 조건 없음) | 047 |
+| `records_followers` | SELECT | 팔로워(`follows.status='accepted'`) + 작성자 `follow_policy != 'blocked'` | 047 |
 | `records_bubble_member_read` | SELECT | 같은 버블 active 멤버의 기록 열람 | 033 |
 
 > **주의**: `companions`, `private_note` 필드는 RLS(row-level)로는 컬럼 단위 제한이 불가하여, SELECT 통과 시 다른 사용자에게도 노출될 수 있음. 비공개 처리는 **application layer**에서 구현 필요 (§3-5 "동반자 정보 무조건 비공개" 원칙).
@@ -275,7 +273,7 @@
 | 정책 | 동작 | 조건 |
 |------|------|------|
 | `bubble_share_read` | SELECT | active 멤버 |
-| `bubble_share_insert` | INSERT | 본인 기록 + active 멤버(owner/admin/member) + `privacy_profile != 'private'` |
+| `bubble_share_insert` | INSERT | 본인 기록 + active 멤버(owner/admin/member) (privacy 조건 없음) |
 | `bubble_share_delete` | DELETE | 공유자 본인만 |
 
 ### 4-10. comments (1 정책)

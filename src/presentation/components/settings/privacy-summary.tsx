@@ -1,23 +1,22 @@
 'use client'
 
-import type { PrivacyProfile, PrivacyRecords } from '@/domain/entities/settings'
+import type { FollowPolicy } from '@/domain/entities/settings'
 
 interface PrivacySummaryProps {
-  privacyProfile: PrivacyProfile
-  privacyRecords: PrivacyRecords
+  isPublic: boolean
+  followPolicy: FollowPolicy
 }
 
 const SUMMARY_MAP: Record<string, string> = {
-  'public|shared_only': '모든 사용자가 프로필을 볼 수 있습니다. 버블에 공유한 기록만 해당 버블에서 보입니다.',
-  'public|all': '모든 사용자가 프로필을 볼 수 있습니다. 내 모든 기록이 공개됩니다.',
-  'bubble_only|shared_only': '같은 버블 멤버만 프로필을 볼 수 있고, 내가 공유한 기록만 해당 버블에서 보입니다.',
-  'bubble_only|all': '같은 버블 멤버만 프로필을 볼 수 있고, 내 모든 기록을 볼 수 있습니다.',
-  'private|shared_only': '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다. 추천 알고리즘에는 여전히 반영됩니다.',
-  'private|all': '프로필과 기록이 나에게만 보입니다. 버블 공유도 불가합니다. 추천 알고리즘에는 여전히 반영됩니다.',
+  'true': '모든 사용자가 내 프로필과 기록을 볼 수 있습니다. 누구나 자유롭게 팔로우할 수 있습니다.',
+  'false|blocked': '프로필과 기록이 나에게만 보입니다. 팔로우가 차단되어 있습니다. 버블 공유는 가능합니다.',
+  'false|auto_approve': '프로필과 기록이 비공개입니다. 팔로우 요청은 자동으로 승인됩니다.',
+  'false|manual_approve': '프로필과 기록이 비공개입니다. 팔로우 요청을 직접 승인해야 합니다.',
+  'false|conditional': '프로필과 기록이 비공개입니다. 조건을 충족하는 유저만 자동 승인, 나머지는 승인제입니다.',
 }
 
-export function PrivacySummary({ privacyProfile, privacyRecords }: PrivacySummaryProps) {
-  const key = `${privacyProfile}|${privacyRecords}`
+export function PrivacySummary({ isPublic, followPolicy }: PrivacySummaryProps) {
+  const key = isPublic ? 'true' : `false|${followPolicy}`
   const text = SUMMARY_MAP[key] ?? ''
 
   return (

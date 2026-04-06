@@ -1,8 +1,8 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
-import type { UserSettings, VisibilityConfig, PrivacyProfile, PrivacyRecords, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
+import type { UserSettings, VisibilityConfig, FollowPolicy, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
 
-const SETTINGS_SELECT = 'nickname, bio, avatar_url, privacy_profile, privacy_records, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_timezone, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
+const SETTINGS_SELECT = 'nickname, bio, avatar_url, is_public, follow_policy, follow_min_records, follow_min_level, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_timezone, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
 
 export class SupabaseSettingsRepository implements SettingsRepository {
   private get supabase() {
@@ -22,8 +22,10 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       nickname: data.nickname as string,
       bio: data.bio as string | null,
       avatarUrl: data.avatar_url as string | null,
-      privacyProfile: (data.privacy_profile as PrivacyProfile) ?? 'bubble_only',
-      privacyRecords: (data.privacy_records as PrivacyRecords) ?? 'shared_only',
+      isPublic: (data.is_public as boolean) ?? false,
+      followPolicy: (data.follow_policy as FollowPolicy) ?? 'blocked',
+      followMinRecords: data.follow_min_records as number | null,
+      followMinLevel: data.follow_min_level as number | null,
       visibilityPublic: data.visibility_public as VisibilityConfig,
       visibilityBubble: data.visibility_bubble as VisibilityConfig,
       notifyPush: (data.notify_push as boolean) ?? true,
@@ -68,13 +70,18 @@ export class SupabaseSettingsRepository implements SettingsRepository {
 
   // ── 프라이버시 ──
 
-  async updatePrivacyProfile(userId: string, value: PrivacyProfile): Promise<void> {
-    const { error } = await this.supabase.from('users').update({ privacy_profile: value }).eq('id', userId)
+  async updateIsPublic(userId: string, value: boolean): Promise<void> {
+    const { error } = await this.supabase.from('users').update({ is_public: value }).eq('id', userId)
     if (error) throw error
   }
 
-  async updatePrivacyRecords(userId: string, value: PrivacyRecords): Promise<void> {
-    const { error } = await this.supabase.from('users').update({ privacy_records: value }).eq('id', userId)
+  async updateFollowPolicy(userId: string, value: FollowPolicy): Promise<void> {
+    const { error } = await this.supabase.from('users').update({ follow_policy: value }).eq('id', userId)
+    if (error) throw error
+  }
+
+  async updateFollowConditions(userId: string, minRecords: number | null, minLevel: number | null): Promise<void> {
+    const { error } = await this.supabase.from('users').update({ follow_min_records: minRecords, follow_min_level: minLevel }).eq('id', userId)
     if (error) throw error
   }
 

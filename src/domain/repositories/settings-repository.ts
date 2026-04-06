@@ -1,7 +1,7 @@
 // src/domain/repositories/settings-repository.ts
 // R1: 외부 의존 0
 
-import type { UserSettings, VisibilityConfig, PrivacyProfile, PrivacyRecords, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
+import type { UserSettings, VisibilityConfig, FollowPolicy, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
 
 export interface SettingsRepository {
   getUserSettings(userId: string): Promise<UserSettings>
@@ -12,8 +12,9 @@ export interface SettingsRepository {
   updateAvatar(userId: string, avatarUrl: string): Promise<void>
 
   // 프라이버시
-  updatePrivacyProfile(userId: string, value: PrivacyProfile): Promise<void>
-  updatePrivacyRecords(userId: string, value: PrivacyRecords): Promise<void>
+  updateIsPublic(userId: string, value: boolean): Promise<void>
+  updateFollowPolicy(userId: string, value: FollowPolicy): Promise<void>
+  updateFollowConditions(userId: string, minRecords: number | null, minLevel: number | null): Promise<void>
   updateVisibilityPublic(userId: string, config: VisibilityConfig): Promise<void>
   updateVisibilityBubble(userId: string, config: VisibilityConfig): Promise<void>
 

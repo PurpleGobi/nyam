@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { bubbleRepo, settingsRepo } from '@/shared/di/container'
+import { bubbleRepo } from '@/shared/di/container'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 import { useBonusXp } from '@/application/hooks/use-bonus-xp'
 
@@ -34,7 +34,6 @@ export function useShareRecord(
 ): UseShareRecordResult {
   const [availableBubbles, setAvailableBubbles] = useState<ShareableBubble[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isPrivateProfile, setIsPrivateProfile] = useState(false)
   const { awardSocialXp } = useSocialXp()
   const { awardBonus } = useBonusXp()
 
@@ -44,15 +43,6 @@ export function useShareRecord(
     if (!userId || !recordId) return
     setIsLoading(true)
     try {
-      // privacy_profile='private' 체크
-      const settings = await settingsRepo.getUserSettings(userId)
-      if (settings.privacyProfile === 'private') {
-        setIsPrivateProfile(true)
-        setAvailableBubbles([])
-        return
-      }
-      setIsPrivateProfile(false)
-
       const [userBubbles, existingShares] = await Promise.all([
         bubbleRepo.getUserBubbles(userId),
         bubbleRepo.getRecordShares(recordId),
@@ -103,7 +93,7 @@ export function useShareRecord(
     setAvailableBubbles((prev) =>
       prev.map((b) => (bubbleIds.includes(b.id) ? { ...b, isShared: true } : b)),
     )
-  }, [userId, recordId, awardSocialXp, awardBonus])
+  }, [userId, recordId, targetId, targetType, awardSocialXp, awardBonus])
 
   const unshareBubble = useCallback(async (bubbleId: string) => {
     if (!recordId) return
@@ -113,10 +103,8 @@ export function useShareRecord(
     )
   }, [recordId])
 
-  const canShare = !isPrivateProfile && availableBubbles.some((b) => b.canShare)
-  const blockReason = isPrivateProfile
-    ? '비공개 프로필은 공유할 수 없습니다'
-    : canShare ? null : '공유 가능한 버블이 없습니다'
+  const canShare = availableBubbles.some((b) => b.canShare)
+  const blockReason = canShare ? null : '공유 가능한 버블이 없습니다'
 
   return { sharedBubbles, availableBubbles, shareToBubble, shareToBubbles, unshareBubble, canShare, blockReason, isLoading }
 }

@@ -58,8 +58,10 @@ CREATE TABLE users (
   preferred_areas TEXT[],           -- 온보딩에서 선택한 동네
 
   -- 프라이버시
-  privacy_profile VARCHAR(20) NOT NULL DEFAULT 'bubble_only',  -- 'public' | 'bubble_only' | 'private'
-  privacy_records VARCHAR(20) NOT NULL DEFAULT 'shared_only',  -- 'all' | 'followers_only' | 'shared_only'
+  is_public BOOLEAN NOT NULL DEFAULT false,                    -- 전체 공개 여부
+  follow_policy VARCHAR(20) NOT NULL DEFAULT 'blocked',        -- 'blocked' | 'auto_approve' | 'manual_approve' | 'conditional'
+  follow_min_records INT,                                      -- conditional일 때 최소 기록 수 (NULL = 조건 없음)
+  follow_min_level INT,                                        -- conditional일 때 최소 레벨 (NULL = 조건 없음)
   visibility_public JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":false,"price":false}',
   visibility_bubble JSONB NOT NULL DEFAULT '{"score":true,"comment":true,"photos":true,"level":true,"quadrant":true,"bubbles":true,"price":true}',
 
@@ -108,8 +110,7 @@ CREATE TABLE users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT chk_users_auth_provider       CHECK (auth_provider IN ('kakao','google','apple','naver')),
-  CONSTRAINT chk_users_privacy_profile     CHECK (privacy_profile IN ('public','bubble_only','private')),
-  CONSTRAINT chk_users_privacy_records     CHECK (privacy_records IN ('all','followers_only','shared_only')),
+  CONSTRAINT chk_follow_policy              CHECK (follow_policy IN ('blocked','auto_approve','manual_approve','conditional')),
   CONSTRAINT chk_users_delete_mode         CHECK (delete_mode IS NULL OR delete_mode IN ('anonymize','hard_delete')),
   CONSTRAINT chk_users_pref_landing        CHECK (pref_landing IN ('last','home','bubbles','profile')),
   CONSTRAINT chk_users_pref_home_tab       CHECK (pref_home_tab IN ('last','restaurant','wine')),
@@ -1120,7 +1121,7 @@ CREATE OR REPLACE FUNCTION get_revisit_count_by_axis(p_user_id UUID, p_axis_type
 
 ```sql
 -- 뷰어가 대상 유저의 어떤 필드를 볼 수 있는지 해석
--- 우선순위: privacy_profile 접근 차단 > bubble visibility_override > visibility_bubble > visibility_public
+-- 우선순위: is_public/follow_policy 접근 차단 > bubble visibility_override > visibility_bubble > visibility_public
 CREATE OR REPLACE FUNCTION get_visible_fields(
   p_viewer_id UUID,
   p_target_user_id UUID,
@@ -1147,8 +1148,8 @@ AS $$ ... $$;
 -- users: 본인 CRUD + public 프로필 읽기 + 버블 co-member 읽기
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY users_own     ON users FOR ALL    USING (id = auth.uid());
-CREATE POLICY users_public  ON users FOR SELECT USING (privacy_profile = 'public');
-CREATE POLICY users_bubble  ON users FOR SELECT USING (privacy_profile = 'bubble_only' AND ...);
+CREATE POLICY users_public  ON users FOR SELECT USING (is_public = true);
+CREATE POLICY users_bubble  ON users FOR SELECT USING (NOT is_public AND ...);
 
 -- restaurants / wines: 인증 사용자 읽기 + 쓰기
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
