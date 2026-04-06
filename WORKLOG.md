@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-07 #15 — 상세페이지/카드뷰 통일 + 찜 기능 재설계
+- **영역**: presentation/containers/(restaurant-detail, wine-detail, home), components/(record-card, wine-card, home-tabs, hero-carousel, bookmark-button), application/hooks/(use-bookmark, use-restaurant-detail, use-wine-detail, use-home-records), domain/(record, record-repository), infrastructure/supabase-record-repository, supabase/migrations/048
+- **맥락**: (1) 상세페이지 섹션 순서 통일(뱃지→스코어카드→사분면→기록→버블). (2) 카드뷰: 높이 170px 통일, 최신기록일+횟수를 점수 아래 소스우선순위 기반 표시, 와인 meta 빈티지·국가·품종, 식당 거리(km). (3) 히어로 사진: 소스 우선순위(나→팔로잉→공개) 최신 사진. (4) 찜: lists.is_bookmarked boolean 추가, status와 독립 동작, wishlist→bookmark 네이밍 통일. (5) 홈: 지도↔뷰모드 아이콘 순서 교체, 캘린더뷰 통계 유지. (6) discover 모듈 제거.
+- **미완료**: 브라우저 QA 미실행, wine text-white 2건 잔존
+- **다음**: 브라우저 수동 QA, 와인 외부평점 BadgeRow 통합 검토
+
 ### 2026-04-06 #13 — 홈 탭 전환 성능 최적화
 - **영역**: domain/entities/calendar(신규), domain/repositories/record-repository, infrastructure/supabase-record-repository, application/hooks/(use-home-records, use-calendar-records, use-following-feed), presentation/(calendar-view, home-container)
 - **맥락**: 탭 전환 시 Supabase 쿼리 42개→19개(55% 감소). findHomeRecords 통합 호출 + 탭 캐시(stale-while-revalidate) + 캘린더 records 재사용(추가 쿼리 0) + 팔로잉 lazy fetch. CalendarDayData를 domain으로 이동하여 R3 위반 해결.
@@ -59,11 +65,5 @@
 - **맥락**: AI tasting_notes와 사용자 comment가 혼용되던 문제 수정. 입력 필드 분리.
 - **미완료**: 없음
 - **다음**: 없음
-
-### 2026-04-02 #4 — 아로마 휠 텍스트 균일화
-- **영역**: presentation/components/record (아로마 휠)
-- **맥락**: 모든 링에 '/' 줄바꿈 적용 + 글자 수 기반 동적 폰트 사이즈. 시인성 개선 연속작업.
-- **미완료**: 없음
-- **다음**: 없음 (아로마 휠 시리즈 완료)
 
 
