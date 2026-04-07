@@ -381,6 +381,84 @@ export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   },
 ]
 
+// ─── 홈 버블 탭 필터 속성 (6종) ───
+// HomeContainer 버블 탭 전용
+
+export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
+  {
+    key: 'membership',
+    label: '소속',
+    type: 'select',
+    options: [
+      { value: 'mine', label: '내 버블' },
+      { value: 'public', label: '공개 전체' },
+    ],
+  },
+  {
+    key: 'focus_type',
+    label: '집중 유형',
+    type: 'select',
+    options: [
+      { value: 'all', label: '전체' },
+      { value: 'restaurant', label: '식당' },
+      { value: 'wine', label: '와인' },
+    ],
+  },
+  {
+    key: 'role',
+    label: '역할',
+    type: 'select',
+    options: [
+      { value: 'owner', label: '오너' },
+      { value: 'member', label: '멤버' },
+    ],
+  },
+  {
+    key: 'member_count',
+    label: '멤버 수',
+    type: 'select',
+    options: [
+      { value: '5', label: '5명 이상' },
+      { value: '10', label: '10명 이상' },
+      { value: '20', label: '20명 이상' },
+    ],
+  },
+  {
+    key: 'activity',
+    label: '활동',
+    type: 'select',
+    options: [
+      { value: '1d', label: '24시간 이내' },
+      { value: '1w', label: '1주 이내' },
+      { value: '1m', label: '1개월 이내' },
+    ],
+  },
+  {
+    key: 'expertise_area',
+    label: '전문 지역',
+    type: 'select',
+    options: [],  // 동적: HomeContainer에서 expertise 데이터 기반으로 주입
+  },
+  {
+    key: 'expertise_genre',
+    label: '전문 장르',
+    type: 'select',
+    options: [],
+  },
+  {
+    key: 'expertise_wine_region',
+    label: '전문 산지',
+    type: 'select',
+    options: [],
+  },
+  {
+    key: 'expertise_wine_variety',
+    label: '전문 품종',
+    type: 'select',
+    options: [],
+  },
+]
+
 // ─── 버블러 필터 속성 ───
 
 export const BUBBLER_FILTER_ATTRIBUTES: FilterAttribute[] = [

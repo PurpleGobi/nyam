@@ -280,6 +280,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         map.set(r.id, {
           name: r.name,
           genre: r.genre ?? null,
+          city: r.city ?? null,
           district: r.district ?? null,
           area: r.area ?? null,
           lat: r.lat ?? null,
@@ -305,6 +306,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         map.set(w.id, {
           name: w.name,
           genre: null,
+          city: null,
           district: null,
           area: null,
           lat: null,
@@ -607,6 +609,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         photoUrl,
 
         genre: meta.genre,
+        city: meta.city,
         district: meta.district,
         area: meta.area,
         lat: meta.lat,
@@ -650,6 +653,7 @@ export class SupabaseHomeRepository implements HomeRepository {
 interface TargetMeta {
   name: string
   genre: string | null
+  city: string | null
   district: string | null
   area: string[] | null
   lat: number | null

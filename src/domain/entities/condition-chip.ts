@@ -12,6 +12,8 @@ export interface ConditionChip {
   displayLabel: string     // "한식", "방문" 등 화면 표시용
   /** cascading 칩에서 실제 필터링할 DB 필드 (레벨별로 다를 때) */
   filterKey?: string
+  /** true면 칩 바에 표시하지 않음 (내부 상태 보관용) */
+  hidden?: boolean
 }
 
 /** 고급 필터 칩 — 복잡한 규칙 묶음 */
@@ -43,6 +45,17 @@ export function chipsToFilterRules(chips: FilterChipItem[]): FilterRule[] {
       if (chip.attribute === 'location' && String(chip.value) === 'nearby') continue
       // cascading "전체" 칩은 필터에서 제외
       if (chip.value === CASCADING_ALL) continue
+      // location 칩 그룹: tab 칩은 스킵, city/detail은 filterKey로 처리
+      if (chip.attribute === LOCATION_TAB_KEY) continue
+      if (chip.attribute === LOCATION_CITY_KEY) {
+        rules.push({ attribute: 'city', operator: chip.operator, value: chip.value })
+        continue
+      }
+      if (chip.attribute === LOCATION_DETAIL_KEY) {
+        const detailAttr = chip.filterKey ?? 'district'
+        rules.push({ attribute: detailAttr, operator: chip.operator, value: chip.value })
+        continue
+      }
 
       // filterKey 우선, 없으면 cascading base key, 아니면 attribute 그대로
       const attribute = chip.filterKey
@@ -81,6 +94,16 @@ export function generateChipId(): string {
 
 /** cascading "전체" 플레이스홀더 값 */
 export const CASCADING_ALL = '__all__'
+
+/* ── location 칩 키 상수 ── */
+export const LOCATION_TAB_KEY = 'location__tab'
+export const LOCATION_CITY_KEY = 'location__city'
+export const LOCATION_DETAIL_KEY = 'location__detail'
+
+/** location 칩 키인지 판별 */
+export function isLocationChipKey(key: string): boolean {
+  return key === LOCATION_TAB_KEY || key === LOCATION_CITY_KEY || key === LOCATION_DETAIL_KEY
+}
 
 /** cascading 칩 키 생성 (예: district__0, district__1) */
 export function cascadingKey(baseKey: string, level: number): string {

@@ -13,6 +13,7 @@ export interface HomeTarget {
 
   // 식당 메타
   genre: string | null
+  city: string | null
   district: string | null
   area: string[] | null
   lat: number | null
