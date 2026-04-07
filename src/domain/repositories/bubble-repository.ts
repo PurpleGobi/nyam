@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule, BubbleExpertise } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -159,6 +159,10 @@ export interface BubbleRepository {
   getRecordShares(recordId: string): Promise<BubbleShare[]>
   shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   unshareRecord(recordId: string, bubbleId: string): Promise<void>
+
+  // 전문성 집계
+  getExpertise(bubbleId: string): Promise<BubbleExpertise[]>
+  getExpertiseForBubbles(bubbleIds: string[]): Promise<Map<string, BubbleExpertise[]>>
 
   // 자동 공유 동기화
   updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>

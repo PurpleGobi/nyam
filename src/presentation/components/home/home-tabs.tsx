@@ -67,7 +67,7 @@ export function HomeTabs({
       variant={activeVariant}
       onTabChange={onTabChange}
       rightSlot={
-        isBubbleTab ? null : isSearchOpen ? (
+        isSearchOpen ? (
           <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
             <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
             <input
@@ -75,7 +75,7 @@ export function HomeTabs({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
-              placeholder={foodActive ? '식당 이름으로 검색' : '와인 이름으로 검색'}
+              placeholder={isBubbleTab ? '버블 이름으로 검색' : foodActive ? '식당 이름으로 검색' : '와인 이름으로 검색'}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -107,21 +107,23 @@ export function HomeTabs({
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            {foodActive && (
+            {!isBubbleTab && foodActive && (
               <button type="button" onClick={onMapToggle} className={`icon-button ${isMapView ? 'active map' : ''}`} title="지도">
                 <Map size={20} />
               </button>
             )}
-            <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
-              <ViewIcon size={20} />
-            </button>
-            <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${tabType}` : ''}`} title="정렬">
+            {!isBubbleTab && (
+              <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
+                <ViewIcon size={20} />
+              </button>
+            )}
+            <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${isBubbleTab ? 'social' : tabType}` : ''}`} title="정렬">
               <ArrowUpDown size={20} />
             </button>
-            <button type="button" onClick={onSearchToggle} className={`icon-button ${isSearchOpen ? `active ${tabType}` : ''}`} title="검색">
+            <button type="button" onClick={onSearchToggle} className={`icon-button ${isSearchOpen ? `active ${isBubbleTab ? 'social' : tabType}` : ''}`} title="검색">
               <Search size={20} />
             </button>
-            {canShowStats && onStatsToggle && (
+            {!isBubbleTab && canShowStats && onStatsToggle && (
               <button
                 type="button"
                 onClick={onStatsToggle}

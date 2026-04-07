@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem, SearchUserResult } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
@@ -735,6 +735,55 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .delete()
       .eq('record_id', recordId)
       .eq('bubble_id', bubbleId)
+  }
+
+  // ─── 전문성 집계 ───
+
+  async getExpertise(bubbleId: string): Promise<BubbleExpertise[]> {
+    const { data, error } = await this.supabase
+      .from('bubble_expertise')
+      .select('axis_type, axis_value, member_count, avg_level, max_level')
+      .eq('bubble_id', bubbleId)
+      .order('avg_level', { ascending: false })
+    if (error) throw new Error(`전문성 조회 실패: ${error.message}`)
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      axisType: r.axis_type as ExpertiseAxisType,
+      axisValue: r.axis_value as string,
+      memberCount: r.member_count as number,
+      avgLevel: r.avg_level as number,
+      maxLevel: r.max_level as number,
+    }))
+  }
+
+  async getExpertiseForBubbles(bubbleIds: string[]): Promise<Map<string, BubbleExpertise[]>> {
+    const result = new Map<string, BubbleExpertise[]>()
+    if (bubbleIds.length === 0) return result
+
+    const { data, error } = await this.supabase
+      .from('bubble_expertise')
+      .select('bubble_id, axis_type, axis_value, member_count, avg_level, max_level')
+      .in('bubble_id', bubbleIds)
+      .order('avg_level', { ascending: false })
+    if (error) throw new Error(`버블 전문성 일괄 조회 실패: ${error.message}`)
+
+    for (const r of (data ?? []) as Record<string, unknown>[]) {
+      const bubbleId = r.bubble_id as string
+      const expertise: BubbleExpertise = {
+        axisType: r.axis_type as ExpertiseAxisType,
+        axisValue: r.axis_value as string,
+        memberCount: r.member_count as number,
+        avgLevel: r.avg_level as number,
+        maxLevel: r.max_level as number,
+      }
+      const list = result.get(bubbleId)
+      if (list) {
+        list.push(expertise)
+      } else {
+        result.set(bubbleId, [expertise])
+      }
+    }
+
+    return result
   }
 
   // ─── 자동 공유 동기화 ───

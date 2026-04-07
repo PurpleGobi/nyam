@@ -107,3 +107,15 @@ export interface BubbleRankingSnapshot {
   avgSatisfaction: number | null
   recordCount: number
 }
+
+// ─── 버블 전문성 집계 (bubble_expertise 뷰) ───
+
+export type ExpertiseAxisType = 'area' | 'genre' | 'wine_variety' | 'wine_region'
+
+export interface BubbleExpertise {
+  axisType: ExpertiseAxisType
+  axisValue: string
+  memberCount: number
+  avgLevel: number
+  maxLevel: number
+}

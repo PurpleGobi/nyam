@@ -11,6 +11,7 @@ interface BubbleCardProps {
   tasteMatchPct?: number | null
   memberAvatars?: Array<{ name: string; color: string }>
   lastActivityText?: string | null
+  expertise?: Array<{ axisValue: string; avgLevel: number }>
   onClick: () => void
 }
 
@@ -21,6 +22,7 @@ export function BubbleCard({
   tasteMatchPct = null,
   memberAvatars = [],
   lastActivityText = null,
+  expertise,
   onClick,
 }: BubbleCardProps) {
   const isHot = bubble.weeklyRecordCount > 0 &&
@@ -109,6 +111,18 @@ export function BubbleCard({
           )}
         </div>
       </div>
+
+      {/* 전문 분야 Top 3 */}
+      {expertise && expertise.length > 0 && (
+        <p className="truncate text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          {expertise.map((e, i) => (
+            <span key={e.axisValue}>
+              {i > 0 && ' · '}
+              {e.axisValue} Lv.{Math.round(e.avgLevel)}
+            </span>
+          ))}
+        </p>
+      )}
 
       {/* 하단: 멤버 아바타 + 취향 일치도 + 최근 활동 */}
       <div className="flex items-center gap-2" style={{ borderTop: '1px solid var(--border)', paddingTop: '10px' }}>

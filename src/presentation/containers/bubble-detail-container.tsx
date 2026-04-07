@@ -8,6 +8,7 @@ import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
+import { useSingleBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
@@ -19,7 +20,7 @@ import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sh
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
-import type { RankingTargetType } from '@/domain/entities/bubble'
+import type { RankingTargetType, ExpertiseAxisType } from '@/domain/entities/bubble'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface BubbleDetailContainerProps {
@@ -36,6 +37,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
+  const { expertise } = useSingleBubbleExpertise(bubbleId)
   const { inviteCode, generateLink, copyToClipboard, isLoading: inviteLoading } = useInviteLink(bubbleId)
   const { members, isLoading: membersLoading } = useBubbleMembers(bubbleId)
   const { rankings: ranking, isLoading: rankingLoading } = useBubbleRanking(bubbleId, rankingType)
@@ -80,6 +82,33 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       topTargets,
     }
   }, [shares])
+
+  // 전문성 축별 그룹핑 (Top 5 per axis)
+  const expertiseGroups = useMemo(() => {
+    if (expertise.length === 0) return []
+
+    const AXIS_LABELS: Record<ExpertiseAxisType, string> = {
+      area: '지역',
+      genre: '장르',
+      wine_region: '산지',
+      wine_variety: '품종',
+    }
+
+    const grouped = new Map<ExpertiseAxisType, typeof expertise>()
+    for (const e of expertise) {
+      const list = grouped.get(e.axisType) ?? []
+      list.push(e)
+      grouped.set(e.axisType, list)
+    }
+
+    return [...grouped.entries()]
+      .map(([axisType, items]) => ({
+        axisType,
+        label: AXIS_LABELS[axisType],
+        items: items.sort((a, b) => b.avgLevel - a.avgLevel).slice(0, 5),
+      }))
+      .filter((g) => g.items.length > 0)
+  }, [expertise])
 
   // 랭킹 포디움 데이터 (target 기반: 이 버블에서 인기 있는 식당/와인)
   const podiumItems: RankingPodiumItem[] = useMemo(() => {
@@ -205,6 +234,36 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
             </div>
           )}
         </section>
+
+        {/* ─── 전문 분야 ─── */}
+        {expertiseGroups.length > 0 && (
+          <>
+            <Divider />
+            <section className="px-5 py-4">
+              <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>전문 분야</h2>
+              <div className="flex flex-col gap-3">
+                {expertiseGroups.map((group) => (
+                  <div key={group.axisType}>
+                    <p className="mb-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
+                      {group.label}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.items.map((item) => (
+                        <span
+                          key={item.axisValue}
+                          className="rounded-full px-2.5 py-[3px] text-[11px] font-medium"
+                          style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                        >
+                          {item.axisValue} Lv.{Math.round(item.avgLevel)} ({item.memberCount}명)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
         <Divider />
 
