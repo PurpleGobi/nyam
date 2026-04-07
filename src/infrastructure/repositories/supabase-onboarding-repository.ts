@@ -41,20 +41,27 @@ export class SupabaseOnboardingRepository implements OnboardingRepository {
   }
 
   async registerRestaurant(restaurantId: string, userId: string): Promise<void> {
+    // 이미 기록이 있으면 무시, 없으면 최소 record 생성
+    const { count } = await this.supabase
+      .from('records')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+    if ((count ?? 0) > 0) return
+
     await this.supabase
-      .from('lists')
-      .upsert({
+      .from('records')
+      .insert({
         user_id: userId,
         target_id: restaurantId,
         target_type: 'restaurant',
-        status: 'visited',
-        source: 'onboarding',
-      }, { onConflict: 'user_id,target_id,target_type' })
+      })
   }
 
   async unregisterRestaurant(restaurantId: string, userId: string): Promise<void> {
     await this.supabase
-      .from('lists')
+      .from('records')
       .delete()
       .eq('user_id', userId)
       .eq('target_id', restaurantId)

@@ -113,6 +113,26 @@ export class SupabaseFollowRepository implements FollowRepository {
     return { followers: followers ?? 0, following: following ?? 0, mutual: mutualList.length }
   }
 
+  async getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; avatarUrl: string | null }>> {
+    const { data: followRows } = await this.supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', userId)
+      .eq('status', 'accepted')
+    if (!followRows || followRows.length === 0) return []
+
+    const followingIds = followRows.map((f) => f.following_id as string)
+    const { data: users } = await this.supabase
+      .from('users')
+      .select('id, nickname, avatar_url')
+      .in('id', followingIds)
+    return (users ?? []).map((u) => ({
+      id: u.id as string,
+      nickname: (u.nickname as string) ?? '',
+      avatarUrl: (u.avatar_url as string) ?? null,
+    }))
+  }
+
   async isMutualFollow(userId: string, targetUserId: string): Promise<boolean> {
     const [{ data: a }, { data: b }] = await Promise.all([
       this.supabase.from('follows').select('status').eq('follower_id', userId).eq('following_id', targetUserId).eq('status', 'accepted').single(),

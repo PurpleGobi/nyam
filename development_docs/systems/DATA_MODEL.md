@@ -1,3 +1,4 @@
+<!-- updated: 2026-04-07 -->
 # DATA_MODEL — 데이터 모델
 
 > affects: 모든 페이지, 모든 시스템
@@ -7,15 +8,16 @@
 ## 1. 핵심 엔티티 관계
 
 ```
-users (1) ─── (N) lists
+users (1) ─── (N) records
+users (1) ─── (N) bookmarks
 users (1) ─── (N) xp_totals
 users (1) ─── (N) saved_filters
 
-lists (1) ─── (N) records
-lists ─── UNIQUE(user_id, target_id, target_type)
+restaurants (1) ─── (N) records (target_type='restaurant')
+wines (1) ─── (N) records (target_type='wine')
 
-restaurants (1) ─── (N) lists (target_type='restaurant')
-wines (1) ─── (N) lists (target_type='wine')
+restaurants (1) ─── (N) bookmarks (target_type='restaurant')
+wines (1) ─── (N) bookmarks (target_type='wine')
 
 records (1) ─── (N) record_photos
 records (1) ─── (N) bubble_shares ─── (N) bubbles
@@ -94,7 +96,7 @@ CREATE TABLE users (
   delete_scheduled_at TIMESTAMPTZ,
 
   -- 비정규화 캐시
-  record_count INT NOT NULL DEFAULT 0,            -- lists(visited/tasted) 기준 총 기록 수
+  record_count INT NOT NULL DEFAULT 0,            -- records 기준 총 기록 수
   follower_count INT NOT NULL DEFAULT 0,
   following_count INT NOT NULL DEFAULT 0,
   current_streak INT NOT NULL DEFAULT 0,          -- 연속 기록 주 수
@@ -384,40 +386,30 @@ New Zealand:
   South Island:       [Marlborough, Nelson, Canterbury, Central Otago]
 ```
 
-### lists (사용자 × 식당/와인 관계)
+### bookmarks (찜/셀러)
 
-> wishlists 테이블을 대체. 식당 방문/찜, 와인 시음/셀러/찜을 하나의 테이블로 통합 관리.
+> lists 테이블을 대체. 찜(bookmark)과 셀러(cellar)를 독립 테이블로 분리. records는 bookmarks 없이 직접 restaurants/wines를 참조.
 
 ```sql
-CREATE TABLE lists (
+CREATE TABLE bookmarks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
-  target_id UUID NOT NULL,           -- restaurant_id or wine_id
+  target_id UUID NOT NULL,
   target_type VARCHAR(10) NOT NULL,  -- 'restaurant' | 'wine'
-  status VARCHAR(20) NOT NULL,       -- 'visited' | 'wishlist' | 'cellar' | 'tasted'
-                                     -- visited: 식당 방문 완료
-                                     -- wishlist: 식당/와인 찜
-                                     -- cellar: 보유 와인
-                                     -- tasted: 와인 시음 완료
-  source VARCHAR(10) DEFAULT 'direct',  -- 'direct' | 'bubble' | 'ai' | 'web' | 'onboarding'
-  source_record_id UUID,             -- source='bubble'일 때 원본 기록 ID
-
+  type VARCHAR(10) NOT NULL DEFAULT 'bookmark',  -- 'bookmark' | 'cellar'
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  UNIQUE(user_id, target_id, target_type)
+  UNIQUE(user_id, target_id, target_type, type)  -- 같은 대상에 bookmark + cellar 동시 가능
 );
 
-CREATE INDEX idx_lists_user_type ON lists(user_id, target_type, status);
-CREATE INDEX idx_lists_target ON lists(target_id, target_type);
+CREATE INDEX idx_bookmarks_user_type ON bookmarks(user_id, target_type, type);
+CREATE INDEX idx_bookmarks_target ON bookmarks(target_id, target_type);
 ```
 
 ### records (방문/시음 기록)
 ```sql
 CREATE TABLE records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  list_id UUID NOT NULL REFERENCES lists(id),
-  user_id UUID NOT NULL REFERENCES users(id),      -- 비정규화
+  user_id UUID NOT NULL REFERENCES users(id),
   target_id UUID NOT NULL,                          -- 비정규화
   target_type VARCHAR(10) NOT NULL,                 -- 비정규화
 
@@ -469,7 +461,6 @@ CREATE TABLE records (
   CONSTRAINT chk_records_intensity CHECK (intensity IS NULL OR (intensity >= 0 AND intensity <= 100))
 );
 
-CREATE INDEX idx_records_list ON records(list_id);
 CREATE INDEX idx_records_user_type ON records(user_id, target_type, visit_date DESC);
 CREATE INDEX idx_records_target ON records(target_id, target_type);
 CREATE INDEX idx_records_satisfaction ON records(user_id, target_type, satisfaction) WHERE satisfaction IS NOT NULL;
@@ -894,13 +885,13 @@ CREATE INDEX idx_accolades_source ON restaurant_accolades(source);
 
 ## 7. 와인 ENUM 및 연동 정의
 
-### lists.status 분류 (식당/와인 공용)
+### bookmarks.type 분류
 | 값 | 대상 | 설명 |
 |----|------|------|
-| `visited` | 식당 | 방문 완료 |
-| `wishlist` | 식당/와인 | 찜 (관심 항목) |
-| `tasted` | 와인 | 시음 완료 |
+| `bookmark` | 식당/와인 | 찜 (관심 항목) |
 | `cellar` | 와인 | 보유 중 (셀러) |
+
+> 방문(visited)/시음(tasted) 상태는 records 테이블 존재 여부로 판별. lists 테이블의 status 기반 분류는 폐기됨.
 
 ### camera_mode ENUM (촬영 모드)
 | 값 | 표시명 | OCR 결과 구조 | 설명 |
@@ -998,13 +989,13 @@ WHERE r.target_id = :wine_id
 모든 트리거는 `SET col = col ± 1` 증분 방식. 서브쿼리로 전체 카운트 재계산 금지.
 
 ```sql
--- users.record_count: lists INSERT/UPDATE/DELETE 시 (visited/tasted 상태만 카운트)
+-- users.record_count: records INSERT/DELETE 시 카운트
 CREATE OR REPLACE FUNCTION trg_update_user_record_count()
 RETURNS TRIGGER AS $$ ... $$
 LANGUAGE plpgsql;
 
-CREATE TRIGGER after_list_record_count
-  AFTER INSERT OR UPDATE OR DELETE ON lists
+CREATE TRIGGER after_record_count
+  AFTER INSERT OR DELETE ON records
   FOR EACH ROW EXECUTE FUNCTION trg_update_user_record_count();
 
 -- users.follower_count / following_count: follows INSERT/UPDATE/DELETE 시
@@ -1157,9 +1148,9 @@ CREATE POLICY restaurants_select ON restaurants FOR SELECT USING (auth.uid() IS 
 CREATE POLICY restaurants_insert ON restaurants FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY restaurants_update ON restaurants FOR UPDATE USING (auth.uid() IS NOT NULL);
 
--- lists / records: 본인 CRUD
-ALTER TABLE lists ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "lists 본인 읽기/쓰기/수정/삭제" ...;
+-- bookmarks / records: 본인 CRUD
+ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "bookmarks_own" ON bookmarks USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 ALTER TABLE records ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "records 본인 읽기/쓰기/수정/삭제" ...;
@@ -1203,11 +1194,12 @@ ALTER TABLE bubble_shares ENABLE ROW LEVEL SECURITY;
 
 | 테이블 | 삭제 시점 | 대체 |
 |--------|----------|------|
-| `wishlists` | 032 | `lists` (status='wishlist') |
+| `lists` | 049 | `bookmarks` (찜/셀러) + `records` 직접 참조 (list_id FK 제거) |
+| `wishlists` | 032 | `lists` (status='wishlist') → 이후 `bookmarks`로 재대체 |
 | `bubble_share_reads` | 031 | — |
 | `nudge_history` | 031 | — |
 | `nudge_fatigue` | 031 | — |
 | `grape_variety_profiles` | 031 | — |
 | `ai_recommendations` | 031 | — |
 
-> **⚠️ 주의**: `supabase/functions/process-account-deletion/index.ts` Edge Function이 삭제된 테이블명(`xp_histories`, `user_experiences`, `user_milestones`, `wishlists`, `nudge_history`, `nudge_fatigue`)을 아직 참조하고 있음. 해당 함수 업데이트 필요.
+> **⚠️ 주의**: `supabase/functions/process-account-deletion/index.ts` Edge Function이 `wishlists` → `bookmarks`로 업데이트됨. 삭제된 테이블명(`xp_histories`, `user_experiences`, `user_milestones`, `nudge_history`, `nudge_fatigue`)은 아직 참조하고 있을 수 있으므로 확인 필요.

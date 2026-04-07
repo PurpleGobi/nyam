@@ -51,7 +51,6 @@ export interface BubbleFeedItem {
   comment?: string | null
   scene?: string | null
   visitDate?: string | null
-  listStatus?: string | null
   sharedAt: string
 }
 

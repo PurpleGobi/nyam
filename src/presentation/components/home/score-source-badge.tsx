@@ -1,13 +1,13 @@
 import type { ScoreSource } from '@/domain/entities/score'
 
-const SOURCE_LABELS: Record<Exclude<ScoreSource, 'my'>, string> = {
+const SOURCE_LABELS: Record<Exclude<ScoreSource, 'mine'>, string> = {
   following: '팔로잉',
   bubble: '버블',
-  nyam: 'nyam',
+  public: 'nyam',
 }
 
 interface ScoreSourceBadgeProps {
-  source: Exclude<ScoreSource, 'my'>
+  source: Exclude<ScoreSource, 'mine'>
 }
 
 export function ScoreSourceBadge({ source }: ScoreSourceBadgeProps) {

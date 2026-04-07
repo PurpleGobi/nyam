@@ -1,15 +1,14 @@
 import type { RecordRepository } from '@/domain/repositories/record-repository'
-import type { DiningRecord, ListItem, ListStatus, CreateRecordInput, RecordTargetType, RecordWithTarget, RecordSource } from '@/domain/entities/record'
+import type { DiningRecord, CreateRecordInput, RecordTargetType, RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import { createClient } from '@/infrastructure/supabase/client'
 
-// ─── DB → Domain 매핑 ───
+// --- DB -> Domain 매핑 ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToRecord(row: any): DiningRecord {
   return {
     id: row.id,
-    listId: row.list_id,
     userId: row.user_id,
     targetId: row.target_id,
     targetType: row.target_type,
@@ -49,22 +48,6 @@ function mapDbToRecord(row: any): DiningRecord {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapDbToListItem(row: any): ListItem {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    targetId: row.target_id,
-    targetType: row.target_type,
-    status: row.status,
-    isBookmarked: row.is_bookmarked ?? false,
-    source: row.source ?? 'direct',
-    sourceRecordId: row.source_record_id ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToPhoto(row: any): RecordPhoto {
   return {
     id: row.id,
@@ -84,148 +67,12 @@ export class SupabaseRecordRepository implements RecordRepository {
     return createClient()
   }
 
-  // ─── List ───
-
-  async findOrCreateList(
-    userId: string,
-    targetId: string,
-    targetType: RecordTargetType,
-    status: ListStatus,
-  ): Promise<ListItem> {
-    // 먼저 기존 항목 조회
-    const existing = await this.findListByUserAndTarget(userId, targetId, targetType)
-    if (existing) return existing
-
-    const { data, error } = await this.supabase
-      .from('lists')
-      .insert({
-        user_id: userId,
-        target_id: targetId,
-        target_type: targetType,
-        status,
-        source: 'direct',
-      })
-      .select()
-      .single()
-
-    if (error) {
-      // UNIQUE 충돌 시 재조회
-      if (error.code === '23505') {
-        const retry = await this.findListByUserAndTarget(userId, targetId, targetType)
-        if (retry) return retry
-      }
-      throw new Error(`List 생성 실패: ${error.message}`)
-    }
-    return mapDbToListItem(data)
-  }
-
-  async updateListStatus(listId: string, status: ListStatus): Promise<void> {
-    const { error } = await this.supabase
-      .from('lists')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', listId)
-
-    if (error) throw new Error(`List 상태 변경 실패: ${error.message}`)
-  }
-
-  async findListsByUser(
-    userId: string,
-    targetType: RecordTargetType,
-    status?: ListStatus,
-  ): Promise<ListItem[]> {
-    let query = this.supabase
-      .from('lists')
-      .select()
-      .eq('user_id', userId)
-      .eq('target_type', targetType)
-      .order('updated_at', { ascending: false })
-
-    if (status) {
-      query = query.eq('status', status)
-    }
-
-    const { data, error } = await query
-    if (error) throw new Error(`Lists 조회 실패: ${error.message}`)
-    return data.map(mapDbToListItem)
-  }
-
-  async findListByUserAndTarget(
-    userId: string,
-    targetId: string,
-    targetType: RecordTargetType,
-  ): Promise<ListItem | null> {
-    const { data, error } = await this.supabase
-      .from('lists')
-      .select()
-      .eq('user_id', userId)
-      .eq('target_id', targetId)
-      .eq('target_type', targetType)
-      .maybeSingle()
-
-    if (error) throw new Error(`List 조회 실패: ${error.message}`)
-    return data ? mapDbToListItem(data) : null
-  }
-
-  async deleteList(listId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('lists')
-      .delete()
-      .eq('id', listId)
-
-    if (error) throw new Error(`List 삭제 실패: ${error.message}`)
-  }
-
-  async toggleBookmark(
-    userId: string,
-    targetId: string,
-    targetType: RecordTargetType,
-    bookmarked: boolean,
-  ): Promise<void> {
-    const existing = await this.findListByUserAndTarget(userId, targetId, targetType)
-    if (existing) {
-      // 기존 list 항목이 있으면 is_bookmarked만 업데이트
-      const { error } = await this.supabase
-        .from('lists')
-        .update({ is_bookmarked: bookmarked, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-      if (error) throw new Error(`북마크 토글 실패: ${error.message}`)
-    } else if (bookmarked) {
-      // list 항목이 없으면 bookmark status로 생성
-      const { error } = await this.supabase
-        .from('lists')
-        .insert({
-          user_id: userId,
-          target_id: targetId,
-          target_type: targetType,
-          status: 'bookmark',
-          is_bookmarked: true,
-          source: 'direct',
-        })
-      if (error) throw new Error(`북마크 생성 실패: ${error.message}`)
-    }
-  }
-
-  // ─── Record ───
+  // --- Record ---
 
   async create(input: CreateRecordInput): Promise<DiningRecord> {
-    // 1) lists upsert
-    const list = await this.findOrCreateList(
-      input.userId,
-      input.targetId,
-      input.targetType,
-      input.listStatus,
-    )
-
-    // 방문 기록 생성 시 list status를 visited/tasted로 승격
-    if (list.status === 'bookmark' && (input.listStatus === 'visited' || input.listStatus === 'tasted')) {
-      await this.updateListStatus(list.id, input.listStatus)
-    }
-
-    // 2) records INSERT
     const { data, error } = await this.supabase
       .from('records')
       .insert({
-        list_id: list.id,
         user_id: input.userId,
         target_id: input.targetId,
         target_type: input.targetType,
@@ -307,7 +154,6 @@ export class SupabaseRecordRepository implements RecordRepository {
     rows: any[],
     currentUserId: string,
     source: RecordSource,
-    listStatusMap?: Map<string, ListStatus>,
   ): Promise<RecordWithTarget[]> {
     if (rows.length === 0) return []
 
@@ -365,13 +211,13 @@ export class SupabaseRecordRepository implements RecordRepository {
     }
 
     // record_photos
-    const recordIds = rows.map((r) => r.id)
+    const realRecordIds = rows.map((r: { id: string }) => r.id)
     const recordPhotoMap = new Map<string, string>()
-    if (recordIds.length > 0) {
+    if (realRecordIds.length > 0) {
       const { data: photos } = await this.supabase
         .from('record_photos')
         .select('record_id, url')
-        .in('record_id', recordIds)
+        .in('record_id', realRecordIds)
         .order('order_index', { ascending: true })
       for (const p of photos ?? []) {
         if (!recordPhotoMap.has(p.record_id)) {
@@ -385,10 +231,16 @@ export class SupabaseRecordRepository implements RecordRepository {
       const isRestaurant = row.target_type === 'restaurant'
       const restaurant = isRestaurant ? restaurantMap.get(row.target_id) : null
       const wine = !isRestaurant ? wineMap.get(row.target_id) : null
-      // lists JOIN이 있는 경우(본인 records) row.lists.status 사용, 없으면 listStatusMap 또는 'visited'
-      const listStatus = row.lists?.status ?? listStatusMap?.get(row.id) ?? 'visited'
+
+      // 타인의 기록: companions/privateNote는 항상 비공개
+      const isOwner = row.user_id === currentUserId
+      const companions = isOwner ? base.companions : null
+      const privateNote = isOwner ? base.privateNote : null
+
       return {
         ...base,
+        companions,
+        privateNote,
         targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
         targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
         targetArea: isRestaurant ? (restaurant?.district ?? restaurant?.area?.[0] ?? null) : (wine?.region ?? null),
@@ -409,7 +261,6 @@ export class SupabaseRecordRepository implements RecordRepository {
         variety: wine?.variety ?? null,
         region: wine?.region ?? null,
         vintage: wine?.vintage ?? null,
-        listStatus: listStatus as ListStatus | undefined,
         authorId: row.user_id,
         authorNickname: userMap.get(row.user_id)?.nickname ?? null,
         authorAvatarUrl: userMap.get(row.user_id)?.avatar_url ?? null,
@@ -420,7 +271,7 @@ export class SupabaseRecordRepository implements RecordRepository {
   async findByUserIdWithTarget(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
     let query = this.supabase
       .from('records')
-      .select('*, lists!inner(status)')
+      .select('*')
       .eq('user_id', userId)
       .order('visit_date', { ascending: false })
 
@@ -466,340 +317,16 @@ export class SupabaseRecordRepository implements RecordRepository {
     }))
   }
 
-  // ─── 보기 필터별 조회 (타인 기록) ───
-
-  async findBookmarkTargetRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
-    // 1) 내 bookmarks에서 target_id 목록 조회
-    let listQuery = this.supabase
-      .from('lists')
-      .select('target_id')
+  async getAvgSatisfactionByType(userId: string, targetType: 'restaurant' | 'wine'): Promise<number | null> {
+    const { data } = await this.supabase
+      .from('records')
+      .select('satisfaction')
       .eq('user_id', userId)
-      .eq('status', 'bookmark')
-    if (targetType) listQuery = listQuery.eq('target_type', targetType)
-    const { data: myBookmarks } = await listQuery
-    if (!myBookmarks || myBookmarks.length === 0) return []
-
-    const targetIds = myBookmarks.map((w) => w.target_id)
-
-    // 2) 해당 target에 대한 타인의 records 조회 (lists JOIN 없이 — 타인 데이터)
-    let query = this.supabase
-      .from('records')
-      .select('*')
-      .in('target_id', targetIds)
-      .neq('user_id', userId)
-      .order('visit_date', { ascending: false })
-    if (targetType) query = query.eq('target_type', targetType)
-    const { data, error } = await query
-    if (error) throw new Error(`Bookmark records 조회 실패: ${error.message}`)
-
-    return this.enrichRecordsWithTarget(data ?? [], userId, 'bookmark')
-  }
-
-  async findBubbleSharedRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
-    // 1) 내가 속한 버블 ID 조회
-    const { data: memberships } = await this.supabase
-      .from('bubble_members')
-      .select('bubble_id')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-    if (!memberships || memberships.length === 0) return []
-
-    const bubbleIds = memberships.map((m) => m.bubble_id)
-
-    // 2) 해당 버블의 shares에서 record_id 조회 (내가 공유한 것 제외)
-    let shareQuery = this.supabase
-      .from('bubble_shares')
-      .select('record_id')
-      .in('bubble_id', bubbleIds)
-      .neq('shared_by', userId)
-    if (targetType) shareQuery = shareQuery.eq('target_type', targetType)
-    const { data: shares } = await shareQuery
-    if (!shares || shares.length === 0) return []
-
-    const recordIds = [...new Set(shares.map((s) => s.record_id))]
-
-    // 3) records 조회 (lists JOIN 없이 — 타인 데이터)
-    let query = this.supabase
-      .from('records')
-      .select('*')
-      .in('id', recordIds)
-      .order('visit_date', { ascending: false })
-    if (targetType) query = query.eq('target_type', targetType)
-    const { data, error } = await query
-    if (error) throw new Error(`Bubble records 조회 실패: ${error.message}`)
-
-    return this.enrichRecordsWithTarget(data ?? [], userId, 'bubble')
-  }
-
-  async findFollowingRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
-    // 1) 내가 팔로우하는 유저 ID 조회
-    const { data: followRows } = await this.supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', userId)
-      .eq('status', 'accepted')
-    if (!followRows || followRows.length === 0) return []
-
-    const followingIds = followRows.map((f) => f.following_id)
-
-    // 2) 팔로잉 유저의 records 조회 (lists JOIN 없이 — 타인 데이터)
-    let query = this.supabase
-      .from('records')
-      .select('*')
-      .in('user_id', followingIds)
-      .order('visit_date', { ascending: false })
-    if (targetType) query = query.eq('target_type', targetType)
-    const { data, error } = await query
-    if (error) throw new Error(`Following records 조회 실패: ${error.message}`)
-
-    return this.enrichRecordsWithTarget(data ?? [], userId, 'following')
-  }
-
-  async findPublicRecords(userId: string, targetType?: RecordTargetType): Promise<RecordWithTarget[]> {
-    // 1) 공개 프로필 유저 ID 조회
-    const { data: publicUsers } = await this.supabase
-      .from('users')
-      .select('id')
-      .eq('is_public', true)
-      .neq('id', userId)
-    if (!publicUsers || publicUsers.length === 0) return []
-
-    const publicUserIds = publicUsers.map((u) => u.id)
-
-    // 2) 공개 유저의 records 조회 (최근 50개 제한으로 성능 보호, lists JOIN 없이)
-    let query = this.supabase
-      .from('records')
-      .select('*')
-      .in('user_id', publicUserIds)
-      .order('visit_date', { ascending: false })
-      .limit(50)
-    if (targetType) query = query.eq('target_type', targetType)
-    const { data, error } = await query
-    if (error) throw new Error(`Public records 조회 실패: ${error.message}`)
-
-    return this.enrichRecordsWithTarget(data ?? [], userId, 'public')
-  }
-
-  async findHomeRecords(
-    userId: string,
-    targetType: RecordTargetType,
-    views: RecordSource[],
-  ): Promise<RecordWithTarget[]> {
-    // 1) 각 view별 raw rows를 병렬로 수집 (enrich 없이)
-    const promises = views.map(async (view) => {
-      switch (view) {
-        case 'mine': {
-          const query = this.supabase
-            .from('records')
-            .select('*, lists!inner(status)')
-            .eq('user_id', userId)
-            .eq('target_type', targetType)
-            .order('visit_date', { ascending: false })
-          const { data, error } = await query
-          if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
-          return { rows: data ?? [], source: 'mine' as RecordSource }
-        }
-        case 'bookmark': {
-          // 찜은 is_bookmarked=true인 lists를 표시 (status와 무관)
-          const { data: myBookmarks, error: listError } = await this.supabase
-            .from('lists')
-            .select('id, target_id, target_type, status, created_at, updated_at')
-            .eq('user_id', userId)
-            .eq('is_bookmarked', true)
-            .eq('target_type', targetType)
-            .order('created_at', { ascending: false })
-          if (listError) throw new Error(`Bookmark 조회 실패: ${listError.message}`)
-          if (!myBookmarks || myBookmarks.length === 0) return { rows: [], source: 'bookmark' as RecordSource }
-
-          const bookmarkTargetIds = myBookmarks.map((b) => b.target_id)
-
-          // 찜한 대상 중 내 기록이 있는 것은 실제 records를 가져옴
-          const { data: myRecords } = await this.supabase
-            .from('records')
-            .select('*, lists!inner(status)')
-            .eq('user_id', userId)
-            .eq('target_type', targetType)
-            .in('target_id', bookmarkTargetIds)
-            .order('visit_date', { ascending: false })
-
-          const recordedTargetIds = new Set((myRecords ?? []).map((r) => r.target_id))
-
-          // 기록이 없는 찜 대상은 가상 row로 변환
-          const fakeRows = myBookmarks
-            .filter((b) => !recordedTargetIds.has(b.target_id))
-            .map((w) => ({
-              id: `bookmark-${w.id}`,
-              list_id: w.id,
-              user_id: userId,
-              target_id: w.target_id,
-              target_type: w.target_type,
-              axis_x: null,
-              axis_y: null,
-              satisfaction: null,
-              scene: null,
-              comment: null,
-              total_price: null,
-              purchase_price: null,
-              visit_date: null,
-              meal_time: null,
-              has_exif_gps: false,
-              is_exif_verified: false,
-              camera_mode: null,
-              ocr_data: null,
-              aroma_primary: [],
-              aroma_secondary: [],
-              aroma_tertiary: [],
-              complexity: null,
-              finish: null,
-              balance: null,
-              intensity: null,
-              auto_score: null,
-              private_note: null,
-              companion_count: null,
-              companions: null,
-              linked_restaurant_id: null,
-              linked_wine_id: null,
-              menu_tags: null,
-              pairing_categories: null,
-              record_quality_xp: 0,
-              score_updated_at: null,
-              created_at: w.created_at,
-              updated_at: w.updated_at,
-              lists: { status: w.status },
-            }))
-
-          return { rows: [...(myRecords ?? []), ...fakeRows], source: 'bookmark' as RecordSource }
-        }
-        case 'bubble': {
-          const { data: memberships } = await this.supabase
-            .from('bubble_members')
-            .select('bubble_id')
-            .eq('user_id', userId)
-            .eq('status', 'active')
-          if (!memberships || memberships.length === 0) return { rows: [], source: 'bubble' as RecordSource }
-          const bubbleIds = memberships.map((m) => m.bubble_id)
-          const shareQuery = this.supabase
-            .from('bubble_shares')
-            .select('record_id')
-            .in('bubble_id', bubbleIds)
-            .neq('shared_by', userId)
-            .eq('target_type', targetType)
-          const { data: shares } = await shareQuery
-          if (!shares || shares.length === 0) return { rows: [], source: 'bubble' as RecordSource }
-          const recordIds = [...new Set(shares.map((s) => s.record_id))]
-          const query = this.supabase
-            .from('records')
-            .select('*')
-            .in('id', recordIds)
-            .eq('target_type', targetType)
-            .order('visit_date', { ascending: false })
-          const { data, error } = await query
-          if (error) throw new Error(`Bubble records 조회 실패: ${error.message}`)
-          return { rows: data ?? [], source: 'bubble' as RecordSource }
-        }
-        case 'following': {
-          const { data: followRows } = await this.supabase
-            .from('follows')
-            .select('following_id')
-            .eq('follower_id', userId)
-            .eq('status', 'accepted')
-          if (!followRows || followRows.length === 0) return { rows: [], source: 'following' as RecordSource }
-          const followingIds = followRows.map((f) => f.following_id)
-          const query = this.supabase
-            .from('records')
-            .select('*')
-            .in('user_id', followingIds)
-            .eq('target_type', targetType)
-            .order('visit_date', { ascending: false })
-          const { data, error } = await query
-          if (error) throw new Error(`Following records 조회 실패: ${error.message}`)
-          return { rows: data ?? [], source: 'following' as RecordSource }
-        }
-        case 'public': {
-          const { data: publicUsers } = await this.supabase
-            .from('users')
-            .select('id')
-            .eq('is_public', true)
-            .neq('id', userId)
-          if (!publicUsers || publicUsers.length === 0) return { rows: [], source: 'public' as RecordSource }
-          const publicUserIds = publicUsers.map((u) => u.id)
-          const query = this.supabase
-            .from('records')
-            .select('*')
-            .in('user_id', publicUserIds)
-            .eq('target_type', targetType)
-            .order('visit_date', { ascending: false })
-            .limit(50)
-          const { data, error } = await query
-          if (error) throw new Error(`Public records 조회 실패: ${error.message}`)
-          return { rows: data ?? [], source: 'public' as RecordSource }
-        }
-      }
-    })
-
-    const results = await Promise.all(promises)
-
-    // 2) 모든 raw rows를 하나로 합침 — 중복 시 우선순위: mine > following > bubble > public > bookmark
-    const SOURCE_PRIORITY: Record<string, number> = {
-      mine: 0, following: 1, bubble: 2, public: 3, bookmark: 4,
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rowMap: Supabase raw row, enrichRecordsWithTarget과 동일 패턴
-    const rowMap = new Map<string, { row: any; source: RecordSource }>()
-    for (const result of results) {
-      for (const row of result.rows) {
-        const existing = rowMap.get(row.id)
-        if (!existing || (SOURCE_PRIORITY[result.source] ?? 99) < (SOURCE_PRIORITY[existing.source] ?? 99)) {
-          rowMap.set(row.id, { row, source: result.source })
-        }
-      }
-    }
-
-    // 3) 통합된 rows를 한 번에 enrich
-    const allEntries = Array.from(rowMap.values())
-    if (allEntries.length === 0) return []
-
-    const mergedRows = allEntries.map((e) => e.row)
-    const enriched = await this.enrichRecordsWithTarget(mergedRows, userId, 'mine')
-
-    // source 오버라이드
-    const sourceMap = new Map<string, RecordSource>()
-    for (const entry of allEntries) {
-      sourceMap.set(entry.row.id, entry.source)
-    }
-    return enriched.map((r) => ({
-      ...r,
-      source: sourceMap.get(r.id) ?? r.source,
-    }))
-  }
-
-  async findFollowingTargetIds(
-    userId: string,
-    targetIds: string[],
-    targetType: RecordTargetType,
-  ): Promise<Set<string>> {
-    if (targetIds.length === 0) return new Set()
-
-    const { data: followRows } = await this.supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', userId)
-      .eq('status', 'accepted')
-
-    if (!followRows || followRows.length === 0) return new Set()
-
-    const followingUserIds = followRows.map((f) => f.following_id)
-    const { data: followingRecords } = await this.supabase
-      .from('records')
-      .select('target_id')
-      .in('user_id', followingUserIds)
-      .in('target_id', targetIds)
       .eq('target_type', targetType)
-
-    const result = new Set<string>()
-    for (const fr of followingRecords ?? []) {
-      result.add(fr.target_id)
-    }
-    return result
+      .not('satisfaction', 'is', null)
+    if (!data || data.length === 0) return null
+    const vals = data.map((r) => r.satisfaction as number)
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
   }
 
   async findByUserAndTarget(userId: string, targetId: string): Promise<DiningRecord[]> {

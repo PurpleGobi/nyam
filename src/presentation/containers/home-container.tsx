@@ -3,20 +3,19 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { UtensilsCrossed, Wine } from 'lucide-react'
+import { UtensilsCrossed, Wine, Users } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget, RecordSource } from '@/domain/entities/record'
-import type { GroupedTarget } from '@/domain/entities/grouped-target'
+import type { HomeTarget } from '@/domain/entities/home-target'
+import type { HomeViewType } from '@/domain/repositories/home-repository'
 import type { ScoreSource } from '@/domain/entities/score'
-import { groupRecordsByTarget } from '@/domain/services/record-grouper'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import { useHomeRecords } from '@/application/hooks/use-home-records'
-import type { ViewType } from '@/application/hooks/use-home-records'
+import { useHomeTargets } from '@/application/hooks/use-home-targets'
 import { useHomeState } from '@/application/hooks/use-home-state'
 import { useCalendarRecords } from '@/application/hooks/use-calendar-records'
 import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
@@ -37,8 +36,12 @@ import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-fil
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 // StatsToggle card removed — stats now toggled via icon in HomeTabs
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
+import { useBubbleList } from '@/application/hooks/use-bubble-list'
+import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 import { useUserCoords } from '@/application/hooks/use-user-coords'
+import { useSocialFilterOptions } from '@/application/hooks/use-social-filter-options'
+import type { SocialFilterState } from '@/presentation/components/home/condition-filter-bar'
 
 // --- Heavy components: lazy-loaded (only fetched when actually rendered) ---
 const CalendarView = dynamic(() => import('@/presentation/components/home/calendar-view').then(m => ({ default: m.CalendarView })), { ssr: false })
@@ -57,114 +60,49 @@ const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-
 function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | undefined {
   if (!source || source === 'bookmark') return undefined
   const map: Record<string, ScoreSource> = {
-    mine: 'my',
+    mine: 'mine',
     following: 'following',
     bubble: 'bubble',
-    public: 'nyam',
+    public: 'public',
   }
   return map[source]
 }
 
-/** group.averageSource → ScoreSource 매핑 */
-function averageSourceToScoreSource(source?: string): ScoreSource | undefined {
-  if (!source) return undefined
-  return mapRecordSourceToScoreSource(source as RecordSource)
-}
-
-function sortRecords(
-  records: RecordWithTarget[],
+function sortHomeTargets(
+  targets: HomeTarget[],
   sort: SortOption,
   userCoords?: { lat: number; lng: number } | null,
-): RecordWithTarget[] {
-  const sorted = [...records]
+): HomeTarget[] {
+  const sorted = [...targets]
   switch (sort) {
     case 'latest':
       return sorted.sort((a, b) => {
-        const dateA = a.visitDate ?? ''
-        const dateB = b.visitDate ?? ''
+        const dateA = a.latestVisitDate ?? ''
+        const dateB = b.latestVisitDate ?? ''
         if (dateA !== dateB) return dateB.localeCompare(dateA)
-        return b.createdAt.localeCompare(a.createdAt)
+        return (b.latestCreatedAt ?? '').localeCompare(a.latestCreatedAt ?? '')
       })
     case 'score_high':
       return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
     case 'score_low':
       return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
     case 'name':
-      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
-    case 'visit_count': {
-      const visitCounts = new Map<string, number>()
-      for (const r of records) {
-        visitCounts.set(r.targetId, (visitCounts.get(r.targetId) ?? 0) + 1)
-      }
-      return sorted.sort((a, b) => (visitCounts.get(b.targetId) ?? 0) - (visitCounts.get(a.targetId) ?? 0))
-    }
-    case 'distance': {
-      if (!userCoords) return sorted
-      return sorted.sort((a, b) => {
-        const distA = a.targetLat != null && a.targetLng != null
-          ? haversineDistance(userCoords.lat, userCoords.lng, a.targetLat, a.targetLng)
-          : Infinity
-        const distB = b.targetLat != null && b.targetLng != null
-          ? haversineDistance(userCoords.lat, userCoords.lng, b.targetLat, b.targetLng)
-          : Infinity
-        return distA - distB
-      })
-    }
-  }
-}
-
-function sortGroupedTargets(
-  groups: GroupedTarget[],
-  sort: SortOption,
-  userCoords?: { lat: number; lng: number } | null,
-): GroupedTarget[] {
-  const sorted = [...groups]
-  switch (sort) {
-    case 'latest':
-      return sorted.sort((a, b) => {
-        const dateA = a.visitDate ?? ''
-        const dateB = b.visitDate ?? ''
-        if (dateA !== dateB) return dateB.localeCompare(dateA)
-        return b.createdAt.localeCompare(a.createdAt)
-      })
-    case 'score_high':
-      return sorted.sort((a, b) => (b.satisfaction ?? 0) - (a.satisfaction ?? 0))
-    case 'score_low':
-      return sorted.sort((a, b) => (a.satisfaction ?? 0) - (b.satisfaction ?? 0))
-    case 'name':
-      return sorted.sort((a, b) => a.targetName.localeCompare(b.targetName))
+      return sorted.sort((a, b) => a.name.localeCompare(b.name))
     case 'visit_count':
       return sorted.sort((a, b) => b.visitCount - a.visitCount)
     case 'distance': {
       if (!userCoords) return sorted
       return sorted.sort((a, b) => {
-        const distA = a.targetLat != null && a.targetLng != null
-          ? haversineDistance(userCoords.lat, userCoords.lng, a.targetLat, a.targetLng)
+        const distA = a.lat != null && a.lng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, a.lat, a.lng)
           : Infinity
-        const distB = b.targetLat != null && b.targetLng != null
-          ? haversineDistance(userCoords.lat, userCoords.lng, b.targetLat, b.targetLng)
+        const distB = b.lat != null && b.lng != null
+          ? haversineDistance(userCoords.lat, userCoords.lng, b.lat, b.lng)
           : Infinity
         return distA - distB
       })
     }
   }
-}
-
-function searchRecords(records: RecordWithTarget[], query: string): RecordWithTarget[] {
-  if (!query.trim()) return records
-  const q = query.trim().toLowerCase()
-  return records.filter((r) =>
-    r.targetName.toLowerCase().includes(q)
-    || (r.targetMeta ?? '').toLowerCase().includes(q)
-    || (r.targetArea ?? '').toLowerCase().includes(q),
-  )
-}
-
-function applyFilterRules(records: RecordWithTarget[], rules: FilterRule[], conjunction: 'and' | 'or'): RecordWithTarget[] {
-  if (rules.length === 0) return records
-  return records.filter((record) =>
-    matchesAllRules(record as unknown as Record<string, unknown>, rules, conjunction),
-  )
 }
 
 /** 와인탭 소팅 옵션 (거리순 미포함) */
@@ -187,6 +125,7 @@ export function HomeContainer() {
   const { user } = useAuth()
   const router = useRouter()
   const { settings } = useSettings()
+  const { bubbles: myBubbles, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null)
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     toggleMap,
@@ -203,6 +142,10 @@ export function HomeContainer() {
 
   // 거리순 소팅 시에만 위치 좌표 요청
   const userCoords = useUserCoords(currentSort === 'distance' || activeTab === 'restaurant')
+
+  // ── 소셜 필터 상태 ──
+  const [socialFilter, setSocialFilter] = useState<SocialFilterState>({ followingUserId: null, bubbleId: null })
+  const socialFilterOptions = useSocialFilterOptions(user?.id ?? null)
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
@@ -234,20 +177,38 @@ export function HomeContainer() {
     return () => { cancelled = true }
   }, [activeTab, user?.id, loadState, setFilterRules])
 
-  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 (useEffect에서 복원 예정)
+  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화
   if (prevTab !== activeTab) {
     setPrevTab(activeTab)
+    setSocialFilter({ followingUserId: null, bubbleId: null })
     if (!initializedTabs.has(activeTab)) {
       setConditionChips([])
     }
   }
 
-  // 칩 변경 → filterRules 동기화 + 저장
+  // 소셜 필터 변경 콜백
+  const handleSocialFilterChange = useCallback((filter: SocialFilterState) => {
+    setSocialFilter(filter)
+  }, [])
+
+  // 칩 변경 → filterRules 동기화 + 저장 + 소셜 필터 정합성
   const handleChipsChange = useCallback((chips: FilterChipItem[]) => {
     setConditionChips(chips)
     const rules = chipsToFilterRules(chips)
     setFilterRules(rules)
     saveState(activeTab, chips)
+
+    // 보기 필터에서 following/bubble 해제 시 소셜 필터도 초기화
+    const viewChip = chips.find((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
+    if (viewChip) {
+      const views = String((viewChip as { value: string }).value).split(',').map((v) => v.trim())
+      setSocialFilter((prev) => ({
+        followingUserId: views.includes('following') ? prev.followingUserId : null,
+        bubbleId: views.includes('bubble') ? prev.bubbleId : null,
+      }))
+    } else {
+      // view 칩이 없으면 (전체 보기) 소셜 필터 유지
+    }
   }, [setFilterRules, saveState, activeTab])
 
   // Advanced Filter 적용
@@ -264,15 +225,15 @@ export function HomeContainer() {
   }, [conditionChips, handleChipsChange])
 
   // ── conditionChips에서 view 값 추출 ──
-  const viewTypes: ViewType[] = useMemo(() => {
-    const views: ViewType[] = []
+  const viewTypes: HomeViewType[] = useMemo(() => {
+    const views: HomeViewType[] = []
     for (const chip of conditionChips) {
       if (isAdvancedChip(chip)) continue
       if (chip.attribute !== 'view') continue
       const vals = String(chip.value).split(',')
       for (const v of vals) {
         const trimmed = v.trim()
-        if (trimmed === 'visited' || trimmed === 'bookmark' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
+        if (trimmed === 'visited' || trimmed === 'tasted' || trimmed === 'bookmark' || trimmed === 'cellar' || trimmed === 'unrated' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
           views.push(trimmed)
         }
       }
@@ -285,39 +246,42 @@ export function HomeContainer() {
     return filterRules.filter((r) => r.attribute !== 'view')
   }, [filterRules])
 
-  // ── useHomeRecords: view 기반 서버 데이터 페칭 ──
+  // ── useHomeTargets: view 기반 서버 데이터 페칭 ──
   const {
-    records,
-  } = useHomeRecords({
+    targets,
+  } = useHomeTargets({
     userId: user?.id ?? null,
     tab: activeTab,
     viewTypes,
+    socialFilter: (socialFilter.followingUserId || socialFilter.bubbleId) ? socialFilter : undefined,
   })
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)
 
-  // AI 인사말 — greeting-generator 기반
+  // AI 인사말 — targets 기반
   const recentRecordsForGreeting = useMemo(() => {
-    return records
-      .filter((r) => r.targetType === 'restaurant' && r.visitDate)
+    return targets
+      .filter((t) => t.targetType === 'restaurant' && t.latestVisitDate)
       .slice(0, 5)
-      .map((r) => ({
-        restaurantName: r.targetName,
-        restaurantId: r.targetId,
-        satisfaction: r.satisfaction ?? 0,
-        visitDate: r.visitDate ?? '',
-        area: '',
-        scene: r.scene ?? null,
+      .map((t) => ({
+        restaurantName: t.name,
+        restaurantId: t.targetId,
+        satisfaction: t.satisfaction ?? 0,
+        visitDate: t.latestVisitDate ?? '',
+        area: t.district ?? '',
+        scene: t.latestScene ?? null,
       }))
-  }, [records])
+  }, [targets])
 
   const weeklyRecordCount = useMemo(() => {
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
     const cutoff = oneWeekAgo.toISOString().slice(0, 10)
-    return records.filter((r) => (r.visitDate ?? r.createdAt) >= cutoff).length
-  }, [records])
+    return targets.reduce((count, t) =>
+      count + t.records.filter((r) => (r.visitDate ?? r.createdAt) >= cutoff).length,
+    0)
+  }, [targets])
 
   const {
     greeting,
@@ -334,7 +298,7 @@ export function HomeContainer() {
   const [isFollowingMode, setIsFollowingMode] = useState(false)
   const followingFeed = useFollowingFeed({
     userId: user?.id ?? null,
-    targetType: activeTab,
+    targetType: activeTab === 'bubble' ? 'restaurant' : activeTab,
     enabled: isFollowingMode,
   })
 
@@ -357,7 +321,8 @@ export function HomeContainer() {
     ? RESTAURANT_FILTER_ATTRIBUTES
     : WINE_FILTER_ATTRIBUTES
 
-  const accentType = activeTab === 'restaurant' ? 'food' as const : 'wine' as const
+  const recordTab = activeTab === 'bubble' ? 'restaurant' : activeTab
+  const accentType = recordTab === 'restaurant' ? 'food' as const : 'wine' as const
   const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   const canShowStats = activeTab === 'restaurant'
@@ -374,31 +339,37 @@ export function HomeContainer() {
     toggleSort()
   }, [setCurrentSort, toggleSort])
 
-  // 필터/검색 적용된 레코드 (그룹화 전) — view 칩은 이미 서버에서 처리됨
-  const filteredRecords = useMemo(() => {
-    let result = records
-    result = applyFilterRules(result, nonViewFilterRules, conjunction)
-    result = searchRecords(result, searchQuery)
+  // 필터/검색 적용 (타겟 기반, 그룹화 불필요)
+  const filteredTargets = useMemo(() => {
+    let result = targets
+    if (nonViewFilterRules.length > 0) {
+      result = result.filter((t) =>
+        matchesAllRules(t as unknown as Record<string, unknown>, nonViewFilterRules, conjunction),
+      )
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(q)
+        || (t.genre ?? '').toLowerCase().includes(q)
+        || (t.district ?? '').toLowerCase().includes(q)
+        || (t.variety ?? '').toLowerCase().includes(q)
+        || (t.region ?? '').toLowerCase().includes(q),
+      )
+    }
     return result
-  }, [records, nonViewFilterRules, conjunction, searchQuery])
+  }, [targets, nonViewFilterRules, conjunction, searchQuery])
 
-  // 그룹화 + 소팅 (카드/리스트/맵 뷰용)
-  const allGroupedTargets = useMemo(() => {
-    const grouped = groupRecordsByTarget(filteredRecords)
-    return sortGroupedTargets(grouped, currentSort, userCoords)
-  }, [filteredRecords, currentSort, userCoords])
-
-  // 캘린더 뷰용 개별 레코드 (소팅 적용)
-  const allSortedRecords = useMemo(() => {
-    if (viewMode !== 'calendar') return []
-    return sortRecords(filteredRecords, currentSort, userCoords)
-  }, [filteredRecords, currentSort, viewMode, userCoords])
+  // 소팅
+  const allSortedTargets = useMemo(() => {
+    return sortHomeTargets(filteredTargets, currentSort, userCoords)
+  }, [filteredTargets, currentSort, userCoords])
 
   // 페이지네이션: 카드 5개, 리스트/지도 10개
   const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
   const [currentRecordPage, setCurrentRecordPage] = useState(1)
-  const totalRecordPages = Math.max(1, Math.ceil(allGroupedTargets.length / pageSize))
-  const displayGrouped = allGroupedTargets.slice(
+  const totalRecordPages = Math.max(1, Math.ceil(allSortedTargets.length / pageSize))
+  const displayTargets = allSortedTargets.slice(
     (currentRecordPage - 1) * pageSize,
     currentRecordPage * pageSize,
   )
@@ -411,11 +382,36 @@ export function HomeContainer() {
     setCurrentRecordPage(1)
   }
 
-  // 캘린더 레코드 — 본인 기록(visited)만 사용
-  const visitedRecords = useMemo(() =>
-    records.filter((r) => r.source === 'mine' || r.source === 'following'),
-    [records],
-  )
+  // [FIX #1] targets에서 RecordWithTarget 호환 배열 생성 (캘린더용)
+  const visitedRecords: RecordWithTarget[] = useMemo(() => {
+    return targets
+      .filter((t) => t.sources.includes('mine') || t.sources.includes('following'))
+      .flatMap((t) =>
+        t.records.map((r) => ({
+          ...r,
+          targetName: t.name,
+          targetMeta: t.genre ?? t.variety ?? null,
+          targetArea: t.district ?? t.area?.[0] ?? t.region ?? null,
+          targetPhotoUrl: t.photoUrl,
+          targetLat: t.lat,
+          targetLng: t.lng,
+          source: (t.scoreSource ?? 'mine') as RecordSource,
+          genre: t.genre,
+          district: t.district,
+          area: t.area,
+          country: t.country,
+          variety: t.variety,
+          region: t.region,
+          wineType: t.wineType,
+          vintage: t.vintage,
+          priceRange: t.priceRange,
+          michelinStars: t.michelinStars,
+          hasBlueRibbon: t.hasBlueRibbon,
+          mediaAppearances: t.mediaAppearances,
+        } satisfies RecordWithTarget)),
+      )
+  }, [targets])
+
   const { days: calendarDays } = useCalendarRecords({
     records: visitedRecords,
     year: calYear,
@@ -423,10 +419,17 @@ export function HomeContainer() {
   })
 
   // 캘린더 선택 날짜의 상세 기록
+  const allSortedVisitedRecords = useMemo(() =>
+    [...visitedRecords].sort((a, b) =>
+      (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt),
+    ),
+    [visitedRecords],
+  )
+
   const selectedDayRecords = useMemo(() => {
     if (!selectedDate) return []
-    return allSortedRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
-  }, [allSortedRecords, selectedDate])
+    return allSortedVisitedRecords.filter((r) => r.visitDate?.startsWith(selectedDate))
+  }, [allSortedVisitedRecords, selectedDate])
 
   const selectedDateLabel = useMemo(() => {
     if (!selectedDate) return ''
@@ -435,21 +438,21 @@ export function HomeContainer() {
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`
   }, [selectedDate])
 
-  // 맵 레코드 (식당 전용 — 그룹화로 중복 마커 제거)
+  // 맵 레코드 (식당 전용 — 타겟 기반으로 중복 마커 제거)
   const mapRecords: MapRecord[] = useMemo(() => {
     if (activeTab !== 'restaurant') return []
-    return displayGrouped.map((g) => ({
-      restaurantId: g.targetId,
-      name: g.targetName,
-      genre: g.targetMeta ?? '',
-      area: g.targetArea ?? '',
-      lat: g.targetLat ?? 0,
-      lng: g.targetLng ?? 0,
-      score: g.satisfaction,
+    return displayTargets.map((t) => ({
+      restaurantId: t.targetId,
+      name: t.name,
+      genre: t.genre ?? '',
+      area: t.district ?? t.area?.[0] ?? '',
+      lat: t.lat ?? 0,
+      lng: t.lng ?? 0,
+      score: t.satisfaction,
       distanceKm: null,
-      photoUrl: g.targetPhotoUrl,
+      photoUrl: t.photoUrl,
     }))
-  }, [displayGrouped, activeTab])
+  }, [displayTargets, activeTab])
 
   // 빈 상태
   const renderEmptyState = () => (
@@ -494,7 +497,7 @@ export function HomeContainer() {
             onMonthChange={(y, m) => { setCalYear(y); setCalMonth(m); setSelectedDate(null) }}
             onDaySelect={setSelectedDate}
             selectedDate={selectedDate}
-            accentType={activeTab}
+            accentType={recordTab}
           />
           {selectedDate && selectedDayRecords.length > 0 && (
             <CalendarDayDetail
@@ -508,7 +511,7 @@ export function HomeContainer() {
                 targetType: r.targetType,
                 targetId: r.targetId,
               }))}
-              accentType={activeTab}
+              accentType={recordTab}
             />
           )}
         </div>
@@ -517,25 +520,25 @@ export function HomeContainer() {
 
     // 리스트(list) 뷰
     if (viewMode === 'list') {
-      if (displayGrouped.length === 0) return renderEmptyState()
+      if (displayTargets.length === 0) return renderEmptyState()
       return (
         <div className="content-detail px-4 pb-24 md:px-8">
-          {displayGrouped.map((group, i) => (
+          {displayTargets.map((target, i) => (
             <CompactListItem
-              key={group.targetId}
+              key={target.targetId}
               rank={i + 1}
-              photoUrl={group.targetPhotoUrl}
-              name={group.targetName}
-              meta={[group.targetMeta, group.visitDate].filter(Boolean).join(' · ')}
-              score={group.satisfaction}
-              axisX={group.axisX}
-              axisY={group.axisY}
-              accentType={activeTab}
-              visitCount={group.visitCount}
-              scoreSource={averageSourceToScoreSource(group.averageSource)}
+              photoUrl={target.photoUrl}
+              name={target.name}
+              meta={[target.genre ?? target.variety, target.latestVisitDate].filter(Boolean).join(' · ')}
+              score={target.satisfaction}
+              axisX={target.axisX}
+              axisY={target.axisY}
+              accentType={recordTab}
+              visitCount={target.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
               onClick={() =>
                 router.push(
-                  `/${group.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${group.targetId}`,
+                  `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
                 )
               }
             />
@@ -545,66 +548,58 @@ export function HomeContainer() {
     }
 
     // 카드(card) 뷰 — 기본
-    if (displayGrouped.length === 0) return renderEmptyState()
+    if (displayTargets.length === 0) return renderEmptyState()
     return (
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-        {displayGrouped.map((group) => {
-          // 소스 우선순위에 따른 최신 기록일 + 기록 갯수
-          const src = group.averageSource
-          const srcRecords = (!src || src === 'mine')
-            ? group.allRecords.filter((r) => !r.source || r.source === 'mine')
-            : group.allRecords.filter((r) => r.source === src)
-          const latestSrcRecord = srcRecords.length > 0
-            ? [...srcRecords].sort((a, b) => (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt))[0]
-            : null
-          const sourceDate = latestSrcRecord?.visitDate ?? group.visitDate
-          const sourceCount = srcRecords.length > 0 ? srcRecords.length : group.visitCount
-          const scoreSource = averageSourceToScoreSource(group.averageSource)
+        {displayTargets.map((target) => {
+          // [FIX #6] status 분기: 식당 vs 와인
+          const status: 'visited' | 'bookmark' | 'cellar' | 'tasted' = activeTab === 'wine'
+            ? (target.isCellar ? 'cellar' : (target.visitCount > 0 ? 'tasted' : 'bookmark'))
+            : (target.visitCount > 0 ? 'visited' : 'bookmark')
 
           return activeTab === 'wine' ? (
             <WineCard
-              key={group.targetId}
-              id={group.latestRecordId}
+              key={target.targetId}
+              id={target.latestRecordId ?? target.targetId}
               wine={{
-                id: group.targetId,
-                name: group.targetName,
-                wineType: '',
-                vintage: group.vintage ?? null,
-                country: group.country ?? null,
-                variety: group.variety ?? group.targetMeta ?? null,
-                region: group.region ?? group.targetArea ?? null,
-                photoUrl: group.targetPhotoUrl,
+                id: target.targetId,
+                name: target.name,
+                wineType: target.wineType ?? '',
+                vintage: target.vintage ?? null,
+                country: target.country ?? null,
+                variety: target.variety ?? null,
+                region: target.region ?? null,
+                photoUrl: target.photoUrl,
               }}
               myRecord={{
-                satisfaction: group.satisfaction,
-                axisX: group.axisX,
-                axisY: group.axisY,
-                visitDate: group.visitDate,
-                listStatus: group.listStatus ?? 'tasted',
-                purchasePrice: group.allRecords[0]?.purchasePrice ?? null,
+                satisfaction: target.satisfaction,
+                axisX: target.axisX,
+                axisY: target.axisY,
+                visitDate: target.latestVisitDate,
+                purchasePrice: target.records[0]?.purchasePrice ?? null,
               }}
-              latestDate={sourceDate}
-              visitCount={sourceCount}
-              scoreSource={scoreSource}
+              latestDate={target.latestVisitDate}
+              visitCount={target.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
             />
           ) : (
             <RecordCard
-              key={group.targetId}
-              id={group.latestRecordId}
-              targetId={group.targetId}
-              targetType={group.targetType}
-              name={group.targetName}
-              meta={[group.targetMeta, group.targetArea].filter(Boolean).join(' · ')}
-              photoUrl={group.targetPhotoUrl}
-              satisfaction={group.satisfaction}
-              axisX={group.axisX}
-              axisY={group.axisY}
-              status={group.listStatus ?? 'visited'}
-              visitCount={sourceCount}
-              scoreSource={scoreSource}
-              latestDate={sourceDate}
-              distanceKm={userCoords && group.targetLat != null && group.targetLng != null
-                ? haversineDistance(userCoords.lat, userCoords.lng, group.targetLat, group.targetLng)
+              key={target.targetId}
+              id={target.latestRecordId ?? target.targetId}
+              targetId={target.targetId}
+              targetType={target.targetType}
+              name={target.name}
+              meta={[target.genre, target.district ?? target.area?.[0]].filter(Boolean).join(' · ')}
+              photoUrl={target.photoUrl}
+              satisfaction={target.satisfaction}
+              axisX={target.axisX}
+              axisY={target.axisY}
+              status={status}
+              visitCount={target.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+              latestDate={target.latestVisitDate}
+              distanceKm={userCoords && target.lat != null && target.lng != null
+                ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
             />
           )
@@ -614,6 +609,7 @@ export function HomeContainer() {
   }
 
   const isCalendarMode = viewMode === 'calendar'
+  const isBubbleTab = activeTab === 'bubble'
 
   return (
     <div className="content-feed flex min-h-dvh flex-col bg-[var(--bg)]">
@@ -650,7 +646,7 @@ export function HomeContainer() {
           accentType={accentType}
         />
 
-        {!isCalendarMode && isSortOpen && (
+        {!isBubbleTab && !isCalendarMode && isSortOpen && (
           <div className="relative">
             <SortDropdown
               currentSort={currentSort}
@@ -661,8 +657,8 @@ export function HomeContainer() {
           </div>
         )}
 
-        {/* 조건 필터 칩 바 — 캘린더/팔로잉 모드에서는 숨김 */}
-        {!isCalendarMode && (
+        {/* 조건 필터 칩 바 — 버블/캘린더/팔로잉 모드에서는 숨김 */}
+        {!isBubbleTab && !isCalendarMode && (
           <ConditionFilterBar
             chips={conditionChips}
             onChipsChange={handleChipsChange}
@@ -673,6 +669,19 @@ export function HomeContainer() {
             recordTotalPages={totalRecordPages}
             onRecordPagePrev={() => setCurrentRecordPage((p) => Math.max(1, p - 1))}
             onRecordPageNext={() => setCurrentRecordPage((p) => Math.min(totalRecordPages, p + 1))}
+            socialFollowingUsers={socialFilterOptions.followingUsers.map((u) => ({
+              id: u.id,
+              label: u.nickname,
+              iconUrl: u.avatarUrl,
+            }))}
+            socialBubbles={socialFilterOptions.myBubbles.map((b) => ({
+              id: b.id,
+              label: b.name,
+              iconUrl: b.icon,
+              iconBgColor: b.iconBgColor,
+            }))}
+            socialFilter={socialFilter}
+            onSocialFilterChange={handleSocialFilterChange}
           />
         )}
 
@@ -686,8 +695,52 @@ export function HomeContainer() {
         />
         </div>
 
+        {/* 버블 탭 콘텐츠 */}
+        {isBubbleTab && (
+          bubblesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
+            </div>
+          ) : myBubbles.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+              <div
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
+                style={{ backgroundColor: 'var(--accent-social-light)' }}
+              >
+                <Users size={32} style={{ color: 'var(--accent-social)' }} />
+              </div>
+              <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
+                아직 버블이 없어요
+              </p>
+              <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
+                버블을 만들어 맛집을 공유해보세요
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/bubbles/create')}
+                className="mt-4 rounded-full px-5 py-2.5 text-[13px] font-bold text-white transition-transform active:scale-95"
+                style={{ backgroundColor: 'var(--accent-social)' }}
+              >
+                첫 버블 만들기
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 px-4 pb-4 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
+              {myBubbles.map((b) => (
+                <BubbleCard
+                  key={b.id}
+                  bubble={b}
+                  role={b.createdBy === user?.id ? 'mine' : 'joined'}
+                  isRecentlyActive={b.lastActivityAt ? Date.now() - new Date(b.lastActivityAt).getTime() < 86400000 : false}
+                  onClick={() => router.push(`/bubbles/${b.id}`)}
+                />
+              ))}
+            </div>
+          )
+        )}
+
         {/* 팔로잉 피드 */}
-        {isFollowingMode && (
+        {!isBubbleTab && isFollowingMode && (
           <FollowingFeed
             items={followingFeed.items}
             isLoading={followingFeed.isLoading}
@@ -700,8 +753,8 @@ export function HomeContainer() {
           />
         )}
 
-        {/* 통계 패널 — 아이콘으로 토글 (지도/팔로잉 모드에서는 숨김) */}
-        {isStatsOpen && !isFollowingMode && canShowStats && (
+        {/* 통계 패널 — 아이콘으로 토글 (버블/지도/팔로잉 모드에서는 숨김) */}
+        {!isBubbleTab && isStatsOpen && !isFollowingMode && canShowStats && (
           <div className="px-4 pt-2 md:px-8">
             <div className="flex flex-col gap-5">
               {activeTab === 'restaurant' && (
@@ -782,11 +835,14 @@ export function HomeContainer() {
           </div>
         )}
 
-        {/* 뷰 모드별 콘텐츠 — 팔로잉 모드에서는 숨김 */}
-        {!isFollowingMode && renderContent()}
+        {/* 뷰 모드별 콘텐츠 — 버블/팔로잉 모드에서는 숨김 */}
+        {!isBubbleTab && !isFollowingMode && renderContent()}
       </div>
 
-      <FabAdd variant={activeTab === 'wine' ? 'wine' : 'food'} onClick={() => router.push(`/add?type=${activeTab}`)} />
+      <FabAdd
+        variant={isBubbleTab ? 'social' : activeTab === 'wine' ? 'wine' : 'food'}
+        onClick={() => isBubbleTab ? router.push('/bubbles/create') : router.push(`/add?type=${activeTab}`)}
+      />
 
     </div>
   )

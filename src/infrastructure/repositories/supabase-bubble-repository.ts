@@ -439,7 +439,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         comment: (rec?.comment as string) ?? null,
         scene: (rec?.scene as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
-        listStatus: null,
         authorNickname: (author?.nickname as string) ?? '',
         authorAvatar: (author?.avatar_url as string) ?? null,
         authorAvatarColor: (author?.avatar_color as string) ?? null,

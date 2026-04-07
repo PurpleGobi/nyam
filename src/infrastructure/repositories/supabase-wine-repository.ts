@@ -56,7 +56,6 @@ function mapDbToWine(data: Record<string, unknown>): Wine {
 function mapDbToRecord(row: Record<string, unknown>): DiningRecord {
   return {
     id: row.id as string,
-    listId: (row.list_id as string) ?? '',
     userId: row.user_id as string,
     targetId: row.target_id as string,
     targetType: row.target_type as DiningRecord['targetType'],

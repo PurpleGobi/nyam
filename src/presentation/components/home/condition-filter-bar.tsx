@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import Image from 'next/image'
 import { Plus, X, SlidersHorizontal, Check, MapPin } from 'lucide-react'
 import type { FilterAttribute, CascadingOption, LocationTab } from '@/domain/entities/filter-config'
 import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
@@ -17,6 +18,18 @@ import { InlinePager } from '@/presentation/components/home/inline-pager'
    - 칩이 없으면 + 버튼만 표시 (전체보기 상태)
    ================================================================ */
 
+export interface SocialFilterOption {
+  id: string
+  label: string
+  iconUrl?: string | null
+  iconBgColor?: string | null
+}
+
+export interface SocialFilterState {
+  followingUserId: string | null
+  bubbleId: string | null
+}
+
 interface ConditionFilterBarProps {
   chips: FilterChipItem[]
   onChipsChange: (chips: FilterChipItem[]) => void
@@ -27,6 +40,14 @@ interface ConditionFilterBarProps {
   recordTotalPages?: number
   onRecordPagePrev?: () => void
   onRecordPageNext?: () => void
+  /** 소셜 필터: 팔로잉 유저 목록 */
+  socialFollowingUsers?: SocialFilterOption[]
+  /** 소셜 필터: 내 버블 목록 */
+  socialBubbles?: SocialFilterOption[]
+  /** 소셜 필터: 현재 선택 상태 */
+  socialFilter?: SocialFilterState
+  /** 소셜 필터: 변경 콜백 */
+  onSocialFilterChange?: (filter: SocialFilterState) => void
 }
 
 /* ── 포탈 팝오버 (버튼 기준 위치) ── */
@@ -98,6 +119,10 @@ export function ConditionFilterBar({
   recordTotalPages,
   onRecordPagePrev,
   onRecordPageNext,
+  socialFollowingUsers,
+  socialBubbles,
+  socialFilter,
+  onSocialFilterChange,
 }: ConditionFilterBarProps) {
   const showPager = recordTotalPages != null && recordTotalPages > 1
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -128,6 +153,9 @@ export function ConditionFilterBar({
     level: number       // 0: 도시, 1: 구/생활권
     city: string | null
   } | null>(null)
+
+  // 소셜 필터 하위 드롭다운 열림 상태
+  const [socialSubOpen, setSocialSubOpen] = useState<'following' | 'bubble' | null>(null)
 
   const accent = accentType === 'wine' ? 'var(--accent-wine)' : accentType === 'social' ? 'var(--accent-social)' : 'var(--accent-food)'
   const wineClass = accentType === 'wine' ? 'wine' : accentType === 'social' ? 'social' : ''
@@ -583,35 +611,143 @@ export function ConditionFilterBar({
         <Popover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={() => {
           setMultiSelectState(null)
           setIsAddOpen(false)
+          setSocialSubOpen(null)
           multiSelectChipIdRef.current = null
         }}>
           <button
             type="button"
-            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); multiSelectChipIdRef.current = null }}
+            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); setSocialSubOpen(null); multiSelectChipIdRef.current = null }}
             className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
             style={{ color: 'var(--text-hint)' }}
           >
             ← {multiSelectState.attribute.label}
           </button>
-          {multiSelectState.attribute.options?.map((opt) => {
+          {multiSelectState.attribute.options?.map((opt, idx, arr) => {
             const isChecked = multiSelectState.selected.has(opt.value)
+            const prevGroup = idx > 0 ? arr[idx - 1].group : undefined
+            const showGroupDivider = opt.group !== undefined && opt.group !== prevGroup
+            const hasSocialSub = (opt.value === 'following' && socialFollowingUsers && socialFollowingUsers.length > 0)
+              || (opt.value === 'bubble' && socialBubbles && socialBubbles.length > 0)
+            const isSocialSubOpen = socialSubOpen === opt.value && isChecked && hasSocialSub
+            const socialItems = opt.value === 'following' ? socialFollowingUsers : opt.value === 'bubble' ? socialBubbles : undefined
+            const currentSocialId = opt.value === 'following' ? socialFilter?.followingUserId : opt.value === 'bubble' ? socialFilter?.bubbleId : null
             return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  const next = new Set(multiSelectState.selected)
-                  if (isChecked) next.delete(opt.value)
-                  else next.add(opt.value)
-                  setMultiSelectState({ ...multiSelectState, selected: next })
-                  applyMultiSelectImmediate(multiSelectState.attribute, next)
-                }}
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
-                style={{ color: 'var(--text)' }}
-              >
-                <span>{opt.label}</span>
-                {isChecked && <Check size={14} style={{ color: accent }} />}
-              </button>
+              <div key={opt.value}>
+                {showGroupDivider && (
+                  <div
+                    className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                    style={{
+                      color: 'var(--text-hint)',
+                      borderTop: idx > 0 ? '1px solid var(--border)' : undefined,
+                      marginTop: idx > 0 ? 4 : undefined,
+                      paddingTop: idx > 0 ? 6 : undefined,
+                    }}
+                  >
+                    {opt.group}
+                  </div>
+                )}
+                <div className="flex w-full items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new Set(multiSelectState.selected)
+                      if (isChecked) {
+                        next.delete(opt.value)
+                        // 해제 시 소셜 필터도 초기화
+                        if (opt.value === 'following' && onSocialFilterChange && socialFilter) {
+                          onSocialFilterChange({ ...socialFilter, followingUserId: null })
+                        }
+                        if (opt.value === 'bubble' && onSocialFilterChange && socialFilter) {
+                          onSocialFilterChange({ ...socialFilter, bubbleId: null })
+                        }
+                        setSocialSubOpen(null)
+                      } else {
+                        next.add(opt.value)
+                      }
+                      setMultiSelectState({ ...multiSelectState, selected: next })
+                      applyMultiSelectImmediate(multiSelectState.attribute, next)
+                    }}
+                    className="flex flex-1 items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                    style={{ color: 'var(--text)' }}
+                  >
+                    <span>{opt.label}</span>
+                    {isChecked && !hasSocialSub && <Check size={14} style={{ color: accent }} />}
+                  </button>
+                  {/* ▾ 소셜 하위 필터 토글 */}
+                  {isChecked && hasSocialSub && (
+                    <button
+                      type="button"
+                      onClick={() => setSocialSubOpen(isSocialSubOpen ? null : opt.value as 'following' | 'bubble')}
+                      className="flex items-center gap-0.5 px-2 py-2 text-[11px]"
+                      style={{ color: accent }}
+                    >
+                      <Check size={14} style={{ color: accent }} />
+                      <span style={{
+                        fontSize: '9px',
+                        transition: 'transform .15s',
+                        transform: isSocialSubOpen ? 'rotate(180deg)' : '',
+                      }}>▾</span>
+                    </button>
+                  )}
+                </div>
+                {/* 소셜 하위 목록 (인라인 확장) */}
+                {isSocialSubOpen && socialItems && (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', margin: '0 8px 4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!onSocialFilterChange || !socialFilter) return
+                        if (opt.value === 'following') onSocialFilterChange({ ...socialFilter, followingUserId: null })
+                        if (opt.value === 'bubble') onSocialFilterChange({ ...socialFilter, bubbleId: null })
+                      }}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-[12px]"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      <span>전체</span>
+                      {!currentSocialId && <Check size={12} style={{ color: accent }} />}
+                    </button>
+                    {socialItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          if (!onSocialFilterChange || !socialFilter) return
+                          const isSame = currentSocialId === item.id
+                          if (opt.value === 'following') {
+                            onSocialFilterChange({ ...socialFilter, followingUserId: isSame ? null : item.id })
+                          }
+                          if (opt.value === 'bubble') {
+                            onSocialFilterChange({ ...socialFilter, bubbleId: isSame ? null : item.id })
+                          }
+                        }}
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-[12px]"
+                        style={{ color: 'var(--text)' }}
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          {item.iconUrl ? (
+                            <Image
+                              src={item.iconUrl}
+                              alt=""
+                              width={16}
+                              height={16}
+                              className="h-4 w-4 rounded-full object-cover"
+                            />
+                          ) : item.iconBgColor ? (
+                            <span
+                              className="flex h-4 w-4 items-center justify-center rounded-full text-[8px]"
+                              style={{ backgroundColor: item.iconBgColor, color: 'var(--bg)' }}
+                            >
+                              {item.label.charAt(0)}
+                            </span>
+                          ) : null}
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                        {currentSocialId === item.id && <Check size={12} style={{ color: accent }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )
           })}
         </Popover>

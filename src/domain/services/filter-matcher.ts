@@ -17,7 +17,7 @@ function periodToDays(period: string): number | null {
   }
 }
 
-/** satisfaction 범위값 → [min, max) 변환 */
+/** satisfaction 범위값 -> [min, max) 변환 */
 function satisfactionRange(value: string): [number, number] {
   switch (value) {
     case '90': return [90, 101]
@@ -28,7 +28,7 @@ function satisfactionRange(value: string): [number, number] {
   }
 }
 
-/** companion_count 범위값 → [min, max] 변환 */
+/** companion_count 범위값 -> [min, max] 변환 */
 function companionRange(value: string): [number, number] {
   switch (value) {
     case '1': return [1, 1]
@@ -39,7 +39,7 @@ function companionRange(value: string): [number, number] {
   }
 }
 
-/** complexity 범위값 → [min, max] 변환 */
+/** complexity 범위값 -> [min, max] 변환 */
 function complexityRange(value: string): [number, number] {
   switch (value) {
     case 'simple': return [0, 33]
@@ -75,7 +75,6 @@ const FIELD_MAP: Record<string, string> = {
   pairing_categories: 'pairingCategories',
   aroma_labels: 'aromaPrimary',
   body_level: 'bodyLevel',
-  area: 'targetArea',
   country: 'country',
   city: 'city',
   district: 'district',
@@ -120,7 +119,7 @@ function matchPrestige(record: Record<string, unknown>, value: string): boolean 
 export function matchRule(record: Record<string, unknown>, rule: FilterRule): boolean {
   const { attribute, operator, value } = rule
 
-  // ── 특수 속성: satisfaction 범위 ──
+  // -- 특수 속성: satisfaction 범위 --
   if (attribute === 'satisfaction' && (operator === 'eq' || operator === 'neq')) {
     const score = Number(record.satisfaction ?? 0)
     const [min, max] = satisfactionRange(String(value))
@@ -128,9 +127,10 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? inRange : !inRange
   }
 
-  // ── 특수 속성: visit_date 기간 ──
+  // -- 특수 속성: visit_date 기간 --
+  // [FIX #2] HomeTarget은 latestVisitDate, RecordWithTarget은 visitDate
   if (attribute === 'visit_date' && (operator === 'eq' || operator === 'neq')) {
-    const visitDate = record.visitDate as string | null
+    const visitDate = (record.latestVisitDate ?? record.visitDate) as string | null
     if (!visitDate) return operator === 'neq'
     const days = periodToDays(String(value))
     if (days === null) return true
@@ -139,15 +139,25 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 특수 속성: companion_count 범위 ──
+  // -- 특수 속성: companion_count 범위 --
+  // [FIX #7] sources 존재 = HomeTarget -> records[0]에서 추출
   if (attribute === 'companion_count' && (operator === 'eq' || operator === 'neq')) {
-    const count = Number(record.companionCount ?? 0)
+    const sources = record.sources as string[] | undefined
+    let count: number
+    if (sources) {
+      // HomeTarget: records 배열에서 최신 기록의 companionCount
+      const records = record.records as Array<{ companionCount: number | null }> | undefined
+      count = records?.[0]?.companionCount ?? 0
+    } else {
+      // RecordWithTarget: 직접 필드
+      count = Number(record.companionCount ?? 0)
+    }
     const [min, max] = companionRange(String(value))
     const inRange = count >= min && count <= max
     return operator === 'eq' ? inRange : !inRange
   }
 
-  // ── 특수 속성: complexity 범위 ──
+  // -- 특수 속성: complexity 범위 --
   if (attribute === 'complexity' && (operator === 'eq' || operator === 'neq')) {
     const score = Number(record.complexity ?? 0)
     const [min, max] = complexityRange(String(value))
@@ -155,53 +165,55 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? inRange : !inRange
   }
 
-  // ── 특수 속성: prestige (미슐랭/블루리본/TV/없음) ──
+  // -- 특수 속성: prestige (미슐랭/블루리본/TV/없음) --
   if (attribute === 'prestige' && (operator === 'eq' || operator === 'neq')) {
     const matches = matchPrestige(record, String(value))
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 가상 속성: view=visited → listStatus로 매칭 ──
-  if (attribute === 'view' && String(value) === 'visited') {
-    const listStatus = String(record.listStatus ?? '')
-    const matches = listStatus === 'visited' || listStatus === 'tasted'
-    return operator === 'eq' ? matches : !matches
+  // -- view 필터 매칭 --
+  // [FIX #7] sources 배열(HomeTarget) / source 필드(RecordWithTarget) 하위 호환
+  if (attribute === 'view') {
+    const viewValue = String(value)
+    const sources = record.sources as string[] | undefined
+
+    if (viewValue === 'visited' || viewValue === 'tasted') {
+      const matches = sources ? sources.includes('mine') : record.source === 'mine'
+      return operator === 'eq' ? matches : !matches
+    }
+    if (viewValue === 'bookmark') {
+      const matches = sources ? sources.includes('bookmark') : record.source === 'bookmark'
+      return operator === 'eq' ? matches : !matches
+    }
+    if (viewValue === 'cellar') {
+      // HomeTarget: isCellar 직접 확인, RecordWithTarget: 서버에서 이미 필터링
+      if (sources) {
+        const matches = record.isCellar === true
+        return operator === 'eq' ? matches : !matches
+      }
+      return true
+    }
+    if (viewValue === 'unrated') {
+      if (sources) {
+        // HomeTarget: axisX가 null인지 확인
+        const matches = record.axisX == null
+        return operator === 'eq' ? matches : !matches
+      }
+      const axisX = record.axisX ?? record['axis_x']
+      const matches = axisX == null
+      return operator === 'eq' ? matches : !matches
+    }
+    // bubble / public / following -> 서버 쿼리로 처리됨
+    if (viewValue === 'bubble' || viewValue === 'public' || viewValue === 'following') {
+      if (sources) {
+        const matches = sources.includes(viewValue)
+        return operator === 'eq' ? matches : !matches
+      }
+      return true
+    }
   }
 
-  // ���─ 가상 속성: view=tasted → listStatus로 매칭 (와인) ──
-  if (attribute === 'view' && String(value) === 'tasted') {
-    const listStatus = String(record.listStatus ?? '')
-    const matches = listStatus === 'tasted'
-    return operator === 'eq' ? matches : !matches
-  }
-
-  // ── 가상 속성: view=bookmark → source가 bookmark이면 매칭 ──
-  if (attribute === 'view' && String(value) === 'bookmark') {
-    const matches = record.source === 'bookmark'
-    return operator === 'eq' ? matches : !matches
-  }
-
-  // ── 가상 속성: view=cellar → listStatus로 매칭 (와인) ──
-  if (attribute === 'view' && String(value) === 'cellar') {
-    const listStatus = String(record.listStatus ?? '')
-    const matches = listStatus === 'cellar'
-    return operator === 'eq' ? matches : !matches
-  }
-
-  // ── ���상 속성: view=unrated → 점수 미입력 기록 ──
-  if (attribute === 'view' && String(value) === 'unrated') {
-    const axisX = record.axisX ?? record['axis_x']
-    const matches = axisX == null
-    return operator === 'eq' ? matches : !matches
-  }
-
-  // ── 가상 속성: view=bubble / view=public / view=following → 서버 쿼리로 처리�� ──
-  // 클라이언트 필터에 도달하면 이미 서버가 필터���한 데이터이므로 통과
-  if (attribute === 'view' && (String(value) === 'bubble' || String(value) === 'public' || String(value) === 'following')) {
-    return true
-  }
-
-  // ── 배열 속성: area (생활권, TEXT[]) ──
+  // -- 배열 속성: area (생활권, TEXT[]) --
   if (attribute === 'area') {
     const arr = record['area'] as string[] | null | undefined
     if (!arr || !Array.isArray(arr)) return operator === 'neq'
@@ -209,7 +221,7 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
     return operator === 'eq' ? matches : !matches
   }
 
-  // ── 일반 속성: 단순 비교 ──
+  // -- 일반 속성: 단순 비교 --
   const val = getRecordField(record, attribute)
   switch (operator) {
     case 'eq': return String(val ?? '') === String(value)

@@ -38,16 +38,16 @@ export function useTargetScores(params: UseTargetScoresParams) {
   } = params
 
   const scores: TargetScores = useMemo(() => ({
-    my: myAvgScore !== null ? { avg: myAvgScore, count: myCount } : null,
+    mine: myAvgScore !== null ? { avg: myAvgScore, count: myCount } : null,
     following: followingAvgScore !== null ? { avg: followingAvgScore, count: followingCount } : null,
     bubble: bubbleAvgScore !== null ? { avg: bubbleAvgScore, count: bubbleCount } : null,
-    nyam: nyamAvgScore !== null ? { avg: nyamAvgScore, count: nyamCount } : null,
+    public: nyamAvgScore !== null ? { avg: nyamAvgScore, count: nyamCount } : null,
   }), [myAvgScore, myCount, followingAvgScore, followingCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount])
 
   const fallback = useMemo(() => getScoreFallback(scores), [scores])
 
   const [state, setState] = useState<ScoreCardState>({
-    selectedSources: [fallback?.source ?? 'my'],
+    selectedSources: [fallback?.source ?? 'mine'],
     quadrantMode: 'visits',
   })
 
@@ -64,10 +64,10 @@ export function useTargetScores(params: UseTargetScoresParams) {
 
   // 카드 데이터 배열 (ScoreCards 컴포넌트에 직접 전달)
   const cards = useMemo(() => [
-    { source: 'my' as const, label: '나', score: myAvgScore, subText: myCount > 0 ? `${myCount}회 방문` : '미방문', available: myAvgScore !== null },
+    { source: 'mine' as const, label: '나', score: myAvgScore, subText: myCount > 0 ? `${myCount}회 방문` : '미방문', available: myAvgScore !== null },
     { source: 'following' as const, label: '팔로잉', score: followingAvgScore, subText: followingCount > 0 ? `${followingCount}명 평균` : '', available: followingAvgScore !== null },
     { source: 'bubble' as const, label: '버블', score: bubbleAvgScore, subText: bubbleCount > 0 ? `${bubbleCount}명 평균` : '', available: bubbleAvgScore !== null },
-    { source: 'nyam' as const, label: 'nyam', score: nyamAvgScore, subText: nyamCount > 0 ? `${nyamCount}명 평균` : '', available: nyamAvgScore !== null },
+    { source: 'public' as const, label: 'nyam', score: nyamAvgScore, subText: nyamCount > 0 ? `${nyamCount}명 평균` : '', available: nyamAvgScore !== null },
   ], [myAvgScore, myCount, followingAvgScore, followingCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount])
 
   const toggleSource = (source: ScoreSource) => {

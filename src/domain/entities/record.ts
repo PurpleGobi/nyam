@@ -6,9 +6,6 @@
 /** target_type: 'restaurant' | 'wine' */
 export type RecordTargetType = 'restaurant' | 'wine'
 
-/** lists.status */
-export type ListStatus = 'visited' | 'bookmark' | 'cellar' | 'tasted'
-
 /** records.camera_mode */
 export type CameraMode = 'individual' | 'shelf' | 'receipt'
 
@@ -20,26 +17,10 @@ export type PairingCategory =
   | 'red_meat' | 'white_meat' | 'seafood' | 'cheese'
   | 'vegetable' | 'spicy' | 'dessert' | 'charcuterie'
 
-// ─── List 엔티티 (사용자 × 식당/와인 관계) ───
-
-export interface ListItem {
-  id: string
-  userId: string
-  targetId: string
-  targetType: RecordTargetType
-  status: ListStatus
-  isBookmarked: boolean
-  source: string
-  sourceRecordId: string | null
-  createdAt: string
-  updatedAt: string
-}
-
 // ─── Record 엔티티 (방문/시음 1회) ───
 
 export interface DiningRecord {
   id: string
-  listId: string
   userId: string
   targetId: string
   targetType: RecordTargetType
@@ -115,8 +96,6 @@ export interface RecordWithTarget extends DiningRecord {
   variety?: string | null
   region?: string | null
   vintage?: number | null
-  // list 정보
-  listStatus?: ListStatus
   // 작성자 정보 (Viewer Context)
   authorId?: string | null
   authorNickname?: string | null
@@ -129,7 +108,6 @@ export interface CreateRecordInput {
   userId: string
   targetId: string
   targetType: RecordTargetType
-  listStatus: ListStatus
   cameraMode?: CameraMode | null
   menuTags?: string[] | null
   pairingCategories?: PairingCategory[] | null

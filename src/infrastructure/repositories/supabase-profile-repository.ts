@@ -310,8 +310,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
     const { count: cellarCount } = await this.supabase
-      .from('lists').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('status', 'cellar')
+      .from('bookmarks').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('target_type', 'wine').eq('type', 'cellar')
 
     const thisMonth = new Date().toISOString().slice(0, 7)
     const { count: thisMonthTastings } = await this.supabase
@@ -614,8 +614,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   private async getThisMonthNewCellar(userId: string, thisMonth: string): Promise<number> {
     const { count } = await this.supabase
-      .from('lists').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('status', 'cellar')
+      .from('bookmarks').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('target_type', 'wine').eq('type', 'cellar')
       .gte('created_at', `${thisMonth}-01`)
 
     return count ?? 0

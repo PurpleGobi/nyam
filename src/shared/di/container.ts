@@ -16,6 +16,8 @@ import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabas
 import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository'
 import { SupabaseOnboardingRepository } from '@/infrastructure/repositories/supabase-onboarding-repository'
 import { SupabaseFilterStateRepository } from '@/infrastructure/repositories/supabase-filter-state-repository'
+import { SupabaseBookmarkRepository } from '@/infrastructure/repositories/supabase-bookmark-repository'
+import { SupabaseHomeRepository } from '@/infrastructure/repositories/supabase-home-repository'
 import { resizeImage, uploadImage, deleteImage } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
@@ -33,6 +35,8 @@ import type { CommentRepository } from '@/domain/repositories/comment-repository
 import type { ReactionRepository } from '@/domain/repositories/reaction-repository'
 import type { OnboardingRepository } from '@/domain/repositories/onboarding-repository'
 import type { FilterStateRepository } from '@/domain/repositories/filter-state-repository'
+import type { BookmarkRepository } from '@/domain/repositories/bookmark-repository'
+import type { HomeRepository } from '@/domain/repositories/home-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -57,6 +61,8 @@ export const commentRepo: CommentRepository = new SupabaseCommentRepository()
 export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 export const onboardingRepo: OnboardingRepository = new SupabaseOnboardingRepository()
 export const filterStateRepo: FilterStateRepository = new SupabaseFilterStateRepository()
+export const bookmarkRepo: BookmarkRepository = new SupabaseBookmarkRepository()
+export const homeRepo: HomeRepository = new SupabaseHomeRepository()
 
 /** Upload a bubble icon image: resize to 256x256 WebP, store in avatars bucket */
 export async function uploadBubbleIcon(file: File, userId: string): Promise<string> {

@@ -106,7 +106,7 @@ export function CompactListItem({
           <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
             {score != null ? score : '—'}
           </span>
-          {score != null && scoreSource && scoreSource !== 'my' && (
+          {score != null && scoreSource && scoreSource !== 'mine' && (
             <ScoreSourceBadge source={scoreSource} />
           )}
         </div>

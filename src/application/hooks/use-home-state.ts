@@ -11,7 +11,7 @@ const VIEW_STORAGE_KEY = 'nyam_home_view'
 function getStoredTab(): HomeTab | null {
   if (typeof window === 'undefined') return null
   const v = sessionStorage.getItem(TAB_STORAGE_KEY)
-  return v === 'restaurant' || v === 'wine' ? v : null
+  return v === 'restaurant' || v === 'wine' || v === 'bubble' ? v : null
 }
 
 function getStoredViewMode(): ViewMode | null {
@@ -56,8 +56,11 @@ export function useHomeState(options?: UseHomeStateOptions) {
   const [viewModeStates, setViewModeStates] = useState(createInitialViewModeStates)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 현재 탭×뷰모드의 필터/소팅 상태 (뷰 모드별 독립)
-  const { filters: filterRules, sort: currentSort, conjunction } = viewModeStates[makeViewModeStateKey(activeTab, viewMode)]
+  // 현재 탭×뷰모드의 필터/소팅 상태 (뷰 모드별 독립). 버블 탭은 viewModeState 미사용.
+  const stateKey = activeTab !== 'bubble' ? makeViewModeStateKey(activeTab, viewMode) : null
+  const { filters: filterRules, sort: currentSort, conjunction } = stateKey
+    ? viewModeStates[stateKey]
+    : DEFAULT_VIEW_MODE_STATE
 
   const setFilterRules = useCallback((rules: FilterRule[]) => {
     setViewModeStates((prev) => {

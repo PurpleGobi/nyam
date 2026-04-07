@@ -36,13 +36,6 @@ export function AppHeader() {
           </h1>
 
           <div className="header-right">
-            <button
-              type="button"
-              onClick={() => router.push('/bubbles')}
-              className="header-bubbles"
-            >
-              bubbles
-            </button>
             <div ref={bellRef}>
               <NotificationBell
                 unreadCount={unreadCount}

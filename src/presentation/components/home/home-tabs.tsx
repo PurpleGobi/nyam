@@ -32,9 +32,10 @@ const VIEW_ICONS: Record<Exclude<ViewMode, 'map'>, typeof LayoutGrid> = {
   calendar: CalendarDays,
 }
 
-const HOME_TABS: { key: HomeTab; label: string; variant: 'food' | 'wine' }[] = [
+const HOME_TABS: { key: HomeTab; label: string; variant: 'food' | 'wine' | 'social' }[] = [
   { key: 'restaurant', label: '식당', variant: 'food' },
   { key: 'wine', label: '와인', variant: 'wine' },
+  { key: 'bubble', label: '버블', variant: 'social' },
 ]
 
 export function HomeTabs({
@@ -47,6 +48,7 @@ export function HomeTabs({
   onStatsToggle, isStatsOpen = false, canShowStats = false, accentType = 'food',
 }: HomeTabsProps) {
   const foodActive = activeTab === 'restaurant'
+  const isBubbleTab = activeTab === 'bubble'
   const isMapView = viewMode === 'map'
   // map 뷰일 때 뷰 사이클 아이콘은 card(기본) 표시
   const ViewIcon = VIEW_ICONS[isMapView ? 'card' : viewMode]
@@ -65,7 +67,7 @@ export function HomeTabs({
       variant={activeVariant}
       onTabChange={onTabChange}
       rightSlot={
-        isSearchOpen ? (
+        isBubbleTab ? null : isSearchOpen ? (
           <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
             <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
             <input

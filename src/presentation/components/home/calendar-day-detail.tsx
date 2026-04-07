@@ -70,7 +70,7 @@ export function CalendarDayDetail({ date, records, accentType }: CalendarDayDeta
             >
               {record.score ?? '—'}
             </span>
-            {record.score != null && record.scoreSource && record.scoreSource !== 'my' && (
+            {record.score != null && record.scoreSource && record.scoreSource !== 'mine' && (
               <ScoreSourceBadge source={record.scoreSource} />
             )}
           </div>

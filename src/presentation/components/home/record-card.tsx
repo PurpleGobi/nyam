@@ -165,7 +165,7 @@ export function RecordCard({
                   >
                     {satisfaction}
                   </span>
-                  {scoreSource && scoreSource !== 'my' && (
+                  {scoreSource && scoreSource !== 'mine' && (
                     <ScoreSourceBadge source={scoreSource} />
                   )}
                 </div>

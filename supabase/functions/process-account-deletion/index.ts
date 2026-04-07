@@ -108,7 +108,7 @@ async function hardDelete(
   await supabase.from('follows').delete().eq('follower_id', userId)
   await supabase.from('follows').delete().eq('following_id', userId)
   await supabase.from('bubble_members').delete().eq('user_id', userId)
-  await supabase.from('wishlists').delete().eq('user_id', userId)
+  await supabase.from('bookmarks').delete().eq('user_id', userId)
   await supabase.from('records').delete().eq('user_id', userId)
   await supabase.from('nudge_history').delete().eq('user_id', userId)
   await supabase.from('nudge_fatigue').delete().eq('user_id', userId)

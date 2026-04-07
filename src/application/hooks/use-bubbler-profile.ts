@@ -78,27 +78,30 @@ export function useBubblerProfile(
           return
         }
 
+        // accessLevel이 'none'이면 프로필 민감 데이터를 숨김
+        const isRestricted = accessLevel === 'none'
+
         setData({
           nickname: profile.nickname,
-          handle: profile.handle ?? null,
-          avatarUrl: profile.avatarUrl ?? null,
+          handle: isRestricted ? null : (profile.handle ?? null),
+          avatarUrl: isRestricted ? null : (profile.avatarUrl ?? null),
           avatarColor: profile.avatarColor ?? null,
-          bio: profile.bio ?? null,
+          bio: isRestricted ? null : (profile.bio ?? null),
           level: profile.level ?? 1,
           levelTitle: profile.levelTitle ?? '입문자',
           accessLevel,
-          tasteTags: profile.tasteTags ?? [],
-          categories: profile.categories ?? [],
-          avgSatisfaction: profile.avgSatisfaction ?? 0,
-          scoreTendencyLabel: profile.scoreTendencyLabel ?? '-',
-          totalRecords: profile.totalRecords ?? 0,
-          topRegions: profile.topRegions ?? [],
-          topPicks: profile.topPicks ?? [],
-          recentRecords: profile.recentRecords ?? [],
-          heatmap: profile.heatmap ?? [],
+          tasteTags: isRestricted ? [] : (profile.tasteTags ?? []),
+          categories: isRestricted ? [] : (profile.categories ?? []),
+          avgSatisfaction: isRestricted ? 0 : (profile.avgSatisfaction ?? 0),
+          scoreTendencyLabel: isRestricted ? '-' : (profile.scoreTendencyLabel ?? '-'),
+          totalRecords: isRestricted ? 0 : (profile.totalRecords ?? 0),
+          topRegions: isRestricted ? [] : (profile.topRegions ?? []),
+          topPicks: isRestricted ? [] : (profile.topPicks ?? []),
+          recentRecords: isRestricted ? [] : (profile.recentRecords ?? []),
+          heatmap: isRestricted ? [] : (profile.heatmap ?? []),
           bubbleContext: profile.bubbleContext ?? null,
-          currentStreak: profile.currentStreak ?? 0,
-          activeDuration: profile.activeDuration ?? '-',
+          currentStreak: isRestricted ? 0 : (profile.currentStreak ?? 0),
+          activeDuration: isRestricted ? '-' : (profile.activeDuration ?? '-'),
         })
       } finally {
         setIsLoading(false)

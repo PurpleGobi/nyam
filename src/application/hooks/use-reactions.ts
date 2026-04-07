@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { ReactionType } from '@/domain/entities/reaction'
-import { reactionRepo, recordRepo, notificationRepo } from '@/shared/di/container'
+import { reactionRepo, bookmarkRepo, notificationRepo } from '@/shared/di/container'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 
 interface UseReactionsParams {
@@ -72,9 +72,9 @@ export function useReactions({
     try {
       const result = await reactionRepo.toggle(targetType, targetId, reactionType, userId)
 
-      // bookmark + added → lists INSERT (source='bubble')
+      // bookmark + added -> bookmarks INSERT
       if (result.added && reactionType === 'bookmark' && bookmarkTarget) {
-        await recordRepo.findOrCreateList(
+        await bookmarkRepo.toggle(
           userId,
           bookmarkTarget.targetId,
           bookmarkTarget.targetType,

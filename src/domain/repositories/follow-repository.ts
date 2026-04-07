@@ -16,4 +16,6 @@ export interface FollowRepository {
   getMutualFollows(userId: string): Promise<Follow[]>
   getCounts(userId: string): Promise<{ followers: number; following: number; mutual: number }>
   isMutualFollow(userId: string, targetUserId: string): Promise<boolean>
+  /** 팔로잉 유저 프로필 목록 (소셜 필터용) */
+  getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; avatarUrl: string | null }>>
 }

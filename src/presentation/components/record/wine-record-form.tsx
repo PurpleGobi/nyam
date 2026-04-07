@@ -90,7 +90,6 @@ interface CreateWineRecordInput {
   axisX?: number | null
   axisY?: number | null
   satisfaction?: number | null
-  listStatus?: 'tasted' | 'cellar'
   aromaPrimary: string[]
   aromaSecondary: string[]
   aromaTertiary: string[]
@@ -336,12 +335,11 @@ export function WineRecordForm({
     tastingNotes: tastingNotes || null,
   }), [vintage, producer, region, subRegion, appellation, country, varieties, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes])
 
-  const handleQuickSave = useCallback(async (status: 'tasted' | 'cellar') => {
+  const handleQuickSave = useCallback(async (_status: 'tasted' | 'cellar') => {
     await onSave({
       targetId: target.id,
       targetType: 'wine',
       wineMetaUpdate: buildWineMetaUpdate(),
-      listStatus: status,
       axisX: null,
       axisY: null,
       satisfaction: null,

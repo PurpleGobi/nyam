@@ -263,7 +263,6 @@ function RecordFlowInner() {
             userId: user.id,
             targetId: formData.targetId,
             targetType: formData.targetType,
-            listStatus: (formData.listStatus as 'visited' | 'tasted' | 'cellar') ?? (formData.targetType === 'wine' ? 'tasted' : 'visited'),
             menuTags: formData.menuTags as string[] | undefined,
             linkedWineId: formData.linkedWineId as string | undefined,
             linkedRestaurantId: formData.linkedRestaurantId as string | undefined,

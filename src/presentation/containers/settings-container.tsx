@@ -6,11 +6,12 @@ import {
   Pencil, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
   Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
-  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe,
+  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe, Map,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
 import { useCleanManualShares } from '@/application/hooks/use-clean-manual-shares'
+import { useNaverImport } from '@/application/hooks/use-naver-import'
 import { SettingsSection } from '@/presentation/components/settings/settings-section'
 import { SettingsCard } from '@/presentation/components/settings/settings-card'
 import { SettingsItem } from '@/presentation/components/settings/settings-item'
@@ -21,6 +22,7 @@ import { PrivacyNote } from '@/presentation/components/settings/privacy-note'
 import { BubblePrivacySheet } from '@/presentation/components/settings/bubble-privacy-sheet'
 import { DeleteAccountSheet } from '@/presentation/components/settings/delete-account-sheet'
 import { EditFieldSheet } from '@/presentation/components/settings/edit-field-sheet'
+import { NaverImportSheet } from '@/presentation/components/settings/naver-import-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -136,6 +138,8 @@ export function SettingsContainer() {
   } = useSettings()
 
   const { cleanShares, isLoading: isCleaningManualShares } = useCleanManualShares()
+  const naverImport = useNaverImport(user?.id ?? null)
+  const [naverImportSheetOpen, setNaverImportSheetOpen] = useState(false)
   const [manualShareCleanResult, setManualShareCleanResult] = useState<string | null>(null)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
@@ -505,6 +509,7 @@ export function SettingsContainer() {
         {/* ── 데이터 ── */}
         <SettingsSection title="데이터">
           <SettingsCard>
+            <SettingsItem icon={<Map size={18} />} label="네이버 지도 가져오기" value="저장 목록" showChevron onPress={() => setNaverImportSheetOpen(true)} />
             <SettingsItem icon={<Upload size={18} />} label="데이터 내보내기" value="JSON / CSV" showChevron onPress={() => exportData('json')} />
             <SettingsItem icon={<Download size={18} />} label="데이터 가져오기" value="JSON / CSV" showChevron onPress={() => importRef.current?.click()} />
             <SettingsItem icon={<Eraser size={18} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
@@ -546,6 +551,20 @@ export function SettingsContainer() {
           </SettingsCard>
         </SettingsSection>
       </div>
+
+      {/* Naver Import Sheet */}
+      <NaverImportSheet
+        isOpen={naverImportSheetOpen}
+        onClose={() => setNaverImportSheetOpen(false)}
+        status={naverImport.status}
+        folderName={naverImport.folderName}
+        places={naverImport.places}
+        result={naverImport.result}
+        errorMessage={naverImport.errorMessage}
+        onFetch={naverImport.fetchPlaces}
+        onImport={naverImport.importPlaces}
+        onReset={naverImport.reset}
+      />
 
       {/* Bubble Privacy Sheet */}
       <BubblePrivacySheet

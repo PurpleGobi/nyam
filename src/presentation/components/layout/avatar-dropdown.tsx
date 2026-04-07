@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Settings } from 'lucide-react'
+import { User, Users, Settings } from 'lucide-react'
 import Image from 'next/image'
 import { useDropdown } from '@/presentation/hooks/use-dropdown'
 
@@ -36,6 +36,9 @@ export function AvatarDropdown({ nickname, avatarUrl, avatarColor }: AvatarDropd
         <div className="avatar-menu">
           <button type="button" onClick={() => { close(); router.push('/profile') }} className="avatar-menu-item">
             <User size={16} /> 프로필
+          </button>
+          <button type="button" onClick={() => { close(); router.push('/followers') }} className="avatar-menu-item">
+            <Users size={16} /> 팔로워/팔로잉
           </button>
           <button type="button" onClick={() => { close(); router.push('/settings') }} className="avatar-menu-item">
             <Settings size={16} /> 설정

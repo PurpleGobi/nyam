@@ -3,7 +3,7 @@
 
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 
-export type HomeTab = 'restaurant' | 'wine'
+export type HomeTab = 'restaurant' | 'wine' | 'bubble'
 export type ViewMode = 'card' | 'list' | 'calendar' | 'map'
 
 export interface ViewModeState {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { recordRepo } from '@/shared/di/container'
+import { bookmarkRepo } from '@/shared/di/container'
 
 export interface UseBookmarkReturn {
   isBookmarked: boolean
@@ -10,8 +10,7 @@ export interface UseBookmarkReturn {
 }
 
 /**
- * 찜(bookmark) 토글 — lists.is_bookmarked 기반
- * status와 독립적으로 동작: 방문 기록이 있어도 찜 가능
+ * 찜(bookmark) 토글 -- bookmarks 테이블 기반
  */
 export function useBookmark(
   userId: string | null,
@@ -23,8 +22,8 @@ export function useBookmark(
 
   useEffect(() => {
     if (!userId || !targetId) return
-    recordRepo.findListByUserAndTarget(userId, targetId, targetType).then((list) => {
-      setIsBookmarked(list?.isBookmarked ?? false)
+    bookmarkRepo.isBookmarked(userId, targetId, targetType).then((result) => {
+      setIsBookmarked(result)
     })
   }, [userId, targetId, targetType])
 
@@ -36,7 +35,8 @@ export function useBookmark(
     setIsBookmarked(next)
 
     try {
-      await recordRepo.toggleBookmark(userId, targetId, targetType, next)
+      const result = await bookmarkRepo.toggle(userId, targetId, targetType, 'bookmark')
+      setIsBookmarked(result)
     } catch {
       setIsBookmarked(!next)
     } finally {

@@ -31,7 +31,7 @@ import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
 import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
-import { BubbleRecordSection } from '@/presentation/components/detail/bubble-record-section'
+import { AllRecordsSection } from '@/presentation/components/detail/all-records-section'
 
 interface WineDetailContainerProps {
   wineId: string
@@ -194,37 +194,56 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   )
 
   // visits 모드에서 selectedSources에 따른 타인 micro dot (멀티셀렉트)
+  // 소스 우선순위 dedup: mine > following > bubble > public
   const visitsRefPoints = useMemo(() => {
-    const myMicroDots = selectedSources.includes('my')
-      ? otherRecordRefs.map((r) => ({ ...r, isMicroDot: true as const }))
+    const seenRecordIds = new Set<string>()
+
+    // 1. 내 기록 micro dots (최우선)
+    const myMicroDots = selectedSources.includes('mine')
+      ? otherRecordRefs.map((r) => {
+          const rid = r._refIdx !== undefined ? sortedRecords[r._refIdx]?.id : undefined
+          if (rid) seenRecordIds.add(rid)
+          return { ...r, isMicroDot: true as const }
+        })
       : []
 
-    type MicroSource = { axisX: number | null; axisY: number | null; satisfaction: number | null }
-    const microRecords: MicroSource[] = []
+    // 타인 micro dots (30개 제한)
+    type MicroDot = { x: number; y: number; satisfaction: number; name: string; score: number; isMicroDot: true }
+    const otherMicroDots: MicroDot[] = []
+    const MAX_OTHER = 30
 
+    // 2. 팔로잉 (내 기록에서 이미 본 ID 제외)
     if (selectedSources.includes('following')) {
-      microRecords.push(...followingRecords.filter((r) => r.axisX != null && r.axisY != null))
-    }
-    if (selectedSources.includes('bubble')) {
-      for (const b of bubbleScores) {
-        microRecords.push(...b.dots.map((d) => ({ axisX: d.axisX as number | null, axisY: d.axisY as number | null, satisfaction: d.satisfaction as number | null })))
+      for (const r of followingRecords) {
+        if (otherMicroDots.length >= MAX_OTHER) break
+        if (r.axisX == null || r.axisY == null || seenRecordIds.has(r.id)) continue
+        seenRecordIds.add(r.id)
+        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction ?? 50, name: '', score: r.satisfaction ?? 50, isMicroDot: true })
       }
     }
-    if (selectedSources.includes('nyam')) {
-      microRecords.push(...publicRecords.filter((r) => r.axisX != null && r.axisY != null))
+
+    // 3. 버블 (dots에 id 없으므로 ID 기반 dedup 불가 — 그대로 추가)
+    if (selectedSources.includes('bubble')) {
+      for (const b of bubbleScores) {
+        for (const d of b.dots) {
+          if (otherMicroDots.length >= MAX_OTHER) break
+          otherMicroDots.push({ x: d.axisX, y: d.axisY, satisfaction: d.satisfaction, name: '', score: d.satisfaction, isMicroDot: true })
+        }
+      }
     }
 
-    const microDots = microRecords.slice(0, 30).map((r) => ({
-      x: r.axisX ?? 50,
-      y: r.axisY ?? 50,
-      satisfaction: r.satisfaction ?? 50,
-      name: '',
-      score: r.satisfaction ?? 50,
-      isMicroDot: true,
-    }))
+    // 4. 공개 (상위 소스에 이미 포함된 record 제외)
+    if (selectedSources.includes('public')) {
+      for (const r of publicRecords) {
+        if (otherMicroDots.length >= MAX_OTHER) break
+        if (r.axisX == null || r.axisY == null || seenRecordIds.has(r.id)) continue
+        seenRecordIds.add(r.id)
+        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction ?? 50, name: '', score: r.satisfaction ?? 50, isMicroDot: true })
+      }
+    }
 
-    return [...myMicroDots, ...microDots]
-  }, [selectedSources, otherRecordRefs, followingRecords, bubbleScores, publicRecords])
+    return [...myMicroDots, ...otherMicroDots]
+  }, [selectedSources, otherRecordRefs, sortedRecords, followingRecords, bubbleScores, publicRecords])
 
   // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
   const followingAxisRecords = useMemo(
@@ -244,7 +263,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
       ['following', followingAxisRecords],
       ['bubble', bubbleAxisRecords],
-      ['nyam', publicAxisRecords],
+      ['public', publicAxisRecords],
     ]
     const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
     if (!match) return null
@@ -256,7 +275,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     }
   }, [avgDot, selectedSources, followingAxisRecords, bubbleAxisRecords, publicAxisRecords])
 
-  const mySelected = selectedSources.includes('my')
+  const mySelected = selectedSources.includes('mine')
   const currentDot = mySelected
     ? (quadrantMode === 'visits' && focusedDot ? focusedDot : avgDot)
     : null
@@ -659,9 +678,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
             <section style={{ padding: '16px 20px' }}>
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 {(() => {
-                  const SOURCE_PRIORITY: ScoreSource[] = ['my', 'following', 'bubble', 'nyam']
-                  const LABELS: Record<ScoreSource, string> = { my: '나의 평가', following: '팔로잉 평가', bubble: '버블 평가', nyam: 'nyam 평가' }
-                  const top = SOURCE_PRIORITY.find((s) => selectedSources.includes(s)) ?? 'my'
+                  const SCORE_SOURCES: ScoreSource[] = ['mine', 'following', 'bubble', 'public']
+                  const LABELS: Record<ScoreSource, string> = { mine: '나의 평가', following: '팔로잉 평가', bubble: '버블 평가', public: 'nyam 평가' }
+                  const top = SCORE_SOURCES.find((s) => selectedSources.includes(s)) ?? 'mine'
                   return LABELS[top]
                 })()}
                 <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-hint)', marginLeft: '8px' }}>
@@ -698,7 +717,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   ? (id, type) => router.push(`/${type === 'wine' ? 'wines' : 'restaurants'}/${id}`)
                   : undefined
                 }
-                onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('my')
+                onRefLongPress={quadrantMode === 'visits' && selectedSources.includes('mine')
                   ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
                   : undefined
                 }
@@ -774,8 +793,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
         <Divider />
 
-        {/* ─── 버블 기록 ─── */}
-        <BubbleRecordSection targetId={wineId} targetType="wine" />
+        {/* ─── 모든 기록 ─── */}
+        <AllRecordsSection targetId={wineId} targetType="wine" />
 
         <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />
       </div>

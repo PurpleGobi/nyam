@@ -40,6 +40,7 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/profile':                   { depth: null, parent: null,        type: 'modal' },
   '/profile/wrapped':           { depth: null, parent: null,        type: 'modal' },
   '/settings':                  { depth: null, parent: null,        type: 'modal' },
+  '/followers':                 { depth: null, parent: null,        type: 'modal' },
   '/users/[id]':                { depth: null, parent: null,        type: 'modal' },
 
   // ── Independent (탭 바 밖, 독립 플로우) ────────────────────

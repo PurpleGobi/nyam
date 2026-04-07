@@ -31,7 +31,6 @@ export interface WineCardProps {
     axisX: number | null
     axisY: number | null
     visitDate: string | null
-    listStatus: 'visited' | 'tasted' | 'cellar' | 'bookmark'
     purchasePrice: number | null
   } | null
   bubbleMembers?: WineBubbleMember[]
@@ -44,7 +43,7 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
-  const isCellar = myRecord?.listStatus === 'cellar'
+  const isCellar = false  // TODO: bookmarks 테이블에서 cellar 여부 판단
 
   const sortedMembers = [...(bubbleMembers ?? [])].sort((a, b) => b.satisfaction - a.satisfaction)
   const visibleMembers = sortedMembers.slice(0, 2)
@@ -99,7 +98,7 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
               >
                 {myRecord.satisfaction}
               </span>
-              {scoreSource && scoreSource !== 'my' && (
+              {scoreSource && scoreSource !== 'mine' && (
                 <ScoreSourceBadge source={scoreSource} />
               )}
             </div>

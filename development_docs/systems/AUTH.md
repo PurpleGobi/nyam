@@ -343,10 +343,10 @@
 | `nudge_history_own` | ALL (nudge_history) | 본인만 |
 | `nudge_fatigue_own` | ALL (nudge_fatigue) | 본인만 |
 
-### 4-21. wishlists (1 정책)
+### 4-21. bookmarks (1 정책)
 | 정책 | 동작 | 조건 |
 |------|------|------|
-| `wishlists_own` | ALL | 본인만 |
+| `bookmarks_own` | ALL | `user_id = auth.uid()` |
 
 ### 4-22. saved_filters (1 정책)
 | 정책 | 동작 | 조건 |
@@ -392,7 +392,7 @@
 | notifications | 2 | 본인 전체, 인증 사용자 알림 생성(actor=self) |
 | nudge_history | 1 | 본인만 |
 | nudge_fatigue | 1 | 본인만 |
-| wishlists | 1 | 본인만 |
+| bookmarks | 1 | 본인만 |
 | saved_filters | 1 | 본인만 |
 | ai_recommendations | 1 | 본인만 |
 | **합계** | **60** | |
@@ -445,7 +445,7 @@
 | 6 | comments |
 | 7 | follows (양방향) |
 | 8 | bubble_members |
-| 9 | wishlists |
+| 9 | bookmarks |
 | 10 | records |
 | 11 | nudge_history |
 | 12 | nudge_fatigue |

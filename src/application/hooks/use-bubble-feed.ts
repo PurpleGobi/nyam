@@ -43,7 +43,6 @@ export interface FeedShareEnriched {
   comment?: string | null
   scene?: string | null
   visitDate?: string | null
-  listStatus?: string | null
   photoUrls?: string[]
 }
 
@@ -80,7 +79,6 @@ function toEnriched(item: BubbleFeedItem): FeedShareEnriched {
     comment: item.comment,
     scene: item.scene,
     visitDate: item.visitDate,
-    listStatus: item.listStatus,
   }
 }
 

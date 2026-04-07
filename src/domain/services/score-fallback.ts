@@ -2,8 +2,12 @@
 // R1: 외부 의존 0
 
 import type { TargetScores, FallbackScore, ScoreSource } from '@/domain/entities/score'
+import { SOURCE_PRIORITY } from '@/domain/constants/source-priority'
 
-const PRIORITY: ScoreSource[] = ['my', 'following', 'bubble', 'nyam']
+/** 점수 폴백에 사용할 소스 (bookmark 제외한 4종) */
+const PRIORITY: ScoreSource[] = SOURCE_PRIORITY.filter(
+  (s): s is ScoreSource => s !== 'bookmark',
+)
 
 /** 신뢰도 우선 폴백: 나 → 팔로잉 → 버블 → nyam */
 export function getScoreFallback(scores: TargetScores): FallbackScore | null {
