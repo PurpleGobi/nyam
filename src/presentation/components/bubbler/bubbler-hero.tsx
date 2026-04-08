@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { BarChart2 } from 'lucide-react'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
+import { SimilarityIndicator } from '@/presentation/components/similarity-indicator'
 import { getLevelColor } from '@/domain/services/xp-calculator'
 import type { AccessLevel } from '@/domain/entities/follow'
 
@@ -22,6 +23,9 @@ interface BubblerHeroProps {
   recordCount: number
   followerCount: number
   followingCount: number
+  /** CF 적합도 (버블러 프로필용) */
+  similarity?: number | null
+  confidence?: number | null
 }
 
 export function BubblerHero({
@@ -39,6 +43,8 @@ export function BubblerHero({
   recordCount,
   followerCount,
   followingCount,
+  similarity,
+  confidence,
 }: BubblerHeroProps) {
   const levelColor = getLevelColor(level)
 
@@ -85,7 +91,14 @@ export function BubblerHero({
             {nickname}
           </h1>
           {handle && (
-            <p className="mb-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>@{handle}</p>
+            <p className="mb-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>@{handle}</p>
+          )}
+
+          {/* CF 적합도 (자신이 아닐 때만) */}
+          {!isOwnProfile && similarity != null && confidence != null && (
+            <div className="mb-1">
+              <SimilarityIndicator similarity={similarity} confidence={confidence} />
+            </div>
           )}
 
           {/* 통계 행 (목업 .profile-stats-row) */}

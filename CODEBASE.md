@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-08 (CF Phase 4 훅 + UI 컴포넌트)
+> 마지막 갱신: 2026-04-08 (CF Phase 6 화면별 통합)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -12,10 +12,10 @@
 ### domain/ (순수 비즈니스 로직, 외부 의존 0)
 | 경로 | 파일 수 | 역할 | 상태 |
 |------|---------|------|------|
-| entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, bookmark, home-target, similarity 등). grouped-target 삭제됨 | 안정 |
+| entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, bookmark, home-target, similarity 등). grouped-target 삭제됨. score.ts: ScoreSource 3종('mine'\|'nyam'\|'bubble'), TargetScores.nyam에 confidence 추가 | 안정 |
 | repositories/ | 19 | 인터페이스 (RecordRepository, BookmarkRepository, BubbleRepository, HomeRepository, SimilarityRepository, PredictionRepository 등) | 안정 |
 | services/ | 19 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback, visibility-filter, profile-visibility, cf-calculator 등). record-grouper 삭제됨. cf-calculator 테스트 32개 (vitest) | 안정 |
-| constants/ | 1 | source-priority.ts (SOURCE_PRIORITY 중앙 상수) | 신규 |
+| constants/ | 1 | source-priority.ts (SOURCE_PRIORITY: 'mine'\|'nyam'\|'bubble'\|'bookmark' 4종) | 안정 |
 
 ### infrastructure/ (외부 시스템 구현체)
 | 경로 | 파일 수 | 역할 | 상태 |
@@ -26,12 +26,12 @@
 | api/providers/ | 1 | gemini.ts (Gemini Vision) | 안정 |
 | storage/ | 1 | image-upload.ts | 안정 |
 
-### application/hooks/ (비즈니스 로직 훅, 62개)
+### application/hooks/ (비즈니스 로직 훅, 63개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
 - 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats, use-target-scores
 - 찜/셀러: use-bookmark
 - 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubblers-list 등
-- 소셜: use-follow, use-comments, use-reactions, use-share-record
+- 소셜: use-follow, use-follow-list-with-similarity (팔로우 목록+적합도 enrichment), use-comments, use-reactions, use-share-record
 - XP/프로필: use-xp, use-xp-award, use-profile, use-wrapped
 - 홈: use-home-targets (use-home-records 대체, target 중심 홈뷰)
 - CF: use-nyam-score (단건 CF 예측), use-feed-scores (배치 CF 예측), use-similarity (적합도 조회)

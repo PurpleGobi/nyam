@@ -23,6 +23,7 @@ import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
 import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
+import { useFeedScores } from '@/application/hooks/use-feed-scores'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -64,9 +65,8 @@ function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | unde
   if (!source || source === 'bookmark') return undefined
   const map: Record<string, ScoreSource> = {
     mine: 'mine',
-    following: 'following',
     bubble: 'bubble',
-    public: 'public',
+    // 'following'과 'public'은 ScoreSource에서 제거됨 → undefined 반환 (매핑 없음)
   }
   return map[source]
 }
@@ -431,6 +431,16 @@ export function HomeContainer() {
     currentRecordPage * pageSize,
   )
 
+  // ── CF 기반 Nyam 점수: 미방문 아이템에 예측 점수 표시 ──
+  const unvisitedTargetIds = useMemo(() =>
+    displayTargets
+      .filter((t) => t.visitCount === 0 && t.satisfaction === null)
+      .map((t) => t.targetId),
+    [displayTargets],
+  )
+  const feedCategory = activeTab === 'wine' ? 'wine' as const : 'restaurant' as const
+  const { scores: feedScores } = useFeedScores(unvisitedTargetIds, feedCategory, user?.id ?? null)
+
   // 필터/탭/뷰모드 변경 시 페이지 리셋 (useEffect 대신 렌더 중 비교)
   const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
   const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey)
@@ -648,12 +658,14 @@ export function HomeContainer() {
               name={target.name}
               meta={[target.genre, target.district ?? target.area?.[0]].filter(Boolean).join(' · ')}
               photoUrl={target.photoUrl}
-              satisfaction={target.satisfaction}
+              satisfaction={target.satisfaction ?? feedScores.get(target.targetId)?.satisfaction ?? null}
               axisX={target.axisX}
               axisY={target.axisY}
               status={status}
               visitCount={target.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+              scoreSource={target.satisfaction !== null
+                ? mapRecordSourceToScoreSource(target.scoreSource ?? undefined)
+                : feedScores.has(target.targetId) ? 'nyam' : mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
               latestDate={target.latestVisitDate}
               distanceKm={userCoords && target.lat != null && target.lng != null
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)

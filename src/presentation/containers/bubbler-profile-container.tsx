@@ -5,6 +5,7 @@ import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
 import { useFollowList } from '@/application/hooks/use-follow-list'
 import { useBubblerProfile } from '@/application/hooks/use-bubbler-profile'
+import { useSimilarity } from '@/application/hooks/use-similarity'
 import { BubblerHero } from '@/presentation/components/bubbler/bubbler-hero'
 import { BubbleContextCard } from '@/presentation/components/bubbler/bubble-context-card'
 import { TasteProfile } from '@/presentation/components/bubbler/taste-profile'
@@ -26,6 +27,11 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
   const { accessLevel, isLoading: followLoading, toggleFollow } = useFollow(authUser?.id ?? null, userId)
   const { counts } = useFollowList(userId)
   const { data, isLoading, activeTab, setActiveTab } = useBubblerProfile(authUser?.id ?? null, userId, bubbleId)
+
+  // CF 적합도
+  const { similarity: restaurantSimilarity } = useSimilarity(authUser?.id ?? null, userId, 'restaurant')
+  const { similarity: wineSimilarity } = useSimilarity(authUser?.id ?? null, userId, 'wine')
+  const currentSimilarity = activeTab === 'restaurant' ? restaurantSimilarity : wineSimilarity
 
   if (isLoading || !data) {
     return (
@@ -59,6 +65,8 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
           recordCount={data.totalRecords}
           followerCount={counts.followers}
           followingCount={counts.following}
+          similarity={currentSimilarity?.similarity ?? null}
+          confidence={currentSimilarity?.confidence ?? null}
         />
 
         {/* 버블 컨텍스트 카드 — mutual only (버블 멤버끼리) */}

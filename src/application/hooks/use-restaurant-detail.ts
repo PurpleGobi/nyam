@@ -12,7 +12,9 @@ import type {
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
+import type { PredictionBreakdown } from '@/domain/entities/similarity'
 import { restaurantRepo } from '@/shared/di/container'
+import { useNyamScore } from '@/application/hooks/use-nyam-score'
 
 /** 뷰 모드 */
 export type RestaurantViewMode = 'my_records' | 'recommend' | 'bubble_review'
@@ -25,7 +27,6 @@ export interface RestaurantDetailState {
   quadrantRefs: QuadrantRefDot[]
   linkedWines: LinkedWineCard[]
   bubbleScores: BubbleScoreRow[]
-  followingRecords: DiningRecord[]
   publicRecords: DiningRecord[]
   isLoading: boolean
   error: string | null
@@ -36,10 +37,10 @@ export interface RestaurantDetailState {
   latestVisitDate: string | null
   bubbleAvgScore: number | null
   bubbleCount: number
-  followingAvgScore: number | null
-  followingCount: number
   nyamAvgScore: number | null
   nyamCount: number
+  nyamConfidence: number | null
+  nyamBreakdown: PredictionBreakdown | null
   viewMode: RestaurantViewMode
 }
 
@@ -54,11 +55,12 @@ export function useRestaurantDetail(
   const [quadrantRefs, setQuadrantRefs] = useState<QuadrantRefDot[]>([])
   const [linkedWines, setLinkedWines] = useState<LinkedWineCard[]>([])
   const [bubbleScores, setBubbleScores] = useState<BubbleScoreRow[]>([])
-  const [followingRecords, setFollowingRecords] = useState<DiningRecord[]>([])
   const [publicRecords, setPublicRecords] = useState<DiningRecord[]>([])
-  const [nyamData, setNyamData] = useState<{ avg: number; count: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // CF 기반 Nyam 점수
+  const { prediction: nyamPrediction } = useNyamScore(restaurantId, 'restaurant', userId)
 
   useEffect(() => {
     let cancelled = false
@@ -78,13 +80,11 @@ export function useRestaurantDetail(
 
         if (!userId) return
 
-        // 2. 내 기록 + 타인 공개 기록 + 버블 점수 + 팔로잉 기록 + nyam 평균 (각각 독립)
-        const [recordsResult, publicRecordsResult, bubblesResult, followingResult, nyamResult] = await Promise.allSettled([
+        // 2. 내 기록 + 타인 공개 기록 + 버블 점수 (각각 독립)
+        const [recordsResult, publicRecordsResult, bubblesResult] = await Promise.allSettled([
           repo.findMyRecords(restaurantId, userId),
           repo.findPublicRecordsByTarget(restaurantId, userId),
           repo.findBubbleScores(restaurantId, userId),
-          repo.findFollowingRecordsByTarget(restaurantId, userId),
-          repo.findPublicSatisfactionAvg(restaurantId, userId),
         ])
         if (cancelled) return
         const records = recordsResult.status === 'fulfilled' ? recordsResult.value : []
@@ -92,15 +92,10 @@ export function useRestaurantDetail(
         setMyRecords(records)
         setPublicRecords(fetchedPublicRecords)
         if (bubblesResult.status === 'fulfilled') setBubbleScores(bubblesResult.value)
-        const fetchedFollowingRecords = followingResult.status === 'fulfilled' ? followingResult.value : []
-        setFollowingRecords(fetchedFollowingRecords)
-        const fetchedNyamData = nyamResult.status === 'fulfilled' ? nyamResult.value : null
-        setNyamData(fetchedNyamData)
 
         // 3. 모든 소스 기록의 사진, 사분면, 연결 와인
         const allRecordIds = [
           ...records.map((rec) => rec.id),
-          ...fetchedFollowingRecords.map((rec) => rec.id),
           ...fetchedPublicRecords.map((rec) => rec.id),
         ]
         if (allRecordIds.length > 0) {
@@ -152,14 +147,11 @@ export function useRestaurantDetail(
 
   const bubbleCount = bubbleScores.length
 
-  const scoredFollowing = followingRecords.filter((r) => r.satisfaction !== null)
-  const followingAvgScore = scoredFollowing.length > 0
-    ? Math.round(scoredFollowing.reduce((sum, r) => sum + (r.satisfaction ?? 0), 0) / scoredFollowing.length)
-    : null
-  const followingCount = scoredFollowing.length
-
-  const nyamAvgScore = nyamData?.avg ?? null
-  const nyamCount = nyamData?.count ?? 0
+  // CF 기반 Nyam 점수 파생값
+  const nyamAvgScore = nyamPrediction?.satisfaction ?? null
+  const nyamCount = nyamPrediction?.nRaters ?? 0
+  const nyamConfidence = nyamPrediction?.confidence ?? null
+  const nyamBreakdown = nyamPrediction?.breakdown ?? null
 
   // 뷰 모드 결정
   const viewMode: RestaurantViewMode =
@@ -176,7 +168,6 @@ export function useRestaurantDetail(
     quadrantRefs,
     linkedWines,
     bubbleScores,
-    followingRecords,
     publicRecords,
     isLoading,
     error,
@@ -185,10 +176,10 @@ export function useRestaurantDetail(
     latestVisitDate,
     bubbleAvgScore,
     bubbleCount,
-    followingAvgScore,
-    followingCount,
     nyamAvgScore,
     nyamCount,
+    nyamConfidence,
+    nyamBreakdown,
     viewMode,
   }
 }

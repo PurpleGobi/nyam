@@ -30,17 +30,6 @@
 - **미완료**: calendar-view.tsx text-white 2건 시맨틱 토큰 교체 (pre-existing), bubble dot DB view 미구현
 - **다음**: bubble dot을 위한 DB view/RPC, pre-existing lint 정리, text-white 토큰 교체
 
-### 2026-04-06 #12 — 점수 체계 재설계 + Viewer Context + 후속 완료
-- **영역**: domain/(entities/score+record, services/score-fallback+record-grouper, repositories/restaurant+wine), infrastructure/supabase-*-repository, application/use-restaurant-detail+use-wine-detail+use-target-scores, presentation/(score-cards+record-card+compact-list-item+calendar-day-detail+score-source-badge+quadrant-input+quadrant-ref-dot+rating-input+restaurant-detail-container+wine-detail-container+home-container), RATING_ENGINE.md
-- **맥락**: (1) 4종 점수(나/팔로잉/버블/nyam) 카드 UI + 신뢰도 폴백 순수 함수. (2) 사분면 모드 avg/recent → visits/compare. (3) visits 모드에서 selectedSource별 micro dot(4px) 렌더링 — followingRecords/publicRecords 개별 fetch + QuadrantRefDot isMicroDot. (4) 홈 리스트 source 우선순위 폴백 (record-grouper에서 bestScore 선택). (5) CalendarDayDetail/ScoreSourceBadge 스타일 개선. 신규 4 + 수정 25개.
-- **미완료**: bubble dot 미표시 (BubbleScoreRow에 avgAxisX/Y 없음 — DB view/RPC 필요), lint pre-existing 2건 (quadrant-input refs + detail-container deps)
-- **다음**: bubble dot을 위한 bubble_shares 확장 or DB view, pre-existing lint 정리
-
-### 2026-04-06 #11 — 프라이버시 모델 재설계
-- **영역**: supabase/migrations/047, domain/entities/settings+user, infrastructure/supabase-settings+follow-repository, application/use-settings+use-share-record, presentation/settings-container+privacy-summary, AUTH.md+DATA_MODEL.md
-- **맥락**: privacy_profile+privacy_records 2개 → is_public(boolean)+follow_policy(4종) 통합. "기본 비공개, 팔로워/버블 오버라이드" 모델. RLS 8개 교체 + records_followers 신규 (follow_policy!=blocked 조건 포함). 설정 UI를 전체공개 토글+팔로우 정책 선택으로 교체. 비공개 유저도 버블 공유 허용.
-- **미완료**: 팔로우 요청/승인 플로우 (pending→accepted), conditional 조건 평가 로직, 보기 필터별 데이터 페칭
-- **다음**: 팔로우 승인제 구현, 보기 필터 데이터 페칭 연동
 
 ### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
 - **영역**: domain/entities/similarity.ts(신규), domain/services/cf-calculator.ts(신규), domain/services/__tests__/cf-calculator.test.ts(신규), supabase/migrations/051_cf_tables.sql(신규), vitest.config.ts(신규)
@@ -59,6 +48,18 @@
 - **맥락**: CF 예측/적합도 훅 3개 + 확신도 배지/점수 근거 패널/적합도 표시 UI 4개 구현. lint 에러 2건(react-hooks/set-state-in-effect) 수정 완료. bubble-expand-panel에 cfScore/memberCount optional 필드 추가(하위 호환).
 - **미완료**: Phase 5(ScoreSource 'cf' + SOURCE_PRIORITY + 기존 마이그레이션), Phase 6(화면 통합), Edge Function 배포(원격 미적용), supabase/types.ts 재생성 필요
 - **다음**: Phase 5 (ScoreSource 변경 + use-target-scores 리팩토링)
+
+### 2026-04-08 #22 — CF Phase 5: 기존 점수 시스템 마이그레이션
+- **영역**: domain/(entities/score, constants/source-priority, services/score-fallback, repositories/restaurant+wine), infrastructure/(supabase-restaurant+wine+home-repository), application/(use-target-scores, use-restaurant-detail, use-wine-detail), presentation/(score-cards, score-source-badge, restaurant-detail+wine-detail+home-container)
+- **맥락**: ScoreSource 4종→3종('mine'|'nyam'|'bubble'). 'following' 제거, 'public'→'nyam'. TargetScores에서 following 제거 + nyam에 confidence 추가. findPublicSatisfactionAvg 인터페이스+구현 삭제. use-target-scores 4→3종 카드. 상세페이지 사분면 following/public micro dots 제거. useNyamScore 연결.
+- **미완료**: Phase 6 화면 통합, pre-existing !단언 4건/text-white 3건, Edge Function 배포(원격 미적용), supabase/types.ts 재생성
+- **다음**: Phase 6 (화면별 CF 점수 통합), pre-existing 기술 부채 정리
+
+### 2026-04-08 #23 — CF Phase 6: 화면별 통합
+- **영역**: application/hooks/(use-follow-list-with-similarity 신규, use-restaurant-detail, use-wine-detail), presentation/containers/(restaurant-detail, wine-detail, home, bubbler-profile, followers), presentation/components/bubbler/bubbler-hero
+- **맥락**: CF 점수/적합도를 실제 화면에 연결. 상세페이지 ScoreBreakdownPanel+BubbleExpandPanel 토글 연결, 홈 미방문 아이템 Nyam 점수 표시, 버블러 프로필 적합도 표시, 팔로우 목록 적합도+정렬. followers-container R4 위반(shared/di 직접 import) 해결.
+- **미완료**: Phase 7 성능 검증, Edge Function 배포(원격 미적용), myqa 브라우저 QA, supabase/types.ts 재생성
+- **다음**: Phase 7 성능 최적화 또는 커밋+배포, myqa 브라우저 QA
 
 ### 2026-04-08 #20 — CF Phase 3: 예측 API (predict-score + batch-predict)
 - **영역**: domain/repositories/prediction-repository.ts(신규), supabase/functions/predict-score(신규), supabase/functions/batch-predict(신규), infrastructure/repositories/supabase-prediction-repository.ts(신규), shared/di/container.ts(수정)

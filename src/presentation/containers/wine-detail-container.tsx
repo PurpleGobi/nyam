@@ -17,6 +17,8 @@ import type { ScoreSource } from '@/domain/entities/score'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
+import { ScoreBreakdownPanel } from '@/presentation/components/detail/score-breakdown-panel'
+import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { RatingInput } from '@/presentation/components/record/rating-input'
@@ -59,6 +61,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
+  const [bubbleExpandOpen, setBubbleExpandOpen] = useState(false)
   const { showToast } = useToast()
   const { deleteRecord, isDeleting } = useDeleteRecord()
   const [showPriceReview, setShowPriceReview] = useState(false)
@@ -70,7 +74,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     quadrantRefs,
     linkedRestaurants,
     bubbleScores,
-    followingRecords,
     publicRecords,
     isLoading,
     tastingCount,
@@ -78,10 +81,10 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     myAvgScore,
     bubbleAvgScore,
     bubbleCount,
-    followingAvgScore,
-    followingCount,
     nyamAvgScore,
     nyamCount,
+    nyamConfidence,
+    nyamBreakdown,
     viewMode,
   } = useWineDetail(wineId, user?.id ?? null)
 
@@ -95,13 +98,26 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   } = useTargetScores({
     myAvgScore,
     myCount: tastingCount,
-    followingAvgScore,
-    followingCount,
     bubbleAvgScore,
     bubbleCount,
     nyamAvgScore,
     nyamCount,
+    nyamConfidence,
   })
+
+  const handleScoreToggle = useCallback((source: ScoreSource) => {
+    toggleSource(source)
+    if (source === 'nyam') {
+      setBreakdownOpen((prev) => !prev)
+      setBubbleExpandOpen(false)
+    } else if (source === 'bubble') {
+      setBubbleExpandOpen((prev) => !prev)
+      setBreakdownOpen(false)
+    } else {
+      setBreakdownOpen(false)
+      setBubbleExpandOpen(false)
+    }
+  }, [toggleSource])
 
   const { isBookmarked, toggle: toggleBookmark } = useBookmark(
     user?.id ?? null, wineId, 'wine',
@@ -194,7 +210,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   )
 
   // visits 모드에서 selectedSources에 따른 타인 micro dot (멀티셀렉트)
-  // 소스 우선순위 dedup: mine > following > bubble > public
+  // 소스 우선순위 dedup: mine > bubble (nyam은 CF 예측이므로 개별 dot 없음)
   const visitsRefPoints = useMemo(() => {
     const seenRecordIds = new Set<string>()
 
@@ -212,17 +228,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     const otherMicroDots: MicroDot[] = []
     const MAX_OTHER = 30
 
-    // 2. 팔로잉 (내 기록에서 이미 본 ID 제외)
-    if (selectedSources.includes('following')) {
-      for (const r of followingRecords) {
-        if (otherMicroDots.length >= MAX_OTHER) break
-        if (r.axisX == null || r.axisY == null || seenRecordIds.has(r.id)) continue
-        seenRecordIds.add(r.id)
-        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction ?? 50, name: '', score: r.satisfaction ?? 50, isMicroDot: true })
-      }
-    }
-
-    // 3. 버블 (dots에 id 없으므로 ID 기반 dedup 불가 — 그대로 추가)
+    // 2. 버블 (dots에 id 없으므로 ID 기반 dedup 불가 — 그대로 추가)
     if (selectedSources.includes('bubble')) {
       for (const b of bubbleScores) {
         for (const d of b.dots) {
@@ -232,38 +238,18 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       }
     }
 
-    // 4. 공개 (상위 소스에 이미 포함된 record 제외)
-    if (selectedSources.includes('public')) {
-      for (const r of publicRecords) {
-        if (otherMicroDots.length >= MAX_OTHER) break
-        if (r.axisX == null || r.axisY == null || seenRecordIds.has(r.id)) continue
-        seenRecordIds.add(r.id)
-        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction ?? 50, name: '', score: r.satisfaction ?? 50, isMicroDot: true })
-      }
-    }
-
     return [...myMicroDots, ...otherMicroDots]
-  }, [selectedSources, otherRecordRefs, sortedRecords, followingRecords, bubbleScores, publicRecords])
+  }, [selectedSources, otherRecordRefs, sortedRecords, bubbleScores])
 
   // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
-  const followingAxisRecords = useMemo(
-    () => followingRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
-    [followingRecords],
-  )
   const bubbleAxisRecords = useMemo(
     () => bubbleScores.flatMap((b) => b.dots),
     [bubbleScores],
   )
-  const publicAxisRecords = useMemo(
-    () => publicRecords.filter((r): r is typeof r & { axisX: number; axisY: number; satisfaction: number } => r.axisX != null && r.axisY != null && r.satisfaction != null),
-    [publicRecords],
-  )
   const fallbackDot = useMemo(() => {
     if (avgDot) return null
     const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
-      ['following', followingAxisRecords],
       ['bubble', bubbleAxisRecords],
-      ['public', publicAxisRecords],
     ]
     const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
     if (!match) return null
@@ -273,7 +259,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       axisY: Math.round(dots.reduce((s, d) => s + d.axisY, 0) / dots.length),
       satisfaction: Math.round(dots.reduce((s, d) => s + d.satisfaction, 0) / dots.length),
     }
-  }, [avgDot, selectedSources, followingAxisRecords, bubbleAxisRecords, publicAxisRecords])
+  }, [avgDot, selectedSources, bubbleAxisRecords])
 
   const mySelected = selectedSources.includes('mine')
   const currentDot = mySelected
@@ -355,7 +341,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const hasAromaData = mergedAroma.primary.length > 0 || mergedAroma.secondary.length > 0 || mergedAroma.tertiary.length > 0
   const hasStructureData = myRecords.some((r) => r.complexity !== null)
 
-  // ─── 히어로 사진: 소스 우선순위(나→팔로잉→공개) 기준 최신 사진 ───
+  // ─── 히어로 사진: 소스 우선순위(나→공개) 기준 최신 사진 ───
   const heroPhotos = useMemo(() => {
     if (!wine) return []
     const getPhotosFromRecords = (records: typeof myRecords) => {
@@ -369,7 +355,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       }
       return urls
     }
-    const sources = [myRecords, followingRecords, publicRecords]
+    const sources = [myRecords]
     for (const records of sources) {
       const urls = getPhotosFromRecords(records)
       if (urls.length > 0) return urls
@@ -377,7 +363,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     if (wine.photos.length > 0) return wine.photos
     if (wine.labelImageUrl) return [wine.labelImageUrl]
     return []
-  }, [wine, myRecords, followingRecords, publicRecords, recordPhotos])
+  }, [wine, myRecords, recordPhotos])
 
   // 연결 식당 이름 맵 (RecordTimeline용)
   const linkedRestaurantNames = useMemo(() => {
@@ -644,8 +630,29 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
           accentColor="--accent-wine"
           cards={scoreCards}
           selectedSources={selectedSources}
-          onToggle={toggleSource}
+          onToggle={handleScoreToggle}
           toggleActive={isCardToggleActive}
+        />
+
+        <ScoreBreakdownPanel
+          isOpen={breakdownOpen}
+          breakdown={nyamBreakdown}
+          accentColor="--accent-wine"
+        />
+
+        <BubbleExpandPanel
+          isOpen={bubbleExpandOpen}
+          bubbleScores={bubbleScores.map((b) => ({
+            bubbleId: b.bubbleId,
+            bubbleName: b.bubbleName,
+            icon: b.bubbleIcon ?? null,
+            iconBgColor: b.bubbleColor ?? null,
+            ratingCount: b.dots.length,
+            avgScore: b.avgScore,
+            cfScore: null,
+            memberCount: b.memberCount,
+          }))}
+          accentColor="--accent-wine"
         />
 
         {/* ─── 평가 사분면 (독립 섹션) ─── */}
@@ -678,8 +685,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
             <section style={{ padding: '16px 20px' }}>
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 {(() => {
-                  const SCORE_SOURCES: ScoreSource[] = ['mine', 'following', 'bubble', 'public']
-                  const LABELS: Record<ScoreSource, string> = { mine: '나의 평가', following: '팔로잉 평가', bubble: '버블 평가', public: 'nyam 평가' }
+                  const SCORE_SOURCES: ScoreSource[] = ['mine', 'nyam', 'bubble']
+                  const LABELS: Record<ScoreSource, string> = { mine: '나의 평가', nyam: 'Nyam 평가', bubble: '버블 평가' }
                   const top = SCORE_SOURCES.find((s) => selectedSources.includes(s)) ?? 'mine'
                   return LABELS[top]
                 })()}

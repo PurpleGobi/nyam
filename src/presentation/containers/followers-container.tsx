@@ -1,82 +1,38 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { Search, X } from 'lucide-react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
-import { useFollowList } from '@/application/hooks/use-follow-list'
+import { useFollowListWithSimilarity } from '@/application/hooks/use-follow-list-with-similarity'
+import type { EnrichedFollowUser } from '@/application/hooks/use-follow-list-with-similarity'
 import { useFollow } from '@/application/hooks/use-follow'
-import { useMiniProfile } from '@/application/hooks/use-mini-profile'
-import { profileRepo } from '@/shared/di/container'
-import { getLevelTitle, getLevelColor } from '@/domain/services/xp-calculator'
+
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { StickyTabs } from '@/presentation/components/ui/sticky-tabs'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
+import { SimilarityIndicator } from '@/presentation/components/similarity-indicator'
 
 type FollowTab = 'followers' | 'following'
-
-interface FollowUserItem {
-  userId: string
-  nickname: string
-  handle: string | null
-  avatarUrl: string | null
-  avatarColor: string | null
-  level: number
-  levelColor: string
-}
 
 function FollowersInner() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') === 'following' ? 'following' : 'followers'
   const { user } = useAuth()
-  const { followers, following, counts, isLoading } = useFollowList(user?.id ?? null)
+  const {
+    followers: followerUsers,
+    following: followingUsers,
+    counts,
+    isLoading,
+    sortedBy,
+    setSortedBy,
+  } = useFollowListWithSimilarity(user?.id ?? null)
   const [activeTab, setActiveTab] = useState<FollowTab>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
-
-  // 프로필 enrichment
-  const [followerUsers, setFollowerUsers] = useState<FollowUserItem[]>([])
-  const [followingUsers, setFollowingUsers] = useState<FollowUserItem[]>([])
-  const [enrichLoading, setEnrichLoading] = useState(false)
-
-  useEffect(() => {
-    if (isLoading || !user) return
-    setEnrichLoading(true)
-
-    const enrichIds = (ids: string[]) =>
-      Promise.allSettled(ids.map((id) => profileRepo.getUserProfile(id)))
-        .then((results) =>
-          results
-            .map((r, i) => {
-              if (r.status !== 'fulfilled') return null
-              const p = r.value
-              const level = Math.max(1, Math.floor(p.totalXp / 100) + 1)
-              return {
-                userId: ids[i],
-                nickname: p.nickname,
-                handle: p.handle,
-                avatarUrl: p.avatarUrl,
-                avatarColor: p.avatarColor,
-                level,
-                levelColor: getLevelColor(level),
-              }
-            })
-            .filter((x): x is FollowUserItem => x !== null)
-        )
-
-    const followerIds = followers.map((f) => f.followerId)
-    const followingIds = following.map((f) => f.followingId)
-
-    Promise.all([enrichIds(followerIds), enrichIds(followingIds)])
-      .then(([fUsers, gUsers]) => {
-        setFollowerUsers(fUsers)
-        setFollowingUsers(gUsers)
-      })
-      .finally(() => setEnrichLoading(false))
-  }, [isLoading, followers, following, user])
 
   const currentList = activeTab === 'followers' ? followerUsers : followingUsers
 
@@ -106,7 +62,7 @@ function FollowersInner() {
         onTabChange={setActiveTab}
       />
 
-      {/* 검색바 */}
+      {/* 검색바 + 정렬 토글 */}
       <div className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
         <Search size={16} style={{ color: 'var(--text-hint)' }} />
         <input
@@ -128,10 +84,22 @@ function FollowersInner() {
             <X size={14} />
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => setSortedBy(sortedBy === 'default' ? 'similarity' : 'default')}
+          className="shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors"
+          style={{
+            backgroundColor: sortedBy === 'similarity' ? 'var(--accent-social-light)' : 'var(--bg-section)',
+            color: sortedBy === 'similarity' ? 'var(--accent-social)' : 'var(--text-sub)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {sortedBy === 'similarity' ? '적합도순' : '기본순'}
+        </button>
       </div>
 
       {/* 목록 */}
-      {isLoading || enrichLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
         </div>
@@ -171,7 +139,7 @@ function FollowUserRow({
   currentUserId,
   onAvatarPress,
 }: {
-  item: FollowUserItem
+  item: EnrichedFollowUser
   currentUserId: string | null
   onAvatarPress: () => void
 }) {
@@ -213,6 +181,9 @@ function FollowUserRow({
           >
             Lv.{item.level}
           </span>
+          {item.similarity != null && item.confidence != null && (
+            <SimilarityIndicator similarity={item.similarity} confidence={item.confidence} compact />
+          )}
         </div>
         {item.handle && (
           <p className="mt-0.5 text-[12px]" style={{ color: 'var(--text-hint)' }}>@{item.handle}</p>
