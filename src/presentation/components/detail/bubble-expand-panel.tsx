@@ -9,6 +9,8 @@ interface BubbleScore {
   iconBgColor: string | null
   ratingCount: number
   avgScore: number | null
+  cfScore?: number | null      // CF 기반 버블 점수 (있으면 우선 표시)
+  memberCount?: number | null   // 버블 멤버 수
 }
 
 interface BubbleExpandPanelProps {
@@ -50,11 +52,11 @@ export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleE
                   {b.bubbleName}
                 </span>
                 <span style={{ fontSize: '10px', color: 'var(--text-hint)', marginLeft: '4px' }}>
-                  {b.ratingCount}명 평가
+                  {b.memberCount != null ? `${b.memberCount}명` : `${b.ratingCount}명 평가`}
                 </span>
               </div>
               <span style={{ fontSize: '16px', fontWeight: 800, color: `var(${accentColor})` }}>
-                {b.avgScore ?? '—'}
+                {(b.cfScore != null ? b.cfScore : b.avgScore) ?? '—'}
               </span>
             </div>
           ))}

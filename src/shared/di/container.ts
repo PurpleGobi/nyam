@@ -18,6 +18,8 @@ import { SupabaseOnboardingRepository } from '@/infrastructure/repositories/supa
 import { SupabaseFilterStateRepository } from '@/infrastructure/repositories/supabase-filter-state-repository'
 import { SupabaseBookmarkRepository } from '@/infrastructure/repositories/supabase-bookmark-repository'
 import { SupabaseHomeRepository } from '@/infrastructure/repositories/supabase-home-repository'
+import { SupabaseSimilarityRepository } from '@/infrastructure/repositories/supabase-similarity-repository'
+import { SupabasePredictionRepository } from '@/infrastructure/repositories/supabase-prediction-repository'
 import { resizeImage, uploadImage, deleteImage } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
@@ -37,6 +39,8 @@ import type { OnboardingRepository } from '@/domain/repositories/onboarding-repo
 import type { FilterStateRepository } from '@/domain/repositories/filter-state-repository'
 import type { BookmarkRepository } from '@/domain/repositories/bookmark-repository'
 import type { HomeRepository } from '@/domain/repositories/home-repository'
+import type { SimilarityRepository } from '@/domain/repositories/similarity-repository'
+import type { PredictionRepository } from '@/domain/repositories/prediction-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -63,6 +67,8 @@ export const onboardingRepo: OnboardingRepository = new SupabaseOnboardingReposi
 export const filterStateRepo: FilterStateRepository = new SupabaseFilterStateRepository()
 export const bookmarkRepo: BookmarkRepository = new SupabaseBookmarkRepository()
 export const homeRepo: HomeRepository = new SupabaseHomeRepository()
+export const similarityRepo: SimilarityRepository = new SupabaseSimilarityRepository()
+export const predictionRepo: PredictionRepository = new SupabasePredictionRepository()
 
 /** Upload a bubble icon image: resize to 256x256 WebP, store in avatars bucket */
 export async function uploadBubbleIcon(file: File, userId: string): Promise<string> {
