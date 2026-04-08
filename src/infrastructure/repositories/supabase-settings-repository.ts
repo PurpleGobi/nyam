@@ -186,33 +186,212 @@ export class SupabaseSettingsRepository implements SettingsRepository {
   }
 
   async importData(userId: string, file: File): Promise<void> {
-    const name = file.name.toLowerCase()
-    let rows: Record<string, unknown>[]
+    const fileName = file.name.toLowerCase()
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls')
 
-    if (name.endsWith('.json')) {
-      const text = await file.text()
-      rows = JSON.parse(text)
-    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-      rows = parseExcel(await file.arrayBuffer())
+    if (isExcel) {
+      await this.importExcelSheets(userId, await file.arrayBuffer())
     } else {
-      // CSV (including .csv exported from Google Sheets)
-      const text = await file.text()
-      rows = parseCsv(text)
+      // JSON / CSV — 기존 records 직접 insert (하위 호환)
+      let rows: Record<string, unknown>[]
+      if (fileName.endsWith('.json')) {
+        rows = JSON.parse(await file.text())
+      } else {
+        rows = parseCsv(await file.text())
+      }
+      if (rows.length === 0) return
+      for (const row of rows) {
+        row.user_id = userId
+        delete row.id
+        delete row.created_at
+        delete row.updated_at
+      }
+      const { error } = await this.supabase.from('records').insert(rows)
+      if (error) throw error
+    }
+  }
+
+  private async importExcelSheets(userId: string, buffer: ArrayBuffer): Promise<void> {
+    const wb = read(buffer, { type: 'array' })
+
+    // 식당 시트
+    const rSheetName = wb.SheetNames.find((n) => n.includes('식당'))
+    if (rSheetName && wb.Sheets[rSheetName]) {
+      const rows = utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[rSheetName])
+      await this.upsertRestaurantRecords(userId, rows)
     }
 
-    if (rows.length === 0) return
+    // 와인 시트
+    const wSheetName = wb.SheetNames.find((n) => n.includes('와인'))
+    if (wSheetName && wb.Sheets[wSheetName]) {
+      const rows = utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wSheetName])
+      await this.upsertWineRecords(userId, rows)
+    }
 
+    // 식당/와인 시트가 없는 경우 — 첫 번째 시트를 records로 직접 insert (하위 호환)
+    if (!rSheetName && !wSheetName) {
+      const rows = parseExcel(buffer)
+      if (rows.length === 0) return
+      for (const row of rows) {
+        row.user_id = userId
+        delete row.id
+        delete row.created_at
+        delete row.updated_at
+      }
+      const { error } = await this.supabase.from('records').insert(rows)
+      if (error) throw error
+    }
+  }
+
+  private async upsertRestaurantRecords(userId: string, rows: Record<string, unknown>[]): Promise<void> {
     for (const row of rows) {
-      row.user_id = userId
-      delete row.id
-      delete row.created_at
-      delete row.updated_at
+      const name = String(row['restaurant_name'] ?? '').trim()
+      if (!name) continue
+
+      // 1) Restaurant upsert — 이름으로 검색, 없으면 생성
+      const targetId = await this.findOrCreateRestaurant(row)
+
+      // 2) Record 생성
+      const record: Record<string, unknown> = {
+        user_id: userId,
+        target_id: targetId,
+        target_type: 'restaurant',
+        axis_x: toNum(row['axis_x']),
+        axis_y: toNum(row['axis_y']),
+        satisfaction: computeSatisfaction(toNum(row['axis_x']), toNum(row['axis_y'])),
+        comment: toStr(row['comment']),
+        scene: toStr(row['scene']),
+        visit_date: toStr(row['visit_date']),
+        meal_time: toStr(row['meal_time']),
+        total_price: toNum(row['total_price']),
+        menu_tags: toArr(row['menu_tags']),
+        companion_count: toNum(row['companion_count']),
+        private_note: toStr(row['private_note']),
+      }
+      cleanNulls(record)
+
+      const { error } = await this.supabase.from('records').insert(record)
+      if (error) throw error
+    }
+  }
+
+  private async upsertWineRecords(userId: string, rows: Record<string, unknown>[]): Promise<void> {
+    for (const row of rows) {
+      const name = String(row['wine_name'] ?? '').trim()
+      if (!name) continue
+
+      // 1) Wine upsert
+      const targetId = await this.findOrCreateWine(row)
+
+      // 2) Record 생성
+      const record: Record<string, unknown> = {
+        user_id: userId,
+        target_id: targetId,
+        target_type: 'wine',
+        axis_x: toNum(row['axis_x']),
+        axis_y: toNum(row['axis_y']),
+        satisfaction: computeSatisfaction(toNum(row['axis_x']), toNum(row['axis_y'])),
+        comment: toStr(row['comment']),
+        scene: toStr(row['scene']),
+        visit_date: toStr(row['visit_date']),
+        meal_time: toStr(row['meal_time']),
+        purchase_price: toNum(row['purchase_price']),
+        pairing_categories: toArr(row['pairing_categories']),
+        aroma_primary: toArr(row['aroma_primary']),
+        aroma_secondary: toArr(row['aroma_secondary']),
+        aroma_tertiary: toArr(row['aroma_tertiary']),
+        complexity: toNum(row['complexity']),
+        finish: toNum(row['finish']),
+        balance: toNum(row['balance']),
+        intensity: toNum(row['intensity']),
+        companion_count: toNum(row['companion_count']),
+        private_note: toStr(row['private_note']),
+      }
+      cleanNulls(record)
+
+      const { error } = await this.supabase.from('records').insert(record)
+      if (error) throw error
+    }
+  }
+
+  private async findOrCreateRestaurant(row: Record<string, unknown>): Promise<string> {
+    const name = String(row['restaurant_name']).trim()
+
+    // 기존 검색
+    const { data: existing } = await this.supabase
+      .from('restaurants')
+      .select('id')
+      .ilike('name', name)
+      .limit(1)
+      .maybeSingle()
+
+    if (existing) return existing.id
+
+    // 신규 생성
+    const insert: Record<string, unknown> = {
+      name,
+      address: toStr(row['address']),
+      genre: toStr(row['genre']),
+      price_range: toNum(row['price_range']),
+      country: toStr(row['country']) ?? '한국',
+      city: toStr(row['city']) ?? '서울',
+      lat: toNum(row['lat']),
+      lng: toNum(row['lng']),
+    }
+    const area = toStr(row['area'])
+    if (area) insert.area = area.split(',').map((s: string) => s.trim())
+
+    cleanNulls(insert)
+
+    const { data, error } = await this.supabase
+      .from('restaurants')
+      .insert(insert)
+      .select('id')
+      .single()
+
+    if (error) throw error
+    return data.id
+  }
+
+  private async findOrCreateWine(row: Record<string, unknown>): Promise<string> {
+    const name = String(row['wine_name']).trim()
+    const vintage = toNum(row['vintage'])
+
+    // 기존 검색 (이름 + 빈티지)
+    let query = this.supabase
+      .from('wines')
+      .select('id')
+      .ilike('name', name)
+
+    if (vintage) {
+      query = query.eq('vintage', vintage)
     }
 
-    const { error } = await this.supabase
-      .from('records')
-      .insert(rows)
+    const { data: existing } = await query.limit(1).maybeSingle()
+    if (existing) return existing.id
+
+    // 신규 생성
+    const insert: Record<string, unknown> = {
+      name,
+      producer: toStr(row['producer']),
+      wine_type: toStr(row['wine_type']) ?? 'red',
+      country: toStr(row['country']),
+      region: toStr(row['region']),
+      sub_region: toStr(row['sub_region']),
+      variety: toStr(row['variety']),
+      vintage,
+      abv: toNum(row['abv']),
+    }
+    cleanNulls(insert)
+
+    const { data, error } = await this.supabase
+      .from('wines')
+      .insert(insert)
+      .select('id')
+      .single()
+
     if (error) throw error
+    return data.id
   }
 
   async generateImportTemplate(): Promise<Blob> {
@@ -360,10 +539,10 @@ async function generateTemplateWorkbook(): Promise<Blob> {
   // autoFillCols: 이름+주소만 입력하면 자동 검색되는 컬럼 (0-indexed)
   const rAutoFill = [4, 5, 6, 7, 8] // country, city, area, lat, lng
   const rDescs = [
-    '식당 이름 *필수', '주소 (자동검색에 활용)', '장르', '가격대 (1~3)',
+    '식당 이름 *필수', '주소 (자동검색에 활용)', '장르', '가격대 (1=저가, 2=중간, 3=고가)',
     '자동검색', '자동검색', '자동검색 (쉼표 구분)', '자동검색', '자동검색',
-    'X축 (0~100, 음식 퀄리티)', 'Y축 (0~100, 경험 가치)', '한줄평 (200자)',
-    '상황 태그', '방문일 (YYYY-MM-DD)', '식사 시간',
+    'X축 (0~100, 음식 퀄리티)', 'Y축 (0~100, 경험 만족도)', '한줄평 (200자)',
+    '상황', '방문일 (YYYY-MM-DD)', '식사 시간',
     '1인 금액 (원)', '추천 메뉴 (쉼표 구분)', '동반자 수', '비공개 메모',
   ]
 
@@ -371,17 +550,22 @@ async function generateTemplateWorkbook(): Promise<Blob> {
 
   // Dropdowns
   const GENRES = ['한식','일식','중식','태국','베트남','인도','이탈리안','프렌치','스페인','지중해','미국','멕시칸','카페','바/주점','베이커리','기타']
+  const R_SCENES = ['solo','romantic','friends','family','business','drinks']
   addDropdown(rs, 3, GENRES)                                    // genre
   addDropdown(rs, 4, ['1','2','3'])                             // price_range
+  addDropdown(rs, 13, R_SCENES)                                 // scene
   addDropdown(rs, 15, ['breakfast','lunch','dinner','snack'])    // meal_time
   addWholeRange(rs, 10, 0, 100)                                 // axis_x
   addWholeRange(rs, 11, 0, 100)                                 // axis_y
 
+  // scene 코멘트 안내
+  rs.getCell(1, 13).note = '상황 태그\nsolo=혼밥, romantic=데이트, friends=친구\nfamily=가족, business=회식, drinks=술자리'
+
   // 예시 데이터
   const rExamples = [
-    ['스시 오마카세 히든', '서울 종로구 익선동 166-55', '일식', 3, '한국', '서울', '익선동,종로', 37.5743, 126.9880, 82, 90, '오마카세 코스 흠잡을 데 없이 완벽', '데이트', '2026-03-15', 'dinner', 150000, '오마카세 코스,사케 페어링', 1, ''],
-    ['을지로 골뱅이', '서울 중구 을지로 14길 8', '한식', 1, '한국', '서울', '을지로', 37.5660, 126.9920, 70, 85, '골뱅이 무침 양이 실하고 소주 한잔에 딱', '회식', '2026-03-20', 'dinner', 15000, '골뱅이 무침,소주', 4, '사장님이 서비스 잘 챙겨줌'],
-    ['블루보틀 삼청', '서울 종로구 삼청로 76', '카페', 2, '한국', '서울', '삼청동,북촌', 37.5803, 126.9820, 75, 65, '뉴올리언스 아이스커피 추천', '혼자', '2026-04-01', 'snack', 8000, '뉴올리언스 아이스커피', 0, ''],
+    ['스시 오마카세 히든', '서울 종로구 익선동 166-55', '일식', 3, '한국', '서울', '익선동,종로', 37.5743, 126.9880, 82, 90, '오마카세 코스 흠잡을 데 없이 완벽', 'romantic', '2026-03-15', 'dinner', 150000, '오마카세 코스,사케 페어링', 1, ''],
+    ['을지로 골뱅이', '서울 중구 을지로 14길 8', '한식', 1, '한국', '서울', '을지로', 37.5660, 126.9920, 70, 85, '골뱅이 무침 양이 실하고 소주 한잔에 딱', 'business', '2026-03-20', 'dinner', 15000, '골뱅이 무침,소주', 4, '사장님이 서비스 잘 챙겨줌'],
+    ['블루보틀 삼청', '서울 종로구 삼청로 76', '카페', 2, '한국', '서울', '삼청동,북촌', 37.5803, 126.9820, 75, 65, '뉴올리언스 아이스커피 추천', 'solo', '2026-04-01', 'snack', 8000, '뉴올리언스 아이스커피', 0, ''],
   ]
   rExamples.forEach((ex, idx) => {
     const row = rs.getRow(DATA_ROW_START + idx)
@@ -403,15 +587,17 @@ async function generateTemplateWorkbook(): Promise<Blob> {
     'companion_count', 'private_note',
   ]
   // autoFillCols: 와인 이름만 입력하면 자동 검색되는 컬럼
-  const wAutoFill = [1, 3, 4, 5, 6, 8] // producer, country, region, sub_region, variety, abv
+  // producer(1), country(3), region(4), sub_region(5), variety(6), abv(8),
+  // aroma_primary(17), aroma_secondary(18), aroma_tertiary(19), complexity(20), finish(21), balance(22), intensity(23)
+  const wAutoFill = [1, 3, 4, 5, 6, 8, 17, 18, 19, 20, 21, 22, 23]
   const wDescs = [
     '와인 이름 *필수', '자동검색', '타입 *필수', '자동검색', '자동검색', '자동검색',
     '자동검색', '빈티지 (NV는 비움)', '자동검색',
-    'X축 (0~100, 구조·완성도)', 'Y축 (0~100, 즐거움·감성)', '한줄평 (200자)',
-    '상황 태그', '음용일 (YYYY-MM-DD)',
+    'X축 (0~100, 구조·완성도)', 'Y축 (0~100, 경험 만족도)', '한줄평 (200자)',
+    '상황', '음용일 (YYYY-MM-DD)',
     '구매가 (원)', '페어링 (쉼표 구분)', '식사 시간',
-    '1차 아로마 (쉼표 구분)', '2차 아로마 (쉼표 구분)', '3차 아로마 (쉼표 구분)',
-    '복합성 (0~100)', '여운 (0~100)', '균형 (0~100)', '강도 (0~100)',
+    '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)',
+    '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)',
     '동반자 수', '비공개 메모',
   ]
 
@@ -424,7 +610,9 @@ async function generateTemplateWorkbook(): Promise<Blob> {
   const AROMA_2 = ['butter','vanilla','spice','toast']
   const AROMA_3 = ['leather','earth','nut']
 
+  const W_SCENES = ['solo','romantic','gathering','pairing','gift','tasting','decanting']
   addDropdown(ws, 3, WINE_TYPES)                                // wine_type
+  addDropdown(ws, 13, W_SCENES)                                 // scene
   addDropdown(ws, 17, ['breakfast','lunch','dinner','snack'])    // meal_time
   addWholeRange(ws, 10, 0, 100)                                 // axis_x
   addWholeRange(ws, 11, 0, 100)                                 // axis_y
@@ -432,6 +620,9 @@ async function generateTemplateWorkbook(): Promise<Blob> {
   addWholeRange(ws, 22, 0, 100)                                 // finish
   addWholeRange(ws, 23, 0, 100)                                 // balance
   addWholeRange(ws, 24, 0, 100)                                 // intensity
+
+  // scene 코멘트 안내
+  ws.getCell(1, 13).note = '상황 태그\nsolo=혼술, romantic=데이트, gathering=모임\npairing=페어링, gift=선물, tasting=테이스팅\ndecanting=디캔팅'
 
   // 쉼표 구분 컬럼 — 셀 코멘트로 선택지 안내
   const multiNotes: Array<[number, string, string[]]> = [
@@ -446,9 +637,9 @@ async function generateTemplateWorkbook(): Promise<Blob> {
 
   // 예시 데이터
   const wExamples = [
-    ['Opus One 2019', 'Opus One Winery', 'red', 'USA', 'California', 'Napa Valley', 'Cabernet Sauvignon', 2019, 14.5, 92, 88, '놀라운 밸런스, 블랙커런트와 시가박스 향', '기념일', '2026-03-10', 650000, 'red_meat,cheese', 'dinner', 'dark_berry,stone_fruit', 'vanilla,toast', 'leather', 90, 95, 92, 85, 1, '결혼기념일 와인'],
-    ['Cloudy Bay Sauvignon Blanc 2023', 'Cloudy Bay', 'white', 'New Zealand', 'Marlborough', '', 'Sauvignon Blanc', 2023, 13.0, 72, 80, '풀향과 자몽 노트가 상쾌', '홈파티', '2026-04-05', 35000, 'seafood,vegetable', 'lunch', 'citrus,tropical,herb', '', '', 50, 45, 70, 65, 3, ''],
-    ['Moët & Chandon Impérial Brut NV', 'Moët & Chandon', 'sparkling', 'France', 'Champagne', '', 'Chardonnay', '', 12.0, 78, 92, '축하 자리에 빠지지 않는 클래식', '축하', '2026-02-14', 89000, 'cheese,charcuterie', 'dinner', 'apple_pear,citrus,white_floral', 'toast,butter', '', 70, 60, 80, 70, 2, '발렌타인 데이'],
+    ['Opus One 2019', 'Opus One Winery', 'red', 'USA', 'California', 'Napa Valley', 'Cabernet Sauvignon', 2019, 14.5, 92, 88, '놀라운 밸런스, 블랙커런트와 시가박스 향', 'pairing', '2026-03-10', 650000, 'red_meat,cheese', 'dinner', 'dark_berry,stone_fruit', 'vanilla,toast', 'leather', 90, 95, 92, 85, 1, '결혼기념일 와인'],
+    ['Cloudy Bay Sauvignon Blanc 2023', 'Cloudy Bay', 'white', 'New Zealand', 'Marlborough', '', 'Sauvignon Blanc', 2023, 13.0, 72, 80, '풀향과 자몽 노트가 상쾌', 'gathering', '2026-04-05', 35000, 'seafood,vegetable', 'lunch', 'citrus,tropical,herb', '', '', 50, 45, 70, 65, 3, ''],
+    ['Moët & Chandon Impérial Brut NV', 'Moët & Chandon', 'sparkling', 'France', 'Champagne', '', 'Chardonnay', '', 12.0, 78, 92, '축하 자리에 빠지지 않는 클래식', 'romantic', '2026-02-14', 89000, 'cheese,charcuterie', 'dinner', 'apple_pear,citrus,white_floral', 'toast,butter', '', 70, 60, 80, 70, 2, '발렌타인 데이'],
   ]
   wExamples.forEach((ex, idx) => {
     const row = ws.getRow(DATA_ROW_START + idx)
@@ -458,6 +649,35 @@ async function generateTemplateWorkbook(): Promise<Blob> {
   // ── Buffer → Blob ──
   const buffer = await wb.xlsx.writeBuffer()
   return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+}
+
+// ── Import 헬퍼 ──
+
+function toStr(v: unknown): string | null {
+  if (v === undefined || v === null || v === '') return null
+  return String(v).trim()
+}
+
+function toNum(v: unknown): number | null {
+  if (v === undefined || v === null || v === '') return null
+  const n = Number(v)
+  return isNaN(n) ? null : n
+}
+
+function toArr(v: unknown): string[] | null {
+  if (v === undefined || v === null || v === '') return null
+  return String(v).split(',').map((s) => s.trim()).filter(Boolean)
+}
+
+function computeSatisfaction(x: number | null, y: number | null): number | null {
+  if (x === null || y === null) return null
+  return Math.round((x + y) / 2)
+}
+
+function cleanNulls(obj: Record<string, unknown>): void {
+  for (const key of Object.keys(obj)) {
+    if (obj[key] === null || obj[key] === undefined) delete obj[key]
+  }
 }
 
 function convertToCsv(rows: Record<string, unknown>[]): string {

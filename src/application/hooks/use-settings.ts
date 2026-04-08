@@ -193,6 +193,20 @@ export function useSettings() {
     URL.revokeObjectURL(url)
   }, [])
 
+  const autoFillFile = useCallback(async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/import/auto-fill', { method: 'POST', body: formData })
+    if (!res.ok) throw new Error('자동 채우기 실패')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'nyam-auto-filled.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
   const clearCache = useCallback(async () => {
     await settingsRepo.clearCache()
   }, [])
@@ -219,6 +233,7 @@ export function useSettings() {
     exportData,
     importData,
     downloadTemplate,
+    autoFillFile,
     clearCache,
   }
 }

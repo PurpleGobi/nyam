@@ -6,7 +6,7 @@ import {
   Pencil, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
   Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
-  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe, Map, FileSpreadsheet,
+  Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe, Map, FileSpreadsheet, Wand2,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
@@ -134,7 +134,7 @@ export function SettingsContainer() {
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
     updateNickname, updateBio, updateAvatar, updateDndTime,
-    exportData, importData, downloadTemplate, clearCache,
+    exportData, importData, downloadTemplate, autoFillFile, clearCache,
   } = useSettings()
 
   const { cleanShares, isLoading: isCleaningManualShares } = useCleanManualShares()
@@ -147,6 +147,7 @@ export function SettingsContainer() {
   const [dndSheetOpen, setDndSheetOpen] = useState(false)
   const [cacheSize, setCacheSize] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const autoFillRef = useRef<HTMLInputElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -511,10 +512,22 @@ export function SettingsContainer() {
           <SettingsCard>
             <SettingsItem icon={<Map size={18} />} label="네이버 지도 가져오기" value="저장 목록" showChevron onPress={() => setNaverImportSheetOpen(true)} />
             <SettingsItem icon={<FileSpreadsheet size={18} />} label="입력 템플릿 다운로드" value="식당 / 와인 시트 포함" showChevron onPress={downloadTemplate} />
+            <SettingsItem icon={<Wand2 size={18} />} label="엑셀 자동 채우기" value="이름만 입력 → 나머지 자동" showChevron onPress={() => autoFillRef.current?.click()} />
             <SettingsItem icon={<Upload size={18} />} label="데이터 내보내기" value="JSON / CSV" showChevron onPress={() => exportData('json')} />
             <SettingsItem icon={<Download size={18} />} label="데이터 가져오기" value="JSON / CSV / Excel" showChevron onPress={() => importRef.current?.click()} />
             <SettingsItem icon={<Eraser size={18} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
           </SettingsCard>
+          <input
+            ref={autoFillRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) autoFillFile(file)
+              e.target.value = ''
+            }}
+          />
           <input
             ref={importRef}
             type="file"

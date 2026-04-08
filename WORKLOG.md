@@ -6,11 +6,17 @@
 
 ---
 
+### 2026-04-08 #20 — 엑셀 자동 채우기 + Import upsert
+- **영역**: app/api/import/auto-fill(신규), infrastructure/supabase-settings-repository(import upsert+템플릿 수정), application/use-settings(autoFillFile), presentation/settings-container(Wand2 버튼)
+- **맥락**: (1) 템플릿 수정: scene dropdown(식당 6종/와인 7종), price_range 설명, axis_y→경험 만족도, 와인 aroma~intensity 자동검색 표시. (2) /api/import/auto-fill: 엑셀 업로드→카카오검색(식당)+AI상세검색(와인)→채워진 엑셀 반환. (3) importData upsert: Excel 시트별 restaurant/wine findOrCreate+record insert. (4) 설정 UI "엑셀 자동 채우기" 버튼.
+- **미완료**: 브라우저 QA 미실행
+- **다음**: 시드 데이터 준비, 브라우저 QA
+
 ### 2026-04-08 #19 — 데이터 가져오기 Excel 템플릿 + Dropdown
 - **영역**: domain/repositories/settings-repository, infrastructure/supabase-settings-repository, application/hooks/use-settings, presentation/containers/settings-container, package.json(exceljs 추가)
 - **맥락**: (1) exceljs로 import 템플릿 생성: 식당/와인 2시트, 헤더+설명행+예시3건, dropdown(genre 16종, wine_type 7종, meal_time, price_range), 범위검증(0~100), 자동검색 컬럼 연녹색 표시, 쉼표구분 컬럼 셀 코멘트 안내. (2) 설정 데이터 섹션에 "입력 템플릿 다운로드" 버튼 추가(FileSpreadsheet 아이콘). (3) generateImportTemplate() domain 인터페이스+구현+hook+UI 연결.
-- **미완료**: import 로직이 records 테이블 직접 insert만 지원 — 식당/와인 자동 생성(upsert)+records 연결 로직 미구현
-- **다음**: import 시 restaurant/wine upsert + record 연결 로직 구현, 브라우저 QA
+- **미완료**: 없음 (다음 커밋에서 완료)
+- **다음**: 완료
 
 ### 2026-04-08 #18 — 위치 필터칩 UX 수정 + Excel 가져오기
 - **영역**: presentation/components/home/condition-filter-bar, infrastructure/supabase-settings-repository, presentation/containers/settings-container, package.json
@@ -60,11 +66,5 @@
 - **맥락**: ScoreSource 4종→3종('mine'|'nyam'|'bubble'). 'following' 제거, 'public'→'nyam'. TargetScores에서 following 제거 + nyam에 confidence 추가. findPublicSatisfactionAvg 인터페이스+구현 삭제. use-target-scores 4→3종 카드. 상세페이지 사분면 following/public micro dots 제거. useNyamScore 연결.
 - **미완료**: Phase 6 화면 통합, pre-existing !단언 4건/text-white 3건, Edge Function 배포(원격 미적용), supabase/types.ts 재생성
 - **다음**: Phase 6 (화면별 CF 점수 통합), pre-existing 기술 부채 정리
-
-### 2026-04-08 #23 — CF Phase 6: 화면별 통합
-- **영역**: application/hooks/(use-follow-list-with-similarity 신규, use-restaurant-detail, use-wine-detail), presentation/containers/(restaurant-detail, wine-detail, home, bubbler-profile, followers), presentation/components/bubbler/bubbler-hero
-- **맥락**: CF 점수/적합도를 실제 화면에 연결. 상세페이지 ScoreBreakdownPanel+BubbleExpandPanel 토글 연결, 홈 미방문 아이템 Nyam 점수 표시, 버블러 프로필 적합도 표시, 팔로우 목록 적합도+정렬. followers-container R4 위반(shared/di 직접 import) 해결.
-- **미완료**: Phase 7 성능 검증, Edge Function 배포(원격 미적용), myqa 브라우저 QA, supabase/types.ts 재생성
-- **다음**: Phase 7 성능 최적화 또는 커밋+배포, myqa 브라우저 QA
 
 
