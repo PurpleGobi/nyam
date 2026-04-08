@@ -124,7 +124,7 @@
 
 | 활동 | XP | 비고 |
 |------|-----|------|
-| 버블에 공유 | +1 | |
+| 버블에 기록 큐레이션 | +1 | 기록 있는 큐레이션만 |
 | 좋아요/찜 받음 | +1 | |
 | 팔로워 획득 (버블/개인) | +1 | |
 | 맞팔 성사 | +2 | 양쪽 모두 |
@@ -138,7 +138,7 @@
 | 온보딩 완료 | +10 |
 | 첫 기록 | +5 |
 | 첫 버블 생성 | +5 |
-| 첫 버블 공유 | +3 |
+| 첫 버블 큐레이션 | +3 |
 
 ### 4-5. 마일스톤 XP (종합 XP에 적립, 달성 시 1회)
 
@@ -576,7 +576,7 @@ Step 7. 종합 레벨 체크 → 호출측(use-xp-award)에서 레벨업 알림 
 보너스 XP (별도 hook: use-bonus-xp.ts):
 - 온보딩 완료 시 (+10): onboarding-container.tsx → awardBonus('onboard')
 - 첫 버블 생성 시 (+5): use-bubble-create.ts → awardBonus('first_bubble')
-- 첫 버블 공유 시 (+3): use-share-record.ts → awardBonus('first_share')
+- 첫 버블 큐레이션 시 (+3): use-share-record.ts → awardBonus('first_share')
 - 첫 기록은 Step 3.5에서 직접 처리 (use-xp-calculation.ts)
 - 모두 hasBonusBeenGranted 중복 체크 후 1회만 지급
 
