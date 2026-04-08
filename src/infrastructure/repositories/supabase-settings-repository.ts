@@ -259,7 +259,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
         axis_x: toNum(row['axis_x']),
         axis_y: toNum(row['axis_y']),
         satisfaction: computeSatisfaction(toNum(row['axis_x']), toNum(row['axis_y'])),
-        comment: toStr(row['comment']),
+        comment: toStr(row['comment'], 200),
         scene: toStr(row['scene']),
         visit_date: toStr(row['visit_date']),
         meal_time: toStr(row['meal_time']),
@@ -291,7 +291,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
         axis_x: toNum(row['axis_x']),
         axis_y: toNum(row['axis_y']),
         satisfaction: computeSatisfaction(toNum(row['axis_x']), toNum(row['axis_y'])),
-        comment: toStr(row['comment']),
+        comment: toStr(row['comment'], 200),
         scene: toStr(row['scene']),
         visit_date: toStr(row['visit_date']),
         meal_time: toStr(row['meal_time']),
@@ -653,9 +653,10 @@ async function generateTemplateWorkbook(): Promise<Blob> {
 
 // ── Import 헬퍼 ──
 
-function toStr(v: unknown): string | null {
+function toStr(v: unknown, maxLen?: number): string | null {
   if (v === undefined || v === null || v === '') return null
-  return String(v).trim()
+  const s = String(v).trim()
+  return maxLen && s.length > maxLen ? s.substring(0, maxLen) : s
 }
 
 function toNum(v: unknown): number | null {

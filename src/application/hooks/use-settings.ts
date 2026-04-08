@@ -180,7 +180,13 @@ export function useSettings() {
 
   const importData = useCallback(async (file: File) => {
     if (!userId) return
-    await settingsRepo.importData(userId, file)
+    try {
+      await settingsRepo.importData(userId, file)
+      alert(`${file.name} 가져오기 완료`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      alert(`가져오기 실패: ${msg}`)
+    }
   }, [userId])
 
   const downloadTemplate = useCallback(async () => {
