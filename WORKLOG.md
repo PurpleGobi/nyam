@@ -42,28 +42,27 @@
 - **미완료**: 팔로우 요청/승인 플로우 (pending→accepted), conditional 조건 평가 로직, 보기 필터별 데이터 페칭
 - **다음**: 팔로우 승인제 구현, 보기 필터 데이터 페칭 연동
 
-### 2026-04-06 #10 — 홈 필터 시스템 재구성 + Write-Behind Cache 영속화
-- **영역**: domain/entities/filter-config, condition-chip, filter-matcher, infrastructure/supabase-filter-state-repository, application/hooks/use-persisted-filter-state, presentation/home-container, condition-filter-bar, supabase/migrations/046
-- **맥락**: (1) 식당탭 필터 재구성: 상태→보기(멀티셀렉트OR), 위치(구)+생활권→위치 통합(내 위치+행정구역/생활권 탭), 순서 재배치(10종). (2) 필터 상태 Write-Behind Cache: localStorage 즉시 + debounce 1500ms Supabase + visibilitychange flush + timestamp 비교 복원. (3) R4 리팩토링: presentation에서 shared/di import 제거, application hooks로 이동.
-- **미완료**: 보기 필터의 "버블"/"공개" 데이터 페칭 미연동 (UI만), "내 위치" GPS 연동 미구현 (UI만), 와인탭 필터 순서/통합 미적용
-- **다음**: 프라이버시 재설계 → 완료(#11)
+### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
+- **영역**: domain/entities/similarity.ts(신규), domain/services/cf-calculator.ts(신규), domain/services/__tests__/cf-calculator.test.ts(신규), supabase/migrations/051_cf_tables.sql(신규), vitest.config.ts(신규)
+- **맥락**: CF_SYSTEM.md 스펙 기반 협업 필터링 순수 계산 서비스 구현. 타입 7개 + 상수 10개 + 함수 8개 + 테스트 32개. user_similarities/user_score_means 캐시 테이블 + RLS. 기존 파일 수정 없음.
+- **미완료**: ScoreSource에 'cf' 추가 + SOURCE_PRIORITY 통합은 Phase 5로 이연 (사용처 10+ 파일), supabase/types.ts 재생성 필요, 051 마이그레이션 원격 적용 필요
+- **다음**: Phase 2 증분 업데이트 파이프라인 (Edge Function), supabase gen types 실행
 
-### 2026-04-03 #9 — 버블 멤버 카운트/통계 트리거 수정 + 버블러 탭 구현
-- **영역**: supabase/migrations/044, application/hooks/use-bubblers-list, presentation/containers/bubble-list-container
-- **맥락**: (1) member_count 트리거가 RLS에 막혀 비-owner INSERT 시 카운트 미갱신 → SECURITY DEFINER 적용. (2) 멤버별 통계(member_unique_target_count, weekly_share_count, avg_satisfaction) 갱신 트리거 없음 → bubble_shares INSERT/DELETE 시 자동 재계산 추가. (3) 기존 데이터 일괄 재계산. (4) 버블러 탭이 하드코딩 빈 상태 → useBubblersList 훅 + BubblerCard 구현.
-- **미완료**: "우리가족" 버블에 테스트 계정 초대 알림이 DB에 없음 — 유저가 실제로 초대를 보냈는지 재확인 필요
-- **다음**: 브라우저에서 버블러 탭/멤버 통계 E2E 검증
+### 2026-04-08 #19 — CF Phase 2: 증분 업데이트 파이프라인
+- **영역**: domain/repositories/similarity-repository.ts(신규), infrastructure/repositories/supabase-similarity-repository.ts(신규), shared/di/container.ts(수정), supabase/functions/compute-similarity(신규), supabase/migrations/052_cf_trigger.sql(신규)
+- **맥락**: records INSERT/UPDATE/DELETE 시 DB trigger → Edge Function → user_score_means 갱신 + user_similarities 증분 재계산. SimilarityRepository 읽기 전용 인터페이스(3메서드) + Supabase 구현체. UPDATE 평가 철회 분기(plan-reviewer 1회차 수정), any/! assertion 제거(quality-guard 2회차 수정).
+- **미완료**: Edge Function 배포 + 동작 테스트 (로컬에서만 작성, supabase 원격 미적용), supabase/types.ts 재생성 필요
+- **다음**: Phase 3 predict-score Edge Function, supabase gen types 실행
 
-### 2026-04-02 #8 — 버블 검색/탐색 + 알림 기반 초대/수락 시스템
-- **영역**: application/hooks, presentation/components/bubble, infrastructure/repositories, supabase/migrations
-- **맥락**: Discover Sheet 4탭 실데이터 연결 (findPublic). 닉네임/이메일 유저 검색 → 초대 알림 → 수락 시 멤버 추가. 가입 신청 시 owner 알림 → 승인 시 active 전환. RLS 정책 2개 추가 (042, 043). 두 계정 E2E 검증 완료.
-- **미완료**: 없음
-- **다음**: 가입 신청(manual_approve) 플로우도 E2E 테스트 필요
+### 2026-04-08 #21 — CF Phase 4: 새 훅 + UI 컴포넌트
+- **영역**: application/hooks/(use-nyam-score, use-feed-scores, use-similarity 신규), presentation/components/(detail/confidence-badge, detail/score-breakdown-panel 신규, similarity-indicator 신규, detail/bubble-expand-panel 수정)
+- **맥락**: CF 예측/적합도 훅 3개 + 확신도 배지/점수 근거 패널/적합도 표시 UI 4개 구현. lint 에러 2건(react-hooks/set-state-in-effect) 수정 완료. bubble-expand-panel에 cfScore/memberCount optional 필드 추가(하위 호환).
+- **미완료**: Phase 5(ScoreSource 'cf' + SOURCE_PRIORITY + 기존 마이그레이션), Phase 6(화면 통합), Edge Function 배포(원격 미적용), supabase/types.ts 재생성 필요
+- **다음**: Phase 5 (ScoreSource 변경 + use-target-scores 리팩토링)
 
-### 2026-04-02 #7 — 버블 조건부 공유 필터 domain 필드 수정
-- **영역**: domain/entities/bubble, domain/services/bubble-share-sync, presentation/components/bubble/share-rule-editor
-- **맥락**: 식당/와인 필터 속성 중 status, satisfaction, visit_date 키 중복으로 칩 중복/규칙 손실/크로스 도메인 평가 실패. rules에 domain 필드 추가하여 완전 분리. evaluateShareRule도 targetType별 규칙만 적용.
-- **미완료**: 없음
-- **다음**: 없음 (검증 완료)
-
+### 2026-04-08 #20 — CF Phase 3: 예측 API (predict-score + batch-predict)
+- **영역**: domain/repositories/prediction-repository.ts(신규), supabase/functions/predict-score(신규), supabase/functions/batch-predict(신규), infrastructure/repositories/supabase-prediction-repository.ts(신규), shared/di/container.ts(수정)
+- **맥락**: CF 예측 API 구현. 단건(predict-score: 7회 DB, breakdown 포함, scope 지원) + 배치(batch-predict: 5회 DB, 최대 50건) Edge Function. PredictionRepository 인터페이스 + functions.invoke() 래퍼 + DI 등록. service_role+JWT 인증, CORS, cf-calculator.ts 로직 인라인 복사.
+- **미완료**: predict-score/batch-predict Edge Function 배포(원격 미적용), 실 데이터 속도 벤치마크, supabase/types.ts 재생성 필요
+- **다음**: Phase 4 (usePrediction 훅 + UI 컴포넌트), Phase 5 (ScoreSource 'cf' 추가 + 기존 마이그레이션)
 
