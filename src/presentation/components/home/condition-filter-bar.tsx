@@ -448,12 +448,8 @@ export function ConditionFilterBar({
         // tab 삭제 → 전체 location 칩 그룹 제거
         onChipsChange(chips.filter((c) => isAdvancedChip(c) || !isLocationChipKey(c.attribute)))
       } else if (chip.attribute === LOCATION_CITY_KEY) {
-        // city 삭제 → city를 "전체"로 리셋 + detail 칩 제거
-        onChipsChange(chips.map((c) => {
-          if (isAdvancedChip(c)) return c
-          if (c.attribute === LOCATION_CITY_KEY) return { ...c, value: CASCADING_ALL, displayLabel: '전체' }
-          return c
-        }).filter((c) => isAdvancedChip(c) || c.attribute !== LOCATION_DETAIL_KEY))
+        // city 삭제 → 전체 location 칩 그룹 제거
+        onChipsChange(chips.filter((c) => isAdvancedChip(c) || !isLocationChipKey(c.attribute)))
       } else if (chip.attribute === LOCATION_DETAIL_KEY) {
         // detail 삭제 → "전체"로 리셋
         onChipsChange(chips.map((c) => {
@@ -604,7 +600,7 @@ export function ConditionFilterBar({
         {conditionChips.filter((c) => !c.hidden).map((chip) => {
           const attrLabel = getChipAttrLabel(chip)
           const isAllPlaceholder = chip.value === CASCADING_ALL
-          const isLocChild = chip.attribute === LOCATION_CITY_KEY || chip.attribute === LOCATION_DETAIL_KEY
+          const isLocChild = chip.attribute === LOCATION_DETAIL_KEY
           const isLocTab = chip.attribute === LOCATION_TAB_KEY
           return (
             <button
@@ -1106,25 +1102,6 @@ export function ConditionFilterBar({
               <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
                 {cityLabel}
               </div>
-              {/* 전체 옵션 */}
-              <button
-                type="button"
-                onClick={() => {
-                  // city를 "전체"로 리셋 + detail 칩 제거
-                  onChipsChange(chips.map((c) => {
-                    if (isAdvancedChip(c)) return c
-                    if (c.attribute === LOCATION_CITY_KEY) return { ...c, value: CASCADING_ALL, displayLabel: '전체' }
-                    return c
-                  }).filter((c) => isAdvancedChip(c) || c.attribute !== LOCATION_DETAIL_KEY))
-                  setEditingChipId(null)
-                }}
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                전체
-                {chip.value === CASCADING_ALL && <Check size={14} style={{ color: accent }} />}
-              </button>
-              <div style={{ borderTop: '1px solid var(--border)', margin: '2px 0' }} />
               {tab.cascadingOptions.map((cityOpt) => (
                 <button
                   key={cityOpt.value}
