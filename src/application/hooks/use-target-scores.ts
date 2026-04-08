@@ -25,10 +25,7 @@ interface UseTargetScoresParams {
 }
 
 function confidenceLabel(c: number): string {
-  if (c >= 0.7) return '확신도 높음'
-  if (c >= 0.5) return '확신도 보통'
-  if (c >= 0.3) return '참고용'
-  return ''
+  return `신뢰도 ${Math.round(c * 100)}%`
 }
 
 export function useTargetScores(params: UseTargetScoresParams) {

@@ -16,8 +16,9 @@ const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
 const CONFIDENCE_QUALITY_WEIGHT = 0.15
-const MIN_OVERLAP = 3
+const MIN_OVERLAP = 1
 const TOP_K = 50
+const BASE_WEIGHT = 0.1
 const MAX_BATCH_SIZE = 50
 
 // ===== 인라인 타입 =====
@@ -60,11 +61,10 @@ function selectTopK<T extends { similarity: number; confidence: number; boost: n
   const limit = k ?? TOP_K
   if (raters.length <= limit) return raters.slice()
 
-  const withWeight = raters.map((r, index) => ({
-    rater: r,
-    weight: Math.abs(r.similarity * r.confidence * r.boost),
-    index,
-  }))
+  const withWeight = raters.map((r, index) => {
+    const cfW = r.similarity * r.confidence * r.boost
+    return { rater: r, weight: Math.abs(cfW > 1e-9 ? cfW : BASE_WEIGHT), index }
+  })
 
   withWeight.sort((a, b) => {
     if (b.weight !== a.weight) return b.weight - a.weight
@@ -83,7 +83,8 @@ function computePredictionConfidence(raters: RaterInput[]): number {
   let sumAbsWeight = 0
   const weights: number[] = []
   for (const r of raters) {
-    const w = r.similarity * r.confidence * r.boost
+    const cfW = r.similarity * r.confidence * r.boost
+    const w = cfW > 1e-9 ? cfW : BASE_WEIGHT
     weights.push(w)
     sumAbsWeight += Math.abs(w)
   }
@@ -139,7 +140,8 @@ function computePrediction(
   let sumAbsWeight = 0
 
   for (const r of raters) {
-    const weight = r.similarity * r.confidence * r.boost
+    const cfW = r.similarity * r.confidence * r.boost
+    const weight = cfW > 1e-9 ? cfW : BASE_WEIGHT
     sumWeightedDevX += weight * r.deviation.x
     sumWeightedDevY += weight * r.deviation.y
     sumAbsWeight += Math.abs(weight)
@@ -395,29 +397,33 @@ async function batchPredictForUser(
       continue
     }
 
-    // 해당 아이템의 기록자 중 적합도 있는 후보
+    // 해당 아이템의 모든 기록자 (겹침 없어도 BASE_WEIGHT로 참여)
     const candidates: RaterCandidate[] = []
     for (const [raterId] of itemScores) {
       const sim = simMap.get(raterId)
-      if (!sim) continue
-
       const relation = determineRelation(userId, raterId, followSet, followerSet)
       const boost = getRelationBoost(relation)
 
       candidates.push({
         raterId,
-        similarity: sim.similarity,
-        confidence: sim.confidence,
-        nOverlap: sim.nOverlap,
+        similarity: sim?.similarity ?? 0,
+        confidence: sim?.confidence ?? 0,
+        nOverlap: sim?.nOverlap ?? 0,
         boost,
       })
     }
 
-    const filtered = filterByMinOverlap(candidates)
-    const topK = selectTopK(filtered)
+    const topK = selectTopK(candidates)
 
     if (topK.length === 0) {
-      results.push({ item_id: itemId, satisfaction: (myMean.x + myMean.y) / 2, confidence: 0 })
+      // 유효 평가자 없음 → 기록자 단순 평균으로 폴백 (신뢰도 0%)
+      const itemScoreMap = itemRaterScores.get(itemId)
+      if (itemScoreMap && itemScoreMap.size > 0) {
+        let sumX = 0, sumY = 0
+        for (const s of itemScoreMap.values()) { sumX += s.x; sumY += s.y }
+        const n = itemScoreMap.size
+        results.push({ item_id: itemId, satisfaction: Math.round((sumX / n + sumY / n) / 2 * 100) / 100, confidence: 0 })
+      }
       continue
     }
 

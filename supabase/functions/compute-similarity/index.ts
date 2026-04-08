@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // ===== CF 파라미터 (cf-calculator.ts와 동일) =====
 const D = 60
 const LAMBDA = 7
-const MIN_OVERLAP = 3
+const MIN_OVERLAP = 1
 
 // ===== 인라인 계산 함수 (cf-calculator.ts 동일 로직) =====
 

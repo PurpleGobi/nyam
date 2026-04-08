@@ -29,13 +29,14 @@ export function SimilarityIndicator({
           opacity,
         }}
       >
-        {pct}%
+        적합도 {pct}%
       </span>
     )
   }
 
   return (
     <div className="flex items-center gap-1.5" style={{ opacity }}>
+      <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>적합도</span>
       {/* 프로그레스 바 */}
       <div
         className="h-1 flex-1 overflow-hidden rounded-full"
@@ -50,7 +51,6 @@ export function SimilarityIndicator({
           }}
         />
       </div>
-      {/* 퍼센트 텍스트 */}
       <span
         style={{
           fontSize: '11px',

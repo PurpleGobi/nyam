@@ -18,8 +18,9 @@ const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
 const CONFIDENCE_QUALITY_WEIGHT = 0.15
-const MIN_OVERLAP = 3
+const MIN_OVERLAP = 1
 const TOP_K = 50
+const BASE_WEIGHT = 0.1  // 겹침 0인 기록자의 기본 가중치 (단순 평균 기여)
 
 /**
  * 점수 배열의 평균 2D 좌표를 계산한다.
@@ -171,23 +172,17 @@ export function computePredictionConfidence(raters: RaterInput[]): number {
 export function computePrediction(
   myMean: ScorePoint,
   raters: RaterInput[],
-): PredictionResult {
-  if (raters.length === 0) {
-    return {
-      predictedX: myMean.x,
-      predictedY: myMean.y,
-      satisfaction: (myMean.x + myMean.y) / 2,
-      confidence: 0,
-      nRaters: 0,
-    }
-  }
+): PredictionResult | null {
+  if (raters.length === 0) return null  // 유효 평가자 없음 → 예측 불가
+
 
   let sumWeightedDevX = 0
   let sumWeightedDevY = 0
   let sumAbsWeight = 0
 
   for (const r of raters) {
-    const weight = r.similarity * r.confidence * r.boost
+    const cfWeight = r.similarity * r.confidence * r.boost
+    const weight = cfWeight > 1e-9 ? cfWeight : BASE_WEIGHT
     sumWeightedDevX += weight * r.deviation.x
     sumWeightedDevY += weight * r.deviation.y
     sumAbsWeight += Math.abs(weight)

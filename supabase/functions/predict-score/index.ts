@@ -17,8 +17,9 @@ const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
 const CONFIDENCE_QUALITY_WEIGHT = 0.15
-const MIN_OVERLAP = 3
+const MIN_OVERLAP = 1
 const TOP_K = 50
+const BASE_WEIGHT = 0.1
 
 // ===== 인라인 타입 =====
 
@@ -161,7 +162,8 @@ function computePrediction(
   let sumAbsWeight = 0
 
   for (const r of raters) {
-    const weight = r.similarity * r.confidence * r.boost
+    const cfWeight = r.similarity * r.confidence * r.boost
+    const weight = cfWeight > 1e-9 ? cfWeight : BASE_WEIGHT  // 겹침 없으면 기본 가중치
     sumWeightedDevX += weight * r.deviation.x
     sumWeightedDevY += weight * r.deviation.y
     sumAbsWeight += Math.abs(weight)
@@ -388,32 +390,44 @@ async function predictScoreForUser(
   const candidates: RaterCandidate[] = []
   for (const raterId of raterIds) {
     const sim = simMap.get(raterId)
-    if (!sim) continue
-
     const relation = determineRelation(userId, raterId, followSet, followerSet)
     const boost = getRelationBoost(relation)
 
     candidates.push({
       raterId,
-      similarity: sim.similarity,
-      confidence: sim.confidence,
-      nOverlap: sim.nOverlap,
+      similarity: sim?.similarity ?? 0,
+      confidence: sim?.confidence ?? 0,
+      nOverlap: sim?.nOverlap ?? 0,
       boost,
       relation,
     })
   }
 
-  const filtered = filterByMinOverlap(candidates)
-  const topK = selectTopK(filtered)
+  // 겹침 있는 유저: CF 가중치, 없는 유저: BASE_WEIGHT로 참여
+  const topK = selectTopK(candidates)
 
   if (topK.length === 0) {
+    // 유효 평가자 없음 → 기록자 단순 평균으로 폴백 (신뢰도 0%)
+    const { data: allScores } = await supabase
+      .from('records')
+      .select('axis_x, axis_y')
+      .eq('target_id', itemId)
+      .eq('target_type', category)
+      .neq('user_id', userId)
+      .not('axis_x', 'is', null)
+      .not('axis_y', 'is', null)
+
+    if (!allScores || allScores.length === 0) return null  // 기록자도 없음
+
+    const avgX = allScores.reduce((s, r) => s + r.axis_x, 0) / allScores.length
+    const avgY = allScores.reduce((s, r) => s + r.axis_y, 0) / allScores.length
     return {
-      predicted_x: myMean.x,
-      predicted_y: myMean.y,
-      satisfaction: (myMean.x + myMean.y) / 2,
+      predicted_x: Math.round(avgX * 100) / 100,
+      predicted_y: Math.round(avgY * 100) / 100,
+      satisfaction: Math.round((avgX + avgY) / 2 * 100) / 100,
       confidence: 0,
-      n_raters: 0,
-      breakdown: { following_raters: [], other_raters: { count: 0, avg_similarity: 0, avg_score: 0 } },
+      n_raters: allScores.length,
+      breakdown: { following_raters: [], other_raters: { count: allScores.length, avg_similarity: 0, avg_score: Math.round((avgX + avgY) / 2 * 100) / 100 } },
     }
   }
 
