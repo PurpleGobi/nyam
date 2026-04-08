@@ -42,8 +42,6 @@ export interface RestaurantRepository {
   /** 팔로잉 유저들의 해당 식당 기록 (satisfaction 있는 것만) */
   findFollowingRecordsByTarget(restaurantId: string, userId: string): Promise<DiningRecord[]>
 
-  /** 공개 사용자의 해당 식당 satisfaction 평균 + 인원수 */
-  findPublicSatisfactionAvg(restaurantId: string, excludeUserId?: string): Promise<{ avg: number; count: number } | null>
 }
 
 /** 사분면 참조 점 */

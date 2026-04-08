@@ -2,14 +2,13 @@
 // R1: 외부 의존 0
 
 /** 점수 출처 */
-export type ScoreSource = 'mine' | 'following' | 'bubble' | 'public'
+export type ScoreSource = 'mine' | 'nyam' | 'bubble'
 
-/** 특정 대상에 대한 4종 점수 */
+/** 특정 대상에 대한 3종 점수 */
 export interface TargetScores {
   mine: { avg: number; count: number } | null
-  following: { avg: number; count: number } | null
+  nyam: { avg: number; count: number; confidence: number } | null
   bubble: { avg: number; count: number } | null
-  public: { avg: number; count: number } | null
 }
 
 /** 폴백 결과 */

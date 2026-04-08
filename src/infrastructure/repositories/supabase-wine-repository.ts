@@ -396,22 +396,4 @@ export class SupabaseWineRepository implements WineRepository {
     return (data ?? []).map((r) => mapDbToRecord(r as unknown as Record<string, unknown>))
   }
 
-  async findPublicSatisfactionAvg(wineId: string, excludeUserId?: string): Promise<{ avg: number; count: number } | null> {
-    let query = this.supabase
-      .from('records')
-      .select('satisfaction, users!inner(is_public)')
-      .eq('target_id', wineId)
-      .eq('target_type', 'wine')
-      .eq('users.is_public', true)
-      .not('satisfaction', 'is', null)
-    if (excludeUserId) {
-      query = query.neq('user_id', excludeUserId)
-    }
-    const { data, error } = await query
-    if (error) throw new Error(`Public satisfaction 조회 실패: ${error.message}`)
-    if (!data || data.length === 0) return null
-
-    const sum = data.reduce((s, r) => s + (r.satisfaction ?? 0), 0)
-    return { avg: Math.round(sum / data.length), count: data.length }
-  }
 }

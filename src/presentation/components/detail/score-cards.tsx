@@ -8,6 +8,7 @@ interface ScoreCardData {
   score: number | null
   subText: string
   available: boolean
+  confidence?: number | null
 }
 
 interface ScoreCardsProps {

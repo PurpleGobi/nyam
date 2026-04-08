@@ -1,7 +1,8 @@
 import type { HomeRepository, HomeViewType } from '@/domain/repositories/home-repository'
 import type { HomeTarget } from '@/domain/entities/home-target'
 import type { DiningRecord, RecordTargetType, RecordSource } from '@/domain/entities/record'
-import { SOURCE_PRIORITY } from '@/domain/constants/source-priority'
+/** 홈 피드용 RecordSource 우선순위 (score 시스템의 SOURCE_PRIORITY와 별개) */
+const RECORD_SOURCE_PRIORITY: RecordSource[] = ['mine', 'following', 'bubble', 'public', 'bookmark']
 import { createClient } from '@/infrastructure/supabase/client'
 
 // --- DB -> Domain 매핑 (records) ---
@@ -551,7 +552,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           if (arr) arr.push(r)
           else bySource.set(src, [r])
         }
-        for (const src of SOURCE_PRIORITY) {
+        for (const src of RECORD_SOURCE_PRIORITY) {
           const srcRecords = bySource.get(src)
           if (srcRecords && srcRecords.length > 0) {
             bestSource = src
@@ -575,7 +576,7 @@ export class SupabaseHomeRepository implements HomeRepository {
       }
       if (!photoUrl) {
         // 소셜 records의 사진 (source 우선순위 순)
-        for (const src of SOURCE_PRIORITY) {
+        for (const src of RECORD_SOURCE_PRIORITY) {
           const srcRecords = targetRecords.filter((r) => r.source === src && r.userId !== currentUserId)
           for (const r of srcRecords) {
             const photo = photoMap.get(r.id)

@@ -51,6 +51,4 @@ export interface WineRepository {
   /** 팔로잉 유저들의 해당 와인 기록 (satisfaction 있는 것만) */
   findFollowingRecordsByTarget(wineId: string, userId: string): Promise<DiningRecord[]>
 
-  /** 공개 사용자의 해당 와인 satisfaction 평균 + 인원수 */
-  findPublicSatisfactionAvg(wineId: string, excludeUserId?: string): Promise<{ avg: number; count: number } | null>
 }

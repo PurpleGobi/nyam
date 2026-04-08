@@ -6,7 +6,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import type { TargetScores, ScoreSource } from '@/domain/entities/score'
 import { getScoreFallback } from '@/domain/services/score-fallback'
-import type { DiningRecord } from '@/domain/entities/record'
 
 export type QuadrantViewMode = 'visits' | 'compare'
 
@@ -18,31 +17,32 @@ interface ScoreCardState {
 interface UseTargetScoresParams {
   myAvgScore: number | null
   myCount: number
-  followingAvgScore: number | null
-  followingCount: number
   bubbleAvgScore: number | null
   bubbleCount: number
   nyamAvgScore: number | null
   nyamCount: number
-  /** visits 모드에서 그룹별 dot 데이터를 가져오기 위한 records */
-  followingRecords?: DiningRecord[]
-  bubbleRecords?: DiningRecord[]
+  nyamConfidence: number | null
+}
+
+function confidenceLabel(c: number): string {
+  if (c >= 0.7) return '확신도 높음'
+  if (c >= 0.5) return '확신도 보통'
+  if (c >= 0.3) return '참고용'
+  return ''
 }
 
 export function useTargetScores(params: UseTargetScoresParams) {
   const {
     myAvgScore, myCount,
-    followingAvgScore, followingCount,
     bubbleAvgScore, bubbleCount,
-    nyamAvgScore, nyamCount,
+    nyamAvgScore, nyamCount, nyamConfidence,
   } = params
 
   const scores: TargetScores = useMemo(() => ({
     mine: myAvgScore !== null ? { avg: myAvgScore, count: myCount } : null,
-    following: followingAvgScore !== null ? { avg: followingAvgScore, count: followingCount } : null,
+    nyam: nyamAvgScore !== null ? { avg: nyamAvgScore, count: nyamCount, confidence: nyamConfidence ?? 0 } : null,
     bubble: bubbleAvgScore !== null ? { avg: bubbleAvgScore, count: bubbleCount } : null,
-    public: nyamAvgScore !== null ? { avg: nyamAvgScore, count: nyamCount } : null,
-  }), [myAvgScore, myCount, followingAvgScore, followingCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount])
+  }), [myAvgScore, myCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount, nyamConfidence])
 
   const fallback = useMemo(() => getScoreFallback(scores), [scores])
 
@@ -65,10 +65,9 @@ export function useTargetScores(params: UseTargetScoresParams) {
   // 카드 데이터 배열 (ScoreCards 컴포넌트에 직접 전달)
   const cards = useMemo(() => [
     { source: 'mine' as const, label: '나', score: myAvgScore, subText: myCount > 0 ? `${myCount}회 방문` : '미방문', available: myAvgScore !== null },
-    { source: 'following' as const, label: '팔로잉', score: followingAvgScore, subText: followingCount > 0 ? `${followingCount}명 평균` : '', available: followingAvgScore !== null },
+    { source: 'nyam' as const, label: 'Nyam', score: nyamAvgScore, subText: nyamConfidence !== null ? confidenceLabel(nyamConfidence) : '', available: nyamAvgScore !== null, confidence: nyamConfidence },
     { source: 'bubble' as const, label: '버블', score: bubbleAvgScore, subText: bubbleCount > 0 ? `${bubbleCount}명 평균` : '', available: bubbleAvgScore !== null },
-    { source: 'public' as const, label: 'nyam', score: nyamAvgScore, subText: nyamCount > 0 ? `${nyamCount}명 평균` : '', available: nyamAvgScore !== null },
-  ], [myAvgScore, myCount, followingAvgScore, followingCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamCount])
+  ], [myAvgScore, myCount, bubbleAvgScore, bubbleCount, nyamAvgScore, nyamConfidence])
 
   const toggleSource = (source: ScoreSource) => {
     // 점수가 있는 카드만 선택 가능

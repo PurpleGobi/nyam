@@ -1,9 +1,8 @@
 import type { ScoreSource } from '@/domain/entities/score'
 
 const SOURCE_LABELS: Record<Exclude<ScoreSource, 'mine'>, string> = {
-  following: '팔로잉',
+  nyam: 'Nyam',
   bubble: '버블',
-  public: 'nyam',
 }
 
 interface ScoreSourceBadgeProps {
