@@ -343,16 +343,15 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       }
       return urls
     }
-    // 소스 우선순위: 나 → 공개
-    const sources = [myRecords]
-    for (const records of sources) {
+    // 소스 우선순위: 나 → 공개 기록 → 식당 기본 사진
+    for (const records of [myRecords, publicRecords]) {
       const urls = getPhotosFromRecords(records)
       if (urls.length > 0) return urls
     }
     const base = restaurant.photos ?? []
     if (base.length > 0) return base
     return []
-  }, [restaurant, myRecords, recordPhotos])
+  }, [restaurant, myRecords, publicRecords, recordPhotos])
 
   if (isLoading || !restaurant) {
     return (

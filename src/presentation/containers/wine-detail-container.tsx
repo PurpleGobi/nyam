@@ -355,15 +355,15 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       }
       return urls
     }
-    const sources = [myRecords]
-    for (const records of sources) {
+    // 소스 우선순위: 나 → 공개 기록 → 와인 기본 사진
+    for (const records of [myRecords, publicRecords]) {
       const urls = getPhotosFromRecords(records)
       if (urls.length > 0) return urls
     }
     if (wine.photos.length > 0) return wine.photos
     if (wine.labelImageUrl) return [wine.labelImageUrl]
     return []
-  }, [wine, myRecords, recordPhotos])
+  }, [wine, myRecords, publicRecords, recordPhotos])
 
   // 연결 식당 이름 맵 (RecordTimeline용)
   const linkedRestaurantNames = useMemo(() => {
