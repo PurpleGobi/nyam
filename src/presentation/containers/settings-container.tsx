@@ -511,13 +511,13 @@ export function SettingsContainer() {
           <SettingsCard>
             <SettingsItem icon={<Map size={18} />} label="네이버 지도 가져오기" value="저장 목록" showChevron onPress={() => setNaverImportSheetOpen(true)} />
             <SettingsItem icon={<Upload size={18} />} label="데이터 내보내기" value="JSON / CSV" showChevron onPress={() => exportData('json')} />
-            <SettingsItem icon={<Download size={18} />} label="데이터 가져오기" value="JSON / CSV" showChevron onPress={() => importRef.current?.click()} />
+            <SettingsItem icon={<Download size={18} />} label="데이터 가져오기" value="JSON / CSV / Excel" showChevron onPress={() => importRef.current?.click()} />
             <SettingsItem icon={<Eraser size={18} />} label="캐시 삭제" value={cacheSize ?? ''} showChevron onPress={async () => { await clearCache(); setCacheSize('0 KB') }} />
           </SettingsCard>
           <input
             ref={importRef}
             type="file"
-            accept=".json,.csv"
+            accept=".json,.csv,.xlsx,.xls"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]

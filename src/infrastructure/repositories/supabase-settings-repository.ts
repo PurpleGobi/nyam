@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
+import { read, utils } from 'xlsx'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { UserSettings, VisibilityConfig, FollowPolicy, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
 
@@ -184,13 +185,17 @@ export class SupabaseSettingsRepository implements SettingsRepository {
   }
 
   async importData(userId: string, file: File): Promise<void> {
-    const text = await file.text()
-    const isJson = file.name.endsWith('.json')
-
+    const name = file.name.toLowerCase()
     let rows: Record<string, unknown>[]
-    if (isJson) {
+
+    if (name.endsWith('.json')) {
+      const text = await file.text()
       rows = JSON.parse(text)
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      rows = parseExcel(await file.arrayBuffer())
     } else {
+      // CSV (including .csv exported from Google Sheets)
+      const text = await file.text()
       rows = parseCsv(text)
     }
 
@@ -248,6 +253,15 @@ function parseCsv(text: string): Record<string, unknown>[] {
     headers.forEach((h, i) => { obj[h] = values[i] ?? '' })
     return obj
   })
+}
+
+function parseExcel(buffer: ArrayBuffer): Record<string, unknown>[] {
+  const workbook = read(buffer, { type: 'array' })
+  const sheetName = workbook.SheetNames[0]
+  if (!sheetName) return []
+  const sheet = workbook.Sheets[sheetName]
+  if (!sheet) return []
+  return utils.sheet_to_json<Record<string, unknown>>(sheet)
 }
 
 function convertToCsv(rows: Record<string, unknown>[]): string {
