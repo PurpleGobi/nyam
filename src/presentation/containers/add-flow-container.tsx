@@ -10,11 +10,13 @@ import { useAddFlow } from '@/application/hooks/use-add-flow'
 import { useCameraCapture } from '@/application/hooks/use-camera-capture'
 import { useCreateRecord } from '@/application/hooks/use-create-record'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { usePhotoManagement } from '@/application/hooks/use-photo-management'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
+import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { AIResultDisplay } from '@/presentation/components/camera/ai-result-display'
 import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
@@ -51,12 +53,18 @@ function AddFlowInner() {
   const { isRecognizing, result, identify, reset: resetCamera } = useCameraCapture()
   const { createRecord, isLoading: isQuickAdding } = useCreateRecord()
   const { syncRecordToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
+  const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(
+    user?.id ?? null,
+    target?.id ?? null,
+    targetType,
+  )
   const { savePhotos: savePhotoRecords, deleteImage, resizeAndUploadImage } = usePhotoManagement()
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null)
   // Phase 1 업로드 상태: 사진은 즉시 업로드, 기록 미완료 시 삭제
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null)
   const [tempExif, setTempExif] = useState<{ lat: number | null; lng: number | null; capturedAt: string | null }>({ lat: null, lng: null, capturedAt: null })
   const [recordCompleted, setRecordCompleted] = useState(false)
+  const [showAddToBubble, setShowAddToBubble] = useState(false)
   const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyGenre, setNearbyGenre] = useState('')
@@ -90,7 +98,7 @@ function AddFlowInner() {
         deleteImage(url).catch(() => {})
       }
     }
-  }, [tempPhotoUrl, recordCompleted])
+  }, [tempPhotoUrl, recordCompleted, deleteImage])
 
   const [nearbyRadius, setNearbyRadius] = useState(500)
 
@@ -125,7 +133,7 @@ function AddFlowInner() {
     } catch {
       // DB 저장 실패해도 record는 유지
     }
-  }, [tempPhotoUrl, tempExif])
+  }, [tempPhotoUrl, tempExif, savePhotoRecords])
 
   const goBack = useCallback(() => {
     const prev = hookGoBack()
@@ -289,7 +297,7 @@ function AddFlowInner() {
       } catch {}
       pushStep('record')
     },
-    [result, pushStep, setTarget, user, createRecord, uploadCapturedPhoto],
+    [result, pushStep, setTarget],
   )
 
   const handleSearchFallback = useCallback(() => {
@@ -406,7 +414,7 @@ function AddFlowInner() {
                 type="button"
                 onClick={handleSearchFallback}
                 className="flex-1 rounded-xl py-3 text-center text-[14px] font-semibold"
-                style={{ backgroundColor: targetType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)', color: '#FFFFFF' }}
+                style={{ backgroundColor: targetType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)', color: 'var(--primary-foreground)' }}
               >
                 이름으로 검색
               </button>
@@ -469,21 +477,47 @@ function AddFlowInner() {
       )}
 
       {step === 'success' && target && (
-        <SuccessScreen
-          variant={variant}
-          targetName={target.name}
-          targetMeta={target.meta}
-          onAddDetail={() => {
-            const meta = target.meta ? `&meta=${encodeURIComponent(target.meta)}` : ''
-            router.push(`/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}${meta}&from=camera`)
-          }}
-          onAddAnother={() => {
-            resetFlow()
-            resetCamera()
-          }}
-          onGoHome={() => router.replace('/')}
-        />
+        <>
+          <SuccessScreen
+            variant={variant}
+            targetName={target.name}
+            targetMeta={target.meta}
+            onAddDetail={() => {
+              const meta = target.meta ? `&meta=${encodeURIComponent(target.meta)}` : ''
+              router.push(`/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}${meta}&from=camera`)
+            }}
+            onAddAnother={() => {
+              resetFlow()
+              resetCamera()
+            }}
+            onGoHome={() => router.replace('/')}
+          />
+
+          {/* 리스트에 추가 버튼 */}
+          <div className="flex justify-center pb-6">
+            <button
+              type="button"
+              onClick={() => setShowAddToBubble(true)}
+              className="flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[13px] font-semibold transition-opacity active:opacity-70"
+              style={{
+                backgroundColor: 'var(--accent-social)',
+                color: 'var(--primary-foreground)',
+              }}
+            >
+              리스트에 추가
+            </button>
+          </div>
+        </>
       )}
+
+      <AddToBubbleSheet
+        isOpen={showAddToBubble}
+        onClose={() => setShowAddToBubble(false)}
+        targetName={target?.name ?? ''}
+        bubbles={bubblesWithStatus}
+        onToggle={toggleBubbleItem}
+        isLoading={isBubblesLoading}
+      />
     </div>
   )
 }

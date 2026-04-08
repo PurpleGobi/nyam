@@ -227,21 +227,15 @@ export class SupabaseHomeRepository implements HomeRepository {
         }
         if (bubbleIds.length === 0) return new Set()
 
-        const { data: shares } = await this.supabase
-          .from('bubble_shares')
-          .select('record_id')
-          .in('bubble_id', bubbleIds)
-          .neq('shared_by', userId)
-          .eq('target_type', targetType)
-        if (!shares || shares.length === 0) return new Set()
-
-        const recordIds = [...new Set(shares.map((s) => s.record_id))]
-        const { data } = await this.supabase
-          .from('records')
+        // bubble_items 기반으로 전환 — target_id 직접 사용
+        const { data: items } = await this.supabase
+          .from('bubble_items')
           .select('target_id')
-          .in('id', recordIds)
+          .in('bubble_id', bubbleIds)
+          .neq('added_by', userId)
           .eq('target_type', targetType)
-        return new Set((data ?? []).map((r) => r.target_id))
+        if (!items || items.length === 0) return new Set()
+        return new Set(items.map((i) => i.target_id))
       }
       case 'public': {
         const { data: publicUsers } = await this.supabase
@@ -403,23 +397,27 @@ export class SupabaseHomeRepository implements HomeRepository {
         }
 
         if (bubbleIds.length > 0) {
-          const { data: shares } = await this.supabase
-            .from('bubble_shares')
-            .select('record_id')
+          // bubble_items 기반으로 전환 — target_id 직접 사용
+          const { data: bItems } = await this.supabase
+            .from('bubble_items')
+            .select('target_id')
             .in('bubble_id', bubbleIds)
-            .neq('shared_by', userId)
+            .neq('added_by', userId)
             .eq('target_type', targetType)
 
-          if (shares && shares.length > 0) {
-            const recordIds = [...new Set(shares.map((s) => s.record_id))]
-            const { data: bRows } = await this.supabase
-              .from('records')
-              .select('*')
-              .in('id', recordIds)
-              .in('target_id', targetIds)
-              .order('visit_date', { ascending: false })
-            for (const row of bRows ?? []) {
-              results.push({ ...mapDbToRecord(row), source: 'bubble' })
+          if (bItems && bItems.length > 0) {
+            const itemTargetIds = [...new Set(bItems.map((i) => i.target_id as string))]
+            const filteredTargetIds = itemTargetIds.filter((id) => targetIds.includes(id))
+            if (filteredTargetIds.length > 0) {
+              const { data: bRows } = await this.supabase
+                .from('records')
+                .select('*')
+                .in('target_id', filteredTargetIds)
+                .eq('target_type', targetType)
+                .order('visit_date', { ascending: false })
+              for (const row of bRows ?? []) {
+                results.push({ ...mapDbToRecord(row), source: 'bubble' })
+              }
             }
           }
         }

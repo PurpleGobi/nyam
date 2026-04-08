@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useRef } from 'react'
+import { useMemo, useCallback, useRef, useEffect } from 'react'
 import { Filter, Zap, UtensilsCrossed, Wine } from 'lucide-react'
 import type { BubbleShareRule } from '@/domain/entities/bubble'
 import type { FilterAttribute } from '@/domain/entities/filter-config'
@@ -53,7 +53,7 @@ function chipsToRules(chips: FilterChipItem[], domain?: 'restaurant' | 'wine'): 
 
 export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRuleEditorProps) {
   const mode = value?.mode ?? 'all'
-  const allRules = value?.rules ?? []
+  const allRules = useMemo(() => value?.rules ?? [], [value?.rules])
 
   // 식당/와인 규칙을 domain 필드로 완전 분리
   const restaurantRules = useMemo(
@@ -67,9 +67,10 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
 
   // ref로 상대 도메인 규칙 보관 — 콜백에서 stale closure 방지
   const restaurantRulesRef = useRef(restaurantRules)
-  restaurantRulesRef.current = restaurantRules
   const wineRulesRef = useRef(wineRules)
-  wineRulesRef.current = wineRules
+  // useEffect 안에서 ref 갱신 (렌더 중 직접 할당 금지)
+  useEffect(() => { restaurantRulesRef.current = restaurantRules }, [restaurantRules])
+  useEffect(() => { wineRulesRef.current = wineRules }, [wineRules])
 
   const restaurantChips = useMemo(
     () => rulesToChips(restaurantRules, RESTAURANT_FILTER_ATTRIBUTES),
@@ -142,7 +143,7 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
             className="flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 transition-colors"
             style={{
               backgroundColor: mode === m ? 'var(--accent-social)' : 'var(--bg-card)',
-              color: mode === m ? '#FFFFFF' : 'var(--text-sub)',
+              color: mode === m ? 'var(--primary-foreground)' : 'var(--text-sub)',
               border: `1.5px solid ${mode === m ? 'var(--accent-social)' : 'var(--border)'}`,
             }}
           >
@@ -152,6 +153,43 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
           </button>
         ))}
       </div>
+
+      {/* 찜도 자동 포함 토글 — mode가 'all' 또는 'filtered' 일 때 표시 */}
+      {mode !== null && (
+        <div
+          className="flex items-center justify-between rounded-xl px-3 py-2.5"
+          style={{ backgroundColor: 'var(--bg-section)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex flex-col">
+            <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>찜도 자동 포함</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-hint)' }}>
+              찜한 식당/와인도 필터 조건에 맞으면 자동으로 추가
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={value?.includeBookmarks ?? false}
+            onClick={() => {
+              onChange({
+                ...value ?? { mode: 'all' as const, rules: [], conjunction: 'and' as const },
+                includeBookmarks: !(value?.includeBookmarks ?? false),
+              })
+            }}
+            className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
+            style={{
+              backgroundColor: (value?.includeBookmarks ?? false) ? 'var(--accent-social)' : 'var(--bg-elevated)',
+            }}
+          >
+            <span
+              className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-background transition-transform"
+              style={{
+                transform: (value?.includeBookmarks ?? false) ? 'translateX(20px)' : 'translateX(0)',
+              }}
+            />
+          </button>
+        </div>
+      )}
 
       {/* 조건부 모드일 때 필터 빌더 */}
       {mode === 'filtered' && (

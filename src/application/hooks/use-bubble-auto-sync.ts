@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { bubbleRepo } from '@/shared/di/container'
-import { evaluateShareRule, computeShareDiff } from '@/domain/services/bubble-share-sync'
+import { evaluateShareRule, computeShareDiff, evaluateBookmarkTargets } from '@/domain/services/bubble-share-sync'
 import type { BubbleShareRule } from '@/domain/entities/bubble'
 
 export interface SyncResult {
@@ -34,19 +34,28 @@ export function useBubbleAutoSync(userId: string | null) {
 
     for (const membership of activeMemberships) {
       const shouldShare = evaluateShareRule([record], membership.shareRule)
-      const currentlyShared = await bubbleRepo.getAutoSharedRecordIds(membership.bubbleId, userId)
-      const recordInCurrent = currentlyShared.includes(record.id)
       const info = { bubbleId: membership.bubbleId, bubbleName: membership.bubbleName ?? '' }
 
-      if (shouldShare.length > 0 && !recordInCurrent) {
-        await bubbleRepo.batchUpsertAutoShares([{ id: record.id, targetId: record.targetId, targetType: record.targetType }], membership.bubbleId, userId)
+      if (shouldShare.length > 0) {
+        // bubble_shares에도 기존 방식으로 동기화 (Phase 5까지 유지)
+        const currentlyShared = await bubbleRepo.getAutoSharedRecordIds(membership.bubbleId, userId)
+        if (!currentlyShared.includes(record.id)) {
+          await bubbleRepo.batchUpsertAutoShares([{ id: record.id, targetId: record.targetId, targetType: record.targetType }], membership.bubbleId, userId)
+        }
+        // bubble_items에도 동기화 (신규)
+        await bubbleRepo.batchUpsertAutoItems(
+          [{ targetId: record.targetId, targetType: record.targetType, recordId: record.id }],
+          membership.bubbleId, userId,
+        )
         result.sharedTo.push(info)
-      } else if (shouldShare.length === 0 && recordInCurrent) {
-        await bubbleRepo.batchDeleteAutoShares([record.id], membership.bubbleId, userId)
+      } else {
+        // bubble_shares 정리
+        const currentlyShared = await bubbleRepo.getAutoSharedRecordIds(membership.bubbleId, userId)
+        if (currentlyShared.includes(record.id)) {
+          await bubbleRepo.batchDeleteAutoShares([record.id], membership.bubbleId, userId)
+        }
+        // bubble_items도 정리 — 단, Phase 5에서 다른 기록이 같은 target에 남아있는지 확인 정교화 예정
         result.unsharedFrom.push(info)
-      } else if (shouldShare.length > 0 && recordInCurrent) {
-        // 이미 공유 중 — 토스트에는 포함
-        result.sharedTo.push(info)
       }
     }
 
@@ -85,5 +94,38 @@ export function useBubbleAutoSync(userId: string | null) {
     ])
   }, [userId])
 
-  return { syncRecordToAllBubbles, syncAllRecordsToBubble }
+  /**
+   * 트리거 3: 찜(bookmark) 토글 시
+   * includeBookmarks가 true인 버블의 shareRule로 평가하여 bubble_items에 동기화
+   */
+  const syncBookmarkToAllBubbles = useCallback(async (
+    target: { targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>,
+    isBookmarked: boolean,
+  ): Promise<void> => {
+    if (!userId) return
+
+    const memberships = await bubbleRepo.getUserBubbles(userId)
+    const activeMemberships = memberships.filter(
+      (m) => m.status === 'active' && m.shareRule?.includeBookmarks
+    )
+
+    for (const membership of activeMemberships) {
+      if (isBookmarked) {
+        const shouldInclude = evaluateBookmarkTargets([target], membership.shareRule)
+        if (shouldInclude.length > 0) {
+          await bubbleRepo.batchUpsertAutoItems(
+            [{ targetId: target.targetId, targetType: target.targetType }],
+            membership.bubbleId, userId,
+          )
+        }
+      } else {
+        // 찜 해제 시 — auto source인 경우만 제거
+        await bubbleRepo.batchDeleteAutoItems(
+          [target.targetId], target.targetType, membership.bubbleId,
+        )
+      }
+    }
+  }, [userId])
+
+  return { syncRecordToAllBubbles, syncAllRecordsToBubble, syncBookmarkToAllBubbles }
 }

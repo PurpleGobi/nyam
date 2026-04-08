@@ -24,11 +24,13 @@ import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useSettings } from '@/application/hooks/use-settings'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
 import { useToast } from '@/presentation/components/ui/toast'
+import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
 
 interface RecordFlowState {
   targetType: RecordTargetType
@@ -62,6 +64,14 @@ function RecordFlowInner() {
   })
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showAddToBubble, setShowAddToBubble] = useState(false)
+  const [savedTargetId, setSavedTargetId] = useState<string | null>(null)
+
+  const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(
+    user?.id ?? null,
+    savedTargetId ?? (state.targetId || null),
+    state.targetType,
+  )
   const [genreHint, setGenreHint] = useState<string | null>(null)
   const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
 
@@ -362,9 +372,10 @@ function RecordFlowInner() {
           return
         }
 
-        // 신규 기록 완료 → 토스트 + 홈 이동
+        // 신규 기록 완료 → 토스트 + "리스트에 추가" 옵션
         showToast('기록이 추가되었습니다')
-        router.replace('/')
+        setSavedTargetId(savedRecord.targetId)
+        setShowAddToBubble(true)
       } catch {
         // useCreateRecord 내부에서 error state 처리
       }
@@ -542,6 +553,18 @@ function RecordFlowInner() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+
+      <AddToBubbleSheet
+        isOpen={showAddToBubble}
+        onClose={() => {
+          setShowAddToBubble(false)
+          router.replace('/')
+        }}
+        targetName={state.targetName}
+        bubbles={bubblesWithStatus}
+        onToggle={toggleBubbleItem}
+        isLoading={isBubblesLoading}
+      />
 
     </div>
   )

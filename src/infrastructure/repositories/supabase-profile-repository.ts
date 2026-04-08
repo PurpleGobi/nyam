@@ -798,17 +798,17 @@ export class SupabaseProfileRepository implements ProfileRepository {
           weeklyTotal = memberUserIds.length
 
           const { data: weekShares } = await this.supabase
-            .from('bubble_shares')
-            .select('shared_by')
+            .from('bubble_items')
+            .select('added_by')
             .eq('bubble_id', bubbleId)
-            .gte('shared_at', weekStartIso)
+            .gte('added_at', weekStartIso)
 
           const shareCounts = new Map<string, number>()
           for (const uid of memberUserIds) {
             shareCounts.set(uid, 0)
           }
           for (const s of weekShares ?? []) {
-            const uid = s.shared_by as string
+            const uid = s.added_by as string
             shareCounts.set(uid, (shareCounts.get(uid) ?? 0) + 1)
           }
 

@@ -257,28 +257,52 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       .select('id, name, icon, icon_bg_color')
       .in('id', bubbleIds)
 
-    // 해당 식당에 대한 버블 공유 기록의 점수 집계
-    const { data: shares } = await this.supabase
-      .from('bubble_shares')
-      .select('bubble_id, record_id, records!inner(satisfaction, axis_x, axis_y, user_id)')
+    // bubble_items 기반으로 해당 식당 포함 버블 조회
+    const { data: items } = await this.supabase
+      .from('bubble_items')
+      .select('bubble_id, target_id, added_by')
       .in('bubble_id', bubbleIds)
-      .eq('records.target_id' as string, restaurantId)
-      .eq('records.target_type' as string, 'restaurant')
-      .neq('records.user_id' as string, userId)
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+
+    if (!items || items.length === 0) return []
+
+    // 해당 식당의 기록을 별도 조회 (본인 제외)
+    const itemUserIds = [...new Set(items.map((i) => i.added_by as string).filter((uid) => uid !== userId))]
+    const { data: recData } = await this.supabase
+      .from('records')
+      .select('satisfaction, axis_x, axis_y, user_id')
+      .eq('target_id', restaurantId)
+      .eq('target_type', 'restaurant')
+      .in('user_id', itemUserIds)
+
+    // user_id → bubble_id 매핑 (한 유저가 여러 버블에 있을 수 있음)
+    const userBubbleMap = new Map<string, Set<string>>()
+    for (const item of items) {
+      const uid = item.added_by as string
+      if (uid === userId) continue
+      const bids = userBubbleMap.get(uid) ?? new Set()
+      bids.add(item.bubble_id as string)
+      userBubbleMap.set(uid, bids)
+    }
 
     // 버블별 집계 + 개별 dot 수집
     const scoreMap = new Map<string, { total: number; count: number; dots: Array<{ axisX: number; axisY: number; satisfaction: number }> }>()
-    for (const s of shares ?? []) {
-      const rec = s.records as unknown as { satisfaction: number | null; axis_x: number | null; axis_y: number | null }
+    for (const r of recData ?? []) {
+      const rec = r as unknown as { satisfaction: number | null; axis_x: number | null; axis_y: number | null; user_id: string }
       const sat = rec?.satisfaction
       if (sat === null || sat === undefined) continue
-      const g = scoreMap.get(s.bubble_id) ?? { total: 0, count: 0, dots: [] }
-      g.total += sat
-      g.count += 1
-      if (rec.axis_x != null && rec.axis_y != null) {
-        g.dots.push({ axisX: rec.axis_x, axisY: rec.axis_y, satisfaction: sat })
+      const bids = userBubbleMap.get(rec.user_id)
+      if (!bids) continue
+      for (const bid of bids) {
+        const g = scoreMap.get(bid) ?? { total: 0, count: 0, dots: [] }
+        g.total += sat
+        g.count += 1
+        if (rec.axis_x != null && rec.axis_y != null) {
+          g.dots.push({ axisX: rec.axis_x, axisY: rec.axis_y, satisfaction: sat })
+        }
+        scoreMap.set(bid, g)
       }
-      scoreMap.set(s.bubble_id, g)
     }
 
     return (bubbles ?? [])

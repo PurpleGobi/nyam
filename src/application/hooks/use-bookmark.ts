@@ -16,6 +16,7 @@ export function useBookmark(
   userId: string | null,
   targetId: string | null,
   targetType: 'restaurant' | 'wine',
+  onBubbleSync?: (targetId: string, targetType: 'restaurant' | 'wine', isBookmarked: boolean) => void,
 ): UseBookmarkReturn {
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,12 +38,14 @@ export function useBookmark(
     try {
       const result = await bookmarkRepo.toggle(userId, targetId, targetType, 'bookmark')
       setIsBookmarked(result)
+      // 찜 상태 변경 후 버블 동기화 트리거
+      onBubbleSync?.(targetId, targetType, result)
     } catch {
       setIsBookmarked(!next)
     } finally {
       setIsLoading(false)
     }
-  }, [userId, targetId, targetType, isBookmarked, isLoading])
+  }, [userId, targetId, targetType, isBookmarked, isLoading, onBubbleSync])
 
   return { isBookmarked, isLoading, toggle }
 }

@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-08 #23 — 버블 큐레이션 리스트 리팩토링 Phase 1~5 전체 완료
+- **영역**: domain/(entities/bubble, repositories/bubble-repository, services/bubble-share-sync), infrastructure/(supabase-bubble/restaurant/wine/home/profile-repository), application/(use-bubble-items 신규, use-bubble-auto-sync, use-bookmark), presentation/(add-to-bubble-sheet+add-item-search-sheet 신규, share-rule-editor, restaurant/wine/bubble-detail-container, record-flow/add-flow-container), supabase/(migrations/053+054, functions/weekly-ranking-snapshot), development_docs/systems/XP_SYSTEM.md
+- **맥락**: Phase 1(DB+Domain) → Phase 2(domain 서비스 확장+stub 실제 구현+auto sync 3메서드) → Phase 3(hooks: syncBookmarkToAllBubbles, onBubbleSync 콜백) → Phase 4(UI: 수동 리스트 추가 시트, includeBookmarks 토글, 상세/기록 후 리스트 추가) → Phase 5(bubble_shares→bubble_items 전환, Edge Function 전환, 054 triggers 마이그레이션, 용어 갱신). 크리티컬 게이트 전체 PASS.
+- **미완료**: 053/054 마이그레이션 원격 적용, Edge Function 배포, supabase/types.ts 재생성, bubble-detail-container.tsx #FFFFFF 하드코딩 4건(pre-existing)
+- **다음**: 마이그레이션 원격 적용, Edge Function 배포, types 재생성
+
 ### 2026-04-08 #20 — 엑셀 자동 채우기 + Import upsert
 - **영역**: app/api/import/auto-fill(신규), infrastructure/supabase-settings-repository(import upsert+템플릿 수정), application/use-settings(autoFillFile), presentation/settings-container(Wand2 버튼)
 - **맥락**: (1) 템플릿 수정: scene dropdown(식당 6종/와인 7종), price_range 설명, axis_y→경험 만족도, 와인 aroma~intensity 자동검색 표시. (2) /api/import/auto-fill: 엑셀 업로드→카카오검색(식당)+AI상세검색(와인)→채워진 엑셀 반환. (3) importData upsert: Excel 시트별 restaurant/wine findOrCreate+record insert. (4) 설정 UI "엑셀 자동 채우기" 버튼.
@@ -35,13 +41,6 @@
 - **맥락**: lists 테이블 제거 → bookmarks 독립 테이블. SOURCE_PRIORITY 중앙화(5곳→1곳). ScoreSource 'my'→'mine', 'nyam'→'public' 통일. ViewType에 tasted/cellar/unrated 추가. 사분면 소스간 dedup. visibility/profile-visibility 서비스 신규. 계정 삭제 wishlists→bookmarks.
 - **미완료**: visibility-filter/profile-visibility는 정의만 (사용처 점진 적용 필요), supabase/types.ts 재생성 필요
 - **다음**: visibility 서비스 사용처 적용, supabase gen types 실행
-
-### 2026-04-07 #15 — 상세페이지/카드뷰 통일 + 찜 기능 재설계
-- **영역**: presentation/containers/(restaurant-detail, wine-detail, home), components/(record-card, wine-card, home-tabs, hero-carousel, bookmark-button), application/hooks/(use-bookmark, use-restaurant-detail, use-wine-detail, use-home-records), domain/(record, record-repository), infrastructure/supabase-record-repository, supabase/migrations/048
-- **맥락**: (1) 상세페이지 섹션 순서 통일(뱃지→스코어카드→사분면→기록→버블). (2) 카드뷰: 높이 170px 통일, 최신기록일+횟수를 점수 아래 소스우선순위 기반 표시, 와인 meta 빈티지·국가·품종, 식당 거리(km). (3) 히어로 사진: 소스 우선순위(나→팔로잉→공개) 최신 사진. (4) 찜: lists.is_bookmarked boolean 추가, status와 독립 동작, wishlist→bookmark 네이밍 통일. (5) 홈: 지도↔뷰모드 아이콘 순서 교체, 캘린더뷰 통계 유지. (6) discover 모듈 제거.
-- **미완료**: 브라우저 QA 미실행, wine text-white 2건 잔존
-- **다음**: 브라우저 수동 QA, 와인 외부평점 BadgeRow 통합 검토
-
 
 ### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
 - **영역**: domain/entities/similarity.ts(신규), domain/services/cf-calculator.ts(신규), domain/services/__tests__/cf-calculator.test.ts(신규), supabase/migrations/051_cf_tables.sql(신규), vitest.config.ts(신규)

@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem, SearchUserResult } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType, BubbleItem, BubbleItemSource } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
@@ -101,6 +101,19 @@ function toBubbleShare(row: Record<string, unknown>): BubbleShare {
     sharedAt: row.shared_at as string,
     targetId: row.target_id as string,
     targetType: row.target_type as 'restaurant' | 'wine',
+  }
+}
+
+function toBubbleItem(row: Record<string, unknown>): BubbleItem {
+  return {
+    id: row.id as string,
+    bubbleId: row.bubble_id as string,
+    targetId: row.target_id as string,
+    targetType: row.target_type as 'restaurant' | 'wine',
+    addedBy: row.added_by as string,
+    source: row.source as BubbleItemSource,
+    recordId: (row.record_id as string) ?? null,
+    addedAt: row.added_at as string,
   }
 }
 
@@ -291,25 +304,39 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
 
-    let query = this.supabase.from('bubble_shares').select('*', { count: 'exact' })
+    // bubble_items 기반으로 전환 (컬럼 매핑: shared_at→added_at, shared_by→added_by)
+    let query = this.supabase.from('bubble_items').select('*', { count: 'exact' })
       .eq('bubble_id', bubbleId)
 
-    if (options?.sharedBy) query = query.eq('shared_by', options.sharedBy)
+    if (options?.targetType) query = query.eq('target_type', options.targetType)
+    if (options?.sharedBy) query = query.eq('added_by', options.sharedBy)
 
     if (options?.period && options.period !== 'all') {
       const msMap = { week: 7 * 86400000, month: 30 * 86400000, '3months': 90 * 86400000 }
       const cutoff = new Date(Date.now() - msMap[options.period]).toISOString()
-      query = query.gte('shared_at', cutoff)
+      query = query.gte('added_at', cutoff)
     }
 
     switch (options?.sortBy) {
-      case 'member': query = query.order('shared_by', { ascending: true }); break
-      default: query = query.order('shared_at', { ascending: false })
+      case 'member': query = query.order('added_by', { ascending: true }); break
+      default: query = query.order('added_at', { ascending: false })
     }
 
     query = query.range(offset, offset + limit - 1)
     const { data, count } = await query
-    return { data: (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>)), total: count ?? 0 }
+    // bubble_items → BubbleShare 어댑터 변환 (호환성 유지)
+    return {
+      data: (data ?? []).map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        recordId: (r.record_id as string) ?? '',
+        bubbleId: r.bubble_id as string,
+        sharedBy: r.added_by as string,
+        sharedAt: r.added_at as string,
+        targetId: r.target_id as string,
+        targetType: r.target_type as 'restaurant' | 'wine',
+      })),
+      total: count ?? 0,
+    }
   }
 
   async getEnrichedShares(bubbleId: string, options?: {
@@ -319,30 +346,41 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
 
-    // 1) shares 가져오기
-    const { data: shareRows, count } = await this.supabase
-      .from('bubble_shares')
+    // 1) bubble_items 기반으로 전환
+    const { data: itemRows, count } = await this.supabase
+      .from('bubble_items')
       .select('*', { count: 'exact' })
       .eq('bubble_id', bubbleId)
-      .order('shared_at', { ascending: false })
+      .order('added_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    const shares = ((shareRows ?? []) as unknown as Record<string, unknown>[]).map((r) => toBubbleShare(r))
-    if (shares.length === 0) return { data: [], total: count ?? 0 }
+    const items = ((itemRows ?? []) as unknown as Record<string, unknown>[]).map((r) => toBubbleItem(r))
+    if (items.length === 0) return { data: [], total: count ?? 0 }
 
-    // 2) records batch 조회
-    const recordIds = [...new Set(shares.map((s) => s.recordId))]
+    // 2) records batch 조회 — target_id + added_by 기반 (기록이 있는 아이템만)
+    const targetIds = [...new Set(items.map((i) => i.targetId))]
+    const addedByIds = [...new Set(items.map((i) => i.addedBy))]
     const { data: recordRows } = await this.supabase
       .from('records')
-      .select('id, target_id, target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date')
-      .in('id', recordIds)
-    const recordMap: Record<string, Record<string, unknown>> = {}
+      .select('id, target_id, target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date, user_id')
+      .in('target_id', targetIds)
+      .in('user_id', addedByIds)
+    // target_id+user_id → record 매핑 (가장 최근 기록)
+    const recordByTargetUser: Record<string, Record<string, unknown>> = {}
     for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
-      recordMap[r.id as string] = r
+      const key = `${r.target_id}:${r.user_id}`
+      if (!recordByTargetUser[key]) {
+        recordByTargetUser[key] = r
+      }
+    }
+    // record_id 기반 매핑도 유지 (record_id가 있는 아이템용)
+    const recordById: Record<string, Record<string, unknown>> = {}
+    for (const r of ((recordRows ?? []) as unknown as Record<string, unknown>[])) {
+      recordById[r.id as string] = r
     }
 
     // 3) authors batch 조회
-    const authorIds = [...new Set(shares.map((s) => s.sharedBy))]
+    const authorIds = [...new Set(items.map((i) => i.addedBy))]
     const { data: userRows } = await this.supabase
       .from('users')
       .select('id, nickname, avatar_url, avatar_color, total_xp')
@@ -352,16 +390,12 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       authorMap[u.id as string] = u
     }
 
-    // 4) target 이름 batch 조회 — bubble_shares의 target_id/target_type 직접 사용 (records RLS 무관)
+    // 4) target 이름 batch 조회
     const restaurantIds = [...new Set(
-      shares
-        .filter((s) => s.targetType === 'restaurant' && s.targetId)
-        .map((s) => s.targetId),
+      items.filter((i) => i.targetType === 'restaurant').map((i) => i.targetId),
     )]
     const wineIds = [...new Set(
-      shares
-        .filter((s) => s.targetType === 'wine' && s.targetId)
-        .map((s) => s.targetId),
+      items.filter((i) => i.targetType === 'wine').map((i) => i.targetId),
     )]
     const targetInfoMap: Record<string, {
       name: string; meta: string | null; area: string | null; photoUrl: string | null
@@ -377,7 +411,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
           name: r.name as string,
           meta: r.genre as string | null,
           area: areaArr?.join(', ') ?? district ?? null,
-          photoUrl: null, // 사진은 record_photos에서 별도 조회
+          photoUrl: null,
         }
       }
     }
@@ -397,38 +431,44 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       }
     }
 
-    // 4-b) record_photos batch 조회 — 각 record의 첫 번째 사진
-    const { data: photoRows } = await this.supabase
-      .from('record_photos')
-      .select('record_id, url')
-      .in('record_id', recordIds)
-      .eq('order_index', 0)
-    const photoMap: Record<string, string> = {}
-    for (const p of ((photoRows ?? []) as unknown as Record<string, unknown>[])) {
-      photoMap[p.record_id as string] = p.url as string
+    // 4-b) record_photos batch 조회 — record_id가 있는 아이템의 사진
+    const recordIdsWithPhotos = items
+      .map((i) => i.recordId)
+      .filter((rid): rid is string => rid !== null)
+    let photoMap: Record<string, string> = {}
+    if (recordIdsWithPhotos.length > 0) {
+      const { data: photoRows } = await this.supabase
+        .from('record_photos')
+        .select('record_id, url')
+        .in('record_id', recordIdsWithPhotos)
+        .eq('order_index', 0)
+      for (const p of ((photoRows ?? []) as unknown as Record<string, unknown>[])) {
+        photoMap[p.record_id as string] = p.url as string
+      }
     }
 
-    // 5) 조합 — bubble_shares 자체의 target_id/target_type을 우선 사용 (records RLS 우회)
-    const items: BubbleFeedItem[] = shares.map((s) => {
-      const rec = recordMap[s.recordId]
-      const author = authorMap[s.sharedBy]
-      // bubble_shares 테이블에 target_id/target_type이 직접 저장됨
-      const targetId = s.targetId || (rec?.target_id as string) || ''
-      const targetType = (s.targetType || (rec?.target_type as string) || 'restaurant') as 'restaurant' | 'wine'
-      const targetInfo = targetInfoMap[targetId]
+    // 5) 조합 — bubble_items 기반
+    const feedItems: BubbleFeedItem[] = items.map((item) => {
+      // record 조회: record_id가 있으면 직접, 없으면 target_id+user_id로
+      const rec = item.recordId
+        ? recordById[item.recordId]
+        : recordByTargetUser[`${item.targetId}:${item.addedBy}`]
+      const author = authorMap[item.addedBy]
+      const targetInfo = targetInfoMap[item.targetId]
+      const recId = item.recordId ?? (rec?.id as string) ?? ''
 
       return {
-        id: s.id,
-        recordId: s.recordId,
-        bubbleId: s.bubbleId,
-        sharedBy: s.sharedBy,
-        sharedAt: s.sharedAt,
-        targetId,
-        targetType,
+        id: item.id,
+        recordId: recId,
+        bubbleId: item.bubbleId,
+        sharedBy: item.addedBy,
+        sharedAt: item.addedAt,
+        targetId: item.targetId,
+        targetType: item.targetType,
         targetName: targetInfo?.name ?? '',
         targetMeta: targetInfo?.meta ?? null,
         targetArea: targetInfo?.area ?? null,
-        targetPhotoUrl: photoMap[s.recordId] ?? targetInfo?.photoUrl ?? null,
+        targetPhotoUrl: (recId ? photoMap[recId] : null) ?? targetInfo?.photoUrl ?? null,
         targetVintage: targetInfo?.vintage ?? null,
         targetWineType: targetInfo?.wineType ?? null,
         targetProducer: targetInfo?.producer ?? null,
@@ -445,17 +485,32 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       }
     })
 
-    return { data: items, total: count ?? 0 }
+    return { data: feedItems, total: count ?? 0 }
   }
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
+    // bubble_shares INSERT 유지 (deprecated — 롤백 안전망)
     const { data, error } = await this.supabase.from('bubble_shares').insert({ record_id: recordId, bubble_id: bubbleId, shared_by: sharedBy, target_id: targetId, target_type: targetType }).select().single()
     if (error) throw new Error(`공유 실패: ${error.message}`)
+    // bubble_items에도 동시 upsert (수동 공유 → source='manual')
+    await this.supabase.from('bubble_items').upsert(
+      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: sharedBy, source: 'manual', record_id: recordId },
+      { onConflict: 'bubble_id,target_id,target_type' }
+    )
     return toBubbleShare(data as Record<string, unknown>)
   }
 
   async removeShare(shareId: string): Promise<void> {
+    // bubble_shares에서 target 정보 조회 후 삭제
+    const { data } = await this.supabase.from('bubble_shares').select('bubble_id, target_id, target_type').eq('id', shareId).single()
     await this.supabase.from('bubble_shares').delete().eq('id', shareId)
+    // bubble_items에서도 삭제
+    if (data) {
+      await this.supabase.from('bubble_items').delete()
+        .eq('bubble_id', data.bubble_id as string)
+        .eq('target_id', data.target_id as string)
+        .eq('target_type', data.target_type as string)
+    }
   }
 
   async getRankings(bubbleId: string, options: {
@@ -540,39 +595,72 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
   async getSharesForTarget(targetId: string, targetType: string, bubbleIds: string[]): Promise<BubbleShareForTarget[]> {
     if (bubbleIds.length === 0) return []
-    const { data } = await this.supabase
-      .from('bubble_shares')
-      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon, content_visibility), records(target_type, satisfaction, axis_x, axis_y, comment, scene, visit_date, users(nickname, avatar_url, avatar_color, total_xp))')
+    // bubble_items 기반으로 전환
+    const { data: itemData } = await this.supabase
+      .from('bubble_items')
+      .select('id, bubble_id, target_id, target_type, added_by, added_at, record_id, bubbles(name, icon, content_visibility)')
       .eq('target_id', targetId)
       .eq('target_type', targetType)
       .in('bubble_id', bubbleIds)
-      .order('shared_at', { ascending: false })
-    const filtered = (data ?? []).filter((s: Record<string, unknown>) => {
-      const rec = s.records as Record<string, unknown> | null
-      return rec != null
+      .order('added_at', { ascending: false })
+
+    if (!itemData || itemData.length === 0) return []
+
+    // records 별도 조회 — target_id 기반
+    const addedByIds = [...new Set((itemData as Record<string, unknown>[]).map((i) => i.added_by as string))]
+    const { data: recData } = await this.supabase
+      .from('records')
+      .select('id, target_id, user_id, satisfaction, axis_x, axis_y, comment, scene, visit_date')
+      .eq('target_id', targetId)
+      .eq('target_type', targetType)
+      .in('user_id', addedByIds)
+
+    // user_id → record 매핑
+    const recByUser: Record<string, Record<string, unknown>> = {}
+    for (const r of ((recData ?? []) as unknown as Record<string, unknown>[])) {
+      recByUser[r.user_id as string] = r
+    }
+
+    // users 조회
+    const { data: userRows } = await this.supabase
+      .from('users')
+      .select('id, nickname, avatar_url, avatar_color, total_xp')
+      .in('id', addedByIds)
+    const userMap: Record<string, Record<string, unknown>> = {}
+    for (const u of ((userRows ?? []) as unknown as Record<string, unknown>[])) {
+      userMap[u.id as string] = u
+    }
+
+    // 기록이 있는 아이템만 필터 (찜만 있는 아이템은 평가 데이터 없으므로 제외)
+    const filtered = (itemData as Record<string, unknown>[]).filter((i) => {
+      const userId = i.added_by as string
+      return recByUser[userId] != null
     })
 
     // 리액션/댓글 카운트 배치 조회
-    const recordIds = filtered.map((s: Record<string, unknown>) => s.record_id as string)
+    const recordIds = filtered.map((i) => {
+      const rec = recByUser[i.added_by as string]
+      return rec?.id as string
+    }).filter(Boolean)
     const [likeCounts, commentCounts] = await Promise.all([
       this.getReactionCountsBatch(recordIds),
       this.getCommentCountsBatch(recordIds),
     ])
 
-    return filtered.map((s: Record<string, unknown>) => {
-      const bubble = s.bubbles as Record<string, unknown> | null
-      const rec = s.records as Record<string, unknown> | null
-      const user = rec?.users as Record<string, unknown> | null
+    return filtered.map((i) => {
+      const bubble = i.bubbles as Record<string, unknown> | null
+      const rec = recByUser[i.added_by as string]
+      const user = userMap[i.added_by as string]
       const totalXp = (user?.total_xp as number) ?? 0
       const level = Math.max(1, Math.floor(totalXp / 100) + 1)
-      const recordId = s.record_id as string
+      const recordId = (rec?.id as string) ?? ''
       return {
-        id: s.id as string,
+        id: i.id as string,
         recordId,
-        bubbleId: s.bubble_id as string,
+        bubbleId: i.bubble_id as string,
         bubbleName: (bubble?.name as string) ?? '',
         bubbleIcon: (bubble?.icon as string) ?? null,
-        sharedBy: s.shared_by as string,
+        sharedBy: i.added_by as string,
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,
@@ -584,7 +672,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
         comment: (rec?.comment as string) ?? null,
         scene: (rec?.scene as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
-        sharedAt: s.shared_at as string,
+        sharedAt: i.added_at as string,
         contentVisibility: (bubble?.content_visibility as 'rating_only' | 'rating_and_comment') ?? 'rating_and_comment',
         likeCount: likeCounts.get(recordId) ?? 0,
         commentCount: commentCounts.get(recordId) ?? 0,
@@ -627,43 +715,80 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const memberships = await this.getUserBubbles(userId)
     if (memberships.length === 0) return []
     const bubbleIds = memberships.map((m) => m.bubbleId)
-    const { data } = await this.supabase
-      .from('bubble_shares')
-      .select('id, record_id, bubble_id, shared_by, shared_at, bubbles(name, icon), records(target_id, target_type, satisfaction, comment, visit_date, users(nickname, avatar_url, avatar_color), restaurants(name), wines(name))')
+
+    // bubble_items 기반으로 전환
+    let itemQuery = this.supabase
+      .from('bubble_items')
+      .select('id, bubble_id, target_id, target_type, added_by, added_at, record_id, bubbles(name, icon)')
       .in('bubble_id', bubbleIds)
-      .neq('shared_by', userId)
-      .order('shared_at', { ascending: false })
+      .neq('added_by', userId)
+      .order('added_at', { ascending: false })
       .limit(50)
-    const items = (data ?? []).map((s: Record<string, unknown>) => {
+    if (targetType) itemQuery = itemQuery.eq('target_type', targetType)
+    const { data } = await itemQuery
+    if (!data || data.length === 0) return []
+
+    // records, users, target 이름을 별도 조회
+    const itemTargetIds = [...new Set((data as Record<string, unknown>[]).map((s) => s.target_id as string))]
+    const itemAddedByIds = [...new Set((data as Record<string, unknown>[]).map((s) => s.added_by as string))]
+
+    // records 조회
+    const { data: recRows } = await this.supabase
+      .from('records')
+      .select('id, target_id, target_type, satisfaction, comment, visit_date, user_id')
+      .in('target_id', itemTargetIds)
+      .in('user_id', itemAddedByIds)
+    const recByTargetUser: Record<string, Record<string, unknown>> = {}
+    for (const r of ((recRows ?? []) as unknown as Record<string, unknown>[])) {
+      recByTargetUser[`${r.target_id}:${r.user_id}`] = r
+    }
+
+    // users 조회
+    const { data: uRows } = await this.supabase
+      .from('users')
+      .select('id, nickname, avatar_url, avatar_color')
+      .in('id', itemAddedByIds)
+    const userMap: Record<string, Record<string, unknown>> = {}
+    for (const u of ((uRows ?? []) as unknown as Record<string, unknown>[])) {
+      userMap[u.id as string] = u
+    }
+
+    // target 이름 조회
+    const restIds = itemTargetIds.filter((id) => (data as Record<string, unknown>[]).some((s) => s.target_id === id && s.target_type === 'restaurant'))
+    const wIds = itemTargetIds.filter((id) => (data as Record<string, unknown>[]).some((s) => s.target_id === id && s.target_type === 'wine'))
+    const nameMap: Record<string, string> = {}
+    if (restIds.length > 0) {
+      const { data: rd } = await this.supabase.from('restaurants').select('id, name').in('id', restIds)
+      for (const r of rd ?? []) nameMap[r.id as string] = r.name as string
+    }
+    if (wIds.length > 0) {
+      const { data: wd } = await this.supabase.from('wines').select('id, name').in('id', wIds)
+      for (const w of wd ?? []) nameMap[w.id as string] = w.name as string
+    }
+
+    return (data as Record<string, unknown>[]).map((s) => {
       const bubble = s.bubbles as Record<string, unknown> | null
-      const rec = s.records as Record<string, unknown> | null
-      const user = rec?.users as Record<string, unknown> | null
-      const rest = rec?.restaurants as Record<string, unknown> | null
-      const wine = rec?.wines as Record<string, unknown> | null
-      const recTargetType = (rec?.target_type as string) ?? 'restaurant'
+      const rec = recByTargetUser[`${s.target_id}:${s.added_by}`]
+      const user = userMap[s.added_by as string]
       return {
         id: s.id as string,
-        recordId: s.record_id as string,
-        targetId: (rec?.target_id as string) ?? '',
+        recordId: (s.record_id as string) ?? (rec?.id as string) ?? '',
+        targetId: s.target_id as string,
         bubbleId: s.bubble_id as string,
         bubbleName: (bubble?.name as string) ?? '',
         bubbleIcon: (bubble?.icon as string) ?? null,
-        sharedBy: s.shared_by as string,
+        sharedBy: s.added_by as string,
         authorNickname: (user?.nickname as string) ?? '',
         authorAvatar: (user?.avatar_url as string) ?? null,
         authorAvatarColor: (user?.avatar_color as string) ?? null,
-        targetName: recTargetType === 'restaurant' ? ((rest?.name as string) ?? '') : ((wine?.name as string) ?? ''),
-        targetType: recTargetType as 'restaurant' | 'wine',
+        targetName: nameMap[s.target_id as string] ?? '',
+        targetType: s.target_type as 'restaurant' | 'wine',
         satisfaction: (rec?.satisfaction as number) ?? null,
         comment: (rec?.comment as string) ?? null,
         visitDate: (rec?.visit_date as string) ?? null,
-        sharedAt: s.shared_at as string,
+        sharedAt: s.added_at as string,
       }
     })
-    if (targetType) {
-      return items.filter((item) => item.targetType === targetType)
-    }
-    return items
   }
 
   async getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]> {
@@ -718,11 +843,20 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async getRecordShares(recordId: string): Promise<BubbleShare[]> {
+    // bubble_items 기반으로 전환 — record_id로 조회
     const { data } = await this.supabase
-      .from('bubble_shares')
+      .from('bubble_items')
       .select('*')
       .eq('record_id', recordId)
-    return (data ?? []).map((r) => toBubbleShare(r as Record<string, unknown>))
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      recordId: (r.record_id as string) ?? '',
+      bubbleId: r.bubble_id as string,
+      sharedBy: r.added_by as string,
+      sharedAt: r.added_at as string,
+      targetId: r.target_id as string,
+      targetType: r.target_type as 'restaurant' | 'wine',
+    }))
   }
 
   async shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
@@ -730,8 +864,15 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async unshareRecord(recordId: string, bubbleId: string): Promise<void> {
+    // bubble_shares에서도 삭제 (deprecated — 롤백 안전망)
     await this.supabase
       .from('bubble_shares')
+      .delete()
+      .eq('record_id', recordId)
+      .eq('bubble_id', bubbleId)
+    // bubble_items에서도 삭제 — record_id 기반
+    await this.supabase
+      .from('bubble_items')
       .delete()
       .eq('record_id', recordId)
       .eq('bubble_id', bubbleId)
@@ -848,5 +989,92 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .delete()
       .in('id', ids)
     return ids.length
+  }
+
+  // ─── 큐레이션 아이템 (bubble_items) ───
+
+  async addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine', source: BubbleItemSource): Promise<void> {
+    const { data: { user } } = await this.supabase.auth.getUser()
+    if (!user) throw new Error('인증 필요')
+    const { error } = await this.supabase.from('bubble_items').upsert(
+      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: user.id, source },
+      { onConflict: 'bubble_id,target_id,target_type' }
+    )
+    if (error) throw new Error(`아이템 추가 실패: ${error.message}`)
+  }
+
+  async removeItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<void> {
+    const { error } = await this.supabase.from('bubble_items')
+      .delete()
+      .eq('bubble_id', bubbleId)
+      .eq('target_id', targetId)
+      .eq('target_type', targetType)
+    if (error) throw new Error(`아이템 삭제 실패: ${error.message}`)
+  }
+
+  async getItems(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleItem[]> {
+    let query = this.supabase.from('bubble_items').select('*')
+      .eq('bubble_id', bubbleId)
+      .order('added_at', { ascending: false })
+    if (targetType) query = query.eq('target_type', targetType)
+    const { data } = await query
+    return (data ?? []).map((r: Record<string, unknown>) => toBubbleItem(r))
+  }
+
+  async isItemInBubble(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<boolean> {
+    const { count } = await this.supabase.from('bubble_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('bubble_id', bubbleId)
+      .eq('target_id', targetId)
+      .eq('target_type', targetType)
+    return (count ?? 0) > 0
+  }
+
+  // ─── target 기반 자동 큐레이션 동기화 (bubble_items) ───
+
+  async batchUpsertAutoItems(
+    targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine'; recordId?: string }>,
+    bubbleId: string,
+    userId: string,
+  ): Promise<void> {
+    if (targets.length === 0) return
+    const rows = targets.map((t) => ({
+      bubble_id: bubbleId,
+      target_id: t.targetId,
+      target_type: t.targetType,
+      added_by: userId,
+      source: 'auto',
+      record_id: t.recordId ?? null,
+    }))
+    const { error } = await this.supabase
+      .from('bubble_items')
+      .upsert(rows, { onConflict: 'bubble_id,target_id,target_type' })
+    if (error) throw new Error(`자동 아이템 일괄 추가 실패: ${error.message}`)
+  }
+
+  async batchDeleteAutoItems(
+    targetIds: string[],
+    targetType: 'restaurant' | 'wine',
+    bubbleId: string,
+  ): Promise<void> {
+    if (targetIds.length === 0) return
+    await this.supabase
+      .from('bubble_items')
+      .delete()
+      .in('target_id', targetIds)
+      .eq('bubble_id', bubbleId)
+      .eq('target_type', targetType)
+      .eq('source', 'auto')
+  }
+
+  async getAutoItemTargetIds(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<string[]> {
+    let query = this.supabase
+      .from('bubble_items')
+      .select('target_id')
+      .eq('bubble_id', bubbleId)
+      .eq('source', 'auto')
+    if (targetType) query = query.eq('target_type', targetType)
+    const { data } = await query
+    return (data ?? []).map((r) => r.target_id as string)
   }
 }

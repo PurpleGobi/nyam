@@ -2,12 +2,14 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, Grape, Thermometer, GlassWater, CalendarRange, UtensilsCrossed, Info, X, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
+import { MapPin, Grape, Thermometer, GlassWater, CalendarRange, UtensilsCrossed, Info, X, ShieldCheck, ShieldAlert, ShieldX, ListPlus } from 'lucide-react'
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
 import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
@@ -28,6 +30,7 @@ import { AromaWheel } from '@/presentation/components/record/aroma-wheel'
 import { WineStructureEval } from '@/presentation/components/record/wine-structure-eval'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
+import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
 import { useToast } from '@/presentation/components/ui/toast'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
@@ -60,6 +63,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [showAddToBubble, setShowAddToBubble] = useState(false)
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
   const [breakdownOpen, setBreakdownOpen] = useState(false)
   const [bubbleExpandOpen, setBubbleExpandOpen] = useState(false)
@@ -119,8 +123,12 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     }
   }, [toggleSource])
 
+  const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
+  const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, wineId, 'wine')
+
   const { isBookmarked, toggle: toggleBookmark } = useBookmark(
     user?.id ?? null, wineId, 'wine',
+    (tId, tType, isB) => syncBookmarkToAllBubbles({ targetId: tId, targetType: tType }, isB),
   )
 
   // 세부 축 레벨 (산지, 품종)
@@ -809,6 +817,22 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       {/* FAB + 액션 버튼 — 같은 높이 */}
       <DetailFab onBack={handleBack} onAdd={handleAdd} variant="wine" />
 
+      {/* 리스트에 추가 버튼 */}
+      <button
+        type="button"
+        onClick={() => setShowAddToBubble(true)}
+        className="fixed z-40 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold shadow-md transition-opacity active:opacity-70"
+        style={{
+          bottom: myRecords.length > 0 ? '148px' : '88px',
+          right: '20px',
+          backgroundColor: 'var(--accent-social)',
+          color: '#FFFFFF',
+        }}
+      >
+        <ListPlus size={14} />
+        리스트
+      </button>
+
       {myRecords.length > 0 && (
         <FabActions
           variant="wine"
@@ -829,6 +853,16 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         bubbles={availableBubbles}
         onShareMultiple={shareToBubbles}
       />
+
+      <AddToBubbleSheet
+        isOpen={showAddToBubble}
+        onClose={() => setShowAddToBubble(false)}
+        targetName={wine.name}
+        bubbles={bubblesWithStatus}
+        onToggle={toggleBubbleItem}
+        isLoading={isBubblesLoading}
+      />
+
       {/* 가격 분석 팝업 */}
       {showPriceReview && wine.priceReview && (
         <>

@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule, BubbleExpertise } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule, BubbleExpertise, BubbleItem, BubbleItemSource } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -170,4 +170,15 @@ export interface BubbleRepository {
   batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
   getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
   cleanManualShares(userId: string): Promise<number>
+
+  // ─── 큐레이션 아이템 (bubble_items) ───
+  addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine', source: BubbleItemSource): Promise<void>
+  removeItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<void>
+  getItems(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleItem[]>
+  isItemInBubble(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<boolean>
+
+  // ─── target 기반 자동 큐레이션 동기화 (bubble_items) ───
+  batchUpsertAutoItems(targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine'; recordId?: string }>, bubbleId: string, userId: string): Promise<void>
+  batchDeleteAutoItems(targetIds: string[], targetType: 'restaurant' | 'wine', bubbleId: string): Promise<void>
+  getAutoItemTargetIds(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<string[]>
 }

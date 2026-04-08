@@ -55,6 +55,8 @@ export interface BubbleShareRule {
     domain?: 'restaurant' | 'wine'
   }>
   conjunction: 'and' | 'or'
+  /** true면 찜도 자동 매칭 대상에 포함 (대상 메타데이터로 필터 평가). 기본값 false */
+  includeBookmarks?: boolean
 }
 
 /** 가시성 오버라이드 7개 키 (users.visibility_bubble과 동일 구조) */
@@ -92,6 +94,21 @@ export interface BubbleShare {
   sharedAt: string
   targetId: string
   targetType: 'restaurant' | 'wine'
+}
+
+// ─── 버블 큐레이션 아이템 (bubble_items 테이블) ───
+
+export type BubbleItemSource = 'auto' | 'manual'
+
+export interface BubbleItem {
+  id: string
+  bubbleId: string
+  targetId: string
+  targetType: 'restaurant' | 'wine'
+  addedBy: string
+  source: BubbleItemSource
+  recordId: string | null
+  addedAt: string
 }
 
 // ─── 랭킹 스냅샷 (bubble_ranking_snapshots 테이블) ───

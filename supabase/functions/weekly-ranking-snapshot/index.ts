@@ -7,7 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  * 처리 순서:
  * 1. 모든 활성 버블 조회
  * 2. 각 버블에 대해:
- *    a. 지난 주(월~일) 공유된 기록 집계 (bubble_shares → records)
+ *    a. 지난 주(월~일) 큐레이션 아이템 집계 (bubble_items → records)
  *    b. target별 평균 만족도 + 기록 수 산출
  *    c. 순위 매기기 (avg_satisfaction DESC, record_count DESC)
  *    d. bubble_ranking_snapshots UPSERT
@@ -111,25 +111,31 @@ async function generateRankingSnapshots(
   toISO: string,
   periodStart: string,
 ): Promise<SnapshotRow[]> {
-  // 지난 주 공유된 기록을 target별로 집계
-  const { data: shares } = await supabase
-    .from('bubble_shares')
-    .select('record_id, records(target_id, target_type, satisfaction, status)')
+  // bubble_items 기반으로 전환 — target별 집계
+  const { data: items } = await supabase
+    .from('bubble_items')
+    .select('target_id, target_type')
     .eq('bubble_id', bubbleId)
-    .gte('shared_at', fromISO)
-    .lt('shared_at', toISO)
+    .gte('added_at', fromISO)
+    .lt('added_at', toISO)
 
-  if (!shares || shares.length === 0) return []
+  if (!items || items.length === 0) return []
+
+  // items의 target_id로 records 별도 조회
+  const targetIds = [...new Set(items.map((i) => i.target_id))]
+  const { data: records } = await supabase
+    .from('records')
+    .select('target_id, target_type, satisfaction, status')
+    .in('target_id', targetIds)
+    .eq('status', 'rated')
+    .not('satisfaction', 'is', null)
+
+  if (!records || records.length === 0) return []
 
   // target별 집계
   const targetMap = new Map<string, { targetId: string; targetType: string; satisfactions: number[] }>()
 
-  for (const share of shares) {
-    const rec = share.records as Record<string, unknown> | null
-    if (!rec) continue
-    if (rec.status !== 'rated') continue
-    if (rec.satisfaction == null) continue
-
+  for (const rec of records) {
     const key = `${rec.target_id}:${rec.target_type}`
     const existing = targetMap.get(key)
     if (existing) {
@@ -189,13 +195,13 @@ async function updateBubbleWeeklyStats(
   fromISO: string,
   toISO: string,
 ): Promise<void> {
-  // 지난 주 공유 수 집계
+  // 지난 주 아이템 수 집계 (bubble_items 기반)
   const { count } = await supabase
-    .from('bubble_shares')
+    .from('bubble_items')
     .select('id', { count: 'exact', head: true })
     .eq('bubble_id', bubbleId)
-    .gte('shared_at', fromISO)
-    .lt('shared_at', toISO)
+    .gte('added_at', fromISO)
+    .lt('added_at', toISO)
 
   // 현재 weekly → prev, 지난 주 공유 수 → weekly
   const { data: bubble } = await supabase

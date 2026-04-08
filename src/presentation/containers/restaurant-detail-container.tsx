@@ -2,13 +2,15 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, UtensilsCrossed } from 'lucide-react'
+import { MapPin, UtensilsCrossed, ListPlus } from 'lucide-react'
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
 import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
+import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
@@ -29,6 +31,7 @@ import { AllRecordsSection } from '@/presentation/components/detail/all-records-
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
+import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
 import { useToast } from '@/presentation/components/ui/toast'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
@@ -50,6 +53,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   const { user } = useAuth()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [showAddToBubble, setShowAddToBubble] = useState(false)
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0) // 최근 뷰에서 포커스된 기록 (0 = 최신)
   const [breakdownOpen, setBreakdownOpen] = useState(false)
   const [bubbleExpandOpen, setBubbleExpandOpen] = useState(false)
@@ -108,10 +112,14 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     }
   }, [toggleSource])
 
+  const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
+  const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, restaurantId, 'restaurant')
+
   const { isBookmarked, toggle: toggleBookmark } = useBookmark(
     user?.id ?? null,
     restaurantId,
     'restaurant',
+    (tId, tType, isB) => syncBookmarkToAllBubbles({ targetId: tId, targetType: tType }, isB),
   )
 
   // 세부 축 레벨 (장르, 지역)
@@ -638,6 +646,22 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       {/* FAB + 액션 버튼 — 같은 높이 */}
       <DetailFab onBack={handleBack} onAdd={handleAdd} />
 
+      {/* 리스트에 추가 버튼 */}
+      <button
+        type="button"
+        onClick={() => setShowAddToBubble(true)}
+        className="fixed z-40 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold shadow-md transition-opacity active:opacity-70"
+        style={{
+          bottom: myRecords.length > 0 ? '148px' : '88px',
+          right: '20px',
+          backgroundColor: 'var(--accent-social)',
+          color: '#FFFFFF',
+        }}
+      >
+        <ListPlus size={14} />
+        리스트
+      </button>
+
       {myRecords.length > 0 && (
         <FabActions
           variant="food"
@@ -658,6 +682,15 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         onClose={() => setShowShareSheet(false)}
         bubbles={availableBubbles}
         onShareMultiple={shareToBubbles}
+      />
+
+      <AddToBubbleSheet
+        isOpen={showAddToBubble}
+        onClose={() => setShowAddToBubble(false)}
+        targetName={restaurant.name}
+        bubbles={bubblesWithStatus}
+        onToggle={toggleBubbleItem}
+        isLoading={isBubblesLoading}
       />
 
     </div>

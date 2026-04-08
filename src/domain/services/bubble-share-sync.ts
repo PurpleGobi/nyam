@@ -77,3 +77,46 @@ export function computeShareDiff(
 
   return { toAdd, toRemove }
 }
+
+/**
+ * 찜(bookmark) 대상이 공유 규칙에 매칭되는지 평가
+ * 찜에는 satisfaction 등 기록 필드가 없으므로, 대상 메타데이터(area, genre, wine_type 등)만으로 평가
+ * includeBookmarks가 false/undefined이면 항상 빈 배열 반환
+ */
+export function evaluateBookmarkTargets(
+  targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
+  shareRule: BubbleShareRule | null,
+): string[] {
+  if (!shareRule) return []
+  if (!shareRule.includeBookmarks) return []
+  if (shareRule.mode === 'all') return targets.map((t) => t.targetId)
+
+  return targets
+    .filter((target) => {
+      const targetType = target.targetType
+      const relevantRules = getRulesForRecord(shareRule.rules, targetType)
+      // 찜에는 satisfaction/visitDate 등이 없으므로, 이런 특수 속성 규칙은 건너뜀
+      const applicableRules = relevantRules.filter((r) =>
+        !['satisfaction', 'visit_date', 'companion_count'].includes(r.attribute)
+      )
+      if (applicableRules.length === 0) return true
+      return matchesAllRules(target, applicableRules, shareRule.conjunction)
+    })
+    .map((t) => t.targetId)
+}
+
+/**
+ * target 기반 diff 계산 (bubble_items용)
+ * record 기반 computeShareDiff와 동일 로직이지만 targetId 기준
+ */
+export function computeItemDiff(
+  shouldIncludeTargetIds: string[],
+  currentTargetIds: string[],
+): { toAdd: string[]; toRemove: string[] } {
+  const shouldSet = new Set(shouldIncludeTargetIds)
+  const currentSet = new Set(currentTargetIds)
+  return {
+    toAdd: shouldIncludeTargetIds.filter((id) => !currentSet.has(id)),
+    toRemove: currentTargetIds.filter((id) => !shouldSet.has(id)),
+  }
+}

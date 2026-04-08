@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, Share2 } from 'lucide-react'
+import { Trophy, Users, Settings, UserPlus, Share2, Plus } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -10,6 +10,8 @@ import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import { useSingleBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
+import { useSearch } from '@/application/hooks/use-search'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
 import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
@@ -18,6 +20,7 @@ import Image from 'next/image'
 import { InviteLinkGenerator } from '@/presentation/components/bubble/invite-link-generator'
 import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sheet'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
+import { AddItemSearchSheet } from '@/presentation/components/bubble/add-item-search-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import type { RankingTargetType, ExpertiseAxisType } from '@/domain/entities/bubble'
@@ -34,6 +37,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
 
   const [showInfoSheet, setShowInfoSheet] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showAddItemSearch, setShowAddItemSearch] = useState(false)
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
@@ -42,6 +46,19 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const { members, isLoading: membersLoading } = useBubbleMembers(bubbleId)
   const { rankings: ranking, isLoading: rankingLoading } = useBubbleRanking(bubbleId, rankingType)
 
+  // 대상 추가 검색
+  const { addItemToBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
+  const { setQuery: setSearchQuery, results: searchResults, isSearching: isSearchLoading, executeSearch } = useSearch({ targetType: 'restaurant' })
+
+  const handleSearchInSheet = useCallback((q: string) => {
+    setSearchQuery(q)
+    executeSearch(q)
+  }, [setSearchQuery, executeSearch])
+
+  const handleAddItemFromSearch = useCallback(async (targetId: string, targetType: 'restaurant' | 'wine') => {
+    await addItemToBubble(bubbleId, targetId, targetType, 'manual')
+  }, [bubbleId, addItemToBubble])
+
   // 피드에서 활동 요약 계산
   const { shares } = useBubbleFeed(
     bubbleId,
@@ -49,8 +66,9 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
     bubble?.contentVisibility ?? 'rating_and_comment',
   )
 
+  const [mountTime] = useState(() => Date.now())
   const activitySummary = useMemo(() => {
-    const thisWeek = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const thisWeek = mountTime - 7 * 24 * 60 * 60 * 1000
     const weeklyShares = shares.filter((s) => new Date(s.sharedAt).getTime() > thisWeek)
 
     // 인기 대상 (가장 많은 기록)
@@ -81,7 +99,24 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       avgSatisfaction,
       topTargets,
     }
+  }, [shares, mountTime])
+
+  // 기존 아이템 ID 목록 (중복 방지)
+  const existingTargetIds = useMemo(() => {
+    return shares.map((s) => s.targetId).filter((id): id is string => id != null)
   }, [shares])
+
+  // 검색 결과를 AddItemSearchSheet 형식으로 변환
+  const searchResultsForSheet = useMemo(() => {
+    return searchResults.map((r) => ({
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      meta: r.type === 'restaurant'
+        ? [r.genre, r.area].filter(Boolean).join(' · ')
+        : [r.wineType, r.region].filter(Boolean).join(' · '),
+    }))
+  }, [searchResults])
 
   // 전문성 축별 그룹핑 (Top 5 per axis)
   const expertiseGroups = useMemo(() => {
@@ -174,7 +209,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               type="button"
               onClick={() => setShowInviteModal(true)}
               className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-              style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+              style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
             >
               <UserPlus size={13} /> 초대
             </button>
@@ -205,7 +240,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <section className="px-5 py-4">
           <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>활동 요약</h2>
           <div className="flex gap-2">
-            <StatCard label="총 기록" value={String(activitySummary.totalRecords)} />
+            <StatCard label="리스트 항목" value={String(activitySummary.totalRecords)} />
             <StatCard label="이번 주" value={String(activitySummary.weeklyRecords)} />
             <StatCard
               label="평균 만족도"
@@ -292,7 +327,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                     className="flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-bold"
                     style={{
                       backgroundColor: m.avatarColor ?? 'var(--accent-social-light)',
-                      color: '#FFFFFF',
+                      color: 'var(--primary-foreground)',
                       border: m.userId === user?.id ? '2px solid var(--accent-social)' : '2px solid var(--bg-card)',
                     }}
                   >
@@ -330,7 +365,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                     backgroundColor: rankingType === type
                       ? (type === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)')
                       : 'var(--bg-section)',
-                    color: rankingType === type ? '#FFFFFF' : 'var(--text-sub)',
+                    color: rankingType === type ? 'var(--primary-foreground)' : 'var(--text-sub)',
                     border: rankingType === type ? 'none' : '1px solid var(--border)',
                   }}
                 >
@@ -386,8 +421,22 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           </>
         )}
 
-        <div style={{ height: '80px' }} />
+        <div style={{ height: '100px' }} />
       </div>
+
+      {/* 대상 추가 FAB */}
+      <button
+        type="button"
+        onClick={() => setShowAddItemSearch(true)}
+        className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-opacity active:opacity-70"
+        style={{
+          bottom: '24px',
+          right: '20px',
+          backgroundColor: 'var(--accent-social)',
+        }}
+      >
+        <Plus size={22} color="var(--primary-foreground)" />
+      </button>
 
       {/* 버블 정보 시트 */}
       {showInfoSheet && bubble && (
@@ -418,6 +467,18 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           targetUserId={miniProfileUserId}
         />
       )}
+
+      {/* 대상 추가 검색 시트 */}
+      <AddItemSearchSheet
+        isOpen={showAddItemSearch}
+        onClose={() => setShowAddItemSearch(false)}
+        bubbleName={bubble.name}
+        searchResults={searchResultsForSheet}
+        existingTargetIds={existingTargetIds}
+        onSearch={handleSearchInSheet}
+        onAdd={handleAddItemFromSearch}
+        isLoading={isSearchLoading}
+      />
     </div>
   )
 }

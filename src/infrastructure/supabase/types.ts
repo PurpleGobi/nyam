@@ -79,6 +79,61 @@ export type Database = {
           },
         ]
       }
+      bubble_items: {
+        Row: {
+          added_at: string
+          added_by: string
+          bubble_id: string
+          id: string
+          record_id: string | null
+          source: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          bubble_id: string
+          id?: string
+          record_id?: string | null
+          source?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          bubble_id?: string
+          id?: string
+          record_id?: string | null
+          source?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bubble_items_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bubble_items_bubble_id_fkey"
+            columns: ["bubble_id"]
+            isOneToOne: false
+            referencedRelation: "bubbles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bubble_items_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bubble_members: {
         Row: {
           avg_satisfaction: number | null
@@ -1409,6 +1464,26 @@ export type Database = {
       }
     }
     Views: {
+      bubble_expertise: {
+        Row: {
+          avg_level: number | null
+          axis_type: string | null
+          axis_value: string | null
+          bubble_id: string | null
+          max_level: number | null
+          member_count: number | null
+          total_xp: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bubble_members_bubble_id_fkey"
+            columns: ["bubble_id"]
+            isOneToOne: false
+            referencedRelation: "bubbles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
