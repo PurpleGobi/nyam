@@ -6,7 +6,7 @@ import { getGaugeColor } from '@/shared/utils/gauge-color'
 import { QuadrantRefDot } from '@/presentation/components/record/quadrant-ref-dot'
 
 interface QuadrantInputProps {
-  /** 'restaurant': X=음식 퀄리티, Y=경험 가치 / 'wine': X=구조·완성도, Y=즐거움·감성 */
+  /** 'restaurant': X=음식 퀄리티, Y=경험 만족도 / 'wine': X=구조·완성도, Y=경험 만족도 */
   type: 'restaurant' | 'wine'
   value: { x: number; y: number; satisfaction?: number }
   onChange: (value: { x: number; y: number; satisfaction?: number }) => void
@@ -45,9 +45,9 @@ const AXIS_LABELS = {
   },
   wine: {
     xLabel: '구조\n완성도',
-    yLabel: '즐거움\n감성',
+    yLabel: '경험\n만족도',
     xAxis: '구조 · 완성도 →',
-    yAxis: '즐거움 · 감성 →',
+    yAxis: '경험 만족도 →',
   },
 } as const
 
@@ -199,7 +199,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               </div>
               <div style={{ position: 'absolute', top: '55%', left: '95px', zIndex: 40 }}>
                 <HintBubble tailSide="left" accentColor="var(--accent-wine)" bgColor="var(--accent-wine-light)">
-                  {type === 'wine' ? '즐거움 · 감성' : '경험 만족도'}<br />바를 터치
+                  경험 만족도<br />바를 터치
                 </HintBubble>
               </div>
             </>

@@ -245,7 +245,7 @@ export default function DesignSystemPage() {
           <Swatch color="#B5603A" name="61~80" hex="#B5603A" />
           <Swatch color="#A83E1A" name="81~100" hex="#A83E1A" />
         </Row>
-        <Sub title="Rating Gauge — Experience (경험 가치)" />
+        <Sub title="Rating Gauge — Experience (경험 만족도)" />
         <Row>
           <Swatch color="#B5B0BA" name="0~20" hex="#B5B0BA" />
           <Swatch color="#A08DA8" name="21~40" hex="#A08DA8" />
@@ -1102,7 +1102,7 @@ export default function DesignSystemPage() {
       <Section title="20. Rating Input">
         <Sub title="Restaurant Rating — 사분면 + 바 게이지 + 가격대" />
         <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
-          Nyam 핵심 평가 컴포넌트. X축(음식 퀄리티) + Y축(경험 가치) 사분면과<br />
+          Nyam 핵심 평가 컴포넌트. X축(음식 퀄리티) + Y축(경험 만족도) 사분면과<br />
           개별 바 게이지, 총점 표시, 가격대 3단계로 구성.<br />
           사분면 터치 또는 바 게이지 드래그로 점수 설정.
         </p>
@@ -1147,14 +1147,14 @@ export default function DesignSystemPage() {
           </button>
         </div>
         <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-hint)' }}>
-          현재 값: 음식 퀄리티 {ratingValue.x} · 경험 가치 {ratingValue.y} · 총점 {Math.round((ratingValue.x + ratingValue.y) / 2)}
+          현재 값: 음식 퀄리티 {ratingValue.x} · 경험 만족도 {ratingValue.y} · 총점 {Math.round((ratingValue.x + ratingValue.y) / 2)}
         </div>
 
         <div style={{ marginTop: '40px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
           <Sub title="Wine Rating — 사분면 + 바 게이지" />
           <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
             X축: 구조 · 완성도 — "이 와인은 객관적으로 얼마나 잘 만들어졌나?"<br />
-            Y축: 즐거움 · 감성 — "내가 실제로 마시면서 얼마나 만족했나 (가격 포함)"<br />
+            Y축: 경험 만족도 — "내가 실제로 마시면서 얼마나 만족했나 (가격 포함)"<br />
             가격대 없음 (와인은 별도 구매가격 입력).
           </p>
           <RatingInput
@@ -1198,7 +1198,7 @@ export default function DesignSystemPage() {
             </button>
           </div>
           <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-hint)' }}>
-            현재 값: 구조·완성도 {wineRatingValue.x} · 즐거움·감성 {wineRatingValue.y} · 총점 {Math.round((wineRatingValue.x + wineRatingValue.y) / 2)}
+            현재 값: 구조·완성도 {wineRatingValue.x} · 경험 만족도 {wineRatingValue.y} · 총점 {Math.round((wineRatingValue.x + wineRatingValue.y) / 2)}
           </div>
         </div>
       </Section>

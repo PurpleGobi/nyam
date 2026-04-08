@@ -23,7 +23,7 @@ interface MiniQuadrantProps {
 
 const LABELS = {
   restaurant: { xL: '퀄리티↓', xR: '퀄리티↑', yT: '경험↑', yB: '경험↓' },
-  wine: { xL: '구조↓', xR: '구조↑', yT: '감성↑', yB: '감성↓' },
+  wine: { xL: '구조↓', xR: '구조↑', yT: '경험↑', yB: '경험↓' },
 }
 
 /** 고정 dot 크기 (RATING_ENGINE 개편: 만족도 기반 크기 제거) */
