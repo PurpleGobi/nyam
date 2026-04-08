@@ -42,6 +42,36 @@ export class SupabaseProfileRepository implements ProfileRepository {
     }
   }
 
+  async getUserProfiles(userIds: string[]): Promise<Map<string, UserProfile>> {
+    if (userIds.length === 0) return new Map()
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .in('id', userIds)
+    if (error) throw new Error(`UserProfiles 배치 조회 실패: ${error.message}`)
+    const map = new Map<string, UserProfile>()
+    for (const d of data ?? []) {
+      map.set(d.id as string, {
+        id: d.id as string,
+        nickname: d.nickname as string,
+        handle: d.handle as string | null,
+        avatarUrl: d.avatar_url as string | null,
+        avatarColor: d.avatar_color as string | null,
+        bio: d.bio as string | null,
+        tasteSummary: d.taste_summary as string | null,
+        tasteTags: (d.taste_tags as string[]) ?? [],
+        totalXp: (d.total_xp as number) ?? 0,
+        activeXp: (d.active_xp as number) ?? 0,
+        activeVerified: (d.active_verified as number) ?? 0,
+        recordCount: (d.record_count as number) ?? 0,
+        currentStreak: (d.current_streak as number) ?? 0,
+        preferredAreas: (d.preferred_areas as string[] | null) ?? null,
+        createdAt: d.created_at as string,
+      })
+    }
+    return map
+  }
+
   // ── 활동 요약 ──
 
   async getActivitySummary(userId: string): Promise<ActivitySummary> {

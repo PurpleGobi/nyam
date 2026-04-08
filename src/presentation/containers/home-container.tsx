@@ -432,14 +432,16 @@ export function HomeContainer() {
   )
 
   // ── CF 기반 Nyam 점수: 미방문 아이템에 예측 점수 표시 ──
-  const unvisitedTargetIds = useMemo(() =>
-    displayTargets
-      .filter((t) => t.visitCount === 0 && t.satisfaction === null)
-      .map((t) => t.targetId),
-    [displayTargets],
-  )
+  // 전체 필터링된 대상에서 1회 배치 조회 (페이지 변경 시 재요청 방지)
   const feedCategory = activeTab === 'wine' ? 'wine' as const : 'restaurant' as const
-  const { scores: feedScores } = useFeedScores(unvisitedTargetIds, feedCategory, user?.id ?? null)
+  const allUnvisitedIds = useMemo(() =>
+    filteredTargets
+      .filter((t) => t.visitCount === 0 && t.satisfaction === null)
+      .map((t) => t.targetId)
+      .slice(0, 50),
+    [filteredTargets],
+  )
+  const { scores: feedScores } = useFeedScores(allUnvisitedIds, feedCategory, user?.id ?? null)
 
   // 필터/탭/뷰모드 변경 시 페이지 리셋 (useEffect 대신 렌더 중 비교)
   const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`

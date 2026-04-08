@@ -68,6 +68,7 @@ export interface BubblerProfileData {
 
 export interface ProfileRepository {
   getUserProfile(userId: string): Promise<UserProfile>
+  getUserProfiles(userIds: string[]): Promise<Map<string, UserProfile>>
   getActivitySummary(userId: string): Promise<ActivitySummary>
   getHeatmapData(userId: string, weeks: number): Promise<HeatmapCell[]>
 

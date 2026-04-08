@@ -7,8 +7,8 @@ import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { QuadrantRefDot, BubbleScoreRow } from '@/domain/repositories/restaurant-repository'
 import type { LinkedRestaurantCard } from '@/domain/repositories/wine-repository'
 import type { PredictionBreakdown } from '@/domain/entities/similarity'
-import { wineRepo } from '@/shared/di/container'
-import { useNyamScore } from '@/application/hooks/use-nyam-score'
+import type { PredictionWithBreakdown } from '@/domain/repositories/prediction-repository'
+import { wineRepo, predictionRepo } from '@/shared/di/container'
 
 export interface WineNyamScoreBreakdown {
   vivinoRating: number | null
@@ -56,58 +56,64 @@ export function useWineDetail(
   const [linkedRestaurants, setLinkedRestaurants] = useState<LinkedRestaurantCard[]>([])
   const [bubbleScores, setBubbleScores] = useState<BubbleScoreRow[]>([])
   const [publicRecords, setPublicRecords] = useState<DiningRecord[]>([])
+  const [nyamPrediction, setNyamPrediction] = useState<PredictionWithBreakdown | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // CF 기반 Nyam 점수
-  const { prediction: nyamPrediction } = useNyamScore(wineId, 'wine', userId)
-
   useEffect(() => {
+    let cancelled = false
+
     async function load() {
       setIsLoading(true)
       setError(null)
       try {
-        // 1. 와인 조회
+        // 1. 와인 기본 정보
         const wineData = await repo.findById(wineId)
+        if (cancelled) return
         setWine(wineData)
 
         if (!userId) return
 
-        // 2. 내 기록
-        const records = await repo.findMyRecords(wineId, userId)
-        setMyRecords(records)
-
-        // 3. records 유무와 무관한 fetch (항상 실행)
-        const [scoresResult, publicResult] = await Promise.allSettled([
-          repo.findBubbleScores(wineId, userId),
+        // 2. 모든 독립 데이터를 한 번에 병렬 fetch (워터폴 제거 + CF 예측 병렬화)
+        const [recordsResult, publicResult, scoresResult, refsResult, linkedResult, nyamResult] = await Promise.allSettled([
+          repo.findMyRecords(wineId, userId),
           repo.findPublicRecordsByTarget(wineId, userId),
+          repo.findBubbleScores(wineId, userId),
+          repo.findQuadrantRefs(userId, wineId),
+          repo.findLinkedRestaurants(wineId, userId),
+          predictionRepo.predictScore(userId, wineId, 'wine'),
         ])
-        if (scoresResult.status === 'fulfilled') setBubbleScores(scoresResult.value)
-        setPublicRecords(publicResult.status === 'fulfilled' ? publicResult.value : [])
+        if (cancelled) return
 
-        // 4. 모든 소스 기록의 사진, 사분면, 연결 식당
+        const records = recordsResult.status === 'fulfilled' ? recordsResult.value : []
         const fetchedPublic = publicResult.status === 'fulfilled' ? publicResult.value : []
+        setMyRecords(records)
+        setPublicRecords(fetchedPublic)
+        if (scoresResult.status === 'fulfilled') setBubbleScores(scoresResult.value)
+        if (refsResult.status === 'fulfilled') setQuadrantRefs(refsResult.value)
+        if (linkedResult.status === 'fulfilled') setLinkedRestaurants(linkedResult.value)
+        if (nyamResult.status === 'fulfilled') setNyamPrediction(nyamResult.value)
+
+        // 3. 사진만 별도 (recordIds 필요)
         const allRecordIds = [
           ...records.map((r) => r.id),
           ...fetchedPublic.map((r) => r.id),
         ]
         if (allRecordIds.length > 0) {
-          const [photosRes, refsRes, linkedRes] = await Promise.allSettled([
-            repo.findRecordPhotos(allRecordIds),
-            records.length > 0 ? repo.findQuadrantRefs(userId, wineId) : Promise.resolve([]),
-            records.length > 0 ? repo.findLinkedRestaurants(wineId, userId) : Promise.resolve([]),
-          ])
-          if (photosRes.status === 'fulfilled') setRecordPhotos(photosRes.value)
-          if (refsRes.status === 'fulfilled') setQuadrantRefs(refsRes.value)
-          if (linkedRes.status === 'fulfilled') setLinkedRestaurants(linkedRes.value)
+          const photosResult = await repo.findRecordPhotos(allRecordIds)
+          if (!cancelled) setRecordPhotos(photosResult)
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : '데이터 로딩 실패')
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : '데이터 로딩 실패')
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
+
     load()
+    return () => { cancelled = true }
   }, [wineId, userId, repo])
 
   // 파생값 계산

@@ -13,8 +13,8 @@ import type {
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
 import type { PredictionBreakdown } from '@/domain/entities/similarity'
-import { restaurantRepo } from '@/shared/di/container'
-import { useNyamScore } from '@/application/hooks/use-nyam-score'
+import type { PredictionWithBreakdown } from '@/domain/repositories/prediction-repository'
+import { restaurantRepo, predictionRepo } from '@/shared/di/container'
 
 /** 뷰 모드 */
 export type RestaurantViewMode = 'my_records' | 'recommend' | 'bubble_review'
@@ -56,11 +56,9 @@ export function useRestaurantDetail(
   const [linkedWines, setLinkedWines] = useState<LinkedWineCard[]>([])
   const [bubbleScores, setBubbleScores] = useState<BubbleScoreRow[]>([])
   const [publicRecords, setPublicRecords] = useState<DiningRecord[]>([])
+  const [nyamPrediction, setNyamPrediction] = useState<PredictionWithBreakdown | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // CF 기반 Nyam 점수
-  const { prediction: nyamPrediction } = useNyamScore(restaurantId, 'restaurant', userId)
 
   useEffect(() => {
     let cancelled = false
@@ -80,34 +78,34 @@ export function useRestaurantDetail(
 
         if (!userId) return
 
-        // 2. 내 기록 + 타인 공개 기록 + 버블 점수 (각각 독립)
-        const [recordsResult, publicRecordsResult, bubblesResult] = await Promise.allSettled([
+        // 2. 모든 독립 데이터를 한 번에 병렬 fetch (워터폴 제거 + CF 예측 병렬화)
+        const [recordsResult, publicRecordsResult, bubblesResult, refsResult, winesResult, nyamResult] = await Promise.allSettled([
           repo.findMyRecords(restaurantId, userId),
           repo.findPublicRecordsByTarget(restaurantId, userId),
           repo.findBubbleScores(restaurantId, userId),
+          repo.findQuadrantRefs(userId, restaurantId),
+          repo.findLinkedWines(restaurantId, userId),
+          predictionRepo.predictScore(userId, restaurantId, 'restaurant'),
         ])
         if (cancelled) return
+
         const records = recordsResult.status === 'fulfilled' ? recordsResult.value : []
         const fetchedPublicRecords = publicRecordsResult.status === 'fulfilled' ? publicRecordsResult.value : []
         setMyRecords(records)
         setPublicRecords(fetchedPublicRecords)
         if (bubblesResult.status === 'fulfilled') setBubbleScores(bubblesResult.value)
+        if (refsResult.status === 'fulfilled') setQuadrantRefs(refsResult.value)
+        if (winesResult.status === 'fulfilled') setLinkedWines(winesResult.value)
+        if (nyamResult.status === 'fulfilled') setNyamPrediction(nyamResult.value)
 
-        // 3. 모든 소스 기록의 사진, 사분면, 연결 와인
+        // 3. 사진만 별도 (recordIds 필요)
         const allRecordIds = [
           ...records.map((rec) => rec.id),
           ...fetchedPublicRecords.map((rec) => rec.id),
         ]
         if (allRecordIds.length > 0) {
-          const [photosResult, refsResult, winesResult] = await Promise.allSettled([
-            repo.findRecordPhotos(allRecordIds),
-            records.length > 0 ? repo.findQuadrantRefs(userId, restaurantId) : Promise.resolve([]),
-            records.length > 0 ? repo.findLinkedWines(restaurantId, userId) : Promise.resolve([]),
-          ])
-          if (cancelled) return
-          if (photosResult.status === 'fulfilled') setRecordPhotos(photosResult.value)
-          if (refsResult.status === 'fulfilled') setQuadrantRefs(refsResult.value)
-          if (winesResult.status === 'fulfilled') setLinkedWines(winesResult.value)
+          const photosResult = await repo.findRecordPhotos(allRecordIds)
+          if (!cancelled) setRecordPhotos(photosResult)
         }
       } catch (e) {
         if (!cancelled) {

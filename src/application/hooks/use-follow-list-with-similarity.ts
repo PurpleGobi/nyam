@@ -36,26 +36,28 @@ async function enrichIds(
   ids: string[],
   currentUserId: string,
 ): Promise<EnrichedFollowUser[]> {
-  // 1. 프로필 enrichment
-  const profileResults = await Promise.allSettled(
-    ids.map((id) => profileRepo.getUserProfile(id)),
-  )
+  if (ids.length === 0) return []
 
-  // 2. 적합도 배치 조회 (restaurant 기준)
-  const similarityResults = await Promise.allSettled(
-    ids.map((id) => similarityRepo.getSimilarity(currentUserId, id, 'restaurant')),
-  )
+  // 프로필 배치 + 적합도 배치를 병렬 실행 (N+1 → 2 쿼리)
+  const [profileResults, similarityResults] = await Promise.allSettled([
+    profileRepo.getUserProfiles(ids),
+    Promise.allSettled(
+      ids.map((id) => similarityRepo.getSimilarity(currentUserId, id, 'restaurant')),
+    ),
+  ])
+
+  const profileMap = profileResults.status === 'fulfilled' ? profileResults.value : new Map()
+  const simResults = similarityResults.status === 'fulfilled' ? similarityResults.value : []
 
   return ids
     .map((id, i) => {
-      const profileResult = profileResults[i]
-      if (profileResult.status !== 'fulfilled') return null
-      const p = profileResult.value
+      const p = profileMap.get(id)
+      if (!p) return null
       const level = Math.max(1, Math.floor(p.totalXp / 100) + 1)
 
-      const simResult = similarityResults[i]
+      const simResult = simResults[i]
       const sim: SimilarityResult | null =
-        simResult.status === 'fulfilled' ? simResult.value : null
+        simResult?.status === 'fulfilled' ? simResult.value : null
 
       return {
         userId: id,
