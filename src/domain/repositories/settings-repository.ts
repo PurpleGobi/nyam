@@ -36,6 +36,7 @@ export interface SettingsRepository {
   // 데이터
   exportData(userId: string, format: 'json' | 'csv'): Promise<Blob>
   importData(userId: string, file: File): Promise<void>
+  generateImportTemplate(): Promise<Blob>
   getCacheSize(): Promise<number>
   clearCache(): Promise<void>
 }

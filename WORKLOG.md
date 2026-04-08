@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-04-08 #19 — 데이터 가져오기 Excel 템플릿 + Dropdown
+- **영역**: domain/repositories/settings-repository, infrastructure/supabase-settings-repository, application/hooks/use-settings, presentation/containers/settings-container, package.json(exceljs 추가)
+- **맥락**: (1) exceljs로 import 템플릿 생성: 식당/와인 2시트, 헤더+설명행+예시3건, dropdown(genre 16종, wine_type 7종, meal_time, price_range), 범위검증(0~100), 자동검색 컬럼 연녹색 표시, 쉼표구분 컬럼 셀 코멘트 안내. (2) 설정 데이터 섹션에 "입력 템플릿 다운로드" 버튼 추가(FileSpreadsheet 아이콘). (3) generateImportTemplate() domain 인터페이스+구현+hook+UI 연결.
+- **미완료**: import 로직이 records 테이블 직접 insert만 지원 — 식당/와인 자동 생성(upsert)+records 연결 로직 미구현
+- **다음**: import 시 restaurant/wine upsert + record 연결 로직 구현, 브라우저 QA
+
+### 2026-04-08 #18 — 위치 필터칩 UX 수정 + Excel 가져오기
+- **영역**: presentation/components/home/condition-filter-bar, infrastructure/supabase-settings-repository, presentation/containers/settings-container, package.json
+- **맥락**: (1) 위치 필터 도시 칩: 쉐브론→X 표시(최상위 필터), X 클릭 시 전체 location 그룹 제거, 편집 팝오버 '전체' 옵션 제거. (2) 설정 데이터 가져오기에 Excel(.xlsx/.xls) 지원 추가(xlsx 패키지).
+- **미완료**: 없음
+- **다음**: 브라우저 QA
+
 ### 2026-04-07 #17 — DB_v4 타겟 중심 홈뷰 리팩토링
 - **영역**: domain/(entities/home-target 신규, repositories/home-repository 신규, services/filter-matcher, entities/grouped-target 삭제, services/record-grouper 삭제), infrastructure/supabase-home-repository 신규, application/hooks/(use-home-targets 신규, use-home-records 삭제), shared/di/container.ts(homeRepo 등록), presentation/home-container, infrastructure/supabase-record-repository(findHomeRecords+가상row 제거)
 - **맥락**: 홈뷰 데이터 모델을 record 중심→target(restaurant/wine) 중심으로 전환. HomeTarget 엔티티+HomeRepository 인터페이스+7단계 파이프라인 Supabase 구현체 신규. 가상 row(bookmark-xxx, cellar-xxx) 완전 제거. groupRecordsByTarget()+GroupedTarget 삭제. 찜/셀러만 있는 대상이 자연스럽게 HomeTarget으로 존재.
@@ -23,12 +35,6 @@
 - **맥락**: (1) 상세페이지 섹션 순서 통일(뱃지→스코어카드→사분면→기록→버블). (2) 카드뷰: 높이 170px 통일, 최신기록일+횟수를 점수 아래 소스우선순위 기반 표시, 와인 meta 빈티지·국가·품종, 식당 거리(km). (3) 히어로 사진: 소스 우선순위(나→팔로잉→공개) 최신 사진. (4) 찜: lists.is_bookmarked boolean 추가, status와 독립 동작, wishlist→bookmark 네이밍 통일. (5) 홈: 지도↔뷰모드 아이콘 순서 교체, 캘린더뷰 통계 유지. (6) discover 모듈 제거.
 - **미완료**: 브라우저 QA 미실행, wine text-white 2건 잔존
 - **다음**: 브라우저 수동 QA, 와인 외부평점 BadgeRow 통합 검토
-
-### 2026-04-06 #13 — 홈 탭 전환 성능 최적화
-- **영역**: domain/entities/calendar(신규), domain/repositories/record-repository, infrastructure/supabase-record-repository, application/hooks/(use-home-records, use-calendar-records, use-following-feed), presentation/(calendar-view, home-container)
-- **맥락**: 탭 전환 시 Supabase 쿼리 42개→19개(55% 감소). findHomeRecords 통합 호출 + 탭 캐시(stale-while-revalidate) + 캘린더 records 재사용(추가 쿼리 0) + 팔로잉 lazy fetch. CalendarDayData를 domain으로 이동하여 R3 위반 해결.
-- **미완료**: calendar-view.tsx text-white 2건 시맨틱 토큰 교체 (pre-existing), bubble dot DB view 미구현
-- **다음**: bubble dot을 위한 DB view/RPC, pre-existing lint 정리, text-white 토큰 교체
 
 
 ### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
@@ -61,9 +67,4 @@
 - **미완료**: Phase 7 성능 검증, Edge Function 배포(원격 미적용), myqa 브라우저 QA, supabase/types.ts 재생성
 - **다음**: Phase 7 성능 최적화 또는 커밋+배포, myqa 브라우저 QA
 
-### 2026-04-08 #20 — CF Phase 3: 예측 API (predict-score + batch-predict)
-- **영역**: domain/repositories/prediction-repository.ts(신규), supabase/functions/predict-score(신규), supabase/functions/batch-predict(신규), infrastructure/repositories/supabase-prediction-repository.ts(신규), shared/di/container.ts(수정)
-- **맥락**: CF 예측 API 구현. 단건(predict-score: 7회 DB, breakdown 포함, scope 지원) + 배치(batch-predict: 5회 DB, 최대 50건) Edge Function. PredictionRepository 인터페이스 + functions.invoke() 래퍼 + DI 등록. service_role+JWT 인증, CORS, cf-calculator.ts 로직 인라인 복사.
-- **미완료**: predict-score/batch-predict Edge Function 배포(원격 미적용), 실 데이터 속도 벤치마크, supabase/types.ts 재생성 필요
-- **다음**: Phase 4 (usePrediction 훅 + UI 컴포넌트), Phase 5 (ScoreSource 'cf' 추가 + 기존 마이그레이션)
 

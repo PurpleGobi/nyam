@@ -183,6 +183,16 @@ export function useSettings() {
     await settingsRepo.importData(userId, file)
   }, [userId])
 
+  const downloadTemplate = useCallback(async () => {
+    const blob = await settingsRepo.generateImportTemplate()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'nyam-import-template.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
   const clearCache = useCallback(async () => {
     await settingsRepo.clearCache()
   }, [])
@@ -208,6 +218,7 @@ export function useSettings() {
     updateAvatar,
     exportData,
     importData,
+    downloadTemplate,
     clearCache,
   }
 }
