@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import { MapPinned, LocateFixed } from 'lucide-react'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
 import type { RestaurantRp } from '@/domain/entities/restaurant'
@@ -35,48 +36,87 @@ interface MapViewProps {
   onNavigate: (restaurantId: string) => void
 }
 
-const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY
+const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
 
-/** 카카오맵 SDK 로드 (한 번만) */
-function loadKakaoSdk(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') return reject(new Error('SSR'))
+/** Google Maps 스타일 — POI·교통 라벨 숨기기 */
+const MAP_STYLES = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park', stylers: [{ visibility: 'on' }] },
+  { featureType: 'poi.park', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+]
 
-    if (window.kakao?.maps) {
-      window.kakao.maps.load(() => resolve())
-      return
-    }
+/** Google Maps SDK 로드 (한 번만) */
+let optionsSet = false
+function loadGoogleMaps(): Promise<void> {
+  if (!GOOGLE_MAPS_KEY) return Promise.reject(new Error('API key missing'))
 
-    const existing = document.getElementById('kakao-map-sdk')
-    if (existing) {
-      const check = () => {
-        if (window.kakao?.maps) {
-          window.kakao.maps.load(() => resolve())
-        } else {
-          setTimeout(check, 100)
-        }
-      }
-      check()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.id = 'kakao-map-sdk'
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false`
-    script.onload = () => {
-      window.kakao.maps.load(() => resolve())
-    }
-    script.onerror = () => reject(new Error('카카오맵 SDK 로드 실패'))
-    document.head.appendChild(script)
-  })
+  if (!optionsSet) {
+    setOptions({ key: GOOGLE_MAPS_KEY, v: 'weekly', language: 'ko', region: 'KR' })
+    optionsSet = true
+  }
+  return importLibrary('maps').then(() => undefined)
 }
 
-/** 커스텀 오버레이 HTML 생성
- *  꼭지점(tip)은 border-radius 50% 50% 50% 0 의 좌하단.
- *  transform-origin을 그 꼭지점에 고정하여 scale 시 tip 위치 불변.
- */
+/* ─────────── 커스텀 오버레이 (OverlayView 기반, 지연 생성) ─────────── */
+
+interface HtmlOverlayInstance {
+  setMap(map: google.maps.Map | null): void
+  setZIdx(z: number): void
+}
+
+/** SDK 로드 후에만 호출 — google.maps.OverlayView를 런타임에 확장 */
+function createHtmlOverlay(opts: {
+  position: google.maps.LatLng
+  content: HTMLDivElement
+  zIndex: number
+  map: google.maps.Map
+}): HtmlOverlayInstance {
+  const overlay = new google.maps.OverlayView()
+  const container = opts.content
+  let zIdx = opts.zIndex
+  const position = opts.position
+
+  container.style.position = 'absolute'
+  container.style.cursor = 'pointer'
+
+  overlay.onAdd = () => {
+    const panes = overlay.getPanes()
+    if (panes) {
+      panes.overlayMouseTarget.appendChild(container)
+    }
+  }
+
+  overlay.draw = () => {
+    const projection = overlay.getProjection()
+    if (!projection) return
+    const point = projection.fromLatLngToDivPixel(position)
+    if (!point) return
+    container.style.left = `${point.x}px`
+    container.style.top = `${point.y}px`
+    container.style.transform = 'translate(-50%, -100%)'
+    container.style.zIndex = String(zIdx)
+  }
+
+  overlay.onRemove = () => {
+    container.parentNode?.removeChild(container)
+  }
+
+  overlay.setMap(opts.map)
+
+  return {
+    setMap: (map: google.maps.Map | null) => overlay.setMap(map),
+    setZIdx: (z: number) => {
+      zIdx = z
+      container.style.zIndex = String(z)
+    },
+  }
+}
+
+/* ─────────── 마커 HTML 생성 (SDK 무관 — 기존 코드 유지) ─────────── */
+
 function createPinHtml(score: number | null, selected: boolean, name?: string): string {
-  const label = score != null ? String(score) : '·'
+  const label = score != null ? String(score) : '\u00B7'
   const bg = selected ? '#c0392b' : 'var(--accent-food)'
   const size = selected ? 28 : 22
   const fontSize = selected ? 11 : 9
@@ -108,7 +148,6 @@ function createPinHtml(score: number | null, selected: boolean, name?: string): 
   </div>`
 }
 
-/** 미슐랭 원형 SVG (inline HTML) */
 const MICHELIN_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <circle cx="50" cy="50" r="50" fill="#E2001A"/>
   <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff"/>
@@ -119,7 +158,6 @@ const MICHELIN_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="h
   <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(300 50 50)"/>
 </svg>`
 
-/** 블루리본 원형 SVG (inline HTML) */
 const BLUERIBBON_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <circle cx="50" cy="50" r="50" fill="#1B4B94"/>
   <path d="M50 44 C40 30,12 14,14 38 C16 54,40 58,50 48Z" fill="#fff"/>
@@ -129,7 +167,6 @@ const BLUERIBBON_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns=
   <circle cx="50" cy="50" r="7" fill="#fff"/>
 </svg>`
 
-/** rp → 뱃지 아이콘 매핑 */
 function getPrestigeBadges(rp: Array<{ type: string }>): string {
   if (rp.length === 0) return ''
   const badges: string[] = []
@@ -146,7 +183,6 @@ function getPrestigeBadges(rp: Array<{ type: string }>): string {
   ">${badges.join('')}</div>`
 }
 
-/** 주변 식당 핀 — 회색 작은 원형 + prestige 뱃지 */
 function createNearbyPinHtml(name: string, selected: boolean, rp: Array<{ type: string }> = []): string {
   const hasPrestige = rp.length > 0
   const bg = selected ? 'var(--text-sub)' : hasPrestige ? 'var(--accent-food)' : 'var(--text-hint)'
@@ -176,7 +212,7 @@ function createNearbyPinHtml(name: string, selected: boolean, rp: Array<{ type: 
       border:1.5px solid white;
     "><span style="
       font-size:${selected ? 9 : 7}px;font-weight:700;color:#fff;
-    ">${hasPrestige ? '★' : '+'}</span>${badgeHtml}</div>
+    ">${hasPrestige ? '\u2605' : '+'}</span>${badgeHtml}</div>
     ${nameTag}
   </div>`
 }
@@ -185,32 +221,36 @@ function createNearbyPinHtml(name: string, selected: boolean, rp: Array<{ type: 
 const DEFAULT_LAT = 37.5665
 const DEFAULT_LNG = 126.978
 
-/** 카카오맵 레벨 → 대략적 반경(m) 변환 */
-function levelToRadius(level: number): number {
+/** Google Maps 줌 레벨 → 대략적 반경(m) 변환 */
+function zoomToRadius(zoom: number): number {
   const table: Record<number, number> = {
-    1: 50, 2: 100, 3: 200, 4: 500, 5: 1000, 6: 2000, 7: 4000, 8: 8000,
+    18: 50, 17: 100, 16: 200, 15: 500,
+    14: 1000, 13: 2000, 12: 4000, 11: 8000,
   }
-  return table[level] ?? 2000
+  const clamped = Math.max(11, Math.min(18, Math.round(zoom)))
+  return table[clamped] ?? 2000
 }
+
+/** 카카오 줌 레벨 5 ≈ Google 줌 14, 카카오 3 ≈ Google 16 */
+const DEFAULT_ZOOM = 14
+const MY_LOCATION_ZOOM = 16
 
 export function MapView({ records, onNavigate }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<kakao.maps.Map | null>(null)
-  const overlaysRef = useRef<{ overlay: kakao.maps.CustomOverlay; el: HTMLDivElement; id: string }[]>([])
-  const nearbyOverlaysRef = useRef<{ overlay: kakao.maps.CustomOverlay; el: HTMLDivElement; id: string }[]>([])
+  const mapRef = useRef<google.maps.Map | null>(null)
+  const overlaysRef = useRef<{ overlay: HtmlOverlayInstance; el: HTMLDivElement; id: string }[]>([])
+  const nearbyOverlaysRef = useRef<{ overlay: HtmlOverlayInstance; el: HTMLDivElement; id: string }[]>([])
 
   const [sdkReady, setSdkReady] = useState(false)
   const [sdkError, setSdkError] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([])
 
-  // ref로 콜백 안정화 — 클로저 갱신은 되지만 참조는 불변
   const onNavigateRef = useRef(onNavigate)
   onNavigateRef.current = onNavigate
   const selectedIdRef = useRef(selectedId)
   selectedIdRef.current = selectedId
 
-  // 좌표가 있는 레코드만 (참조 안정화)
   const geoRecordIds = records.filter((r) => r.lat !== 0 && r.lng !== 0).map((r) => r.restaurantId).join(',')
   const geoRecords = useMemo(
     () => records.filter((r) => r.lat !== 0 && r.lng !== 0),
@@ -218,7 +258,6 @@ export function MapView({ records, onNavigate }: MapViewProps) {
     [geoRecordIds],
   )
 
-  /** 핀/카드 클릭 핸들러: 첫 클릭 → 선택, 재클릭 → 네비게이트 */
   const handleSelect = useCallback((restaurantId: string) => {
     if (selectedIdRef.current === restaurantId) {
       onNavigateRef.current(restaurantId)
@@ -229,16 +268,15 @@ export function MapView({ records, onNavigate }: MapViewProps) {
 
   // SDK 로드
   useEffect(() => {
-    if (!KAKAO_JS_KEY) {
+    if (!GOOGLE_MAPS_KEY) {
       setSdkError(true)
       return
     }
-    loadKakaoSdk()
+    loadGoogleMaps()
       .then(() => setSdkReady(true))
       .catch(() => setSdkError(true))
   }, [])
 
-  /** 주변 식당 fetch — 기록된 식당 ID를 제외 */
   const recordedIds = useMemo(
     () => new Set(geoRecords.map((r) => r.restaurantId)),
     [geoRecords],
@@ -262,35 +300,33 @@ export function MapView({ records, onNavigate }: MapViewProps) {
   }, [recordedIds])
 
   /** 주변 식당 오버레이 그리기 */
-  const renderNearbyOverlays = useCallback((map: kakao.maps.Map, places: NearbyPlace[]) => {
+  const renderNearbyOverlays = useCallback((map: google.maps.Map, places: NearbyPlace[]) => {
     nearbyOverlaysRef.current.forEach((o) => o.overlay.setMap(null))
     nearbyOverlaysRef.current = []
 
     places.forEach((place) => {
       if (!place.lat || !place.lng) return
-      const position = new kakao.maps.LatLng(place.lat, place.lng)
+      const position = new google.maps.LatLng(place.lat, place.lng)
       const el = document.createElement('div')
       el.innerHTML = createNearbyPinHtml(place.name, false, place.rp)
-      el.onclick = () => {
+      el.addEventListener('click', () => {
         if (selectedIdRef.current === place.id) {
           onNavigateRef.current(place.id)
         } else {
           setSelectedId(place.id)
         }
-      }
-      const overlay = new kakao.maps.CustomOverlay({
+      })
+      const overlay = createHtmlOverlay({
         position,
         content: el,
-        yAnchor: 1,
-        clickable: true,
         zIndex: 0,
+        map,
       })
-      overlay.setMap(map)
       nearbyOverlaysRef.current.push({ overlay, el, id: place.id })
     })
   }, [])
 
-  // 맵 초기화 + 오버레이 (geoRecords·handleSelect 참조 안정)
+  // 맵 초기화 + 오버레이
   useEffect(() => {
     if (!sdkReady || !containerRef.current) return
 
@@ -302,69 +338,76 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       centerLng = geoRecords.reduce((s, r) => s + r.lng, 0) / geoRecords.length
     }
 
-    const center = new kakao.maps.LatLng(centerLat, centerLng)
-    const level = geoRecords.length > 0 ? 5 : 3
-    const map = new kakao.maps.Map(containerRef.current, { center, level })
+    const map = new google.maps.Map(containerRef.current, {
+      center: { lat: centerLat, lng: centerLng },
+      zoom: geoRecords.length > 0 ? DEFAULT_ZOOM : MY_LOCATION_ZOOM,
+      styles: MAP_STYLES,
+      disableDefaultUI: true,
+      zoomControl: true,
+      clickableIcons: false,
+      gestureHandling: 'greedy',
+    })
     mapRef.current = map
 
     // 기존 오버레이 제거
     overlaysRef.current.forEach((o) => o.overlay.setMap(null))
     overlaysRef.current = []
 
-    const bounds = new kakao.maps.LatLngBounds()
+    const bounds = new google.maps.LatLngBounds()
 
     geoRecords.forEach((record, idx) => {
-      const position = new kakao.maps.LatLng(record.lat, record.lng)
+      const position = new google.maps.LatLng(record.lat, record.lng)
       bounds.extend(position)
 
       const el = document.createElement('div')
       el.innerHTML = createPinHtml(record.score, false, record.name)
-      el.onclick = () => handleSelect(record.restaurantId)
+      el.addEventListener('click', () => handleSelect(record.restaurantId))
 
       const zIndex = geoRecords.length - idx
 
-      const overlay = new kakao.maps.CustomOverlay({
+      const overlay = createHtmlOverlay({
         position,
         content: el,
-        yAnchor: 1,
-        clickable: true,
         zIndex,
+        map,
       })
-      overlay.setMap(map)
       overlaysRef.current.push({ overlay, el, id: record.restaurantId })
     })
 
     if (geoRecords.length > 1) {
-      map.setBounds(bounds, 50, 50, 50, 50)
+      map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 })
     }
 
     // 초기 주변 식당 로드
-    fetchNearby(centerLat, centerLng, levelToRadius(level))
+    const initialZoom = geoRecords.length > 0 ? DEFAULT_ZOOM : MY_LOCATION_ZOOM
+    fetchNearby(centerLat, centerLng, zoomToRadius(initialZoom))
 
     // 지도 이동/줌 시 주변 식당 재검색 (500ms debounce)
     let debounceTimer: ReturnType<typeof setTimeout>
-    const handleIdle = () => {
+    const idleListener = map.addListener('idle', () => {
       clearTimeout(debounceTimer)
       debounceTimer = setTimeout(() => {
         const c = map.getCenter()
-        const r = levelToRadius(map.getLevel())
-        fetchNearby(c.getLat(), c.getLng(), r)
+        const z = map.getZoom()
+        if (!c || z == null) return
+        fetchNearby(c.lat(), c.lng(), zoomToRadius(z))
       }, 500)
-    }
-    kakao.maps.event.addListener(map, 'idle', handleIdle)
+    })
 
     // 리사이즈 대응
     const container = containerRef.current
     const observer = new ResizeObserver(() => {
       const currentCenter = map.getCenter()
-      map.relayout()
-      map.setCenter(currentCenter)
+      google.maps.event.trigger(map, 'resize')
+      if (currentCenter) {
+        map.setCenter(currentCenter)
+      }
     })
     observer.observe(container)
 
     return () => {
       clearTimeout(debounceTimer)
-      kakao.maps.event.removeListener(map, 'idle', handleIdle)
+      idleListener.remove()
       observer.disconnect()
     }
   }, [sdkReady, geoRecords, handleSelect, fetchNearby])
@@ -375,9 +418,8 @@ export function MapView({ records, onNavigate }: MapViewProps) {
     renderNearbyOverlays(mapRef.current, nearbyPlaces)
   }, [nearbyPlaces, renderNearbyOverlays])
 
-  // 선택 상태 변경 시 핀 비주얼 업데이트 + z-index + 목록 스크롤
+  // 선택 상태 변경 시 핀 비주얼 업데이트 + z-index
   useEffect(() => {
-    // 기록된 식당 핀
     const recordMap = new Map(geoRecords.map((r) => [r.restaurantId, r]))
     for (const item of overlaysRef.current) {
       const record = recordMap.get(item.id)
@@ -385,16 +427,15 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       const isSelected = item.id === selectedId
       item.el.innerHTML = createPinHtml(record.score, isSelected, record.name)
       const listIdx = geoRecords.findIndex((r) => r.restaurantId === item.id)
-      item.overlay.setZIndex(isSelected ? 100 : geoRecords.length - listIdx)
+      item.overlay.setZIdx(isSelected ? 100 : geoRecords.length - listIdx)
     }
-    // 주변 식당 핀
     const nearbyMap = new Map(nearbyPlaces.map((p) => [p.id, p]))
     for (const item of nearbyOverlaysRef.current) {
       const place = nearbyMap.get(item.id)
       if (!place) continue
       const isSelected = item.id === selectedId
       item.el.innerHTML = createNearbyPinHtml(place.name, isSelected, place.rp)
-      item.overlay.setZIndex(isSelected ? 100 : 0)
+      item.overlay.setZIdx(isSelected ? 100 : 0)
     }
   }, [selectedId, geoRecords, nearbyPlaces])
 
@@ -404,9 +445,8 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       (pos) => {
         const map = mapRef.current
         if (!map) return
-        const latlng = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
-        map.setCenter(latlng)
-        map.setLevel(3)
+        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        map.setZoom(MY_LOCATION_ZOOM)
       },
       () => { /* 위치 권한 거부 시 무시 */ },
       { enableHighAccuracy: true, timeout: 5000 },
@@ -414,7 +454,7 @@ export function MapView({ records, onNavigate }: MapViewProps) {
   }, [])
 
   // SDK 에러 또는 키 미설정 → 폴백
-  if (sdkError || !KAKAO_JS_KEY) {
+  if (sdkError || !GOOGLE_MAPS_KEY) {
     return (
       <div>
         <div
