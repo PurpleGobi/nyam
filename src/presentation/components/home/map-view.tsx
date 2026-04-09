@@ -108,6 +108,27 @@ function createPinHtml(score: number | null, selected: boolean, name?: string): 
   </div>`
 }
 
+/** 미슐랭 원형 SVG (inline HTML) */
+const MICHELIN_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="50" fill="#E2001A"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(60 50 50)"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(120 50 50)"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(180 50 50)"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(240 50 50)"/>
+  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(300 50 50)"/>
+</svg>`
+
+/** 블루리본 원형 SVG (inline HTML) */
+const BLUERIBBON_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="50" fill="#1B4B94"/>
+  <path d="M50 44 C40 30,12 14,14 38 C16 54,40 58,50 48Z" fill="#fff"/>
+  <path d="M50 44 C60 30,88 14,86 38 C84 54,60 58,50 48Z" fill="#fff"/>
+  <path d="M48 54 C38 60,18 82,26 84 C32 85,42 68,48 58Z" fill="#fff"/>
+  <path d="M52 54 C62 60,82 82,74 84 C68 85,58 68,52 58Z" fill="#fff"/>
+  <circle cx="50" cy="50" r="7" fill="#fff"/>
+</svg>`
+
 /** rp → 뱃지 아이콘 매핑 */
 function getPrestigeBadges(rp: Array<{ type: string }>): string {
   if (rp.length === 0) return ''
@@ -115,8 +136,8 @@ function getPrestigeBadges(rp: Array<{ type: string }>): string {
   const hasMichelin = rp.some((p) => p.type === 'michelin')
   const hasBlueRibbon = rp.some((p) => p.type === 'blue_ribbon')
   const hasTv = rp.some((p) => p.type === 'tv')
-  if (hasMichelin) badges.push('<span style="font-size:8px;" title="미슐랭">⭐</span>')
-  if (hasBlueRibbon) badges.push('<span style="font-size:8px;" title="블루리본">🎀</span>')
+  if (hasMichelin) badges.push(`<span title="미슐랭">${MICHELIN_SVG}</span>`)
+  if (hasBlueRibbon) badges.push(`<span title="블루리본">${BLUERIBBON_SVG}</span>`)
   if (hasTv) badges.push('<span style="font-size:8px;" title="TV출연">📺</span>')
   return `<div style="
     position:absolute;top:-6px;right:-8px;

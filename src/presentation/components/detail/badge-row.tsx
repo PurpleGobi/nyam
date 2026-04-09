@@ -1,6 +1,8 @@
 'use client'
 
-import { Award, Star, Tv, Grape, Trophy } from 'lucide-react'
+import { Tv, Grape, Trophy, Award } from 'lucide-react'
+import { MichelinIcon, BlueRibbonIcon } from '@/presentation/components/icons'
+import type { ComponentType } from 'react'
 
 export interface BadgeItem {
   type: 'michelin' | 'blue_ribbon' | 'tv' | 'wine_class' | 'vivino' | 'wine_spectator'
@@ -22,14 +24,16 @@ const BADGE_CLASS_MAP: Record<BadgeItem['type'], string> = {
   wine_spectator: 'badge wine-spectator',
 }
 
-const BADGE_ICONS = {
-  michelin: Star,
-  blue_ribbon: Award,
+type IconComponent = ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>
+
+const BADGE_ICONS: Record<BadgeItem['type'], IconComponent> = {
+  michelin: MichelinIcon,
+  blue_ribbon: BlueRibbonIcon,
   tv: Tv,
   wine_class: Award,
   vivino: Grape,
   wine_spectator: Trophy,
-} as const
+}
 
 export function BadgeRow({ badges }: BadgeRowProps) {
   if (badges.length === 0) return null

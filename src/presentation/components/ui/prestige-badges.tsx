@@ -1,24 +1,28 @@
 'use client'
 
-import { Award, Tv, Ribbon } from 'lucide-react'
+import { Tv } from 'lucide-react'
+import { MichelinIcon, BlueRibbonIcon } from '@/presentation/components/icons'
 import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { ComponentType } from 'react'
 
 interface PrestigeBadgesProps {
   rp: RestaurantRp[]
   size?: 'sm' | 'md'
 }
 
-const BADGE_CONFIG: Record<string, { icon: typeof Award; color: string; label: string }> = {
-  michelin: { icon: Award, color: 'var(--accent-food)', label: '미슐랭' },
-  blue_ribbon: { icon: Ribbon, color: 'var(--accent-social)', label: '블루리본' },
-  tv: { icon: Tv, color: 'var(--accent-wine)', label: 'TV' },
+type IconComponent = ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>
+
+const BADGE_CONFIG: Record<string, { icon: IconComponent; color?: string; label: string; sizeRatio: number }> = {
+  michelin: { icon: MichelinIcon, label: '미슐랭', sizeRatio: 1.4 },
+  blue_ribbon: { icon: BlueRibbonIcon, label: '블루리본', sizeRatio: 1.4 },
+  tv: { icon: Tv, color: 'var(--accent-wine)', label: 'TV', sizeRatio: 1 },
 }
 
 export function PrestigeBadges({ rp, size = 'sm' }: PrestigeBadgesProps) {
   if (rp.length === 0) return null
-  const iconSize = size === 'sm' ? 11 : 14
+  const baseSize = size === 'sm' ? 11 : 14
   const seen = new Set<string>()
-  const badges: { key: string; icon: typeof Award; color: string; label: string }[] = []
+  const badges: { key: string; icon: IconComponent; color?: string; label: string; sizeRatio: number }[] = []
 
   for (const item of rp) {
     if (!seen.has(item.type) && BADGE_CONFIG[item.type]) {
@@ -34,7 +38,7 @@ export function PrestigeBadges({ rp, size = 'sm' }: PrestigeBadgesProps) {
         const Icon = b.icon
         return (
           <span key={b.key} title={b.label}>
-            <Icon size={iconSize} style={{ color: b.color }} />
+            <Icon size={Math.round(baseSize * b.sizeRatio)} {...(b.color ? { style: { color: b.color } } : {})} />
           </span>
         )
       })}
