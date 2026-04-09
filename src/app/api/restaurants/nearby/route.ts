@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 interface KakaoCategoryDocument {
   id: string
@@ -72,6 +73,30 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // kakao_id로 restaurant_rp 조회
+  const kakaoIds = documents.map((d) => d.id)
+  const rpMap = new Map<string, Array<{ type: string; grade: string }>>()
+
+  if (kakaoIds.length > 0) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { data: rpRows } = await supabase
+        .from('restaurant_rp')
+        .select('kakao_id, rp_type, rp_grade')
+        .in('kakao_id', kakaoIds)
+      if (rpRows) {
+        for (const r of rpRows) {
+          if (!r.kakao_id) continue
+          const existing = rpMap.get(r.kakao_id) ?? []
+          existing.push({ type: r.rp_type, grade: r.rp_grade })
+          rpMap.set(r.kakao_id, existing)
+        }
+      }
+    }
+  }
+
   const restaurants = documents.map((d) => ({
     id: `kakao_${d.id}`,
     name: d.place_name,
@@ -83,6 +108,7 @@ export async function GET(request: NextRequest) {
     lng: Number(d.x),
     distance: Number(d.distance),
     hasRecord: false,
+    rp: rpMap.get(d.id) ?? [],
   }))
 
   return NextResponse.json({ restaurants })

@@ -431,6 +431,7 @@ export function HomeContainer() {
     currentRecordPage * pageSize,
   )
 
+
   // ── CF 기반 Nyam 점수: 미방문 아이템에 예측 점수 표시 ──
   // 전체 필터링된 대상에서 1회 배치 조회 (페이지 변경 시 재요청 방지)
   const feedCategory = activeTab === 'wine' ? 'wine' as const : 'restaurant' as const
@@ -474,9 +475,7 @@ export function HomeContainer() {
           wineType: t.wineType,
           vintage: t.vintage,
           priceRange: t.priceRange,
-          michelinStars: t.michelinStars,
-          hasBlueRibbon: t.hasBlueRibbon,
-          mediaAppearances: t.mediaAppearances,
+          rp: t.rp ?? null,
         } satisfies RecordWithTarget)),
       )
   }, [targets])
@@ -520,6 +519,7 @@ export function HomeContainer() {
       score: t.satisfaction,
       distanceKm: null,
       photoUrl: t.photoUrl,
+      rp: t.rp ?? [],
     }))
   }, [displayTargets, activeTab])
 
@@ -532,7 +532,7 @@ export function HomeContainer() {
         <Wine size={48} style={{ color: 'var(--text-hint)' }} />
       )}
       <p className="mt-4 text-[15px] font-semibold text-[var(--text)]">
-        {activeTab === 'restaurant' ? '첫 식당을 기록해보세요' : '첫 와인을 기록해보세요'}
+        {activeTab === 'restaurant' ? '첫 식당을 기록해 보세요' : '첫 와인을 기록해 보세요'}
       </p>
       <p className="mt-1 text-center text-[13px] text-[var(--text-hint)]">
         +버튼을 눌러 시작하세요
@@ -544,7 +544,6 @@ export function HomeContainer() {
   const renderContent = () => {
     // 지도 뷰 (식당 전용)
     if (viewMode === 'map' && activeTab === 'restaurant') {
-      if (mapRecords.length === 0) return renderEmptyState()
       return (
         <div className="pb-24">
           <MapView
@@ -605,6 +604,7 @@ export function HomeContainer() {
               accentType={recordTab}
               visitCount={target.visitCount}
               scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+              rp={target.rp ?? []}
               onClick={() =>
                 router.push(
                   `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
@@ -672,6 +672,7 @@ export function HomeContainer() {
               distanceKm={userCoords && target.lat != null && target.lng != null
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
+              rp={target.rp ?? []}
             />
           )
         })}
@@ -869,28 +870,13 @@ export function HomeContainer() {
           if (sorted.length === 0) {
             return (
               <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-                <div
-                  className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
-                  style={{ backgroundColor: 'var(--accent-social-light)' }}
-                >
-                  <Users size={32} style={{ color: 'var(--accent-social)' }} />
-                </div>
+                <Users size={48} style={{ color: 'var(--text-hint)' }} />
                 <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {isPublicBubbleMode ? '공개 버블이 없어요' : '아직 버블이 없어요'}
+                  {isPublicBubbleMode ? '공개 버블이 없어요' : '첫 나만의 버블을 만들어 보세요'}
                 </p>
                 <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                  {isPublicBubbleMode ? '조건을 변경해 보세요' : '버블을 만들어 맛집을 공유해보세요'}
+                  {isPublicBubbleMode ? '조건을 변경해 보세요' : '+버튼을 눌러 시작하세요'}
                 </p>
-                {!isPublicBubbleMode && (
-                  <button
-                    type="button"
-                    onClick={() => router.push('/bubbles/create')}
-                    className="mt-4 rounded-full px-5 py-2.5 text-[13px] font-bold text-white transition-transform active:scale-95"
-                    style={{ backgroundColor: 'var(--accent-social)' }}
-                  >
-                    첫 버블 만들기
-                  </button>
-                )}
               </div>
             )
           }

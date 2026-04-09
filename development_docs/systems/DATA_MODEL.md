@@ -152,10 +152,8 @@ CREATE TABLE restaurants (
   kakao_rating NUMERIC,
   google_rating NUMERIC,
 
-  -- 권위 인증
-  michelin_stars INT,              -- NULL or 1,2,3
-  has_blue_ribbon BOOLEAN NOT NULL DEFAULT false,
-  media_appearances JSONB,         -- TV출연 등 [{"show":"흑백요리사","season":"S1","year":2024}]
+  -- 명성(RP) 캐시 — restaurant_rp 테이블에서 트리거로 자동 동기화
+  rp JSONB DEFAULT '[]',           -- [{"type":"michelin","grade":"1_star"}, {"type":"blue_ribbon","grade":"3_ribbon"}]
 
   -- 비정규화 캐시
   specialty TEXT,                   -- 대표 메뉴/특색 (AI 추출)
@@ -175,8 +173,7 @@ CREATE TABLE restaurants (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT chk_restaurants_genre       CHECK (genre IS NULL OR genre IN ('한식','일식','중식','태국','베트남','인도','이탈리안','프렌치','스페인','지중해','미국','멕시칸','카페','바/주점','베이커리','기타')),
-  CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 3)),
-  CONSTRAINT chk_restaurants_michelin    CHECK (michelin_stars IS NULL OR (michelin_stars >= 1 AND michelin_stars <= 3))
+  CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 3))
 );
 
 CREATE INDEX idx_restaurants_area ON restaurants(area);
@@ -845,41 +842,39 @@ CREATE TABLE area_zones (
 CREATE INDEX idx_area_zones_city ON area_zones(city);
 ```
 
-### restaurant_accolades (미슐랭/블루리본/TV 수상)
+### restaurant_rp (명성 — 미슐랭/블루리본/TV)
+
+> `restaurant_accolades` 테이블을 대체. 마이그레이션: `055_restaurant_rp.sql`
 
 ```sql
-CREATE TABLE restaurant_accolades (
+CREATE TABLE restaurant_rp (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID REFERENCES restaurants(id) ON DELETE SET NULL,
   restaurant_name TEXT NOT NULL,
   restaurant_name_norm TEXT NOT NULL,  -- 정규화된 이름 (공백/특수문자 제거, 소문자)
+  rp_type TEXT NOT NULL CHECK (rp_type IN ('michelin', 'blue_ribbon', 'tv')),
+  rp_year INT,
+  rp_grade TEXT NOT NULL,             -- '3_star','2_star','1_star','bib','3_ribbon','2_ribbon','1_ribbon', 또는 프로그램명
   region TEXT,
   area TEXT,
-  category TEXT NOT NULL,              -- 'award' | 'tv_competition' | 'tv_review' | 'celebrity' | 'media'
-  source TEXT NOT NULL,
-  prestige_tier TEXT NOT NULL DEFAULT 'B',  -- 'S' | 'A' | 'B'
-  detail TEXT,
-  year INT,
-  season INT,
-  episode TEXT,
-  source_url TEXT,
-  verified BOOLEAN DEFAULT false,
   address TEXT,
   phone TEXT,
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
   kakao_id TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT restaurant_accolades_category_check      CHECK (category IN ('award','tv_competition','tv_review','celebrity','media')),
-  CONSTRAINT restaurant_accolades_prestige_tier_check  CHECK (prestige_tier IN ('S','A','B'))
+  source_url TEXT,
+  verified BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_accolades_name_norm ON restaurant_accolades(restaurant_name_norm);
-CREATE INDEX idx_accolades_region_area ON restaurant_accolades(region, area);
-CREATE INDEX idx_accolades_category ON restaurant_accolades(category);
-CREATE INDEX idx_accolades_source ON restaurant_accolades(source);
+CREATE INDEX idx_restaurant_rp_restaurant_id ON restaurant_rp(restaurant_id);
+CREATE INDEX idx_restaurant_rp_name_norm ON restaurant_rp(restaurant_name_norm);
+CREATE INDEX idx_restaurant_rp_kakao_id ON restaurant_rp(kakao_id);
+CREATE INDEX idx_restaurant_rp_type ON restaurant_rp(rp_type);
 ```
+
+**restaurants.rp 캐시 자동 동기화**: `restaurant_rp` 테이블에 INSERT/UPDATE/DELETE 발생 시, 트리거(`trg_sync_restaurant_rp_cache`)가 해당 `restaurant_id`의 `restaurants.rp` JSONB를 자동 갱신한다. 캐시 형식: `[{"type":"michelin","grade":"1_star"}, ...]`
 
 ---
 

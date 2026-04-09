@@ -19,6 +19,7 @@ import { useTargetScores } from '@/application/hooks/use-target-scores'
 import type { ScoreSource } from '@/domain/entities/score'
 import { useDeleteRecord } from '@/application/hooks/use-delete-record'
 import { GENRE_MAJOR_CATEGORIES } from '@/domain/entities/restaurant'
+import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { ScoreCards } from '@/presentation/components/detail/score-cards'
 import { ScoreBreakdownPanel } from '@/presentation/components/detail/score-breakdown-panel'
@@ -81,6 +82,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     viewMode,
   } = useRestaurantDetail(restaurantId, user?.id ?? null)
 
+
   const {
     cards: scoreCards,
     selectedSources,
@@ -134,16 +136,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   // 뱃지 빌드
   const badges: BadgeItem[] = []
-  if (restaurant?.michelinStars) {
-    badges.push({ type: 'michelin', label: `미슐랭 ${restaurant.michelinStars}스타`, icon: 'star' })
-  }
-  if (restaurant?.hasBlueRibbon) {
-    badges.push({ type: 'blue_ribbon', label: '블루리본', icon: 'award' })
-  }
-  if (restaurant?.mediaAppearances && restaurant.mediaAppearances.length > 0) {
-    restaurant.mediaAppearances.forEach((m) => {
-      badges.push({ type: 'tv', label: m.show, icon: 'tv' })
-    })
+  for (const p of restaurant?.rp ?? []) {
+    if (p.type === 'michelin') badges.push({ type: 'michelin', label: `미슐랭 ${p.grade}`, icon: 'star' })
+    else if (p.type === 'blue_ribbon') badges.push({ type: 'blue_ribbon', label: '블루리본', icon: 'award' })
+    else if (p.type === 'tv') badges.push({ type: 'tv', label: p.grade, icon: 'tv' })
   }
 
   // ─── 버블 모드 ───
@@ -399,8 +395,9 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         {/* ─── 1. 이름 + 지역 + 장르 + 가격대 ─── */}
         <div>
           <section style={{ padding: '14px 20px 0' }}>
-            <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
+            <h1 className="flex items-center gap-1.5" style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
               {restaurant.name}
+              <PrestigeBadges rp={restaurant.rp ?? []} size="md" />
             </h1>
 
             {restaurant.priceRange && (

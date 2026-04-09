@@ -85,6 +85,7 @@ function SearchInner() {
     clearRecentSearches,
   } = useSearch({ targetType, lat: gps?.lat, lng: gps?.lng, initialQuery })
 
+
   const handleSelect = useCallback(
     async (result: SearchResult) => {
       addRecentSearch(query)

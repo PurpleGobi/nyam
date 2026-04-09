@@ -10,6 +10,8 @@ import type { SourceType } from '@/presentation/components/home/source-tag'
 import type { BadgeType } from '@/presentation/components/home/place-badge'
 import type { ScoreSource } from '@/domain/entities/score'
 import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
+import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
+import type { RestaurantRp } from '@/domain/entities/restaurant'
 
 export interface SourceInfo {
   type: SourceType
@@ -50,6 +52,7 @@ export interface RecordCardProps {
   scoreSource?: ScoreSource
   latestDate?: string | null
   distanceKm?: number | null
+  rp?: RestaurantRp[]
 }
 
 export function RecordCard({
@@ -73,6 +76,7 @@ export function RecordCard({
   scoreSource,
   latestDate,
   distanceKm,
+  rp,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -127,7 +131,10 @@ export function RecordCard({
       </div>
 
       <div className="flex flex-1 flex-col p-3.5" style={{ minWidth: 0 }}>
-        <p className="truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>{name}</p>
+        <p className="flex items-center gap-1 truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>
+          <span className="truncate">{name}</span>
+          {rp && rp.length > 0 && <PrestigeBadges rp={rp} />}
+        </p>
         <p className="mb-2.5 truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
           {meta}
           {distanceKm != null && (

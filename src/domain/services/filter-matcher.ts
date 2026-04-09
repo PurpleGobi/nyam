@@ -88,25 +88,19 @@ export function getRecordField(record: Record<string, unknown>, attrKey: string)
   return record[field]
 }
 
-/** prestige 복합 조건 매칭 */
+/** prestige 복합 조건 매칭 — rp 배열 기반 */
 function matchPrestige(record: Record<string, unknown>, value: string): boolean {
-  const michelinStars = record.michelinStars as number | null | undefined
-  const hasBlueRibbon = record.hasBlueRibbon as boolean | undefined
-  const mediaAppearances = record.mediaAppearances as unknown[] | null | undefined
+  const rp = (record.rp ?? []) as Array<{ type: string }>
 
   switch (value) {
     case 'michelin_1':
-      return michelinStars != null && michelinStars > 0
+      return rp.some(p => p.type === 'michelin')
     case 'blue_ribbon':
-      return hasBlueRibbon === true
+      return rp.some(p => p.type === 'blue_ribbon')
     case 'tv':
-      return Array.isArray(mediaAppearances) && mediaAppearances.length > 0
+      return rp.some(p => p.type === 'tv')
     case 'none':
-      return (
-        (michelinStars == null || michelinStars === 0) &&
-        hasBlueRibbon !== true &&
-        (!Array.isArray(mediaAppearances) || mediaAppearances.length === 0)
-      )
+      return rp.length === 0
     default:
       return true
   }

@@ -7,9 +7,11 @@ import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant
 import { formatRelativeDate } from '@/shared/utils/date-format'
 import type { ScoreSource } from '@/domain/entities/score'
 import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
+import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
+import type { RestaurantRp } from '@/domain/entities/restaurant'
 
 interface CompactListItemProps {
-  rank: number
+  rank: number | null
   photoUrl: string | null
   name: string
   meta: string
@@ -24,6 +26,7 @@ interface CompactListItemProps {
   latestReviewAt?: string | null
   visitCount?: number
   scoreSource?: ScoreSource
+  rp?: RestaurantRp[]
 }
 
 export function CompactListItem({
@@ -41,8 +44,9 @@ export function CompactListItem({
   latestReviewAt,
   visitCount,
   scoreSource,
+  rp,
 }: CompactListItemProps) {
-  const isTop3 = rank <= 3
+  const isTop3 = rank != null && rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
   const accentColor = accentType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'
   const isBubbleMode = bubbleDots != null
@@ -56,9 +60,11 @@ export function CompactListItem({
       onClick={onClick}
       className="compact-item w-full text-left transition-transform active:scale-[0.985]"
     >
-      <span className={`compact-rank ${isTop3 ? `top ${typeClass}` : ''}`}>
-        {rank}
-      </span>
+      {rank != null && (
+        <span className={`compact-rank ${isTop3 ? `top ${typeClass}` : ''}`}>
+          {rank}
+        </span>
+      )}
 
       {photoUrl ? (
         <div
@@ -80,7 +86,10 @@ export function CompactListItem({
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="compact-name">{name}</p>
+        <p className="compact-name flex items-center gap-1">
+          <span className="truncate">{name}</span>
+          {rp && rp.length > 0 && <PrestigeBadges rp={rp} />}
+        </p>
         <p className="compact-meta flex items-center gap-0.5">
           <span className="truncate">{meta}</span>
           {visitCount != null && visitCount > 1 && (

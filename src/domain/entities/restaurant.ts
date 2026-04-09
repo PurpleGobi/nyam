@@ -31,7 +31,11 @@ export interface BusinessHours {
 
 export interface MenuItem { name: string; price: number }
 
-export interface MediaAppearance { show: string; season?: string; year?: number }
+/** 식당 명성 정보 (restaurants.rp JSONB 캐시와 1:1 대응) */
+export interface RestaurantRp {
+  type: 'michelin' | 'blue_ribbon' | 'tv'
+  grade: string  // '3_star', '2_star', '1_star', 'bib', '3_ribbon', '2_ribbon', '1_ribbon', 프로그램명
+}
 
 export interface RestaurantExternalIds { kakao?: string; naver?: string; google?: string }
 
@@ -54,9 +58,7 @@ export interface Restaurant {
   naverRating: number | null
   kakaoRating: number | null
   googleRating: number | null
-  michelinStars: number | null
-  hasBlueRibbon: boolean
-  mediaAppearances: MediaAppearance[] | null
+  rp: RestaurantRp[]
   nyamScore: number | null
   nyamScoreUpdatedAt: string | null
   externalIds: RestaurantExternalIds | null

@@ -772,77 +772,76 @@ export type Database = {
           },
         ]
       }
-      restaurant_accolades: {
+      restaurant_rp: {
         Row: {
           address: string | null
           area: string | null
-          category: string
-          created_at: string
-          detail: string | null
-          episode: string | null
+          created_at: string | null
           id: string
           kakao_id: string | null
           lat: number | null
           lng: number | null
           phone: string | null
-          prestige_tier: string
           region: string | null
+          restaurant_id: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          season: number | null
-          source: string
+          rp_grade: string
+          rp_type: string
+          rp_year: number | null
           source_url: string | null
-          updated_at: string
+          updated_at: string | null
           verified: boolean | null
-          year: number | null
         }
         Insert: {
           address?: string | null
           area?: string | null
-          category: string
-          created_at?: string
-          detail?: string | null
-          episode?: string | null
+          created_at?: string | null
           id?: string
           kakao_id?: string | null
           lat?: number | null
           lng?: number | null
           phone?: string | null
-          prestige_tier?: string
           region?: string | null
+          restaurant_id?: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          season?: number | null
-          source: string
+          rp_grade: string
+          rp_type: string
+          rp_year?: number | null
           source_url?: string | null
-          updated_at?: string
+          updated_at?: string | null
           verified?: boolean | null
-          year?: number | null
         }
         Update: {
           address?: string | null
           area?: string | null
-          category?: string
-          created_at?: string
-          detail?: string | null
-          episode?: string | null
+          created_at?: string | null
           id?: string
           kakao_id?: string | null
           lat?: number | null
           lng?: number | null
           phone?: string | null
-          prestige_tier?: string
           region?: string | null
+          restaurant_id?: string | null
           restaurant_name?: string
           restaurant_name_norm?: string
-          season?: number | null
-          source?: string
+          rp_grade?: string
+          rp_type?: string
+          rp_year?: number | null
           source_url?: string | null
-          updated_at?: string
+          updated_at?: string | null
           verified?: boolean | null
-          year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_rp_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants: {
         Row: {
@@ -856,16 +855,13 @@ export type Database = {
           external_ids: Json | null
           genre: string | null
           google_rating: number | null
-          has_blue_ribbon: boolean
           hours: Json | null
           id: string
           kakao_map_url: string | null
           kakao_rating: number | null
           lat: number | null
           lng: number | null
-          media_appearances: Json | null
           menus: Json | null
-          michelin_stars: number | null
           name: string
           naver_rating: number | null
           next_refresh_at: string | null
@@ -874,6 +870,7 @@ export type Database = {
           phone: string | null
           photos: string[] | null
           price_range: number | null
+          rp: Json | null
         }
         Insert: {
           address?: string | null
@@ -886,16 +883,13 @@ export type Database = {
           external_ids?: Json | null
           genre?: string | null
           google_rating?: number | null
-          has_blue_ribbon?: boolean
           hours?: Json | null
           id?: string
           kakao_map_url?: string | null
           kakao_rating?: number | null
           lat?: number | null
           lng?: number | null
-          media_appearances?: Json | null
           menus?: Json | null
-          michelin_stars?: number | null
           name: string
           naver_rating?: number | null
           next_refresh_at?: string | null
@@ -904,6 +898,7 @@ export type Database = {
           phone?: string | null
           photos?: string[] | null
           price_range?: number | null
+          rp?: Json | null
         }
         Update: {
           address?: string | null
@@ -916,16 +911,13 @@ export type Database = {
           external_ids?: Json | null
           genre?: string | null
           google_rating?: number | null
-          has_blue_ribbon?: boolean
           hours?: Json | null
           id?: string
           kakao_map_url?: string | null
           kakao_rating?: number | null
           lat?: number | null
           lng?: number | null
-          media_appearances?: Json | null
           menus?: Json | null
-          michelin_stars?: number | null
           name?: string
           naver_rating?: number | null
           next_refresh_at?: string | null
@@ -934,6 +926,7 @@ export type Database = {
           phone?: string | null
           photos?: string[] | null
           price_range?: number | null
+          rp?: Json | null
         }
         Relationships: []
       }
@@ -1837,11 +1830,15 @@ export type Database = {
       restaurants_within_radius: {
         Args: { lat: number; lng: number; radius_meters?: number }
         Returns: {
+          address: string
           area: string
           distance: number
           genre: string
           id: string
+          lat: number
+          lng: number
           name: string
+          rp: Json
         }[]
       }
       st_3dclosestpoint: {
@@ -2600,4 +2597,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

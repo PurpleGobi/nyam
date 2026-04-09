@@ -2,6 +2,7 @@
 
 import { MapPin, Plus, UtensilsCrossed } from 'lucide-react'
 import type { NearbyRestaurant } from '@/domain/entities/search'
+import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 
 export const NEARBY_GENRE_FILTERS = [
   { value: '', label: '전체' },
@@ -109,7 +110,10 @@ export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChang
                   <UtensilsCrossed size={18} className="text-[var(--accent-food)]" />
                 </div>
                 <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-[14px] font-semibold text-[var(--text)]">{r.name}</p>
+                  <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-[var(--text)]">
+                    <span className="truncate">{r.name}</span>
+                    {r.rp && r.rp.length > 0 && <PrestigeBadges rp={r.rp} />}
+                  </p>
                   <p className="truncate text-[12px] text-[var(--text-sub)]">
                     {[r.genre, r.area].filter(Boolean).join(' · ')}
                   </p>

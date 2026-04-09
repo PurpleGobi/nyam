@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-09 #24 — RP(Reputation) 시스템 리디자인: restaurant_accolades → restaurant_rp
+- **영역**: supabase/migrations/055, domain/(entities/restaurant+home-target+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository), presentation/(prestige-badges 신규, record-card+compact-list-item+map-view+search-results+search-result-item+nearby-list, home+restaurant-detail+search-container), app/api/(rp/match 신규, nearby+search route 수정, accolades 삭제), use-accolades+accolade-badges 삭제, DATA_MODEL.md 갱신
+- **맥락**: restaurant_accolades 테이블→restaurant_rp 리디자인. restaurants 테이블에 rp JSONB 캐시 컬럼 추가(michelin_stars/has_blue_ribbon/media_appearances 삭제). 매칭 프로세스 API(카카오 연동). UI AccoladeBadges→PrestigeBadges 전환. 전 레이어 28개 파일 변경. pnpm build PASS.
+- **미완료**: 055 마이그레이션 원격 적용, supabase/types.ts 재생성, CODEBASE.md 갱신, map-view.tsx hooks 위반은 수정 완료
+- **다음**: 마이그레이션 원격 적용, types 재생성, 매칭 API 실제 테스트
+
 ### 2026-04-08 #23 — 버블 큐레이션 리스트 리팩토링 Phase 1~5 전체 완료
 - **영역**: domain/(entities/bubble, repositories/bubble-repository, services/bubble-share-sync), infrastructure/(supabase-bubble/restaurant/wine/home/profile-repository), application/(use-bubble-items 신규, use-bubble-auto-sync, use-bookmark), presentation/(add-to-bubble-sheet+add-item-search-sheet 신규, share-rule-editor, restaurant/wine/bubble-detail-container, record-flow/add-flow-container), supabase/(migrations/053+054, functions/weekly-ranking-snapshot), development_docs/systems/XP_SYSTEM.md
 - **맥락**: Phase 1(DB+Domain) → Phase 2(domain 서비스 확장+stub 실제 구현+auto sync 3메서드) → Phase 3(hooks: syncBookmarkToAllBubbles, onBubbleSync 콜백) → Phase 4(UI: 수동 리스트 추가 시트, includeBookmarks 토글, 상세/기록 후 리스트 추가) → Phase 5(bubble_shares→bubble_items 전환, Edge Function 전환, 054 triggers 마이그레이션, 용어 갱신). 크리티컬 게이트 전체 PASS.
@@ -53,17 +59,5 @@
 - **맥락**: records INSERT/UPDATE/DELETE 시 DB trigger → Edge Function → user_score_means 갱신 + user_similarities 증분 재계산. SimilarityRepository 읽기 전용 인터페이스(3메서드) + Supabase 구현체. UPDATE 평가 철회 분기(plan-reviewer 1회차 수정), any/! assertion 제거(quality-guard 2회차 수정).
 - **미완료**: Edge Function 배포 + 동작 테스트 (로컬에서만 작성, supabase 원격 미적용), supabase/types.ts 재생성 필요
 - **다음**: Phase 3 predict-score Edge Function, supabase gen types 실행
-
-### 2026-04-08 #21 — CF Phase 4: 새 훅 + UI 컴포넌트
-- **영역**: application/hooks/(use-nyam-score, use-feed-scores, use-similarity 신규), presentation/components/(detail/confidence-badge, detail/score-breakdown-panel 신규, similarity-indicator 신규, detail/bubble-expand-panel 수정)
-- **맥락**: CF 예측/적합도 훅 3개 + 확신도 배지/점수 근거 패널/적합도 표시 UI 4개 구현. lint 에러 2건(react-hooks/set-state-in-effect) 수정 완료. bubble-expand-panel에 cfScore/memberCount optional 필드 추가(하위 호환).
-- **미완료**: Phase 5(ScoreSource 'cf' + SOURCE_PRIORITY + 기존 마이그레이션), Phase 6(화면 통합), Edge Function 배포(원격 미적용), supabase/types.ts 재생성 필요
-- **다음**: Phase 5 (ScoreSource 변경 + use-target-scores 리팩토링)
-
-### 2026-04-08 #22 — CF Phase 5: 기존 점수 시스템 마이그레이션
-- **영역**: domain/(entities/score, constants/source-priority, services/score-fallback, repositories/restaurant+wine), infrastructure/(supabase-restaurant+wine+home-repository), application/(use-target-scores, use-restaurant-detail, use-wine-detail), presentation/(score-cards, score-source-badge, restaurant-detail+wine-detail+home-container)
-- **맥락**: ScoreSource 4종→3종('mine'|'nyam'|'bubble'). 'following' 제거, 'public'→'nyam'. TargetScores에서 following 제거 + nyam에 confidence 추가. findPublicSatisfactionAvg 인터페이스+구현 삭제. use-target-scores 4→3종 카드. 상세페이지 사분면 following/public micro dots 제거. useNyamScore 연결.
-- **미완료**: Phase 6 화면 통합, pre-existing !단언 4건/text-white 3건, Edge Function 배포(원격 미적용), supabase/types.ts 재생성
-- **다음**: Phase 6 (화면별 CF 점수 통합), pre-existing 기술 부채 정리
 
 

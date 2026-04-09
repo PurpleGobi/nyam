@@ -5,7 +5,7 @@ import type {
   LinkedWineCard,
   BubbleScoreRow,
 } from '@/domain/repositories/restaurant-repository'
-import type { Restaurant } from '@/domain/entities/restaurant'
+import type { Restaurant, RestaurantRp } from '@/domain/entities/restaurant'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { RestaurantSearchResult, NearbyRestaurant } from '@/domain/entities/search'
@@ -31,9 +31,7 @@ function mapDbToRestaurant(data: Record<string, unknown>): Restaurant {
     naverRating: data.naver_rating ? Number(data.naver_rating) : null,
     kakaoRating: data.kakao_rating ? Number(data.kakao_rating) : null,
     googleRating: data.google_rating ? Number(data.google_rating) : null,
-    michelinStars: data.michelin_stars as number | null,
-    hasBlueRibbon: (data.has_blue_ribbon as boolean) ?? false,
-    mediaAppearances: data.media_appearances as Restaurant['mediaAppearances'],
+    rp: (data.rp ?? []) as RestaurantRp[],
     nyamScore: data.nyam_score ? Number(data.nyam_score) : null,
     nyamScoreUpdatedAt: data.nyam_score_updated_at as string | null,
     externalIds: data.external_ids as Restaurant['externalIds'],
@@ -326,7 +324,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
   async search(query: string, userId: string): Promise<RestaurantSearchResult[]> {
     const { data, error } = await this.supabase
       .from('restaurants')
-      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url')
+      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
       .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
       .limit(20)
 
@@ -357,6 +355,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       lng: r.lng,
       phone: r.phone ?? null,
       kakaoMapUrl: r.kakao_map_url ?? null,
+      rp: ((r as Record<string, unknown>).rp ?? []) as RestaurantRp[],
       distance: null,
       hasRecord: recordedIds.has(r.id),
     }))
@@ -384,7 +383,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
 
     return (
-      (data as Array<{ id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; distance: number }>) ?? []
+      (data as Array<{ id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; rp: unknown; distance: number }>) ?? []
     ).map((r) => ({
       id: r.id,
       name: r.name,
@@ -394,6 +393,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       categoryPath: null,
       lat: r.lat ?? null,
       lng: r.lng ?? null,
+      rp: (r.rp ?? []) as RestaurantRp[],
       distance: r.distance,
       hasRecord: recordedIds.has(r.id),
     }))

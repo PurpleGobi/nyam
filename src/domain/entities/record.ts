@@ -1,6 +1,8 @@
 // src/domain/entities/record.ts
 // R1: 외부 의존 0 — React, Supabase, Next.js import 금지
 
+import type { RestaurantRp } from '@/domain/entities/restaurant'
+
 // ─── 공통 타입 ───
 
 /** target_type: 'restaurant' | 'wine' */
@@ -89,9 +91,7 @@ export interface RecordWithTarget extends DiningRecord {
   district?: string | null
   area?: string[] | null
   priceRange?: number | null
-  michelinStars?: number | null
-  hasBlueRibbon?: boolean | null
-  mediaAppearances?: string[] | null
+  rp?: RestaurantRp[] | null
   wineType?: string | null
   variety?: string | null
   region?: string | null

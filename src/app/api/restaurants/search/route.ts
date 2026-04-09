@@ -4,6 +4,7 @@ import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { searchNaverLocal } from '@/infrastructure/api/naver-local'
 import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
+import type { RestaurantRp } from '@/domain/entities/restaurant'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   // ── Step 1: Nyam DB 검색 ──
   const { data: restaurants } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url')
+    .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
     .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
     .limit(20)
 
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
     lng: r.lng,
     phone: r.phone,
     kakaoMapUrl: r.kakao_map_url,
+    rp: ((r as Record<string, unknown>).rp ?? []) as RestaurantRp[],
     distance: lat && lng && r.lat && r.lng
       ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
@@ -155,6 +157,7 @@ export async function GET(request: NextRequest) {
     lng: ext.lng,
     phone: ext.phone,
     kakaoMapUrl: ext.kakaoMapUrl,
+    rp: [],
     distance: latNum && lngNum && ext.lat && ext.lng
       ? haversineDistance(latNum, lngNum, ext.lat, ext.lng)
       : null,

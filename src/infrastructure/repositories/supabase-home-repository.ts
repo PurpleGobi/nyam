@@ -1,5 +1,6 @@
 import type { HomeRepository, HomeViewType } from '@/domain/repositories/home-repository'
 import type { HomeTarget } from '@/domain/entities/home-target'
+import type { RestaurantRp } from '@/domain/entities/restaurant'
 import type { DiningRecord, RecordTargetType, RecordSource } from '@/domain/entities/record'
 /** 홈 피드용 RecordSource 우선순위 (score 시스템의 SOURCE_PRIORITY와 별개) */
 const RECORD_SOURCE_PRIORITY: RecordSource[] = ['mine', 'following', 'bubble', 'public', 'bookmark']
@@ -269,7 +270,7 @@ export class SupabaseHomeRepository implements HomeRepository {
     if (targetType === 'restaurant') {
       const { data } = await this.supabase
         .from('restaurants')
-        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, michelin_stars, has_blue_ribbon, media_appearances')
+        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, rp')
         .in('id', targetIds)
       for (const r of data ?? []) {
         map.set(r.id, {
@@ -281,9 +282,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           lat: r.lat ?? null,
           lng: r.lng ?? null,
           priceRange: r.price_range ?? null,
-          michelinStars: r.michelin_stars ?? null,
-          hasBlueRibbon: r.has_blue_ribbon ?? null,
-          mediaAppearances: r.media_appearances ?? null,
+          rp: ((r as Record<string, unknown>).rp ?? []) as RestaurantRp[],
           photoUrl: r.photos?.[0] ?? null,
           wineType: null,
           variety: null,
@@ -307,9 +306,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           lat: null,
           lng: null,
           priceRange: null,
-          michelinStars: null,
-          hasBlueRibbon: null,
-          mediaAppearances: null,
+          rp: [],
           photoUrl: w.photos?.[0] ?? null,
           wineType: w.wine_type ?? null,
           variety: w.variety ?? null,
@@ -614,9 +611,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         lat: meta.lat,
         lng: meta.lng,
         priceRange: meta.priceRange,
-        michelinStars: meta.michelinStars,
-        hasBlueRibbon: meta.hasBlueRibbon,
-        mediaAppearances: meta.mediaAppearances,
+        rp: meta.rp,
 
         wineType: meta.wineType,
         variety: meta.variety,
@@ -658,9 +653,7 @@ interface TargetMeta {
   lat: number | null
   lng: number | null
   priceRange: number | null
-  michelinStars: number | null
-  hasBlueRibbon: boolean | null
-  mediaAppearances: string[] | null
+  rp: RestaurantRp[]
   photoUrl: string | null
   wineType: string | null
   variety: string | null

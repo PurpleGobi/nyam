@@ -1,6 +1,8 @@
 // src/domain/entities/search.ts
 // R1: 외부 의존 0
 
+import type { RestaurantRp } from './restaurant'
+
 export interface SearchResultBase {
   id: string
   name: string
@@ -19,6 +21,7 @@ export interface RestaurantSearchResult extends SearchResultBase {
   lng: number | null
   phone: string | null
   kakaoMapUrl: string | null
+  rp?: RestaurantRp[]
 }
 
 export interface WineSearchResult extends SearchResultBase {
@@ -51,4 +54,5 @@ export interface NearbyRestaurant {
   lng: number | null
   distance: number
   hasRecord: boolean
+  rp?: RestaurantRp[]
 }

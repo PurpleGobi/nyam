@@ -79,11 +79,13 @@ function complexityFilter(value: string, negate: boolean): string {
 }
 
 function prestigeFilter(value: string, negate: boolean): string {
+  // JSONB 배열에서 type 필드로 필터링 — PostgREST cs (contains) 연산자 사용
+  // GIN 인덱스(idx_restaurants_rp)가 있으므로 성능 OK
   const conditions: Record<string, string> = {
-    michelin_1: 'michelin_stars=not.is.null',
-    blue_ribbon: 'has_blue_ribbon=eq.true',
-    tv: 'and=(media_appearances=not.is.null,media_appearances=neq.[])',
-    none: 'and=(michelin_stars=is.null,has_blue_ribbon=eq.false)',
+    michelin_1: 'rp=cs.[{"type":"michelin"}]',
+    blue_ribbon: 'rp=cs.[{"type":"blue_ribbon"}]',
+    tv: 'rp=cs.[{"type":"tv"}]',
+    none: 'rp=eq.[]',
   }
   const cond = conditions[value]
   if (!cond) return ''
