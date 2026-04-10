@@ -2,11 +2,11 @@
 
 import { Tv } from 'lucide-react'
 import { MichelinIcon, BlueRibbonIcon } from '@/presentation/components/icons'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 import type { ComponentType } from 'react'
 
 interface PrestigeBadgesProps {
-  rp: RestaurantRp[]
+  prestige: RestaurantPrestige[]
   size?: 'sm' | 'md'
 }
 
@@ -18,13 +18,13 @@ const BADGE_CONFIG: Record<string, { icon: IconComponent; color?: string; label:
   tv: { icon: Tv, color: 'var(--accent-wine)', label: 'TV', sizeRatio: 1 },
 }
 
-export function PrestigeBadges({ rp, size = 'sm' }: PrestigeBadgesProps) {
-  if (rp.length === 0) return null
+export function PrestigeBadges({ prestige, size = 'sm' }: PrestigeBadgesProps) {
+  if (prestige.length === 0) return null
   const baseSize = size === 'sm' ? 11 : 14
   const seen = new Set<string>()
   const badges: { key: string; icon: IconComponent; color?: string; label: string; sizeRatio: number }[] = []
 
-  for (const item of rp) {
+  for (const item of prestige) {
     if (!seen.has(item.type) && BADGE_CONFIG[item.type]) {
       seen.add(item.type)
       badges.push({ key: item.type, ...BADGE_CONFIG[item.type] })

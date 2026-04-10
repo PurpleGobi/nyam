@@ -2,7 +2,7 @@
 // R1: 외부 의존 0 — React, Supabase, Next.js import 금지
 
 import type { RecordTargetType, DiningRecord, RecordSource } from '@/domain/entities/record'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 /** 홈 뷰의 1급 시민: target (restaurant 또는 wine) */
 export interface HomeTarget {
@@ -20,7 +20,7 @@ export interface HomeTarget {
   lat: number | null
   lng: number | null
   priceRange: number | null
-  rp: RestaurantRp[] | null
+  prestige: RestaurantPrestige[] | null
 
   // 와인 메타
   wineType: string | null

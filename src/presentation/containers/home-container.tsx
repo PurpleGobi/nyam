@@ -12,7 +12,7 @@ import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
-import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, MAP_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useHomeTargets } from '@/application/hooks/use-home-targets'
@@ -31,7 +31,7 @@ import { HomeTabs } from '@/presentation/components/home/home-tabs'
 import { RecordCard } from '@/presentation/components/home/record-card'
 import { WineCard } from '@/presentation/components/home/wine-card'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
-import type { MapRecord } from '@/presentation/components/home/map-view'
+import { useMapDiscovery } from '@/application/hooks/use-map-discovery'
 import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
 import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
@@ -115,6 +115,13 @@ const WINE_SORT_LABELS: Partial<Record<SortOption, string>> = {
   score_low: '점수 낮은순',
   name: '이름순',
   visit_count: '방문 많은순',
+}
+
+/** 지도뷰 소팅 옵션 (점수 높은순 디폴트, 점수 낮은순 제거) */
+const MAP_SORT_LABELS: Partial<Record<SortOption, string>> = {
+  score_high: '점수 높은순',
+  name: '이름순',
+  distance: '거리순',
 }
 
 /** 버블탭 소팅 옵션 */
@@ -206,6 +213,7 @@ export function HomeContainer() {
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
+  const [mapConditionChips, setMapConditionChips] = useState<FilterChipItem[]>([])
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const [prevTab, setPrevTab] = useState(activeTab)
 
@@ -475,7 +483,7 @@ export function HomeContainer() {
           wineType: t.wineType,
           vintage: t.vintage,
           priceRange: t.priceRange,
-          rp: t.rp ?? null,
+          prestige: t.prestige ?? null,
         } satisfies RecordWithTarget)),
       )
   }, [targets])
@@ -506,22 +514,16 @@ export function HomeContainer() {
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`
   }, [selectedDate])
 
-  // 맵 레코드 (식당 전용 — 타겟 기반으로 중복 마커 제거)
-  const mapRecords: MapRecord[] = useMemo(() => {
-    if (activeTab !== 'restaurant') return []
-    return displayTargets.map((t) => ({
-      restaurantId: t.targetId,
-      name: t.name,
-      genre: t.genre ?? '',
-      area: t.district ?? t.area?.[0] ?? '',
-      lat: t.lat ?? 0,
-      lng: t.lng ?? 0,
-      score: t.satisfaction,
-      distanceKm: null,
-      photoUrl: t.photoUrl,
-      rp: t.rp ?? [],
-    }))
-  }, [displayTargets, activeTab])
+  // 지도 뷰 데이터 — 식당 탭 필터 영향 없이 전체 targets 전달 (지도뷰 자체 필터 사용)
+  const mapDiscovery = useMapDiscovery({
+    userId: user?.id ?? null,
+    targets: activeTab === 'restaurant' ? targets : [],
+    userLat: userCoords?.lat ?? null,
+    userLng: userCoords?.lng ?? null,
+    mapChips: mapConditionChips,
+    sortOption: (viewMode === 'map' ? currentSort : 'score_high') as 'score_high' | 'name' | 'distance',
+    searchQuery: viewMode === 'map' ? searchQuery : '',
+  })
 
   // 빈 상태
   const renderEmptyState = () => (
@@ -547,8 +549,31 @@ export function HomeContainer() {
       return (
         <div className="pb-24">
           <MapView
-            records={mapRecords}
-            onNavigate={(id) => router.push(`/restaurants/${id}`)}
+            items={mapDiscovery.pageItems}
+            onMapIdle={mapDiscovery.onMapIdle}
+            onItemSelect={() => {
+              // 지도에서 선택 → MapView 내부에서 포커스 처리
+            }}
+            onItemNavigate={(item) => {
+              if (item.inNyamDb && item.restaurantId) {
+                router.push(`/restaurants/${item.restaurantId}`)
+              } else {
+                const params = new URLSearchParams({
+                  name: item.name,
+                  lat: String(item.lat),
+                  lng: String(item.lng),
+                  ...(item.kakaoId ? { kakaoId: item.kakaoId } : {}),
+                  ...(item.genre ? { genre: item.genre } : {}),
+                })
+                router.push(`/search?${params}`)
+              }
+            }}
+            isNearbyLoading={mapDiscovery.isNearbyLoading}
+            currentPage={mapDiscovery.currentPage}
+            totalPages={mapDiscovery.totalPages}
+            onPageChange={mapDiscovery.setPage}
+            userLat={userCoords?.lat}
+            userLng={userCoords?.lng}
           />
         </div>
       )
@@ -604,7 +629,7 @@ export function HomeContainer() {
               accentType={recordTab}
               visitCount={target.visitCount}
               scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
-              rp={target.rp ?? []}
+              prestige={target.prestige ?? []}
               onClick={() =>
                 router.push(
                   `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
@@ -672,7 +697,7 @@ export function HomeContainer() {
               distanceKm={userCoords && target.lat != null && target.lng != null
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
-              rp={target.rp ?? []}
+              prestige={target.prestige ?? []}
             />
           )
         })}
@@ -707,7 +732,7 @@ export function HomeContainer() {
           onMapToggle={toggleMap}
           onSortToggle={toggleSort}
           isSortOpen={isSortOpen}
-          onSearchToggle={toggleSearch}
+          onSearchToggle={() => { toggleSearch(); setSearchQuery('') }}
           isSearchOpen={isSearchOpen}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -735,7 +760,13 @@ export function HomeContainer() {
                 currentSort={currentSort}
                 onSortChange={handleSortChange}
                 accentType={accentType}
-                labels={activeTab === 'wine' ? WINE_SORT_LABELS : undefined}
+                labels={
+                  viewMode === 'map' && activeTab === 'restaurant'
+                    ? MAP_SORT_LABELS
+                    : activeTab === 'wine'
+                      ? WINE_SORT_LABELS
+                      : undefined
+                }
               />
             </div>
           )
@@ -749,6 +780,13 @@ export function HomeContainer() {
               onChipsChange={setBubbleConditionChips}
               attributes={bubbleFilterAttributes}
               accentType="social"
+            />
+          ) : viewMode === 'map' && activeTab === 'restaurant' ? (
+            <ConditionFilterBar
+              chips={mapConditionChips}
+              onChipsChange={setMapConditionChips}
+              attributes={MAP_FILTER_ATTRIBUTES}
+              accentType="food"
             />
           ) : (
             <ConditionFilterBar

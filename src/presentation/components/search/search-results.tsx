@@ -73,7 +73,7 @@ export function SearchResults({
           <ul className="divide-y divide-[var(--border)]">
             {results.map((result) => (
               <li key={result.id}>
-                <SearchResultItem result={result} onSelect={onSelect} rp={result.type === 'restaurant' ? result.rp : undefined} />
+                <SearchResultItem result={result} onSelect={onSelect} prestige={result.type === 'restaurant' ? result.prestige : undefined} />
               </li>
             ))}
           </ul>

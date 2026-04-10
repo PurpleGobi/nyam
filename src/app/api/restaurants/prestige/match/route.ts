@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 
-interface RpRow {
+interface PrestigeRow {
   id: string
   restaurant_id: string | null
   restaurant_name: string
@@ -20,7 +20,7 @@ interface RestaurantCandidate {
 }
 
 interface MatchResult {
-  rpId: string
+  prestigeId: string
   restaurantName: string
   status: 'matched_existing' | 'created_new' | 'unmatched'
   restaurantId: string | null
@@ -74,7 +74,7 @@ export async function POST() {
 
   // 1. restaurant_id가 NULL인 행 조회
   const { data: unmatchedRows, error: fetchError } = await supabase
-    .from('restaurant_rp')
+    .from('restaurant_prestige')
     .select('id, restaurant_id, restaurant_name, restaurant_name_norm, lat, lng, kakao_id')
     .is('restaurant_id', null)
     .limit(200)
@@ -92,22 +92,22 @@ export async function POST() {
   let createdCount = 0
   let unmatchedCount = 0
 
-  for (const row of unmatchedRows as RpRow[]) {
-    const result = await matchSingleRp(supabase, row)
+  for (const row of unmatchedRows as PrestigeRow[]) {
+    const result = await matchSinglePrestige(supabase, row)
     results.push(result)
     if (result.status === 'matched_existing') matchedCount++
     else if (result.status === 'created_new') createdCount++
     else unmatchedCount++
   }
 
-  // bulk rp 캐시 갱신 — 매칭된 restaurant_id 수집
+  // bulk prestige 캐시 갱신 — 매칭된 restaurant_id 수집
   const matchedRestaurantIds = results
     .filter((r) => r.restaurantId !== null)
     .map((r) => r.restaurantId as string)
 
   const uniqueIds = [...new Set(matchedRestaurantIds)]
   for (const restId of uniqueIds) {
-    await refreshRpCache(supabase, restId)
+    await refreshPrestigeCache(supabase, restId)
   }
 
   return NextResponse.json({
@@ -118,12 +118,13 @@ export async function POST() {
   })
 }
 
-async function matchSingleRp(
+async function matchSinglePrestige(
   supabase: SupabaseClient,
-  row: RpRow,
+  row: PrestigeRow,
 ): Promise<MatchResult> {
   const base: Omit<MatchResult, 'status' | 'restaurantId'> = {
-    rpId: row.id,
+    prestigeId: row.id,
+
     restaurantName: row.restaurant_name,
   }
 
@@ -138,7 +139,7 @@ async function matchSingleRp(
     const match = findBestMatch(row, normalizeName(row.restaurant_name), candidates as RestaurantCandidate[])
     if (match) {
       await supabase
-        .from('restaurant_rp')
+        .from('restaurant_prestige')
         .update({ restaurant_id: match.id })
         .eq('id', row.id)
       return { ...base, status: 'matched_existing', restaurantId: match.id }
@@ -177,7 +178,7 @@ async function matchSingleRp(
       if (existingByKakao && existingByKakao.length > 0) {
         const existingId = (existingByKakao[0] as { id: string }).id
         await supabase
-          .from('restaurant_rp')
+          .from('restaurant_prestige')
           .update({ restaurant_id: existingId, kakao_id: bestKakao.kakaoId })
           .eq('id', row.id)
         return { ...base, status: 'matched_existing', restaurantId: existingId }
@@ -207,7 +208,7 @@ async function matchSingleRp(
       if (!insertError && newRestaurant) {
         const newId = (newRestaurant as { id: string }).id
         await supabase
-          .from('restaurant_rp')
+          .from('restaurant_prestige')
           .update({ restaurant_id: newId, kakao_id: bestKakao.kakaoId })
           .eq('id', row.id)
         return { ...base, status: 'created_new', restaurantId: newId }
@@ -223,7 +224,7 @@ async function matchSingleRp(
 }
 
 function findBestMatch(
-  row: RpRow,
+  row: PrestigeRow,
   rpNorm: string,
   candidates: RestaurantCandidate[],
 ): RestaurantCandidate | null {
@@ -246,24 +247,24 @@ function findBestMatch(
   return null
 }
 
-/** restaurants.rp JSONB 캐시 직접 갱신 */
-async function refreshRpCache(
+/** restaurants.prestige JSONB 캐시 직접 갱신 */
+async function refreshPrestigeCache(
   supabase: SupabaseClient,
   restaurantId: string,
 ): Promise<void> {
   const { data: rpRows } = await supabase
-    .from('restaurant_rp')
-    .select('rp_type, rp_grade')
+    .from('restaurant_prestige')
+    .select('prestige_type, prestige_grade')
     .eq('restaurant_id', restaurantId)
 
-  const rpArray = (rpRows ?? []).map((r: { rp_type: string; rp_grade: string }) => ({
-    type: r.rp_type,
-    grade: r.rp_grade,
+  const rpArray = (rpRows ?? []).map((r: { prestige_type: string; prestige_grade: string }) => ({
+    type: r.prestige_type,
+    grade: r.prestige_grade,
   }))
 
   await supabase
     .from('restaurants')
-    .update({ rp: rpArray })
+    .update({ prestige: rpArray })
     .eq('id', restaurantId)
 }
 

@@ -1,4 +1,4 @@
-<!-- updated: 2026-04-07 -->
+<!-- updated: 2026-04-10 -->
 # DATA_MODEL — 데이터 모델
 
 > affects: 모든 페이지, 모든 시스템
@@ -152,8 +152,8 @@ CREATE TABLE restaurants (
   kakao_rating NUMERIC,
   google_rating NUMERIC,
 
-  -- 명성(RP) 캐시 — restaurant_rp 테이블에서 트리거로 자동 동기화
-  rp JSONB DEFAULT '[]',           -- [{"type":"michelin","grade":"1_star"}, {"type":"blue_ribbon","grade":"3_ribbon"}]
+  -- 명성(Prestige) 캐시 — restaurant_prestige 테이블에서 트리거로 자동 동기화
+  prestige JSONB DEFAULT '[]',     -- [{"type":"michelin","grade":"1_star"}, {"type":"blue_ribbon","grade":"3_ribbon"}]
 
   -- 비정규화 캐시
   specialty TEXT,                   -- 대표 메뉴/특색 (AI 추출)
@@ -842,19 +842,19 @@ CREATE TABLE area_zones (
 CREATE INDEX idx_area_zones_city ON area_zones(city);
 ```
 
-### restaurant_rp (명성 — 미슐랭/블루리본/TV)
+### restaurant_prestige (명성 — 미슐랭/블루리본/TV)
 
-> `restaurant_accolades` 테이블을 대체. 마이그레이션: `055_restaurant_rp.sql`
+> `restaurant_accolades` 테이블을 대체. 마이그레이션: `055_restaurant_rp.sql` → `058_rename_rp_to_prestige.sql`
 
 ```sql
-CREATE TABLE restaurant_rp (
+CREATE TABLE restaurant_prestige (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   restaurant_id UUID REFERENCES restaurants(id) ON DELETE SET NULL,
   restaurant_name TEXT NOT NULL,
   restaurant_name_norm TEXT NOT NULL,  -- 정규화된 이름 (공백/특수문자 제거, 소문자)
-  rp_type TEXT NOT NULL CHECK (rp_type IN ('michelin', 'blue_ribbon', 'tv')),
-  rp_year INT,
-  rp_grade TEXT NOT NULL,             -- '3_star','2_star','1_star','bib','3_ribbon','2_ribbon','1_ribbon', 또는 프로그램명
+  prestige_type TEXT NOT NULL CHECK (prestige_type IN ('michelin', 'blue_ribbon', 'tv')),
+  prestige_year INT,
+  prestige_grade TEXT NOT NULL,       -- '3_star','2_star','1_star','bib','3_ribbon','2_ribbon','1_ribbon', 또는 프로그램명
   region TEXT,
   area TEXT,
   address TEXT,
@@ -868,13 +868,13 @@ CREATE TABLE restaurant_rp (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_restaurant_rp_restaurant_id ON restaurant_rp(restaurant_id);
-CREATE INDEX idx_restaurant_rp_name_norm ON restaurant_rp(restaurant_name_norm);
-CREATE INDEX idx_restaurant_rp_kakao_id ON restaurant_rp(kakao_id);
-CREATE INDEX idx_restaurant_rp_type ON restaurant_rp(rp_type);
+CREATE INDEX idx_restaurant_prestige_restaurant_id ON restaurant_prestige(restaurant_id);
+CREATE INDEX idx_restaurant_prestige_name_norm ON restaurant_prestige(restaurant_name_norm);
+CREATE INDEX idx_restaurant_prestige_kakao_id ON restaurant_prestige(kakao_id);
+CREATE INDEX idx_restaurant_prestige_type ON restaurant_prestige(prestige_type);
 ```
 
-**restaurants.rp 캐시 자동 동기화**: `restaurant_rp` 테이블에 INSERT/UPDATE/DELETE 발생 시, 트리거(`trg_sync_restaurant_rp_cache`)가 해당 `restaurant_id`의 `restaurants.rp` JSONB를 자동 갱신한다. 캐시 형식: `[{"type":"michelin","grade":"1_star"}, ...]`
+**restaurants.prestige 캐시 자동 동기화**: `restaurant_prestige` 테이블에 INSERT/UPDATE/DELETE 발생 시, 트리거(`trg_sync_restaurant_prestige_cache`)가 해당 `restaurant_id`의 `restaurants.prestige` JSONB를 자동 갱신한다. 캐시 형식: `[{"type":"michelin","grade":"1_star"}, ...]`
 
 ---
 

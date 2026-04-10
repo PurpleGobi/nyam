@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-04-10 #27 — rp → prestige 용어 통일 리팩토링
+- **영역**: supabase/migrations/058(신규), domain/(entities/restaurant+home-target+map-discovery+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository, supabase/types.ts), app/api/restaurants/(nearby+search+bounds+prestige/match), application/hooks/use-map-discovery, presentation/(prestige-badges, record-card, compact-list-item, map-compact-item, search-result-item, search-results, nearby-list, map-view, home+restaurant-detail-container), middleware.ts, DATA_MODEL.md, CODEBASE.md
+- **맥락**: restaurant_rp(reputation) → restaurant_prestige 용어 통일. DB: 테이블/컬럼/인덱스/RLS/트리거/RPC rename. 코드: RestaurantRp→RestaurantPrestige 타입, .rp→.prestige 필드, /api/restaurants/rp/match→/prestige/match 경로. 약 25개 파일 변경. pnpm build PASS.
+- **미완료**: 058 마이그레이션 원격 적용, supabase/types.ts 재생성
+- **다음**: 마이그레이션 원격 적용, supabase gen types 실행
+
+### 2026-04-09 #26 — 지도뷰 통합 식당 탐색 허브 리디자인
+- **영역**: domain/(entities/map-discovery 신규, services/map-cluster 신규), app/api/restaurants/nearby(enrichment 추가), application/hooks/use-map-discovery(신규), presentation/components/home/(map-filter-bar 신규, map-compact-item 신규, map-view 전면 수정), presentation/containers/home-container
+- **맥락**: 지도뷰를 "내 기록 뷰어 + nearby 사이드바" 이원 구조에서 통합 식당 탐색 허브로 리디자인. MapDiscoveryItem 단일 타입으로 내 기록+nearby 통합, 4종 점수(내/nyam/버블/구글) cascade 소팅, 3그룹 필터(보기/명성/점수), 그리드 클러스터링, 4px 도트 마커. nearby API에 Nyam DB cross-reference + Google Places enrichment 추가.
+- **미완료**: quality-guard(pnpm build/lint) 미실행, 브라우저 QA 미실행, bubbleScore enrichment 미구현(Phase 2), Google Places 별점 캐싱 미구현
+- **다음**: pnpm build && pnpm lint 크리티컬 게이트 실행, /myqa 브라우저 QA, bubbleScore Phase 2
+
+### 2026-04-09 #25 — 지도뷰 카카오맵 → Google Maps 전환
+- **영역**: presentation/components/home/map-view.tsx, package.json(@googlemaps/js-api-loader, @types/google.maps 추가), .env.local(NEXT_PUBLIC_GOOGLE_MAPS_KEY)
+- **맥락**: 카카오맵 기본 POI 라벨(상호명 등)이 커스텀 마커와 겹쳐 가독성 저하. 카카오맵 SDK는 POI 숨기기 미지원 → Google Maps JavaScript API로 지도 렌더링 교체. Styled Maps로 POI/교통 라벨 off. OverlayView 기반 팩토리 함수로 커스텀 오버레이 구현. 한글화(language:'ko', region:'KR'). 카카오 REST API(nearby/search)는 그대로 유지.
+- **미완료**: 없음
+- **다음**: 브라우저 QA, Google Cloud Console에서 Maps JavaScript API 활성화 확인 (이미 완료)
+
 ### 2026-04-09 #24 — RP(Reputation) 시스템 리디자인: restaurant_accolades → restaurant_rp
 - **영역**: supabase/migrations/055, domain/(entities/restaurant+home-target+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository), presentation/(prestige-badges 신규, record-card+compact-list-item+map-view+search-results+search-result-item+nearby-list, home+restaurant-detail+search-container), app/api/(rp/match 신규, nearby+search route 수정, accolades 삭제), use-accolades+accolade-badges 삭제, DATA_MODEL.md 갱신
 - **맥락**: restaurant_accolades 테이블→restaurant_rp 리디자인. restaurants 테이블에 rp JSONB 캐시 컬럼 추가(michelin_stars/has_blue_ribbon/media_appearances 삭제). 매칭 프로세스 API(카카오 연동). UI AccoladeBadges→PrestigeBadges 전환. 전 레이어 28개 파일 변경. pnpm build PASS.
@@ -42,11 +60,6 @@
 - **미완료**: 브라우저 QA 미실행, supabase/types.ts 재생성 필요
 - **다음**: 브라우저 QA 실행, supabase gen types 실행
 
-### 2026-04-07 #16 — 데이터 필터링 체계 전면 리팩토링
-- **영역**: domain/(entities/bookmark, constants/source-priority, services/visibility-filter+profile-visibility, repositories/bookmark-repository), infrastructure/(supabase-bookmark-repository, supabase-record-repository 대규모 정리), application/(use-bookmark, use-home-records, use-target-scores, use-reactions), presentation/(restaurant/wine-detail-container, home-container, filter-config, condition-filter-bar), supabase/migrations/049, supabase/functions/process-account-deletion
-- **맥락**: lists 테이블 제거 → bookmarks 독립 테이블. SOURCE_PRIORITY 중앙화(5곳→1곳). ScoreSource 'my'→'mine', 'nyam'→'public' 통일. ViewType에 tasted/cellar/unrated 추가. 사분면 소스간 dedup. visibility/profile-visibility 서비스 신규. 계정 삭제 wishlists→bookmarks.
-- **미완료**: visibility-filter/profile-visibility는 정의만 (사용처 점진 적용 필요), supabase/types.ts 재생성 필요
-- **다음**: visibility 서비스 사용처 적용, supabase gen types 실행
 
 ### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
 - **영역**: domain/entities/similarity.ts(신규), domain/services/cf-calculator.ts(신규), domain/services/__tests__/cf-calculator.test.ts(신규), supabase/migrations/051_cf_tables.sql(신규), vitest.config.ts(신규)
@@ -54,10 +67,5 @@
 - **미완료**: ScoreSource에 'cf' 추가 + SOURCE_PRIORITY 통합은 Phase 5로 이연 (사용처 10+ 파일), supabase/types.ts 재생성 필요, 051 마이그레이션 원격 적용 필요
 - **다음**: Phase 2 증분 업데이트 파이프라인 (Edge Function), supabase gen types 실행
 
-### 2026-04-08 #19 — CF Phase 2: 증분 업데이트 파이프라인
-- **영역**: domain/repositories/similarity-repository.ts(신규), infrastructure/repositories/supabase-similarity-repository.ts(신규), shared/di/container.ts(수정), supabase/functions/compute-similarity(신규), supabase/migrations/052_cf_trigger.sql(신규)
-- **맥락**: records INSERT/UPDATE/DELETE 시 DB trigger → Edge Function → user_score_means 갱신 + user_similarities 증분 재계산. SimilarityRepository 읽기 전용 인터페이스(3메서드) + Supabase 구현체. UPDATE 평가 철회 분기(plan-reviewer 1회차 수정), any/! assertion 제거(quality-guard 2회차 수정).
-- **미완료**: Edge Function 배포 + 동작 테스트 (로컬에서만 작성, supabase 원격 미적용), supabase/types.ts 재생성 필요
-- **다음**: Phase 3 predict-score Edge Function, supabase gen types 실행
 
 

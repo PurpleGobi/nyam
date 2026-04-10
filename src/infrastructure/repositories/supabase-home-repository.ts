@@ -1,6 +1,6 @@
 import type { HomeRepository, HomeViewType } from '@/domain/repositories/home-repository'
 import type { HomeTarget } from '@/domain/entities/home-target'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 import type { DiningRecord, RecordTargetType, RecordSource } from '@/domain/entities/record'
 /** 홈 피드용 RecordSource 우선순위 (score 시스템의 SOURCE_PRIORITY와 별개) */
 const RECORD_SOURCE_PRIORITY: RecordSource[] = ['mine', 'following', 'bubble', 'public', 'bookmark']
@@ -270,7 +270,7 @@ export class SupabaseHomeRepository implements HomeRepository {
     if (targetType === 'restaurant') {
       const { data } = await this.supabase
         .from('restaurants')
-        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, rp')
+        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, prestige')
         .in('id', targetIds)
       for (const r of data ?? []) {
         map.set(r.id, {
@@ -282,7 +282,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           lat: r.lat ?? null,
           lng: r.lng ?? null,
           priceRange: r.price_range ?? null,
-          rp: ((r as Record<string, unknown>).rp ?? []) as RestaurantRp[],
+          prestige: ((r as Record<string, unknown>).prestige ?? []) as RestaurantPrestige[],
           photoUrl: r.photos?.[0] ?? null,
           wineType: null,
           variety: null,
@@ -306,7 +306,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           lat: null,
           lng: null,
           priceRange: null,
-          rp: [],
+          prestige: [],
           photoUrl: w.photos?.[0] ?? null,
           wineType: w.wine_type ?? null,
           variety: w.variety ?? null,
@@ -611,7 +611,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         lat: meta.lat,
         lng: meta.lng,
         priceRange: meta.priceRange,
-        rp: meta.rp,
+        prestige: meta.prestige,
 
         wineType: meta.wineType,
         variety: meta.variety,
@@ -653,7 +653,7 @@ interface TargetMeta {
   lat: number | null
   lng: number | null
   priceRange: number | null
-  rp: RestaurantRp[]
+  prestige: RestaurantPrestige[]
   photoUrl: string | null
   wineType: string | null
   variety: string | null

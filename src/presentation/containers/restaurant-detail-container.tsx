@@ -136,7 +136,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
   // 뱃지 빌드
   const badges: BadgeItem[] = []
-  for (const p of restaurant?.rp ?? []) {
+  for (const p of restaurant?.prestige ?? []) {
     if (p.type === 'michelin') badges.push({ type: 'michelin', label: `미슐랭 ${p.grade}`, icon: 'star' })
     else if (p.type === 'blue_ribbon') badges.push({ type: 'blue_ribbon', label: '블루리본', icon: 'award' })
     else if (p.type === 'tv') badges.push({ type: 'tv', label: p.grade, icon: 'tv' })
@@ -397,7 +397,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           <section style={{ padding: '14px 20px 0' }}>
             <h1 className="flex items-center gap-1.5" style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
               {restaurant.name}
-              <PrestigeBadges rp={restaurant.rp ?? []} size="md" />
+              <PrestigeBadges prestige={restaurant.prestige ?? []} size="md" />
             </h1>
 
             {restaurant.priceRange && (

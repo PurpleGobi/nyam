@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/infrastructure/supabase/server'
+import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 
 interface KakaoCategoryDocument {
   id: string
@@ -12,6 +13,27 @@ interface KakaoCategoryDocument {
   distance: string
   x: string
   y: string
+}
+
+/** nearby API 응답 아이템 */
+interface NearbyRestaurant {
+  id: string
+  kakaoId: string
+  name: string
+  genre: string | null
+  categoryPath: string | null
+  area: string | null
+  address: string | null
+  lat: number
+  lng: number
+  distance: number
+  prestige: Array<{ type: string; grade: string }>
+  inNyamDb: boolean
+  restaurantId: string | null
+  myScore: number | null
+  nyamScore: number | null
+  bubbleScore: number | null
+  googleRating: number | null
 }
 
 export async function GET(request: NextRequest) {
@@ -29,87 +51,218 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ restaurants: [] }, { status: 400 })
   }
 
-  // 키워드가 있으면 keyword 검색, 없으면 카테고리 검색
-  let documents: KakaoCategoryDocument[] = []
-
-  if (keyword) {
-    const params = new URLSearchParams({
-      query: keyword,
-      category_group_code: 'FD6',
-      x: String(lng),
-      y: String(lat),
-      radius: String(radius),
-      sort: 'distance',
-      size: '15',
-    })
-
-    const response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/keyword.json?${params}`,
-      { headers: { Authorization: `KakaoAK ${apiKey}` } },
-    )
-
-    if (response.ok) {
-      const data = await response.json()
-      documents = data.documents ?? []
-    }
-  } else {
-    const params = new URLSearchParams({
-      category_group_code: 'FD6',
-      x: String(lng),
-      y: String(lat),
-      radius: String(radius),
-      sort: 'distance',
-      size: '15',
-    })
-
-    const response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/category.json?${params}`,
-      { headers: { Authorization: `KakaoAK ${apiKey}` } },
-    )
-
-    if (response.ok) {
-      const data = await response.json()
-      documents = data.documents ?? []
-    }
+  // --- 인증 (실패해도 카카오 데이터는 반환) ---
+  let supabase: Awaited<ReturnType<typeof createClient>> | null = null
+  let userId: string | null = null
+  try {
+    supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    userId = user?.id ?? null
+  } catch {
+    // 인증 실패 시 enrichment 스킵, 카카오 데이터만 반환
   }
 
-  // kakao_id로 restaurant_rp 조회
-  const kakaoIds = documents.map((d) => d.id)
-  const rpMap = new Map<string, Array<{ type: string; grade: string }>>()
+  // --- 카카오 API 호출 (3페이지 = 최대 45건, 후보군 확보) ---
+  let documents: KakaoCategoryDocument[] = []
+  const endpoint = keyword
+    ? 'https://dapi.kakao.com/v2/local/search/keyword.json'
+    : 'https://dapi.kakao.com/v2/local/search/category.json'
 
-  if (kakaoIds.length > 0) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      const { data: rpRows } = await supabase
-        .from('restaurant_rp')
-        .select('kakao_id, rp_type, rp_grade')
-        .in('kakao_id', kakaoIds)
-      if (rpRows) {
-        for (const r of rpRows) {
-          if (!r.kakao_id) continue
-          const existing = rpMap.get(r.kakao_id) ?? []
-          existing.push({ type: r.rp_type, grade: r.rp_grade })
-          rpMap.set(r.kakao_id, existing)
-        }
+  const baseParams: Record<string, string> = {
+    category_group_code: 'FD6',
+    x: String(lng),
+    y: String(lat),
+    radius: String(radius),
+    sort: 'distance',
+    size: '15',
+  }
+  if (keyword) baseParams.query = keyword
+
+  // 1페이지 먼저 호출하여 총 개수 확인
+  const firstRes = await fetch(
+    `${endpoint}?${new URLSearchParams({ ...baseParams, page: '1' })}`,
+    { headers: { Authorization: `KakaoAK ${apiKey}` } },
+  )
+
+  if (firstRes.ok) {
+    const firstData = await firstRes.json()
+    documents = firstData.documents ?? []
+    const totalCount: number = firstData.meta?.total_count ?? 0
+
+    // 2, 3페이지 병렬 호출 (데이터가 더 있으면)
+    if (totalCount > 15) {
+      const extraPages = Math.min(Math.ceil(totalCount / 15), 3)
+      const pagePromises: Promise<KakaoCategoryDocument[]>[] = []
+      for (let p = 2; p <= extraPages; p++) {
+        pagePromises.push(
+          fetch(
+            `${endpoint}?${new URLSearchParams({ ...baseParams, page: String(p) })}`,
+            { headers: { Authorization: `KakaoAK ${apiKey}` } },
+          ).then(async (res) => {
+            if (!res.ok) return []
+            const data = await res.json()
+            return (data.documents ?? []) as KakaoCategoryDocument[]
+          }).catch(() => [] as KakaoCategoryDocument[]),
+        )
+      }
+      const extraResults = await Promise.all(pagePromises)
+      for (const docs of extraResults) {
+        documents.push(...docs)
       }
     }
   }
 
-  const restaurants = documents.map((d) => ({
-    id: `kakao_${d.id}`,
-    name: d.place_name,
-    genre: extractGenre(d.category_name),
-    categoryPath: d.category_name || null,
-    area: extractArea(d.road_address_name || d.address_name),
-    address: d.road_address_name || d.address_name || null,
-    lat: Number(d.y),
-    lng: Number(d.x),
-    distance: Number(d.distance),
-    hasRecord: false,
-    rp: rpMap.get(d.id) ?? [],
-  }))
+  // 중복 제거 (카카오 ID 기준)
+  const seen = new Set<string>()
+  documents = documents.filter((d) => {
+    if (seen.has(d.id)) return false
+    seen.add(d.id)
+    return true
+  })
+
+  const kakaoIds = documents.map((d) => d.id)
+
+  // --- Enrichment (실패해도 기본 카카오 데이터는 반환) ---
+  const rpMap = new Map<string, Array<{ type: string; grade: string }>>()
+  const matchedMap = new Map<string, {
+    restaurantId: string
+    nyamScore: number | null
+    googleRating: number | null
+  }>()
+  const myScoreMap = new Map<string, number>()
+  const googleRatingMap = new Map<string, number | null>()
+
+  if (kakaoIds.length > 0 && supabase) {
+    try {
+      // restaurant_prestige 조회 (기존 로직)
+      const { data: rpRows } = await supabase
+        .from('restaurant_prestige')
+        .select('kakao_id, prestige_type, prestige_grade')
+        .in('kakao_id', kakaoIds)
+
+      if (rpRows) {
+        for (const r of rpRows) {
+          if (!r.kakao_id) continue
+          const existing = rpMap.get(r.kakao_id) ?? []
+          existing.push({ type: r.prestige_type, grade: r.prestige_grade })
+          rpMap.set(r.kakao_id, existing)
+        }
+      }
+    } catch {
+      // prestige 조회 실패 시 무시
+    }
+
+    try {
+      // restaurants 테이블에서 kakao ID로 매칭
+      // RPC로 JSONB path 검색 (PostgREST .in()은 JSONB path 미지원)
+      const { data: matchedRestaurants } = await supabase
+        .from('restaurants')
+        .select('id, external_ids, nyam_score, google_rating')
+        .filter('external_ids->>kakao', 'in', `(${kakaoIds.join(',')})`)
+
+      if (matchedRestaurants) {
+        for (const r of matchedRestaurants) {
+          const externalIds = r.external_ids as { kakao?: string } | null
+          const kId = externalIds?.kakao
+          if (!kId) continue
+          matchedMap.set(kId, {
+            restaurantId: r.id,
+            nyamScore: r.nyam_score ?? null,
+            googleRating: r.google_rating ?? null,
+          })
+        }
+      }
+    } catch {
+      // 매칭 실패 시 무시
+    }
+
+    try {
+      // 인증된 유저의 satisfaction 평균 (매칭된 식당에 대해서만)
+      if (userId && matchedMap.size > 0) {
+        const restaurantIds = [...matchedMap.values()].map((m) => m.restaurantId)
+        const { data: records } = await supabase
+          .from('records')
+          .select('restaurant_id, satisfaction')
+          .eq('user_id', userId)
+          .in('restaurant_id', restaurantIds)
+          .not('satisfaction', 'is', null)
+
+        if (records) {
+          const satMap = new Map<string, number[]>()
+          for (const rec of records) {
+            const arr = satMap.get(rec.restaurant_id) ?? []
+            arr.push(rec.satisfaction as number)
+            satMap.set(rec.restaurant_id, arr)
+          }
+          for (const [kId, match] of matchedMap.entries()) {
+            const sats = satMap.get(match.restaurantId)
+            if (sats && sats.length > 0) {
+              const avg = sats.reduce((s, v) => s + v, 0) / sats.length
+              myScoreMap.set(kId, Math.round(avg * 10) / 10)
+            }
+          }
+        }
+      }
+    } catch {
+      // 점수 조회 실패 시 무시
+    }
+  }
+
+  // --- 미매칭 식당: Google Places rating 조회 (최대 10건) ---
+  try {
+    const unmatchedDocs = documents.filter((d) => {
+      const match = matchedMap.get(d.id)
+      return !match || match.googleRating == null
+    })
+    const googleBatch = unmatchedDocs.slice(0, 10)
+
+    if (googleBatch.length > 0) {
+      const googleResults = await Promise.allSettled(
+        googleBatch.map(async (doc) => {
+          const query = `${doc.place_name} ${doc.road_address_name || doc.address_name}`
+          const results = await searchGooglePlaces(query, Number(doc.y), Number(doc.x), {
+            radius: 500,
+            maxResults: 1,
+          })
+          return { kakaoId: doc.id, rating: results[0]?.rating ?? null }
+        }),
+      )
+      for (const result of googleResults) {
+        if (result.status === 'fulfilled') {
+          googleRatingMap.set(result.value.kakaoId, result.value.rating)
+        }
+      }
+    }
+  } catch {
+    // Google Places 전체 실패 시 무시
+  }
+
+  // --- 응답 조합 ---
+  const restaurants: NearbyRestaurant[] = documents.map((d) => {
+    const match = matchedMap.get(d.id)
+    const googleFromDb = match?.googleRating ?? null
+    const googleFromApi = googleRatingMap.get(d.id) ?? null
+
+    return {
+      id: `kakao_${d.id}`,
+      kakaoId: d.id,
+      name: d.place_name,
+      genre: extractGenre(d.category_name),
+      categoryPath: d.category_name || null,
+      area: extractArea(d.road_address_name || d.address_name),
+      address: d.road_address_name || d.address_name || null,
+      lat: Number(d.y),
+      lng: Number(d.x),
+      distance: Number(d.distance),
+      prestige: rpMap.get(d.id) ?? [],
+      inNyamDb: match != null,
+      restaurantId: match?.restaurantId ?? null,
+      myScore: myScoreMap.get(d.id) ?? null,
+      nyamScore: match?.nyamScore ?? null,
+      bubbleScore: null, // Phase 2에서 추가
+      googleRating: googleFromDb ?? googleFromApi,
+    }
+  })
 
   return NextResponse.json({ restaurants })
 }

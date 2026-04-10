@@ -112,7 +112,7 @@ export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChang
                 <div className="min-w-0 flex-1 text-left">
                   <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-[var(--text)]">
                     <span className="truncate">{r.name}</span>
-                    {r.rp && r.rp.length > 0 && <PrestigeBadges rp={r.rp} />}
+                    {r.prestige && r.prestige.length > 0 && <PrestigeBadges prestige={r.prestige} />}
                   </p>
                   <p className="truncate text-[12px] text-[var(--text-sub)]">
                     {[r.genre, r.area].filter(Boolean).join(' · ')}

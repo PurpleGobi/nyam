@@ -8,7 +8,7 @@ import { formatRelativeDate } from '@/shared/utils/date-format'
 import type { ScoreSource } from '@/domain/entities/score'
 import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 interface CompactListItemProps {
   rank: number | null
@@ -26,7 +26,7 @@ interface CompactListItemProps {
   latestReviewAt?: string | null
   visitCount?: number
   scoreSource?: ScoreSource
-  rp?: RestaurantRp[]
+  prestige?: RestaurantPrestige[]
 }
 
 export function CompactListItem({
@@ -44,7 +44,7 @@ export function CompactListItem({
   latestReviewAt,
   visitCount,
   scoreSource,
-  rp,
+  prestige,
 }: CompactListItemProps) {
   const isTop3 = rank != null && rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
@@ -88,7 +88,7 @@ export function CompactListItem({
       <div className="min-w-0 flex-1">
         <p className="compact-name flex items-center gap-1">
           <span className="truncate">{name}</span>
-          {rp && rp.length > 0 && <PrestigeBadges rp={rp} />}
+          {prestige && prestige.length > 0 && <PrestigeBadges prestige={prestige} />}
         </p>
         <p className="compact-meta flex items-center gap-0.5">
           <span className="truncate">{meta}</span>

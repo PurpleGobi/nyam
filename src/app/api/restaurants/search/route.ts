@@ -1,45 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
-import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
-import { searchNaverLocal } from '@/infrastructure/api/naver-local'
-import { searchGooglePlaces } from '@/infrastructure/api/google-places'
+// TODO: 외부 API 폴백 재활성화 시 복원
+// import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
+// import { searchNaverLocal } from '@/infrastructure/api/naver-local'
+// import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ results: [] }, { status: 401 })
-  }
 
   const q = request.nextUrl.searchParams.get('q')
   const lat = request.nextUrl.searchParams.get('lat')
   const lng = request.nextUrl.searchParams.get('lng')
 
-  if (!q || q.length < 2) {
+  if (!q || q.length < 1) {
     return NextResponse.json({ results: [] })
   }
 
-  // ── Step 1: Nyam DB 검색 ──
-  const { data: restaurants } = await supabase
-    .from('restaurants')
-    .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
-    .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
-    .limit(20)
+  // 한 글자: 앞쪽 % 없이 (인덱스 활용, 빠름) / 두 글자 이상: %쿼리% (어디든 포함)
+  const pattern = q.length === 1 ? `${q}%` : `%${q}%`
 
-  const restaurantIds = (restaurants ?? []).map((r) => r.id)
-  const { data: userRecords } = restaurantIds.length > 0
-    ? await supabase
-        .from('records')
-        .select('target_id')
-        .eq('user_id', user.id)
-        .eq('target_type', 'restaurant')
-        .in('target_id', restaurantIds)
-    : { data: [] }
+  // ── Step 1: Nyam DB 검색 (auth와 병렬) ──
+  const [authResult, searchResult] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from('restaurants')
+      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
+      .or(`name.ilike.${pattern},address.ilike.${pattern}`)
+      .limit(20),
+  ])
 
-  const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
+  if (authResult.error || !authResult.data.user) {
+    return NextResponse.json({ results: [] }, { status: 401 })
+  }
+
+  const restaurants = searchResult.data
+  const recordedIds = new Set<string>()
 
   // DB 내부 중복 제거: 같은 이름의 식당이 여러 행일 때 기록있는 것 우선
   const nyamDeduped = deduplicateNyamResults(restaurants ?? [], recordedIds)
@@ -57,7 +54,7 @@ export async function GET(request: NextRequest) {
     lng: r.lng,
     phone: r.phone,
     kakaoMapUrl: r.kakao_map_url,
-    rp: ((r as Record<string, unknown>).rp ?? []) as RestaurantRp[],
+    prestige: ((r as Record<string, unknown>).prestige ?? []) as RestaurantPrestige[],
     distance: lat && lng && r.lat && r.lng
       ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
@@ -69,119 +66,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: sortResults(nyamResults) })
   }
 
-  // ── Step 2: 외부 API 동시 호출 (폴백) ──
-  const latNum = lat ? Number(lat) : undefined
-  const lngNum = lng ? Number(lng) : undefined
-
-  const [kakaoResult, naverResult, googleResult] = await Promise.allSettled([
-    searchKakaoLocal(q, latNum, lngNum, { radius: 20000, size: 5 }),
-    searchNaverLocal(q),
-    searchGooglePlaces(q, latNum, lngNum, { radius: 20000, maxResults: 5 }),
-  ])
-
-  // 외부 결과 통합
-  interface ExternalItem {
-    name: string
-    address: string
-    lat: number | null
-    lng: number | null
-    genre: string | null
-    genreDisplay: string | null
-    categoryPath: string | null
-    district: string | null
-    phone: string | null
-    kakaoMapUrl: string | null
-    externalId: string
-    externalIds: Record<string, string>
-  }
-  const externals: ExternalItem[] = []
-
-  if (kakaoResult.status === 'fulfilled') {
-    for (const item of kakaoResult.value) {
-      const mapped = mapKakaoCategoryDetail(item.categoryDetail)
-      const fallback = item.category ? mapKakaoCategory(item.category) : null
-      externals.push({
-        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: mapped?.genre ?? fallback ?? '기타',
-        genreDisplay: mapped?.display ?? fallback ?? '기타',
-        categoryPath: item.categoryDetail,
-        district: extractDistrict(item.address), phone: item.phone,
-        kakaoMapUrl: item.kakaoMapUrl,
-        externalId: `kakao_${item.kakaoId}`, externalIds: { kakao: item.kakaoId },
-      })
-    }
-  }
-  if (naverResult.status === 'fulfilled') {
-    for (const item of naverResult.value) {
-      externals.push({
-        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
-        genreDisplay: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
-        categoryPath: item.category ?? null,
-        district: extractDistrict(item.address), phone: item.phone ?? null, kakaoMapUrl: null,
-        externalId: `naver_${item.naverId ?? item.name}`,
-        externalIds: item.naverId ? { naver: item.naverId } : {},
-      })
-    }
-  }
-  if (googleResult.status === 'fulfilled') {
-    for (const item of googleResult.value) {
-      externals.push({
-        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
-        genre: '기타', genreDisplay: '기타', categoryPath: null, district: extractDistrict(item.address), phone: null, kakaoMapUrl: null,
-        externalId: `google_${item.googlePlaceId}`, externalIds: { google: item.googlePlaceId },
-      })
-    }
-  }
-
-  // 중복 제거 (이름 + 좌표 근접 200m 이내면 같은 식당)
-  const accepted: { name: string; lat: number | null; lng: number | null }[] =
-    nyamResults.map((r) => ({ name: r.name, lat: r.lat, lng: r.lng }))
-
-  const dedupedExternals = externals.filter((ext) => {
-    if (isSameRestaurant(ext, accepted)) return false
-    accepted.push({ name: ext.name, lat: ext.lat, lng: ext.lng })
-    return true
-  })
-
-  const externalSearchResults: RestaurantSearchResult[] = dedupedExternals.map((ext) => ({
-    id: ext.externalId,
-    type: 'restaurant' as const,
-    name: ext.name,
-    genre: ext.genre,
-    genreDisplay: ext.genreDisplay,
-    categoryPath: ext.categoryPath,
-    area: ext.district,
-    address: ext.address,
-    lat: ext.lat,
-    lng: ext.lng,
-    phone: ext.phone,
-    kakaoMapUrl: ext.kakaoMapUrl,
-    rp: [],
-    distance: latNum && lngNum && ext.lat && ext.lng
-      ? haversineDistance(latNum, lngNum, ext.lat, ext.lng)
-      : null,
-    hasRecord: false,
-  }))
-
-  // externalData: 선택 시 DB INSERT에 사용할 원본 데이터
-  const externalData = dedupedExternals.map((ext) => ({
-    name: ext.name,
-    address: ext.address,
-    district: ext.district,
-    area: ext.district,
-    genre: ext.genre,
-    lat: ext.lat,
-    lng: ext.lng,
-    phone: ext.phone,
-    kakaoMapUrl: ext.kakaoMapUrl,
-    externalIds: ext.externalIds,
-  }))
-
-  return NextResponse.json({
-    results: sortResults([...nyamResults, ...externalSearchResults]),
-    externalData,
-  })
+  // ── Step 2: 외부 API 폴백 (비활성화) ──
+  // TODO: 카카오 크롤링으로 DB 충분히 채운 후 필요 시 재활성화
+  return NextResponse.json({ results: sortResults(nyamResults) })
 }
 
 /** 결과 정렬: 거리순 → 이름순 */

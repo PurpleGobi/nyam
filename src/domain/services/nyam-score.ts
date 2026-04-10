@@ -1,7 +1,7 @@
 // src/domain/services/nyam-score.ts
 // R1: 외부 의존 0
 
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 export interface NyamScoreBreakdown {
   naverRating: number | null
@@ -25,7 +25,7 @@ export function calcNyamScore(r: {
   naverRating: number | null
   kakaoRating: number | null
   googleRating: number | null
-  rp: RestaurantRp[]
+  prestige: RestaurantPrestige[]
 }): NyamScoreBreakdown | null {
   const n = r.naverRating
   const k = r.kakaoRating
@@ -47,9 +47,9 @@ export function calcNyamScore(r: {
 
   // 명성 보너스
   let prestige = 0
-  if (r.rp.some(p => p.type === 'michelin')) prestige += 8
-  if (r.rp.some(p => p.type === 'blue_ribbon')) prestige += 5
-  if (r.rp.some(p => p.type === 'tv')) prestige += 3
+  if (r.prestige.some(p => p.type === 'michelin')) prestige += 8
+  if (r.prestige.some(p => p.type === 'blue_ribbon')) prestige += 5
+  if (r.prestige.some(p => p.type === 'tv')) prestige += 3
   const prestigeBonus = Math.min(prestige, 15)
 
   // 최종 점수

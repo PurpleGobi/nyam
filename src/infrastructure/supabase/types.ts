@@ -772,7 +772,7 @@ export type Database = {
           },
         ]
       }
-      restaurant_rp: {
+      restaurant_prestige: {
         Row: {
           address: string | null
           area: string | null
@@ -786,9 +786,9 @@ export type Database = {
           restaurant_id: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          rp_grade: string
-          rp_type: string
-          rp_year: number | null
+          prestige_grade: string
+          prestige_type: string
+          prestige_year: number | null
           source_url: string | null
           updated_at: string | null
           verified: boolean | null
@@ -806,9 +806,9 @@ export type Database = {
           restaurant_id?: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          rp_grade: string
-          rp_type: string
-          rp_year?: number | null
+          prestige_grade: string
+          prestige_type: string
+          prestige_year?: number | null
           source_url?: string | null
           updated_at?: string | null
           verified?: boolean | null
@@ -826,16 +826,16 @@ export type Database = {
           restaurant_id?: string | null
           restaurant_name?: string
           restaurant_name_norm?: string
-          rp_grade?: string
-          rp_type?: string
-          rp_year?: number | null
+          prestige_grade?: string
+          prestige_type?: string
+          prestige_year?: number | null
           source_url?: string | null
           updated_at?: string | null
           verified?: boolean | null
         }
         Relationships: [
           {
-            foreignKeyName: "restaurant_rp_restaurant_id_fkey"
+            foreignKeyName: "restaurant_prestige_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
@@ -870,7 +870,7 @@ export type Database = {
           phone: string | null
           photos: string[] | null
           price_range: number | null
-          rp: Json | null
+          prestige: Json | null
         }
         Insert: {
           address?: string | null
@@ -898,7 +898,7 @@ export type Database = {
           phone?: string | null
           photos?: string[] | null
           price_range?: number | null
-          rp?: Json | null
+          prestige?: Json | null
         }
         Update: {
           address?: string | null
@@ -926,7 +926,7 @@ export type Database = {
           phone?: string | null
           photos?: string[] | null
           price_range?: number | null
-          rp?: Json | null
+          prestige?: Json | null
         }
         Relationships: []
       }
@@ -1838,7 +1838,7 @@ export type Database = {
           lat: number
           lng: number
           name: string
-          rp: Json
+          prestige: Json
         }[]
       }
       st_3dclosestpoint: {

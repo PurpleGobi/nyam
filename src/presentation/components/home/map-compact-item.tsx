@@ -1,0 +1,129 @@
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
+import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
+
+interface MapCompactItemProps {
+  name: string
+  genre: string | null
+  distanceKm: number | null
+  myScore: number | null
+  followingScore: number | null
+  bubbleScore: number | null
+  nyamScore: number | null
+  googleRating: number | null
+  prestige: RestaurantPrestige[]
+  inNyamDb: boolean
+  isSelected: boolean
+  onClick: () => void
+}
+
+function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)}m`
+  return `${km.toFixed(1)}km`
+}
+
+function ScoreBadge({
+  label,
+  value,
+  color,
+}: {
+  label: string
+  value: string
+  color: string
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5"
+      style={{
+        fontSize: '10px',
+        fontWeight: 600,
+        background: `color-mix(in srgb, ${color} 12%, transparent)`,
+        color,
+      }}
+    >
+      <span style={{ fontSize: '9px' }}>{label}</span>
+      {value}
+    </span>
+  )
+}
+
+export function MapCompactItem({
+  name,
+  genre,
+  distanceKm,
+  myScore,
+  followingScore,
+  bubbleScore,
+  nyamScore,
+  googleRating,
+  prestige,
+  inNyamDb,
+  isSelected,
+  onClick,
+}: MapCompactItemProps) {
+  const meta = [genre, distanceKm != null ? formatDistance(distanceKm) : null]
+    .filter(Boolean)
+    .join(' \u00B7 ')
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 text-left transition-colors"
+      style={{
+        padding: '8px 12px',
+        backgroundColor: isSelected ? 'var(--bg-elevated)' : 'transparent',
+        borderLeft: isSelected
+          ? '3px solid var(--accent-food)'
+          : '3px solid transparent',
+      }}
+    >
+      {/* 좌: 이름 + 메타 */}
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1">
+          <span
+            className="truncate text-[13px] font-semibold"
+            style={{ color: 'var(--text)' }}
+          >
+            {name}
+          </span>
+          {prestige.length > 0 && <PrestigeBadges prestige={prestige} />}
+          {!inNyamDb && (
+            <span
+              className="shrink-0 text-[9px] font-bold"
+              style={{ color: 'var(--text-hint)' }}
+            >
+              NEW
+            </span>
+          )}
+        </p>
+        {meta && (
+          <p
+            className="truncate text-[11px]"
+            style={{ color: 'var(--text-sub)' }}
+          >
+            {meta}
+          </p>
+        )}
+      </div>
+
+      {/* 우: 점수 뱃지들 (우선순위 순) */}
+      <div className="flex shrink-0 items-center gap-1">
+        {myScore != null && (
+          <ScoreBadge label="내" value={String(myScore)} color="var(--accent-food)" />
+        )}
+        {followingScore != null && (
+          <ScoreBadge label="F" value={String(followingScore)} color="var(--text-sub)" />
+        )}
+        {bubbleScore != null && (
+          <ScoreBadge label="B" value={String(bubbleScore)} color="var(--text-sub)" />
+        )}
+        {nyamScore != null && (
+          <ScoreBadge label="N" value={String(nyamScore)} color="var(--text-sub)" />
+        )}
+        {googleRating != null && (
+          <ScoreBadge label="G" value={String(googleRating)} color="var(--text-hint)" />
+        )}
+      </div>
+    </button>
+  )
+}

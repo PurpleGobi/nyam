@@ -1,49 +1,46 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import { MapPinned, LocateFixed } from 'lucide-react'
-import { CompactListItem } from '@/presentation/components/home/compact-list-item'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
-
-export interface MapRecord {
-  restaurantId: string
-  name: string
-  genre: string
-  area: string
-  lat: number
-  lng: number
-  score: number | null
-  distanceKm: number | null
-  photoUrl?: string | null
-  rp?: RestaurantRp[]
-}
-
-interface NearbyPlace {
-  id: string
-  name: string
-  genre: string | null
-  area: string | null
-  address: string | null
-  lat: number
-  lng: number
-  distance: number
-  rp: Array<{ type: string }>
-}
+import type {
+  MapDiscoveryItem,
+} from '@/domain/entities/map-discovery'
+import { MapCompactItem } from '@/presentation/components/home/map-compact-item'
 
 interface MapViewProps {
-  records: MapRecord[]
-  onNavigate: (restaurantId: string) => void
+  /** 현재 페이지 아이템 (지도 마커 + 리스트 동일) */
+  items: MapDiscoveryItem[]
+  /** 지도 idle 이벤트 (bounds 포함) */
+  onMapIdle: (center: { lat: number; lng: number }, zoom: number, bounds: { north: number; south: number; east: number; west: number } | null) => void
+  /** 아이템 클릭 (포커스) */
+  onItemSelect: (item: MapDiscoveryItem) => void
+  /** 아이템 재클릭 → 네비게이트 */
+  onItemNavigate: (item: MapDiscoveryItem) => void
+  /** nearby 로딩 중 */
+  isNearbyLoading: boolean
+  /** 사용자 위치 (초기 center 결정용) */
+  userLat?: number | null
+  userLng?: number | null
+  /** 페이지네이션 */
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
 }
 
 const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
 
-/** Google Maps 스타일 — POI·교통 라벨 숨기기 */
+/** Google Maps 스타일 — POI 숨기기 + 지도 톤 연하게 (도트 가시성 확보) */
 const MAP_STYLES = [
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.park', stylers: [{ visibility: 'on' }] },
   { featureType: 'poi.park', elementType: 'labels', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'landscape', stylers: [{ saturation: -70 }, { lightness: 40 }] },
+  { featureType: 'road', stylers: [{ saturation: -80 }, { lightness: 50 }] },
+  { featureType: 'road', elementType: 'labels', stylers: [{ lightness: 30 }] },
+  { featureType: 'water', stylers: [{ saturation: -60 }, { lightness: 40 }] },
+  { featureType: 'administrative', elementType: 'labels', stylers: [{ lightness: 30 }] },
 ]
 
 /** Google Maps SDK 로드 (한 번만) */
@@ -113,106 +110,34 @@ function createHtmlOverlay(opts: {
   }
 }
 
-/* ─────────── 마커 HTML 생성 (SDK 무관 — 기존 코드 유지) ─────────── */
+/* ─────────── 도트 마커 HTML ─────────── */
 
-function createPinHtml(score: number | null, selected: boolean, name?: string): string {
-  const label = score != null ? String(score) : '\u00B7'
-  const bg = selected ? '#c0392b' : 'var(--accent-food)'
-  const size = selected ? 28 : 22
-  const fontSize = selected ? 11 : 9
+function createDotHtml(selected: boolean, name?: string): string {
+  const size = selected ? 14 : 8
+  const color = selected ? '#C62828' : '#E53935'
+  const border = selected ? '2px solid #fff' : '1.5px solid rgba(255,255,255,0.8)'
   const shadow = selected
-    ? '0 3px 10px rgba(0,0,0,0.4)'
-    : '0 1px 4px rgba(0,0,0,0.25)'
+    ? '0 2px 8px rgba(0,0,0,0.4)'
+    : '0 1px 4px rgba(0,0,0,0.3)'
   const nameTag = selected && name
     ? `<div style="
         position:absolute;top:100%;left:50%;transform:translateX(-50%);
         margin-top:3px;white-space:nowrap;
-        padding:1px 6px;border-radius:4px;
-        background:rgba(0,0,0,0.75);
-        font-size:10px;font-weight:600;color:#fff;
+        padding:2px 8px;border-radius:4px;
+        background:rgba(0,0,0,0.8);
+        font-size:11px;font-weight:600;color:#fff;
         pointer-events:none;
       ">${name}</div>`
     : ''
   return `<div style="position:relative;display:flex;flex-direction:column;align-items:center;">
     <div style="
       width:${size}px;height:${size}px;border-radius:50%;
-      background:${bg};
-      display:flex;align-items:center;justify-content:center;
-      box-shadow:${shadow};cursor:pointer;
-      transition:all 0.2s ease;
-      border:2px solid white;
-    "><span style="
-      font-size:${fontSize}px;font-weight:700;color:#fff;
-    ">${label}</span></div>
-    ${nameTag}
-  </div>`
-}
-
-const MICHELIN_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="50" fill="#E2001A"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(60 50 50)"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(120 50 50)"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(180 50 50)"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(240 50 50)"/>
-  <ellipse cx="50" cy="30" rx="10" ry="16" fill="#fff" transform="rotate(300 50 50)"/>
-</svg>`
-
-const BLUERIBBON_SVG = `<svg width="12" height="12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="50" fill="#1B4B94"/>
-  <path d="M50 44 C40 30,12 14,14 38 C16 54,40 58,50 48Z" fill="#fff"/>
-  <path d="M50 44 C60 30,88 14,86 38 C84 54,60 58,50 48Z" fill="#fff"/>
-  <path d="M48 54 C38 60,18 82,26 84 C32 85,42 68,48 58Z" fill="#fff"/>
-  <path d="M52 54 C62 60,82 82,74 84 C68 85,58 68,52 58Z" fill="#fff"/>
-  <circle cx="50" cy="50" r="7" fill="#fff"/>
-</svg>`
-
-function getPrestigeBadges(rp: Array<{ type: string }>): string {
-  if (rp.length === 0) return ''
-  const badges: string[] = []
-  const hasMichelin = rp.some((p) => p.type === 'michelin')
-  const hasBlueRibbon = rp.some((p) => p.type === 'blue_ribbon')
-  const hasTv = rp.some((p) => p.type === 'tv')
-  if (hasMichelin) badges.push(`<span title="미슐랭">${MICHELIN_SVG}</span>`)
-  if (hasBlueRibbon) badges.push(`<span title="블루리본">${BLUERIBBON_SVG}</span>`)
-  if (hasTv) badges.push('<span style="font-size:8px;" title="TV출연">📺</span>')
-  return `<div style="
-    position:absolute;top:-6px;right:-8px;
-    display:flex;gap:1px;
-    pointer-events:none;
-  ">${badges.join('')}</div>`
-}
-
-function createNearbyPinHtml(name: string, selected: boolean, rp: Array<{ type: string }> = []): string {
-  const hasPrestige = rp.length > 0
-  const bg = selected ? 'var(--text-sub)' : hasPrestige ? 'var(--accent-food)' : 'var(--text-hint)'
-  const size = selected ? 22 : hasPrestige ? 20 : 16
-  const shadow = selected
-    ? '0 2px 8px rgba(0,0,0,0.3)'
-    : '0 1px 3px rgba(0,0,0,0.15)'
-  const nameTag = selected
-    ? `<div style="
-        position:absolute;top:100%;left:50%;transform:translateX(-50%);
-        margin-top:3px;white-space:nowrap;
-        padding:1px 6px;border-radius:4px;
-        background:rgba(0,0,0,0.75);
-        font-size:10px;font-weight:600;color:#fff;
-        pointer-events:none;
-      ">${name}</div>`
-    : ''
-  const badgeHtml = getPrestigeBadges(rp)
-  return `<div style="position:relative;display:flex;flex-direction:column;align-items:center;">
-    <div style="
-      position:relative;
-      width:${size}px;height:${size}px;border-radius:50%;
-      background:${bg};
-      display:flex;align-items:center;justify-content:center;
-      box-shadow:${shadow};cursor:pointer;
-      transition:all 0.2s ease;
-      border:1.5px solid white;
-    "><span style="
-      font-size:${selected ? 9 : 7}px;font-weight:700;color:#fff;
-    ">${hasPrestige ? '\u2605' : '+'}</span>${badgeHtml}</div>
+      background:${color};
+      border:${border};
+      box-shadow:${shadow};
+      transition:all 0.15s ease;
+      cursor:pointer;
+    "></div>
     ${nameTag}
   </div>`
 }
@@ -220,49 +145,52 @@ function createNearbyPinHtml(name: string, selected: boolean, rp: Array<{ type: 
 // 서울 시청 기본 좌표
 const DEFAULT_LAT = 37.5665
 const DEFAULT_LNG = 126.978
-
-/** Google Maps 줌 레벨 → 대략적 반경(m) 변환 */
-function zoomToRadius(zoom: number): number {
-  const table: Record<number, number> = {
-    18: 50, 17: 100, 16: 200, 15: 500,
-    14: 1000, 13: 2000, 12: 4000, 11: 8000,
-  }
-  const clamped = Math.max(11, Math.min(18, Math.round(zoom)))
-  return table[clamped] ?? 2000
-}
-
-/** 카카오 줌 레벨 5 ≈ Google 줌 14, 카카오 3 ≈ Google 16 */
 const DEFAULT_ZOOM = 14
 const MY_LOCATION_ZOOM = 16
 
-export function MapView({ records, onNavigate }: MapViewProps) {
+export function MapView({
+  items,
+  onMapIdle,
+  onItemSelect,
+  onItemNavigate,
+  isNearbyLoading,
+  userLat,
+  userLng,
+  currentPage,
+  totalPages,
+  onPageChange,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const overlaysRef = useRef<{ overlay: HtmlOverlayInstance; el: HTMLDivElement; id: string }[]>([])
-  const nearbyOverlaysRef = useRef<{ overlay: HtmlOverlayInstance; el: HTMLDivElement; id: string }[]>([])
 
   const [sdkReady, setSdkReady] = useState(false)
   const [sdkError, setSdkError] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([])
 
-  const onNavigateRef = useRef(onNavigate)
-  onNavigateRef.current = onNavigate
+  const onItemSelectRef = useRef(onItemSelect)
+  onItemSelectRef.current = onItemSelect
+  const onItemNavigateRef = useRef(onItemNavigate)
+  onItemNavigateRef.current = onItemNavigate
+  const onMapIdleRef = useRef(onMapIdle)
+  onMapIdleRef.current = onMapIdle
   const selectedIdRef = useRef(selectedId)
   selectedIdRef.current = selectedId
 
-  const geoRecordIds = records.filter((r) => r.lat !== 0 && r.lng !== 0).map((r) => r.restaurantId).join(',')
-  const geoRecords = useMemo(
-    () => records.filter((r) => r.lat !== 0 && r.lng !== 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [geoRecordIds],
-  )
+  // items map for lookup
+  const itemsMapRef = useRef(new Map<string, MapDiscoveryItem>())
+  useEffect(() => {
+    itemsMapRef.current = new Map(items.map((i) => [i.id, i]))
+  }, [items])
 
-  const handleSelect = useCallback((restaurantId: string) => {
-    if (selectedIdRef.current === restaurantId) {
-      onNavigateRef.current(restaurantId)
+  const handleSelect = useCallback((id: string) => {
+    const item = itemsMapRef.current.get(id)
+    if (!item) return
+    if (selectedIdRef.current === id) {
+      onItemNavigateRef.current(item)
     } else {
-      setSelectedId(restaurantId)
+      setSelectedId(id)
+      onItemSelectRef.current(item)
     }
   }, [])
 
@@ -277,112 +205,38 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       .catch(() => setSdkError(true))
   }, [])
 
-  const recordedIds = useMemo(
-    () => new Set(geoRecords.map((r) => r.restaurantId)),
-    [geoRecords],
-  )
-
-  const fetchNearby = useCallback(async (lat: number, lng: number, radius: number) => {
-    try {
-      const params = new URLSearchParams({
-        lat: String(lat),
-        lng: String(lng),
-        radius: String(Math.min(radius, 20000)),
-      })
-      const res = await fetch(`/api/restaurants/nearby?${params}`)
-      if (!res.ok) return
-      const data = await res.json() as { restaurants: NearbyPlace[] }
-      const filtered = data.restaurants.filter((p) => !recordedIds.has(p.id))
-      setNearbyPlaces(filtered)
-    } catch {
-      // 실패 시 조용히 무시
-    }
-  }, [recordedIds])
-
-  /** 주변 식당 오버레이 그리기 */
-  const renderNearbyOverlays = useCallback((map: google.maps.Map, places: NearbyPlace[]) => {
-    nearbyOverlaysRef.current.forEach((o) => o.overlay.setMap(null))
-    nearbyOverlaysRef.current = []
-
-    places.forEach((place) => {
-      if (!place.lat || !place.lng) return
-      const position = new google.maps.LatLng(place.lat, place.lng)
-      const el = document.createElement('div')
-      el.innerHTML = createNearbyPinHtml(place.name, false, place.rp)
-      el.addEventListener('click', () => {
-        if (selectedIdRef.current === place.id) {
-          onNavigateRef.current(place.id)
-        } else {
-          setSelectedId(place.id)
-        }
-      })
-      const overlay = createHtmlOverlay({
-        position,
-        content: el,
-        zIndex: 0,
-        map,
-      })
-      nearbyOverlaysRef.current.push({ overlay, el, id: place.id })
-    })
-  }, [])
-
-  // 맵 초기화 + 오버레이
+  // 맵 초기화
   useEffect(() => {
     if (!sdkReady || !containerRef.current) return
 
+    // 최초 center 결정: 1) 내 위치 → 2) items centroid → 3) 서울 시청
+    const geoItems = items.filter((i) => i.lat !== 0 && i.lng !== 0)
     let centerLat = DEFAULT_LAT
     let centerLng = DEFAULT_LNG
+    let initialZoom = DEFAULT_ZOOM
 
-    if (geoRecords.length > 0) {
-      centerLat = geoRecords.reduce((s, r) => s + r.lat, 0) / geoRecords.length
-      centerLng = geoRecords.reduce((s, r) => s + r.lng, 0) / geoRecords.length
+    if (userLat != null && userLng != null) {
+      centerLat = userLat
+      centerLng = userLng
+      initialZoom = MY_LOCATION_ZOOM
+    } else if (geoItems.length > 0) {
+      centerLat = geoItems.reduce((s, i) => s + i.lat, 0) / geoItems.length
+      centerLng = geoItems.reduce((s, i) => s + i.lng, 0) / geoItems.length
     }
 
     const map = new google.maps.Map(containerRef.current, {
       center: { lat: centerLat, lng: centerLng },
-      zoom: geoRecords.length > 0 ? DEFAULT_ZOOM : MY_LOCATION_ZOOM,
+      zoom: initialZoom,
       styles: MAP_STYLES,
       disableDefaultUI: true,
-      zoomControl: true,
+      zoomControl: false,
       clickableIcons: false,
       gestureHandling: 'greedy',
+      keyboardShortcuts: false,
     })
     mapRef.current = map
 
-    // 기존 오버레이 제거
-    overlaysRef.current.forEach((o) => o.overlay.setMap(null))
-    overlaysRef.current = []
-
-    const bounds = new google.maps.LatLngBounds()
-
-    geoRecords.forEach((record, idx) => {
-      const position = new google.maps.LatLng(record.lat, record.lng)
-      bounds.extend(position)
-
-      const el = document.createElement('div')
-      el.innerHTML = createPinHtml(record.score, false, record.name)
-      el.addEventListener('click', () => handleSelect(record.restaurantId))
-
-      const zIndex = geoRecords.length - idx
-
-      const overlay = createHtmlOverlay({
-        position,
-        content: el,
-        zIndex,
-        map,
-      })
-      overlaysRef.current.push({ overlay, el, id: record.restaurantId })
-    })
-
-    if (geoRecords.length > 1) {
-      map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 })
-    }
-
-    // 초기 주변 식당 로드
-    const initialZoom = geoRecords.length > 0 ? DEFAULT_ZOOM : MY_LOCATION_ZOOM
-    fetchNearby(centerLat, centerLng, zoomToRadius(initialZoom))
-
-    // 지도 이동/줌 시 주변 식당 재검색 (500ms debounce)
+    // idle → onMapIdle (debounce)
     let debounceTimer: ReturnType<typeof setTimeout>
     const idleListener = map.addListener('idle', () => {
       clearTimeout(debounceTimer)
@@ -390,8 +244,15 @@ export function MapView({ records, onNavigate }: MapViewProps) {
         const c = map.getCenter()
         const z = map.getZoom()
         if (!c || z == null) return
-        fetchNearby(c.lat(), c.lng(), zoomToRadius(z))
-      }, 500)
+        const b = map.getBounds()
+        const bounds = b ? {
+          north: b.getNorthEast().lat(),
+          south: b.getSouthWest().lat(),
+          east: b.getNorthEast().lng(),
+          west: b.getSouthWest().lng(),
+        } : null
+        onMapIdleRef.current({ lat: c.lat(), lng: c.lng() }, z, bounds)
+      }, 200)
     })
 
     // 리사이즈 대응
@@ -410,34 +271,48 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       idleListener.remove()
       observer.disconnect()
     }
-  }, [sdkReady, geoRecords, handleSelect, fetchNearby])
+    // 맵 초기화는 sdkReady 시 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sdkReady])
 
-  // 주변 식당 오버레이 업데이트
+  // items → 오버레이 갱신 (모두 개별 도트)
   useEffect(() => {
-    if (!mapRef.current) return
-    renderNearbyOverlays(mapRef.current, nearbyPlaces)
-  }, [nearbyPlaces, renderNearbyOverlays])
+    const map = mapRef.current
+    if (!map) return
 
-  // 선택 상태 변경 시 핀 비주얼 업데이트 + z-index
+    // 기존 오버레이 제거
+    overlaysRef.current.forEach((o) => o.overlay.setMap(null))
+    overlaysRef.current = []
+
+    items.forEach((item, idx) => {
+      const position = new google.maps.LatLng(item.lat, item.lng)
+      const el = document.createElement('div')
+      el.innerHTML = createDotHtml(selectedIdRef.current === item.id, item.name)
+      el.addEventListener('click', () => handleSelect(item.id))
+
+      const overlay = createHtmlOverlay({
+        position,
+        content: el,
+        zIndex: selectedIdRef.current === item.id ? 100 : items.length - idx,
+        map,
+      })
+      overlaysRef.current.push({ overlay, el, id: item.id })
+    })
+  }, [items, handleSelect])
+
+  // 선택 상태 변경 → 도트 비주얼 업데이트
   useEffect(() => {
-    const recordMap = new Map(geoRecords.map((r) => [r.restaurantId, r]))
-    for (const item of overlaysRef.current) {
-      const record = recordMap.get(item.id)
-      if (!record) continue
-      const isSelected = item.id === selectedId
-      item.el.innerHTML = createPinHtml(record.score, isSelected, record.name)
-      const listIdx = geoRecords.findIndex((r) => r.restaurantId === item.id)
-      item.overlay.setZIdx(isSelected ? 100 : geoRecords.length - listIdx)
+    for (const entry of overlaysRef.current) {
+      const item = itemsMapRef.current.get(entry.id)
+      if (!item) continue
+      const isSelected = entry.id === selectedId
+      entry.el.innerHTML = createDotHtml(isSelected, item.name)
+      entry.overlay.setZIdx(isSelected ? 100 : 1)
     }
-    const nearbyMap = new Map(nearbyPlaces.map((p) => [p.id, p]))
-    for (const item of nearbyOverlaysRef.current) {
-      const place = nearbyMap.get(item.id)
-      if (!place) continue
-      const isSelected = item.id === selectedId
-      item.el.innerHTML = createNearbyPinHtml(place.name, isSelected, place.rp)
-      item.overlay.setZIdx(isSelected ? 100 : 0)
-    }
-  }, [selectedId, geoRecords, nearbyPlaces])
+  }, [selectedId])
+
+  // 내 위치 마커
+  const myLocationOverlayRef = useRef<HtmlOverlayInstance | null>(null)
 
   const moveToMyLocation = useCallback(() => {
     if (!mapRef.current) return
@@ -445,8 +320,38 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       (pos) => {
         const map = mapRef.current
         if (!map) return
-        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        map.setCenter({ lat, lng })
         map.setZoom(MY_LOCATION_ZOOM)
+
+        // 기존 내 위치 마커 제거
+        myLocationOverlayRef.current?.setMap(null)
+
+        // 내 위치 마커 표시 (파란 점 + 펄스)
+        const el = document.createElement('div')
+        el.innerHTML = `<div style="position:relative;display:flex;align-items:center;justify-content:center;">
+          <div style="
+            width:12px;height:12px;border-radius:50%;
+            background:#4285F4;
+            border:2px solid #fff;
+            box-shadow:0 1px 4px rgba(0,0,0,0.3);
+          "></div>
+          <div style="
+            position:absolute;
+            width:24px;height:24px;border-radius:50%;
+            background:rgba(66,133,244,0.2);
+            animation:pulse 2s ease-out infinite;
+          "></div>
+        </div>`
+
+        const overlay = createHtmlOverlay({
+          position: new google.maps.LatLng(lat, lng),
+          content: el,
+          zIndex: 200,
+          map,
+        })
+        myLocationOverlayRef.current = overlay
       },
       () => { /* 위치 권한 거부 시 무시 */ },
       { enableHighAccuracy: true, timeout: 5000 },
@@ -472,7 +377,14 @@ export function MapView({ records, onNavigate }: MapViewProps) {
             </span>
           </div>
         </div>
-        <MapList records={records} nearbyPlaces={[]} selectedId={selectedId} onSelect={handleSelect} />
+        <MapItemList
+          items={items}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       </div>
     )
   }
@@ -489,6 +401,7 @@ export function MapView({ records, onNavigate }: MapViewProps) {
       >
         <div
           ref={containerRef}
+          className="map-clean"
           style={{
             width: '100%',
             height: '320px',
@@ -500,121 +413,153 @@ export function MapView({ records, onNavigate }: MapViewProps) {
           onClick={moveToMyLocation}
           style={{
             position: 'absolute',
-            bottom: '12px',
-            right: '12px',
-            width: '36px',
-            height: '36px',
+            bottom: '8px',
+            right: '8px',
+            width: '28px',
+            height: '28px',
             borderRadius: '50%',
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+            background: 'rgba(255,255,255,0.6)',
+            border: 'none',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             zIndex: 10,
+            opacity: 0.5,
           }}
           title="내 위치로 이동"
         >
-          <LocateFixed size={18} style={{ color: 'var(--text-sub)' }} />
+          <LocateFixed size={14} style={{ color: '#666' }} />
         </button>
+        {isNearbyLoading && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '2px 10px',
+              borderRadius: '12px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              fontSize: '11px',
+              color: 'var(--text-hint)',
+              zIndex: 10,
+            }}
+          >
+            주변 검색 중...
+          </div>
+        )}
       </div>
-      <MapList records={records} nearbyPlaces={nearbyPlaces} selectedId={selectedId} onSelect={handleSelect} />
+      <MapItemList
+        items={items}
+        selectedId={selectedId}
+        onSelect={handleSelect}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   )
 }
 
-function MapList({
-  records,
-  nearbyPlaces,
+/** 리스트 영역: 아이템 목록 + 페이지네이션 */
+function MapItemList({
+  items,
   selectedId,
   onSelect,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: {
-  records: MapRecord[]
-  nearbyPlaces: NearbyPlace[]
+  items: MapDiscoveryItem[]
   selectedId: string | null
-  onSelect: (restaurantId: string) => void
+  onSelect: (id: string) => void
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
 }) {
-  const totalCount = records.length + nearbyPlaces.length
   return (
     <div className="pt-3">
-      {records.length > 0 && (
-        <>
-          <p
-            className="px-4 pb-2 text-[13px] font-bold"
-            style={{ color: 'var(--text-sub)' }}
-          >
-            내 기록 {records.length}곳
-          </p>
-          {records.map((record, i) => (
-            <div
-              key={record.restaurantId}
-              data-restaurant-id={record.restaurantId}
-              className="px-4"
-              style={{
-                backgroundColor: selectedId === record.restaurantId ? 'var(--bg-elevated)' : 'transparent',
-                borderLeft: selectedId === record.restaurantId ? '3px solid var(--accent-food)' : '3px solid transparent',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <CompactListItem
-                rank={i + 1}
-                photoUrl={record.photoUrl ?? null}
-                name={record.name}
-                meta={`${record.genre} · ${record.area}${record.distanceKm != null ? ` · ${record.distanceKm}km` : ''}`}
-                score={record.score}
-                axisX={null}
-                axisY={null}
-                accentType="restaurant"
-                rp={record.rp}
-                onClick={() => onSelect(record.restaurantId)}
-              />
-            </div>
-          ))}
-        </>
-      )}
-      {nearbyPlaces.length > 0 && (
-        <>
-          <p
-            className="px-4 pb-2 pt-3 text-[13px] font-bold"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            주변 식당 {nearbyPlaces.length}곳
-          </p>
-          {nearbyPlaces.map((place) => (
-            <div
-              key={place.id}
-              data-restaurant-id={place.id}
-              className="px-4"
-              style={{
-                backgroundColor: selectedId === place.id ? 'var(--bg-elevated)' : 'transparent',
-                borderLeft: selectedId === place.id ? '3px solid var(--text-hint)' : '3px solid transparent',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <CompactListItem
-                rank={null}
-                photoUrl={null}
-                name={place.name}
-                meta={[place.genre, place.area, place.distance ? `${place.distance}m` : null].filter(Boolean).join(' · ')}
-                score={null}
-                axisX={null}
-                axisY={null}
-                accentType="restaurant"
-                rp={place.rp as RestaurantRp[]}
-                onClick={() => onSelect(place.id)}
-              />
-            </div>
-          ))}
-        </>
-      )}
-      {totalCount === 0 && (
+      {items.length > 0 && (
         <p
-          className="px-4 py-8 text-center text-[13px]"
+          className="px-3 pb-1 pt-1 text-[12px] font-medium"
           style={{ color: 'var(--text-hint)' }}
         >
-          지도에 표시된 식당이 없어요
+          {items.length}곳
         </p>
+      )}
+      {items.map((item) => (
+        <MapCompactItem
+          key={item.id}
+          name={item.name}
+          genre={item.genre}
+          distanceKm={item.distanceKm}
+          myScore={item.myScore}
+          followingScore={item.followingScore}
+          bubbleScore={item.bubbleScore}
+          nyamScore={item.nyamScore}
+          googleRating={item.googleRating}
+          prestige={item.prestige}
+          inNyamDb={item.inNyamDb}
+          isSelected={selectedId === item.id}
+          onClick={() => onSelect(item.id)}
+        />
+      ))}
+      {items.length === 0 && (
+        <div className="py-8 text-center">
+          <MapPinned
+            size={32}
+            style={{ color: 'var(--text-hint)', margin: '0 auto 8px' }}
+          />
+          <p
+            className="text-[13px]"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            조건에 맞는 식당이 없어요
+          </p>
+          <p
+            className="mt-1 text-[12px]"
+            style={{ color: 'var(--text-hint)' }}
+          >
+            필터를 조정하거나 지도를 이동해 보세요
+          </p>
+        </div>
+      )}
+      {totalPages > 1 && (
+        <div
+          className="flex items-center justify-center gap-3 py-3"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="rounded-md px-3 py-1 text-[12px] font-medium"
+            style={{
+              color: currentPage <= 1 ? 'var(--text-hint)' : 'var(--accent-food)',
+              opacity: currentPage <= 1 ? 0.4 : 1,
+            }}
+          >
+            이전
+          </button>
+          <span className="text-[12px] font-medium" style={{ color: 'var(--text-sub)' }}>
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="rounded-md px-3 py-1 text-[12px] font-medium"
+            style={{
+              color: currentPage >= totalPages ? 'var(--text-hint)' : 'var(--accent-food)',
+              opacity: currentPage >= totalPages ? 0.4 : 1,
+            }}
+          >
+            다음
+          </button>
+        </div>
       )}
     </div>
   )

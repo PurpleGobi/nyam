@@ -3,15 +3,15 @@
 import { UtensilsCrossed, Wine, MapPin } from 'lucide-react'
 import type { SearchResult } from '@/domain/entities/search'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
-import type { RestaurantRp } from '@/domain/entities/restaurant'
+import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 interface SearchResultItemProps {
   result: SearchResult
   onSelect: (result: SearchResult) => void
-  rp?: RestaurantRp[]
+  prestige?: RestaurantPrestige[]
 }
 
-export function SearchResultItem({ result, onSelect, rp }: SearchResultItemProps) {
+export function SearchResultItem({ result, onSelect, prestige }: SearchResultItemProps) {
   const isRestaurant = result.type === 'restaurant'
   const accentClass = isRestaurant ? 'text-[var(--accent-food)]' : 'text-[var(--accent-wine)]'
   const bgClass = isRestaurant
@@ -57,7 +57,7 @@ export function SearchResultItem({ result, onSelect, rp }: SearchResultItemProps
       <div className="min-w-0 flex-1 text-left">
         <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-[var(--text)]">
           <span className="truncate">{displayName}</span>
-          {rp && rp.length > 0 && <PrestigeBadges rp={rp} />}
+          {prestige && prestige.length > 0 && <PrestigeBadges prestige={prestige} />}
         </p>
         {subtitle && <p className="truncate text-[12px] text-[var(--text-sub)]">{subtitle}</p>}
       </div>

@@ -88,9 +88,9 @@ export function getRecordField(record: Record<string, unknown>, attrKey: string)
   return record[field]
 }
 
-/** prestige 복합 조건 매칭 — rp 배열 기반 */
+/** prestige 복합 조건 매칭 — prestige 배열 기반 */
 function matchPrestige(record: Record<string, unknown>, value: string): boolean {
-  const rp = (record.rp ?? []) as Array<{ type: string }>
+  const rp = (record.prestige ?? []) as Array<{ type: string }>
 
   switch (value) {
     case 'michelin_1':
