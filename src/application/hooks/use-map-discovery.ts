@@ -6,7 +6,7 @@ import type {
   MapDiscoveryItem,
 } from '@/domain/entities/map-discovery'
 import type { FilterChipItem } from '@/domain/entities/condition-chip'
-import { isAdvancedChip } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, PRESTIGE_GRADE_PREFIX, CASCADING_ALL } from '@/domain/entities/condition-chip'
 import { haversineDistance } from '@/domain/services/distance'
 
 /** bounds API 응답 아이템 */
@@ -72,16 +72,31 @@ export function useMapDiscovery(params: {
     for (const chip of mapChips) {
       if (isAdvancedChip(chip)) continue
       const attr = chip.filterKey ?? chip.attribute
-      if (attr === 'prestige_type') {
+      if (attr === 'prestige_type' || attr === 'prestige') {
         values.push(...String(chip.value).split(',').map((v) => v.trim()))
       }
     }
     return values
   }, [mapChips])
 
+  // grade sub-chip에서 type→grade 매핑 추출 (CASCADING_ALL이 아닌 것만)
+  const prestigeGradeFilter: Map<string, string> = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const chip of mapChips) {
+      if (isAdvancedChip(chip)) continue
+      if (chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX) && chip.value !== CASCADING_ALL) {
+        const type = chip.attribute.slice(PRESTIGE_GRADE_PREFIX.length)
+        map.set(type, String(chip.value))
+      }
+    }
+    return map
+  }, [mapChips])
+
   const sourceFilterRef = useRef(sourceFilter)
   sourceFilterRef.current = sourceFilter
   const prestigeFilterRef = useRef(prestigeFilter)
+  const prestigeGradeFilterRef = useRef(prestigeGradeFilter)
+  prestigeGradeFilterRef.current = prestigeGradeFilter
   prestigeFilterRef.current = prestigeFilter
 
   // --- bounds API 호출 (모든 필터를 DB로 전달) ---
@@ -138,7 +153,19 @@ export function useMapDiscovery(params: {
         prestige: r.prestige ?? [],
         sources: (r.sources.length > 0 ? r.sources : ['mine']) as MapDiscoveryItem['sources'],
       }))
-      setItems(mapped)
+      // grade sub-chip 클라이언트 사이드 필터링
+      const gradeMap = prestigeGradeFilterRef.current
+      const filtered = gradeMap.size > 0
+        ? mapped.filter((item) => {
+          for (const [type, grade] of gradeMap) {
+            // 해당 type의 grade 조건: prestige 배열에 type+grade 매칭 항목 필요
+            const has = item.prestige.some((p) => p.type === type && p.grade === grade)
+            if (!has) return false
+          }
+          return true
+        })
+        : mapped
+      setItems(filtered)
     } catch {
       // 조용히 무시
     } finally {
@@ -182,7 +209,7 @@ export function useMapDiscovery(params: {
     setCurrentPage(1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => fetchCurrent(1), 150)
-  }, [searchQuery, sourceFilter, prestigeFilter, fetchCurrent])
+  }, [searchQuery, sourceFilter, prestigeFilter, prestigeGradeFilter, fetchCurrent])
 
   // --- 페이지 변경 ---
   const setPage = useCallback((page: number) => {

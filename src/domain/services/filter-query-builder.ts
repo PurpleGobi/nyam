@@ -82,7 +82,7 @@ function prestigeFilter(value: string, negate: boolean): string {
   // JSONB 배열에서 type 필드로 필터링 — PostgREST cs (contains) 연산자 사용
   // GIN 인덱스(idx_restaurants_prestige)가 있으므로 성능 OK
   const conditions: Record<string, string> = {
-    michelin_1: 'prestige=cs.[{"type":"michelin"}]',
+    michelin: 'prestige=cs.[{"type":"michelin"}]',
     blue_ribbon: 'prestige=cs.[{"type":"blue_ribbon"}]',
     tv: 'prestige=cs.[{"type":"tv"}]',
     none: 'prestige=eq.[]',

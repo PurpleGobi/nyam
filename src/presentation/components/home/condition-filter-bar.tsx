@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Plus, X, SlidersHorizontal, Check, MapPin, ChevronDown } from 'lucide-react'
 import type { FilterAttribute, CascadingOption, LocationTab } from '@/domain/entities/filter-config'
 import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
-import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL, LOCATION_TAB_KEY, LOCATION_CITY_KEY, LOCATION_DETAIL_KEY, isLocationChipKey } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL, LOCATION_TAB_KEY, LOCATION_CITY_KEY, LOCATION_DETAIL_KEY, isLocationChipKey, PRESTIGE_TYPE_KEY, PRESTIGE_GRADE_PREFIX, isPrestigeChipKey, getPrestigeGradeType } from '@/domain/entities/condition-chip'
 import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { InlinePager } from '@/presentation/components/home/inline-pager'
@@ -142,6 +142,8 @@ export function ConditionFilterBar({
     currentOptions: CascadingOption[]
   } | null>(null)
 
+
+
   // multi-select 체크박스 상태
   const [multiSelectState, setMultiSelectState] = useState<{
     attribute: FilterAttribute
@@ -168,12 +170,24 @@ export function ConditionFilterBar({
   const conditionChips = chips.filter((c) => !isAdvancedChip(c)) as ConditionChip[]
   const advancedChips = chips.filter(isAdvancedChip)
 
-  // 이미 추가된 속성 키 (중복 방지) — cascading 칩은 base key로 그룹, location 칩 그룹도 고려
+  // 이미 추가된 속성 키 (중복 방지) — cascading 칩은 base key로 그룹, location/prestige 칩 그룹도 고려
+  const usedPrestigeTypes = conditionChips
+    .filter((c) => c.attribute === PRESTIGE_TYPE_KEY)
+    .map((c) => String(c.value))
   const usedBaseKeys = new Set(conditionChips.map((c) => {
     if (isLocationChipKey(c.attribute)) return 'location'
+    if (isPrestigeChipKey(c.attribute)) return '__prestige_internal__'
     return isCascadingKey(c.attribute) ? getCascadingBaseKey(c.attribute) : c.attribute
   }))
-  const availableAttributes = attributes.filter((a) => !usedBaseKeys.has(a.key))
+  const availableAttributes = attributes.filter((a) => {
+    if (usedBaseKeys.has(a.key)) return false
+    // prestige (cascade 모드): 아직 선택 안 한 type이 있으면 표시
+    if (a.key === 'prestige' && a.options?.some((o) => o.children && o.children.length > 0)) {
+      const allTypes = a.options?.map((o) => o.value) ?? []
+      return allTypes.some((t) => !usedPrestigeTypes.includes(t))
+    }
+    return true
+  })
 
   /* ── helpers: cascading 트리에서 레벨별 옵션 찾기 ── */
   const findCascadingOptionsAtLevel = useCallback((
@@ -214,12 +228,73 @@ export function ConditionFilterBar({
       const attr = attributes.find((a) => a.key === baseKey)
       return attr?.cascadingLabels?.[level] ?? attr?.label ?? baseKey
     }
+    if (chip.attribute === PRESTIGE_TYPE_KEY) return '명성'
+    if (chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX)) {
+      const type = getPrestigeGradeType(chip.attribute)
+      const prestigeAttr = attributes.find((a) => a.key === 'prestige')
+      const typeOpt = prestigeAttr?.options?.find((o) => o.value === type)
+      return typeOpt?.label ?? type
+    }
     return attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
   }, [attributes, conditionChips])
 
   /* ── handlers ── */
   const handleAddCondition = useCallback((attr: FilterAttribute, value: string) => {
-    const option = attr.options?.find((o) => o.value === value)
+    // prestige 전용 (children 있는 경우만): 상위 type칩 1개 (누적) + grade칩 추가
+    if (attr.key === 'prestige' && attr.options?.some((o) => o.children && o.children.length > 0)) {
+      const opt = attr.options?.find((o) => o.value === value)
+      const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === PRESTIGE_TYPE_KEY) as ConditionChip | undefined
+
+      let next: FilterChipItem[]
+      if (existingTypeChip) {
+        // 기존 type칩에 값 추가
+        const newValue = `${existingTypeChip.value},${value}`
+        const newLabel = newValue.split(',').map((v) => attr.options?.find((o) => o.value === v.trim())?.label ?? v).join(', ')
+        next = chips.map((c) =>
+          c.id === existingTypeChip.id ? { ...c, value: newValue, displayLabel: newLabel } : c,
+        )
+      } else {
+        // 첫 type칩 생성
+        const typeChip: ConditionChip = {
+          id: generateChipId(),
+          attribute: PRESTIGE_TYPE_KEY,
+          operator: 'eq',
+          value,
+          displayLabel: opt?.label ?? value,
+        }
+        next = [...chips, typeChip]
+      }
+      // grade칩 추가
+      const gradeChip: ConditionChip = {
+        id: generateChipId(),
+        attribute: `${PRESTIGE_GRADE_PREFIX}${value}`,
+        operator: 'eq',
+        value: CASCADING_ALL,
+        displayLabel: '전체',
+      }
+      next.push(gradeChip)
+      onChipsChange(next)
+
+      // 남은 미선택 type이 있으면 팝오버 유지, 없으면 닫기
+      const usedAfter = [...usedPrestigeTypes, value]
+      const remaining = attr.options?.filter((o) => !usedAfter.includes(o.value)) ?? []
+      if (remaining.length === 0) {
+        setSelectedAttribute(null)
+        setIsAddOpen(false)
+      }
+      // selectedAttribute 유지 → 팝오버가 열린 채로 남은 type 표시
+      setCascadingState(null)
+      return
+    }
+
+    // top-level 또는 children에서 option 탐색
+    let option = attr.options?.find((o) => o.value === value)
+    if (!option) {
+      for (const parent of attr.options ?? []) {
+        const child = parent.children?.find((c) => c.value === value)
+        if (child) { option = child; break }
+      }
+    }
     const newChip: ConditionChip = {
       id: generateChipId(),
       attribute: attr.key,
@@ -231,6 +306,7 @@ export function ConditionFilterBar({
     setSelectedAttribute(null)
     setIsAddOpen(false)
     setCascadingState(null)
+
   }, [chips, onChipsChange])
 
   /** multi-select에서 editingChipId를 추적하는 ref (실시간 적용에 필요) */
@@ -239,7 +315,6 @@ export function ConditionFilterBar({
   /** multi-select 실시간 적용 — 체크 토글할 때마다 칩을 즉시 업데이트 */
   const applyMultiSelectImmediate = useCallback((attr: FilterAttribute, selected: Set<string>) => {
     if (selected.size === 0) {
-      // 전부 해제 → 칩 제거
       if (multiSelectChipIdRef.current) {
         onChipsChange(chips.filter((c) => c.id !== multiSelectChipIdRef.current))
         multiSelectChipIdRef.current = null
@@ -253,14 +328,12 @@ export function ConditionFilterBar({
       .join(', ')
 
     if (multiSelectChipIdRef.current) {
-      // 기존 칩 업데이트
       onChipsChange(chips.map((c) =>
         c.id === multiSelectChipIdRef.current
           ? { ...c, value: combinedValue, displayLabel: combinedLabel }
           : c,
       ))
     } else {
-      // 신규 칩 생성
       const newId = generateChipId()
       multiSelectChipIdRef.current = newId
       const newChip: ConditionChip = {
@@ -480,19 +553,29 @@ export function ConditionFilterBar({
           return c
         }))
       }
+    } else if (chip.attribute === PRESTIGE_TYPE_KEY) {
+      // prestige type 칩 삭제 → 모든 prestige 칩 제거 (전체 리셋)
+      onChipsChange(chips.filter((c) => !isAdvancedChip(c) ? !isPrestigeChipKey(c.attribute) : true))
     } else {
       onChipsChange(chips.filter((c) => c.id !== chipId))
     }
     setEditingChipId(null)
     setCascadingState(null)
-  }, [chips, conditionChips, onChipsChange])
+  }, [chips, conditionChips, attributes, onChipsChange])
 
   /** 칩 값 변경 (일반 select) */
   const handleChangeChipValue = useCallback((chipId: string, newValue: string) => {
     const chip = conditionChips.find((c) => c.id === chipId)
     if (!chip) return
     const attr = attributes.find((a) => a.key === chip.attribute)
-    const option = attr?.options?.find((o) => o.value === newValue)
+    // top-level 또는 children에서 option 탐색
+    let option = attr?.options?.find((o) => o.value === newValue)
+    if (!option) {
+      for (const parent of attr?.options ?? []) {
+        const child = parent.children?.find((c) => c.value === newValue)
+        if (child) { option = child; break }
+      }
+    }
     onChipsChange(chips.map((c) =>
       c.id === chipId
         ? { ...c, value: newValue, displayLabel: option?.label ?? newValue }
@@ -548,6 +631,7 @@ export function ConditionFilterBar({
     setCascadingState(null)
     setMultiSelectState(null)
     setLocationState(null)
+
   }, [])
 
   /** 칩 클릭 → 토글 or 편집 팝오버 */
@@ -601,6 +685,8 @@ export function ConditionFilterBar({
           const attrLabel = getChipAttrLabel(chip)
           const isAllPlaceholder = chip.value === CASCADING_ALL
           const isLocChild = chip.attribute === LOCATION_DETAIL_KEY
+          const isPrestigeGrade = chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX)
+          const isChildChip = isLocChild || isPrestigeGrade
           const isLocTab = chip.attribute === LOCATION_TAB_KEY
           return (
             <button
@@ -612,7 +698,7 @@ export function ConditionFilterBar({
               onClick={() => handleChipClick(chip)}
             >
               <span style={{ opacity: 0.7, fontSize: '11px' }}>{attrLabel}</span>
-              {isLocChild ? (
+              {isChildChip ? (
                 <span className="flex items-center gap-0.5">
                   {chip.displayLabel}
                   <ChevronDown size={14} />
@@ -620,8 +706,8 @@ export function ConditionFilterBar({
               ) : (
                 chip.displayLabel
               )}
-              {/* tab 칩 → X로 전체 그룹 삭제, child 칩 → X 없음 (드롭다운으로 변경) */}
-              {!isLocChild && (
+              {/* child 칩(location detail, prestige grade) → X 없음 (드롭다운으로 변경) */}
+              {!isChildChip && (
                 <span
                   role="button"
                   tabIndex={0}
@@ -787,7 +873,10 @@ export function ConditionFilterBar({
           >
             ← {selectedAttribute.label}
           </button>
-          {selectedAttribute.options?.map((opt) => (
+          {(selectedAttribute.key === 'prestige' && selectedAttribute.options?.some((o) => o.children && o.children.length > 0)
+            ? selectedAttribute.options?.filter((o) => !usedPrestigeTypes.includes(o.value))
+            : selectedAttribute.options
+          )?.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -1156,6 +1245,55 @@ export function ConditionFilterBar({
                 >
                   {opt.label}
                   {String(chip.value) === opt.value && <Check size={14} style={{ color: accent }} />}
+                </button>
+              ))}
+            </Popover>
+          )
+        }
+
+        // grade sub-chip 편집 (multi-select children에서 자동 생성된 칩)
+        const gradeMatch = chip.attribute.match(/^(.+)_grade:(.+)$/)
+        if (gradeMatch) {
+          const parentKey = gradeMatch[1]
+          const typeValue = gradeMatch[2]
+          const parentAttr = attributes.find((a) => a.key === parentKey)
+          const parentOpt = parentAttr?.options?.find((o) => o.value === typeValue)
+          if (!parentOpt?.children) return null
+          return (
+            <Popover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
+              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
+                {parentOpt.label}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onChipsChange(chips.map((c) =>
+                    c.id === editingChipId ? { ...c, value: CASCADING_ALL, displayLabel: '전체' } : c,
+                  ))
+                  setEditingChipId(null)
+                }}
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                style={{ color: accent }}
+              >
+                전체
+                {String(chip.value) === CASCADING_ALL && <Check size={14} style={{ color: accent }} />}
+              </button>
+              <div style={{ borderTop: '1px solid var(--border)', margin: '2px 0' }} />
+              {parentOpt.children.map((child) => (
+                <button
+                  key={child.value}
+                  type="button"
+                  onClick={() => {
+                    onChipsChange(chips.map((c) =>
+                      c.id === editingChipId ? { ...c, value: child.value, displayLabel: child.label } : c,
+                    ))
+                    setEditingChipId(null)
+                  }}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {child.label}
+                  {String(chip.value) === child.value && <Check size={14} style={{ color: accent }} />}
                 </button>
               ))}
             </Popover>

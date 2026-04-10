@@ -88,12 +88,19 @@ export function getRecordField(record: Record<string, unknown>, attrKey: string)
   return record[field]
 }
 
-/** prestige 복합 조건 매칭 — prestige 배열 기반 */
+/** prestige 복합 조건 매칭 — prestige 배열 기반 (type + grade 지원) */
 function matchPrestige(record: Record<string, unknown>, value: string): boolean {
-  const rp = (record.prestige ?? []) as Array<{ type: string }>
+  const rp = (record.prestige ?? []) as Array<{ type: string; grade?: string }>
 
+  // grade 레벨 매칭: 'michelin:3_star', 'blue_ribbon:2_ribbon' 등
+  if (value.includes(':')) {
+    const [type, grade] = value.split(':')
+    return rp.some(p => p.type === type && p.grade === grade)
+  }
+
+  // type 레벨 매칭: 'michelin', 'blue_ribbon', 'tv', 'none'
   switch (value) {
-    case 'michelin_1':
+    case 'michelin':
       return rp.some(p => p.type === 'michelin')
     case 'blue_ribbon':
       return rp.some(p => p.type === 'blue_ribbon')
@@ -162,6 +169,14 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
   // -- 특수 속성: prestige (미슐랭/블루리본/TV/없음) --
   if (attribute === 'prestige' && (operator === 'eq' || operator === 'neq')) {
     const matches = matchPrestige(record, String(value))
+    return operator === 'eq' ? matches : !matches
+  }
+
+  // -- 특수 속성: prestige grade sub-chip (prestige_grade:michelin 등) --
+  if (attribute.startsWith('prestige_grade:') && (operator === 'eq' || operator === 'neq')) {
+    const type = attribute.slice('prestige_grade:'.length)
+    const rp = (record.prestige ?? []) as Array<{ type: string; grade?: string }>
+    const matches = rp.some(p => p.type === type && p.grade === String(value))
     return operator === 'eq' ? matches : !matches
   }
 

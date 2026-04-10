@@ -8,6 +8,7 @@ export interface FilterAttributeOption {
   value: string
   label: string
   group?: string  // 시각적 그룹 구분용 (예: '내 컬렉션', '다른 사람')
+  children?: FilterAttributeOption[]  // drill-down 하위 옵션 (select 타입에서 cascade UX)
 }
 
 /** 캐스케이딩 셀렉트용 트리 옵션 (country → city → district/area) */
@@ -266,7 +267,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '명성',
     type: 'select',
     options: [
-      { value: 'michelin_1', label: '미슐랭' },
+      { value: 'michelin', label: '미슐랭' },
       { value: 'blue_ribbon', label: '블루리본' },
       { value: 'tv', label: 'TV출연' },
       { value: 'none', label: '수상없음' },
@@ -305,6 +306,48 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: '2', label: '2인' },
       { value: '3-4', label: '3~4인' },
       { value: '5+', label: '5인+' },
+    ],
+  },
+]
+
+// ─── 지도뷰 필터 속성 (식당 탭 지도 모드 전용) ───
+
+export const MAP_FILTER_ATTRIBUTES: FilterAttribute[] = [
+  {
+    key: 'map_source',
+    label: '보기',
+    type: 'multi-select',
+    options: [
+      { value: 'mine', label: '내기록' },
+      { value: 'bookmark', label: '찜' },
+      { value: 'following', label: '팔로잉' },
+      { value: 'bubble', label: '버블' },
+    ],
+  },
+  {
+    key: 'prestige',
+    label: '명성',
+    type: 'select',
+    options: [
+      { value: 'michelin', label: '미슐랭', children: [
+        { value: '3_star', label: '★★★' },
+        { value: '2_star', label: '★★' },
+        { value: '1_star', label: '★' },
+        { value: 'bib', label: '빕 구르망' },
+      ]},
+      { value: 'blue_ribbon', label: '블루리본', children: [
+        { value: '3_ribbon', label: '3리본' },
+        { value: '2_ribbon', label: '2리본' },
+        { value: '1_ribbon', label: '1리본' },
+      ]},
+      { value: 'tv', label: 'TV출연', children: [
+        { value: '흑백요리사', label: '흑백요리사' },
+        { value: '줄서는식당', label: '줄서는식당' },
+        { value: '생활의달인', label: '생활의달인' },
+        { value: '맛있는녀석들', label: '맛있는녀석들' },
+        { value: '성시경_먹을텐데', label: '성시경 먹을텐데' },
+        { value: '허영만_백반기행', label: '허영만 백반기행' },
+      ]},
     ],
   },
 ]

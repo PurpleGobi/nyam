@@ -56,6 +56,15 @@ export function chipsToFilterRules(chips: FilterChipItem[]): FilterRule[] {
         rules.push({ attribute: detailAttr, operator: chip.operator, value: chip.value })
         continue
       }
+      // prestige 칩 그룹: type칩은 OR로, grade칩은 그대로 전달
+      if (chip.attribute === PRESTIGE_TYPE_KEY) {
+        rules.push({ conjunction: 'or', attribute: 'prestige', operator: chip.operator, value: chip.value })
+        continue
+      }
+      if (chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX)) {
+        rules.push({ attribute: chip.attribute, operator: chip.operator, value: chip.value })
+        continue
+      }
 
       // filterKey 우선, 없으면 cascading base key, 아니면 attribute 그대로
       const attribute = chip.filterKey
@@ -103,6 +112,20 @@ export const LOCATION_DETAIL_KEY = 'location__detail'
 /** location 칩 키인지 판별 */
 export function isLocationChipKey(key: string): boolean {
   return key === LOCATION_TAB_KEY || key === LOCATION_CITY_KEY || key === LOCATION_DETAIL_KEY
+}
+
+/* ── prestige 칩 키 상수 ── */
+export const PRESTIGE_TYPE_KEY = 'prestige_type'
+export const PRESTIGE_GRADE_PREFIX = 'prestige_grade:'
+
+/** prestige 칩 키인지 판별 */
+export function isPrestigeChipKey(key: string): boolean {
+  return key === PRESTIGE_TYPE_KEY || key.startsWith(PRESTIGE_GRADE_PREFIX)
+}
+
+/** prestige grade 칩에서 type 추출 (prestige_grade:michelin → michelin) */
+export function getPrestigeGradeType(key: string): string {
+  return key.slice(PRESTIGE_GRADE_PREFIX.length)
 }
 
 /** cascading 칩 키 생성 (예: district__0, district__1) */
