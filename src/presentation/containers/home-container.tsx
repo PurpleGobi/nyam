@@ -25,6 +25,7 @@ import { useSettings } from '@/application/hooks/use-settings'
 import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
 import { useBookmarkMap } from '@/application/hooks/use-bookmark'
+import { Heart } from 'lucide-react'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -155,8 +156,9 @@ export function HomeContainer() {
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
-  // ── 찜 토글 (카드 뷰) ──
-  const { getIsBookmarked, toggle: toggleBookmark } = useBookmarkMap(user?.id ?? null)
+  // ── 찜 토글 (카드/리스트 뷰) ──
+  const { getIsBookmarked, toggle: toggleBookmark, batchAdd: batchBookmarkAdd, batchRemove: batchBookmarkRemove } = useBookmarkMap(user?.id ?? null)
+
 
   // 탭+필터 sticky 영역 ref → 지도 stickyTop 동적 계산
   const stickyBarRef = useRef<HTMLDivElement>(null)
@@ -766,30 +768,60 @@ export function HomeContainer() {
     // 리스트(list) 뷰
     if (viewMode === 'list') {
       if (displayTargets.length === 0) return renderEmptyState()
+      const allBookmarked = displayTargets.length > 0 && displayTargets.every((t) => getIsBookmarked(t.targetId, t.isBookmarked))
       return (
         <div className="content-detail px-4 pb-24 md:px-8">
-          {displayTargets.map((target, i) => (
-            <CompactListItem
-              key={target.targetId}
-              rank={i + 1}
-              photoUrl={target.photoUrl}
-              name={target.name}
-              meta={[target.genre ?? target.variety, target.latestVisitDate].filter(Boolean).join(' · ')}
-              score={target.satisfaction}
-              axisX={target.axisX}
-              axisY={target.axisY}
-              accentType={recordTab}
-              visitCount={target.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
-              prestige={target.prestige ?? []}
-              onClick={() =>
-                router.push(
-                  `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
-                )
+          {displayTargets.map((target, i) => {
+            const bookmarked = getIsBookmarked(target.targetId, target.isBookmarked)
+            return (
+              <CompactListItem
+                key={target.targetId}
+                rank={i + 1}
+                photoUrl={target.photoUrl}
+                name={target.name}
+                meta={[target.genre ?? target.variety, target.latestVisitDate].filter(Boolean).join(' · ')}
+                score={target.satisfaction}
+                axisX={target.axisX}
+                axisY={target.axisY}
+                accentType={recordTab}
+                visitCount={target.visitCount}
+                scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+                prestige={target.prestige ?? []}
+                myScore={target.myScore}
+                nyamScore={target.nyamScore}
+                bubbleScore={target.bubbleScore}
+                isBookmarked={bookmarked}
+                onBookmarkToggle={() => toggleBookmark(target.targetId, target.targetType, bookmarked)}
+                onClick={() =>
+                  router.push(
+                    `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
+                  )
+                }
+              />
+            )
+          })}
+          {/* 전체 찜하기 / 전체 찜해제 */}
+          <button
+            type="button"
+            onClick={() => {
+              if (allBookmarked) {
+                const targets = displayTargets
+                  .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+                batchBookmarkRemove(targets)
+              } else {
+                const targets = displayTargets
+                  .filter((t) => !getIsBookmarked(t.targetId, t.isBookmarked))
+                  .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+                batchBookmarkAdd(targets)
               }
-            />
-          ))}
-          </div>
+            }}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 py-3 text-[12px] font-medium"
+            style={{ color: allBookmarked ? 'var(--negative)' : 'var(--text-hint)' }}
+          >
+            <Heart size={13} fill={allBookmarked ? 'currentColor' : 'transparent'} />
+            {allBookmarked ? '전체 찜해제' : '전체 찜하기'}
+          </button>
+        </div>
       )
     }
 
@@ -831,6 +863,9 @@ export function HomeContainer() {
               scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
               isBookmarked={bookmarked}
               onBookmarkToggle={() => toggleBookmark(target.targetId, 'wine', bookmarked)}
+              myScore={target.myScore}
+              nyamScore={target.nyamScore}
+              bubbleScore={target.bubbleScore}
             />
           ) : (
             <RecordCard
@@ -856,6 +891,9 @@ export function HomeContainer() {
               prestige={target.prestige ?? []}
               isBookmarked={bookmarked}
               onBookmarkToggle={() => toggleBookmark(target.targetId, target.targetType, bookmarked)}
+              myScore={target.myScore}
+              nyamScore={target.nyamScore}
+              bubbleScore={target.bubbleScore}
             />
           )
         })}

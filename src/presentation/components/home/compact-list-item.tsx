@@ -1,12 +1,12 @@
 'use client'
 
-import { Wine, Users } from 'lucide-react'
+import { Wine, Users, Heart } from 'lucide-react'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
 import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
 import { formatRelativeDate } from '@/shared/utils/date-format'
 import type { ScoreSource } from '@/domain/entities/score'
-import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
+import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
@@ -27,6 +27,13 @@ interface CompactListItemProps {
   visitCount?: number
   scoreSource?: ScoreSource
   prestige?: RestaurantPrestige[]
+  myScore?: number | null
+  nyamScore?: number | null
+  bubbleScore?: number | null
+  /** 찜 상태 */
+  isBookmarked?: boolean
+  /** 찜 토글 */
+  onBookmarkToggle?: () => void
 }
 
 export function CompactListItem({
@@ -45,6 +52,11 @@ export function CompactListItem({
   visitCount,
   scoreSource,
   prestige,
+  myScore,
+  nyamScore,
+  bubbleScore,
+  isBookmarked,
+  onBookmarkToggle,
 }: CompactListItemProps) {
   const isTop3 = rank != null && rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
@@ -111,15 +123,35 @@ export function CompactListItem({
             ? <BubbleQuadrant dots={bubbleDots} size={48} />
             : <MiniQuadrant axisX={axisX!} axisY={axisY!} satisfaction={score!} accentColor={accentColor} size={48} />
         )}
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-end gap-0.5">
           <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
             {score != null ? score : '—'}
           </span>
-          {score != null && scoreSource && scoreSource !== 'mine' && (
-            <ScoreSourceBadge source={scoreSource} />
-          )}
+          <MiniScoreBadges
+            myScore={myScore ?? null}
+            nyamScore={nyamScore ?? null}
+            bubbleScore={bubbleScore ?? null}
+            accentType={accentType}
+          />
         </div>
       </div>
+
+      {/* 찜 Heart */}
+      {onBookmarkToggle && (
+        <div
+          role="button"
+          tabIndex={0}
+          className="flex shrink-0 cursor-pointer items-center justify-center pl-2"
+          onClick={(e) => { e.stopPropagation(); onBookmarkToggle() }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle() } }}
+        >
+          <Heart
+            size={16}
+            style={{ color: isBookmarked ? '#FF6038' : 'var(--text-hint)' }}
+            fill={isBookmarked ? '#FF6038' : 'transparent'}
+          />
+        </div>
+      )}
     </button>
   )
 }

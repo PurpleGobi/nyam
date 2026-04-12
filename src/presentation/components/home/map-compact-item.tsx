@@ -1,3 +1,4 @@
+import { Heart } from 'lucide-react'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 
@@ -14,6 +15,10 @@ interface MapCompactItemProps {
   inNyamDb: boolean
   isSelected: boolean
   onClick: () => void
+  /** 찜 상태 */
+  isBookmarked?: boolean
+  /** 찜 토글 */
+  onBookmarkToggle?: () => void
 }
 
 function formatDistance(km: number): string {
@@ -59,6 +64,8 @@ export function MapCompactItem({
   inNyamDb,
   isSelected,
   onClick,
+  isBookmarked,
+  onBookmarkToggle,
 }: MapCompactItemProps) {
   const meta = [genre, distanceKm != null ? formatDistance(distanceKm) : null]
     .filter(Boolean)
@@ -124,6 +131,23 @@ export function MapCompactItem({
           <ScoreBadge label="G" value={String(googleRating)} color="var(--text-hint)" />
         )}
       </div>
+
+      {/* 찜 Heart */}
+      {onBookmarkToggle && (
+        <div
+          role="button"
+          tabIndex={0}
+          className="flex shrink-0 cursor-pointer items-center justify-center pl-1"
+          onClick={(e) => { e.stopPropagation(); onBookmarkToggle() }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle() } }}
+        >
+          <Heart
+            size={16}
+            style={{ color: isBookmarked ? '#FF6038' : 'var(--text-hint)' }}
+            fill={isBookmarked ? '#FF6038' : 'transparent'}
+          />
+        </div>
+      )}
     </button>
   )
 }

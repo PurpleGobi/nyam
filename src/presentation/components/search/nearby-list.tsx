@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Plus, UtensilsCrossed } from 'lucide-react'
+import { MapPin, Plus, UtensilsCrossed, Heart } from 'lucide-react'
 import type { NearbyRestaurant } from '@/domain/entities/search'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 
@@ -15,11 +15,9 @@ export const NEARBY_GENRE_FILTERS = [
 ] as const
 
 export const NEARBY_RADIUS_OPTIONS = [
+  { value: 50, label: '50m' },
   { value: 100, label: '100m' },
-  { value: 250, label: '250m' },
   { value: 500, label: '500m' },
-  { value: 1000, label: '1km' },
-  { value: 2000, label: '2km' },
 ] as const
 
 interface NearbyListProps {
@@ -31,9 +29,13 @@ interface NearbyListProps {
   onRadiusChange: (radius: number) => void
   onSelect: (restaurantId: string) => void
   onRegister?: () => void
+  /** 찜 상태 맵 (restaurantId → boolean) */
+  bookmarkMap?: Map<string, boolean>
+  /** 개별 찜 토글 */
+  onBookmarkToggle?: (restaurantId: string) => void
 }
 
-export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChange, onRadiusChange, onSelect, onRegister }: NearbyListProps) {
+export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChange, onRadiusChange, onSelect, onRegister, bookmarkMap, onBookmarkToggle }: NearbyListProps) {
   return (
     <div className="px-4 py-3">
       <div className="mb-2 flex items-center gap-1.5 px-1">
@@ -99,39 +101,60 @@ export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChang
 
       {!isLoading && restaurants.length > 0 && (
         <ul className="flex flex-col">
-          {restaurants.map((r) => (
-            <li key={r.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(r.id)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-[var(--accent-food-light)]"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-food-light)]">
-                  <UtensilsCrossed size={18} className="text-[var(--accent-food)]" />
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-[var(--text)]">
-                    <span className="truncate">{r.name}</span>
-                    {r.prestige && r.prestige.length > 0 && <PrestigeBadges prestige={r.prestige} />}
-                  </p>
-                  <p className="truncate text-[12px] text-[var(--text-sub)]">
-                    {[r.genre, r.area].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {r.hasRecord && (
-                    <span className="rounded-full bg-[var(--accent-food-light)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-food)]">
-                      기록 있음
+          {restaurants.map((r) => {
+            const isItemBookmarked = bookmarkMap?.get(r.id) ?? false
+
+            return (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(r.id)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-[var(--accent-food-light)]"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-food-light)]">
+                    <UtensilsCrossed size={18} className="text-[var(--accent-food)]" />
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="flex items-center gap-1 truncate text-[14px] font-semibold text-[var(--text)]">
+                      <span className="truncate">{r.name}</span>
+                      {r.prestige && r.prestige.length > 0 && <PrestigeBadges prestige={r.prestige} />}
+                    </p>
+                    <p className="truncate text-[12px] text-[var(--text-sub)]">
+                      {[r.genre, r.area].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {r.hasRecord && (
+                      <span className="rounded-full bg-[var(--accent-food-light)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-food)]">
+                        기록 있음
+                      </span>
+                    )}
+                    <span className="flex items-center gap-0.5 text-[12px] text-[var(--text-hint)]">
+                      <MapPin size={12} />
+                      {r.distance < 1000 ? `${Math.round(r.distance)}m` : `${(r.distance / 1000).toFixed(1)}km`}
                     </span>
+                  </div>
+
+                  {/* 찜 Heart */}
+                  {onBookmarkToggle && (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex shrink-0 cursor-pointer items-center justify-center pl-1"
+                      onClick={(e) => { e.stopPropagation(); onBookmarkToggle(r.id) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle(r.id) } }}
+                    >
+                      <Heart
+                        size={16}
+                        style={{ color: isItemBookmarked ? '#FF6038' : 'var(--text-hint)' }}
+                        fill={isItemBookmarked ? '#FF6038' : 'transparent'}
+                      />
+                    </div>
                   )}
-                  <span className="flex items-center gap-0.5 text-[12px] text-[var(--text-hint)]">
-                    <MapPin size={12} />
-                    {r.distance < 1000 ? `${Math.round(r.distance)}m` : `${(r.distance / 1000).toFixed(1)}km`}
-                  </span>
-                </div>
-              </button>
-            </li>
-          ))}
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
 

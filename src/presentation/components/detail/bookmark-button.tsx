@@ -17,7 +17,7 @@ export function BookmarkButton({
   variant = 'card',
   size = 20,
 }: BookmarkButtonProps) {
-  const btnRef = useRef<HTMLButtonElement>(null)
+  const btnRef = useRef<HTMLDivElement>(null)
 
   const handleClick = useCallback(() => {
     const el = btnRef.current
@@ -35,17 +35,19 @@ export function BookmarkButton({
     : (isBookmarked ? '#FF6038' : 'var(--text-hint)')
 
   return (
-    <button
+    <div
       ref={btnRef}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
-      className="flex items-center justify-center"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick() } }}
+      className="flex cursor-pointer items-center justify-center"
     >
       <Heart
         size={size}
         style={{ color }}
         fill={isBookmarked ? color : 'transparent'}
       />
-    </button>
+    </div>
   )
 }

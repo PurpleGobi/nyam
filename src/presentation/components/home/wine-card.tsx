@@ -2,10 +2,11 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Wine } from 'lucide-react'
+import { Wine, Share2 } from 'lucide-react'
+import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
-import { ScoreSourceBadge } from '@/presentation/components/home/score-source-badge'
+import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
 import type { ScoreSource } from '@/domain/entities/score'
 
 export interface WineBubbleMember {
@@ -37,9 +38,20 @@ export interface WineCardProps {
   visitCount?: number
   latestDate?: string | null
   scoreSource?: ScoreSource
+  /** 타인 기록 여부 */
+  isNotMine?: boolean
+  /** 타인 기록 카드용 찜 상태 */
+  isBookmarked?: boolean
+  /** 타인 기록 카드용 찜 토글 핸들러 */
+  onBookmarkToggle?: () => void
+  /** 타인 기록 카드용 공유 핸들러 */
+  onShareClick?: () => void
+  myScore?: number | null
+  nyamScore?: number | null
+  bubbleScore?: number | null
 }
 
-export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource }: WineCardProps) {
+export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource, isNotMine, isBookmarked, onBookmarkToggle, onShareClick, myScore, nyamScore, bubbleScore }: WineCardProps) {
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
@@ -73,6 +85,36 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
             <Wine size={32} color="rgba(255,255,255,0.4)" />
           </div>
         )}
+        {/* 찜+공유 오버레이 (hero 동일) */}
+        {onBookmarkToggle && (
+          <>
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0"
+              style={{ height: '48px', background: 'linear-gradient(transparent, rgba(0,0,0,0.35))' }}
+            />
+            <div
+              className="absolute z-[2] flex items-center gap-2.5"
+              style={{ bottom: '6px', right: '8px' }}
+            >
+              {onShareClick && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onShareClick() }}
+                >
+                  <Share2 size={16} style={{ color: 'rgba(255,255,255,0.85)' }} />
+                </button>
+              )}
+              <span onClick={(e) => e.stopPropagation()}>
+                <BookmarkButton
+                  isBookmarked={isBookmarked ?? false}
+                  onToggle={onBookmarkToggle}
+                  variant="hero"
+                  size={16}
+                />
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-3.5" style={{ minWidth: 0 }}>
@@ -91,19 +133,21 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
             />
           )}
           {myRecord?.satisfaction != null && (
-            <div className="flex items-baseline gap-1">
-              <span
-                className="text-[32px] font-extrabold leading-none"
-                style={{ color: 'var(--accent-wine)' }}
-              >
-                {myRecord.satisfaction}
-              </span>
-              {scoreSource && scoreSource !== 'mine' && (
-                <ScoreSourceBadge source={scoreSource} />
-              )}
-            </div>
+            <span
+              className="text-[32px] font-extrabold leading-none"
+              style={{ color: 'var(--accent-wine)' }}
+            >
+              {myRecord.satisfaction}
+            </span>
           )}
         </div>
+
+        <MiniScoreBadges
+          myScore={myScore ?? null}
+          nyamScore={nyamScore ?? null}
+          bubbleScore={bubbleScore ?? null}
+          accentType="wine"
+        />
 
         {(latestDate || (visitCount != null && visitCount > 0)) && (
           <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
