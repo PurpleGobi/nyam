@@ -656,6 +656,8 @@ export function HomeContainer() {
   isMapSearchModeRef.current = isMapSearchMode
   const mapSearchSuppressIdleRef = useRef(false)
   const [mapSearchSelectedId, setMapSearchSelectedId] = useState<string | null>(null)
+  // 검색 모드에서 지도 idle 시 마지막 bounds 저장 (초기화 시 현재 위치에서 nearby 검색용)
+  const lastMapIdleRef = useRef<{ center: { lat: number; lng: number }; zoom: number; bounds: { north: number; south: number; east: number; west: number } | null } | null>(null)
 
   // 빈 상태
   const renderEmptyState = () => (
@@ -682,13 +684,15 @@ export function HomeContainer() {
         <MapView
           items={isMapSearchMode ? mapSearchItems : mapDiscovery.pageItems}
           onMapIdle={(center, zoom, bounds) => {
-            // 검색 모드에서는 idle 무시
+            // 검색 모드에서는 bounds만 저장하고 nearby 검색은 하지 않음
             if (isMapSearchModeRef.current) {
+              lastMapIdleRef.current = { center, zoom, bounds }
               if (mapSearchSuppressIdleRef.current) {
                 mapSearchSuppressIdleRef.current = false
               }
               return
             }
+            lastMapIdleRef.current = { center, zoom, bounds }
             mapDiscovery.onMapIdle(center, zoom, bounds)
           }}
           onItemSelect={() => {
@@ -720,10 +724,6 @@ export function HomeContainer() {
           onExternalSelect={isMapSearchMode ? (id) => {
             setMapSearchSelectedId(id)
             mapSearchSuppressIdleRef.current = true
-          } : undefined}
-          onUserDrag={isMapSearchMode ? () => {
-            setSearchQuery('')
-            setMapSearchSelectedId(null)
           } : undefined}
         />
       )
@@ -891,11 +891,28 @@ export function HomeContainer() {
           onMapToggle={toggleMap}
           onSortToggle={toggleSort}
           isSortOpen={isSortOpen}
-          onSearchToggle={() => { toggleSearch(); setSearchQuery('') }}
+          onSearchToggle={() => {
+            toggleSearch()
+            setSearchQuery('')
+            setMapSearchSelectedId(null)
+            // 현재 지도 위치에서 nearby 검색 재시작
+            if (lastMapIdleRef.current) {
+              const { center, zoom, bounds } = lastMapIdleRef.current
+              mapDiscovery.onMapIdle(center, zoom, bounds)
+            }
+          }}
           isSearchOpen={isSearchOpen}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          onSearchClear={() => setSearchQuery('')}
+          onSearchClear={() => {
+            setSearchQuery('')
+            setMapSearchSelectedId(null)
+            // 현재 지도 위치에서 nearby 검색 재시작
+            if (lastMapIdleRef.current) {
+              const { center, zoom, bounds } = lastMapIdleRef.current
+              mapDiscovery.onMapIdle(center, zoom, bounds)
+            }
+          }}
           onStatsToggle={() => setIsStatsOpen(!isStatsOpen)}
           isStatsOpen={isStatsOpen}
           canShowStats={canShowStats && !isFollowingMode}

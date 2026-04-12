@@ -88,9 +88,9 @@ function SearchInner() {
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
 
   // 텍스트 검색 후 panTo로 지도가 이동했을 때 bounds 갱신 억제
-  // 유저가 직접 지도를 터치/드래그하면 해제
   const [suppressIdle, setSuppressIdle] = useState(false)
-  const userDragRef = useRef(false)
+  // 검색 모드에서 마지막 맵 bounds 저장 (초기화 시 현재 위치에서 nearby 검색용)
+  const lastMapIdleRef = useRef<{ center: { lat: number; lng: number }; zoom: number; bounds: { north: number; south: number; east: number; west: number } | null } | null>(null)
 
   // 검색 결과 → MapDiscoveryItem 변환 (지도 마커 표시용)
   const searchMapItems: MapDiscoveryItem[] = useMemo(() => {
@@ -119,11 +119,15 @@ function SearchInner() {
       }))
   }, [results, screenState, targetType])
 
-  // 검색어 변경 시 선택 초기화
+  // 검색어 변경 시 선택 초기화 + 빈 문자열이면 현재 지도 위치에서 nearby 검색
   const setQueryWithReset = useCallback((q: string) => {
     setQuery(q)
     setSearchSelectedId(null)
-  }, [setQuery])
+    if (q === '' && lastMapIdleRef.current) {
+      const { center, zoom, bounds } = lastMapIdleRef.current
+      mapDiscovery.onMapIdle(center, zoom, bounds)
+    }
+  }, [setQuery, mapDiscovery])
 
   const handleSelect = useCallback(
     async (result: SearchResult) => {
@@ -298,13 +302,12 @@ function SearchInner() {
           <MapView
             items={screenState === 'idle' ? mapDiscovery.pageItems : searchMapItems}
             onMapIdle={(center, zoom, bounds) => {
+              lastMapIdleRef.current = { center, zoom, bounds }
               if (screenState !== 'idle' && suppressIdle) {
                 setSuppressIdle(false)
                 return
               }
               if (screenState !== 'idle') {
-                // 검색 모드에서는 지도 이동해도 모드 전환하지 않음
-                // (사용자가 검색바를 비우면 자연스럽게 idle 복귀)
                 return
               }
               mapDiscovery.onMapIdle(center, zoom, bounds)
@@ -317,7 +320,7 @@ function SearchInner() {
             onPageChange={mapDiscovery.setPage}
             userLat={gps?.lat}
             userLng={gps?.lng}
-            radius={screenState === 'idle' ? 50 : undefined}
+            radius={50}
             stickyTop="0px"
             splitLayout
             hideList={screenState === 'searching' || screenState === 'typing'}
