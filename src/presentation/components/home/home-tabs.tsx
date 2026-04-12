@@ -55,10 +55,24 @@ export function HomeTabs({
   const tabType = foodActive ? 'food' : 'wine'
   const activeVariant = HOME_TABS.find((t) => t.key === activeTab)?.variant ?? 'food'
   const inputRef = useRef<HTMLInputElement>(null)
+  const searchBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isSearchOpen) inputRef.current?.focus()
   }, [isSearchOpen])
+
+  useEffect(() => {
+    if (!isSearchOpen) return
+    // 지도뷰에서는 검색 결과가 지도 아래 목록에 표시되므로 외부 클릭으로 닫지 않음
+    if (isMapView) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(e.target as Node)) {
+        onSearchToggle()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isSearchOpen, isMapView, onSearchToggle])
 
   return (
     <StickyTabs
@@ -68,7 +82,7 @@ export function HomeTabs({
       onTabChange={onTabChange}
       rightSlot={
         isSearchOpen ? (
-          <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
+          <div ref={searchBarRef} className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
             <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
             <input
               ref={inputRef}

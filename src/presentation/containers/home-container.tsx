@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine, Users } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { HomeTarget } from '@/domain/entities/home-target'
-import type { HomeViewType } from '@/domain/repositories/home-repository'
+import type { HomeViewType, HomeDbFilters } from '@/domain/repositories/home-repository'
 import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
@@ -24,6 +24,7 @@ import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
 import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
+import { useBookmarkMap } from '@/application/hooks/use-bookmark'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -32,6 +33,9 @@ import { RecordCard } from '@/presentation/components/home/record-card'
 import { WineCard } from '@/presentation/components/home/wine-card'
 import { CompactListItem } from '@/presentation/components/home/compact-list-item'
 import { useMapDiscovery } from '@/application/hooks/use-map-discovery'
+import { useSearch } from '@/application/hooks/use-search'
+import type { MapDiscoveryItem } from '@/domain/entities/map-discovery'
+import type { RestaurantSearchResult } from '@/domain/entities/search'
 import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
 import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
@@ -139,11 +143,36 @@ const MEAL_TIME_LABELS: Record<string, string> = {
   snack: '간식',
 }
 
+/** DB에서 처리할 필터 속성 (SQL WHERE로 처리) */
+const DB_FILTER_ATTRIBUTES = new Set([
+  'genre', 'district', 'area', 'prestige', 'price_range',
+  'wine_type', 'variety', 'country', 'vintage', 'acidity_level', 'sweetness_level',
+])
+
 export function HomeContainer() {
   const { user } = useAuth()
   const router = useRouter()
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
+
+  // ── 찜 토글 (카드 뷰) ──
+  const { getIsBookmarked, toggle: toggleBookmark } = useBookmarkMap(user?.id ?? null)
+
+  // 탭+필터 sticky 영역 ref → 지도 stickyTop 동적 계산
+  const stickyBarRef = useRef<HTMLDivElement>(null)
+  const [mapStickyTop, setMapStickyTop] = useState('126px')
+  useEffect(() => {
+    const el = stickyBarRef.current
+    if (!el) return
+    const update = () => {
+      const top = parseFloat(getComputedStyle(el).top) || 0
+      setMapStickyTop(`${top + el.offsetHeight}px`)
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
   const { bubbles: myBubbles, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null)
 
   // ── 버블 전문성 ──
@@ -193,7 +222,7 @@ export function HomeContainer() {
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     toggleMap,
-    isSortOpen, toggleSort,
+    isSortOpen, toggleSort, closeSort,
     isSearchOpen, toggleSearch,
     filterRules, setFilterRules,
     conjunction, setConjunction,
@@ -311,14 +340,65 @@ export function HomeContainer() {
     return filterRules.filter((r) => r.attribute !== 'view')
   }, [filterRules])
 
+  const { dbFilterRules, jsFilterRules } = useMemo(() => {
+    const db: FilterRule[] = []
+    const js: FilterRule[] = []
+    for (const rule of nonViewFilterRules) {
+      if (rule.attribute.startsWith('prestige_grade:')) {
+        js.push(rule)
+      } else if (DB_FILTER_ATTRIBUTES.has(rule.attribute)) {
+        db.push(rule)
+      } else {
+        js.push(rule)
+      }
+    }
+    return { dbFilterRules: db, jsFilterRules: js }
+  }, [nonViewFilterRules])
+
+  const homeDbFilters: HomeDbFilters | undefined = useMemo(() => {
+    if (dbFilterRules.length === 0) return undefined
+    const filters: HomeDbFilters = {}
+    for (const rule of dbFilterRules) {
+      switch (rule.attribute) {
+        case 'genre': filters.genre = String(rule.value); break
+        case 'district': filters.district = String(rule.value); break
+        case 'area': filters.area = String(rule.value); break
+        case 'prestige': filters.prestige = String(rule.value); break
+        case 'price_range': filters.priceRange = Number(rule.value); break
+        case 'wine_type': filters.wineType = String(rule.value); break
+        case 'variety': filters.variety = String(rule.value); break
+        case 'country': filters.country = String(rule.value); break
+        case 'vintage':
+          filters.vintage = Number(rule.value)
+          filters.vintageOp = rule.operator === 'lte' ? 'lte' : 'eq'
+          break
+        case 'acidity_level': filters.acidity = Number(rule.value); break
+        case 'sweetness_level': filters.sweetness = Number(rule.value); break
+      }
+    }
+    return filters
+  }, [dbFilterRules])
+
+  // ── DB 페이지네이션 조건: name 소팅 + JS필터 없음 + 검색어 없음 ──
+  const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
+  const [currentRecordPage, setCurrentRecordPage] = useState(1)
+  const useDbPagination = currentSort === 'name' && jsFilterRules.length === 0 && !searchQuery.trim()
+  const dbLimit = useDbPagination ? pageSize : null
+  const dbOffset = useDbPagination ? (currentRecordPage - 1) * pageSize : 0
+
   // ── useHomeTargets: view 기반 서버 데이터 페칭 ──
   const {
     targets,
+    hasMore,
   } = useHomeTargets({
     userId: user?.id ?? null,
     tab: activeTab,
     viewTypes,
     socialFilter: (socialFilter.followingUserId || socialFilter.bubbleId) ? socialFilter : undefined,
+    dbFilters: homeDbFilters,
+    sort: currentSort,
+    limit: dbLimit,
+    offset: dbOffset,
   })
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
@@ -407,9 +487,9 @@ export function HomeContainer() {
   // 필터/검색 적용 (타겟 기반, 그룹화 불필요)
   const filteredTargets = useMemo(() => {
     let result = targets
-    if (nonViewFilterRules.length > 0) {
+    if (jsFilterRules.length > 0) {
       result = result.filter((t) =>
-        matchesAllRules(t as unknown as Record<string, unknown>, nonViewFilterRules, conjunction),
+        matchesAllRules(t as unknown as Record<string, unknown>, jsFilterRules, conjunction),
       )
     }
     if (searchQuery.trim()) {
@@ -423,21 +503,23 @@ export function HomeContainer() {
       )
     }
     return result
-  }, [targets, nonViewFilterRules, conjunction, searchQuery])
+  }, [targets, jsFilterRules, conjunction, searchQuery])
 
   // 소팅
   const allSortedTargets = useMemo(() => {
     return sortHomeTargets(filteredTargets, currentSort, userCoords)
   }, [filteredTargets, currentSort, userCoords])
 
-  // 페이지네이션: 카드 5개, 리스트/지도 10개
-  const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
-  const [currentRecordPage, setCurrentRecordPage] = useState(1)
-  const totalRecordPages = Math.max(1, Math.ceil(allSortedTargets.length / pageSize))
-  const displayTargets = allSortedTargets.slice(
-    (currentRecordPage - 1) * pageSize,
-    currentRecordPage * pageSize,
-  )
+  // 페이지네이션: DB 페이지네이션(name 소팅+JS필터 없음) vs JS slice
+  const totalRecordPages = useDbPagination
+    ? currentRecordPage + (hasMore ? 1 : 0)
+    : Math.max(1, Math.ceil(allSortedTargets.length / pageSize))
+  const displayTargets = useDbPagination
+    ? allSortedTargets  // DB에서 이미 LIMIT/OFFSET 적용됨
+    : allSortedTargets.slice(
+        (currentRecordPage - 1) * pageSize,
+        currentRecordPage * pageSize,
+      )
 
 
   // ── CF 기반 Nyam 점수: 미방문 아이템에 예측 점수 표시 ──
@@ -453,7 +535,7 @@ export function HomeContainer() {
   const { scores: feedScores } = useFeedScores(allUnvisitedIds, feedCategory, user?.id ?? null)
 
   // 필터/탭/뷰모드 변경 시 페이지 리셋 (useEffect 대신 렌더 중 비교)
-  const pageResetKey = `${activeTab}-${filterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
+  const pageResetKey = `${activeTab}-${dbFilterRules.length}-${jsFilterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
   const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey)
   if (prevPageResetKey !== pageResetKey) {
     setPrevPageResetKey(pageResetKey)
@@ -471,6 +553,7 @@ export function HomeContainer() {
           targetMeta: t.genre ?? t.variety ?? null,
           targetArea: t.district ?? t.area?.[0] ?? t.region ?? null,
           targetPhotoUrl: t.photoUrl,
+          targetPhotos: t.allPhotos,
           targetLat: t.lat,
           targetLng: t.lng,
           source: (t.scoreSource ?? 'mine') as RecordSource,
@@ -522,8 +605,57 @@ export function HomeContainer() {
     userLng: userCoords?.lng ?? null,
     mapChips: mapConditionChips,
     sortOption: (viewMode === 'map' ? currentSort : 'score_high') as 'score_high' | 'name' | 'distance',
-    searchQuery: viewMode === 'map' ? searchQuery : '',
+    searchQuery: '', // 지도뷰 검색은 useSearch로 별도 처리 (전체 DB + 폴백)
   })
+
+  // 지도뷰 전체 DB 검색 (폴백 포함)
+  const mapSearch = useSearch({
+    targetType: 'restaurant',
+    lat: userCoords?.lat,
+    lng: userCoords?.lng,
+    initialQuery: '',
+  })
+
+  // searchQuery 변경 → useSearch에 전달
+  useEffect(() => {
+    if (viewMode === 'map') {
+      mapSearch.setQuery(searchQuery)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, viewMode])
+
+  // 검색 결과 → MapDiscoveryItem 변환
+  const mapSearchItems: MapDiscoveryItem[] = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    return mapSearch.results
+      .filter((r): r is RestaurantSearchResult & { lat: number; lng: number } =>
+        r.type === 'restaurant' && r.lat != null && r.lng != null)
+      .map((r) => ({
+        id: r.id,
+        kakaoId: r.id.startsWith('kakao_') ? r.id.replace('kakao_', '') : null,
+        name: r.name,
+        genre: r.genre,
+        area: r.area,
+        lat: r.lat,
+        lng: r.lng,
+        distanceKm: null,
+        inNyamDb: !r.id.startsWith('kakao_') && !r.id.startsWith('naver_') && !r.id.startsWith('google_'),
+        restaurantId: r.id.startsWith('kakao_') || r.id.startsWith('naver_') || r.id.startsWith('google_') ? null : r.id,
+        myScore: null,
+        followingScore: null,
+        bubbleScore: null,
+        nyamScore: null,
+        googleRating: null,
+        prestige: r.prestige ?? [],
+        sources: [] as MapDiscoveryItem['sources'],
+      }))
+  }, [mapSearch.results, searchQuery])
+
+  const isMapSearchMode = viewMode === 'map' && searchQuery.trim().length > 0
+  const isMapSearchModeRef = useRef(isMapSearchMode)
+  isMapSearchModeRef.current = isMapSearchMode
+  const mapSearchSuppressIdleRef = useRef(false)
+  const [mapSearchSelectedId, setMapSearchSelectedId] = useState<string | null>(null)
 
   // 빈 상태
   const renderEmptyState = () => (
@@ -547,35 +679,53 @@ export function HomeContainer() {
     // 지도 뷰 (식당 전용)
     if (viewMode === 'map' && activeTab === 'restaurant') {
       return (
-        <div className="pb-24">
-          <MapView
-            items={mapDiscovery.pageItems}
-            onMapIdle={mapDiscovery.onMapIdle}
-            onItemSelect={() => {
-              // 지도에서 선택 → MapView 내부에서 포커스 처리
-            }}
-            onItemNavigate={(item) => {
-              if (item.inNyamDb && item.restaurantId) {
-                router.push(`/restaurants/${item.restaurantId}`)
-              } else {
-                const params = new URLSearchParams({
-                  name: item.name,
-                  lat: String(item.lat),
-                  lng: String(item.lng),
-                  ...(item.kakaoId ? { kakaoId: item.kakaoId } : {}),
-                  ...(item.genre ? { genre: item.genre } : {}),
-                })
-                router.push(`/search?${params}`)
+        <MapView
+          items={isMapSearchMode ? mapSearchItems : mapDiscovery.pageItems}
+          onMapIdle={(center, zoom, bounds) => {
+            // 검색 모드에서는 idle 무시
+            if (isMapSearchModeRef.current) {
+              if (mapSearchSuppressIdleRef.current) {
+                mapSearchSuppressIdleRef.current = false
               }
-            }}
-            isNearbyLoading={mapDiscovery.isNearbyLoading}
-            currentPage={mapDiscovery.currentPage}
-            totalPages={mapDiscovery.totalPages}
-            onPageChange={mapDiscovery.setPage}
-            userLat={userCoords?.lat}
-            userLng={userCoords?.lng}
-          />
-        </div>
+              return
+            }
+            mapDiscovery.onMapIdle(center, zoom, bounds)
+          }}
+          onItemSelect={() => {
+            if (isMapSearchModeRef.current) mapSearchSuppressIdleRef.current = true
+          }}
+          onItemNavigate={(item) => {
+            if (item.inNyamDb && item.restaurantId) {
+              router.push(`/restaurants/${item.restaurantId}`)
+            } else {
+              const params = new URLSearchParams({
+                name: item.name,
+                lat: String(item.lat),
+                lng: String(item.lng),
+                ...(item.kakaoId ? { kakaoId: item.kakaoId } : {}),
+                ...(item.genre ? { genre: item.genre } : {}),
+              })
+              router.push(`/search?${params}`)
+            }
+          }}
+          isNearbyLoading={isMapSearchMode ? mapSearch.screenState === 'searching' : mapDiscovery.isNearbyLoading}
+          currentPage={isMapSearchMode ? 1 : mapDiscovery.currentPage}
+          totalPages={isMapSearchMode ? 1 : mapDiscovery.totalPages}
+          onPageChange={mapDiscovery.setPage}
+          userLat={userCoords?.lat}
+          userLng={userCoords?.lng}
+          splitLayout
+          disablePanOnSelect={!isMapSearchMode}
+          externalSelectedId={isMapSearchMode ? mapSearchSelectedId : undefined}
+          onExternalSelect={isMapSearchMode ? (id) => {
+            setMapSearchSelectedId(id)
+            mapSearchSuppressIdleRef.current = true
+          } : undefined}
+          onUserDrag={isMapSearchMode ? () => {
+            setSearchQuery('')
+            setMapSearchSelectedId(null)
+          } : undefined}
+        />
       )
     }
 
@@ -603,6 +753,8 @@ export function HomeContainer() {
                 id: r.id,
                 targetType: r.targetType,
                 targetId: r.targetId,
+                privateNote: r.privateNote,
+                photos: r.targetPhotos.length > 0 ? r.targetPhotos : (r.targetPhotoUrl ? [r.targetPhotoUrl] : []),
               }))}
               accentType={recordTab}
             />
@@ -651,6 +803,8 @@ export function HomeContainer() {
             ? (target.isCellar ? 'cellar' : (target.visitCount > 0 ? 'tasted' : 'bookmark'))
             : (target.visitCount > 0 ? 'visited' : 'bookmark')
 
+          const bookmarked = getIsBookmarked(target.targetId, target.isBookmarked)
+
           return activeTab === 'wine' ? (
             <WineCard
               key={target.targetId}
@@ -675,6 +829,8 @@ export function HomeContainer() {
               latestDate={target.latestVisitDate}
               visitCount={target.visitCount}
               scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+              isBookmarked={bookmarked}
+              onBookmarkToggle={() => toggleBookmark(target.targetId, 'wine', bookmarked)}
             />
           ) : (
             <RecordCard
@@ -698,6 +854,8 @@ export function HomeContainer() {
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
               prestige={target.prestige ?? []}
+              isBookmarked={bookmarked}
+              onBookmarkToggle={() => toggleBookmark(target.targetId, target.targetType, bookmarked)}
             />
           )
         })}
@@ -707,12 +865,13 @@ export function HomeContainer() {
 
   const isCalendarMode = viewMode === 'calendar'
   const isBubbleTab = activeTab === 'bubble'
+  const isMapMode = viewMode === 'map' && activeTab === 'restaurant'
 
   return (
-    <div className="content-feed flex min-h-dvh flex-col bg-[var(--bg)]">
+    <div className={`content-feed flex flex-col bg-[var(--bg)] ${isMapMode ? 'h-dvh overflow-hidden' : 'min-h-dvh'}`}>
       <AppHeader />
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         {isGreetingVisible && (
           <div className="pt-2">
             <AiGreeting
@@ -723,7 +882,7 @@ export function HomeContainer() {
           </div>
         )}
 
-        <div style={{ position: 'sticky', top: '46px', zIndex: 80, backgroundColor: 'var(--bg)' }}>
+        <div ref={stickyBarRef} style={{ position: isMapMode ? 'relative' : 'sticky', top: isMapMode ? undefined : '46px', zIndex: 80, backgroundColor: 'var(--bg)', flexShrink: 0 }}>
         <HomeTabs
           activeTab={activeTab}
           viewMode={viewMode}
@@ -749,7 +908,8 @@ export function HomeContainer() {
             <div className="relative">
               <SortDropdown<BubbleSortOption>
                 currentSort={bubbleSort}
-                onSortChange={(s) => { setBubbleSort(s); toggleSort() }}
+                onSortChange={(s) => { setBubbleSort(s); closeSort() }}
+                onClose={closeSort}
                 accentType="social"
                 labels={HOME_BUBBLE_SORT_LABELS}
               />
@@ -759,6 +919,7 @@ export function HomeContainer() {
               <SortDropdown
                 currentSort={currentSort}
                 onSortChange={handleSortChange}
+                onClose={closeSort}
                 accentType={accentType}
                 labels={
                   viewMode === 'map' && activeTab === 'restaurant'

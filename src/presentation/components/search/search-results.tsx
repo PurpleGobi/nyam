@@ -15,6 +15,8 @@ interface SearchResultsProps {
   isAiSearching?: boolean
   isSelectingAi?: boolean
   onSelectAiCandidate?: (candidate: WineSearchCandidate) => void
+  /** 현재 선택된 항목 ID (지도 연동 강조용) */
+  selectedId?: string | null
 }
 
 const wineTypeMap: Record<string, string> = {
@@ -33,6 +35,7 @@ export function SearchResults({
   isAiSearching = false,
   isSelectingAi = false,
   onSelectAiCandidate,
+  selectedId,
 }: SearchResultsProps) {
   if (screenState === 'searching' && results.length === 0 && aiCandidates.length === 0) {
     return (
@@ -73,7 +76,7 @@ export function SearchResults({
           <ul className="divide-y divide-[var(--border)]">
             {results.map((result) => (
               <li key={result.id}>
-                <SearchResultItem result={result} onSelect={onSelect} prestige={result.type === 'restaurant' ? result.prestige : undefined} />
+                <SearchResultItem result={result} onSelect={onSelect} prestige={result.type === 'restaurant' ? result.prestige : undefined} isSelected={selectedId === result.id} />
               </li>
             ))}
           </ul>

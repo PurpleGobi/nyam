@@ -9,9 +9,10 @@ interface SearchResultItemProps {
   result: SearchResult
   onSelect: (result: SearchResult) => void
   prestige?: RestaurantPrestige[]
+  isSelected?: boolean
 }
 
-export function SearchResultItem({ result, onSelect, prestige }: SearchResultItemProps) {
+export function SearchResultItem({ result, onSelect, prestige, isSelected }: SearchResultItemProps) {
   const isRestaurant = result.type === 'restaurant'
   const accentClass = isRestaurant ? 'text-[var(--accent-food)]' : 'text-[var(--accent-wine)]'
   const bgClass = isRestaurant
@@ -44,7 +45,7 @@ export function SearchResultItem({ result, onSelect, prestige }: SearchResultIte
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className={`flex w-full items-center gap-3 px-4 py-3 transition-colors ${isRestaurant ? 'hover:bg-[var(--accent-food-light)]' : 'hover:bg-[var(--accent-wine-light)]'}`}
+      className={`flex w-full items-center gap-3 px-4 py-3 transition-colors ${isRestaurant ? 'hover:bg-[var(--accent-food-light)]' : 'hover:bg-[var(--accent-wine-light)]'} ${isSelected ? (isRestaurant ? 'bg-[var(--accent-food-light)]' : 'bg-[var(--accent-wine-light)]') : ''}`}
     >
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bgClass}`}>
         {isRestaurant ? (

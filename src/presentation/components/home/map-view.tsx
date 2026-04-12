@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import { MapPinned, LocateFixed } from 'lucide-react'
 import type {
@@ -12,7 +12,7 @@ interface MapViewProps {
   /** 현재 페이지 아이템 (지도 마커 + 리스트 동일) */
   items: MapDiscoveryItem[]
   /** 지도 idle 이벤트 (bounds 포함) */
-  onMapIdle: (center: { lat: number; lng: number }, zoom: number, bounds: { north: number; south: number; east: number; west: number } | null) => void
+  onMapIdle?: (center: { lat: number; lng: number }, zoom: number, bounds: { north: number; south: number; east: number; west: number } | null) => void
   /** 아이템 클릭 (포커스) */
   onItemSelect: (item: MapDiscoveryItem) => void
   /** 아이템 재클릭 → 네비게이트 */
@@ -22,10 +22,28 @@ interface MapViewProps {
   /** 사용자 위치 (초기 center 결정용) */
   userLat?: number | null
   userLng?: number | null
-  /** 페이지네이션 */
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
+  /** 페이지네이션 (기본값: 1/1) */
+  currentPage?: number
+  totalPages?: number
+  onPageChange?: (page: number) => void
+  /** 반경 모드: 설정 시 줌 레벨 자동 조정 (100~2000m) */
+  radius?: number
+  /** sticky top 오프셋 (기본 90px) */
+  stickyTop?: string
+  /** 지도-리스트 분리 모드: true이면 지도 고정 + 리스트가 남은 공간에서 스크롤 */
+  splitLayout?: boolean
+  /** splitLayout 모드에서 리스트 하단에 추가할 콘텐츠 */
+  listFooter?: React.ReactNode
+  /** splitLayout 모드에서 내장 리스트를 숨기고 listFooter만 표시 */
+  hideList?: boolean
+  /** 외부에서 선택 상태 제어 (지도 마커 강조) */
+  externalSelectedId?: string | null
+  /** 외부 선택 변경 콜백 */
+  onExternalSelect?: (id: string | null) => void
+  /** true이면 아이템 선택 시 지도 panTo를 하지 않음 (지도 탐색 모드) */
+  disablePanOnSelect?: boolean
+  /** 유저가 직접 지도를 드래그했을 때 콜백 */
+  onUserDrag?: () => void
 }
 
 const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
@@ -148,6 +166,17 @@ const DEFAULT_LNG = 126.978
 const DEFAULT_ZOOM = 14
 const MY_LOCATION_ZOOM = 16
 
+/** 반경(m) → 줌 레벨 매핑 */
+const RADIUS_ZOOM_MAP: Record<number, number> = {
+  50: 19,
+  100: 18,
+  500: 16,
+}
+
+function radiusToZoom(radius: number): number {
+  return RADIUS_ZOOM_MAP[radius] ?? DEFAULT_ZOOM
+}
+
 export function MapView({
   items,
   onMapIdle,
@@ -156,9 +185,18 @@ export function MapView({
   isNearbyLoading,
   userLat,
   userLng,
-  currentPage,
-  totalPages,
+  currentPage = 1,
+  totalPages = 1,
   onPageChange,
+  radius,
+  stickyTop = '90px',
+  splitLayout = false,
+  listFooter,
+  hideList = false,
+  externalSelectedId,
+  onExternalSelect,
+  disablePanOnSelect = false,
+  onUserDrag,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -166,7 +204,19 @@ export function MapView({
 
   const [sdkReady, setSdkReady] = useState(false)
   const [sdkError, setSdkError] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
+
+  // 외부 제어 모드: externalSelectedId가 제공되면 외부 상태 사용
+  const isExternalControlled = externalSelectedId !== undefined
+  const selectedId = isExternalControlled ? externalSelectedId : internalSelectedId
+  const onExternalSelectRef = useRef(onExternalSelect)
+  onExternalSelectRef.current = onExternalSelect
+  const setSelectedId = useMemo(
+    () => isExternalControlled
+      ? (id: string | null) => onExternalSelectRef.current?.(id)
+      : setInternalSelectedId,
+    [isExternalControlled],
+  )
 
   const onItemSelectRef = useRef(onItemSelect)
   onItemSelectRef.current = onItemSelect
@@ -174,6 +224,8 @@ export function MapView({
   onItemNavigateRef.current = onItemNavigate
   const onMapIdleRef = useRef(onMapIdle)
   onMapIdleRef.current = onMapIdle
+  const onUserDragRef = useRef(onUserDrag)
+  onUserDragRef.current = onUserDrag
   const selectedIdRef = useRef(selectedId)
   selectedIdRef.current = selectedId
 
@@ -192,7 +244,7 @@ export function MapView({
       setSelectedId(id)
       onItemSelectRef.current(item)
     }
-  }, [])
+  }, [setSelectedId])
 
   // SDK 로드
   useEffect(() => {
@@ -218,7 +270,7 @@ export function MapView({
     if (userLat != null && userLng != null) {
       centerLat = userLat
       centerLng = userLng
-      initialZoom = MY_LOCATION_ZOOM
+      initialZoom = radius != null ? radiusToZoom(radius) : MY_LOCATION_ZOOM
     } else if (geoItems.length > 0) {
       centerLat = geoItems.reduce((s, i) => s + i.lat, 0) / geoItems.length
       centerLng = geoItems.reduce((s, i) => s + i.lng, 0) / geoItems.length
@@ -236,6 +288,11 @@ export function MapView({
     })
     mapRef.current = map
 
+    // dragend → onUserDrag
+    const dragListener = map.addListener('dragend', () => {
+      onUserDragRef.current?.()
+    })
+
     // idle → onMapIdle (debounce)
     let debounceTimer: ReturnType<typeof setTimeout>
     const idleListener = map.addListener('idle', () => {
@@ -251,7 +308,7 @@ export function MapView({
           east: b.getNorthEast().lng(),
           west: b.getSouthWest().lng(),
         } : null
-        onMapIdleRef.current({ lat: c.lat(), lng: c.lng() }, z, bounds)
+        onMapIdleRef.current?.({ lat: c.lat(), lng: c.lng() }, z, bounds)
       }, 200)
     })
 
@@ -269,11 +326,22 @@ export function MapView({
     return () => {
       clearTimeout(debounceTimer)
       idleListener.remove()
+      dragListener.remove()
       observer.disconnect()
     }
     // 맵 초기화는 sdkReady 시 한 번만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sdkReady])
+
+  // radius 변경 → 줌 레벨 + center 조정
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || radius == null) return
+    map.setZoom(radiusToZoom(radius))
+    if (userLat != null && userLng != null) {
+      map.setCenter({ lat: userLat, lng: userLng })
+    }
+  }, [radius, userLat, userLng])
 
   // items → 오버레이 갱신 (모두 개별 도트)
   useEffect(() => {
@@ -300,7 +368,7 @@ export function MapView({
     })
   }, [items, handleSelect])
 
-  // 선택 상태 변경 → 도트 비주얼 업데이트
+  // 선택 상태 변경 → 도트 비주얼 업데이트 + 지도 패닝
   useEffect(() => {
     for (const entry of overlaysRef.current) {
       const item = itemsMapRef.current.get(entry.id)
@@ -309,7 +377,14 @@ export function MapView({
       entry.el.innerHTML = createDotHtml(isSelected, item.name)
       entry.overlay.setZIdx(isSelected ? 100 : 1)
     }
-  }, [selectedId])
+    // 선택된 아이템으로 지도 패닝 (disablePanOnSelect가 아닐 때만)
+    if (selectedId && mapRef.current && !disablePanOnSelect) {
+      const item = itemsMapRef.current.get(selectedId)
+      if (item) {
+        mapRef.current.panTo({ lat: item.lat, lng: item.lng })
+      }
+    }
+  }, [selectedId, disablePanOnSelect])
 
   // 내 위치 마커
   const myLocationOverlayRef = useRef<HtmlOverlayInstance | null>(null)
@@ -323,7 +398,6 @@ export function MapView({
         const lat = pos.coords.latitude
         const lng = pos.coords.longitude
         map.setCenter({ lat, lng })
-        map.setZoom(MY_LOCATION_ZOOM)
 
         // 기존 내 위치 마커 제거
         myLocationOverlayRef.current?.setMap(null)
@@ -360,40 +434,65 @@ export function MapView({
 
   // SDK 에러 또는 키 미설정 → 폴백
   if (sdkError || !GOOGLE_MAPS_KEY) {
-    return (
-      <div>
-        <div
-          className="relative overflow-hidden"
-          style={{
-            height: '320px',
-            borderRadius: '0 0 16px 16px',
-            backgroundColor: 'var(--bg-elevated)',
-          }}
-        >
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-            <MapPinned size={32} style={{ color: 'var(--text-hint)' }} />
-            <span className="text-[13px]" style={{ color: 'var(--text-hint)' }}>
-              지도를 불러올 수 없습니다
-            </span>
+    const fallbackMap = (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          position: splitLayout ? 'relative' : 'sticky',
+          top: splitLayout ? undefined : stickyTop,
+          zIndex: 40,
+          height: '320px',
+          borderRadius: '0 0 16px 16px',
+          backgroundColor: 'var(--bg-elevated)',
+          flexShrink: 0,
+        }}
+      >
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+          <MapPinned size={32} style={{ color: 'var(--text-hint)' }} />
+          <span className="text-[13px]" style={{ color: 'var(--text-hint)' }}>
+            지도를 불러올 수 없습니다
+          </span>
+        </div>
+      </div>
+    )
+    const fallbackList = (
+      <MapItemList
+        items={items}
+        selectedId={selectedId}
+        onSelect={handleSelect}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
+    )
+
+    if (splitLayout) {
+      return (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {fallbackMap}
+          <div className="min-h-0 flex-1 overflow-y-auto px-3">
+            {!hideList && fallbackList}
+            {listFooter}
           </div>
         </div>
-        <MapItemList
-          items={items}
-          selectedId={selectedId}
-          onSelect={handleSelect}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+      )
+    }
+
+    return (
+      <div>
+        {fallbackMap}
+        {fallbackList}
       </div>
     )
   }
 
-  return (
-    <div style={{ padding: '0 12px' }}>
+  const mapSection = (
+    <div style={{ padding: '0 12px', flexShrink: 0 }}>
       <div
         style={{
-          position: 'relative',
+          position: splitLayout ? 'relative' : 'sticky',
+          top: splitLayout ? undefined : stickyTop,
+          zIndex: 40,
           border: '1px solid var(--border)',
           borderRadius: '12px',
           overflow: 'hidden',
@@ -452,14 +551,36 @@ export function MapView({
           </div>
         )}
       </div>
-      <MapItemList
-        items={items}
-        selectedId={selectedId}
-        onSelect={handleSelect}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-      />
+    </div>
+  )
+
+  const listSection = (
+    <MapItemList
+      items={items}
+      selectedId={selectedId}
+      onSelect={handleSelect}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={onPageChange}
+    />
+  )
+
+  if (splitLayout) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        {mapSection}
+        <div className="min-h-0 flex-1 overflow-y-auto px-3">
+          {!hideList && listSection}
+          {listFooter}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {mapSection}
+      {listSection}
     </div>
   )
 }
@@ -478,7 +599,7 @@ function MapItemList({
   onSelect: (id: string) => void
   currentPage: number
   totalPages: number
-  onPageChange: (page: number) => void
+  onPageChange?: (page: number) => void
 }) {
   return (
     <div className="pt-3">
@@ -534,7 +655,7 @@ function MapItemList({
         >
           <button
             type="button"
-            onClick={() => onPageChange(currentPage - 1)}
+            onClick={() => onPageChange?.(currentPage - 1)}
             disabled={currentPage <= 1}
             className="rounded-md px-3 py-1 text-[12px] font-medium"
             style={{
@@ -549,7 +670,7 @@ function MapItemList({
           </span>
           <button
             type="button"
-            onClick={() => onPageChange(currentPage + 1)}
+            onClick={() => onPageChange?.(currentPage + 1)}
             disabled={currentPage >= totalPages}
             className="rounded-md px-3 py-1 text-[12px] font-medium"
             style={{
