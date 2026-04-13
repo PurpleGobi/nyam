@@ -141,7 +141,8 @@ function RecordFlowInner() {
     editRecordId,
   )
 
-  const isLoading = isRecordLoading || isUploading
+  const [isSaving, setIsSaving] = useState(false)
+  const isLoading = isSaving || isRecordLoading || isUploading
 
   // sessionStorage에서 촬영 사진 URL + AI prefill 읽기
   const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
@@ -170,7 +171,8 @@ function RecordFlowInner() {
 
   const handleSave = useCallback(
     async (formData: { targetId: string; targetType: RecordTargetType; [key: string]: unknown }) => {
-      if (!user) return
+      if (!user || isSaving) return
+      setIsSaving(true)
       try {
         let savedRecord: DiningRecord
 
@@ -377,10 +379,10 @@ function RecordFlowInner() {
         setSavedTargetId(savedRecord.targetId)
         setShowAddToBubble(true)
       } catch {
-        // useCreateRecord 내부에서 error state 처리
+        setIsSaving(false)
       }
     },
-    [user, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta],
+    [user, isSaving, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta],
   )
 
   const handleBack = useCallback(() => router.back(), [router])
