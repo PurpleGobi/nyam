@@ -26,6 +26,7 @@ import { usePersistedFilterState } from '@/application/hooks/use-persisted-filte
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
 import { PenLine, FolderPlus, FolderMinus } from 'lucide-react'
 import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
+import { useToast } from '@/presentation/components/ui/toast'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -152,6 +153,7 @@ const DB_FILTER_ATTRIBUTES = new Set([
 
 export function HomeContainer() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeBubbleIdParam = searchParams.get('bubbleId')
@@ -632,30 +634,37 @@ export function HomeContainer() {
 
   // [FIX #1] targets에서 RecordWithTarget 호환 배열 생성 (캘린더용)
   const visitedRecords: RecordWithTarget[] = useMemo(() => {
+    const seen = new Set<string>()
     return targets
       .filter((t) => t.sources.includes('mine') || t.sources.includes('following'))
       .flatMap((t) =>
-        t.records.map((r) => ({
-          ...r,
-          targetName: t.name,
-          targetMeta: t.genre ?? t.variety ?? null,
-          targetArea: t.district ?? t.area?.[0] ?? t.region ?? null,
-          targetPhotoUrl: t.photoUrl,
-          targetPhotos: t.allPhotos,
-          targetLat: t.lat,
-          targetLng: t.lng,
-          source: (t.scoreSource ?? 'mine') as RecordSource,
-          genre: t.genre,
-          district: t.district,
-          area: t.area,
-          country: t.country,
-          variety: t.variety,
-          region: t.region,
-          wineType: t.wineType,
-          vintage: t.vintage,
-          priceRange: t.priceRange,
-          prestige: t.prestige ?? null,
-        } satisfies RecordWithTarget)),
+        t.records
+          .filter((r) => {
+            if (seen.has(r.id)) return false
+            seen.add(r.id)
+            return true
+          })
+          .map((r) => ({
+            ...r,
+            targetName: t.name,
+            targetMeta: t.genre ?? t.variety ?? null,
+            targetArea: t.district ?? t.area?.[0] ?? t.region ?? null,
+            targetPhotoUrl: t.photoUrl,
+            targetPhotos: t.allPhotos,
+            targetLat: t.lat,
+            targetLng: t.lng,
+            source: (t.scoreSource ?? 'mine') as RecordSource,
+            genre: t.genre,
+            district: t.district,
+            area: t.area,
+            country: t.country,
+            variety: t.variety,
+            region: t.region,
+            wineType: t.wineType,
+            vintage: t.vintage,
+            priceRange: t.priceRange,
+            prestige: t.prestige ?? null,
+          } satisfies RecordWithTarget)),
       )
   }, [targets])
 
@@ -729,7 +738,7 @@ export function HomeContainer() {
         distanceKm: null,
         inNyamDb: !r.id.startsWith('kakao_') && !r.id.startsWith('naver_') && !r.id.startsWith('google_'),
         restaurantId: r.id.startsWith('kakao_') || r.id.startsWith('naver_') || r.id.startsWith('google_') ? null : r.id,
-        myScore: null,
+        myScore: r.myScore ?? null,
         followingScore: null,
         bubbleScore: null,
         nyamScore: null,
@@ -872,6 +881,7 @@ export function HomeContainer() {
               accentType={recordTab}
               visitCount={target.visitCount}
               prestige={target.prestige ?? []}
+              memberBubbles={target.memberBubbles.map((b) => ({ bubbleId: b.bubbleId, bubbleName: b.bubbleName }))}
               isSelecting={isBubbleSelectMode}
               isSelected={bubbleSelectIds.has(target.targetId)}
               onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
@@ -941,6 +951,11 @@ export function HomeContainer() {
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
               prestige={target.prestige ?? []}
+              sharedBubbles={target.memberBubbles.map((b) => ({
+                bubbleId: b.bubbleId,
+                bubbleName: b.bubbleName,
+                bubbleIcon: b.bubbleIcon,
+              }))}
               isSelecting={isBubbleSelectMode}
               isSelected={bubbleSelectIds.has(target.targetId)}
               onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
@@ -1323,12 +1338,12 @@ export function HomeContainer() {
             label: '버블에 추가',
             onClick: startBubbleSelect,
           },
-          ...(socialFilter.bubbleId ? [{
+          {
             key: 'bubble-remove',
             icon: <FolderMinus size={16} />,
             label: '버블에서 제거',
             onClick: startBubbleRemove,
-          }] : []),
+          },
         ]}
         onClick={isBubbleTab ? () => router.push('/bubbles/create') : undefined}
         selectMode={isBubbleSelectMode ? {
@@ -1337,33 +1352,72 @@ export function HomeContainer() {
             : '취소',
           onClick: bubbleSelectIds.size > 0
             ? (isBubbleRemoveMode
-              ? async () => {
-                  const targets = displayTargets
-                    .filter((t) => bubbleSelectIds.has(t.targetId))
-                    .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
-                  if (socialFilter.bubbleId) {
-                    await batchRemoveFromBubble(socialFilter.bubbleId, targets)
-                    setHomeRefreshKey((k) => k + 1)
-                  }
-                  stopBubbleSelect()
-                }
+              ? () => setShowBubblePicker(true)
               : () => setShowBubblePicker(true))
             : stopBubbleSelect,
         } : undefined}
       />
 
-      {/* 버블 선택 시트 */}
+      {/* 버블 선택 시트 — 추가/제거 공용 */}
       <BubblePickerSheet
         isOpen={showBubblePicker}
         onClose={() => { setShowBubblePicker(false); stopBubbleSelect() }}
-        bubbles={socialFilter.bubbleId ? myBubbles.filter((b) => b.id !== socialFilter.bubbleId) : myBubbles}
+        title={isBubbleRemoveMode ? '어디에서 제거할까요?' : undefined}
+        bubbles={(() => {
+          if (isBubbleRemoveMode) {
+            // 제거 모드: 선택한 아이템이 속한 버블만 표시
+            const selectedItems = displayTargets.filter((t) => bubbleSelectIds.has(t.targetId))
+            const bubbleIdSet = new Set<string>()
+            for (const t of selectedItems) {
+              for (const b of t.memberBubbles) bubbleIdSet.add(b.bubbleId)
+            }
+            return myBubbles.filter((b) => bubbleIdSet.has(b.id))
+          }
+          // 추가 모드: 현재 필터 버블 제외
+          return socialFilter.bubbleId ? myBubbles.filter((b) => b.id !== socialFilter.bubbleId) : myBubbles
+        })()}
         onSelect={async (bubbleId) => {
-          const targets = displayTargets
-            .filter((t) => bubbleSelectIds.has(t.targetId))
-            .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
-          await batchAddToBubble(bubbleId, targets)
+          const selected = displayTargets.filter((t) => bubbleSelectIds.has(t.targetId))
+          const bubbleName = myBubbles.find((b) => b.id === bubbleId)?.name ?? '버블'
+
+          if (isBubbleRemoveMode) {
+            // 제거: 해당 버블에 속한 아이템만 제거
+            const removeTargets = selected
+              .filter((t) => t.memberBubbles.some((b) => b.bubbleId === bubbleId))
+              .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+            if (removeTargets.length === 0) return
+            await batchRemoveFromBubble(bubbleId, removeTargets)
+            showToast(`${removeTargets.length}개 항목을 "${bubbleName}"에서 제거했습니다`, 3000)
+          } else {
+            // 추가: 중복 제외
+            const newTargets = selected
+              .filter((t) => !t.memberBubbles.some((b) => b.bubbleId === bubbleId))
+              .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+            if (newTargets.length === 0) {
+              showToast(`선택한 항목이 모두 "${bubbleName}"에 이미 등록되어 있습니다`, 3000)
+              return
+            }
+            await batchAddToBubble(bubbleId, newTargets)
+            const dupCount = selected.length - newTargets.length
+            const msg = dupCount > 0
+              ? `${newTargets.length}개 추가 (${dupCount}개 중복 제외)`
+              : `${newTargets.length}개 항목을 "${bubbleName}"에 추가했습니다`
+            showToast(msg, 3000)
+          }
+          setHomeRefreshKey((k) => k + 1)
           stopBubbleSelect()
         }}
+        duplicateCounts={(() => {
+          if (bubbleSelectIds.size === 0 || isBubbleRemoveMode) return undefined
+          const counts = new Map<string, number>()
+          const selected = displayTargets.filter((t) => bubbleSelectIds.has(t.targetId))
+          for (const t of selected) {
+            for (const b of t.memberBubbles) {
+              counts.set(b.bubbleId, (counts.get(b.bubbleId) ?? 0) + 1)
+            }
+          }
+          return counts.size > 0 ? counts : undefined
+        })()}
       />
     </div>
   )

@@ -125,7 +125,7 @@ export class SupabaseHomeRepository implements HomeRepository {
       photoMap = result.photoMap
 
       return {
-        targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId),
+        targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId, shared.bubbleItemsByTarget),
         hasMore,
       }
     }
@@ -144,7 +144,7 @@ export class SupabaseHomeRepository implements HomeRepository {
     if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
 
     return {
-      targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId),
+      targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId, shared.bubbleItemsByTarget),
       hasMore: false,
     }
   }
@@ -199,36 +199,69 @@ export class SupabaseHomeRepository implements HomeRepository {
             })
         : Promise.resolve({ followingIds: [] as string[], followingTargetIds: new Set<string>() }),
 
-      // Chain C: memberships → bubble_items (2 queries chained)
+      // Chain C: memberships → bubble_items + bubble meta (2 queries chained)
       needBubble
         ? this.supabase
             .from('bubble_members')
-            .select('bubble_id')
+            .select('bubble_id, bubbles(name, icon, icon_bg_color)')
             .eq('user_id', userId)
             .eq('status', 'active')
             .then(async ({ data: memberships }) => {
-              if (!memberships || memberships.length === 0) return new Set<string>()
+              if (!memberships || memberships.length === 0) {
+                return { ids: new Set<string>(), byTarget: new Map<string, BubbleItemEntry[]>() }
+              }
+              // 버블 메타 맵 구축
+              const bubbleMeta = new Map<string, { name: string; icon: string | null; iconBgColor: string | null }>()
+              for (const m of memberships) {
+                const b = m.bubbles as unknown as { name: string; icon: string | null; icon_bg_color: string | null } | null
+                bubbleMeta.set(m.bubble_id as string, {
+                  name: b?.name ?? '',
+                  icon: b?.icon ?? null,
+                  iconBgColor: b?.icon_bg_color ?? null,
+                })
+              }
               let bubbleIds = memberships.map((m) => m.bubble_id as string)
               if (socialFilter?.bubbleIds && socialFilter.bubbleIds.length > 0) {
                 const allowed = new Set(socialFilter.bubbleIds)
                 bubbleIds = bubbleIds.filter((id) => allowed.has(id))
               }
-              if (bubbleIds.length === 0) return new Set<string>()
+              if (bubbleIds.length === 0) {
+                return { ids: new Set<string>(), byTarget: new Map<string, BubbleItemEntry[]>() }
+              }
               const { data: items } = await this.supabase
                 .from('bubble_items')
-                .select('target_id')
+                .select('target_id, bubble_id')
                 .in('bubble_id', bubbleIds)
                 .eq('target_type', targetType)
-              return new Set((items ?? []).map((i) => i.target_id as string))
+              const ids = new Set((items ?? []).map((i) => i.target_id as string))
+              // target별 소속 버블 맵 구축
+              const byTarget = new Map<string, BubbleItemEntry[]>()
+              for (const item of items ?? []) {
+                const tid = item.target_id as string
+                const bid = item.bubble_id as string
+                const meta = bubbleMeta.get(bid)
+                const entry: BubbleItemEntry = {
+                  targetId: tid,
+                  bubbleId: bid,
+                  bubbleName: meta?.name ?? '',
+                  bubbleIcon: meta?.icon ?? null,
+                  bubbleIconBgColor: meta?.iconBgColor ?? null,
+                }
+                const arr = byTarget.get(tid)
+                if (arr) arr.push(entry)
+                else byTarget.set(tid, [entry])
+              }
+              return { ids, byTarget }
             })
-        : Promise.resolve(new Set<string>()),
+        : Promise.resolve({ ids: new Set<string>(), byTarget: new Map<string, BubbleItemEntry[]>() }),
     ])
 
     return {
       myTargetIds,
       followingIds: followingChain.followingIds,
       followingTargetIds: followingChain.followingTargetIds,
-      bubbleItemTargetIds,
+      bubbleItemTargetIds: bubbleItemTargetIds.ids,
+      bubbleItemsByTarget: bubbleItemTargetIds.byTarget,
     }
   }
 
@@ -424,6 +457,7 @@ export class SupabaseHomeRepository implements HomeRepository {
     photoMap: Map<string, string[]>,
     targetSourceMap: Map<string, Set<RecordSource>>,
     currentUserId: string,
+    bubbleItemsByTarget?: Map<string, BubbleItemEntry[]>,
   ): HomeTarget[] {
     const results: HomeTarget[] = []
 
@@ -556,6 +590,13 @@ export class SupabaseHomeRepository implements HomeRepository {
         visitCount: myRecords.length,
         sources,
 
+        memberBubbles: (bubbleItemsByTarget?.get(targetId) ?? []).map((e) => ({
+          bubbleId: e.bubbleId,
+          bubbleName: e.bubbleName,
+          bubbleIcon: e.bubbleIcon,
+          bubbleIconBgColor: e.bubbleIconBgColor,
+        })),
+
         satisfaction: bestSatisfaction,
         axisX: bestAxisX,
         axisY: bestAxisY,
@@ -611,11 +652,21 @@ interface RpcWineRow {
 }
 
 /** prefetchSharedData 결과 — collectTargetIdsFromCache와 fetchRecordsParallel에서 재사용 */
+interface BubbleItemEntry {
+  targetId: string
+  bubbleId: string
+  bubbleName: string
+  bubbleIcon: string | null
+  bubbleIconBgColor: string | null
+}
+
 interface SharedPrefetch {
   myTargetIds: Set<string>
   followingIds: string[]
   followingTargetIds: Set<string>
   bubbleItemTargetIds: Set<string>
+  /** target별 소속 버블 상세 (뱃지 표시용) */
+  bubbleItemsByTarget: Map<string, BubbleItemEntry[]>
 }
 
 interface TargetMeta {

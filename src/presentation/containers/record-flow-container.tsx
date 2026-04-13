@@ -152,6 +152,16 @@ function RecordFlowInner() {
     return null
   })
 
+  // sessionStorage에서 EXIF 촬영일 읽기 → 방문일 기본값
+  const [exifVisitDate] = useState<string | null>(() => {
+    if (isEditMode) return null
+    try {
+      const d = sessionStorage.getItem('nyam_exif_visit_date')
+      if (d) { sessionStorage.removeItem('nyam_exif_visit_date'); return d }
+    } catch {}
+    return null
+  })
+
   // sessionStorage에서 촬영 사진 URL 읽기 (비동기 fetch 필요)
   const [, startPhotoTransition] = useTransition()
   useEffect(() => {
@@ -487,7 +497,7 @@ function RecordFlowInner() {
           }}
           genreHint={genreHint ?? aiPrefill?.genre}
           referenceRecords={isEditMode ? [] : referenceRecords}
-          initialData={restaurantInitial ?? (aiPrefill?.foodType ? { menuTags: [aiPrefill.foodType], axisX: null, axisY: null, satisfaction: null, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: null } : undefined)}
+          initialData={restaurantInitial ?? (aiPrefill?.foodType || exifVisitDate ? { menuTags: aiPrefill?.foodType ? [aiPrefill.foodType] : [], axisX: null, axisY: null, satisfaction: null, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: exifVisitDate } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
           isLoading={isLoading}
@@ -539,7 +549,7 @@ function RecordFlowInner() {
             isAiRecognized: !!wineData,
           }}
           referenceRecords={isEditMode ? [] : referenceRecords}
-          initialData={wineInitial}
+          initialData={wineInitial ?? (exifVisitDate ? { visitDate: exifVisitDate, axisX: null, axisY: null, satisfaction: null, aromaPrimary: [], aromaSecondary: [], aromaTertiary: [], complexity: null, finish: null, balance: null, intensity: null, pairingCategories: null, comment: null, purchasePrice: null, companions: null, privateNote: null } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}
           isLoading={isLoading}

@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
       kakaoMapUrl: r.kakao_map_url,
       prestige: (r.prestige ?? []) as RestaurantPrestige[],
       sources: srcs,
+      myScore: typeof r.my_score === 'number' ? r.my_score : null,
     }
   })
 

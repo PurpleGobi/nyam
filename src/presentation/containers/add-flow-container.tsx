@@ -73,11 +73,16 @@ function AddFlowInner() {
   }, [])
 
   // Cleanup: 기록 미완료 시 임시 업로드 삭제
+  // sessionStorage에 사진 URL이 저장된 경우(search→record 전환)는 삭제하지 않음
   useEffect(() => {
     const url = tempPhotoUrl
     const completed = recordCompleted
     return () => {
       if (url && !completed) {
+        try {
+          const savedUrl = sessionStorage.getItem('nyam_captured_photo_url')
+          if (savedUrl === url) return
+        } catch {}
         deleteImage(url).catch(() => {})
       }
     }
@@ -198,6 +203,13 @@ function AddFlowInner() {
 
       // ── 식당: EXIF GPS로 /search 페이지 라우팅 (AI 호출 불필요) ──
       if (targetType === 'restaurant') {
+        // 사진 URL + EXIF 촬영일을 sessionStorage에 저장 (search → record 전환 시 복원용)
+        if (photoUrl) {
+          try { sessionStorage.setItem('nyam_captured_photo_url', photoUrl) } catch {}
+        }
+        if (exif.capturedAt) {
+          try { sessionStorage.setItem('nyam_exif_visit_date', exif.capturedAt.slice(0, 10)) } catch {}
+        }
         const searchParams = new URLSearchParams({ type: 'restaurant' })
         if (coords) {
           searchParams.set('lat', String(coords.latitude))
@@ -211,8 +223,11 @@ function AddFlowInner() {
   )
 
   const handleSearchFallback = useCallback(() => {
+    if (tempPhotoUrl) {
+      try { sessionStorage.setItem('nyam_captured_photo_url', tempPhotoUrl) } catch {}
+    }
     router.push(`/search?type=${targetType}`)
-  }, [router, targetType])
+  }, [router, targetType, tempPhotoUrl])
 
   const variant = targetType === 'wine' ? 'wine' : 'food'
 
@@ -240,10 +255,13 @@ function AddFlowInner() {
     if (tempPhotoUrl) {
       try { sessionStorage.setItem('nyam_captured_photo_url', tempPhotoUrl) } catch {}
     }
+    if (tempExif.capturedAt) {
+      try { sessionStorage.setItem('nyam_exif_visit_date', tempExif.capturedAt.slice(0, 10)) } catch {}
+    }
     router.replace(
       `/record?type=${target.type}&targetId=${target.id}&name=${encodeURIComponent(target.name)}&meta=${encodeURIComponent(target.meta)}&from=${entryPath}`,
     )
-  }, [shouldRedirectToRecord, target, result, gps, tempPhotoUrl, router, entryPath])
+  }, [shouldRedirectToRecord, target, result, gps, tempPhotoUrl, tempExif.capturedAt, router, entryPath])
 
   if (shouldRedirectToRecord) return null
 

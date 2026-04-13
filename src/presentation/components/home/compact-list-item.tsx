@@ -8,6 +8,11 @@ import { formatRelativeDate } from '@/shared/utils/date-format'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
+interface BubbleBadge {
+  bubbleId: string
+  bubbleName: string
+}
+
 interface CompactListItemProps {
   rank: number | null
   photoUrl: string | null
@@ -24,6 +29,8 @@ interface CompactListItemProps {
   latestReviewAt?: string | null
   visitCount?: number
   prestige?: RestaurantPrestige[]
+  /** 소속 버블 뱃지 */
+  memberBubbles?: BubbleBadge[]
   /** 버블 추가 선택 모드 */
   isSelecting?: boolean
   /** 선택 여부 */
@@ -47,6 +54,7 @@ export function CompactListItem({
   latestReviewAt,
   visitCount,
   prestige,
+  memberBubbles,
   isSelecting,
   isSelected,
   onSelectToggle,
@@ -114,6 +122,19 @@ export function CompactListItem({
             <span className="shrink-0"> · {formatRelativeDate(latestReviewAt)}</span>
           )}
         </p>
+        {memberBubbles && memberBubbles.length > 0 && (
+          <div className="flex gap-1 pt-0.5">
+            {memberBubbles.map((b) => (
+              <span
+                key={b.bubbleId}
+                className="truncate rounded-full px-1.5 py-px text-[9px] font-medium"
+                style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)', maxWidth: 80 }}
+              >
+                {b.bubbleName}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 사분면 + 점수 — 고정 너비로 정렬 */}

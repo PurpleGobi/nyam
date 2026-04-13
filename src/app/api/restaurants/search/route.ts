@@ -40,6 +40,31 @@ export async function GET(request: NextRequest) {
   // DB 내부 중복 제거: 같은 이름의 식당이 여러 행일 때 기록있는 것 우선
   const nyamDeduped = deduplicateNyamResults(restaurants ?? [], recordedIds)
 
+  // 사용자의 satisfaction 평균 일괄 조회
+  const userId = authResult.data.user.id
+  const restaurantIds = nyamDeduped.map((r) => r.id)
+  const scoreMap = new Map<string, number>()
+  if (restaurantIds.length > 0) {
+    const { data: scoreRows } = await supabase
+      .from('records')
+      .select('target_id, satisfaction')
+      .eq('user_id', userId)
+      .eq('target_type', 'restaurant')
+      .in('target_id', restaurantIds)
+      .not('satisfaction', 'is', null)
+    if (scoreRows) {
+      const grouped = new Map<string, number[]>()
+      for (const row of scoreRows) {
+        const arr = grouped.get(row.target_id) ?? []
+        arr.push(row.satisfaction as number)
+        grouped.set(row.target_id, arr)
+      }
+      for (const [id, scores] of grouped) {
+        scoreMap.set(id, Math.round(scores.reduce((a, b) => a + b, 0) / scores.length))
+      }
+    }
+  }
+
   const nyamResults: RestaurantSearchResult[] = nyamDeduped.map((r) => ({
     id: r.id,
     type: 'restaurant' as const,
@@ -58,6 +83,7 @@ export async function GET(request: NextRequest) {
       ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
     hasRecord: recordedIds.has(r.id),
+    myScore: scoreMap.get(r.id) ?? null,
   }))
 
   // Nyam DB 결과가 5개 이상이면 외부 API 스킵

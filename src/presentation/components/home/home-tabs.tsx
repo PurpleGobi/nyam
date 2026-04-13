@@ -63,8 +63,6 @@ export function HomeTabs({
 
   useEffect(() => {
     if (!isSearchOpen) return
-    // 지도뷰에서는 검색 결과가 지도 아래 목록에 표시되므로 외부 클릭으로 닫지 않음
-    if (isMapView) return
     const handleClickOutside = (e: MouseEvent) => {
       if (searchBarRef.current && !searchBarRef.current.contains(e.target as Node)) {
         onSearchToggle()
@@ -72,7 +70,7 @@ export function HomeTabs({
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isSearchOpen, isMapView, onSearchToggle])
+  }, [isSearchOpen, onSearchToggle])
 
   return (
     <StickyTabs

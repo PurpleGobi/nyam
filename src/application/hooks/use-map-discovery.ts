@@ -23,6 +23,7 @@ interface BoundsRestaurant {
   kakaoMapUrl: string | null
   prestige: RestaurantPrestige[]
   sources: string[]
+  myScore: number | null
 }
 
 type MapSourceValue = 'mine' | 'following' | 'bubble'
@@ -181,7 +182,7 @@ export function useMapDiscovery(params: {
             : null,
         inNyamDb: true,
         restaurantId: r.id,
-        myScore: null,
+        myScore: r.myScore,
         followingScore: null,
         bubbleScore: null,
         nyamScore: null,

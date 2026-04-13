@@ -21,6 +21,10 @@ interface BubblePickerSheetProps {
   /** 버블 선택 시 콜백 */
   onSelect: (bubbleId: string) => void
   isLoading?: boolean
+  /** 버블별 중복 아이템 수 (선택한 아이템 중 이미 해당 버블에 있는 개수) */
+  duplicateCounts?: Map<string, number>
+  /** 시트 제목 (기본: "어디에 추가할까요?") */
+  title?: string
 }
 
 export function BubblePickerSheet({
@@ -29,6 +33,8 @@ export function BubblePickerSheet({
   bubbles,
   onSelect,
   isLoading = false,
+  duplicateCounts,
+  title,
 }: BubblePickerSheetProps) {
   const router = useRouter()
 
@@ -41,7 +47,7 @@ export function BubblePickerSheet({
     <BottomSheet isOpen={isOpen} onClose={onClose}>
       <div className="px-4 pb-6 pt-2">
         <p className="mb-4 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-          어디에 추가할까요?
+          {title ?? '어디에 추가할까요?'}
         </p>
 
         <div className="flex flex-col">
@@ -49,37 +55,46 @@ export function BubblePickerSheet({
             <div className="flex justify-center py-8">
               <div className="h-5 w-5 animate-spin rounded-full border-[2px] border-[var(--accent-social)] border-t-transparent" />
             </div>
-          ) : bubbles.map((bubble) => (
-            <button
-              key={bubble.id}
-              type="button"
-              onClick={() => handleSelect(bubble.id)}
-              className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors active:scale-[0.98]"
-              style={{ backgroundColor: 'transparent' }}
-            >
-              {/* 버블 아이콘 */}
-              <div
-                className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl"
+          ) : bubbles.map((bubble) => {
+            const dupCount = duplicateCounts?.get(bubble.id) ?? 0
+            return (
+              <button
+                key={bubble.id}
+                type="button"
+                onClick={() => handleSelect(bubble.id)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors active:scale-[0.98]"
                 style={{
-                  backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)',
-                  color: '#FFFFFF',
+                  backgroundColor: dupCount > 0 ? 'var(--status-error-light, rgba(239,68,68,0.08))' : 'transparent',
                 }}
               >
-                <BubbleIcon icon={bubble.icon} size={20} />
-              </div>
+                {/* 버블 아이콘 */}
+                <div
+                  className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl"
+                  style={{
+                    backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  <BubbleIcon icon={bubble.icon} size={20} />
+                </div>
 
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {bubble.name}
-                </p>
-                {bubble.description && (
-                  <p className="truncate text-[12px]" style={{ color: 'var(--text-hint)' }}>
-                    {bubble.description}
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                    {bubble.name}
                   </p>
-                )}
-              </div>
-            </button>
-          ))}
+                  {dupCount > 0 ? (
+                    <p className="text-[12px] font-medium" style={{ color: 'var(--status-error, #ef4444)' }}>
+                      {dupCount}개 이미 등록됨
+                    </p>
+                  ) : bubble.description ? (
+                    <p className="truncate text-[12px]" style={{ color: 'var(--text-hint)' }}>
+                      {bubble.description}
+                    </p>
+                  ) : null}
+                </div>
+              </button>
+            )
+          })}
         </div>
 
         {/* 새 버블 만들기 — 로딩 중엔 숨김 */}

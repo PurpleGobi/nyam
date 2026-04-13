@@ -22,6 +22,8 @@ export interface RestaurantSearchResult extends SearchResultBase {
   phone: string | null
   kakaoMapUrl: string | null
   prestige?: RestaurantPrestige[]
+  /** 사용자의 satisfaction 평균 (기록 있는 Nyam DB 식당만) */
+  myScore?: number | null
 }
 
 export interface WineSearchResult extends SearchResultBase {

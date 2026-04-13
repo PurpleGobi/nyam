@@ -4,6 +4,14 @@
 import type { RecordTargetType, DiningRecord, RecordSource } from '@/domain/entities/record'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
+/** target이 속한 내 버블 정보 */
+export interface MemberBubbleInfo {
+  bubbleId: string
+  bubbleName: string
+  bubbleIcon: string | null
+  bubbleIconBgColor: string | null
+}
+
 /** 홈 뷰의 1급 시민: target (restaurant 또는 wine) */
 export interface HomeTarget {
   // --- Target 본체 ---
@@ -33,6 +41,9 @@ export interface HomeTarget {
   // --- 관계 상태 ---
   visitCount: number              // 내 records 수 (0 = 방문/시음 없음)
   sources: RecordSource[]         // 이 target이 어떤 경로로 내 목록에 들어왔는지
+
+  // --- 버블 소속 (내 버블만) ---
+  memberBubbles: MemberBubbleInfo[]
 
   // --- 대표 점수 (소스 우선순위 폴백) ---
   satisfaction: number | null
