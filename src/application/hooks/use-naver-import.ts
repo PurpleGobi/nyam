@@ -18,7 +18,6 @@ export interface ImportResult {
   total: number
   created: number
   existing: number
-  bookmarked: number
   failed: number
 }
 
@@ -91,7 +90,7 @@ export function useNaverImport(userId: string | null) {
     if (!userId || places.length === 0) return
 
     setStatus('importing')
-    const importResult: ImportResult = { total: places.length, created: 0, existing: 0, bookmarked: 0, failed: 0 }
+    const importResult: ImportResult = { total: places.length, created: 0, existing: 0, failed: 0 }
 
     for (const place of places) {
       try {

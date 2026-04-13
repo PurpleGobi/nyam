@@ -6,14 +6,11 @@ import { savedFilterRepo } from '@/shared/di/container'
 
 const RESTAURANT_PRESETS: { name: string; rules: FilterRule[] }[] = [
   { name: '방문', rules: [{ attribute: 'view', operator: 'eq', value: 'visited' }] },
-  { name: '찜', rules: [{ attribute: 'view', operator: 'eq', value: 'bookmark' }] },
   { name: '팔로잉', rules: [{ attribute: 'view', operator: 'eq', value: 'following' }] },
 ]
 
 const WINE_PRESETS: { name: string; rules: FilterRule[] }[] = [
   { name: '시음', rules: [{ attribute: 'status', operator: 'eq', value: 'tasted' }] },
-  { name: '찜', rules: [{ attribute: 'status', operator: 'eq', value: 'bookmark' }] },
-  { name: '셀러', rules: [{ attribute: 'status', operator: 'eq', value: 'cellar' }] },
 ]
 
 export function useSavedFilters(userId: string | null, targetType: string) {

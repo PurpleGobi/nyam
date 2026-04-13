@@ -25,7 +25,7 @@ interface BoundsRestaurant {
   sources: string[]
 }
 
-type MapSourceValue = 'mine' | 'bookmark' | 'following' | 'bubble'
+type MapSourceValue = 'mine' | 'following' | 'bubble'
 
 const PAGE_SIZE = 20
 

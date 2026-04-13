@@ -166,7 +166,7 @@ export function NaverImportSheet({
               </div>
 
               <p style={{ fontSize: '12px', color: 'var(--text-hint)', lineHeight: 1.5 }}>
-                가져온 식당은 Nyam에 등록되고 자동으로 찜 목록에 추가됩니다.
+                가져온 식당은 Nyam에 등록됩니다.
               </p>
             </div>
           )}
@@ -222,10 +222,6 @@ export function NaverImportSheet({
                   <div className="flex justify-between">
                     <span style={{ color: 'var(--text-sub)' }}>기존 식당 매칭</span>
                     <span style={{ color: 'var(--text)', fontWeight: 600 }}>{result.existing}개</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: 'var(--text-sub)' }}>찜 추가</span>
-                    <span style={{ color: 'var(--accent-food)', fontWeight: 600 }}>{result.bookmarked}개</span>
                   </div>
                   {result.failed > 0 && (
                     <div className="flex justify-between">

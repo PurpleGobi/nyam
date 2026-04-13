@@ -8,8 +8,6 @@ import { PlaceBadge } from '@/presentation/components/home/place-badge'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import type { SourceType } from '@/presentation/components/home/source-tag'
 import type { BadgeType } from '@/presentation/components/home/place-badge'
-import type { ScoreSource } from '@/domain/entities/score'
-import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
@@ -40,7 +38,7 @@ export interface RecordCardProps {
   satisfaction: number | null
   axisX: number | null
   axisY: number | null
-  status: 'visited' | 'bookmark' | 'cellar' | 'tasted'
+  status: 'visited' | 'tasted'
   sources?: SourceInfo[]
   badges?: BadgeInfo[]
   likeCount?: number
@@ -55,13 +53,9 @@ export interface RecordCardProps {
   sharedBubbles?: SharedBubbleChip[]
   onShareClick?: () => void
   visitCount?: number
-  scoreSource?: ScoreSource
   latestDate?: string | null
   distanceKm?: number | null
   prestige?: RestaurantPrestige[]
-  myScore?: number | null
-  nyamScore?: number | null
-  bubbleScore?: number | null
 }
 
 export function RecordCard({
@@ -85,13 +79,9 @@ export function RecordCard({
   sharedBubbles,
   onShareClick,
   visitCount,
-  scoreSource,
   latestDate,
   distanceKm,
   prestige,
-  myScore,
-  nyamScore,
-  bubbleScore,
 }: RecordCardProps) {
   const router = useRouter()
   const isFood = targetType === 'restaurant'
@@ -195,17 +185,6 @@ export function RecordCard({
                 </span>
               )}
             </div>
-            {(myScore !== undefined || nyamScore !== undefined || bubbleScore !== undefined) && (
-              <div className="mb-1.5">
-                <MiniScoreBadges
-                  myScore={myScore ?? null}
-                  nyamScore={nyamScore ?? null}
-                  bubbleScore={bubbleScore ?? null}
-                  accentType={targetType}
-                />
-              </div>
-            )}
-
             {(latestDate || (visitCount != null && visitCount > 0)) && (
               <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
                 {[latestDate, visitCount != null && visitCount > 0 ? `${visitCount}회` : null].filter(Boolean).join(' · ')}

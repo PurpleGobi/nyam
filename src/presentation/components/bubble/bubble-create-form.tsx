@@ -109,7 +109,6 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   // 공유 규칙 (자동 동기화)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>({
     mode: 'all', rules: [], conjunction: 'and',
-    includeBookmarks: true,
     enabledDomains: { restaurant: true, wine: true },
   })
   // 정보 공개 범위 (디폴트 모두 ON, 원하지 않는 항목만 OFF)

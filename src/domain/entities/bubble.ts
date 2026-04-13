@@ -55,8 +55,6 @@ export interface BubbleShareRule {
     domain?: 'restaurant' | 'wine'
   }>
   conjunction: 'and' | 'or'
-  /** true면 찜도 자동 매칭 대상에 포함 (대상 메타데이터로 필터 평가). 기본값 false */
-  includeBookmarks?: boolean
   /** 도메인별 공유 ON/OFF. 미지정 시 모두 true (하위호환) */
   enabledDomains?: { restaurant: boolean; wine: boolean }
 }

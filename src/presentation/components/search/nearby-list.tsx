@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Plus, UtensilsCrossed, Heart } from 'lucide-react'
+import { MapPin, Plus, UtensilsCrossed } from 'lucide-react'
 import type { NearbyRestaurant } from '@/domain/entities/search'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 
@@ -29,13 +29,9 @@ interface NearbyListProps {
   onRadiusChange: (radius: number) => void
   onSelect: (restaurantId: string) => void
   onRegister?: () => void
-  /** 찜 상태 맵 (restaurantId → boolean) */
-  bookmarkMap?: Map<string, boolean>
-  /** 개별 찜 토글 */
-  onBookmarkToggle?: (restaurantId: string) => void
 }
 
-export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChange, onRadiusChange, onSelect, onRegister, bookmarkMap, onBookmarkToggle }: NearbyListProps) {
+export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChange, onRadiusChange, onSelect, onRegister }: NearbyListProps) {
   return (
     <div className="px-4 py-3">
       <div className="mb-2 flex items-center gap-1.5 px-1">
@@ -101,10 +97,7 @@ export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChang
 
       {!isLoading && restaurants.length > 0 && (
         <ul className="flex flex-col">
-          {restaurants.map((r) => {
-            const isItemBookmarked = bookmarkMap?.get(r.id) ?? false
-
-            return (
+          {restaurants.map((r) => (
               <li key={r.id}>
                 <button
                   type="button"
@@ -135,26 +128,9 @@ export function NearbyList({ restaurants, isLoading, genre, radius, onGenreChang
                     </span>
                   </div>
 
-                  {/* 찜 Heart */}
-                  {onBookmarkToggle && (
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="flex shrink-0 cursor-pointer items-center justify-center pl-1"
-                      onClick={(e) => { e.stopPropagation(); onBookmarkToggle(r.id) }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle(r.id) } }}
-                    >
-                      <Heart
-                        size={16}
-                        style={{ color: isItemBookmarked ? '#FF6038' : 'var(--text-hint)' }}
-                        fill={isItemBookmarked ? '#FF6038' : 'transparent'}
-                      />
-                    </div>
-                  )}
                 </button>
               </li>
-            )
-          })}
+          ))}
         </ul>
       )}
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useCallback, useRef, useEffect } from 'react'
-import { UtensilsCrossed, Wine, Bookmark } from 'lucide-react'
+import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { BubbleShareRule } from '@/domain/entities/bubble'
 import type { FilterAttribute } from '@/domain/entities/filter-config'
 import type { FilterOperator } from '@/domain/entities/saved-filter'
@@ -12,7 +12,7 @@ import { ConditionFilterBar } from '@/presentation/components/home/condition-fil
 
 /* ================================================================
    ShareRuleEditor — 버블 공유 항목 토글 + 필터
-   식당·와인·찜 각각 토글 (디폴트 ON) + 식당/와인은 세부 필터 가능
+   식당·와인 각각 토글 (디폴트 ON) + 세부 필터 가능
    ================================================================ */
 
 interface ShareRuleEditorProps {
@@ -69,7 +69,6 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
   // 도메인별 ON/OFF
   const restaurantOn = value?.enabledDomains?.restaurant ?? true
   const wineOn = value?.enabledDomains?.wine ?? true
-  const bookmarkOn = value?.includeBookmarks ?? true
 
   // 식당/와인 규칙 분리
   const restaurantRules = useMemo(
@@ -98,21 +97,18 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
   /** 공통: 현재 상태 기반으로 mode 결정 + onChange */
   const emitChange = useCallback((patch: {
     enabledDomains?: { restaurant: boolean; wine: boolean }
-    includeBookmarks?: boolean
     rules?: ShareRuleItem[]
   }) => {
     const domains = patch.enabledDomains ?? value?.enabledDomains ?? { restaurant: true, wine: true }
-    const bookmarks = patch.includeBookmarks ?? value?.includeBookmarks ?? true
     const rules = patch.rules ?? allRules
 
-    const allDomainsOn = domains.restaurant && domains.wine && bookmarks
+    const allDomainsOn = domains.restaurant && domains.wine
     const noRules = rules.length === 0
 
     onChange({
       mode: allDomainsOn && noRules ? 'all' : 'filtered',
       rules,
       conjunction,
-      includeBookmarks: bookmarks,
       enabledDomains: domains,
     })
   }, [value, allRules, conjunction, onChange])
@@ -132,10 +128,6 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
       rules: next ? allRules : allRules.filter((r) => r.domain !== 'wine'),
     })
   }, [wineOn, restaurantOn, allRules, emitChange])
-
-  const toggleBookmark = useCallback(() => {
-    emitChange({ includeBookmarks: !bookmarkOn })
-  }, [bookmarkOn, emitChange])
 
   const handleRestaurantChipsChange = useCallback((newChips: FilterChipItem[]) => {
     emitChange({ rules: [...chipsToRules(newChips, 'restaurant'), ...wineRulesRef.current] })
@@ -243,19 +235,6 @@ export function ShareRuleEditor({ value, onChange, focusType = 'all' }: ShareRul
           </div>
         )}
 
-      {/* 찜목록 토글 */}
-      <button
-        type="button"
-        onClick={toggleBookmark}
-        className="flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors"
-        style={{ backgroundColor: bookmarkOn ? 'var(--accent-social-light, rgba(59,130,246,0.08))' : 'transparent' }}
-      >
-        <div className="flex items-center gap-2">
-          <Bookmark size={14} style={{ color: bookmarkOn ? 'var(--accent-social)' : 'var(--text-hint)' }} />
-          <span className="text-[12px] font-medium" style={{ color: 'var(--text)' }}>찜 목록</span>
-        </div>
-        <ToggleSwitch on={bookmarkOn} />
-      </button>
     </div>
   )
 }

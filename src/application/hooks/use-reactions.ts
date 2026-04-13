@@ -10,11 +10,6 @@ interface UseReactionsParams {
   targetId: string
   userId: string | null
   targetOwnerId?: string | null
-  /** bookmark 리액션 시 찜할 대상 정보 (식당/와인) */
-  bookmarkTarget?: {
-    targetId: string
-    targetType: 'restaurant' | 'wine'
-  } | null
 }
 
 export function useReactions({
@@ -22,7 +17,6 @@ export function useReactions({
   targetId,
   userId,
   targetOwnerId,
-  bookmarkTarget,
 }: UseReactionsParams) {
   const [counts, setCounts] = useState<Record<ReactionType, number>>({
     like: 0, bookmark: 0, want: 0, check: 0, fire: 0,

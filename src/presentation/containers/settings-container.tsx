@@ -52,15 +52,12 @@ const HOME_TAB_OPTIONS = [
 const RESTAURANT_SUB_OPTIONS = [
   { value: 'last', label: '마지막 사용' },
   { value: 'visited', label: '방문' },
-  { value: 'bookmark', label: '찜' },
   { value: 'following', label: '팔로잉' },
 ]
 
 const WINE_SUB_OPTIONS = [
   { value: 'last', label: '마지막 사용' },
   { value: 'tasted', label: '시음' },
-  { value: 'bookmark', label: '찜' },
-  { value: 'cellar', label: '셀러' },
 ]
 
 const BUBBLE_TAB_OPTIONS = [
