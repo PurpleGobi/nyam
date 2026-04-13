@@ -58,9 +58,7 @@ export interface RestaurantStats {
 export interface WineStats {
   totalTastings: number
   avgScore: number
-  cellarCount: number
   thisMonthTastings: number
-  thisMonthNewCellar: number
   scoreDelta: number
 }
 

@@ -183,7 +183,6 @@ function WinePanel({
         cards={[
           { label: '총 시음', value: stats.totalTastings, color: 'var(--accent-wine)' },
           { label: '평균 점수', value: stats.avgScore, color: 'var(--accent-wine)' },
-          { label: '셀러 보유', value: stats.cellarCount, color: 'var(--accent-wine)' },
         ]}
       />
 

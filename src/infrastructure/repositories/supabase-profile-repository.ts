@@ -348,9 +348,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return {
       totalTastings: totalTastings ?? 0,
       avgScore,
-      cellarCount: 0,
       thisMonthTastings: thisMonthTastings ?? 0,
-      thisMonthNewCellar: await this.getThisMonthNewCellar(userId, thisMonth),
       scoreDelta: await this.getScoreDelta(userId, 'wine'),
     }
   }
@@ -638,9 +636,6 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return newCount
   }
 
-  private async getThisMonthNewCellar(_userId: string, _thisMonth: string): Promise<number> {
-    return 0
-  }
 
   private async getScoreDelta(userId: string, targetType: string): Promise<number> {
     const now = new Date()
