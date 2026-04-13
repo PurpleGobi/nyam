@@ -99,6 +99,17 @@ export function generateChipId(): string {
   return `chip_${Date.now()}_${_chipIdCounter}`
 }
 
+/** 식당/와인 탭 디폴트 '보기: 내기록' 칩 */
+export function createDefaultViewChip(): ConditionChip {
+  return {
+    id: generateChipId(),
+    attribute: 'view',
+    operator: 'eq',
+    value: 'mine',
+    displayLabel: '내 기록',
+  }
+}
+
 /* ── cascading-select 헬퍼 ── */
 
 /** cascading "전체" 플레이스홀더 값 */

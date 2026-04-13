@@ -1,9 +1,10 @@
-import type { HomeRepository, HomeViewType } from '@/domain/repositories/home-repository'
+import type { HomeRepository, HomeViewType, HomeDbFilters, HomeTargetsResult } from '@/domain/repositories/home-repository'
 import type { HomeTarget } from '@/domain/entities/home-target'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 import type { DiningRecord, RecordTargetType, RecordSource } from '@/domain/entities/record'
+import type { SortOption } from '@/domain/entities/saved-filter'
 /** 홈 피드용 RecordSource 우선순위 (score 시스템의 SOURCE_PRIORITY와 별개) */
-const RECORD_SOURCE_PRIORITY: RecordSource[] = ['mine', 'following', 'bubble', 'public', 'bookmark']
+const RECORD_SOURCE_PRIORITY: RecordSource[] = ['mine', 'following', 'bubble']
 import { createClient } from '@/infrastructure/supabase/client'
 
 // --- DB -> Domain 매핑 (records) ---
@@ -53,19 +54,12 @@ function mapDbToRecord(row: any): DiningRecord {
 /** HomeViewType -> RecordSource 매핑 */
 function viewToSource(view: HomeViewType): RecordSource {
   switch (view) {
-    case 'visited':
-    case 'tasted':
-    case 'unrated':
+    case 'mine':
       return 'mine'
-    case 'bookmark':
-    case 'cellar':
-      return 'bookmark'
     case 'following':
       return 'following'
     case 'bubble':
       return 'bubble'
-    case 'public':
-      return 'public'
   }
 }
 
@@ -82,7 +76,11 @@ export class SupabaseHomeRepository implements HomeRepository {
       followingUserIds?: string[]
       bubbleIds?: string[]
     },
-  ): Promise<HomeTarget[]> {
+    dbFilters?: HomeDbFilters,
+    sort?: SortOption,
+    limit?: number | null,
+    offset?: number,
+  ): Promise<HomeTargetsResult> {
     // Step 1: 각 view별 target_id 셋 병렬 수집 + source 매핑
     const viewTargetSets = await Promise.all(
       views.map(async (view) => {
@@ -106,26 +104,40 @@ export class SupabaseHomeRepository implements HomeRepository {
     }
 
     const allTargetIds = [...targetSourceMap.keys()]
-    if (allTargetIds.length === 0) return []
+    if (allTargetIds.length === 0) return { targets: [], hasMore: false }
 
-    // Step 2-5: 병렬로 batch 조회
-    const [targetMeta, allRecords, bookmarks, recordPhotos] = await Promise.all([
-      this.fetchTargetMeta(allTargetIds, targetType),
-      this.fetchRecords(userId, allTargetIds, targetType, views, socialFilter),
-      this.fetchBookmarks(userId, allTargetIds, targetType),
-      // record photos는 records 결과에 의존하므로 임시 빈 Map
-      Promise.resolve(new Map<string, string>()),
+    // Step 2: DB 필터 + 소팅 + 페이지네이션 (LIMIT+1 패턴)
+    // limit이 있으면 limit+1을 요청하여 hasMore 판별
+    const dbLimit = limit != null ? limit + 1 : null
+    const targetMeta = await this.fetchTargetMeta(allTargetIds, targetType, dbFilters, sort, dbLimit, offset)
+
+    // hasMore 판별: limit+1개를 요청해서 limit보다 많으면 다음 페이지 존재
+    let hasMore = false
+    if (limit != null && targetMeta.size > limit) {
+      hasMore = true
+      // 초과분 제거 (마지막 1개)
+      const keys = [...targetMeta.keys()]
+      targetMeta.delete(keys[keys.length - 1])
+    }
+
+    // Step 3: 필터된 ID로만 records/bookmarks/photos 조회 (불필요한 조회 방지)
+    const filteredTargetIds = [...targetMeta.keys()]
+    if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
+
+    const [allRecords, bookmarks] = await Promise.all([
+      this.fetchRecords(userId, filteredTargetIds, targetType, views, socialFilter),
+      this.fetchBookmarks(userId, filteredTargetIds, targetType),
     ])
 
-    // record_photos batch 조회 (내 기록 + 소셜 기록 모두 포함 — 사진 우선순위 폴백용)
+    // record_photos batch 조회
     const realRecordIds = allRecords.map((r) => r.id)
     const photoMap = realRecordIds.length > 0
       ? await this.fetchRecordPhotos(realRecordIds)
-      : recordPhotos
+      : new Map<string, string[]>()
 
-    // Step 6-7: HomeTarget[] 조립
-    return this.assembleTargets(
-      allTargetIds,
+    // Step 4: HomeTarget[] 조립
+    const targets = this.assembleTargets(
+      filteredTargetIds,
       targetType,
       targetMeta,
       allRecords,
@@ -134,6 +146,8 @@ export class SupabaseHomeRepository implements HomeRepository {
       targetSourceMap,
       userId,
     )
+
+    return { targets, hasMore }
   }
 
   // --- Step 1: ViewType별 target_id 수집 ---
@@ -148,47 +162,12 @@ export class SupabaseHomeRepository implements HomeRepository {
     },
   ): Promise<Set<string>> {
     switch (view) {
-      case 'visited': {
+      case 'mine': {
         const { data } = await this.supabase
           .from('records')
           .select('target_id')
           .eq('user_id', userId)
           .eq('target_type', targetType)
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'tasted': {
-        const { data } = await this.supabase
-          .from('records')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('target_type', 'wine')
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'bookmark': {
-        const { data } = await this.supabase
-          .from('bookmarks')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('target_type', targetType)
-          .eq('type', 'bookmark')
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'cellar': {
-        const { data } = await this.supabase
-          .from('bookmarks')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('type', 'cellar')
-          .eq('target_type', targetType)
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'unrated': {
-        const { data } = await this.supabase
-          .from('records')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('target_type', targetType)
-          .is('axis_x', null)
         return new Set((data ?? []).map((r) => r.target_id))
       }
       case 'following': {
@@ -228,32 +207,14 @@ export class SupabaseHomeRepository implements HomeRepository {
         }
         if (bubbleIds.length === 0) return new Set()
 
-        // bubble_items 기반으로 전환 — target_id 직접 사용
+        // bubble_items 기반 — 본인 추가 아이템 포함 (중복은 targetSourceMap에서 병합)
         const { data: items } = await this.supabase
           .from('bubble_items')
           .select('target_id')
           .in('bubble_id', bubbleIds)
-          .neq('added_by', userId)
           .eq('target_type', targetType)
         if (!items || items.length === 0) return new Set()
         return new Set(items.map((i) => i.target_id))
-      }
-      case 'public': {
-        const { data: publicUsers } = await this.supabase
-          .from('users')
-          .select('id')
-          .eq('is_public', true)
-          .neq('id', userId)
-        if (!publicUsers || publicUsers.length === 0) return new Set()
-
-        const publicUserIds = publicUsers.map((u) => u.id)
-        const { data } = await this.supabase
-          .from('records')
-          .select('target_id')
-          .in('user_id', publicUserIds)
-          .eq('target_type', targetType)
-          .limit(200)
-        return new Set((data ?? []).map((r) => r.target_id))
       }
     }
   }
@@ -263,16 +224,28 @@ export class SupabaseHomeRepository implements HomeRepository {
   private async fetchTargetMeta(
     targetIds: string[],
     targetType: RecordTargetType,
+    dbFilters?: HomeDbFilters,
+    sort?: SortOption,
+    limit?: number | null,
+    offset?: number,
   ): Promise<Map<string, TargetMeta>> {
     const map = new Map<string, TargetMeta>()
     if (targetIds.length === 0) return map
 
     if (targetType === 'restaurant') {
-      const { data } = await this.supabase
-        .from('restaurants')
-        .select('id, name, genre, country, city, district, area, photos, lat, lng, price_range, prestige')
-        .in('id', targetIds)
-      for (const r of data ?? []) {
+      const { data } = await this.supabase.rpc('filter_home_restaurants', {
+        p_ids: targetIds,
+        p_genre: dbFilters?.genre ?? null,
+        p_district: dbFilters?.district ?? null,
+        p_area: dbFilters?.area ?? null,
+        p_prestige: dbFilters?.prestige ?? null,
+        p_price_range: dbFilters?.priceRange ?? null,
+        p_sort: sort === 'name' ? 'name' : 'name',
+        p_limit: limit ?? null,
+        p_offset: offset ?? 0,
+      })
+      const rows = (data ?? []) as unknown as RpcRestaurantRow[]
+      for (const r of rows) {
         map.set(r.id, {
           name: r.name,
           genre: r.genre ?? null,
@@ -282,7 +255,7 @@ export class SupabaseHomeRepository implements HomeRepository {
           lat: r.lat ?? null,
           lng: r.lng ?? null,
           priceRange: r.price_range ?? null,
-          prestige: ((r as Record<string, unknown>).prestige ?? []) as RestaurantPrestige[],
+          prestige: (r.prestige ?? []) as RestaurantPrestige[],
           photoUrl: r.photos?.[0] ?? null,
           wineType: null,
           variety: null,
@@ -292,11 +265,21 @@ export class SupabaseHomeRepository implements HomeRepository {
         })
       }
     } else {
-      const { data } = await this.supabase
-        .from('wines')
-        .select('id, name, variety, region, country, wine_type, vintage, photos')
-        .in('id', targetIds)
-      for (const w of data ?? []) {
+      const { data } = await this.supabase.rpc('filter_home_wines', {
+        p_ids: targetIds,
+        p_wine_type: dbFilters?.wineType ?? null,
+        p_variety: dbFilters?.variety ?? null,
+        p_country: dbFilters?.country ?? null,
+        p_vintage: dbFilters?.vintage ?? null,
+        p_vintage_op: dbFilters?.vintageOp ?? 'eq',
+        p_acidity: dbFilters?.acidity ?? null,
+        p_sweetness: dbFilters?.sweetness ?? null,
+        p_sort: sort === 'name' ? 'name' : 'name',
+        p_limit: limit ?? null,
+        p_offset: offset ?? 0,
+      })
+      const rows = (data ?? []) as unknown as RpcWineRow[]
+      for (const w of rows) {
         map.set(w.id, {
           name: w.name,
           genre: null,
@@ -394,12 +377,11 @@ export class SupabaseHomeRepository implements HomeRepository {
         }
 
         if (bubbleIds.length > 0) {
-          // bubble_items 기반으로 전환 — target_id 직접 사용
+          // bubble_items 기반 — 본인 추가 아이템 포함
           const { data: bItems } = await this.supabase
             .from('bubble_items')
             .select('target_id')
             .in('bubble_id', bubbleIds)
-            .neq('added_by', userId)
             .eq('target_type', targetType)
 
           if (bItems && bItems.length > 0) {
@@ -417,30 +399,6 @@ export class SupabaseHomeRepository implements HomeRepository {
               }
             }
           }
-        }
-      }
-    }
-
-    // 공개 기록
-    if (views.includes('public')) {
-      const { data: publicUsers } = await this.supabase
-        .from('users')
-        .select('id')
-        .eq('is_public', true)
-        .neq('id', userId)
-
-      if (publicUsers && publicUsers.length > 0) {
-        const publicUserIds = publicUsers.map((u) => u.id)
-        const { data: pRows } = await this.supabase
-          .from('records')
-          .select('*')
-          .in('user_id', publicUserIds)
-          .eq('target_type', targetType)
-          .in('target_id', targetIds)
-          .order('visit_date', { ascending: false })
-          .limit(200)
-        for (const row of pRows ?? []) {
-          results.push({ ...mapDbToRecord(row), source: 'public' })
         }
       }
     }
@@ -479,8 +437,8 @@ export class SupabaseHomeRepository implements HomeRepository {
 
   private async fetchRecordPhotos(
     recordIds: string[],
-  ): Promise<Map<string, string>> {
-    const map = new Map<string, string>()
+  ): Promise<Map<string, string[]>> {
+    const map = new Map<string, string[]>()
     if (recordIds.length === 0) return map
 
     const { data } = await this.supabase
@@ -490,10 +448,9 @@ export class SupabaseHomeRepository implements HomeRepository {
       .order('order_index', { ascending: true })
 
     for (const p of data ?? []) {
-      // record_id -> url (첫 사진만)
-      if (!map.has(p.record_id)) {
-        map.set(p.record_id, p.url)
-      }
+      const existing = map.get(p.record_id)
+      if (existing) existing.push(p.url)
+      else map.set(p.record_id, [p.url])
     }
 
     return map
@@ -507,7 +464,7 @@ export class SupabaseHomeRepository implements HomeRepository {
     targetMeta: Map<string, TargetMeta>,
     allRecords: (DiningRecord & { source: RecordSource })[],
     bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>,
-    photoMap: Map<string, string>,
+    photoMap: Map<string, string[]>,
     targetSourceMap: Map<string, Set<RecordSource>>,
     currentUserId: string,
   ): HomeTarget[] {
@@ -565,18 +522,25 @@ export class SupabaseHomeRepository implements HomeRepository {
       }
 
       // 사진 우선순위: 내 record_photos -> 소셜 record_photos -> target.photos
+      // allPhotos: 내 최신 record의 전체 사진 배열 (캘린더 사진 뷰어용)
       let photoUrl: string | null = null
+      let allPhotos: string[] = []
       if (latestMine) {
-        photoUrl = photoMap.get(latestMine.id) ?? null
+        const minePhotos = photoMap.get(latestMine.id)
+        if (minePhotos && minePhotos.length > 0) {
+          photoUrl = minePhotos[0]
+          allPhotos = minePhotos
+        }
       }
       if (!photoUrl) {
         // 소셜 records의 사진 (source 우선순위 순)
         for (const src of RECORD_SOURCE_PRIORITY) {
           const srcRecords = targetRecords.filter((r) => r.source === src && r.userId !== currentUserId)
           for (const r of srcRecords) {
-            const photo = photoMap.get(r.id)
-            if (photo) {
-              photoUrl = photo
+            const photos = photoMap.get(r.id)
+            if (photos && photos.length > 0) {
+              photoUrl = photos[0]
+              allPhotos = photos
               break
             }
           }
@@ -585,7 +549,20 @@ export class SupabaseHomeRepository implements HomeRepository {
       }
       if (!photoUrl) {
         photoUrl = meta.photoUrl
+        if (meta.photoUrl) allPhotos = [meta.photoUrl]
       }
+
+      // 내 점수 평균
+      const myScoredRecords = myRecords.filter((r) => r.satisfaction != null)
+      const myScoreAvg = myScoredRecords.length > 0
+        ? Math.round(myScoredRecords.reduce((s, r) => s + (r.satisfaction ?? 0), 0) / myScoredRecords.length)
+        : null
+
+      // 버블 점수 평균 (source='bubble' 기록)
+      const bubbleRecords = targetRecords.filter((r) => r.source === 'bubble' && r.satisfaction != null)
+      const bubbleScoreAvg = bubbleRecords.length > 0
+        ? Math.round(bubbleRecords.reduce((s, r) => s + (r.satisfaction ?? 0), 0) / bubbleRecords.length)
+        : null
 
       const bookmark = bookmarks.get(targetId) ?? { isBookmarked: false, isCellar: false }
       const sources = [...(targetSourceMap.get(targetId) ?? [])]
@@ -603,6 +580,7 @@ export class SupabaseHomeRepository implements HomeRepository {
         targetType,
         name: meta.name,
         photoUrl,
+        allPhotos,
 
         genre: meta.genre,
         city: meta.city,
@@ -629,6 +607,12 @@ export class SupabaseHomeRepository implements HomeRepository {
         axisY: bestAxisY,
         scoreSource: bestSource,
 
+        myScore: myScoreAvg,
+        nyamScore: null,       // application hook에서 batchPredict로 채움
+        nyamConfidence: null,
+        bubbleScore: bubbleScoreAvg,
+        bubbleConfidence: null, // application hook에서 채움
+
         latestRecordId: latestMine?.id ?? null,
         latestVisitDate: latestMine?.visitDate ?? null,
         latestScene: latestMine?.scene ?? null,
@@ -643,6 +627,34 @@ export class SupabaseHomeRepository implements HomeRepository {
 }
 
 // --- 내부 타입 ---
+
+/** filter_home_restaurants RPC 반환 행 */
+interface RpcRestaurantRow {
+  id: string
+  name: string
+  genre: string | null
+  country: string | null
+  city: string | null
+  district: string | null
+  area: string[] | null
+  photos: string[] | null
+  lat: number | null
+  lng: number | null
+  price_range: number | null
+  prestige: unknown[]
+}
+
+/** filter_home_wines RPC 반환 행 */
+interface RpcWineRow {
+  id: string
+  name: string
+  wine_type: string | null
+  variety: string | null
+  country: string | null
+  region: string | null
+  vintage: number | null
+  photos: string[] | null
+}
 
 interface TargetMeta {
   name: string

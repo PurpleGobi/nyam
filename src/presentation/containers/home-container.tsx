@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { UtensilsCrossed, Wine, Users } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
@@ -11,7 +11,7 @@ import type { HomeViewType, HomeDbFilters } from '@/domain/repositories/home-rep
 import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
-import { chipsToFilterRules, isAdvancedChip } from '@/domain/entities/condition-chip'
+import { chipsToFilterRules, isAdvancedChip, createDefaultViewChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, MAP_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -68,11 +68,10 @@ const VarietalChart = dynamic(() => import('@/presentation/components/home/varie
 const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-type-chart').then(m => ({ default: m.WineTypeChart })), { ssr: false })
 
 function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | undefined {
-  if (!source || source === 'bookmark') return undefined
+  if (!source) return undefined
   const map: Record<string, ScoreSource> = {
     mine: 'mine',
     bubble: 'bubble',
-    // 'following'과 'public'은 ScoreSource에서 제거됨 → undefined 반환 (매핑 없음)
   }
   return map[source]
 }
@@ -154,6 +153,8 @@ const DB_FILTER_ATTRIBUTES = new Set([
 export function HomeContainer() {
   const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlBubbleId = searchParams.get('bubbleId')
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
@@ -254,15 +255,18 @@ export function HomeContainer() {
     currentSort, setCurrentSort,
     searchQuery, setSearchQuery,
   } = useHomeState({
-    initialTab: settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined,
+    initialTab: urlBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined),
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
   })
 
   // 거리순 소팅 시에만 위치 좌표 요청
   const userCoords = useUserCoords(currentSort === 'distance' || activeTab === 'restaurant')
 
-  // ── 소셜 필터 상태 ──
-  const [socialFilter, setSocialFilter] = useState<SocialFilterState>({ followingUserId: null, bubbleId: null })
+  // ── 소셜 필터 상태 (URL ?bubbleId= 파라미터로 진입 시 프리셋) ──
+  const [socialFilter, setSocialFilter] = useState<SocialFilterState>(() => ({
+    followingUserId: null,
+    bubbleId: urlBubbleId ?? null,
+  }))
   const socialFilterOptions = useSocialFilterOptions(user?.id ?? null)
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
@@ -280,8 +284,13 @@ export function HomeContainer() {
     if (!user?.id) return
 
     let cancelled = false
-    void loadState(activeTab).then((chips) => {
+    void loadState(activeTab).then((loaded) => {
       if (cancelled) return
+      // 식당/와인 탭: 로드된 칩에 view 칩이 없으면 디폴트 '내기록' 칩 추가
+      const hasViewChip = loaded.some((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
+      const chips = (!hasViewChip && activeTab !== 'bubble')
+        ? [createDefaultViewChip(), ...loaded]
+        : loaded
       setInitializedTabs((prev) => {
         if (prev.has(activeTab)) return prev
         const next = new Set(prev)
@@ -296,12 +305,14 @@ export function HomeContainer() {
     return () => { cancelled = true }
   }, [activeTab, user?.id, loadState, setFilterRules])
 
-  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화
+  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화 (URL 버블 필터는 유지)
   if (prevTab !== activeTab) {
     setPrevTab(activeTab)
-    setSocialFilter({ followingUserId: null, bubbleId: null })
+    if (!urlBubbleId) {
+      setSocialFilter({ followingUserId: null, bubbleId: null })
+    }
     if (!initializedTabs.has(activeTab)) {
-      setConditionChips([])
+      setConditionChips(activeTab !== 'bubble' ? [createDefaultViewChip()] : [])
     }
   }
 
@@ -345,6 +356,9 @@ export function HomeContainer() {
 
   // ── conditionChips에서 view 값 추출 ──
   const viewTypes: HomeViewType[] = useMemo(() => {
+    // URL ?bubbleId= 로 진입 시 bubble viewType 강제 포함
+    if (urlBubbleId) return ['bubble']
+
     const views: HomeViewType[] = []
     for (const chip of conditionChips) {
       if (isAdvancedChip(chip)) continue
@@ -352,13 +366,13 @@ export function HomeContainer() {
       const vals = String(chip.value).split(',')
       for (const v of vals) {
         const trimmed = v.trim()
-        if (trimmed === 'visited' || trimmed === 'tasted' || trimmed === 'bookmark' || trimmed === 'cellar' || trimmed === 'unrated' || trimmed === 'bubble' || trimmed === 'following' || trimmed === 'public') {
+        if (trimmed === 'mine' || trimmed === 'bubble' || trimmed === 'following') {
           views.push(trimmed)
         }
       }
     }
     return views
-  }, [conditionChips])
+  }, [conditionChips, urlBubbleId])
 
   // view 칩은 데이터 소스 변경용이므로 filterRules에서 제외
   const nonViewFilterRules = useMemo(() => {
