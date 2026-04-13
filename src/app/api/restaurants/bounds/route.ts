@@ -91,7 +91,6 @@ export async function GET(request: NextRequest) {
   const restaurants = sliced.map((r: Record<string, unknown>) => {
     const srcs: string[] = []
     if (r.has_record) srcs.push('mine')
-    if (r.has_bookmark) srcs.push('bookmark')
     return {
       id: r.id,
       name: r.name,
