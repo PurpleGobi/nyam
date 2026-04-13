@@ -82,9 +82,9 @@ def parse_detail_jsonld(html: str) -> dict:
                 # 요리 유형
                 detail['cuisine'] = data.get('servesCuisine')
 
-                # 설명
+                # 설명 (JSON-LD fallback)
                 review = data.get('review', {})
-                detail['description'] = review.get('description', '')[:500]
+                detail['description_jsonld'] = review.get('description', '')
 
                 # 이미지
                 detail['image_url'] = data.get('image')
@@ -123,6 +123,20 @@ def parse_detail_jsonld(html: str) -> dict:
             facilities.append(text)
     if facilities:
         detail['facilities'] = ', '.join(facilities)
+
+    # 설명 — HTML 본문에서 전체 텍스트 추출 (JSON-LD보다 길 수 있음)
+    desc_el = soup.select_one(
+        '.restaurant-details__description, '
+        '.data-sheet__description, '
+        '.restaurant-details__content--description, '
+        '[class*="editorial-content"] p, '
+        '.mikado-editor-content p'
+    )
+    html_desc = desc_el.get_text(strip=True) if desc_el else ''
+    # HTML 본문이 더 길면 그걸 사용, 아니면 JSON-LD fallback
+    jsonld_desc = detail.get('description_jsonld', '')
+    detail['description'] = html_desc if len(html_desc) > len(jsonld_desc) else jsonld_desc
+    detail.pop('description_jsonld', None)
 
     return detail
 

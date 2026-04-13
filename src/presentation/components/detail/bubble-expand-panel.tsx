@@ -1,26 +1,18 @@
 'use client'
 
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
-
-interface BubbleScore {
-  bubbleId: string
-  bubbleName: string
-  icon: string | null
-  iconBgColor: string | null
-  ratingCount: number
-  avgScore: number | null
-  cfScore?: number | null      // CF 기반 버블 점수 (있으면 우선 표시)
-  memberCount?: number | null   // 버블 멤버 수
-}
+import type { BubbleScoreEntry } from '@/domain/entities/score'
 
 interface BubbleExpandPanelProps {
   isOpen: boolean
-  bubbleScores: BubbleScore[]
+  bubbleScores: BubbleScoreEntry[]
   accentColor: string  // '--accent-food' | '--accent-wine'
 }
 
 export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleExpandPanelProps) {
-  if (bubbleScores.length === 0) return null
+  // 기록 1건+ 있는 버블만 표시
+  const eligible = bubbleScores.filter(b => b.raterCount >= 1)
+  if (eligible.length === 0) return null
 
   return (
     <div style={{ padding: '0 20px 10px' }}>
@@ -32,7 +24,11 @@ export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleE
         }}
       >
         <div className="flex flex-col gap-1.5 pb-2.5">
-          {bubbleScores.map((b) => (
+          {/* 헤더 */}
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            버블별 점수
+          </span>
+          {eligible.map((b) => (
             <div
               key={b.bubbleId}
               className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
@@ -51,15 +47,21 @@ export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleE
                 <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text)' }}>
                   {b.bubbleName}
                 </span>
-                <span style={{ fontSize: '10px', color: 'var(--text-hint)', marginLeft: '4px' }}>
-                  {b.memberCount != null ? `${b.memberCount}명` : `${b.ratingCount}명 평가`}
+              </div>
+              <div className="flex flex-col items-end">
+                <span style={{ fontSize: '16px', fontWeight: 800, color: `var(${accentColor})` }}>
+                  {b.score !== null ? Math.round(b.score) : '—'}
+                </span>
+                <span style={{ fontSize: '8px', color: 'var(--text-hint)', whiteSpace: 'nowrap' }}>
+                  확신 {Math.round(b.confidence * 100)}% · {b.raterCount}명 평가
                 </span>
               </div>
-              <span style={{ fontSize: '16px', fontWeight: 800, color: `var(${accentColor})` }}>
-                {(b.cfScore != null ? b.cfScore : b.avgScore) ?? '—'}
-              </span>
             </div>
           ))}
+          {/* 안내 텍스트 */}
+          <span style={{ fontSize: '9px', color: 'var(--text-hint)', textAlign: 'center' }}>
+            가입한 버블 중 기록 1건+ 있는 것만 표시
+          </span>
         </div>
       </div>
     </div>

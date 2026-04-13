@@ -11,6 +11,7 @@ export interface HomeTarget {
   targetType: RecordTargetType    // 'restaurant' | 'wine'
   name: string
   photoUrl: string | null         // record_photos 우선 -> target.photos[0] 폴백
+  allPhotos: string[]             // 해당 record의 전체 사진 (사진 뷰어용)
 
   // 식당 메타
   genre: string | null
@@ -40,6 +41,13 @@ export interface HomeTarget {
   axisX: number | null
   axisY: number | null
   scoreSource: RecordSource | null
+
+  // --- 3종 점수 ---
+  myScore: number | null
+  nyamScore: number | null
+  nyamConfidence: number | null
+  bubbleScore: number | null
+  bubbleConfidence: number | null
 
   // --- 최신 기록 요약 ---
   latestRecordId: string | null   // null = 기록 없음 (찜만)

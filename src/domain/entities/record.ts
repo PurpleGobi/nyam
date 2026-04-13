@@ -75,13 +75,14 @@ export interface DiningRecord {
 
 // ─── 대상 정보 포함 기록 (홈 피드용) ───
 
-export type RecordSource = 'mine' | 'following' | 'bubble' | 'public' | 'bookmark'
+export type RecordSource = 'mine' | 'following' | 'bubble'
 
 export interface RecordWithTarget extends DiningRecord {
   targetName: string
   targetMeta: string | null
   targetArea: string | null
   targetPhotoUrl: string | null
+  targetPhotos: string[]
   targetLat: number | null
   targetLng: number | null
   source?: RecordSource

@@ -16,6 +16,7 @@ export function ScoreBreakdownPanel({ isOpen, breakdown, accentColor }: ScoreBre
   const { followingRaters, otherRaters } = breakdown
   const hasFollowing = followingRaters.length > 0
   const hasOther = otherRaters.count > 0
+  const totalRaters = followingRaters.length + otherRaters.count
 
   if (!hasFollowing && !hasOther) return null
 
@@ -29,11 +30,20 @@ export function ScoreBreakdownPanel({ isOpen, breakdown, accentColor }: ScoreBre
         }}
       >
         <div className="flex flex-col gap-2 pb-2.5">
+          {/* 헤더: 총 평가자 수 */}
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Nyam 점수 근거
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>
+              평가자 {totalRaters}명 기반
+            </span>
+          </div>
           {/* 팔로잉 기여자 섹션 */}
           {hasFollowing && (
             <div className="flex flex-col gap-1">
               <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-hint)' }}>
-                팔로잉 기여자
+                팔로잉 (가중 ×1.5)
               </span>
               {followingRaters.map((rater) => (
                 <RaterRow

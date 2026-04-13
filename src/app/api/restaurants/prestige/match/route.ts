@@ -172,7 +172,7 @@ async function matchSinglePrestige(
       const { data: existingByKakao } = await supabase
         .from('restaurants')
         .select('id')
-        .or(`external_ids->>kakao.eq.${bestKakao.kakaoId},kakao_map_url.eq.${bestKakao.kakaoMapUrl ?? ''}`)
+        .or(`external_id_kakao.eq.${bestKakao.kakaoId},kakao_map_url.eq.${bestKakao.kakaoMapUrl ?? ''}`)
         .limit(1)
 
       if (existingByKakao && existingByKakao.length > 0) {
@@ -199,7 +199,7 @@ async function matchSinglePrestige(
           lat: bestKakao.lat,
           lng: bestKakao.lng,
           phone: bestKakao.phone,
-          external_ids: { kakao: bestKakao.kakaoId },
+          external_id_kakao: bestKakao.kakaoId,
           kakao_map_url: bestKakao.kakaoMapUrl,
         })
         .select('id')

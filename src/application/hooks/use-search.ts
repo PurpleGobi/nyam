@@ -5,8 +5,8 @@ import type { SearchResult, SearchScreenState, RecentSearch } from '@/domain/ent
 import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import { debounce } from '@/shared/utils/debounce'
 
-const DEBOUNCE_MS = 300
-const MIN_QUERY_LENGTH = 2
+const DEBOUNCE_MS = 150
+const MIN_QUERY_LENGTH = 1
 const MAX_RECENT_SEARCHES = 10
 const RECENT_SEARCHES_KEY = 'nyam_recent_searches'
 

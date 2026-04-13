@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect, useCallback, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Notification } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
@@ -9,6 +9,21 @@ import { NotificationActions } from '@/presentation/components/notification/noti
 import { NotificationEmpty } from '@/presentation/components/notification/notification-empty'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
 import { formatTimeAgo } from '@/shared/utils/date-format'
+
+const DROPDOWN_PADDING = 12
+
+function calcPosition(anchorEl: HTMLElement | null) {
+  if (!anchorEl) return { top: 56, left: 0 }
+  const rect = anchorEl.getBoundingClientRect()
+  const dropdownWidth = Math.min(360, window.innerWidth - DROPDOWN_PADDING * 2)
+  const bellCenter = rect.left + rect.width / 2
+  const idealLeft = bellCenter - dropdownWidth / 2
+  const maxLeft = window.innerWidth - dropdownWidth - DROPDOWN_PADDING
+  return {
+    top: rect.bottom + 8,
+    left: Math.max(DROPDOWN_PADDING, Math.min(idealLeft, maxLeft)),
+  }
+}
 
 interface NotificationDropdownProps {
   isOpen: boolean
@@ -19,15 +34,27 @@ interface NotificationDropdownProps {
   onMarkAllAsRead: () => void
   onAction: (id: string, status: 'accepted' | 'rejected') => void
   onNavigate?: (notification: Notification) => void
-  position?: { top: number; right: number }
+  anchorRef: RefObject<HTMLDivElement | null>
 }
 
 export function NotificationDropdown({
   isOpen, onClose, notifications, unreadCount,
-  onMarkAsRead, onMarkAllAsRead, onAction, onNavigate, position,
+  onMarkAsRead, onMarkAllAsRead, onAction, onNavigate, anchorRef,
 }: NotificationDropdownProps) {
   const ref = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const [pos, setPos] = useState({ top: 56, left: 0 })
+
+  const updatePos = useCallback(() => {
+    setPos(calcPosition(anchorRef.current))
+  }, [anchorRef])
+
+  useEffect(() => {
+    if (!isOpen) return
+    updatePos()
+    window.addEventListener('resize', updatePos)
+    return () => window.removeEventListener('resize', updatePos)
+  }, [isOpen, updatePos])
 
   const handleItemClick = (n: Notification) => {
     if (!n.isRead) onMarkAsRead(n.id)
@@ -50,7 +77,7 @@ export function NotificationDropdown({
       <div
         ref={ref}
         className="notif-dropdown"
-        style={position ? { position: 'fixed', top: `${position.top}px`, right: `${position.right}px` } : undefined}
+        style={{ position: 'fixed', top: `${pos.top}px`, left: `${pos.left}px` }}
       >
         {/* 헤더 */}
         <div className="notif-header" style={{ borderBottom: '1px solid var(--border)' }}>

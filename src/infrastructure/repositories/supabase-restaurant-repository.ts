@@ -34,7 +34,9 @@ function mapDbToRestaurant(data: Record<string, unknown>): Restaurant {
     prestige: (data.prestige ?? []) as RestaurantPrestige[],
     nyamScore: data.nyam_score ? Number(data.nyam_score) : null,
     nyamScoreUpdatedAt: data.nyam_score_updated_at as string | null,
-    externalIds: data.external_ids as Restaurant['externalIds'],
+    externalIdKakao: data.external_id_kakao as string | null,
+    externalIdGoogle: data.external_id_google as string | null,
+    externalIdNaver: data.external_id_naver as string | null,
     cachedAt: data.cached_at as string | null,
     nextRefreshAt: data.next_refresh_at as string | null,
     createdAt: data.created_at as string,
@@ -324,7 +326,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
   async search(query: string, userId: string): Promise<RestaurantSearchResult[]> {
     const { data, error } = await this.supabase
       .from('restaurants')
-      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
+      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, prestige')
       .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
       .limit(20)
 
@@ -355,7 +357,7 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       lng: r.lng,
       phone: r.phone ?? null,
       kakaoMapUrl: r.kakao_map_url ?? null,
-      prestige: ((r as Record<string, unknown>).prestige ?? []) as RestaurantPrestige[],
+      prestige: (r.prestige ?? []) as RestaurantPrestige[],
       distance: null,
       hasRecord: recordedIds.has(r.id),
     }))
@@ -425,7 +427,9 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
         lat: input.lat ?? null,
         lng: input.lng ?? null,
         phone: input.phone ?? null,
-        external_ids: input.externalIds ?? null,
+        external_id_kakao: input.externalIdKakao ?? null,
+        external_id_google: input.externalIdGoogle ?? null,
+        external_id_naver: input.externalIdNaver ?? null,
         cached_at: now,
         next_refresh_at: twoWeeksLater,
       })

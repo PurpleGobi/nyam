@@ -37,8 +37,6 @@ export interface RestaurantPrestige {
   grade: string  // '3_star', '2_star', '1_star', 'bib', '3_ribbon', '2_ribbon', '1_ribbon', 프로그램명
 }
 
-export interface RestaurantExternalIds { kakao?: string; naver?: string; google?: string }
-
 export interface Restaurant {
   id: string
   name: string
@@ -61,7 +59,9 @@ export interface Restaurant {
   prestige: RestaurantPrestige[]
   nyamScore: number | null
   nyamScoreUpdatedAt: string | null
-  externalIds: RestaurantExternalIds | null
+  externalIdKakao: string | null
+  externalIdGoogle: string | null
+  externalIdNaver: string | null
   cachedAt: string | null
   nextRefreshAt: string | null
   createdAt: string

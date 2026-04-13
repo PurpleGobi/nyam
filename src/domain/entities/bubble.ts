@@ -57,6 +57,8 @@ export interface BubbleShareRule {
   conjunction: 'and' | 'or'
   /** true면 찜도 자동 매칭 대상에 포함 (대상 메타데이터로 필터 평가). 기본값 false */
   includeBookmarks?: boolean
+  /** 도메인별 공유 ON/OFF. 미지정 시 모두 true (하위호환) */
+  enabledDomains?: { restaurant: boolean; wine: boolean }
 }
 
 /** 가시성 오버라이드 7개 키 (users.visibility_bubble과 동일 구조) */

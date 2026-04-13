@@ -270,8 +270,11 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       }
       cleanNulls(record)
 
-      const { error } = await this.supabase.from('records').insert(record)
+      const { data: inserted, error } = await this.supabase.from('records').insert(record).select('id').single()
       if (error) throw error
+
+      // 3) 사진 URL이 있으면 record_photos insert
+      await this.insertPhotos(inserted.id, row['photo_urls'])
     }
   }
 
@@ -309,9 +312,26 @@ export class SupabaseSettingsRepository implements SettingsRepository {
       }
       cleanNulls(record)
 
-      const { error } = await this.supabase.from('records').insert(record)
+      const { data: inserted, error } = await this.supabase.from('records').insert(record).select('id').single()
       if (error) throw error
+
+      await this.insertPhotos(inserted.id, row['photo_urls'])
     }
+  }
+
+  private async insertPhotos(recordId: string, photoUrlsRaw: unknown): Promise<void> {
+    const urls = toArr(photoUrlsRaw)
+    if (!urls || urls.length === 0) return
+
+    const photos = urls.map((url, i) => ({
+      record_id: recordId,
+      url: url.trim(),
+      order_index: i,
+      is_public: true,
+    }))
+
+    const { error } = await this.supabase.from('record_photos').insert(photos)
+    if (error) throw error
   }
 
   private async findOrCreateRestaurant(row: Record<string, unknown>): Promise<string> {
@@ -534,7 +554,7 @@ async function generateTemplateWorkbook(): Promise<Blob> {
     'restaurant_name', 'address', 'genre', 'price_range',
     'country', 'city', 'area', 'lat', 'lng',
     'axis_x', 'axis_y', 'comment', 'scene', 'visit_date', 'meal_time',
-    'total_price', 'menu_tags', 'companion_count', 'private_note',
+    'total_price', 'menu_tags', 'companion_count', 'private_note', 'photo_urls',
   ]
   // autoFillCols: 이름+주소만 입력하면 자동 검색되는 컬럼 (0-indexed)
   const rAutoFill = [4, 5, 6, 7, 8] // country, city, area, lat, lng
@@ -543,7 +563,7 @@ async function generateTemplateWorkbook(): Promise<Blob> {
     '자동검색', '자동검색', '자동검색 (쉼표 구분)', '자동검색', '자동검색',
     'X축 (0~100, 음식 퀄리티)', 'Y축 (0~100, 경험 만족도)', '한줄평 (200자)',
     '상황', '방문일 (YYYY-MM-DD)', '식사 시간',
-    '1인 금액 (원)', '추천 메뉴 (쉼표 구분)', '동반자 수', '비공개 메모',
+    '1인 금액 (원)', '추천 메뉴 (쉼표 구분)', '동반자 수', '비공개 메모', '사진 URL (쉼표 구분)',
   ]
 
   setupSheet(rs, rHeaders, rDescs, rAutoFill)
@@ -563,9 +583,9 @@ async function generateTemplateWorkbook(): Promise<Blob> {
 
   // 예시 데이터
   const rExamples = [
-    ['스시 오마카세 히든', '서울 종로구 익선동 166-55', '일식', 3, '한국', '서울', '익선동,종로', 37.5743, 126.9880, 82, 90, '오마카세 코스 흠잡을 데 없이 완벽', 'romantic', '2026-03-15', 'dinner', 150000, '오마카세 코스,사케 페어링', 1, ''],
-    ['을지로 골뱅이', '서울 중구 을지로 14길 8', '한식', 1, '한국', '서울', '을지로', 37.5660, 126.9920, 70, 85, '골뱅이 무침 양이 실하고 소주 한잔에 딱', 'business', '2026-03-20', 'dinner', 15000, '골뱅이 무침,소주', 4, '사장님이 서비스 잘 챙겨줌'],
-    ['블루보틀 삼청', '서울 종로구 삼청로 76', '카페', 2, '한국', '서울', '삼청동,북촌', 37.5803, 126.9820, 75, 65, '뉴올리언스 아이스커피 추천', 'solo', '2026-04-01', 'snack', 8000, '뉴올리언스 아이스커피', 0, ''],
+    ['스시 오마카세 히든', '서울 종로구 익선동 166-55', '일식', 3, '한국', '서울', '익선동,종로', 37.5743, 126.9880, 82, 90, '오마카세 코스 흠잡을 데 없이 완벽', 'romantic', '2026-03-15', 'dinner', 150000, '오마카세 코스,사케 페어링', 1, '', ''],
+    ['을지로 골뱅이', '서울 중구 을지로 14길 8', '한식', 1, '한국', '서울', '을지로', 37.5660, 126.9920, 70, 85, '골뱅이 무침 양이 실하고 소주 한잔에 딱', 'business', '2026-03-20', 'dinner', 15000, '골뱅이 무침,소주', 4, '사장님이 서비스 잘 챙겨줌', ''],
+    ['블루보틀 삼청', '서울 종로구 삼청로 76', '카페', 2, '한국', '서울', '삼청동,북촌', 37.5803, 126.9820, 75, 65, '뉴올리언스 아이스커피 추천', 'solo', '2026-04-01', 'snack', 8000, '뉴올리언스 아이스커피', 0, '', ''],
   ]
   rExamples.forEach((ex, idx) => {
     const row = rs.getRow(DATA_ROW_START + idx)
@@ -584,7 +604,7 @@ async function generateTemplateWorkbook(): Promise<Blob> {
     'purchase_price', 'pairing_categories', 'meal_time',
     'aroma_primary', 'aroma_secondary', 'aroma_tertiary',
     'complexity', 'finish', 'balance', 'intensity',
-    'companion_count', 'private_note',
+    'companion_count', 'private_note', 'photo_urls',
   ]
   // autoFillCols: 와인 이름만 입력하면 자동 검색되는 컬럼
   // producer(1), country(3), region(4), sub_region(5), variety(6), abv(8),
@@ -598,7 +618,7 @@ async function generateTemplateWorkbook(): Promise<Blob> {
     '구매가 (원)', '페어링 (쉼표 구분)', '식사 시간',
     '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)',
     '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)', '자동검색 (수정 가능)',
-    '동반자 수', '비공개 메모',
+    '동반자 수', '비공개 메모', '사진 URL (쉼표 구분)',
   ]
 
   setupSheet(ws, wHeaders, wDescs, wAutoFill)
@@ -637,9 +657,9 @@ async function generateTemplateWorkbook(): Promise<Blob> {
 
   // 예시 데이터
   const wExamples = [
-    ['Opus One 2019', 'Opus One Winery', 'red', 'USA', 'California', 'Napa Valley', 'Cabernet Sauvignon', 2019, 14.5, 92, 88, '놀라운 밸런스, 블랙커런트와 시가박스 향', 'pairing', '2026-03-10', 650000, 'red_meat,cheese', 'dinner', 'dark_berry,stone_fruit', 'vanilla,toast', 'leather', 90, 95, 92, 85, 1, '결혼기념일 와인'],
-    ['Cloudy Bay Sauvignon Blanc 2023', 'Cloudy Bay', 'white', 'New Zealand', 'Marlborough', '', 'Sauvignon Blanc', 2023, 13.0, 72, 80, '풀향과 자몽 노트가 상쾌', 'gathering', '2026-04-05', 35000, 'seafood,vegetable', 'lunch', 'citrus,tropical,herb', '', '', 50, 45, 70, 65, 3, ''],
-    ['Moët & Chandon Impérial Brut NV', 'Moët & Chandon', 'sparkling', 'France', 'Champagne', '', 'Chardonnay', '', 12.0, 78, 92, '축하 자리에 빠지지 않는 클래식', 'romantic', '2026-02-14', 89000, 'cheese,charcuterie', 'dinner', 'apple_pear,citrus,white_floral', 'toast,butter', '', 70, 60, 80, 70, 2, '발렌타인 데이'],
+    ['Opus One 2019', 'Opus One Winery', 'red', 'USA', 'California', 'Napa Valley', 'Cabernet Sauvignon', 2019, 14.5, 92, 88, '놀라운 밸런스, 블랙커런트와 시가박스 향', 'pairing', '2026-03-10', 650000, 'red_meat,cheese', 'dinner', 'dark_berry,stone_fruit', 'vanilla,toast', 'leather', 90, 95, 92, 85, 1, '결혼기념일 와인', ''],
+    ['Cloudy Bay Sauvignon Blanc 2023', 'Cloudy Bay', 'white', 'New Zealand', 'Marlborough', '', 'Sauvignon Blanc', 2023, 13.0, 72, 80, '풀향과 자몽 노트가 상쾌', 'gathering', '2026-04-05', 35000, 'seafood,vegetable', 'lunch', 'citrus,tropical,herb', '', '', 50, 45, 70, 65, 3, '', ''],
+    ['Moët & Chandon Impérial Brut NV', 'Moët & Chandon', 'sparkling', 'France', 'Champagne', '', 'Chardonnay', '', 12.0, 78, 92, '축하 자리에 빠지지 않는 클래식', 'romantic', '2026-02-14', 89000, 'cheese,charcuterie', 'dinner', 'apple_pear,citrus,white_floral', 'toast,butter', '', 70, 60, 80, 70, 2, '발렌타인 데이', ''],
   ]
   wExamples.forEach((ex, idx) => {
     const row = ws.getRow(DATA_ROW_START + idx)

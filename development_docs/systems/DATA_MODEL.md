@@ -1,4 +1,4 @@
-<!-- updated: 2026-04-10 -->
+<!-- updated: 2026-04-12 -->
 # DATA_MODEL — 데이터 모델
 
 > affects: 모든 페이지, 모든 시스템
@@ -9,15 +9,15 @@
 
 ```
 users (1) ─── (N) records
-users (1) ─── (N) bookmarks
+users (1) ─── (N) bookmarks [DEPRECATED]
 users (1) ─── (N) xp_totals
 users (1) ─── (N) saved_filters
 
 restaurants (1) ─── (N) records (target_type='restaurant')
 wines (1) ─── (N) records (target_type='wine')
 
-restaurants (1) ─── (N) bookmarks (target_type='restaurant')
-wines (1) ─── (N) bookmarks (target_type='wine')
+restaurants (1) ─── (N) bookmarks [DEPRECATED]
+wines (1) ─── (N) bookmarks [DEPRECATED]
 
 records (1) ─── (N) record_photos
 records (1) ─── (N) bubble_shares ─── (N) bubbles
@@ -37,7 +37,7 @@ users (1) ─── (N) xp_log_milestones ─── (N) xp_seed_milestones
 -- xp_seed_levels: 레벨별 필요 XP 정의 (시드)
 -- xp_seed_rules: XP 배분 규칙 (시드)
 -- area_zones: 생활권 좌표 (시드)
--- restaurant_accolades: 미슐랭/블루리본/TV 수상 (시드)
+-- restaurant_prestige: 미슐랭/블루리본/TV 명성 (시드)
 ```
 
 ---
@@ -155,20 +155,27 @@ CREATE TABLE restaurants (
   -- 명성(Prestige) 캐시 — restaurant_prestige 테이블에서 트리거로 자동 동기화
   prestige JSONB DEFAULT '[]',     -- [{"type":"michelin","grade":"1_star"}, {"type":"blue_ribbon","grade":"3_ribbon"}]
 
-  -- 비정규화 캐시
-  specialty TEXT,                   -- 대표 메뉴/특색 (AI 추출)
-  external_avg NUMERIC,            -- 외부 평점 평균 (naver+kakao+google 가중 평균)
-  record_count INT NOT NULL DEFAULT 0,  -- nyam 내 총 기록 수
-
   -- nyam 종합 점수
   nyam_score NUMERIC,              -- 0~100. NULL이면 아직 미산출
   nyam_score_updated_at TIMESTAMPTZ,
 
   -- 캐싱 관리
-  external_ids JSONB,              -- {"kakao": "...", "naver": "...", "google": "..."}
   cached_at TIMESTAMPTZ,
   next_refresh_at TIMESTAMPTZ,
   kakao_map_url TEXT,              -- 카카오맵 URL
+
+  -- 크롤링 메타
+  data_source TEXT NOT NULL DEFAULT 'user_created',  -- 'user_created' | 'kakao_crawl' | ...
+  last_crawled_at TIMESTAMPTZ,     -- 마지막 크롤링 시점
+  is_closed BOOLEAN NOT NULL DEFAULT false,  -- 폐업 여부
+
+  -- 외부 서비스 ID (각각 UNIQUE partial 인덱스)
+  external_id_kakao TEXT,          -- 카카오 장소 ID
+  external_id_google TEXT,         -- Google Place ID
+  external_id_naver TEXT,          -- 네이버 장소 ID
+
+  -- 공간 인덱스용 저장 geometry (트리거로 lat/lng와 자동 동기화)
+  geom geometry(Point, 4326),      -- trg_restaurants_geom → sync_restaurant_geom()
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -176,11 +183,7 @@ CREATE TABLE restaurants (
   CONSTRAINT chk_restaurants_price_range CHECK (price_range IS NULL OR (price_range >= 1 AND price_range <= 3))
 );
 
-CREATE INDEX idx_restaurants_area ON restaurants(area);
-CREATE INDEX idx_restaurants_country_city ON restaurants(country, city);
-CREATE INDEX idx_restaurants_location ON restaurants USING gist(
-  ST_MakePoint(lng, lat)
-) WHERE lng IS NOT NULL AND lat IS NOT NULL;
+-- 인덱스는 섹션 11.5 참조
 ```
 
 ### wines
@@ -383,9 +386,9 @@ New Zealand:
   South Island:       [Marlborough, Nelson, Canterbury, Central Otago]
 ```
 
-### bookmarks (찜/셀러)
+### bookmarks (DEPRECATED — 버블로 대체)
 
-> lists 테이블을 대체. 찜(bookmark)과 셀러(cellar)를 독립 테이블로 분리. records는 bookmarks 없이 직접 restaurants/wines를 참조.
+> **DEPRECATED**: 찜 기능은 버블 기반 큐레이션으로 전환됨. 개인 큐레이션은 비공개 버블(1인 버블)로, "일단 저장"은 FAB "버블에 추가"로 대체. 테이블은 마이그레이션 전까지 유지.
 
 ```sql
 CREATE TABLE bookmarks (
@@ -824,6 +827,58 @@ CREATE INDEX idx_saved_filters_context ON saved_filters(user_id, target_type, co
 
 ---
 
+## 5. CF (Collaborative Filtering) 테이블
+
+> 마이그레이션: `051_cf_tables.sql`
+> 상세: `docs/Nyam 개념문서/CF_SYSTEM.md`
+
+### user_similarities (유저 쌍별 적합도 캐시)
+
+```sql
+CREATE TABLE user_similarities (
+  user_a UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_b UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL CHECK (category IN ('restaurant', 'wine')),
+
+  similarity REAL NOT NULL DEFAULT 0,    -- 0~1 (적합도)
+  confidence REAL NOT NULL DEFAULT 0,    -- 0~1 (신뢰도 = 기본신뢰도 × 겹침다양성비율)
+  n_overlap INT NOT NULL DEFAULT 0,      -- 겹치는 기록 수
+
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (user_a, user_b, category),
+  CHECK (user_a < user_b)  -- 정규화: 항상 작은 ID가 앞
+);
+
+CREATE INDEX idx_sim_user_a ON user_similarities(user_a, category);
+CREATE INDEX idx_sim_user_b ON user_similarities(user_b, category);
+```
+
+RLS: 본인이 포함된 쌍만 SELECT 가능. 쓰기는 service role만 (Edge Function).
+
+### user_score_means (유저별 평균 점수 캐시)
+
+```sql
+CREATE TABLE user_score_means (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL CHECK (category IN ('restaurant', 'wine')),
+
+  mean_x REAL NOT NULL DEFAULT 50,
+  mean_y REAL NOT NULL DEFAULT 50,
+  record_count INT NOT NULL DEFAULT 0,
+
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (user_id, category)
+);
+```
+
+RLS: 모두 SELECT 가능 (예측에 필요). 쓰기는 service role만.
+
+**갱신 시점:** 기록 INSERT/UPDATE/DELETE 시 `compute-similarity` Edge Function이 비동기 갱신.
+
+---
+
 ## 6. 참조/시드 테이블
 
 ### area_zones (생활권 좌표)
@@ -1103,9 +1158,10 @@ CREATE OR REPLACE FUNCTION get_revisit_count_by_axis(p_user_id UUID, p_axis_type
   RETURNS INT LANGUAGE plpgsql STABLE AS $$ ... $$;
 ```
 
-### get_visible_fields — 프라이버시 캐스케이드 해석
+### get_visible_fields — 프라이버시 캐스케이드 해석 (미구현)
 
 ```sql
+-- ⚠️ 미구현: 마이그레이션 미적용. AUTH.md 스펙 기반 후속 구현 예정.
 -- 뷰어가 대상 유저의 어떤 필드를 볼 수 있는지 해석
 -- 우선순위: is_public/follow_policy 접근 차단 > bubble visibility_override > visibility_bubble > visibility_public
 CREATE OR REPLACE FUNCTION get_visible_fields(
@@ -1117,6 +1173,190 @@ RETURNS JSONB
 LANGUAGE plpgsql STABLE SECURITY INVOKER
 AS $$ ... $$;
 ```
+
+### 지도뷰 범위 검색 — 3-way RPC 분리
+
+> geom 컬럼(stored geometry) + SQL language 인라인으로 290ms → 1.7ms 달성.
+> 코드에서 조건에 따라 3개 함수를 분기 호출 (bounds/route.ts).
+> 기존 `search_restaurants_in_bounds`는 레거시 (코드 미사용, 향후 DROP 가능).
+
+```sql
+-- 1) simple: user_id 없음, source 없음 (SQL language → planner 인라인 가능, 최고 성능)
+CREATE OR REPLACE FUNCTION search_restaurants_bounds_simple(
+  p_north FLOAT8, p_south FLOAT8, p_east FLOAT8, p_west FLOAT8,
+  p_keyword TEXT DEFAULT '',
+  p_prestige_types TEXT[] DEFAULT NULL,
+  p_genre TEXT DEFAULT NULL,
+  p_district TEXT DEFAULT NULL,
+  p_area TEXT DEFAULT NULL,
+  p_sort TEXT DEFAULT 'name',
+  p_limit INT DEFAULT 20,
+  p_offset INT DEFAULT 0
+) RETURNS TABLE(...)
+  LANGUAGE sql STABLE AS $$ ... $$;
+
+-- 2) auth: user_id 있음, source 없음 (SQL language, has_record/has_bookmark EXISTS 포함)
+CREATE OR REPLACE FUNCTION search_restaurants_bounds_auth(
+  ... + p_user_id UUID
+) RETURNS TABLE(...)
+  LANGUAGE sql STABLE AS $$ ... $$;
+
+-- 3) source: source 필터 포함 (PL/pgSQL, 분기 로직 필요)
+CREATE OR REPLACE FUNCTION search_restaurants_bounds_source(
+  ... + p_user_id UUID + p_sources TEXT[]
+) RETURNS TABLE(...)
+  LANGUAGE plpgsql STABLE AS $$ ... $$;
+```
+
+**유지보수**: 새 WHERE 조건 추가 시 3개 함수 모두 수정 필요.
+**geom 동기화**: `trg_restaurants_geom` 트리거가 lat/lng 변경 시 자동 갱신. 코드 수정 불필요.
+
+### filter_home_restaurants — 홈뷰 식당 메타 필터
+
+```sql
+-- target_id 배열 + 메타 컬럼 WHERE 필터 + name 소팅 + LIMIT/OFFSET
+-- 홈뷰에서 DB 필터를 적용하여 JS 필터 부담 경감
+CREATE OR REPLACE FUNCTION filter_home_restaurants(
+  p_ids UUID[],
+  p_genre TEXT DEFAULT NULL,
+  p_district TEXT DEFAULT NULL,
+  p_area TEXT DEFAULT NULL,
+  p_prestige TEXT DEFAULT NULL,
+  p_price_range INT DEFAULT NULL,
+  p_sort TEXT DEFAULT 'name',
+  p_limit INT DEFAULT 20,
+  p_offset INT DEFAULT 0
+) RETURNS TABLE(id UUID, name TEXT, genre TEXT, district TEXT, area TEXT[],
+  city TEXT, country TEXT, lat FLOAT8, lng FLOAT8,
+  price_range INT, prestige JSONB, photos TEXT[])
+  LANGUAGE plpgsql STABLE AS $$ ... $$;
+```
+
+### filter_home_wines — 홈뷰 와인 메타 필터
+
+```sql
+-- 와인 target_id 배열 + 메타 컬럼 WHERE 필터 + name 소팅 + LIMIT/OFFSET
+CREATE OR REPLACE FUNCTION filter_home_wines(
+  p_ids UUID[],
+  p_wine_type TEXT DEFAULT NULL,
+  p_variety TEXT DEFAULT NULL,
+  p_country TEXT DEFAULT NULL,
+  p_vintage INT DEFAULT NULL,
+  p_vintage_op TEXT DEFAULT 'eq',   -- 'eq' | 'lte' (2018년 이전)
+  p_acidity INT DEFAULT NULL,
+  p_sweetness INT DEFAULT NULL,
+  p_sort TEXT DEFAULT 'name',
+  p_limit INT DEFAULT 20,
+  p_offset INT DEFAULT 0
+) RETURNS TABLE(id UUID, name TEXT, wine_type TEXT, variety TEXT,
+  country TEXT, region TEXT, sub_region TEXT, vintage INT,
+  photos TEXT[], producer TEXT, acidity_level INT, sweetness_level INT)
+  LANGUAGE plpgsql STABLE AS $$ ... $$;
+```
+
+### is_mutual_follow — 맞팔 확인
+
+```sql
+-- follows 테이블 self-JOIN으로 양방향 accepted 확인 (단일 쿼리)
+CREATE OR REPLACE FUNCTION is_mutual_follow(
+  p_user_id UUID, p_target_id UUID
+) RETURNS BOOLEAN
+  LANGUAGE sql STABLE AS $$ ... $$;
+```
+
+---
+
+## 11.5. 인덱스 전략
+
+> 근거 문서: `docs/Nyam 개념문서/DB_인덱싱_전략.md`, `docs/Nyam 개념문서/DB_쿼리_리팩토링_구현계획.md`
+> 마이그레이션: `059_query_optimization_indexes.sql`, `061_query_optimization_functions.sql`
+
+### 쿼리 코딩 규칙 (7가지)
+
+| 규칙 | 이름 | 내용 |
+|------|------|------|
+| R-SEARCH | 텍스트 검색 | ILIKE 사용 컬럼은 반드시 GIN trgm 인덱스 |
+| R-ENUM | 고정값 필터 | SSOT 고정값(genre, wine_type 등)은 EQ만. ILIKE 금지 |
+| R-FILTER | DB 필터 우선 | 테이블 컬럼 기반 필터는 SQL WHERE로 처리 |
+| R-PAGINATE | DB 페이지네이션 | 20건 초과 가능한 목록은 DB LIMIT+OFFSET |
+| R-SELECT | 필요 컬럼만 | SELECT * 금지 |
+| R-COUNT | 집계 캐싱 | 자주 쓰는 COUNT는 캐시 컬럼으로 유지 |
+| R-MUTUAL | N+1 방지 | 관계 확인은 단일 JOIN. 왕복 여러 번 금지 |
+
+### 테이블별 인덱스 현황
+
+#### restaurants (15개)
+
+| 인덱스 | 타입 | 용도 |
+|--------|------|------|
+| `restaurants_pkey` | btree (id) | PK |
+| `idx_restaurants_name_trgm` | GIN trgm (name) | 텍스트 검색 |
+| `idx_restaurants_address_trgm` | GIN trgm (address) | 텍스트 검색 |
+| `idx_restaurants_location` | GiST expression (lng, lat) | 레거시 공간 검색 |
+| `idx_restaurants_geom` | GiST (geom) | 공간 검색 (stored geometry, 현재 사용) |
+| `idx_restaurants_genre` | btree (genre) | 필터 |
+| `idx_restaurants_genre_name` | btree (genre, name) | 필터+소팅 |
+| `idx_restaurants_district` | btree (district) | 필터 |
+| `idx_restaurants_area` | btree (area) | 온보딩 EQ 매칭 |
+| `idx_restaurants_area_gin` | GIN (area) | ANY() 배열 검색 |
+| `idx_restaurants_prestige` | GIN (prestige) | JSONB 필터 |
+| `idx_restaurants_last_crawled` | btree (last_crawled_at) | 크롤러 관리 |
+| `idx_restaurants_external_id_kakao` | UNIQUE btree partial | 외부 ID 매칭 |
+| `idx_restaurants_external_id_google` | UNIQUE btree partial | 외부 ID 매칭 |
+| `idx_restaurants_external_id_naver` | UNIQUE btree partial | 외부 ID 매칭 |
+
+#### wines (7개)
+
+| 인덱스 | 타입 | 용도 |
+|--------|------|------|
+| `wines_pkey` | btree (id) | PK |
+| `idx_wines_name_trgm` | GIN trgm (name) | 텍스트 검색 |
+| `idx_wines_producer_trgm` | GIN trgm (producer) | 텍스트 검색 |
+| `idx_wines_type_name` | btree (wine_type, name) | 필터+소팅 |
+| `idx_wines_variety` | btree (variety) | 필터 |
+| `idx_wines_country` | btree (country) | 필터 |
+| `idx_wines_region` | btree (country, region, sub_region, appellation) | 산지 계층 |
+
+#### users (6개)
+
+| 인덱스 | 타입 | 용도 |
+|--------|------|------|
+| `users_pkey` | btree (id) | PK |
+| `users_email_key` | UNIQUE btree (email) | 이메일 |
+| `users_handle_key` | UNIQUE btree (handle) | @handle |
+| `users_auth_provider_id_key` | UNIQUE btree (auth_provider_id) | OAuth |
+| `idx_users_nickname_trgm` | GIN trgm (nickname) | 사용자 검색 |
+| `idx_users_is_public` | btree partial (is_public=true) | public 뷰 |
+
+#### records (5개)
+
+| 인덱스 | 타입 | 용도 |
+|--------|------|------|
+| `records_pkey` | btree (id) | PK |
+| `idx_records_user_type` | btree (user_id, target_type, visit_date DESC) | 홈뷰 |
+| `idx_records_target` | btree (target_id, target_type) | 상세 페이지 |
+| `idx_records_target_date` | btree (target_id, target_type, visit_date DESC) | 상세+정렬 |
+| `idx_records_satisfaction` | btree partial (satisfaction IS NOT NULL) | 점수 조회 |
+
+#### follows (4개)
+
+| 인덱스 | 타입 | 용도 |
+|--------|------|------|
+| `follows_pkey` | btree (follower_id, following_id) | PK |
+| `idx_follows_reverse` | btree (following_id, follower_id) | 역방향 |
+| `idx_follows_follower_accepted` | btree partial (status='accepted') | 팔로잉 조회 |
+| `idx_follows_following_accepted` | btree partial (status='accepted') | 팔로워 조회 |
+
+### 성능 측정 기준점 (2026-04-12, restaurants 133K행)
+
+| 쿼리 | Before | After | 개선 |
+|------|--------|-------|------|
+| 텍스트 검색 "트라토리아" | 643ms | 9.6ms | 67x |
+| 지도뷰 genre="이탈리안" (RPC) | 713ms | 1.7ms | 419x |
+| 홈뷰 genre+district | 34ms | 4.2ms | 8x |
+
+> 지도뷰: geom 저장 컬럼 + SQL language 인라인 + 3-way RPC 분리로 달성.
+> 텍스트 검색: address GIN trgm 인덱스 추가로 Bitmap OR scan 활성화.
 
 ---
 

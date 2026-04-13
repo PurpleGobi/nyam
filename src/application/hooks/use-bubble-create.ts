@@ -6,8 +6,6 @@ import type { CreateBubbleInput } from '@/domain/repositories/bubble-repository'
 import { bubbleRepo } from '@/shared/di/container'
 import { useBonusXp } from '@/application/hooks/use-bonus-xp'
 
-export type InviteExpiry = '1d' | '7d' | '30d' | 'unlimited'
-
 export interface CreateBubbleFormInput {
   name: string                    // 1~20자
   description?: string            // 0~100자
@@ -15,7 +13,6 @@ export interface CreateBubbleFormInput {
   joinPolicy?: 'closed' | 'manual_approve' | 'auto_approve' | 'open'
   icon?: string                   // lucide 아이콘명
   iconBgColor?: string            // hex
-  inviteExpiry?: InviteExpiry     // 기본 '30d'
   minRecords?: number
   minLevel?: number
   maxMembers?: number
@@ -27,10 +24,8 @@ export interface CreateBubbleResult {
   inviteCode: string
 }
 
-function expiryToDate(expiry: InviteExpiry): string | null {
-  if (expiry === 'unlimited') return null
-  const days = expiry === '1d' ? 1 : expiry === '7d' ? 7 : 30
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+function expiryToDate(): string {
+  return new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
 }
 
 export function useBubbleCreate() {
@@ -69,9 +64,8 @@ export function useBubbleCreate() {
 
       const bubble = await bubbleRepo.create(repoInput)
 
-      // 초대 코드 생성
-      const expiry = input.inviteExpiry ?? '30d'
-      const expiresAt = expiryToDate(expiry)
+      // 초대 코드 생성 (3일 고정)
+      const expiresAt = expiryToDate()
       const inviteCode = await bubbleRepo.generateInviteCode(bubble.id, expiresAt)
 
       // XP 적립: bonus_first_bubble (+5, 첫 버블 생성 시만)

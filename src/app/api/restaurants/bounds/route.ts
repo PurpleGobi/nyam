@@ -5,6 +5,7 @@ import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 /**
  * GET /api/restaurants/bounds?north=...&south=...&east=...&west=...
  *   &sort=name&limit=20&offset=0&source=mine,bookmark&keyword=미역&prestige=michelin,blue_ribbon
+ *   &genre=한식&district=서울&area=강남구
  *
  * 모든 필터가 DB(RPC)에서 처리됨. LIMIT+1 페이지네이션.
  */
@@ -24,33 +25,60 @@ export async function GET(request: NextRequest) {
   const sources = sourceParam ? sourceParam.split(',').map((s) => s.trim()) : []
   const prestigeParam = sp.get('prestige')?.trim() ?? ''
   const prestige = prestigeParam ? prestigeParam.split(',').map((s) => s.trim()) : []
+  const genre = sp.get('genre')?.trim() || null
+  const district = sp.get('district')?.trim() || null
+  const area = sp.get('area')?.trim() || null
 
   if ([north, south, east, west].some((v) => Number.isNaN(v) || v === 0)) {
     return NextResponse.json({ restaurants: [], hasMore: false })
   }
 
-  let userId: string | null = null
+  // 3-way RPC 분기: source 필터 → auth → simple (SQL inline, 최고 성능)
+  let data: Record<string, unknown>[] | null = null
+  let error: { message: string } | null = null
+
   if (sources.length > 0) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ restaurants: [], hasMore: false }, { status: 401 })
     }
-    userId = user.id
+    const result = await supabase.rpc('search_restaurants_bounds_source', {
+      p_north: north, p_south: south, p_east: east, p_west: west,
+      p_user_id: user.id,
+      p_keyword: keyword,
+      p_sources: sources,
+      p_prestige_types: prestige.length > 0 ? prestige : null,
+      p_genre: genre, p_district: district, p_area: area,
+      p_sort: sort, p_limit: limit, p_offset: offset,
+    })
+    data = result.data as Record<string, unknown>[] | null
+    error = result.error
+  } else {
+    // 인증 시도 (실패해도 simple로 폴백)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const result = await supabase.rpc('search_restaurants_bounds_auth', {
+        p_north: north, p_south: south, p_east: east, p_west: west,
+        p_user_id: user.id,
+        p_keyword: keyword,
+        p_prestige_types: prestige.length > 0 ? prestige : null,
+        p_genre: genre, p_district: district, p_area: area,
+        p_sort: sort, p_limit: limit, p_offset: offset,
+      })
+      data = result.data as Record<string, unknown>[] | null
+      error = result.error
+    } else {
+      const result = await supabase.rpc('search_restaurants_bounds_simple', {
+        p_north: north, p_south: south, p_east: east, p_west: west,
+        p_keyword: keyword,
+        p_prestige_types: prestige.length > 0 ? prestige : null,
+        p_genre: genre, p_district: district, p_area: area,
+        p_sort: sort, p_limit: limit, p_offset: offset,
+      })
+      data = result.data as Record<string, unknown>[] | null
+      error = result.error
+    }
   }
-
-  const { data, error } = await supabase.rpc('search_restaurants_in_bounds', {
-    p_north: north,
-    p_south: south,
-    p_east: east,
-    p_west: west,
-    p_user_id: userId,
-    p_keyword: keyword,
-    p_sources: sources.length > 0 ? sources : null,
-    p_prestige_types: prestige.length > 0 ? prestige : null,
-    p_sort: sort,
-    p_limit: limit,
-    p_offset: offset,
-  })
 
   if (error) {
     return NextResponse.json({ restaurants: [], hasMore: false })

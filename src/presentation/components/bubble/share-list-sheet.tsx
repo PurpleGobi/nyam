@@ -71,6 +71,7 @@ export function ShareListSheet({
   const [conjunction, setConjunction] = useState<'and' | 'or'>('and')
   const [currentSort, setCurrentSort] = useState<SortOption>('latest')
   const inputRef = useRef<HTMLInputElement>(null)
+  const searchBarRef = useRef<HTMLDivElement>(null)
 
   // body 스크롤 잠금
   useEffect(() => {
@@ -82,6 +83,18 @@ export function ShareListSheet({
   // 검색창 열리면 포커스
   useEffect(() => {
     if (isSearchOpen) inputRef.current?.focus()
+  }, [isSearchOpen])
+
+  // 검색 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!isSearchOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isSearchOpen])
 
   // 탭 전환 시 필터/소팅 초기화
@@ -185,7 +198,7 @@ export function ShareListSheet({
           onTabChange={setFilter}
           rightSlot={
             isSearchOpen ? (
-              <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
+              <div ref={searchBarRef} className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
                 <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
                 <input
                   ref={inputRef}
@@ -271,6 +284,7 @@ export function ShareListSheet({
           <SortDropdown
             currentSort={currentSort}
             onSortChange={(sort) => { setCurrentSort(sort); setIsSortOpen(false) }}
+            onClose={() => setIsSortOpen(false)}
             accentType={accentType}
           />
         )}

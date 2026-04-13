@@ -211,9 +211,9 @@ export class SupabaseRecordRepository implements RecordRepository {
       }
     }
 
-    // record_photos
+    // record_photos — 기록별 모든 사진 URL 수집
     const realRecordIds = rows.map((r: { id: string }) => r.id)
-    const recordPhotoMap = new Map<string, string>()
+    const recordPhotosMap = new Map<string, string[]>()
     if (realRecordIds.length > 0) {
       const { data: photos } = await this.supabase
         .from('record_photos')
@@ -221,9 +221,9 @@ export class SupabaseRecordRepository implements RecordRepository {
         .in('record_id', realRecordIds)
         .order('order_index', { ascending: true })
       for (const p of photos ?? []) {
-        if (!recordPhotoMap.has(p.record_id)) {
-          recordPhotoMap.set(p.record_id, p.url)
-        }
+        const existing = recordPhotosMap.get(p.record_id)
+        if (existing) existing.push(p.url)
+        else recordPhotosMap.set(p.record_id, [p.url])
       }
     }
 
@@ -245,7 +245,8 @@ export class SupabaseRecordRepository implements RecordRepository {
         targetName: (isRestaurant ? restaurant?.name : wine?.name) ?? '',
         targetMeta: isRestaurant ? (restaurant?.genre ?? null) : (wine?.variety ?? null),
         targetArea: isRestaurant ? (restaurant?.district ?? restaurant?.area?.[0] ?? null) : (wine?.region ?? null),
-        targetPhotoUrl: recordPhotoMap.get(row.id) ?? (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
+        targetPhotoUrl: recordPhotosMap.get(row.id)?.[0] ?? (isRestaurant ? restaurant?.photo_url : wine?.photo_url) ?? null,
+        targetPhotos: recordPhotosMap.get(row.id) ?? [],
         targetLat: isRestaurant ? (restaurant?.lat ?? null) : null,
         targetLng: isRestaurant ? (restaurant?.lng ?? null) : null,
         source,

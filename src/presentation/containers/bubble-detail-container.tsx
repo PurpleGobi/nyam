@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, Share2, Plus } from 'lucide-react'
+import { Trophy, Users, Settings, UserPlus, Share2, Plus, List } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -204,7 +204,15 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           </div>
 
           {/* 액션 버튼 행 */}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
+              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+              style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+            >
+              <List size={13} /> 리스트 보기
+            </button>
             <button
               type="button"
               onClick={() => setShowInviteModal(true)}

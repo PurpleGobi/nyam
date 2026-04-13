@@ -6,8 +6,10 @@ import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { QuadrantRefDot, BubbleScoreRow } from '@/domain/repositories/restaurant-repository'
 import type { LinkedRestaurantCard } from '@/domain/repositories/wine-repository'
+import type { BubbleScoreEntry } from '@/domain/entities/score'
 import type { PredictionBreakdown } from '@/domain/entities/similarity'
 import type { PredictionWithBreakdown } from '@/domain/repositories/prediction-repository'
+import { computeBubbleConfidence } from '@/domain/services/score-fallback'
 import { wineRepo, predictionRepo } from '@/shared/di/container'
 
 export interface WineNyamScoreBreakdown {
@@ -41,6 +43,7 @@ export interface WineDetailState {
   nyamCount: number
   nyamConfidence: number | null
   nyamBreakdown: PredictionBreakdown | null
+  bubbleScoreEntries: BubbleScoreEntry[]
   viewMode: 'my_records' | 'recommend' | 'bubble_review'
 }
 
@@ -145,11 +148,24 @@ export function useWineDetail(
 
   const bubbleCount = bubbleScores.length
 
-  // CF 기반 Nyam 점수 파생값
-  const nyamAvgScore = nyamPrediction?.satisfaction ?? null
+  // CF 기반 Nyam 점수 파생값 — rater 0명이면 점수 없음 처리
+  const hasNyamRaters = (nyamPrediction?.nRaters ?? 0) > 0
+  const nyamAvgScore = hasNyamRaters ? (nyamPrediction?.satisfaction ?? null) : null
   const nyamCount = nyamPrediction?.nRaters ?? 0
-  const nyamConfidence = nyamPrediction?.confidence ?? null
-  const nyamBreakdown = nyamPrediction?.breakdown ?? null
+  const nyamConfidence = hasNyamRaters ? (nyamPrediction?.confidence ?? null) : null
+  const nyamBreakdown = hasNyamRaters ? (nyamPrediction?.breakdown ?? null) : null
+
+  // 버블 점수 → BubbleScoreEntry 변환 (확신도 heuristic 포함)
+  const bubbleScoreEntries: BubbleScoreEntry[] = bubbleScores.map((b) => ({
+    bubbleId: b.bubbleId,
+    bubbleName: b.bubbleName,
+    icon: b.bubbleIcon ?? null,
+    iconBgColor: b.bubbleColor ?? null,
+    score: b.avgScore,
+    confidence: computeBubbleConfidence(b.dots.length),
+    memberCount: b.memberCount ?? 0,
+    raterCount: b.dots.length,
+  }))
 
   const viewMode: WineDetailState['viewMode'] =
     myRecords.length > 0 ? 'my_records'
@@ -176,6 +192,7 @@ export function useWineDetail(
     nyamCount,
     nyamConfidence,
     nyamBreakdown,
+    bubbleScoreEntries,
     viewMode,
   }
 }

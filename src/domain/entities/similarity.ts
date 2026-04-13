@@ -37,7 +37,7 @@ export interface RaterDetail {
 }
 
 /** 관계 유형 (부스트 판정용) */
-export type RelationType = 'mutual' | 'following' | 'none'
+export type RelationType = 'following' | 'none'
 
 /** 2D 좌표 (mean-centering 입출력용) */
 export interface ScorePoint {

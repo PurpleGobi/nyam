@@ -65,8 +65,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [showAddToBubble, setShowAddToBubble] = useState(false)
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0)
-  const [breakdownOpen, setBreakdownOpen] = useState(false)
-  const [bubbleExpandOpen, setBubbleExpandOpen] = useState(false)
   const { showToast } = useToast()
   const { deleteRecord, isDeleting } = useDeleteRecord()
   const [showPriceReview, setShowPriceReview] = useState(false)
@@ -83,12 +81,11 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     tastingCount,
     latestTastingDate,
     myAvgScore,
-    bubbleAvgScore,
-    bubbleCount,
     nyamAvgScore,
     nyamCount,
     nyamConfidence,
     nyamBreakdown,
+    bubbleScoreEntries,
     viewMode,
   } = useWineDetail(wineId, user?.id ?? null)
 
@@ -96,32 +93,20 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     cards: scoreCards,
     selectedSources,
     quadrantMode,
+    expandedPanel,
     toggleSource,
     setQuadrantMode,
+    togglePanel,
+    bubbleScoreEntries: bubbleEntries,
     isCardToggleActive,
   } = useTargetScores({
     myAvgScore,
     myCount: tastingCount,
-    bubbleAvgScore,
-    bubbleCount,
+    bubbleScoreEntries,
     nyamAvgScore,
     nyamCount,
     nyamConfidence,
   })
-
-  const handleScoreToggle = useCallback((source: ScoreSource) => {
-    toggleSource(source)
-    if (source === 'nyam') {
-      setBreakdownOpen((prev) => !prev)
-      setBubbleExpandOpen(false)
-    } else if (source === 'bubble') {
-      setBubbleExpandOpen((prev) => !prev)
-      setBreakdownOpen(false)
-    } else {
-      setBreakdownOpen(false)
-      setBubbleExpandOpen(false)
-    }
-  }, [toggleSource])
 
   const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, wineId, 'wine')
@@ -638,28 +623,21 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
           accentColor="--accent-wine"
           cards={scoreCards}
           selectedSources={selectedSources}
-          onToggle={handleScoreToggle}
+          onToggle={toggleSource}
           toggleActive={isCardToggleActive}
+          expandedPanel={expandedPanel}
+          onPanelToggle={togglePanel}
         />
 
         <ScoreBreakdownPanel
-          isOpen={breakdownOpen}
+          isOpen={expandedPanel === 'nyam'}
           breakdown={nyamBreakdown}
           accentColor="--accent-wine"
         />
 
         <BubbleExpandPanel
-          isOpen={bubbleExpandOpen}
-          bubbleScores={bubbleScores.map((b) => ({
-            bubbleId: b.bubbleId,
-            bubbleName: b.bubbleName,
-            icon: b.bubbleIcon ?? null,
-            iconBgColor: b.bubbleColor ?? null,
-            ratingCount: b.dots.length,
-            avgScore: b.avgScore,
-            cfScore: null,
-            memberCount: b.memberCount,
-          }))}
+          isOpen={expandedPanel === 'bubble'}
+          bubbleScores={bubbleEntries}
           accentColor="--accent-wine"
         />
 

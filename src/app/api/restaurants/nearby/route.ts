@@ -157,13 +157,12 @@ export async function GET(request: NextRequest) {
       // RPC로 JSONB path 검색 (PostgREST .in()은 JSONB path 미지원)
       const { data: matchedRestaurants } = await supabase
         .from('restaurants')
-        .select('id, external_ids, nyam_score, google_rating')
-        .filter('external_ids->>kakao', 'in', `(${kakaoIds.join(',')})`)
+        .select('id, external_id_kakao, nyam_score, google_rating')
+        .in('external_id_kakao', kakaoIds)
 
       if (matchedRestaurants) {
         for (const r of matchedRestaurants) {
-          const externalIds = r.external_ids as { kakao?: string } | null
-          const kId = externalIds?.kakao
+          const kId = r.external_id_kakao as string | null
           if (!kId) continue
           matchedMap.set(kId, {
             restaurantId: r.id,

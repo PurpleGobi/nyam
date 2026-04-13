@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-04-13 #30 — FAB Speed Dial + 버블에 추가 선택 모드 (찜→버블 전환)
+- **영역**: presentation/(layout/fab-add 전면 리디자인, bubble/bubble-picker-sheet 신규, home/compact-list-item+map-compact-item+map-view+record-card+wine-card에서 Heart 제거+선택 모드 추가), containers/(home, bubble-create), application/hooks/use-bubble-items(batchAddToBubble), globals.css(바텀시트 z-index)
+- **맥락**: 찜(bookmark) 기능을 버블 기반 큐레이션으로 전환 결정. (1) FabAdd를 Speed Dial로 변경(기록 추가/버블에 추가 2개 메뉴, dim overlay, ×전환). (2) "버블에 추가" → 아이템 배경 틴트 선택 모드 → FAB "N개 추가" 버튼 변환 → BubblePickerSheet(버블 목록+BubbleIcon+새 버블 만들기). (3) Heart/전체찜 UI 전면 제거. (4) 바텀시트 z-index 90/91로 상향(지도 위). (5) 버블 생성 후 sync 에러 시에도 라우팅 진행.
+- **미완료**: 상세 페이지 FAB Speed Dial 적용, 버블 포크(복제) 기능, bookmarks 테이블 deprecation
+- **다음**: 상세 페이지에서 FAB "버블에 추가" → 바로 버블 선택 시트, 버블 포크 1탭 복제
+
+### 2026-04-12 #29 — 찜(Heart) 토글 리스트/카드 뷰 전체 적용
+- **영역**: domain/repositories/bookmark-repository(batchAdd/batchRemove), infrastructure/supabase-bookmark-repository, application/hooks/use-bookmark(useBookmarkMap), presentation/(bookmark-button, record-card, wine-card, compact-list-item, map-compact-item, search-result-item, nearby-list, search-results), containers/(home, search)
+- **맥락**: 찜 기능을 상세 페이지 히어로에서 전체 리스트/카드 뷰로 확장. 이후 찜→버블 전환 결정으로 #30에서 Heart UI 전면 제거.
+- **미완료**: 없음 (#30으로 대체)
+- **다음**: 없음
+
+### 2026-04-10 #28 — 지도뷰 명성 cascade 필터 + 뱃지 grade 표시
+- **영역**: domain/(entities/filter-config+condition-chip, services/filter-matcher+filter-query-builder), presentation/(prestige-badges, bib-gourmand-icon 신규, condition-filter-bar, icons/index), application/hooks/use-map-discovery
+- **맥락**: 지도뷰 명성 필터를 cascade 방식으로 전면 리디자인. type 선택 시 grade sub-chip 자동 생성(위치 필터 패턴). 상위 칩 1개에 type 누적, X로 전체 리셋. 뱃지에 grade 반영(아이콘 개수, 빕 구르망 전용 아이콘, TV 프로그램명). filter-matcher에 prestige_grade:* 매칭 추가. use-map-discovery에 grade 클라이언트 사이드 필터링 추가.
+- **미완료**: 없음
+- **다음**: 브라우저 QA, grade 필터 실제 데이터 검증
+
 ### 2026-04-10 #27 — rp → prestige 용어 통일 리팩토링
 - **영역**: supabase/migrations/058(신규), domain/(entities/restaurant+home-target+map-discovery+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository, supabase/types.ts), app/api/restaurants/(nearby+search+bounds+prestige/match), application/hooks/use-map-discovery, presentation/(prestige-badges, record-card, compact-list-item, map-compact-item, search-result-item, search-results, nearby-list, map-view, home+restaurant-detail-container), middleware.ts, DATA_MODEL.md, CODEBASE.md
 - **맥락**: restaurant_rp(reputation) → restaurant_prestige 용어 통일. DB: 테이블/컬럼/인덱스/RLS/트리거/RPC rename. 코드: RestaurantRp→RestaurantPrestige 타입, .rp→.prestige 필드, /api/restaurants/rp/match→/prestige/match 경로. 약 25개 파일 변경. pnpm build PASS.
@@ -54,18 +72,10 @@
 - **미완료**: 없음
 - **다음**: 브라우저 QA
 
-### 2026-04-07 #17 — DB_v4 타겟 중심 홈뷰 리팩토링
-- **영역**: domain/(entities/home-target 신규, repositories/home-repository 신규, services/filter-matcher, entities/grouped-target 삭제, services/record-grouper 삭제), infrastructure/supabase-home-repository 신규, application/hooks/(use-home-targets 신규, use-home-records 삭제), shared/di/container.ts(homeRepo 등록), presentation/home-container, infrastructure/supabase-record-repository(findHomeRecords+가상row 제거)
-- **맥락**: 홈뷰 데이터 모델을 record 중심→target(restaurant/wine) 중심으로 전환. HomeTarget 엔티티+HomeRepository 인터페이스+7단계 파이프라인 Supabase 구현체 신규. 가상 row(bookmark-xxx, cellar-xxx) 완전 제거. groupRecordsByTarget()+GroupedTarget 삭제. 찜/셀러만 있는 대상이 자연스럽게 HomeTarget으로 존재.
-- **미완료**: 브라우저 QA 미실행, supabase/types.ts 재생성 필요
-- **다음**: 브라우저 QA 실행, supabase gen types 실행
-
-
-### 2026-04-08 #18 — CF 시스템 Phase 1: 도메인 계층 + DB 테이블
-- **영역**: domain/entities/similarity.ts(신규), domain/services/cf-calculator.ts(신규), domain/services/__tests__/cf-calculator.test.ts(신규), supabase/migrations/051_cf_tables.sql(신규), vitest.config.ts(신규)
-- **맥락**: CF_SYSTEM.md 스펙 기반 협업 필터링 순수 계산 서비스 구현. 타입 7개 + 상수 10개 + 함수 8개 + 테스트 32개. user_similarities/user_score_means 캐시 테이블 + RLS. 기존 파일 수정 없음.
-- **미완료**: ScoreSource에 'cf' 추가 + SOURCE_PRIORITY 통합은 Phase 5로 이연 (사용처 10+ 파일), supabase/types.ts 재생성 필요, 051 마이그레이션 원격 적용 필요
-- **다음**: Phase 2 증분 업데이트 파이프라인 (Edge Function), supabase gen types 실행
-
+### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
+- **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
+- **맥락**: DB 쿼리 최적화. (1) 홈뷰: JS 필터를 DB RPC(filter_home_restaurants/wines)로 이관, HomeDbFilters 인터페이스 추가. (2) 지도뷰: bounds API에 genre/district/area 파라미터 추가, search_restaurants_in_bounds RPC 재작성. (3) 맞팔: is_mutual_follow RPC, getMutualFollows 병렬화. (4) filter-query-builder.ts dead code 삭제. 크리티컬 게이트 전체 PASS.
+- **미완료**: 059/061 마이그레이션 원격 적용, supabase/types.ts 재생성(supabase gen types), 완전한 DB 페이지네이션(hasMore 패턴)
+- **다음**: 마이그레이션 원격 적용, types 재생성, EXPLAIN ANALYZE로 성능 검증
 
 

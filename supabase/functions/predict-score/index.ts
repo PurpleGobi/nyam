@@ -11,8 +11,7 @@ const CORS_HEADERS = {
 // ===== CF 파라미터 (cf-calculator.ts와 동일) =====
 const D = 60
 const LAMBDA = 7
-const BOOST_MUTUAL = 1.5
-const BOOST_FOLLOWING = 1.2
+const BOOST_FOLLOWING = 1.5  // 팔로우(맞팔 포함) 부스트
 const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
@@ -25,7 +24,7 @@ const BASE_WEIGHT = 0.1
 
 interface ScorePoint { x: number; y: number }
 
-type RelationType = 'mutual' | 'following' | 'none'
+type RelationType = 'following' | 'none'
 
 interface RaterInput {
   deviation: ScorePoint
@@ -55,10 +54,9 @@ function computeMeanCentered(scores: ScorePoint[]): ScorePoint {
   return { x: sumX / scores.length, y: sumY / scores.length }
 }
 
-function getRelationBoost(relation: RelationType): number {
+function getRelationBoost(relation: RelationType, uniformBoost?: boolean): number {
+  if (uniformBoost) return BOOST_NONE
   switch (relation) {
-    case 'mutual':
-      return BOOST_MUTUAL
     case 'following':
       return BOOST_FOLLOWING
     case 'none':
@@ -199,13 +197,8 @@ function determineRelation(
   userId: string,
   raterId: string,
   followSet: Set<string>,
-  followerSet: Set<string>,
 ): RelationType {
-  const iFollow = followSet.has(raterId)
-  const theyFollow = followerSet.has(raterId)
-  if (iFollow && theyFollow) return 'mutual'
-  if (iFollow) return 'following'
-  return 'none'
+  return followSet.has(raterId) ? 'following' : 'none'
 }
 
 // ===== Edge Function 본체 =====
@@ -346,23 +339,23 @@ async function predictScoreForUser(
     })
   }
 
-  // Step 3: 팔로우 관계 배치 조회
-  const { data: followRows, error: followError } = await supabase
-    .from('follows')
-    .select('follower_id, following_id')
-    .or(
-      `and(follower_id.eq.${userId},following_id.in.(${raterIds.join(',')})),` +
-      `and(following_id.eq.${userId},follower_id.in.(${raterIds.join(',')}))`
-    )
+  // 버블 모드 판정 (scope가 있으면 버블)
+  const isBubbleMode = scope !== undefined && scope.length > 0
 
-  if (followError) throw new Error(`팔로우 조회 실패: ${followError.message}`)
-
-  // 내가 팔로우하는 유저 세트, 나를 팔로우하는 유저 세트
+  // Step 3: 팔로우 관계 배치 조회 (버블 모드에서는 균등 부스트이므로 조회 불필요)
   const followSet = new Set<string>()
-  const followerSet = new Set<string>()
-  for (const row of (followRows ?? [])) {
-    if (row.follower_id === userId) followSet.add(row.following_id)
-    if (row.following_id === userId) followerSet.add(row.follower_id)
+  if (!isBubbleMode) {
+    const { data: followRows, error: followError } = await supabase
+      .from('follows')
+      .select('follower_id, following_id')
+      .eq('follower_id', userId)
+      .in('following_id', raterIds)
+
+    if (followError) throw new Error(`팔로우 조회 실패: ${followError.message}`)
+
+    for (const row of (followRows ?? [])) {
+      followSet.add(row.following_id)
+    }
   }
 
   // Step 4: 내 평균 조회
@@ -390,8 +383,8 @@ async function predictScoreForUser(
   const candidates: RaterCandidate[] = []
   for (const raterId of raterIds) {
     const sim = simMap.get(raterId)
-    const relation = determineRelation(userId, raterId, followSet, followerSet)
-    const boost = getRelationBoost(relation)
+    const relation = determineRelation(userId, raterId, followSet)
+    const boost = getRelationBoost(relation, isBubbleMode)
 
     candidates.push({
       raterId,
@@ -486,11 +479,11 @@ async function predictScoreForUser(
   const prediction = computePrediction(myMean, raterInputs)
 
   // Step 9: Breakdown 구성
-  const followingRaters = topK.filter(r => r.relation === 'mutual' || r.relation === 'following')
+  const followingRaters = topK.filter(r => r.relation === 'following')
   const otherRaters = topK.filter(r => r.relation === 'none')
 
   // 닉네임 조회 (팔로잉 기록자만)
-  let nicknameMap = new Map<string, string>()
+  const nicknameMap = new Map<string, string>()
   if (followingRaters.length > 0) {
     const followingIds = followingRaters.map(r => r.raterId)
     const { data: profileRows } = await supabase

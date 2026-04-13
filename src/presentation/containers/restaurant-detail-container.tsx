@@ -56,8 +56,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [showAddToBubble, setShowAddToBubble] = useState(false)
   const [focusedRecordIdx, setFocusedRecordIdx] = useState(0) // 최근 뷰에서 포커스된 기록 (0 = 최신)
-  const [breakdownOpen, setBreakdownOpen] = useState(false)
-  const [bubbleExpandOpen, setBubbleExpandOpen] = useState(false)
   const { showToast } = useToast()
   const { deleteRecord, isDeleting } = useDeleteRecord()
 
@@ -73,46 +71,32 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     myAvgScore,
     visitCount,
     latestVisitDate,
-    bubbleAvgScore,
-    bubbleCount,
     nyamAvgScore,
     nyamCount,
     nyamConfidence,
     nyamBreakdown,
+    bubbleScoreEntries,
     viewMode,
   } = useRestaurantDetail(restaurantId, user?.id ?? null)
-
 
   const {
     cards: scoreCards,
     selectedSources,
     quadrantMode,
+    expandedPanel,
     toggleSource,
     setQuadrantMode,
+    togglePanel,
+    bubbleScoreEntries: bubbleEntries,
     isCardToggleActive,
   } = useTargetScores({
     myAvgScore,
     myCount: visitCount,
-    bubbleAvgScore,
-    bubbleCount,
+    bubbleScoreEntries,
     nyamAvgScore,
     nyamCount,
     nyamConfidence,
   })
-
-  const handleScoreToggle = useCallback((source: ScoreSource) => {
-    toggleSource(source)
-    if (source === 'nyam') {
-      setBreakdownOpen((prev) => !prev)
-      setBubbleExpandOpen(false)
-    } else if (source === 'bubble') {
-      setBubbleExpandOpen((prev) => !prev)
-      setBreakdownOpen(false)
-    } else {
-      setBreakdownOpen(false)
-      setBubbleExpandOpen(false)
-    }
-  }, [toggleSource])
 
   const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, restaurantId, 'restaurant')
@@ -487,28 +471,21 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
             accentColor="--accent-food"
             cards={scoreCards}
             selectedSources={selectedSources}
-            onToggle={handleScoreToggle}
+            onToggle={toggleSource}
             toggleActive={isCardToggleActive}
+            expandedPanel={expandedPanel}
+            onPanelToggle={togglePanel}
           />
 
           <ScoreBreakdownPanel
-            isOpen={breakdownOpen}
+            isOpen={expandedPanel === 'nyam'}
             breakdown={nyamBreakdown}
             accentColor="--accent-food"
           />
 
           <BubbleExpandPanel
-            isOpen={bubbleExpandOpen}
-            bubbleScores={bubbleScores.map((b) => ({
-              bubbleId: b.bubbleId,
-              bubbleName: b.bubbleName,
-              icon: b.bubbleIcon ?? null,
-              iconBgColor: b.bubbleColor ?? null,
-              ratingCount: b.dots.length,
-              avgScore: b.avgScore,
-              cfScore: null,
-              memberCount: b.memberCount,
-            }))}
+            isOpen={expandedPanel === 'bubble'}
+            bubbleScores={bubbleEntries}
             accentColor="--accent-food"
           />
         </div>
@@ -633,7 +610,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           name={restaurant.name}
           menus={restaurant.menus ?? []}
           showMenuSection={viewMode === 'my_records'}
-          externalIds={restaurant.externalIds}
         />
 
         {/* 하단 spacer (FAB + 액션바 클리어런스) */}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MapPin, Phone, Clock, ChevronDown, ExternalLink } from 'lucide-react'
-import type { BusinessHours, MenuItem, RestaurantExternalIds } from '@/domain/entities/restaurant'
+import type { BusinessHours, MenuItem } from '@/domain/entities/restaurant'
 
 const DAY_NAMES: Record<string, string> = {
   mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일',
@@ -23,7 +23,6 @@ interface RestaurantInfoProps {
   name: string
   menus: MenuItem[]
   showMenuSection: boolean
-  externalIds: RestaurantExternalIds | null
 }
 
 export function RestaurantInfo({
@@ -35,7 +34,6 @@ export function RestaurantInfo({
   name,
   menus,
   showMenuSection,
-  externalIds,
 }: RestaurantInfoProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 

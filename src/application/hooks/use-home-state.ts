@@ -25,7 +25,7 @@ function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> 
     restaurant_card: { ...DEFAULT_VIEW_MODE_STATE },
     restaurant_list: { ...DEFAULT_VIEW_MODE_STATE },
     restaurant_calendar: { ...DEFAULT_VIEW_MODE_STATE },
-    restaurant_map: { ...DEFAULT_VIEW_MODE_STATE },
+    restaurant_map: { ...DEFAULT_VIEW_MODE_STATE, sort: 'name' },
     wine_card: { ...DEFAULT_VIEW_MODE_STATE },
     wine_list: { ...DEFAULT_VIEW_MODE_STATE },
     wine_calendar: { ...DEFAULT_VIEW_MODE_STATE },
@@ -118,10 +118,12 @@ export function useHomeState(options?: UseHomeStateOptions) {
     return viewModeStates[makeViewModeStateKey(activeTab, viewMode)]
   }, [activeTab, viewMode, viewModeStates])
 
+  const closeSort = useCallback(() => setIsSortOpen(false), [])
+
   return {
     activeTab, setActiveTab, viewMode, cycleViewMode,
     toggleMap,
-    isSortOpen, toggleSort,
+    isSortOpen, toggleSort, closeSort,
     isSearchOpen, toggleSearch,
     filterRules, setFilterRules,
     conjunction, setConjunction,

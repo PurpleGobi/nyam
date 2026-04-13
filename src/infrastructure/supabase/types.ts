@@ -782,13 +782,13 @@ export type Database = {
           lat: number | null
           lng: number | null
           phone: string | null
+          prestige_grade: string
+          prestige_type: string
+          prestige_year: number | null
           region: string | null
           restaurant_id: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          prestige_grade: string
-          prestige_type: string
-          prestige_year: number | null
           source_url: string | null
           updated_at: string | null
           verified: boolean | null
@@ -802,13 +802,13 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           phone?: string | null
+          prestige_grade: string
+          prestige_type: string
+          prestige_year?: number | null
           region?: string | null
           restaurant_id?: string | null
           restaurant_name: string
           restaurant_name_norm: string
-          prestige_grade: string
-          prestige_type: string
-          prestige_year?: number | null
           source_url?: string | null
           updated_at?: string | null
           verified?: boolean | null
@@ -822,20 +822,20 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           phone?: string | null
+          prestige_grade?: string
+          prestige_type?: string
+          prestige_year?: number | null
           region?: string | null
           restaurant_id?: string | null
           restaurant_name?: string
           restaurant_name_norm?: string
-          prestige_grade?: string
-          prestige_type?: string
-          prestige_year?: number | null
           source_url?: string | null
           updated_at?: string | null
           verified?: boolean | null
         }
         Relationships: [
           {
-            foreignKeyName: "restaurant_prestige_restaurant_id_fkey"
+            foreignKeyName: "restaurant_rp_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
@@ -851,14 +851,19 @@ export type Database = {
           city: string
           country: string
           created_at: string
+          data_source: string
           district: string | null
-          external_ids: Json | null
+          external_id_google: string | null
+          external_id_kakao: string | null
+          external_id_naver: string | null
           genre: string | null
           google_rating: number | null
           hours: Json | null
           id: string
+          is_closed: boolean
           kakao_map_url: string | null
           kakao_rating: number | null
+          last_crawled_at: string | null
           lat: number | null
           lng: number | null
           menus: Json | null
@@ -869,8 +874,8 @@ export type Database = {
           nyam_score_updated_at: string | null
           phone: string | null
           photos: string[] | null
-          price_range: number | null
           prestige: Json | null
+          price_range: number | null
         }
         Insert: {
           address?: string | null
@@ -879,14 +884,19 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          data_source?: string
           district?: string | null
-          external_ids?: Json | null
+          external_id_google?: string | null
+          external_id_kakao?: string | null
+          external_id_naver?: string | null
           genre?: string | null
           google_rating?: number | null
           hours?: Json | null
           id?: string
+          is_closed?: boolean
           kakao_map_url?: string | null
           kakao_rating?: number | null
+          last_crawled_at?: string | null
           lat?: number | null
           lng?: number | null
           menus?: Json | null
@@ -897,8 +907,8 @@ export type Database = {
           nyam_score_updated_at?: string | null
           phone?: string | null
           photos?: string[] | null
-          price_range?: number | null
           prestige?: Json | null
+          price_range?: number | null
         }
         Update: {
           address?: string | null
@@ -907,14 +917,19 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          data_source?: string
           district?: string | null
-          external_ids?: Json | null
+          external_id_google?: string | null
+          external_id_kakao?: string | null
+          external_id_naver?: string | null
           genre?: string | null
           google_rating?: number | null
           hours?: Json | null
           id?: string
+          is_closed?: boolean
           kakao_map_url?: string | null
           kakao_rating?: number | null
+          last_crawled_at?: string | null
           lat?: number | null
           lng?: number | null
           menus?: Json | null
@@ -925,8 +940,8 @@ export type Database = {
           nyam_score_updated_at?: string | null
           phone?: string | null
           photos?: string[] | null
-          price_range?: number | null
           prestige?: Json | null
+          price_range?: number | null
         }
         Relationships: []
       }
@@ -1681,6 +1696,62 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      filter_home_restaurants: {
+        Args: {
+          p_area?: string
+          p_district?: string
+          p_genre?: string
+          p_ids: string[]
+          p_limit?: number
+          p_offset?: number
+          p_prestige?: string
+          p_price_range?: number
+          p_sort?: string
+        }
+        Returns: {
+          area: string[]
+          city: string
+          country: string
+          district: string
+          genre: string
+          id: string
+          lat: number
+          lng: number
+          name: string
+          photos: string[]
+          prestige: Json
+          price_range: number
+        }[]
+      }
+      filter_home_wines: {
+        Args: {
+          p_acidity?: number
+          p_country?: string
+          p_ids: string[]
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+          p_sweetness?: number
+          p_variety?: string
+          p_vintage?: number
+          p_vintage_op?: string
+          p_wine_type?: string
+        }
+        Returns: {
+          acidity_level: number
+          country: string
+          id: string
+          name: string
+          photos: string[]
+          producer: string
+          region: string
+          sub_region: string
+          sweetness_level: number
+          variety: string
+          vintage: number
+          wine_type: string
+        }[]
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -1784,6 +1855,10 @@ export type Database = {
         Args: { p_user_id: string; p_xp_delta: number }
         Returns: undefined
       }
+      is_mutual_follow: {
+        Args: { p_target_id: string; p_user_id: string }
+        Returns: boolean
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       normalize_restaurant_name: { Args: { name: string }; Returns: string }
       populate_geometry_columns:
@@ -1841,6 +1916,41 @@ export type Database = {
           prestige: Json
         }[]
       }
+      search_restaurants_in_bounds: {
+        Args: {
+          p_area?: string
+          p_district?: string
+          p_east: number
+          p_genre?: string
+          p_keyword?: string
+          p_limit?: number
+          p_north: number
+          p_offset?: number
+          p_prestige_types?: string[]
+          p_sort?: string
+          p_sources?: string[]
+          p_south: number
+          p_user_id?: string
+          p_west: number
+        }
+        Returns: {
+          address: string
+          area: string[]
+          district: string
+          genre: string
+          has_bookmark: boolean
+          has_record: boolean
+          id: string
+          kakao_map_url: string
+          lat: number
+          lng: number
+          name: string
+          phone: string
+          prestige: Json
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -2433,6 +2543,7 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_crawled_restaurants: { Args: { items: Json }; Returns: undefined }
       upsert_user_experience: {
         Args: {
           p_axis_type: string

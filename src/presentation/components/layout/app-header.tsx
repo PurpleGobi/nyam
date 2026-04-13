@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useNotifications } from '@/application/hooks/use-notifications'
@@ -17,19 +17,25 @@ export function AppHeader() {
   const { levelInfo } = useXp(user?.id ?? null)
   const [notifOpen, setNotifOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
 
-  const getBellPosition = () => {
-    if (!bellRef.current) return { top: 56, right: 16 }
-    const rect = bellRef.current.getBoundingClientRect()
-    return {
-      top: rect.bottom + 8,
-      right: window.innerWidth - rect.right,
+  const syncHeight = useCallback(() => {
+    if (headerRef.current) {
+      setHeaderHeight(headerRef.current.offsetHeight)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    syncHeight()
+    const ro = new ResizeObserver(syncHeight)
+    if (headerRef.current) ro.observe(headerRef.current)
+    return () => ro.disconnect()
+  }, [syncHeight])
 
   return (
     <>
-      <header className="top-fixed">
+      <header ref={headerRef} className="top-fixed">
         <div className="app-header">
           <h1 onClick={() => router.push('/')} className="header-brand">
             nyam
@@ -53,7 +59,7 @@ export function AppHeader() {
           </div>
         </div>
       </header>
-      <div className="header-spacer" style={{ height: '46px' }} />
+      <div className="header-spacer" style={{ height: headerHeight }} />
 
       <NotificationDropdown
         isOpen={notifOpen}
@@ -63,7 +69,7 @@ export function AppHeader() {
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
         onAction={handleAction}
-        position={getBellPosition()}
+        anchorRef={bellRef}
       />
     </>
   )

@@ -86,20 +86,35 @@ export class SupabaseFollowRepository implements FollowRepository {
   }
 
   async getMutualFollows(userId: string): Promise<Follow[]> {
-    // 내가 팔로우하는 사람 중 나를 팔로우하는 사람 = 맞팔
-    const { data: myFollowing } = await this.supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', userId)
-      .eq('status', 'accepted')
+    // 내가 팔로우하는 사람 + 나를 팔로우하는 사람을 병렬 조회 후 교집합
+    const [{ data: myFollowing }, { data: theirFollowing }] = await Promise.all([
+      this.supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId)
+        .eq('status', 'accepted'),
+      this.supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', userId)
+        .eq('status', 'accepted'),
+    ])
     if (!myFollowing || myFollowing.length === 0) return []
-    const followingIds = myFollowing.map((f) => f.following_id as string)
+    if (!theirFollowing || theirFollowing.length === 0) return []
+
+    const myFollowingSet = new Set(myFollowing.map((f) => f.following_id as string))
+    const mutualIds = (theirFollowing ?? [])
+      .map((f) => f.follower_id as string)
+      .filter((id) => myFollowingSet.has(id))
+
+    if (mutualIds.length === 0) return []
+
     const { data: mutuals } = await this.supabase
       .from('follows')
       .select('*')
-      .eq('following_id', userId)
+      .eq('follower_id', userId)
       .eq('status', 'accepted')
-      .in('follower_id', followingIds)
+      .in('following_id', mutualIds)
     return (mutuals ?? []).map(mapFollow)
   }
 
@@ -134,11 +149,11 @@ export class SupabaseFollowRepository implements FollowRepository {
   }
 
   async isMutualFollow(userId: string, targetUserId: string): Promise<boolean> {
-    const [{ data: a }, { data: b }] = await Promise.all([
-      this.supabase.from('follows').select('status').eq('follower_id', userId).eq('following_id', targetUserId).eq('status', 'accepted').single(),
-      this.supabase.from('follows').select('status').eq('follower_id', targetUserId).eq('following_id', userId).eq('status', 'accepted').single(),
-    ])
-    return !!a && !!b
+    const { data } = await this.supabase.rpc('is_mutual_follow', {
+      p_user_id: userId,
+      p_target_id: targetUserId,
+    })
+    return data === true
   }
 }
 

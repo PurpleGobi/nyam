@@ -12,8 +12,7 @@ import type {
 // CF 확정 파라미터 (시뮬레이션 검증 완료)
 const D = 60
 const LAMBDA = 7
-const BOOST_MUTUAL = 1.5
-const BOOST_FOLLOWING = 1.2
+const BOOST_FOLLOWING = 1.5  // 팔로우(맞팔 포함) 부스트
 const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
@@ -21,6 +20,31 @@ const CONFIDENCE_QUALITY_WEIGHT = 0.15
 const MIN_OVERLAP = 1
 const TOP_K = 50
 const BASE_WEIGHT = 0.1  // 겹침 0인 기록자의 기본 가중치 (단순 평균 기여)
+const NICHE_THRESHOLD = 0.10  // 니치 판별: 기록자 수가 전체 유저의 10% 이하
+
+/** CF 파라미터 셋 — Nyam(전체) vs 버블 모드 분리 */
+export interface CfParams {
+  minOverlap: number
+  applyDiversityCorrection: boolean
+  uniformBoost: boolean  // true이면 모든 관계에 BOOST_NONE 적용
+  minRaters: number      // 최소 기록자 수 (버블: 1명)
+}
+
+/** Nyam 점수용 기본 파라미터 */
+export const NYAM_CF_PARAMS: CfParams = {
+  minOverlap: MIN_OVERLAP,
+  applyDiversityCorrection: true,
+  uniformBoost: false,
+  minRaters: 3,
+}
+
+/** 버블 점수용 파라미터 */
+export const BUBBLE_CF_PARAMS: CfParams = {
+  minOverlap: 0,
+  applyDiversityCorrection: false,
+  uniformBoost: true,
+  minRaters: 1,
+}
 
 /**
  * 점수 배열의 평균 2D 좌표를 계산한다.
@@ -47,10 +71,18 @@ export function computeMeanCentered(scores: ScorePoint[]): ScorePoint {
 
 /**
  * 겹침 수 기반 신뢰도 계산.
- * confidence = n / (n + lambda)
+ * 신뢰도 = 기본 신뢰도 × 겹침 다양성 비율
+ * 기본 신뢰도 = n / (n + lambda)
+ * 겹침 다양성 비율 = nicheOverlap / totalOverlap (니치 판별: 기록자 수가 전체 유저의 10% 이하)
+ *
+ * @param nOverlap 겹치는 아이템 수
+ * @param lambda 감쇠 상수 (기본값 7)
+ * @param nicheRatio 니치 겹침 비율 (0~1, undefined면 다양성 보정 미적용)
  */
-export function computeConfidence(nOverlap: number, lambda?: number): number {
-  return nOverlap / (nOverlap + (lambda ?? LAMBDA))
+export function computeConfidence(nOverlap: number, lambda?: number, nicheRatio?: number): number {
+  const baseConfidence = nOverlap / (nOverlap + (lambda ?? LAMBDA))
+  if (nicheRatio === undefined) return baseConfidence
+  return baseConfidence * nicheRatio
 }
 
 /**
@@ -217,16 +249,37 @@ export function computePrediction(
 
 /**
  * 관계 유형에 따른 부스트 값 반환.
+ * 팔로우(맞팔 포함) → 1.5, 없음 → 1.0
  */
-export function getRelationBoost(relation: RelationType): number {
+export function getRelationBoost(relation: RelationType, uniformBoost?: boolean): number {
+  if (uniformBoost) return BOOST_NONE
   switch (relation) {
-    case 'mutual':
-      return BOOST_MUTUAL
     case 'following':
       return BOOST_FOLLOWING
     case 'none':
       return BOOST_NONE
   }
+}
+
+/**
+ * 니치 겹침 비율 계산.
+ * 니치 아이템: 해당 아이템을 기록한 유저 수가 전체 유저 수의 NICHE_THRESHOLD(10%) 이하
+ *
+ * @param overlapItemRaterCounts 겹치는 각 아이템의 기록자 수 배열
+ * @param totalUsers 전체 유저 수
+ * @returns nicheRatio (0~1). 겹침 0이면 1 반환.
+ */
+export function computeNicheRatio(
+  overlapItemRaterCounts: number[],
+  totalUsers: number,
+): number {
+  if (overlapItemRaterCounts.length === 0) return 1
+  const threshold = totalUsers * NICHE_THRESHOLD
+  let nicheCount = 0
+  for (const count of overlapItemRaterCounts) {
+    if (count <= threshold) nicheCount++
+  }
+  return nicheCount / overlapItemRaterCounts.length
 }
 
 /**

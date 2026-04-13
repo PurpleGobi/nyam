@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, Suspense } from 'react'
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType } from '@/domain/entities/record'
 import type { AddFlowStep } from '@/domain/entities/add-flow'
@@ -18,10 +18,7 @@ import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
-import { AIResultDisplay } from '@/presentation/components/camera/ai-result-display'
 import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
-import { NearbyList } from '@/presentation/components/search/nearby-list'
-import type { NearbyRestaurant } from '@/domain/entities/search'
 
 function AddFlowInner() {
   const router = useRouter()
@@ -65,29 +62,15 @@ function AddFlowInner() {
   const [tempExif, setTempExif] = useState<{ lat: number | null; lng: number | null; capturedAt: string | null }>({ lat: null, lng: null, capturedAt: null })
   const [recordCompleted, setRecordCompleted] = useState(false)
   const [showAddToBubble, setShowAddToBubble] = useState(false)
-  const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
-  const [nearbyLoading, setNearbyLoading] = useState(false)
-  const [nearbyGenre, setNearbyGenre] = useState('')
-
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => {
-        const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-        setGps(coords)
-        // 근처 식당 미리 로드
-        if (targetType === 'restaurant') {
-          setNearbyLoading(true)
-          fetch(`/api/restaurants/nearby?lat=${coords.latitude}&lng=${coords.longitude}&radius=500`)
-            .then((res) => res.json())
-            .then((data) => setNearbyRestaurants(data.restaurants ?? []))
-            .catch(() => {})
-            .finally(() => setNearbyLoading(false))
-        }
+        setGps({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
       },
       () => {},
       { enableHighAccuracy: true, timeout: 5000 },
     )
-  }, [targetType])
+  }, [])
 
   // Cleanup: 기록 미완료 시 임시 업로드 삭제
   useEffect(() => {
@@ -100,23 +83,6 @@ function AddFlowInner() {
     }
   }, [tempPhotoUrl, recordCompleted, deleteImage])
 
-  const [nearbyRadius, setNearbyRadius] = useState(500)
-
-  const fetchNearby = useCallback((keyword: string, radius: number = 500) => {
-    if (!gps) return
-    setNearbyLoading(true)
-    const params = new URLSearchParams({
-      lat: String(gps.latitude),
-      lng: String(gps.longitude),
-      radius: String(radius),
-    })
-    if (keyword) params.set('keyword', keyword)
-    fetch(`/api/restaurants/nearby?${params}`)
-      .then((res) => res.json())
-      .then((data) => setNearbyRestaurants(data.restaurants ?? []))
-      .catch(() => {})
-      .finally(() => setNearbyLoading(false))
-  }, [gps])
 
   /** Phase 1에서 이미 업로드된 사진을 record에 연결 */
   const uploadCapturedPhoto = useCallback(async (recordId: string) => {
@@ -230,74 +196,18 @@ function AddFlowInner() {
         return
       }
 
-      // ── 식당: GPS 100m 내 근처 식당 검색 ──
-      const aiResult = await identify({
-        imageUrl: photoUrl,
-        targetType,
-        latitude: coords?.latitude,
-        longitude: coords?.longitude,
-      })
-
+      // ── 식당: EXIF GPS로 /search 페이지 라우팅 (AI 호출 불필요) ──
       if (targetType === 'restaurant') {
-        const restResult = aiResult as RestaurantAIResult | null
-        if (restResult && restResult.candidates.length > 0) {
-          pushStep('ai_result')
-        } else {
-          pushStep('search')
+        const searchParams = new URLSearchParams({ type: 'restaurant' })
+        if (coords) {
+          searchParams.set('lat', String(coords.latitude))
+          searchParams.set('lng', String(coords.longitude))
         }
-      }
-    },
-    [identify, targetType, gps, pushStep, setTarget, uploadFile],
-  )
-
-  const handleRestaurantSelect = useCallback(
-    async (restaurantId: string) => {
-      if (result?.targetType !== 'restaurant') return
-      const restResult = result as RestaurantAIResult
-      const selected = restResult.candidates.find((c) => c.restaurantId === restaurantId)
-      if (!selected) return
-
-      let targetId = selected.restaurantId
-
-      // 카카오 ID → DB에 식당 등록
-      if (targetId.startsWith('kakao_')) {
-        try {
-          const res = await fetch('/api/restaurants', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: selected.name,
-              area: selected.area,
-              genre: selected.genre,
-            }),
-          })
-          const data = await res.json()
-          if (data.id) targetId = data.id
-        } catch {}
-      }
-
-      if (targetId.startsWith('kakao_')) {
-        pushStep('search')
+        router.push(`/search?${searchParams.toString()}`)
         return
       }
-
-      setTarget({
-        id: targetId,
-        name: selected.name,
-        type: 'restaurant',
-        meta: [selected.genre, selected.area].filter(Boolean).join(' · '),
-        isAiRecognized: true,
-      })
-      try {
-        const restResult = result as RestaurantAIResult
-        sessionStorage.setItem('nyam_ai_prefill', JSON.stringify({
-          genre: restResult?.detectedGenre ?? selected.genre,
-          foodType: selected.genre,
-        }))
-      } catch {}
-      pushStep('record')
     },
-    [result, pushStep, setTarget],
+    [identify, targetType, gps, pushStep, setTarget, uploadFile, router],
   )
 
   const handleSearchFallback = useCallback(() => {
@@ -394,15 +304,6 @@ function AddFlowInner() {
         />
       )}
 
-      {step === 'ai_result' && result?.targetType === 'restaurant' && (
-        <AIResultDisplay
-          candidates={(result as RestaurantAIResult).candidates}
-          detectedGenre={(result as RestaurantAIResult).detectedGenre}
-          onSelect={handleRestaurantSelect}
-          onSearchFallback={handleSearchFallback}
-        />
-      )}
-
       {step === 'search' && (
         <div className="flex flex-1 flex-col">
           <div className="flex flex-col items-center gap-3 px-6 py-6">
@@ -428,51 +329,6 @@ function AddFlowInner() {
             </div>
           </div>
 
-          {targetType === 'restaurant' && (
-            <NearbyList
-              restaurants={nearbyRestaurants}
-              isLoading={nearbyLoading}
-              genre={nearbyGenre}
-              radius={nearbyRadius}
-              onGenreChange={(g) => {
-                setNearbyGenre(g)
-                fetchNearby(g, nearbyRadius)
-              }}
-              onRadiusChange={(r) => {
-                setNearbyRadius(r)
-                fetchNearby(nearbyGenre, r)
-              }}
-              onSelect={async (restaurantId) => {
-                const r = nearbyRestaurants.find((n) => n.id === restaurantId)
-                if (!r) return
-                // 외부 식당 → DB 등록
-                const res = await fetch('/api/restaurants', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    name: r.name,
-                    address: r.address,
-                    area: r.area,
-                    genre: r.genre,
-                    lat: r.lat,
-                    lng: r.lng,
-                  }),
-                })
-                const data = await res.json()
-                const targetId = data.id ?? r.id
-                const meta = [r.genre, r.area].filter(Boolean).join(' · ')
-                setTarget({
-                  id: targetId,
-                  name: r.name,
-                  type: 'restaurant',
-                  meta,
-                  isAiRecognized: false,
-                })
-                pushStep('record')
-              }}
-              onRegister={() => router.push(`/register?type=restaurant`)}
-            />
-          )}
         </div>
       )}
 

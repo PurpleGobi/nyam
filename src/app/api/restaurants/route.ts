@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import { getGooglePlaceDetail } from '@/infrastructure/api/google-places'
+import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 
 /** 주소에서 구/군 추출 ("서울 강남구 도곡로 408" → "강남구") */
 function extractDistrict(address: string | null): string | null {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   const { data: existing } = await supabase
     .from('restaurants')
-    .select('id, name, genre, area, phone, kakao_map_url, next_refresh_at, external_ids')
+    .select('id, name, genre, area, phone, kakao_map_url, next_refresh_at, external_id_kakao, external_id_google')
     .ilike('name', name.trim())
     .limit(1)
     .maybeSingle()
@@ -60,10 +61,12 @@ export async function POST(request: NextRequest) {
       if (kakaoMapUrl) updates.kakao_map_url = kakaoMapUrl
       if (lat) updates.lat = lat
       if (lng) updates.lng = lng
-      if (externalIds) updates.external_ids = externalIds
+      if (externalIds?.kakao) updates.external_id_kakao = externalIds.kakao
+      if (externalIds?.google) updates.external_id_google = externalIds.google
+      if (externalIds?.naver) updates.external_id_naver = externalIds.naver
 
       // stale 갱신 시에도 Google Place Detail 보강
-      const staleGoogleId = (externalIds?.google ?? existing.external_ids?.google) as string | undefined
+      const staleGoogleId = (externalIds?.google ?? existing.external_id_google) as string | undefined
       if (staleGoogleId) {
         const detail = await getGooglePlaceDetail(staleGoogleId)
         if (detail) {
@@ -89,12 +92,27 @@ export async function POST(request: NextRequest) {
   let enrichedHours = null
   let enrichedGoogleRating = null
   const googlePlaceId = externalIds?.google as string | undefined
+  const kakaoId = externalIds?.kakao as string | undefined
+  const naverId = externalIds?.naver as string | undefined
   if (googlePlaceId) {
     const detail = await getGooglePlaceDetail(googlePlaceId)
     if (detail) {
       if (!enrichedPhone && detail.phone) enrichedPhone = detail.phone
       enrichedHours = detail.hours
       enrichedGoogleRating = detail.googleRating
+    }
+  }
+
+  // kakao ID가 없으면 카카오 키워드 검색으로 매칭 시도 (중복 방지)
+  let resolvedKakaoId = kakaoId ?? null
+  if (!resolvedKakaoId && name && lat && lng) {
+    try {
+      const kakaoResults = await searchKakaoLocal(name.trim(), lat, lng, { radius: 500, size: 1 })
+      if (kakaoResults.length > 0) {
+        resolvedKakaoId = kakaoResults[0].kakaoId
+      }
+    } catch {
+      // 카카오 매칭 실패해도 등록은 진행
     }
   }
 
@@ -112,7 +130,9 @@ export async function POST(request: NextRequest) {
       hours: enrichedHours,
       google_rating: enrichedGoogleRating,
       kakao_map_url: kakaoMapUrl ?? null,
-      external_ids: externalIds ?? null,
+      external_id_kakao: resolvedKakaoId,
+      external_id_google: googlePlaceId ?? null,
+      external_id_naver: naverId ?? null,
       cached_at: now,
       next_refresh_at: refreshAt,
       country: body.country ?? '한국',

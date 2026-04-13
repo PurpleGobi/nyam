@@ -102,9 +102,21 @@ export function BubbleListContainer() {
   // 검색
   const [searchQuery, setSearchQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isSearchOpen) searchInputRef.current?.focus()
+  }, [isSearchOpen])
+
+  useEffect(() => {
+    if (!isSearchOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(e.target as Node)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isSearchOpen])
 
   const toggleSort = () => { setSortOpen(!isSortOpen); setSearchOpen(false) }
@@ -216,7 +228,7 @@ export function BubbleListContainer() {
         onTabChange={setContentTab}
         rightSlot={
           isSearchOpen ? (
-            <div className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
+            <div ref={searchBarRef} className="flex flex-1 items-center gap-2" style={{ marginLeft: '8px' }}>
               <Search size={16} className="shrink-0" style={{ color: 'var(--text-hint)' }} />
               <input
                 ref={searchInputRef}
@@ -275,6 +287,7 @@ export function BubbleListContainer() {
           <SortDropdown
             currentSort={sortBy}
             onSortChange={(s) => { setSortBy(s); setSortOpen(false); setPage(1) }}
+            onClose={() => setSortOpen(false)}
             accentType="social"
             labels={BUBBLE_SORT_LABELS}
           />
@@ -322,18 +335,8 @@ export function BubbleListContainer() {
                 {searchQuery || filterRules.length > 0 ? '조건에 맞는 버블이 없어요' : '아직 버블이 없어요'}
               </p>
               <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                {searchQuery || filterRules.length > 0 ? '필터를 변경해보세요' : '버블을 만들어 맛집을 공유해보세요'}
+                {searchQuery || filterRules.length > 0 ? '필터를 변경해보세요' : '+버튼을 눌러 시작하세요'}
               </p>
-              {!searchQuery && filterRules.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/bubbles/create')}
-                  className="mt-4 rounded-full px-5 py-2.5 text-[13px] font-bold text-white transition-transform active:scale-95"
-                  style={{ backgroundColor: 'var(--accent-social)' }}
-                >
-                  첫 버블 만들기
-                </button>
-              )}
             </div>
           ) : (
             <div className="flex flex-col gap-3 px-4 pb-4 md:grid md:grid-cols-2 md:gap-4 md:px-8">

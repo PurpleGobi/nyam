@@ -10,8 +10,7 @@ const CORS_HEADERS = {
 
 // ===== CF 파라미터 (cf-calculator.ts와 동일) =====
 const LAMBDA = 7
-const BOOST_MUTUAL = 1.5
-const BOOST_FOLLOWING = 1.2
+const BOOST_FOLLOWING = 1.5  // 팔로우(맞팔 포함) 부스트
 const BOOST_NONE = 1.0
 const CONFIDENCE_N_WEIGHT = 0.50
 const CONFIDENCE_AGREEMENT_WEIGHT = 0.35
@@ -25,7 +24,7 @@ const MAX_BATCH_SIZE = 50
 
 interface ScorePoint { x: number; y: number }
 
-type RelationType = 'mutual' | 'following' | 'none'
+type RelationType = 'following' | 'none'
 
 interface RaterInput {
   deviation: ScorePoint
@@ -38,8 +37,6 @@ interface RaterInput {
 
 function getRelationBoost(relation: RelationType): number {
   switch (relation) {
-    case 'mutual':
-      return BOOST_MUTUAL
     case 'following':
       return BOOST_FOLLOWING
     case 'none':
@@ -174,13 +171,8 @@ function determineRelation(
   userId: string,
   raterId: string,
   followSet: Set<string>,
-  followerSet: Set<string>,
 ): RelationType {
-  const iFollow = followSet.has(raterId)
-  const theyFollow = followerSet.has(raterId)
-  if (iFollow && theyFollow) return 'mutual'
-  if (iFollow) return 'following'
-  return 'none'
+  return followSet.has(raterId) ? 'following' : 'none'
 }
 
 // ===== Edge Function 본체 =====
@@ -335,22 +327,18 @@ async function batchPredictForUser(
     }
   }
 
-  // Step 3: 팔로우 관계 (1회)
+  // Step 3: 팔로우 관계 (1회) — 내가 팔로우하는 유저만 조회
   const { data: followRows, error: followError } = await supabase
     .from('follows')
-    .select('follower_id, following_id')
-    .or(
-      `and(follower_id.eq.${userId},following_id.in.(${raterIdArray.join(',')})),` +
-      `and(following_id.eq.${userId},follower_id.in.(${raterIdArray.join(',')}))`
-    )
+    .select('following_id')
+    .eq('follower_id', userId)
+    .in('following_id', raterIdArray)
 
   if (followError) throw new Error(`팔로우 조회 실패: ${followError.message}`)
 
   const followSet = new Set<string>()
-  const followerSet = new Set<string>()
   for (const row of (followRows ?? [])) {
-    if (row.follower_id === userId) followSet.add(row.following_id)
-    if (row.following_id === userId) followerSet.add(row.follower_id)
+    followSet.add(row.following_id)
   }
 
   // Step 4: 내 평균 (1회)
@@ -401,7 +389,7 @@ async function batchPredictForUser(
     const candidates: RaterCandidate[] = []
     for (const [raterId] of itemScores) {
       const sim = simMap.get(raterId)
-      const relation = determineRelation(userId, raterId, followSet, followerSet)
+      const relation = determineRelation(userId, raterId, followSet)
       const boost = getRelationBoost(relation)
 
       candidates.push({

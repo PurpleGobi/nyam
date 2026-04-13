@@ -9,6 +9,7 @@ import {
   getRelationBoost,
   filterByMinOverlap,
   selectTopK,
+  computeNicheRatio,
 } from '@/domain/services/cf-calculator'
 
 import type { RaterInput, ScorePoint } from '@/domain/entities/similarity'
@@ -106,14 +107,10 @@ describe('cf-calculator', () => {
   })
 
   describe('computePrediction', () => {
-    it('평가자 0명 → myMean 반환, confidence = 0', () => {
+    it('평가자 0명 → null 반환', () => {
       const myMean: ScorePoint = { x: 60, y: 40 }
       const result = computePrediction(myMean, [])
-      expect(result.predictedX).toBe(60)
-      expect(result.predictedY).toBe(40)
-      expect(result.satisfaction).toBe(50)
-      expect(result.confidence).toBe(0)
-      expect(result.nRaters).toBe(0)
+      expect(result).toBeNull()
     })
 
     it('단일 평가자, weight > 0 → 예측 = myMean + deviation', () => {
@@ -140,7 +137,7 @@ describe('cf-calculator', () => {
           deviation: { x: 20, y: 10 },
           similarity: 0.8,
           confidence: 0.5,
-          boost: 1.5, // mutual: weight = 0.6
+          boost: 1.5, // following: weight = 0.6
         },
         {
           deviation: { x: -10, y: 5 },
@@ -223,16 +220,56 @@ describe('cf-calculator', () => {
   })
 
   describe('getRelationBoost', () => {
-    it('mutual → 1.5', () => {
-      expect(getRelationBoost('mutual')).toBe(1.5)
-    })
-
-    it('following → 1.2', () => {
-      expect(getRelationBoost('following')).toBe(1.2)
+    it('following → 1.5', () => {
+      expect(getRelationBoost('following')).toBe(1.5)
     })
 
     it('none → 1.0', () => {
       expect(getRelationBoost('none')).toBe(1.0)
+    })
+
+    it('uniformBoost=true → 항상 1.0', () => {
+      expect(getRelationBoost('following', true)).toBe(1.0)
+      expect(getRelationBoost('none', true)).toBe(1.0)
+    })
+  })
+
+  describe('computeConfidence with nicheRatio', () => {
+    it('nicheRatio 미지정 → 기본 신뢰도만', () => {
+      expect(computeConfidence(7)).toBeCloseTo(0.5, 5)
+    })
+
+    it('nicheRatio=1.0 → 기본 신뢰도 그대로', () => {
+      expect(computeConfidence(7, undefined, 1.0)).toBeCloseTo(0.5, 5)
+    })
+
+    it('nicheRatio=0.5 → 기본 신뢰도 × 0.5', () => {
+      expect(computeConfidence(7, undefined, 0.5)).toBeCloseTo(0.25, 5)
+    })
+
+    it('nicheRatio=0 → 신뢰도 0', () => {
+      expect(computeConfidence(7, undefined, 0)).toBeCloseTo(0, 5)
+    })
+  })
+
+  describe('computeNicheRatio', () => {
+    it('빈 겹침 → 1', () => {
+      expect(computeNicheRatio([], 100)).toBe(1)
+    })
+
+    it('모두 니치(10% 이하) → 1', () => {
+      // 전체 유저 100명, 겹침 아이템 기록자 수 [5, 8, 10]
+      expect(computeNicheRatio([5, 8, 10], 100)).toBe(1)
+    })
+
+    it('모두 대중(10% 초과) → 0', () => {
+      // 전체 유저 100명, 겹침 아이템 기록자 수 [50, 80]
+      expect(computeNicheRatio([50, 80], 100)).toBe(0)
+    })
+
+    it('혼합 → 니치 비율', () => {
+      // 전체 유저 100명, [5, 50, 8, 80] → 니치 2개 / 전체 4개 = 0.5
+      expect(computeNicheRatio([5, 50, 8, 80], 100)).toBe(0.5)
     })
   })
 
@@ -241,7 +278,7 @@ describe('cf-calculator', () => {
       expect(filterByMinOverlap([])).toEqual([])
     })
 
-    it('모두 겹침 >= 3 → 전체 반환', () => {
+    it('모두 겹침 >= 1 → 전체 반환', () => {
       const raters = [
         { nOverlap: 5, id: 'a' },
         { nOverlap: 10, id: 'b' },
@@ -249,21 +286,22 @@ describe('cf-calculator', () => {
       expect(filterByMinOverlap(raters)).toEqual(raters)
     })
 
-    it('일부 겹침 < 3 → 해당 평가자 제거', () => {
+    it('일부 겹침 < 1 → 해당 평가자 제거', () => {
       const raters = [
-        { nOverlap: 2, id: 'a' },
+        { nOverlap: 0, id: 'a' },
         { nOverlap: 5, id: 'b' },
         { nOverlap: 1, id: 'c' },
       ]
       const result = filterByMinOverlap(raters)
-      expect(result).toHaveLength(1)
+      expect(result).toHaveLength(2)
       expect(result[0].id).toBe('b')
+      expect(result[1].id).toBe('c')
     })
 
-    it('기본값 3 검증 (minOverlap 미지정 시)', () => {
+    it('기본값 1 검증 (minOverlap 미지정 시)', () => {
       const raters = [
-        { nOverlap: 3, id: 'a' },
-        { nOverlap: 2, id: 'b' },
+        { nOverlap: 1, id: 'a' },
+        { nOverlap: 0, id: 'b' },
       ]
       const result = filterByMinOverlap(raters)
       expect(result).toHaveLength(1)

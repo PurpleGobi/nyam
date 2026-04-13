@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
-// TODO: 외부 API 폴백 재활성화 시 복원
-// import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
-// import { searchNaverLocal } from '@/infrastructure/api/naver-local'
-// import { searchGooglePlaces } from '@/infrastructure/api/google-places'
+import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
+import { searchNaverLocal } from '@/infrastructure/api/naver-local'
+import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
     supabase.auth.getUser(),
     supabase
       .from('restaurants')
-      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, rp')
+      .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, prestige')
       .or(`name.ilike.${pattern},address.ilike.${pattern}`)
       .limit(20),
   ])
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
     lng: r.lng,
     phone: r.phone,
     kakaoMapUrl: r.kakao_map_url,
-    prestige: ((r as Record<string, unknown>).prestige ?? []) as RestaurantPrestige[],
+    prestige: (r.prestige ?? []) as RestaurantPrestige[],
     distance: lat && lng && r.lat && r.lng
       ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
       : null,
@@ -66,9 +65,104 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: sortResults(nyamResults) })
   }
 
-  // ── Step 2: 외부 API 폴백 (비활성화) ──
-  // TODO: 카카오 크롤링으로 DB 충분히 채운 후 필요 시 재활성화
-  return NextResponse.json({ results: sortResults(nyamResults) })
+  // ── Step 2: 외부 API 동시 호출 (폴백) ──
+  const latNum = lat ? Number(lat) : undefined
+  const lngNum = lng ? Number(lng) : undefined
+
+  const [kakaoResult, naverResult, googleResult] = await Promise.allSettled([
+    searchKakaoLocal(q, latNum, lngNum, { radius: 20000, size: 5 }),
+    searchNaverLocal(q),
+    searchGooglePlaces(q, latNum, lngNum, { radius: 20000, maxResults: 5 }),
+  ])
+
+  interface ExternalItem {
+    name: string
+    address: string
+    lat: number | null
+    lng: number | null
+    genre: string | null
+    genreDisplay: string | null
+    categoryPath: string | null
+    district: string | null
+    phone: string | null
+    kakaoMapUrl: string | null
+    externalId: string
+    externalIds: Record<string, string>
+  }
+  const externals: ExternalItem[] = []
+
+  if (kakaoResult.status === 'fulfilled') {
+    for (const item of kakaoResult.value) {
+      const mapped = mapKakaoCategoryDetail(item.categoryDetail)
+      const fallback = item.category ? mapKakaoCategory(item.category) : null
+      externals.push({
+        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
+        genre: mapped?.genre ?? fallback ?? '기타',
+        genreDisplay: mapped?.display ?? fallback ?? '기타',
+        categoryPath: item.categoryDetail,
+        district: extractDistrict(item.address), phone: item.phone,
+        kakaoMapUrl: item.kakaoMapUrl,
+        externalId: `kakao_${item.kakaoId}`, externalIds: { kakao: item.kakaoId },
+      })
+    }
+  }
+  if (naverResult.status === 'fulfilled') {
+    for (const item of naverResult.value) {
+      externals.push({
+        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
+        genre: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
+        genreDisplay: (item.category ? mapNaverCategory(item.category) : null) ?? '기타',
+        categoryPath: item.category ?? null,
+        district: extractDistrict(item.address), phone: item.phone ?? null, kakaoMapUrl: null,
+        externalId: `naver_${item.naverId ?? item.name}`,
+        externalIds: item.naverId ? { naver: item.naverId } : {},
+      })
+    }
+  }
+  if (googleResult.status === 'fulfilled') {
+    for (const item of googleResult.value) {
+      externals.push({
+        name: item.name, address: item.address, lat: item.lat, lng: item.lng,
+        genre: '기타', genreDisplay: '기타', categoryPath: null,
+        district: extractDistrict(item.address), phone: null, kakaoMapUrl: null,
+        externalId: `google_${item.googlePlaceId}`, externalIds: { google: item.googlePlaceId },
+      })
+    }
+  }
+
+  // 중복 제거 (이름 + 좌표 근접 200m 이내면 같은 식당)
+  const accepted: { name: string; lat: number | null; lng: number | null }[] =
+    nyamResults.map((r) => ({ name: r.name, lat: r.lat, lng: r.lng }))
+
+  const dedupedExternals = externals.filter((ext) => {
+    if (isSameRestaurant(ext, accepted)) return false
+    accepted.push({ name: ext.name, lat: ext.lat, lng: ext.lng })
+    return true
+  })
+
+  const externalSearchResults: RestaurantSearchResult[] = dedupedExternals.map((ext) => ({
+    id: ext.externalId,
+    type: 'restaurant' as const,
+    name: ext.name,
+    genre: ext.genre,
+    genreDisplay: ext.genreDisplay,
+    categoryPath: ext.categoryPath,
+    area: ext.district,
+    address: ext.address,
+    lat: ext.lat,
+    lng: ext.lng,
+    phone: ext.phone,
+    kakaoMapUrl: ext.kakaoMapUrl,
+    prestige: [],
+    distance: latNum && lngNum && ext.lat && ext.lng
+      ? haversineDistance(latNum, lngNum, ext.lat, ext.lng)
+      : null,
+    hasRecord: false,
+  }))
+
+  return NextResponse.json({
+    results: sortResults([...nyamResults, ...externalSearchResults]),
+  })
 }
 
 /** 결과 정렬: 거리순 → 이름순 */
@@ -206,7 +300,7 @@ function mapNaverCategory(category: string): string | null {
 
 /** DB 내부 중복 제거: 이름+좌표 근접 기준 그룹핑, 기록 있는 행 우선 */
 function deduplicateNyamResults(
-  restaurants: { id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; phone: string | null; kakao_map_url: string | null }[],
+  restaurants: { id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; phone: string | null; kakao_map_url: string | null; prestige: unknown }[],
   recordedIds: Set<string>,
 ): typeof restaurants {
   const groups: (typeof restaurants)[] = []

@@ -162,12 +162,9 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '보기',
     type: 'multi-select',
     options: [
-      { value: 'visited', label: '방문', group: '내 컬렉션' },
-      { value: 'bookmark', label: '찜', group: '내 컬렉션' },
-      { value: 'unrated', label: '미평가', group: '내 컬렉션' },
-      { value: 'following', label: '팔로잉', group: '다른 사람' },
-      { value: 'bubble', label: '버블', group: '다른 사람' },
-      { value: 'public', label: '공개', group: '다른 사람' },
+      { value: 'mine', label: '내 기록' },
+      { value: 'following', label: '팔로잉' },
+      { value: 'bubble', label: '버블' },
     ],
   },
   {
@@ -318,8 +315,7 @@ export const MAP_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '보기',
     type: 'multi-select',
     options: [
-      { value: 'mine', label: '내기록' },
-      { value: 'bookmark', label: '찜' },
+      { value: 'mine', label: '내 기록' },
       { value: 'following', label: '팔로잉' },
       { value: 'bubble', label: '버블' },
     ],
@@ -525,13 +521,9 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     label: '보기',
     type: 'multi-select',
     options: [
-      { value: 'tasted', label: '시음', group: '내 컬렉션' },
-      { value: 'bookmark', label: '찜', group: '내 컬렉션' },
-      { value: 'cellar', label: '셀러', group: '내 컬렉션' },
-      { value: 'unrated', label: '미평가', group: '내 컬렉션' },
-      { value: 'following', label: '팔로잉', group: '다른 사람' },
-      { value: 'bubble', label: '버블', group: '다른 사람' },
-      { value: 'public', label: '공개', group: '다른 사람' },
+      { value: 'mine', label: '내 기록' },
+      { value: 'following', label: '팔로잉' },
+      { value: 'bubble', label: '버블' },
     ],
   },
   {

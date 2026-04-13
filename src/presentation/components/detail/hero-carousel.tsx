@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { Share2, UtensilsCrossed, Wine } from 'lucide-react'
 import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
-import { PopupWindow } from '@/presentation/components/ui/popup-window'
+import { PhotoViewer } from '@/presentation/components/ui/photo-viewer'
 
 interface HeroCarouselProps {
   photos: string[]
@@ -76,11 +76,6 @@ export function HeroCarousel({
     if (Math.abs(mouseStartX.current - e.clientX) > 10) return
     setPopupIndex(currentIndex)
   }, [currentIndex])
-
-  // 팝업에서 사진 클릭 → 순환
-  const handlePopupClick = useCallback(() => {
-    setPopupIndex((prev) => prev !== null ? (prev + 1) % photos.length : null)
-  }, [photos.length])
 
   return (
     <>
@@ -173,24 +168,12 @@ export function HeroCarousel({
       </div>
 
       {/* 사진 팝업 */}
-      <PopupWindow isOpen={popupIndex !== null} onClose={() => setPopupIndex(null)}>
-        {popupIndex !== null && (
-          <div
-            className="fixed inset-0 flex items-center justify-center"
-            style={{ zIndex: 200, pointerEvents: 'none' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photos[popupIndex]}
-              alt=""
-              onClick={handlePopupClick}
-              className="rounded-2xl shadow-lg"
-              style={{ maxWidth: 'min(90vw, 500px)', maxHeight: '70vh', objectFit: 'contain', cursor: 'pointer', pointerEvents: 'auto' }}
-              draggable={false}
-            />
-          </div>
-        )}
-      </PopupWindow>
+      <PhotoViewer
+        photos={photos}
+        initialIndex={popupIndex ?? 0}
+        isOpen={popupIndex !== null}
+        onClose={() => setPopupIndex(null)}
+      />
     </>
   )
 }

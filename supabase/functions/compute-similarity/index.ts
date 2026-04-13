@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const D = 60
 const LAMBDA = 7
 const MIN_OVERLAP = 1
+const NICHE_THRESHOLD = 0.10
 
 // ===== 인라인 계산 함수 (cf-calculator.ts 동일 로직) =====
 
@@ -234,10 +235,18 @@ async function recomputeSimilarity(
     deviationsB.push({ x: rB.axis_x - mB.x, y: rB.axis_y - mB.y })
   }
 
+  // 겹치는 아이템 ID 수집
+  const overlapItemIds: string[] = []
+  for (const rA of (recordsA ?? [])) {
+    if (mapB.has(rA.target_id)) {
+      overlapItemIds.push(rA.target_id)
+    }
+  }
+
   const nOverlap = deviationsA.length
 
   if (nOverlap < MIN_OVERLAP) {
-    // 겹침 < 3 → 기존 행 삭제 (있으면)
+    // 겹침 < 1 → 기존 행 삭제 (있으면)
     await supabase
       .from('user_similarities')
       .delete()
@@ -250,6 +259,43 @@ async function recomputeSimilarity(
   // 적합도 계산
   const result = computeSimilarityFromDeviations(deviationsA, deviationsB)
 
+  // 다양성 보정: 니치 겹침 비율 계산
+  let nicheRatio = 1
+  if (overlapItemIds.length > 0) {
+    // 전체 유저 수 조회
+    const { count: totalUsers } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+
+    if (totalUsers && totalUsers > 0) {
+      // 겹치는 각 아이템의 기록자 수 조회
+      const { data: raterCountRows } = await supabase
+        .from('records')
+        .select('target_id')
+        .in('target_id', overlapItemIds)
+        .eq('target_type', category)
+        .not('axis_x', 'is', null)
+        .not('axis_y', 'is', null)
+
+      // 아이템별 기록자 수 집계
+      const itemRaterCounts = new Map<string, number>()
+      for (const row of (raterCountRows ?? [])) {
+        itemRaterCounts.set(row.target_id, (itemRaterCounts.get(row.target_id) ?? 0) + 1)
+      }
+
+      const threshold = totalUsers * NICHE_THRESHOLD
+      let nicheCount = 0
+      for (const itemId of overlapItemIds) {
+        const count = itemRaterCounts.get(itemId) ?? 0
+        if (count <= threshold) nicheCount++
+      }
+      nicheRatio = nicheCount / overlapItemIds.length
+    }
+  }
+
+  // 신뢰도에 다양성 보정 적용
+  const correctedConfidence = result.confidence * nicheRatio
+
   // UPSERT
   const { error: upsertError } = await supabase
     .from('user_similarities')
@@ -258,7 +304,7 @@ async function recomputeSimilarity(
       user_b: userB,
       category,
       similarity: result.similarity,
-      confidence: result.confidence,
+      confidence: correctedConfidence,
       n_overlap: result.nOverlap,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_a,user_b,category' })

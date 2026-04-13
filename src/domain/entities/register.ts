@@ -46,7 +46,9 @@ export interface CreateRestaurantInput {
   lat?: number | null
   lng?: number | null
   phone?: string | null
-  externalIds?: Record<string, string> | null
+  externalIdKakao?: string | null
+  externalIdGoogle?: string | null
+  externalIdNaver?: string | null
 }
 
 /** 와인 등록 입력 */

@@ -92,12 +92,45 @@ export function useMapDiscovery(params: {
     return map
   }, [mapChips])
 
+  const genreFilter: string | null = useMemo(() => {
+    for (const chip of mapChips) {
+      if (isAdvancedChip(chip)) continue
+      const attr = chip.filterKey ?? chip.attribute
+      if (attr === 'genre') return String(chip.value)
+    }
+    return null
+  }, [mapChips])
+
+  const districtFilter: string | null = useMemo(() => {
+    for (const chip of mapChips) {
+      if (isAdvancedChip(chip)) continue
+      const attr = chip.filterKey ?? chip.attribute
+      if (attr === 'district') return String(chip.value)
+    }
+    return null
+  }, [mapChips])
+
+  const areaFilter: string | null = useMemo(() => {
+    for (const chip of mapChips) {
+      if (isAdvancedChip(chip)) continue
+      const attr = chip.filterKey ?? chip.attribute
+      if (attr === 'area') return String(chip.value)
+    }
+    return null
+  }, [mapChips])
+
   const sourceFilterRef = useRef(sourceFilter)
   sourceFilterRef.current = sourceFilter
   const prestigeFilterRef = useRef(prestigeFilter)
   const prestigeGradeFilterRef = useRef(prestigeGradeFilter)
   prestigeGradeFilterRef.current = prestigeGradeFilter
   prestigeFilterRef.current = prestigeFilter
+  const genreFilterRef = useRef(genreFilter)
+  genreFilterRef.current = genreFilter
+  const districtFilterRef = useRef(districtFilter)
+  districtFilterRef.current = districtFilter
+  const areaFilterRef = useRef(areaFilter)
+  areaFilterRef.current = areaFilter
 
   // --- bounds API 호출 (모든 필터를 DB로 전달) ---
   const fetchBounds = useCallback(async (
@@ -123,6 +156,9 @@ export function useMapDiscovery(params: {
       if (keyword) sp.set('keyword', keyword)
       if (sourcesArr.length > 0) sp.set('source', sourcesArr.join(','))
       if (prestigeArr.length > 0) sp.set('prestige', prestigeArr.join(','))
+      if (genreFilterRef.current) sp.set('genre', genreFilterRef.current)
+      if (districtFilterRef.current) sp.set('district', districtFilterRef.current)
+      if (areaFilterRef.current) sp.set('area', areaFilterRef.current)
 
       const res = await fetch(`/api/restaurants/bounds?${sp}`)
       if (!res.ok) {
@@ -209,7 +245,7 @@ export function useMapDiscovery(params: {
     setCurrentPage(1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => fetchCurrent(1), 150)
-  }, [searchQuery, sourceFilter, prestigeFilter, prestigeGradeFilter, fetchCurrent])
+  }, [searchQuery, sourceFilter, prestigeFilter, prestigeGradeFilter, genreFilter, districtFilter, areaFilter, fetchCurrent])
 
   // --- 페이지 변경 ---
   const setPage = useCallback((page: number) => {
