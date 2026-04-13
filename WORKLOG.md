@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-13 #31 — 홈 초기 로딩 최적화 + 검색 UI + 탭 전환 버그 수정
+- **영역**: infrastructure/supabase-home-repository(prefetchSharedData+fetchRecordsAndBookmarks 통합), application/hooks/(use-home-targets race condition fix, use-restaurant-stats+use-wine-stats+use-xp+use-social-filter-options에 enabled/levelOnly 지연 로드), presentation/(search-container 인라인 검색, home-container stats 지연, app-header XP levelOnly), development_docs/systems/QUERY_OPTIMIZATION.md(신규), CLAUDE.md 참조맵
+- **맥락**: (1) 쿼리 최적화 5대 원칙(P1~P5) 수립. (2) homeRepo: follows/bubble_members 중복 조회 제거(P1), 3체인 병렬+필터 없을 때 meta+records 전부 병렬(P2), record_photos FK join으로 별도 쿼리 제거, 소셜 records 9컬럼 최소 SELECT(P3). (3) stats/XP/소셜 필터를 지연 로드하여 초기 네트워크 경합 제거. (4) 탭 전환 race condition: requestIdRef로 stale 응답 무시. (5) 검색 UI: 필터 추가 버튼과 같은 줄에 인라인 검색. Supabase 요청 62% 감소(100+→38).
+- **미완료**: 없음
+- **다음**: 브라우저 QA, 프로덕션 EXPLAIN ANALYZE 성능 검증
+
 ### 2026-04-13 #30 — FAB Speed Dial + 버블에 추가 선택 모드 (찜→버블 전환)
 - **영역**: presentation/(layout/fab-add 전면 리디자인, bubble/bubble-picker-sheet 신규, home/compact-list-item+map-compact-item+map-view+record-card+wine-card에서 Heart 제거+선택 모드 추가), containers/(home, bubble-create), application/hooks/use-bubble-items(batchAddToBubble), globals.css(바텀시트 z-index)
 - **맥락**: 찜(bookmark) 기능을 버블 기반 큐레이션으로 전환 결정. (1) FabAdd를 Speed Dial로 변경(기록 추가/버블에 추가 2개 메뉴, dim overlay, ×전환). (2) "버블에 추가" → 아이템 배경 틴트 선택 모드 → FAB "N개 추가" 버튼 변환 → BubblePickerSheet(버블 목록+BubbleIcon+새 버블 만들기). (3) Heart/전체찜 UI 전면 제거. (4) 바텀시트 z-index 90/91로 상향(지도 위). (5) 버블 생성 후 sync 에러 시에도 라우팅 진행.
@@ -66,11 +72,6 @@
 - **미완료**: 없음 (다음 커밋에서 완료)
 - **다음**: 완료
 
-### 2026-04-08 #18 — 위치 필터칩 UX 수정 + Excel 가져오기
-- **영역**: presentation/components/home/condition-filter-bar, infrastructure/supabase-settings-repository, presentation/containers/settings-container, package.json
-- **맥락**: (1) 위치 필터 도시 칩: 쉐브론→X 표시(최상위 필터), X 클릭 시 전체 location 그룹 제거, 편집 팝오버 '전체' 옵션 제거. (2) 설정 데이터 가져오기에 Excel(.xlsx/.xls) 지원 추가(xlsx 패키지).
-- **미완료**: 없음
-- **다음**: 브라우저 QA
 
 ### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
 - **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
