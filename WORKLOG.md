@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-04-13 #34 — 홈뷰 버블 필터 미작동 수정 + 로고 클릭 초기화
+- **영역**: presentation/(home-container: urlBubbleId→activeBubbleId state 전환, handleLogoReset 추가, components/layout/app-header: onLogoClick prop)
+- **맥락**: 버블 상세→리스트 보기 진입 시 필터 변경이 작동하지 않던 버그 수정. urlBubbleId가 상수여서 viewTypes가 항상 ['bubble']로 고정되고 칩 변경 시 초기화 effect가 재실행되며 덮어쓰기됨. state로 전환하여 필터 변경 시 bubble 모드 해제. 로고 클릭 시 필터/소팅/검색/소셜필터 전체 디폴트 복원.
+- **미완료**: 없음
+- **다음**: 브라우저 QA
+
+### 2026-04-13 #33 — 버블에서 제거 기능 + 버블 상세/설정 UI 리디자인
+- **영역**: application/hooks/(use-bubble-items: batchRemoveFromBubble 추가, use-home-targets: refreshKey 파라미터, use-home-state: initialSort), presentation/(home-container: FAB 버블 제거 선택 모드+BubblePickerSheet 자기 버블 제외, bubble-create-form: 수동/자동 공유 라디오 UI, bubble-settings: 공유 방식 라디오+토글 정리+stats 제거, bubble-detail-container: 정보/통계 섹션 리디자인+설정 버튼 이동, bubble-settings-container: 저장 후 상세 복귀)
+- **맥락**: (1) 홈뷰에서 버블 필터 활성 시 FAB에 "버블에서 제거" 메뉴 추가 — 선택 모드로 아이템 선택 후 BubblePickerSheet 없이 바로 제거+리스트 갱신. (2) BubblePickerSheet에서 현재 보고 있는 버블 제외(자기 버블 중복 추가 방지). (3) 버블 생성/설정: 공유 규칙을 수동/자동 라디오로 변경(디폴트 수동). (4) 버블 상세: 가입조건·공개설정 태그, 통계 카드를 상세로 이동. (5) 설정: stats prop 제거, 토글 레이아웃 정리, 저장 후 상세 페이지 복귀.
+- **미완료**: 없음
+- **다음**: 브라우저 QA
+
 ### 2026-04-13 #32 — 찜(bookmark) 기능 전체 제거
 - **영역**: domain/(entities/bookmark 삭제, repositories/bookmark-repository 삭제, entities/home-target에서 isBookmarked/isCellar 제거, services/filter-matcher에서 bookmark/cellar 필터 제거), infrastructure/(supabase-bookmark-repository 삭제, supabase-home-repository에서 bookmarks 쿼리 제거), application/(use-bookmark 삭제, use-bubble-auto-sync에서 syncBookmarkToAllBubbles 제거, use-naver-import+use-reactions에서 bookmarkRepo 제거), presentation/(bookmark-button 삭제, hero-carousel에서 하트 제거, search-result-item에서 Heart 제거, wine-card isCellar dead code 제거, home-container isCellar 분기 제거, restaurant/wine-detail-container useBookmark 제거), shared/di/container.ts bookmarkRepo 제거, CODEBASE.md+DATA_MODEL.md 갱신
 - **맥락**: 찜 → 버블 큐레이션 전환 완료에 따른 dead code 전면 삭제. 5파일 삭제 + 17파일 정리, 순 -558줄. bookmarks 테이블 Supabase 쿼리 1개 추가 제거로 홈 성능 소폭 개선.
@@ -47,37 +59,6 @@
 - **맥락**: 지도뷰를 "내 기록 뷰어 + nearby 사이드바" 이원 구조에서 통합 식당 탐색 허브로 리디자인. MapDiscoveryItem 단일 타입으로 내 기록+nearby 통합, 4종 점수(내/nyam/버블/구글) cascade 소팅, 3그룹 필터(보기/명성/점수), 그리드 클러스터링, 4px 도트 마커. nearby API에 Nyam DB cross-reference + Google Places enrichment 추가.
 - **미완료**: quality-guard(pnpm build/lint) 미실행, 브라우저 QA 미실행, bubbleScore enrichment 미구현(Phase 2), Google Places 별점 캐싱 미구현
 - **다음**: pnpm build && pnpm lint 크리티컬 게이트 실행, /myqa 브라우저 QA, bubbleScore Phase 2
-
-### 2026-04-09 #25 — 지도뷰 카카오맵 → Google Maps 전환
-- **영역**: presentation/components/home/map-view.tsx, package.json(@googlemaps/js-api-loader, @types/google.maps 추가), .env.local(NEXT_PUBLIC_GOOGLE_MAPS_KEY)
-- **맥락**: 카카오맵 기본 POI 라벨(상호명 등)이 커스텀 마커와 겹쳐 가독성 저하. 카카오맵 SDK는 POI 숨기기 미지원 → Google Maps JavaScript API로 지도 렌더링 교체. Styled Maps로 POI/교통 라벨 off. OverlayView 기반 팩토리 함수로 커스텀 오버레이 구현. 한글화(language:'ko', region:'KR'). 카카오 REST API(nearby/search)는 그대로 유지.
-- **미완료**: 없음
-- **다음**: 브라우저 QA, Google Cloud Console에서 Maps JavaScript API 활성화 확인 (이미 완료)
-
-### 2026-04-09 #24 — RP(Reputation) 시스템 리디자인: restaurant_accolades → restaurant_rp
-- **영역**: supabase/migrations/055, domain/(entities/restaurant+home-target+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository), presentation/(prestige-badges 신규, record-card+compact-list-item+map-view+search-results+search-result-item+nearby-list, home+restaurant-detail+search-container), app/api/(rp/match 신규, nearby+search route 수정, accolades 삭제), use-accolades+accolade-badges 삭제, DATA_MODEL.md 갱신
-- **맥락**: restaurant_accolades 테이블→restaurant_rp 리디자인. restaurants 테이블에 rp JSONB 캐시 컬럼 추가(michelin_stars/has_blue_ribbon/media_appearances 삭제). 매칭 프로세스 API(카카오 연동). UI AccoladeBadges→PrestigeBadges 전환. 전 레이어 28개 파일 변경. pnpm build PASS.
-- **미완료**: 055 마이그레이션 원격 적용, supabase/types.ts 재생성, CODEBASE.md 갱신, map-view.tsx hooks 위반은 수정 완료
-- **다음**: 마이그레이션 원격 적용, types 재생성, 매칭 API 실제 테스트
-
-### 2026-04-08 #23 — 버블 큐레이션 리스트 리팩토링 Phase 1~5 전체 완료
-- **영역**: domain/(entities/bubble, repositories/bubble-repository, services/bubble-share-sync), infrastructure/(supabase-bubble/restaurant/wine/home/profile-repository), application/(use-bubble-items 신규, use-bubble-auto-sync, use-bookmark), presentation/(add-to-bubble-sheet+add-item-search-sheet 신규, share-rule-editor, restaurant/wine/bubble-detail-container, record-flow/add-flow-container), supabase/(migrations/053+054, functions/weekly-ranking-snapshot), development_docs/systems/XP_SYSTEM.md
-- **맥락**: Phase 1(DB+Domain) → Phase 2(domain 서비스 확장+stub 실제 구현+auto sync 3메서드) → Phase 3(hooks: syncBookmarkToAllBubbles, onBubbleSync 콜백) → Phase 4(UI: 수동 리스트 추가 시트, includeBookmarks 토글, 상세/기록 후 리스트 추가) → Phase 5(bubble_shares→bubble_items 전환, Edge Function 전환, 054 triggers 마이그레이션, 용어 갱신). 크리티컬 게이트 전체 PASS.
-- **미완료**: 053/054 마이그레이션 원격 적용, Edge Function 배포, supabase/types.ts 재생성, bubble-detail-container.tsx #FFFFFF 하드코딩 4건(pre-existing)
-- **다음**: 마이그레이션 원격 적용, Edge Function 배포, types 재생성
-
-### 2026-04-08 #20 — 엑셀 자동 채우기 + Import upsert
-- **영역**: app/api/import/auto-fill(신규), infrastructure/supabase-settings-repository(import upsert+템플릿 수정), application/use-settings(autoFillFile), presentation/settings-container(Wand2 버튼)
-- **맥락**: (1) 템플릿 수정: scene dropdown(식당 6종/와인 7종), price_range 설명, axis_y→경험 만족도, 와인 aroma~intensity 자동검색 표시. (2) /api/import/auto-fill: 엑셀 업로드→카카오검색(식당)+AI상세검색(와인)→채워진 엑셀 반환. (3) importData upsert: Excel 시트별 restaurant/wine findOrCreate+record insert. (4) 설정 UI "엑셀 자동 채우기" 버튼.
-- **미완료**: 브라우저 QA 미실행
-- **다음**: 시드 데이터 준비, 브라우저 QA
-
-### 2026-04-08 #19 — 데이터 가져오기 Excel 템플릿 + Dropdown
-- **영역**: domain/repositories/settings-repository, infrastructure/supabase-settings-repository, application/hooks/use-settings, presentation/containers/settings-container, package.json(exceljs 추가)
-- **맥락**: (1) exceljs로 import 템플릿 생성: 식당/와인 2시트, 헤더+설명행+예시3건, dropdown(genre 16종, wine_type 7종, meal_time, price_range), 범위검증(0~100), 자동검색 컬럼 연녹색 표시, 쉼표구분 컬럼 셀 코멘트 안내. (2) 설정 데이터 섹션에 "입력 템플릿 다운로드" 버튼 추가(FileSpreadsheet 아이콘). (3) generateImportTemplate() domain 인터페이스+구현+hook+UI 연결.
-- **미완료**: 없음 (다음 커밋에서 완료)
-- **다음**: 완료
-
 
 ### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
 - **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
