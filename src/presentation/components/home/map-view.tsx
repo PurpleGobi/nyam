@@ -44,6 +44,12 @@ interface MapViewProps {
   disablePanOnSelect?: boolean
   /** 유저가 직접 지도를 드래그했을 때 콜백 */
   onUserDrag?: () => void
+  /** 버블 추가 선택 모드 */
+  isBubbleSelecting?: boolean
+  /** 버블 추가 선택된 ID Set */
+  bubbleSelectIds?: Set<string>
+  /** 버블 추가 선택 토글 */
+  onBubbleSelectToggle?: (id: string) => void
 }
 
 const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
@@ -197,6 +203,9 @@ export function MapView({
   onExternalSelect,
   disablePanOnSelect = false,
   onUserDrag,
+  isBubbleSelecting,
+  bubbleSelectIds,
+  onBubbleSelectToggle,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -463,6 +472,9 @@ export function MapView({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
+        isBubbleSelecting={isBubbleSelecting}
+        bubbleSelectIds={bubbleSelectIds}
+        onBubbleSelectToggle={onBubbleSelectToggle}
       />
     )
 
@@ -547,7 +559,7 @@ export function MapView({
               zIndex: 10,
             }}
           >
-            주변 검색 중...
+            지도 검색 중...
           </div>
         )}
       </div>
@@ -562,6 +574,9 @@ export function MapView({
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={onPageChange}
+      isBubbleSelecting={isBubbleSelecting}
+      bubbleSelectIds={bubbleSelectIds}
+      onBubbleSelectToggle={onBubbleSelectToggle}
     />
   )
 
@@ -593,6 +608,9 @@ function MapItemList({
   currentPage,
   totalPages,
   onPageChange,
+  isBubbleSelecting,
+  bubbleSelectIds,
+  onBubbleSelectToggle,
 }: {
   items: MapDiscoveryItem[]
   selectedId: string | null
@@ -600,6 +618,9 @@ function MapItemList({
   currentPage: number
   totalPages: number
   onPageChange?: (page: number) => void
+  isBubbleSelecting?: boolean
+  bubbleSelectIds?: Set<string>
+  onBubbleSelectToggle?: (id: string) => void
 }) {
   return (
     <div className="pt-3">
@@ -626,6 +647,9 @@ function MapItemList({
           inNyamDb={item.inNyamDb}
           isSelected={selectedId === item.id}
           onClick={() => onSelect(item.id)}
+          isBubbleSelecting={isBubbleSelecting}
+          isBubbleSelected={bubbleSelectIds?.has(item.id)}
+          onBubbleSelectToggle={onBubbleSelectToggle ? () => onBubbleSelectToggle(item.id) : undefined}
         />
       ))}
       {items.length === 0 && (

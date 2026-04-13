@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { UtensilsCrossed, Wine, Heart, MessageCircle, ArrowRight, Share2 } from 'lucide-react'
-import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { PlaceBadge } from '@/presentation/components/home/place-badge'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
@@ -47,10 +46,12 @@ export interface RecordCardProps {
   likeCount?: number
   commentCount?: number
   isNotMine?: boolean
-  /** 타인 기록 카드용 찜 상태 */
-  isBookmarked?: boolean
-  /** 타인 기록 카드용 찜 토글 핸들러 */
-  onBookmarkToggle?: () => void
+  /** 버블 추가 선택 모드 */
+  isSelecting?: boolean
+  /** 선택 여부 */
+  isSelected?: boolean
+  /** 선택 토글 */
+  onSelectToggle?: () => void
   sharedBubbles?: SharedBubbleChip[]
   onShareClick?: () => void
   visitCount?: number
@@ -78,8 +79,9 @@ export function RecordCard({
   likeCount,
   commentCount,
   isNotMine,
-  isBookmarked,
-  onBookmarkToggle,
+  isSelecting,
+  isSelected,
+  onSelectToggle,
   sharedBubbles,
   onShareClick,
   visitCount,
@@ -97,14 +99,21 @@ export function RecordCard({
   const hasQuadrant = axisX != null && axisY != null && satisfaction != null
   const isUnrated = satisfaction === null
 
+  const handleClick = isSelecting && onSelectToggle
+    ? () => onSelectToggle()
+    : () => router.push(`/${isFood ? 'restaurants' : 'wines'}/${targetId}`)
+
+  const selectedBorder = isFood ? 'var(--accent-food)' : 'var(--accent-wine)'
+  const selectedBg = isFood ? 'var(--accent-food-light)' : 'var(--accent-wine-light)'
+
   return (
     <button
       type="button"
-      onClick={() => router.push(`/${isFood ? 'restaurants' : 'wines'}/${targetId}`)}
-      className="flex w-full overflow-hidden rounded-2xl text-left transition-transform active:scale-[0.985]"
+      onClick={handleClick}
+      className="flex w-full overflow-hidden rounded-2xl text-left transition-all active:scale-[0.985]"
       style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
+        backgroundColor: isSelecting && isSelected ? selectedBg : 'var(--bg-card)',
+        border: isSelecting && isSelected ? `2px solid ${selectedBorder}` : '1px solid var(--border)',
         minHeight: '170px',
       }}
     >
@@ -140,36 +149,6 @@ export function RecordCard({
               <PlaceBadge key={badge.type} type={badge.type} label={badge.label} />
             ))}
           </div>
-        )}
-        {/* 찜+공유 오버레이 (hero 동일) */}
-        {onBookmarkToggle && (
-          <>
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0"
-              style={{ height: '48px', background: 'linear-gradient(transparent, rgba(0,0,0,0.35))' }}
-            />
-            <div
-              className="absolute z-[2] flex items-center gap-2.5"
-              style={{ bottom: '6px', right: '8px' }}
-            >
-              {onShareClick && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onShareClick() }}
-                >
-                  <Share2 size={16} style={{ color: 'rgba(255,255,255,0.85)' }} />
-                </button>
-              )}
-              <span onClick={(e) => e.stopPropagation()}>
-                <BookmarkButton
-                  isBookmarked={isBookmarked ?? false}
-                  onToggle={onBookmarkToggle}
-                  variant="hero"
-                  size={16}
-                />
-              </span>
-            </div>
-          </>
         )}
       </div>
 

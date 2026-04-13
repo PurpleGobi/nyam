@@ -230,6 +230,21 @@
   }
 }
 
+/* 내 위치 마커 펄스 애니메이션 */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Google Maps — 로고 유지(약관 필수), 나머지 숨김/흐리게 */
+.map-clean .gm-style-cc,
+.map-clean .gm-bundled-control {
+  display: none !important;
+}
+.map-clean .gm-style > div > a {
+  opacity: 0.3 !important;
+}
+
 /* 클릭 가능 요소 포인터 커서 일괄 적용 */
 button,
 a,
@@ -1562,7 +1577,7 @@ html, body, * {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  z-index: 20;
+  z-index: 90;
 }
 
 .bottom-sheet {
@@ -1573,7 +1588,7 @@ html, body, * {
   background: var(--bg-elevated);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--shadow-sheet);
-  z-index: 30;
+  z-index: 91;
   max-height: 75%;
   max-width: 480px;
   margin: 0 auto;
@@ -1603,7 +1618,7 @@ html, body, * {
 /* ── 16. 알림 드롭다운 ── */
 
 .notif-dropdown {
-  width: min(360px, calc(100vw - 48px));
+  width: min(360px, calc(100vw - 32px));
   max-height: 70vh;
   overflow-y: auto;
   background: var(--bg-elevated);

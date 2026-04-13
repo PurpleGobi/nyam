@@ -2,8 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Wine, Share2 } from 'lucide-react'
-import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
+import { Wine } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
@@ -38,20 +37,18 @@ export interface WineCardProps {
   visitCount?: number
   latestDate?: string | null
   scoreSource?: ScoreSource
-  /** 타인 기록 여부 */
-  isNotMine?: boolean
-  /** 타인 기록 카드용 찜 상태 */
-  isBookmarked?: boolean
-  /** 타인 기록 카드용 찜 토글 핸들러 */
-  onBookmarkToggle?: () => void
-  /** 타인 기록 카드용 공유 핸들러 */
-  onShareClick?: () => void
   myScore?: number | null
   nyamScore?: number | null
   bubbleScore?: number | null
+  /** 버블 추가 선택 모드 */
+  isSelecting?: boolean
+  /** 선택 여부 */
+  isSelected?: boolean
+  /** 선택 토글 */
+  onSelectToggle?: () => void
 }
 
-export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource, isNotMine, isBookmarked, onBookmarkToggle, onShareClick, myScore, nyamScore, bubbleScore }: WineCardProps) {
+export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource, myScore, nyamScore, bubbleScore, isSelecting, isSelected, onSelectToggle }: WineCardProps) {
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
@@ -63,14 +60,18 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
 
   const meta = [wine.vintage, wine.country, wine.variety].filter(Boolean).join(' · ')
 
+  const handleClick = isSelecting && onSelectToggle
+    ? () => onSelectToggle()
+    : () => router.push(`/wines/${wine.id}`)
+
   return (
     <button
       type="button"
-      onClick={() => router.push(`/wines/${wine.id}`)}
-      className="flex w-full overflow-hidden rounded-2xl text-left transition-transform active:scale-[0.985]"
+      onClick={handleClick}
+      className="flex w-full overflow-hidden rounded-2xl text-left transition-all active:scale-[0.985]"
       style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
+        backgroundColor: isSelecting && isSelected ? 'var(--accent-wine-light)' : 'var(--bg-card)',
+        border: isSelecting && isSelected ? '2px solid var(--accent-wine)' : '1px solid var(--border)',
         minHeight: '170px',
       }}
     >
@@ -84,36 +85,6 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
           >
             <Wine size={32} color="rgba(255,255,255,0.4)" />
           </div>
-        )}
-        {/* 찜+공유 오버레이 (hero 동일) */}
-        {onBookmarkToggle && (
-          <>
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0"
-              style={{ height: '48px', background: 'linear-gradient(transparent, rgba(0,0,0,0.35))' }}
-            />
-            <div
-              className="absolute z-[2] flex items-center gap-2.5"
-              style={{ bottom: '6px', right: '8px' }}
-            >
-              {onShareClick && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onShareClick() }}
-                >
-                  <Share2 size={16} style={{ color: 'rgba(255,255,255,0.85)' }} />
-                </button>
-              )}
-              <span onClick={(e) => e.stopPropagation()}>
-                <BookmarkButton
-                  isBookmarked={isBookmarked ?? false}
-                  onToggle={onBookmarkToggle}
-                  variant="hero"
-                  size={16}
-                />
-              </span>
-            </div>
-          </>
         )}
       </div>
 
@@ -133,21 +104,22 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
             />
           )}
           {myRecord?.satisfaction != null && (
-            <span
-              className="text-[32px] font-extrabold leading-none"
-              style={{ color: 'var(--accent-wine)' }}
-            >
-              {myRecord.satisfaction}
-            </span>
+            <div className="flex flex-col items-start gap-0.5">
+              <span
+                className="text-[32px] font-extrabold leading-none"
+                style={{ color: 'var(--accent-wine)' }}
+              >
+                {myRecord.satisfaction}
+              </span>
+              <MiniScoreBadges
+                myScore={myScore ?? null}
+                nyamScore={nyamScore ?? null}
+                bubbleScore={bubbleScore ?? null}
+                accentType="wine"
+              />
+            </div>
           )}
         </div>
-
-        <MiniScoreBadges
-          myScore={myScore ?? null}
-          nyamScore={nyamScore ?? null}
-          bubbleScore={bubbleScore ?? null}
-          accentType="wine"
-        />
 
         {(latestDate || (visitCount != null && visitCount > 0)) && (
           <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>

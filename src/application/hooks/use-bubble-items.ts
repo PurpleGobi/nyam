@@ -67,5 +67,18 @@ export function useBubbleItems(userId: string | null, targetId: string | null, t
     await bubbleRepo.addItem(bubbleId, itemTargetId, itemTargetType, source)
   }, [])
 
-  return { bubblesWithStatus, isLoading, toggleItem, addItemToBubble, refetch: fetchStatus }
+  /** 여러 대상을 한번에 버블에 추가 */
+  const batchAddToBubble = useCallback(async (
+    bubbleId: string,
+    targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' }>,
+  ) => {
+    if (!userId) return
+    await bubbleRepo.batchUpsertAutoItems(
+      targets.map((t) => ({ targetId: t.targetId, targetType: t.targetType })),
+      bubbleId,
+      userId,
+    )
+  }, [userId])
+
+  return { bubblesWithStatus, isLoading, toggleItem, addItemToBubble, batchAddToBubble, refetch: fetchStatus }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Wine, Users, Heart } from 'lucide-react'
+import { Wine, Users } from 'lucide-react'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
 import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
@@ -30,10 +30,12 @@ interface CompactListItemProps {
   myScore?: number | null
   nyamScore?: number | null
   bubbleScore?: number | null
-  /** 찜 상태 */
-  isBookmarked?: boolean
-  /** 찜 토글 */
-  onBookmarkToggle?: () => void
+  /** 버블 추가 선택 모드 */
+  isSelecting?: boolean
+  /** 선택 여부 */
+  isSelected?: boolean
+  /** 선택 토글 */
+  onSelectToggle?: () => void
 }
 
 export function CompactListItem({
@@ -55,8 +57,9 @@ export function CompactListItem({
   myScore,
   nyamScore,
   bubbleScore,
-  isBookmarked,
-  onBookmarkToggle,
+  isSelecting,
+  isSelected,
+  onSelectToggle,
 }: CompactListItemProps) {
   const isTop3 = rank != null && rank <= 3
   const typeClass = accentType === 'wine' ? 'wine' : ''
@@ -66,11 +69,18 @@ export function CompactListItem({
     ? bubbleDots.length > 0
     : axisX != null && axisY != null && score != null
 
+  const handleClick = isSelecting && onSelectToggle
+    ? () => onSelectToggle()
+    : onClick
+
+  const selectedBg = accentType === 'wine' ? 'var(--accent-wine-light)' : 'var(--accent-food-light)'
+
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="compact-item w-full text-left transition-transform active:scale-[0.985]"
+      onClick={handleClick}
+      className="compact-item w-full text-left transition-all active:scale-[0.985]"
+      style={isSelecting && isSelected ? { backgroundColor: selectedBg } : undefined}
     >
       {rank != null && (
         <span className={`compact-rank ${isTop3 ? `top ${typeClass}` : ''}`}>
@@ -136,22 +146,6 @@ export function CompactListItem({
         </div>
       </div>
 
-      {/* 찜 Heart */}
-      {onBookmarkToggle && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="flex shrink-0 cursor-pointer items-center justify-center pl-2"
-          onClick={(e) => { e.stopPropagation(); onBookmarkToggle() }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle() } }}
-        >
-          <Heart
-            size={16}
-            style={{ color: isBookmarked ? '#FF6038' : 'var(--text-hint)' }}
-            fill={isBookmarked ? '#FF6038' : 'transparent'}
-          />
-        </div>
-      )}
     </button>
   )
 }

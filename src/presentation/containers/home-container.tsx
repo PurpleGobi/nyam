@@ -24,8 +24,8 @@ import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
 import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
-import { useBookmarkMap } from '@/application/hooks/use-bookmark'
-import { Heart } from 'lucide-react'
+import { PenLine, FolderPlus } from 'lucide-react'
+import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
 import { AiGreeting } from '@/presentation/components/home/ai-greeting'
@@ -44,6 +44,7 @@ import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import type { BubbleSortOption } from '@/domain/entities/saved-filter'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
+import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
@@ -156,9 +157,31 @@ export function HomeContainer() {
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
-  // ── 찜 토글 (카드/리스트 뷰) ──
-  const { getIsBookmarked, toggle: toggleBookmark, batchAdd: batchBookmarkAdd, batchRemove: batchBookmarkRemove } = useBookmarkMap(user?.id ?? null)
+  // ── 버블에 추가: 선택 모드 ──
+  const [isBubbleSelectMode, setIsBubbleSelectMode] = useState(false)
+  const [bubbleSelectIds, setBubbleSelectIds] = useState<Set<string>>(new Set())
+  const [showBubblePicker, setShowBubblePicker] = useState(false)
 
+  const startBubbleSelect = useCallback(() => {
+    setIsBubbleSelectMode(true)
+    setBubbleSelectIds(new Set())
+  }, [])
+
+  const { batchAddToBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
+
+  const stopBubbleSelect = useCallback(() => {
+    setIsBubbleSelectMode(false)
+    setBubbleSelectIds(new Set())
+  }, [])
+
+  const toggleBubbleSelectItem = useCallback((id: string) => {
+    setBubbleSelectIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   // 탭+필터 sticky 영역 ref → 지도 stickyTop 동적 계산
   const stickyBarRef = useRef<HTMLDivElement>(null)
@@ -727,6 +750,9 @@ export function HomeContainer() {
             setMapSearchSelectedId(id)
             mapSearchSuppressIdleRef.current = true
           } : undefined}
+          isBubbleSelecting={isBubbleSelectMode}
+          bubbleSelectIds={bubbleSelectIds}
+          onBubbleSelectToggle={toggleBubbleSelectItem}
         />
       )
     }
@@ -768,59 +794,35 @@ export function HomeContainer() {
     // 리스트(list) 뷰
     if (viewMode === 'list') {
       if (displayTargets.length === 0) return renderEmptyState()
-      const allBookmarked = displayTargets.length > 0 && displayTargets.every((t) => getIsBookmarked(t.targetId, t.isBookmarked))
       return (
         <div className="content-detail px-4 pb-24 md:px-8">
-          {displayTargets.map((target, i) => {
-            const bookmarked = getIsBookmarked(target.targetId, target.isBookmarked)
-            return (
-              <CompactListItem
-                key={target.targetId}
-                rank={i + 1}
-                photoUrl={target.photoUrl}
-                name={target.name}
-                meta={[target.genre ?? target.variety, target.latestVisitDate].filter(Boolean).join(' · ')}
-                score={target.satisfaction}
-                axisX={target.axisX}
-                axisY={target.axisY}
-                accentType={recordTab}
-                visitCount={target.visitCount}
-                scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
-                prestige={target.prestige ?? []}
-                myScore={target.myScore}
-                nyamScore={target.nyamScore}
-                bubbleScore={target.bubbleScore}
-                isBookmarked={bookmarked}
-                onBookmarkToggle={() => toggleBookmark(target.targetId, target.targetType, bookmarked)}
-                onClick={() =>
-                  router.push(
-                    `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
-                  )
-                }
-              />
-            )
-          })}
-          {/* 전체 찜하기 / 전체 찜해제 */}
-          <button
-            type="button"
-            onClick={() => {
-              if (allBookmarked) {
-                const targets = displayTargets
-                  .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
-                batchBookmarkRemove(targets)
-              } else {
-                const targets = displayTargets
-                  .filter((t) => !getIsBookmarked(t.targetId, t.isBookmarked))
-                  .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
-                batchBookmarkAdd(targets)
+          {displayTargets.map((target, i) => (
+            <CompactListItem
+              key={target.targetId}
+              rank={i + 1}
+              photoUrl={target.photoUrl}
+              name={target.name}
+              meta={[target.genre ?? target.variety, target.latestVisitDate].filter(Boolean).join(' · ')}
+              score={target.satisfaction}
+              axisX={target.axisX}
+              axisY={target.axisY}
+              accentType={recordTab}
+              visitCount={target.visitCount}
+              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
+              prestige={target.prestige ?? []}
+              myScore={target.myScore}
+              nyamScore={target.nyamScore}
+              bubbleScore={target.bubbleScore}
+              isSelecting={isBubbleSelectMode}
+              isSelected={bubbleSelectIds.has(target.targetId)}
+              onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
+              onClick={() =>
+                router.push(
+                  `/${target.targetType === 'restaurant' ? 'restaurants' : 'wines'}/${target.targetId}`,
+                )
               }
-            }}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 py-3 text-[12px] font-medium"
-            style={{ color: allBookmarked ? 'var(--negative)' : 'var(--text-hint)' }}
-          >
-            <Heart size={13} fill={allBookmarked ? 'currentColor' : 'transparent'} />
-            {allBookmarked ? '전체 찜해제' : '전체 찜하기'}
-          </button>
+            />
+          ))}
         </div>
       )
     }
@@ -834,8 +836,6 @@ export function HomeContainer() {
           const status: 'visited' | 'bookmark' | 'cellar' | 'tasted' = activeTab === 'wine'
             ? (target.isCellar ? 'cellar' : (target.visitCount > 0 ? 'tasted' : 'bookmark'))
             : (target.visitCount > 0 ? 'visited' : 'bookmark')
-
-          const bookmarked = getIsBookmarked(target.targetId, target.isBookmarked)
 
           return activeTab === 'wine' ? (
             <WineCard
@@ -861,11 +861,12 @@ export function HomeContainer() {
               latestDate={target.latestVisitDate}
               visitCount={target.visitCount}
               scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
-              isBookmarked={bookmarked}
-              onBookmarkToggle={() => toggleBookmark(target.targetId, 'wine', bookmarked)}
               myScore={target.myScore}
               nyamScore={target.nyamScore}
               bubbleScore={target.bubbleScore}
+              isSelecting={isBubbleSelectMode}
+              isSelected={bubbleSelectIds.has(target.targetId)}
+              onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
             />
           ) : (
             <RecordCard
@@ -889,11 +890,12 @@ export function HomeContainer() {
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
               prestige={target.prestige ?? []}
-              isBookmarked={bookmarked}
-              onBookmarkToggle={() => toggleBookmark(target.targetId, target.targetType, bookmarked)}
               myScore={target.myScore}
               nyamScore={target.nyamScore}
               bubbleScore={target.bubbleScore}
+              isSelecting={isBubbleSelectMode}
+              isSelected={bubbleSelectIds.has(target.targetId)}
+              onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
             />
           )
         })}
@@ -1260,9 +1262,43 @@ export function HomeContainer() {
 
       <FabAdd
         variant={isBubbleTab ? 'social' : activeTab === 'wine' ? 'wine' : 'food'}
-        onClick={() => isBubbleTab ? router.push('/bubbles/create') : router.push(`/add?type=${activeTab}`)}
+        menuItems={isBubbleTab || isBubbleSelectMode ? undefined : [
+          {
+            key: 'record',
+            icon: <PenLine size={16} />,
+            label: '기록 추가',
+            onClick: () => router.push(`/add?type=${activeTab}`),
+          },
+          {
+            key: 'bubble-add',
+            icon: <FolderPlus size={16} />,
+            label: '버블에 추가',
+            onClick: startBubbleSelect,
+          },
+        ]}
+        onClick={isBubbleTab ? () => router.push('/bubbles/create') : undefined}
+        selectMode={isBubbleSelectMode ? {
+          label: bubbleSelectIds.size > 0 ? `${bubbleSelectIds.size}개 추가` : '취소',
+          onClick: bubbleSelectIds.size > 0
+            ? () => setShowBubblePicker(true)
+            : stopBubbleSelect,
+        } : undefined}
       />
 
+      {/* 버블 선택 시트 */}
+      <BubblePickerSheet
+        isOpen={showBubblePicker}
+        onClose={() => { setShowBubblePicker(false); stopBubbleSelect() }}
+        bubbles={myBubbles}
+        selectedCount={bubbleSelectIds.size}
+        onSelect={async (bubbleId) => {
+          const targets = displayTargets
+            .filter((t) => bubbleSelectIds.has(t.targetId))
+            .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+          await batchAddToBubble(bubbleId, targets)
+          stopBubbleSelect()
+        }}
+      />
     </div>
   )
 }

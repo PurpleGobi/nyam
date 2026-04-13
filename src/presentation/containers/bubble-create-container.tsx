@@ -28,7 +28,6 @@ export function BubbleCreateContainer() {
     joinPolicy: 'invite_only' | 'closed' | 'manual_approve' | 'auto_approve' | 'open'
     icon: string
     iconBgColor: string
-    inviteExpiry: '1d' | '7d' | '30d' | 'unlimited'
     minRecords: number
     minLevel: number
     maxMembers: number | null
@@ -44,7 +43,6 @@ export function BubbleCreateContainer() {
         joinPolicy: data.joinPolicy === 'invite_only' ? undefined : data.joinPolicy,
         icon: data.icon,
         iconBgColor: data.iconBgColor,
-        inviteExpiry: data.inviteExpiry,
         minRecords: data.minRecords,
         minLevel: data.minLevel,
         maxMembers: data.maxMembers ?? undefined,
@@ -52,16 +50,20 @@ export function BubbleCreateContainer() {
       })
 
       // 정보공개 범위 → bubble_members.visibility_override (이 버블 개별)
-      await updateMemberAfterCreate(result.bubble.id, user.id, {
-        visibilityOverride: data.privacy.visibilityOverride,
-      })
+      try {
+        await updateMemberAfterCreate(result.bubble.id, user.id, {
+          visibilityOverride: data.privacy.visibilityOverride,
+        })
+      } catch { /* 부가 설정 실패해도 진행 */ }
 
-      // 공유 규칙 저장 + 소급 적용 (완료 후 라우팅)
-      await syncAllRecordsToBubble(
-        result.bubble.id,
-        data.privacy.shareRule,
-        records as unknown as Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
-      )
+      // 공유 규칙 저장 + 소급 적용 (실패해도 라우팅)
+      try {
+        await syncAllRecordsToBubble(
+          result.bubble.id,
+          data.privacy.shareRule,
+          records as unknown as Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>>,
+        )
+      } catch { /* 동기화 실패해도 진행 */ }
 
       router.replace(`/bubbles/${result.bubble.id}`)
     } catch {
