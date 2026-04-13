@@ -2,12 +2,11 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, BarChart3, AlertTriangle, Share2, UserPlus, ImagePlus, X } from 'lucide-react'
+import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, AlertTriangle, Share2, UserPlus, ImagePlus, X } from 'lucide-react'
 import type { Bubble, BubbleJoinPolicy, BubbleVisibility, BubbleShareRule, BubbleMemberRole, VisibilityOverride } from '@/domain/entities/bubble'
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
-import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
 import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
 import { MemberInviteSection } from '@/presentation/components/bubble/member-invite-section'
 import type { SearchUserResult } from '@/domain/repositories/bubble-repository'
@@ -79,11 +78,6 @@ interface BubbleSettingsProps {
   onInviteUser?: (userId: string) => void
   existingMemberIds?: string[]
   onUploadPhoto?: (file: File) => Promise<string>
-  stats: {
-    weeklyRecordCount: number
-    prevWeeklyRecordCount: number
-    weeklyChartData: number[]
-  }
 }
 
 export function BubbleSettings({
@@ -94,7 +88,6 @@ export function BubbleSettings({
   onInviteSearch, onInviteUser, existingMemberIds,
   visibilityOverride, onVisibilityChange,
   onUploadPhoto,
-  stats,
 }: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
   const [description, setDescription] = useState(bubble.description ?? '')
@@ -168,7 +161,6 @@ export function BubbleSettings({
   const isAdmin = myRole === 'admin'
   const showBubbleSettings = isOwner
   const showMemberManagement = isOwner || isAdmin
-  const showStats = isOwner || isAdmin
   const showDangerZone = isOwner
 
   const handleSave = async () => {
@@ -230,9 +222,9 @@ export function BubbleSettings({
       {showBubbleSettings && (
         <Section title="기본 정보" icon={<Info size={16} style={{ color: 'var(--accent-social)' }} />}>
           {/* 아이콘 + 이름/설명 2컬럼 */}
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             {/* 아이콘 */}
-            <div className="flex shrink-0 flex-col items-center gap-1">
+            <div className="flex shrink-0 flex-col items-center gap-1 px-2">
               <button
                 type="button"
                 onClick={() => setShowIconPicker(!showIconPicker)}
@@ -396,7 +388,7 @@ export function BubbleSettings({
           )}
 
           {/* 검색·기타 토글 */}
-          <div className="mt-1 flex flex-col gap-1 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+          <div className="flex flex-col gap-1 border-t pt-1.5" style={{ borderColor: 'var(--border)' }}>
             <ToggleRow label="탐색에 노출" value={isSearchable} onChange={setIsSearchable} description="다른 사용자가 버블 탐색에서 발견 가능" />
             {isSearchable && (
               <div className="flex flex-col gap-1.5 pl-1">
@@ -442,17 +434,58 @@ export function BubbleSettings({
         </Section>
       )}
 
-      {/* ── 모든 멤버: 목록 공개 범위 ── */}
+      {/* ── 모든 멤버: 목록 공유 방식 ── */}
       {shareRule !== undefined && onShareRuleChange && (
-        <Section title="목록 공개 범위" icon={<Share2 size={16} style={{ color: 'var(--accent-social)' }} />}>
-          <ShareRuleEditor
-            value={shareRule}
-            onChange={onShareRuleChange}
-            focusType={bubble.focusType}
-          />
-          <p className="text-[10px] text-[var(--text-hint)]">
-            규칙을 변경하면 기존 기록도 자동으로 재평가됩니다.
-          </p>
+        <Section title="목록 공유 방식" icon={<Share2 size={16} style={{ color: 'var(--accent-social)' }} />}>
+          <div className="flex flex-col gap-1">
+            {[
+              { auto: false, label: '수동 추가', desc: '직접 선택한 항목만 버블에 공유' },
+              { auto: true, label: '자동 공유', desc: '조건에 맞는 기록을 자동으로 공유' },
+            ].map(({ auto, label, desc }) => {
+              const isActive = auto ? shareRule !== null : shareRule === null
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    if (auto) {
+                      onShareRuleChange({ mode: 'all', rules: [], conjunction: 'and', enabledDomains: { restaurant: true, wine: true } })
+                    } else {
+                      onShareRuleChange(null)
+                    }
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors"
+                  style={{ backgroundColor: isActive ? 'var(--accent-social-light)' : 'transparent' }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[12px] font-semibold" style={{ color: isActive ? 'var(--accent-social)' : 'var(--text)' }}>
+                      {label}
+                    </span>
+                    <span className="ml-1.5 text-[10px] text-[var(--text-hint)]">{desc}</span>
+                  </div>
+                  <div
+                    className="h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors"
+                    style={{
+                      borderColor: isActive ? 'var(--accent-social)' : 'var(--border)',
+                      backgroundColor: isActive ? 'var(--accent-social)' : 'transparent',
+                    }}
+                  />
+                </button>
+              )
+            })}
+          </div>
+          {shareRule !== null && (
+            <>
+              <ShareRuleEditor
+                value={shareRule}
+                onChange={onShareRuleChange}
+                focusType={bubble.focusType}
+              />
+              <p className="text-[10px] text-[var(--text-hint)]">
+                규칙을 변경하면 기존 기록도 자동으로 재평가됩니다.
+              </p>
+            </>
+          )}
         </Section>
       )}
 
@@ -466,20 +499,19 @@ export function BubbleSettings({
             {VISIBILITY_FIELD_LABELS.map(({ key, label }) => {
               const on = visFields[key]
               return (
-                <button
+                <div
                   key={key}
-                  type="button"
-                  onClick={() => {
+                  className="flex items-center justify-between py-1.5"
+                >
+                  <span className="text-[12px]" style={{ color: 'var(--text)' }}>{label}</span>
+                  <button type="button" onClick={() => {
                     const next = { ...visFields, [key]: !on }
                     const allOn = VISIBILITY_FIELD_LABELS.every(f => next[f.key])
                     onVisibilityChange(allOn ? null : next)
-                  }}
-                  className="flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors"
-                  style={{ backgroundColor: on ? 'var(--accent-social-light)' : 'transparent' }}
-                >
-                  <span className="text-[12px]" style={{ color: 'var(--text)' }}>{label}</span>
-                  <ToggleSwitchUI on={on} />
-                </button>
+                  }}>
+                    <ToggleSwitchUI on={on} />
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -510,20 +542,6 @@ export function BubbleSettings({
             onReject={onRejectJoin}
             maxPreview={3}
             onViewAll={onViewAllPending}
-          />
-        </Section>
-      )}
-
-      {/* ── Owner + Admin: 통계 ── */}
-      {showStats && (
-        <Section title="버블 통계" icon={<BarChart3 size={16} style={{ color: 'var(--accent-social)' }} />}>
-          <BubbleStatsCard
-            recordCount={bubble.recordCount}
-            memberCount={bubble.memberCount}
-            weeklyRecordCount={stats.weeklyRecordCount}
-            prevWeeklyRecordCount={stats.prevWeeklyRecordCount}
-            avgSatisfaction={bubble.avgSatisfaction}
-            weeklyChartData={stats.weeklyChartData}
           />
         </Section>
       )}
@@ -640,16 +658,14 @@ function CompactNumberField({ label, value, onChange, min, suffix, placeholder }
 
 function ToggleRow({ label, value, onChange, description }: { label: string; value: boolean; onChange: (v: boolean) => void; description?: string }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!value)}
-      className="flex items-center justify-between rounded-lg px-2.5 py-2"
-    >
+    <div className="flex items-center justify-between py-1.5">
       <div className="flex flex-col">
         <span className="text-[12px] text-[var(--text)]">{label}</span>
         {description && <span className="text-[10px] text-[var(--text-hint)]">{description}</span>}
       </div>
-      <ToggleSwitchUI on={value} />
-    </button>
+      <button type="button" onClick={() => onChange(!value)}>
+        <ToggleSwitchUI on={value} />
+      </button>
+    </div>
   )
 }

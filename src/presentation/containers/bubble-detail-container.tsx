@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, Share2, Plus, List } from 'lucide-react'
+import { Trophy, Users, Settings, UserPlus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -13,18 +13,17 @@ import { useInviteLink } from '@/application/hooks/use-invite-link'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useSearch } from '@/application/hooks/use-search'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
 import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
 import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import Image from 'next/image'
 import { InviteLinkGenerator } from '@/presentation/components/bubble/invite-link-generator'
-import { BubbleInfoSheet } from '@/presentation/components/bubble/bubble-info-sheet'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import { AddItemSearchSheet } from '@/presentation/components/bubble/add-item-search-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import type { RankingTargetType, ExpertiseAxisType } from '@/domain/entities/bubble'
-import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface BubbleDetailContainerProps {
   bubbleId: string
@@ -35,7 +34,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const { user } = useAuth()
   const { bubble, myRole, tasteMatch, isLoading } = useBubbleDetail(bubbleId, user?.id ?? null)
 
-  const [showInfoSheet, setShowInfoSheet] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddItemSearch, setShowAddItemSearch] = useState(false)
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
@@ -168,8 +166,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   }
 
   const isOwner = myRole === 'owner'
-  const isAdmin = myRole === 'admin'
-  const canManage = isOwner || isAdmin
 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
@@ -186,9 +182,20 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           >
             <BubbleIcon icon={bubble.icon} size={36} />
           </div>
-          <h1 className="mt-3 text-[20px] font-[800]" style={{ color: 'var(--text)' }}>
-            {bubble.name}
-          </h1>
+          <div className="mt-3 flex items-center gap-1.5">
+            <h1 className="text-[20px] font-[800]" style={{ color: 'var(--text)' }}>
+              {bubble.name}
+            </h1>
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
+                className="flex items-center justify-center rounded-full p-1 transition-opacity active:opacity-70"
+              >
+                <Settings size={16} style={{ color: 'var(--text-hint)' }} />
+              </button>
+            )}
+          </div>
           {bubble.description && (
             <p className="mt-1 text-center text-[13px] leading-relaxed" style={{ color: 'var(--text-sub)' }}>
               {bubble.description}
@@ -221,41 +228,78 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
             >
               <UserPlus size={13} /> 초대
             </button>
-            <button
-              type="button"
-              onClick={() => setShowInfoSheet(true)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-              style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-            >
-              <Share2 size={13} /> 정보
-            </button>
-            {canManage && (
-              <button
-                type="button"
-                onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
-                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-                style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-              >
-                <Settings size={13} /> 설정
-              </button>
-            )}
           </div>
         </div>
 
         <Divider />
 
-        {/* ─── 활동 요약 ─── */}
+        {/* ─── 버블 정보 ─── */}
         <section className="px-5 py-4">
-          <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>활동 요약</h2>
-          <div className="flex gap-2">
-            <StatCard label="리스트 항목" value={String(activitySummary.totalRecords)} />
-            <StatCard label="이번 주" value={String(activitySummary.weeklyRecords)} />
-            <StatCard
-              label="평균 만족도"
-              value={activitySummary.avgSatisfaction !== null ? String(activitySummary.avgSatisfaction) : '-'}
-              valueColor={activitySummary.avgSatisfaction !== null ? getGaugeColor(activitySummary.avgSatisfaction) : undefined}
-            />
+          <h2 className="mb-3 flex items-center gap-1.5 text-[14px] font-bold" style={{ color: 'var(--text)' }}>
+            <Info size={15} style={{ color: 'var(--accent-social)' }} /> 정보
+          </h2>
+          <div className="flex flex-col gap-3">
+            {/* 가입 조건 */}
+            <div>
+              <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
+                <ShieldCheck size={12} /> 가입 조건
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(() => {
+                  const conditions: Array<{ icon: typeof FileCheck; label: string }> = []
+                  if (bubble.joinPolicy === 'invite_only') conditions.push({ icon: FileCheck, label: '초대만' })
+                  else if (bubble.joinPolicy === 'closed') conditions.push({ icon: FileCheck, label: '팔로우만' })
+                  else if (bubble.joinPolicy === 'manual_approve') conditions.push({ icon: FileCheck, label: '승인 필요' })
+                  else if (bubble.joinPolicy === 'auto_approve') conditions.push({ icon: FileCheck, label: '자동 승인' })
+                  else conditions.push({ icon: Users, label: '자유 가입' })
+                  if (bubble.minRecords > 0) conditions.push({ icon: PencilLine, label: `기록 ${bubble.minRecords}개+` })
+                  if (bubble.minLevel > 0) conditions.push({ icon: Star, label: `Lv.${bubble.minLevel}+` })
+                  if (bubble.maxMembers !== null) conditions.push({ icon: Users, label: `최대 ${bubble.maxMembers}명` })
+                  return conditions.map((c, i) => (
+                    <span
+                      key={i}
+                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                      style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                    >
+                      <c.icon size={11} /> {c.label}
+                    </span>
+                  ))
+                })()}
+              </div>
+            </div>
+            {/* 공개 설정 */}
+            <div className="flex flex-wrap gap-1.5">
+              <span
+                className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+              >
+                {bubble.visibility === 'private' ? '비공개' : '공개'}
+              </span>
+              {bubble.isSearchable && (
+                <span
+                  className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                  style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                >
+                  탐색 노출
+                </span>
+              )}
+            </div>
           </div>
+        </section>
+
+        <Divider />
+
+        {/* ─── 버블 통계 ─── */}
+        <section className="px-5 py-4">
+          <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>버블 통계</h2>
+          <BubbleStatsCard
+            recordCount={bubble.recordCount}
+            memberCount={bubble.memberCount}
+            weeklyRecordCount={activitySummary.weeklyRecords}
+            prevWeeklyRecordCount={0}
+            avgSatisfaction={bubble.avgSatisfaction}
+            weeklyChartData={[0, 0, 0, 0, 0, 0, 0]}
+          />
 
           {/* 인기 대상 */}
           {activitySummary.topTargets.length > 0 && (
@@ -446,15 +490,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <Plus size={22} color="var(--primary-foreground)" />
       </button>
 
-      {/* 버블 정보 시트 */}
-      {showInfoSheet && bubble && (
-        <BubbleInfoSheet
-          isOpen={showInfoSheet}
-          onClose={() => setShowInfoSheet(false)}
-          bubble={bubble}
-        />
-      )}
-
       {/* 초대 모달 */}
       {showInviteModal && (
         <InviteLinkGenerator
@@ -495,18 +530,3 @@ function Divider() {
   return <div className="mx-5 h-px" style={{ backgroundColor: 'var(--border)' }} />
 }
 
-function StatCard({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
-  return (
-    <div
-      className="flex flex-1 flex-col items-center rounded-xl py-3"
-      style={{ backgroundColor: 'var(--bg-section)' }}
-    >
-      <span className="text-[18px] font-[800]" style={{ color: valueColor ?? 'var(--text)' }}>
-        {value}
-      </span>
-      <span className="mt-0.5 text-[10px]" style={{ color: 'var(--text-hint)' }}>
-        {label}
-      </span>
-    </div>
-  )
-}

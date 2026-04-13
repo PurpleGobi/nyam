@@ -80,5 +80,15 @@ export function useBubbleItems(userId: string | null, targetId: string | null, t
     )
   }, [userId])
 
-  return { bubblesWithStatus, isLoading, toggleItem, addItemToBubble, batchAddToBubble, refetch: fetchStatus }
+  /** 여러 대상을 한번에 버블에서 제거 */
+  const batchRemoveFromBubble = useCallback(async (
+    bubbleId: string,
+    targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' }>,
+  ) => {
+    await Promise.all(
+      targets.map((t) => bubbleRepo.removeItem(bubbleId, t.targetId, t.targetType)),
+    )
+  }, [])
+
+  return { bubblesWithStatus, isLoading, toggleItem, addItemToBubble, batchAddToBubble, batchRemoveFromBubble, refetch: fetchStatus }
 }

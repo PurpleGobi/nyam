@@ -106,11 +106,9 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   const [selectedIcon, setSelectedIcon] = useState('utensils-crossed')
   const [selectedColor, setSelectedColor] = useState('#F97316')
   const [showIconPicker, setShowIconPicker] = useState(false)
-  // 공유 규칙 (자동 동기화)
-  const [shareRule, setShareRule] = useState<BubbleShareRule | null>({
-    mode: 'all', rules: [], conjunction: 'and',
-    enabledDomains: { restaurant: true, wine: true },
-  })
+  // 공유 모드: 수동(디폴트) / 자동
+  const [isAutoShare, setIsAutoShare] = useState(false)
+  const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
   // 정보 공개 범위 (디폴트 모두 ON, 원하지 않는 항목만 OFF)
   const [visibilityFields, setVisibilityFields] = useState<VisibilityOverride>({ ...ALL_VISIBLE })
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -448,10 +446,50 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
         )}
       </div>
 
-      {/* ━━ 섹션 2: 목록 공개 범위 ━━ */}
+      {/* ━━ 섹션 2: 목록 공유 방식 ━━ */}
       <div className="flex flex-col gap-1.5">
-        <SectionHeader num={2} label="목록 공개 범위" />
-        <ShareRuleEditor value={shareRule} onChange={setShareRule} />
+        <SectionHeader num={2} label="목록 공유 방식" />
+        <div
+          className="flex flex-col gap-1 rounded-xl p-2.5"
+          style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        >
+          {[
+            { value: false, label: '수동 추가', desc: '직접 선택한 항목만 버블에 공유' },
+            { value: true, label: '자동 공유', desc: '조건에 맞는 기록을 자동으로 공유' },
+          ].map(({ value, label, desc }) => {
+            const isActive = isAutoShare === value
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  setIsAutoShare(value)
+                  if (!value) setShareRule(null)
+                  else setShareRule({ mode: 'all', rules: [], conjunction: 'and', enabledDomains: { restaurant: true, wine: true } })
+                }}
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors"
+                style={{ backgroundColor: isActive ? 'var(--accent-social-light)' : 'transparent' }}
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="text-[12px] font-semibold" style={{ color: isActive ? 'var(--accent-social)' : 'var(--text)' }}>
+                    {label}
+                  </span>
+                  <span className="ml-1.5 text-[10px] text-[var(--text-hint)]">{desc}</span>
+                </div>
+                <div
+                  className="h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors"
+                  style={{
+                    borderColor: isActive ? 'var(--accent-social)' : 'var(--border)',
+                    backgroundColor: isActive ? 'var(--accent-social)' : 'transparent',
+                  }}
+                />
+              </button>
+            )
+          })}
+        </div>
+        {isAutoShare && (
+          <ShareRuleEditor value={shareRule} onChange={setShareRule} />
+        )}
       </div>
 
       {/* ━━ 섹션 3: 정보 공개 범위 ━━ */}

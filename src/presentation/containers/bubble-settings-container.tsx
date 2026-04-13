@@ -44,7 +44,8 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     isLoading: memberLoading,
   } = useBubbleMember(bubbleId, userId)
 
-  const [currentBubble, setCurrentBubble] = useState<Bubble>(bubble)
+  const [currentBubble] = useState<Bubble>(bubble)
+  const [isSaving, setIsSaving] = useState(false)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
   const [visibilityOverride, setVisibilityOverride] = useState<VisibilityOverride | null>(null)
   const memberLoaded = !memberLoading
@@ -69,8 +70,9 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   }))
 
   const handleSave = async (updates: Partial<Bubble>) => {
-    const updated = await updateSettings(updates)
-    setCurrentBubble(updated)
+    setIsSaving(true)
+    await updateSettings(updates)
+    router.push(`/bubbles/${bubbleId}`)
   }
 
   const handleShareRuleChange = async (newRule: BubbleShareRule | null) => {
@@ -127,7 +129,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           myRole={myRole}
           onSave={handleSave}
           onDelete={handleDelete}
-          isLoading={settingsLoading || rolesLoading}
+          isLoading={isSaving || settingsLoading || rolesLoading}
           pendingMembers={pendingMembers}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
@@ -143,11 +145,6 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onShareRuleChange={handleShareRuleChange}
           visibilityOverride={memberLoaded ? visibilityOverride : undefined}
           onVisibilityChange={handleVisibilityChange}
-          stats={{
-            weeklyRecordCount: 0,
-            prevWeeklyRecordCount: 0,
-            weeklyChartData: [0, 0, 0, 0, 0, 0, 0],
-          }}
         />
       </div>
     </div>

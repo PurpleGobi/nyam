@@ -20,22 +20,26 @@ function getStoredViewMode(): ViewMode | null {
   return v === 'card' || v === 'list' || v === 'calendar' || v === 'map' ? v : null
 }
 
-function createInitialViewModeStates(): Record<ViewModeStateKey, ViewModeState> {
+function createInitialViewModeStates(initialSort?: SortOption): Record<ViewModeStateKey, ViewModeState> {
+  const base = initialSort
+    ? { ...DEFAULT_VIEW_MODE_STATE, sort: initialSort }
+    : { ...DEFAULT_VIEW_MODE_STATE }
   return {
-    restaurant_card: { ...DEFAULT_VIEW_MODE_STATE },
-    restaurant_list: { ...DEFAULT_VIEW_MODE_STATE },
-    restaurant_calendar: { ...DEFAULT_VIEW_MODE_STATE },
-    restaurant_map: { ...DEFAULT_VIEW_MODE_STATE, sort: 'name' },
-    wine_card: { ...DEFAULT_VIEW_MODE_STATE },
-    wine_list: { ...DEFAULT_VIEW_MODE_STATE },
-    wine_calendar: { ...DEFAULT_VIEW_MODE_STATE },
-    wine_map: { ...DEFAULT_VIEW_MODE_STATE },
+    restaurant_card: { ...base },
+    restaurant_list: { ...base },
+    restaurant_calendar: { ...base },
+    restaurant_map: { ...DEFAULT_VIEW_MODE_STATE, sort: initialSort ?? 'name' },
+    wine_card: { ...base },
+    wine_list: { ...base },
+    wine_calendar: { ...base },
+    wine_map: { ...DEFAULT_VIEW_MODE_STATE, sort: initialSort ?? 'latest' },
   }
 }
 
 interface UseHomeStateOptions {
   initialTab?: HomeTab
   initialViewMode?: ViewMode
+  initialSort?: SortOption
 }
 
 export function useHomeState(options?: UseHomeStateOptions) {
@@ -53,7 +57,7 @@ export function useHomeState(options?: UseHomeStateOptions) {
   }, [])
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [viewModeStates, setViewModeStates] = useState(createInitialViewModeStates)
+  const [viewModeStates, setViewModeStates] = useState(() => createInitialViewModeStates(options?.initialSort))
   const [searchQuery, setSearchQuery] = useState('')
 
   // 현재 탭×뷰모드의 필터/소팅 상태 (뷰 모드별 독립). 버블 탭은 viewModeState 미사용.

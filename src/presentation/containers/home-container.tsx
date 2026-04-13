@@ -24,7 +24,7 @@ import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
 import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
-import { PenLine, FolderPlus } from 'lucide-react'
+import { PenLine, FolderPlus, FolderMinus } from 'lucide-react'
 import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabAdd } from '@/presentation/components/layout/fab-add'
@@ -158,22 +158,33 @@ export function HomeContainer() {
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
-  // ── 버블에 추가: 선택 모드 ──
+  // ── 버블에 추가/제거: 선택 모드 ──
   const [isBubbleSelectMode, setIsBubbleSelectMode] = useState(false)
+  const [isBubbleRemoveMode, setIsBubbleRemoveMode] = useState(false)
   const [bubbleSelectIds, setBubbleSelectIds] = useState<Set<string>>(new Set())
   const [showBubblePicker, setShowBubblePicker] = useState(false)
 
   const startBubbleSelect = useCallback(() => {
     setIsBubbleSelectMode(true)
+    setIsBubbleRemoveMode(false)
     setBubbleSelectIds(new Set())
   }, [])
 
-  const { batchAddToBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
+  const startBubbleRemove = useCallback(() => {
+    setIsBubbleSelectMode(true)
+    setIsBubbleRemoveMode(true)
+    setBubbleSelectIds(new Set())
+  }, [])
+
+  const { batchAddToBubble, batchRemoveFromBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
 
   const stopBubbleSelect = useCallback(() => {
     setIsBubbleSelectMode(false)
+    setIsBubbleRemoveMode(false)
     setBubbleSelectIds(new Set())
   }, [])
+
+  const [homeRefreshKey, setHomeRefreshKey] = useState(0)
 
   const toggleBubbleSelectItem = useCallback((id: string) => {
     setBubbleSelectIds((prev) => {
@@ -257,6 +268,7 @@ export function HomeContainer() {
   } = useHomeState({
     initialTab: urlBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined),
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
+    initialSort: urlBubbleId ? 'distance' : undefined,
   })
 
   // 거리순 소팅 시에만 위치 좌표 요청
@@ -453,6 +465,7 @@ export function HomeContainer() {
     sort: currentSort,
     limit: dbLimit,
     offset: dbOffset,
+    refreshKey: homeRefreshKey,
   })
 
   // view 칩 기반 클라이언트 필터링 (서버 왕복 없이 즉시 반영)
@@ -1294,12 +1307,31 @@ export function HomeContainer() {
             label: '버블에 추가',
             onClick: startBubbleSelect,
           },
+          ...(socialFilter.bubbleId ? [{
+            key: 'bubble-remove',
+            icon: <FolderMinus size={16} />,
+            label: '버블에서 제거',
+            onClick: startBubbleRemove,
+          }] : []),
         ]}
         onClick={isBubbleTab ? () => router.push('/bubbles/create') : undefined}
         selectMode={isBubbleSelectMode ? {
-          label: bubbleSelectIds.size > 0 ? `${bubbleSelectIds.size}개 추가` : '취소',
+          label: bubbleSelectIds.size > 0
+            ? (isBubbleRemoveMode ? `${bubbleSelectIds.size}개 제거` : `${bubbleSelectIds.size}개 추가`)
+            : '취소',
           onClick: bubbleSelectIds.size > 0
-            ? () => setShowBubblePicker(true)
+            ? (isBubbleRemoveMode
+              ? async () => {
+                  const targets = displayTargets
+                    .filter((t) => bubbleSelectIds.has(t.targetId))
+                    .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
+                  if (socialFilter.bubbleId) {
+                    await batchRemoveFromBubble(socialFilter.bubbleId, targets)
+                    setHomeRefreshKey((k) => k + 1)
+                  }
+                  stopBubbleSelect()
+                }
+              : () => setShowBubblePicker(true))
             : stopBubbleSelect,
         } : undefined}
       />
@@ -1308,7 +1340,7 @@ export function HomeContainer() {
       <BubblePickerSheet
         isOpen={showBubblePicker}
         onClose={() => { setShowBubblePicker(false); stopBubbleSelect() }}
-        bubbles={myBubbles}
+        bubbles={socialFilter.bubbleId ? myBubbles.filter((b) => b.id !== socialFilter.bubbleId) : myBubbles}
         onSelect={async (bubbleId) => {
           const targets = displayTargets
             .filter((t) => bubbleSelectIds.has(t.targetId))

@@ -20,12 +20,13 @@ export function useHomeTargets(params: {
   sort?: SortOption
   limit?: number | null
   offset?: number
+  refreshKey?: number
 }): {
   targets: HomeTarget[]
   hasMore: boolean
   isLoading: boolean
 } {
-  const { userId, tab, socialFilter, dbFilters, sort, limit, offset } = params
+  const { userId, tab, socialFilter, dbFilters, sort, limit, offset, refreshKey } = params
   const [allTargets, setAllTargets] = useState<HomeTarget[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -49,7 +50,7 @@ export function useHomeTargets(params: {
     // 항상 ALL views fetch — view 칩 변경은 클라이언트 필터링으로 처리 (서버 왕복 0ms)
     const views = ALL_HOME_VIEWS
 
-    const cacheKey = `${tab}:${socialFilterKey}:${dbFiltersKey}:${sort ?? ''}:${limit ?? ''}:${offset ?? 0}`
+    const cacheKey = `${tab}:${socialFilterKey}:${dbFiltersKey}:${sort ?? ''}:${limit ?? ''}:${offset ?? 0}:${refreshKey ?? 0}`
     const cached = cacheRef.current.get(cacheKey)
 
     // 탭 전환 → 즉시 클리어 (잔상 방지), 같은 탭 내 필터 변경 → 이전 데이터 유지
@@ -122,7 +123,7 @@ export function useHomeTargets(params: {
         setIsLoading(false)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, tab, socialFilterKey, dbFiltersKey, sort, limit, offset])
+  }, [userId, tab, socialFilterKey, dbFiltersKey, sort, limit, offset, refreshKey])
 
   return { targets: allTargets, hasMore, isLoading }
 }
