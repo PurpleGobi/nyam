@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { Search, X } from 'lucide-react'
 import type { SearchResult } from '@/domain/entities/search'
 import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
 import type { RecordTargetType } from '@/domain/entities/record'
@@ -278,31 +279,50 @@ function SearchInner() {
         </div>
       )}
 
-      <div className="mt-2">
-        <SearchBar
-          value={query}
-          onChange={setQueryWithReset}
-          placeholder={targetType === 'wine' ? '와인 이름으로 검색' : '식당 이름으로 검색'}
-          variant={variant}
-          autoFocus={false}
-          recentSearches={recentSearches}
-          onRecentSelect={handleRecentSelect}
-          onRecentClear={clearRecentSearches}
-        />
-      </div>
+      {targetType !== 'restaurant' && (
+        <div className="mt-2">
+          <SearchBar
+            value={query}
+            onChange={setQueryWithReset}
+            placeholder="와인 이름으로 검색"
+            variant={variant}
+            autoFocus={false}
+            recentSearches={recentSearches}
+            onRecentSelect={handleRecentSelect}
+            onRecentClear={clearRecentSearches}
+          />
+        </div>
+      )}
 
       {targetType === 'restaurant' && (
         <div className="flex min-h-0 flex-1 flex-col py-1">
-          {screenState === 'idle' && (
-            <div ref={filterBarRef} style={{ zIndex: 50, backgroundColor: 'var(--bg)', flexShrink: 0 }}>
-              <ConditionFilterBar
-                chips={mapChips}
-                onChipsChange={setMapChips}
-                attributes={MAP_FILTER_ATTRIBUTES}
-                accentType="food"
+          <div ref={filterBarRef} className="flex items-center gap-2 pr-4" style={{ zIndex: 50, backgroundColor: 'var(--bg)', flexShrink: 0 }}>
+            {screenState === 'idle' && (
+              <div className="min-w-0 shrink-0">
+                <ConditionFilterBar
+                  chips={mapChips}
+                  onChipsChange={setMapChips}
+                  attributes={MAP_FILTER_ATTRIBUTES}
+                  accentType="food"
+                />
+              </div>
+            )}
+            <div className="ml-auto flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2.5" style={{ height: '32px', minWidth: '140px', maxWidth: '200px' }}>
+              <Search size={14} className="shrink-0 text-[var(--text-hint)]" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQueryWithReset(e.target.value)}
+                placeholder="식당 검색"
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-hint)]"
               />
+              {query.length > 0 && (
+                <button type="button" onClick={() => setQueryWithReset('')} className="shrink-0 text-[var(--text-hint)]">
+                  <X size={12} />
+                </button>
+              )}
             </div>
-          )}
+          </div>
           <MapView
             items={screenState === 'idle' ? mapDiscovery.pageItems : searchMapItems}
             onMapIdle={(center, zoom, bounds) => {
