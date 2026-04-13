@@ -33,6 +33,8 @@ export function useHomeTargets(params: {
   // 탭별 캐시 (stale-while-revalidate)
   const cacheRef = useRef<Map<string, HomeTarget[]>>(new Map())
   const prevTabRef = useRef(tab)
+  // race condition 방지: 최신 요청만 반영
+  const requestIdRef = useRef(0)
 
   const socialFilterKey = useMemo(() => {
     if (!socialFilter) return ''
@@ -41,7 +43,7 @@ export function useHomeTargets(params: {
 
   const dbFiltersKey = useMemo(() => JSON.stringify(dbFilters ?? {}), [dbFilters])
 
-  const fetchTargets = useCallback(async () => {
+  useEffect(() => {
     if (!userId || tab === 'bubble') return
     const targetType: RecordTargetType = tab
     // 항상 ALL views fetch — view 칩 변경은 클라이언트 필터링으로 처리 (서버 왕복 0ms)
@@ -64,60 +66,63 @@ export function useHomeTargets(params: {
       setIsLoading(true)
     }
 
-    try {
-      const sf = socialFilter ? {
-        followingUserIds: socialFilter.followingUserId ? [socialFilter.followingUserId] : undefined,
-        bubbleIds: socialFilter.bubbleId ? [socialFilter.bubbleId] : undefined,
-      } : undefined
+    const currentRequestId = ++requestIdRef.current
 
-      const result = await homeRepo.findHomeTargets(userId, targetType, views, sf, dbFilters, sort, limit ?? null, offset ?? 0)
+    const sf = socialFilter ? {
+      followingUserIds: socialFilter.followingUserId ? [socialFilter.followingUserId] : undefined,
+      bubbleIds: socialFilter.bubbleId ? [socialFilter.bubbleId] : undefined,
+    } : undefined
 
-      // 버블 확신도 enrich (bubbleScore가 있는 target만)
-      for (const t of result.targets) {
-        if (t.bubbleScore !== null) {
-          t.bubbleConfidence = computeBubbleConfidence(1)
+    homeRepo.findHomeTargets(userId, targetType, views, sf, dbFilters, sort, limit ?? null, offset ?? 0)
+      .then((result) => {
+        // 이미 다른 탭/필터로 전환된 경우 무시
+        if (requestIdRef.current !== currentRequestId) return
+
+        // 버블 확신도 enrich (bubbleScore가 있는 target만)
+        for (const t of result.targets) {
+          if (t.bubbleScore !== null) {
+            t.bubbleConfidence = computeBubbleConfidence(1)
+          }
         }
-      }
 
-      cacheRef.current.set(cacheKey, result.targets)
-      setHasMore(result.hasMore)
-      setAllTargets(result.targets)
+        cacheRef.current.set(cacheKey, result.targets)
+        setHasMore(result.hasMore)
+        setAllTargets(result.targets)
+        setIsLoading(false)
 
-      // Nyam 점수 batch enrich — 논블로킹 (targets 먼저 표시, 예측 점수는 async)
-      const needPrediction = result.targets.filter((t) => t.myScore === null)
-      if (needPrediction.length > 0) {
-        const category = targetType === 'restaurant' ? 'restaurant' : 'wine'
-        predictionRepo.batchPredict(
-          userId,
-          needPrediction.map((t) => t.targetId),
-          category,
-        ).then((predictions) => {
-          if (predictions.size === 0) return
-          setAllTargets((prev) => {
-            const updated = prev.map((t) => {
-              const pred = predictions.get(t.targetId)
-              if (!pred) return t
-              return { ...t, nyamScore: Math.round(pred.satisfaction), nyamConfidence: pred.confidence }
+        // Nyam 점수 batch enrich — 논블로킹 (targets 먼저 표시, 예측 점수는 async)
+        const needPrediction = result.targets.filter((t) => t.myScore === null)
+        if (needPrediction.length > 0) {
+          const category = targetType === 'restaurant' ? 'restaurant' : 'wine'
+          predictionRepo.batchPredict(
+            userId,
+            needPrediction.map((t) => t.targetId),
+            category,
+          ).then((predictions) => {
+            if (requestIdRef.current !== currentRequestId) return
+            if (predictions.size === 0) return
+            setAllTargets((prev) => {
+              const updated = prev.map((t) => {
+                const pred = predictions.get(t.targetId)
+                if (!pred) return t
+                return { ...t, nyamScore: Math.round(pred.satisfaction), nyamConfidence: pred.confidence }
+              })
+              // 캐시도 갱신
+              cacheRef.current.set(cacheKey, updated)
+              return updated
             })
-            // 캐시도 갱신
-            cacheRef.current.set(cacheKey, updated)
-            return updated
+          }).catch(() => {
+            // batch predict 실패해도 기본 데이터는 이미 표시됨
           })
-        }).catch(() => {
-          // batch predict 실패해도 기본 데이터는 이미 표시됨
-        })
-      }
-    } catch {
-      if (!cached) setAllTargets([])
-    } finally {
-      setIsLoading(false)
-    }
+        }
+      })
+      .catch(() => {
+        if (requestIdRef.current !== currentRequestId) return
+        if (!cached) setAllTargets([])
+        setIsLoading(false)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, tab, socialFilterKey, dbFiltersKey, sort, limit, offset])
-
-  useEffect(() => {
-    fetchTargets()
-  }, [fetchTargets])
 
   return { targets: allTargets, hasMore, isLoading }
 }

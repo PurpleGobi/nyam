@@ -81,141 +81,175 @@ export class SupabaseHomeRepository implements HomeRepository {
     limit?: number | null,
     offset?: number,
   ): Promise<HomeTargetsResult> {
-    // Step 1: 각 view별 target_id 셋 병렬 수집 + source 매핑
-    const viewTargetSets = await Promise.all(
-      views.map(async (view) => {
-        const ids = await this.collectTargetIds(userId, targetType, view, socialFilter)
-        return { view, ids }
-      }),
-    )
+    // ── Stage 1: 공유 데이터 + target_id 수집 (P1: 1회 조회, P2: 내부 체인 병렬) ──
+    const shared = await this.prefetchSharedData(userId, targetType, views, socialFilter)
 
-    // target_id -> sources 매핑
     const targetSourceMap = new Map<string, Set<RecordSource>>()
-    for (const { view, ids } of viewTargetSets) {
+    for (const view of views) {
+      const ids = this.collectTargetIdsFromCache(view, shared)
       const source = viewToSource(view)
       for (const id of ids) {
         const existing = targetSourceMap.get(id)
-        if (existing) {
-          existing.add(source)
-        } else {
-          targetSourceMap.set(id, new Set([source]))
-        }
+        if (existing) existing.add(source)
+        else targetSourceMap.set(id, new Set([source]))
       }
     }
 
     const allTargetIds = [...targetSourceMap.keys()]
     if (allTargetIds.length === 0) return { targets: [], hasMore: false }
 
-    // Step 2: DB 필터 + 소팅 + 페이지네이션 (LIMIT+1 패턴)
-    // limit이 있으면 limit+1을 요청하여 hasMore 판별
+    // ── Stage 2: 메타 필터 + records + bookmarks 병렬 (P2) ──
+    // 필터가 없으면 meta와 records/bookmarks를 동시 시작 가능
+    const hasDbFilters = dbFilters && Object.values(dbFilters).some((v) => v != null)
     const dbLimit = limit != null ? limit + 1 : null
-    const targetMeta = await this.fetchTargetMeta(allTargetIds, targetType, dbFilters, sort, dbLimit, offset)
 
-    // hasMore 판별: limit+1개를 요청해서 limit보다 많으면 다음 페이지 존재
-    let hasMore = false
-    if (limit != null && targetMeta.size > limit) {
-      hasMore = true
-      // 초과분 제거 (마지막 1개)
-      const keys = [...targetMeta.keys()]
-      targetMeta.delete(keys[keys.length - 1])
+    let targetMeta: Map<string, TargetMeta>
+    let allRecords: (DiningRecord & { source: RecordSource })[]
+    let bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>
+    let photoMap: Map<string, string[]>
+
+    if (hasDbFilters || dbLimit != null) {
+      // 필터/페이지네이션 있음 → meta 먼저, 필터된 ID로 records 조회
+      targetMeta = await this.fetchTargetMeta(allTargetIds, targetType, dbFilters, sort, dbLimit, offset)
+
+      let hasMore = false
+      if (limit != null && targetMeta.size > limit) {
+        hasMore = true
+        const keys = [...targetMeta.keys()]
+        targetMeta.delete(keys[keys.length - 1])
+      }
+
+      const filteredTargetIds = [...targetMeta.keys()]
+      if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
+
+      // records(+photos join) + bookmarks 병렬
+      const result = await this.fetchRecordsAndBookmarks(userId, filteredTargetIds, targetType, views, shared)
+      allRecords = result.records
+      bookmarks = result.bookmarks
+      photoMap = result.photoMap
+
+      return {
+        targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, bookmarks, photoMap, targetSourceMap, userId),
+        hasMore,
+      }
     }
 
-    // Step 3: 필터된 ID로만 records/bookmarks/photos 조회 (불필요한 조회 방지)
+    // 필터 없음 → meta + records + bookmarks 전부 병렬 (P2: 최대 병렬화)
+    const [metaResult, recordsResult] = await Promise.all([
+      this.fetchTargetMeta(allTargetIds, targetType, dbFilters, sort, dbLimit, offset),
+      this.fetchRecordsAndBookmarks(userId, allTargetIds, targetType, views, shared),
+    ])
+
+    targetMeta = metaResult
+    allRecords = recordsResult.records
+    bookmarks = recordsResult.bookmarks
+    photoMap = recordsResult.photoMap
+
     const filteredTargetIds = [...targetMeta.keys()]
     if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
 
-    const [allRecords, bookmarks] = await Promise.all([
-      this.fetchRecords(userId, filteredTargetIds, targetType, views, socialFilter),
-      this.fetchBookmarks(userId, filteredTargetIds, targetType),
-    ])
-
-    // record_photos batch 조회
-    const realRecordIds = allRecords.map((r) => r.id)
-    const photoMap = realRecordIds.length > 0
-      ? await this.fetchRecordPhotos(realRecordIds)
-      : new Map<string, string[]>()
-
-    // Step 4: HomeTarget[] 조립
-    const targets = this.assembleTargets(
-      filteredTargetIds,
-      targetType,
-      targetMeta,
-      allRecords,
-      bookmarks,
-      photoMap,
-      targetSourceMap,
-      userId,
-    )
-
-    return { targets, hasMore }
+    return {
+      targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, bookmarks, photoMap, targetSourceMap, userId),
+      hasMore: false,
+    }
   }
 
-  // --- Step 1: ViewType별 target_id 수집 ---
+  // --- Step 0: 공유 데이터 1회 조회 (follows, memberships, bubble_items, my target_ids) ---
 
-  private async collectTargetIds(
+  private async prefetchSharedData(
     userId: string,
     targetType: RecordTargetType,
-    view: HomeViewType,
+    views: HomeViewType[],
     socialFilter?: {
       followingUserIds?: string[]
       bubbleIds?: string[]
     },
-  ): Promise<Set<string>> {
+  ): Promise<SharedPrefetch> {
+    const needFollowing = views.includes('following')
+    const needBubble = views.includes('bubble')
+
+    // P2: 3개 체인을 동시에 시작 — 각 체인 내부만 순차 (의존성), 체인 간 병렬
+    const [myTargetIds, followingChain, bubbleItemTargetIds] = await Promise.all([
+      // Chain A: 내 기록 target_id (1 query)
+      this.supabase
+        .from('records')
+        .select('target_id')
+        .eq('user_id', userId)
+        .eq('target_type', targetType)
+        .then(({ data }) => new Set((data ?? []).map((r) => r.target_id as string))),
+
+      // Chain B: follows → following target_ids (2 queries chained)
+      needFollowing
+        ? this.supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', userId)
+            .eq('status', 'accepted')
+            .then(async ({ data }) => {
+              let ids = (data ?? []).map((f) => f.following_id as string)
+              if (socialFilter?.followingUserIds && socialFilter.followingUserIds.length > 0) {
+                const allowed = new Set(socialFilter.followingUserIds)
+                ids = ids.filter((id) => allowed.has(id))
+              }
+              if (ids.length === 0) return { followingIds: [] as string[], followingTargetIds: new Set<string>() }
+              const { data: recs } = await this.supabase
+                .from('records')
+                .select('target_id')
+                .in('user_id', ids)
+                .eq('target_type', targetType)
+              return {
+                followingIds: ids,
+                followingTargetIds: new Set((recs ?? []).map((r) => r.target_id as string)),
+              }
+            })
+        : Promise.resolve({ followingIds: [] as string[], followingTargetIds: new Set<string>() }),
+
+      // Chain C: memberships → bubble_items (2 queries chained)
+      needBubble
+        ? this.supabase
+            .from('bubble_members')
+            .select('bubble_id')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .then(async ({ data: memberships }) => {
+              if (!memberships || memberships.length === 0) return new Set<string>()
+              let bubbleIds = memberships.map((m) => m.bubble_id as string)
+              if (socialFilter?.bubbleIds && socialFilter.bubbleIds.length > 0) {
+                const allowed = new Set(socialFilter.bubbleIds)
+                bubbleIds = bubbleIds.filter((id) => allowed.has(id))
+              }
+              if (bubbleIds.length === 0) return new Set<string>()
+              const { data: items } = await this.supabase
+                .from('bubble_items')
+                .select('target_id')
+                .in('bubble_id', bubbleIds)
+                .eq('target_type', targetType)
+              return new Set((items ?? []).map((i) => i.target_id as string))
+            })
+        : Promise.resolve(new Set<string>()),
+    ])
+
+    return {
+      myTargetIds,
+      followingIds: followingChain.followingIds,
+      followingTargetIds: followingChain.followingTargetIds,
+      bubbleItemTargetIds,
+    }
+  }
+
+  // --- 캐시된 공유 데이터로 target_id 수집 (DB 호출 없음) ---
+
+  private collectTargetIdsFromCache(
+    view: HomeViewType,
+    shared: SharedPrefetch,
+  ): Set<string> {
     switch (view) {
-      case 'mine': {
-        const { data } = await this.supabase
-          .from('records')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('target_type', targetType)
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'following': {
-        const { data: followRows } = await this.supabase
-          .from('follows')
-          .select('following_id')
-          .eq('follower_id', userId)
-          .eq('status', 'accepted')
-        if (!followRows || followRows.length === 0) return new Set()
-
-        let followingIds = followRows.map((f) => f.following_id)
-        if (socialFilter?.followingUserIds && socialFilter.followingUserIds.length > 0) {
-          const allowed = new Set(socialFilter.followingUserIds)
-          followingIds = followingIds.filter((id) => allowed.has(id))
-        }
-        if (followingIds.length === 0) return new Set()
-
-        const { data } = await this.supabase
-          .from('records')
-          .select('target_id')
-          .in('user_id', followingIds)
-          .eq('target_type', targetType)
-        return new Set((data ?? []).map((r) => r.target_id))
-      }
-      case 'bubble': {
-        const { data: memberships } = await this.supabase
-          .from('bubble_members')
-          .select('bubble_id')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-        if (!memberships || memberships.length === 0) return new Set()
-
-        let bubbleIds = memberships.map((m) => m.bubble_id)
-        if (socialFilter?.bubbleIds && socialFilter.bubbleIds.length > 0) {
-          const allowed = new Set(socialFilter.bubbleIds)
-          bubbleIds = bubbleIds.filter((id) => allowed.has(id))
-        }
-        if (bubbleIds.length === 0) return new Set()
-
-        // bubble_items 기반 — 본인 추가 아이템 포함 (중복은 targetSourceMap에서 병합)
-        const { data: items } = await this.supabase
-          .from('bubble_items')
-          .select('target_id')
-          .in('bubble_id', bubbleIds)
-          .eq('target_type', targetType)
-        if (!items || items.length === 0) return new Set()
-        return new Set(items.map((i) => i.target_id))
-      }
+      case 'mine':
+        return shared.myTargetIds
+      case 'following':
+        return shared.followingTargetIds
+      case 'bubble':
+        return shared.bubbleItemTargetIds
     }
   }
 
@@ -303,157 +337,109 @@ export class SupabaseHomeRepository implements HomeRepository {
     return map
   }
 
-  // --- Step 3: Records batch 조회 (내 기록 + 소셜 소스) ---
+  // --- Records + Bookmarks + Photos 병렬 조회 (P1: 중복 없음, P2: 최대 병렬) ---
 
-  private async fetchRecords(
+  /** 소셜 기록 집계에 필요한 최소 컬럼 + photos join (P3) */
+  private static readonly SOCIAL_RECORD_COLS = 'id, user_id, target_id, target_type, satisfaction, axis_x, axis_y, visit_date, created_at, record_photos(url, order_index)' as const
+
+  private async fetchRecordsAndBookmarks(
     userId: string,
     targetIds: string[],
     targetType: RecordTargetType,
     views: HomeViewType[],
-    socialFilter?: {
-      followingUserIds?: string[]
-      bubbleIds?: string[]
-    },
-  ): Promise<(DiningRecord & { source: RecordSource })[]> {
-    if (targetIds.length === 0) return []
-
-    const results: (DiningRecord & { source: RecordSource })[] = []
-
-    // 내 기록 (mine)
-    const { data: myRows } = await this.supabase
-      .from('records')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('target_type', targetType)
-      .in('target_id', targetIds)
-      .order('visit_date', { ascending: false })
-    for (const row of myRows ?? []) {
-      results.push({ ...mapDbToRecord(row), source: 'mine' })
+    shared: SharedPrefetch,
+  ): Promise<{
+    records: (DiningRecord & { source: RecordSource })[]
+    bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>
+    photoMap: Map<string, string[]>
+  }> {
+    if (targetIds.length === 0) {
+      return { records: [], bookmarks: new Map(), photoMap: new Map() }
     }
 
-    // 팔로잉 기록
-    if (views.includes('following')) {
-      const { data: followRows } = await this.supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId)
-        .eq('status', 'accepted')
+    const targetIdSet = new Set(targetIds)
 
-      if (followRows && followRows.length > 0) {
-        let followingIds = followRows.map((f) => f.following_id)
-        if (socialFilter?.followingUserIds && socialFilter.followingUserIds.length > 0) {
-          const allowed = new Set(socialFilter.followingUserIds)
-          followingIds = followingIds.filter((id) => allowed.has(id))
-        }
+    // P2: records(3소스) + bookmarks = 4개 병렬, photos는 join으로 포함 (별도 쿼리 제거)
+    const [myRows, followingRows, bubbleRows, bookmarkData] = await Promise.all([
+      // 내 기록 — 전체 필드 + photos join (캘린더/상세용)
+      this.supabase
+        .from('records')
+        .select('*, record_photos(url, order_index)')
+        .eq('user_id', userId)
+        .eq('target_type', targetType)
+        .in('target_id', targetIds)
+        .order('visit_date', { ascending: false })
+        .then(({ data }) => data ?? []),
 
-        if (followingIds.length > 0) {
-          const { data: fRows } = await this.supabase
+      // 팔로잉 기록 — 최소 필드 + photos join (P3)
+      views.includes('following') && shared.followingIds.length > 0
+        ? this.supabase
             .from('records')
-            .select('*')
-            .in('user_id', followingIds)
+            .select(SupabaseHomeRepository.SOCIAL_RECORD_COLS)
+            .in('user_id', shared.followingIds)
             .eq('target_type', targetType)
             .in('target_id', targetIds)
             .order('visit_date', { ascending: false })
-          for (const row of fRows ?? []) {
-            results.push({ ...mapDbToRecord(row), source: 'following' })
-          }
-        }
-      }
-    }
+            .then(({ data }) => data ?? [])
+        : Promise.resolve([]),
 
-    // 버블 기록
-    if (views.includes('bubble')) {
-      const { data: memberships } = await this.supabase
-        .from('bubble_members')
-        .select('bubble_id')
+      // 버블 기록 — 최소 필드 + photos join (P3)
+      views.includes('bubble') && shared.bubbleItemTargetIds.size > 0
+        ? (() => {
+            const filteredBubbleTargetIds = [...shared.bubbleItemTargetIds].filter((id) => targetIdSet.has(id))
+            if (filteredBubbleTargetIds.length === 0) return Promise.resolve([])
+            return this.supabase
+              .from('records')
+              .select(SupabaseHomeRepository.SOCIAL_RECORD_COLS)
+              .in('target_id', filteredBubbleTargetIds)
+              .eq('target_type', targetType)
+              .order('visit_date', { ascending: false })
+              .then(({ data }) => data ?? [])
+          })()
+        : Promise.resolve([]),
+
+      // Bookmarks
+      this.supabase
+        .from('bookmarks')
+        .select('target_id, type')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .eq('target_type', targetType)
+        .in('target_id', targetIds)
+        .then(({ data }) => data ?? []),
+    ])
 
-      if (memberships && memberships.length > 0) {
-        let bubbleIds = memberships.map((m) => m.bubble_id)
-        if (socialFilter?.bubbleIds && socialFilter.bubbleIds.length > 0) {
-          const allowed = new Set(socialFilter.bubbleIds)
-          bubbleIds = bubbleIds.filter((id) => allowed.has(id))
-        }
-
-        if (bubbleIds.length > 0) {
-          // bubble_items 기반 — 본인 추가 아이템 포함
-          const { data: bItems } = await this.supabase
-            .from('bubble_items')
-            .select('target_id')
-            .in('bubble_id', bubbleIds)
-            .eq('target_type', targetType)
-
-          if (bItems && bItems.length > 0) {
-            const itemTargetIds = [...new Set(bItems.map((i) => i.target_id as string))]
-            const filteredTargetIds = itemTargetIds.filter((id) => targetIds.includes(id))
-            if (filteredTargetIds.length > 0) {
-              const { data: bRows } = await this.supabase
-                .from('records')
-                .select('*')
-                .in('target_id', filteredTargetIds)
-                .eq('target_type', targetType)
-                .order('visit_date', { ascending: false })
-              for (const row of bRows ?? []) {
-                results.push({ ...mapDbToRecord(row), source: 'bubble' })
-              }
-            }
-          }
+    // photoMap 구축 (join된 record_photos에서 추출)
+    const photoMap = new Map<string, string[]>()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const extractPhotos = (rows: any[]) => {
+      for (const row of rows) {
+        const photos = row.record_photos as { url: string; order_index: number }[] | undefined
+        if (photos && photos.length > 0) {
+          const sorted = [...photos].sort((a, b) => a.order_index - b.order_index)
+          photoMap.set(row.id as string, sorted.map((p) => p.url))
         }
       }
     }
+    extractPhotos(myRows)
+    extractPhotos(followingRows)
+    extractPhotos(bubbleRows)
 
-    return results
-  }
+    // records 조립
+    const records: (DiningRecord & { source: RecordSource })[] = []
+    for (const row of myRows) records.push({ ...mapDbToRecord(row), source: 'mine' })
+    for (const row of followingRows) records.push({ ...mapDbToRecord(row), source: 'following' })
+    for (const row of bubbleRows) records.push({ ...mapDbToRecord(row), source: 'bubble' })
 
-  // --- Step 4: Bookmarks batch 조회 ---
-
-  private async fetchBookmarks(
-    userId: string,
-    targetIds: string[],
-    targetType: RecordTargetType,
-  ): Promise<Map<string, { isBookmarked: boolean; isCellar: boolean }>> {
-    const map = new Map<string, { isBookmarked: boolean; isCellar: boolean }>()
-    if (targetIds.length === 0) return map
-
-    const { data } = await this.supabase
-      .from('bookmarks')
-      .select('target_id, type')
-      .eq('user_id', userId)
-      .eq('target_type', targetType)
-      .in('target_id', targetIds)
-
-    for (const row of data ?? []) {
-      const existing = map.get(row.target_id) ?? { isBookmarked: false, isCellar: false }
+    // bookmarks 조립
+    const bookmarks = new Map<string, { isBookmarked: boolean; isCellar: boolean }>()
+    for (const row of bookmarkData) {
+      const existing = bookmarks.get(row.target_id) ?? { isBookmarked: false, isCellar: false }
       if (row.type === 'bookmark') existing.isBookmarked = true
       if (row.type === 'cellar') existing.isCellar = true
-      map.set(row.target_id, existing)
+      bookmarks.set(row.target_id, existing)
     }
 
-    return map
-  }
-
-  // --- Step 5: Record photos batch 조회 ---
-
-  private async fetchRecordPhotos(
-    recordIds: string[],
-  ): Promise<Map<string, string[]>> {
-    const map = new Map<string, string[]>()
-    if (recordIds.length === 0) return map
-
-    const { data } = await this.supabase
-      .from('record_photos')
-      .select('record_id, url')
-      .in('record_id', recordIds)
-      .order('order_index', { ascending: true })
-
-    for (const p of data ?? []) {
-      const existing = map.get(p.record_id)
-      if (existing) existing.push(p.url)
-      else map.set(p.record_id, [p.url])
-    }
-
-    return map
+    return { records, bookmarks, photoMap }
   }
 
   // --- Step 6-7: HomeTarget[] 조립 ---
@@ -654,6 +640,14 @@ interface RpcWineRow {
   region: string | null
   vintage: number | null
   photos: string[] | null
+}
+
+/** prefetchSharedData 결과 — collectTargetIdsFromCache와 fetchRecordsParallel에서 재사용 */
+interface SharedPrefetch {
+  myTargetIds: Set<string>
+  followingIds: string[]
+  followingTargetIds: Set<string>
+  bubbleItemTargetIds: Set<string>
 }
 
 interface TargetMeta {

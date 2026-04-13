@@ -264,6 +264,7 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 | 사분면/아로마/평가 | `systems/RATING_ENGINE.md` |
 | 디자인 토큰/컴포넌트 | `systems/DESIGN_SYSTEM.md` |
 | XP/레벨/어뷰징 | `systems/XP_SYSTEM.md` |
+| 쿼리 최적화 원칙 | `systems/QUERY_OPTIMIZATION.md` |
 | 추천 알고리즘 | `systems/RECOMMENDATION.md` |
 | 페이지별 스펙 | `pages/01~12_*.md` |
 | 비주얼 레퍼런스 | `prototype/*.html` |

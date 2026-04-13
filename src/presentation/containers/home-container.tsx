@@ -267,7 +267,14 @@ export function HomeContainer() {
     followingUserId: null,
     bubbleId: urlBubbleId ?? null,
   }))
-  const socialFilterOptions = useSocialFilterOptions(user?.id ?? null)
+  // 소셜 필터 옵션: 초기 로딩 후 지연 fetch (follows + bubbles 중복 쿼리 제거)
+  const [socialFilterReady, setSocialFilterReady] = useState(false)
+  useEffect(() => {
+    // 메인 데이터 로딩 후 소셜 필터 옵션 fetch
+    const timer = setTimeout(() => setSocialFilterReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
+  const socialFilterOptions = useSocialFilterOptions(user?.id ?? null, socialFilterReady)
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
@@ -445,8 +452,11 @@ export function HomeContainer() {
     return allViewTargets.filter((t) => t.sources.some((s) => viewTypes.includes(s as typeof viewTypes[number])))
   }, [allViewTargets, viewTypes])
 
-  const restaurantStats = useRestaurantStats(user?.id ?? null)
-  const wineStats = useWineStats(user?.id ?? null)
+  // P2: stats는 패널 열릴 때만 fetch (초기 로딩에서 records 풀스캔 2회 제거)
+  const [isStatsOpen, setIsStatsOpen] = useState(false)
+  const canShowStatsButton = targets.length >= 5
+  const restaurantStats = useRestaurantStats(user?.id ?? null, isStatsOpen && activeTab === 'restaurant')
+  const wineStats = useWineStats(user?.id ?? null, isStatsOpen && activeTab === 'wine')
 
   // AI 인사말 — targets 기반
   const recentRecordsForGreeting = useMemo(() => {
@@ -498,8 +508,6 @@ export function HomeContainer() {
     }
   }, [isFollowingMode, setFilterRules])
 
-  const [isStatsOpen, setIsStatsOpen] = useState(false)
-
   // 캘린더 상태
   const now = new Date()
   const [calYear, setCalYear] = useState(now.getFullYear())
@@ -514,9 +522,7 @@ export function HomeContainer() {
   const accentType = recordTab === 'restaurant' ? 'food' as const : 'wine' as const
   const accentColor = accentType === 'food' ? 'var(--accent-food)' : 'var(--accent-wine)'
 
-  const canShowStats = activeTab === 'restaurant'
-    ? restaurantStats.totalRecordCount >= 5
-    : wineStats.totalRecordCount >= 5
+  const canShowStats = canShowStatsButton
 
   const totalCountries = useMemo(() => {
     const countries = new Set(restaurantStats.cityStats.map((c) => c.country))

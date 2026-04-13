@@ -22,13 +22,13 @@ export interface SocialFilterOptions {
   isLoading: boolean
 }
 
-export function useSocialFilterOptions(userId: string | null): SocialFilterOptions {
+export function useSocialFilterOptions(userId: string | null, enabled = true): SocialFilterOptions {
   const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([])
   const [myBubbles, setMyBubbles] = useState<MyBubble[]>([])
   const [isLoading, setIsLoading] = useState(!!userId)
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || !enabled) return
 
     let cancelled = false
 
@@ -49,7 +49,7 @@ export function useSocialFilterOptions(userId: string | null): SocialFilterOptio
     })
 
     return () => { cancelled = true }
-  }, [userId])
+  }, [userId, enabled])
 
   return { followingUsers, myBubbles, isLoading }
 }

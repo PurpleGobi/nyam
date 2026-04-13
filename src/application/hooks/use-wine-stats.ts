@@ -111,7 +111,7 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
 
 export { VARIETAL_MASTER }
 
-export function useWineStats(userId: string | null): WineStatsResult {
+export function useWineStats(userId: string | null, enabled = true): WineStatsResult {
   const [countryStats, setCountryStats] = useState<CountryStats[]>([])
   const [varietalStats, setVarietalStats] = useState<VarietalStats[]>([])
   const [scoreBuckets, setScoreBuckets] = useState<ScoreBucket[]>(
@@ -125,7 +125,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
   const [error, setError] = useState<string | null>(null)
 
   const fetchStats = useCallback(async () => {
-    if (!userId) return
+    if (!userId || !enabled) return
     setIsLoading(true)
     setError(null)
 
@@ -305,7 +305,7 @@ export function useWineStats(userId: string | null): WineStatsResult {
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, enabled])
 
   useEffect(() => {
     fetchStats()

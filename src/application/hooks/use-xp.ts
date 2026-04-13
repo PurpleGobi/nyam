@@ -7,8 +7,9 @@ import { xpRepo } from '@/shared/di/container'
 
 /**
  * XP 조회 hook — 경험치, 레벨, 최근 이력을 로드.
+ * @param levelOnly true이면 레벨 계산에 필요한 totalXp + thresholds만 fetch (2쿼리 → 헤더용)
  */
-export function useXp(userId: string | null) {
+export function useXp(userId: string | null, levelOnly = false) {
   const [experiences, setExperiences] = useState<UserExperience[]>([])
   const [recentXp, setRecentXp] = useState<XpHistory[]>([])
   const [thresholds, setThresholds] = useState<LevelThreshold[]>([])
@@ -17,6 +18,19 @@ export function useXp(userId: string | null) {
 
   useEffect(() => {
     if (!userId) return
+
+    if (levelOnly) {
+      // 헤더 레벨바: totalXp + thresholds만 필요 (4쿼리 → 2쿼리)
+      Promise.all([
+        xpRepo.getLevelThresholds(),
+        xpRepo.getUserTotalXp(userId),
+      ]).then(([thresh, userTotalXp]) => {
+        setThresholds(thresh)
+        setTotalXp(userTotalXp)
+        setIsLoading(false)
+      })
+      return
+    }
 
     Promise.all([
       xpRepo.getUserExperiences(userId),
@@ -30,7 +44,7 @@ export function useXp(userId: string | null) {
       setTotalXp(userTotalXp)
       setIsLoading(false)
     })
-  }, [userId])
+  }, [userId, levelOnly])
 
   const levelInfo: LevelInfo | null = thresholds.length > 0
     ? getLevel(totalXp, thresholds)

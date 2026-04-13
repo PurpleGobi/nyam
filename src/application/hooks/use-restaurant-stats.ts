@@ -69,7 +69,7 @@ const SCENE_MAP = Object.fromEntries(
   SCENE_TAGS.map((t) => [t.value, t])
 )
 
-export function useRestaurantStats(userId: string | null): RestaurantStatsResult {
+export function useRestaurantStats(userId: string | null, enabled = true): RestaurantStatsResult {
   const [cityStats, setCityStats] = useState<CityStats[]>([])
   const [genreStats, setGenreStats] = useState<GenreStats[]>([])
   const [scoreBuckets, setScoreBuckets] = useState<ScoreBucket[]>(
@@ -83,7 +83,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
   const [error, setError] = useState<string | null>(null)
 
   const fetchStats = useCallback(async () => {
-    if (!userId) return
+    if (!userId || !enabled) return
     setIsLoading(true)
     setError(null)
 
@@ -208,7 +208,7 @@ export function useRestaurantStats(userId: string | null): RestaurantStatsResult
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, enabled])
 
   useEffect(() => {
     fetchStats()

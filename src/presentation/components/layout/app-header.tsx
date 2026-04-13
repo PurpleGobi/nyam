@@ -14,7 +14,7 @@ export function AppHeader() {
   const router = useRouter()
   const { user } = useAuth()
   const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
-  const { levelInfo } = useXp(user?.id ?? null)
+  const { levelInfo } = useXp(user?.id ?? null, true)
   const [notifOpen, setNotifOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
