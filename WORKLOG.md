@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-13 #35 — 초대 팝업 리디자인 + 핸들 설정 + 중복/취소 관리
+- **영역**: application/hooks/(use-invite-link 3일 고정, use-bubble-invite-member 중복체크+취소, use-bubble-member pendingInvites, use-settings updateHandle), domain/(notification-repo deleteNotification+getPendingBubbleInvites, settings handle), infrastructure/(supabase-notification-repo, supabase-settings-repo updateHandle), presentation/(invite-popup 신규, bubble-settings 초대대기+취소, pending-approval-list hideEmptyMessage, edit-field-sheet prefix/description/inputFilter, settings-container 핸들변경, bubble-detail-container+bubble-settings-container 토스트+새로고침), supabase/migrations/065+066(RLS)
+- **맥락**: (1) 초대 링크(만료 3일 고정) + 직접 초대(닉네임/핸들/이메일 검색) 통합 팝업으로 리디자인. (2) 중복 초대 방지(DB pendingInvites + 세션 invitedIds 이중 체크, 토스트 알림). (3) 초대 취소(notification 삭제 + RLS 066). (4) 설정 멤버관리에 "초대 수락 대기" 목록 표시(RLS 065) + 즉시 새로고침. (5) 핸들 설정/변경 UI(설정>계정, @접두사, 영문소문자+숫자+밑줄 필터, UNIQUE 검증).
+- **미완료**: 065/066 마이그레이션 로컬 파일은 생성했으나 원격은 MCP로 적용 완료. 초대 수락/거절 알림 처리 UI 미구현.
+- **다음**: 브라우저 QA, 초대 수락 처리 UX
+
 ### 2026-04-13 #34 — 홈뷰 버블 필터 미작동 수정 + 로고 클릭 초기화
 - **영역**: presentation/(home-container: urlBubbleId→activeBubbleId state 전환, handleLogoReset 추가, components/layout/app-header: onLogoClick prop)
 - **맥락**: 버블 상세→리스트 보기 진입 시 필터 변경이 작동하지 않던 버그 수정. urlBubbleId가 상수여서 viewTypes가 항상 ['bubble']로 고정되고 칩 변경 시 초기화 effect가 재실행되며 덮어쓰기됨. state로 전환하여 필터 변경 시 bubble 모드 해제. 로고 클릭 시 필터/소팅/검색/소셜필터 전체 디폴트 복원.
@@ -53,12 +59,6 @@
 - **맥락**: restaurant_rp(reputation) → restaurant_prestige 용어 통일. DB: 테이블/컬럼/인덱스/RLS/트리거/RPC rename. 코드: RestaurantRp→RestaurantPrestige 타입, .rp→.prestige 필드, /api/restaurants/rp/match→/prestige/match 경로. 약 25개 파일 변경. pnpm build PASS.
 - **미완료**: 058 마이그레이션 원격 적용, supabase/types.ts 재생성
 - **다음**: 마이그레이션 원격 적용, supabase gen types 실행
-
-### 2026-04-09 #26 — 지도뷰 통합 식당 탐색 허브 리디자인
-- **영역**: domain/(entities/map-discovery 신규, services/map-cluster 신규), app/api/restaurants/nearby(enrichment 추가), application/hooks/use-map-discovery(신규), presentation/components/home/(map-filter-bar 신규, map-compact-item 신규, map-view 전면 수정), presentation/containers/home-container
-- **맥락**: 지도뷰를 "내 기록 뷰어 + nearby 사이드바" 이원 구조에서 통합 식당 탐색 허브로 리디자인. MapDiscoveryItem 단일 타입으로 내 기록+nearby 통합, 4종 점수(내/nyam/버블/구글) cascade 소팅, 3그룹 필터(보기/명성/점수), 그리드 클러스터링, 4px 도트 마커. nearby API에 Nyam DB cross-reference + Google Places enrichment 추가.
-- **미완료**: quality-guard(pnpm build/lint) 미실행, 브라우저 QA 미실행, bubbleScore enrichment 미구현(Phase 2), Google Places 별점 캐싱 미구현
-- **다음**: pnpm build && pnpm lint 크리티컬 게이트 실행, /myqa 브라우저 QA, bubbleScore Phase 2
 
 ### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
 - **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
