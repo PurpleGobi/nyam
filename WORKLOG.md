@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-13 #32 — 찜(bookmark) 기능 전체 제거
+- **영역**: domain/(entities/bookmark 삭제, repositories/bookmark-repository 삭제, entities/home-target에서 isBookmarked/isCellar 제거, services/filter-matcher에서 bookmark/cellar 필터 제거), infrastructure/(supabase-bookmark-repository 삭제, supabase-home-repository에서 bookmarks 쿼리 제거), application/(use-bookmark 삭제, use-bubble-auto-sync에서 syncBookmarkToAllBubbles 제거, use-naver-import+use-reactions에서 bookmarkRepo 제거), presentation/(bookmark-button 삭제, hero-carousel에서 하트 제거, search-result-item에서 Heart 제거, wine-card isCellar dead code 제거, home-container isCellar 분기 제거, restaurant/wine-detail-container useBookmark 제거), shared/di/container.ts bookmarkRepo 제거, CODEBASE.md+DATA_MODEL.md 갱신
+- **맥락**: 찜 → 버블 큐레이션 전환 완료에 따른 dead code 전면 삭제. 5파일 삭제 + 17파일 정리, 순 -558줄. bookmarks 테이블 Supabase 쿼리 1개 추가 제거로 홈 성능 소폭 개선.
+- **미완료**: bookmarks DB 테이블 DROP 마이그레이션 (데이터 백업 후 별도 진행)
+- **다음**: bookmarks 테이블 마이그레이션 정리, supabase/types.ts 재생성
+
 ### 2026-04-13 #31 — 홈 초기 로딩 최적화 + 검색 UI + 탭 전환 버그 수정
 - **영역**: infrastructure/supabase-home-repository(prefetchSharedData+fetchRecordsAndBookmarks 통합), application/hooks/(use-home-targets race condition fix, use-restaurant-stats+use-wine-stats+use-xp+use-social-filter-options에 enabled/levelOnly 지연 로드), presentation/(search-container 인라인 검색, home-container stats 지연, app-header XP levelOnly), development_docs/systems/QUERY_OPTIMIZATION.md(신규), CLAUDE.md 참조맵
 - **맥락**: (1) 쿼리 최적화 5대 원칙(P1~P5) 수립. (2) homeRepo: follows/bubble_members 중복 조회 제거(P1), 3체인 병렬+필터 없을 때 meta+records 전부 병렬(P2), record_photos FK join으로 별도 쿼리 제거, 소셜 records 9컬럼 최소 SELECT(P3). (3) stats/XP/소셜 필터를 지연 로드하여 초기 네트워크 경합 제거. (4) 탭 전환 race condition: requestIdRef로 stale 응답 무시. (5) 검색 UI: 필터 추가 버튼과 같은 줄에 인라인 검색. Supabase 요청 62% 감소(100+→38).
