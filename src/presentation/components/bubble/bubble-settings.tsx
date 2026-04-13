@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, BarChart3, AlertTriangle, Share2, UserPlus } from 'lucide-react'
+import { useState, useRef } from 'react'
+import Image from 'next/image'
+import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, BarChart3, AlertTriangle, Share2, UserPlus, ImagePlus, X } from 'lucide-react'
 import type { Bubble, BubbleJoinPolicy, BubbleVisibility, BubbleShareRule, BubbleMemberRole, VisibilityOverride } from '@/domain/entities/bubble'
+import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
@@ -49,6 +51,12 @@ const ALL_VISIBLE: VisibilityOverride = {
   level: true, quadrant: true, bubbles: true, price: true,
 }
 
+const COLOR_OPTIONS = [
+  '#F97316', '#EF4444', '#EC4899', '#8B5CF6',
+  '#3B82F6', '#06B6D4', '#10B981', '#6B7280',
+  '#F59E0B', '#84CC16', '#14B8A6', '#6366F1',
+]
+
 interface BubbleSettingsProps {
   bubble: Bubble
   myRole: BubbleMemberRole | null
@@ -70,6 +78,7 @@ interface BubbleSettingsProps {
   onInviteSearch?: (query: string, excludeIds: string[]) => void
   onInviteUser?: (userId: string) => void
   existingMemberIds?: string[]
+  onUploadPhoto?: (file: File) => Promise<string>
   stats: {
     weeklyRecordCount: number
     prevWeeklyRecordCount: number
@@ -84,10 +93,23 @@ export function BubbleSettings({
   inviteSearchResults, isInviteSearching, isInviting, invitedIds,
   onInviteSearch, onInviteUser, existingMemberIds,
   visibilityOverride, onVisibilityChange,
+  onUploadPhoto,
   stats,
 }: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
   const [description, setDescription] = useState(bubble.description ?? '')
+
+  // 아이콘 상태
+  const initIsPhoto = bubble.icon !== null && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://'))
+  const [selectedIcon, setSelectedIcon] = useState(bubble.icon ?? 'utensils-crossed')
+  const [selectedColor, setSelectedColor] = useState(bubble.iconBgColor ?? '#F97316')
+  const [showIconPicker, setShowIconPicker] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(initIsPhoto ? bubble.icon : null)
+  const [uploadError, setUploadError] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const isPhoto = photoPreview !== null
   const [accessMode, setAccessMode] = useState<AccessMode>(
     resolveAccessMode(bubble.visibility, bubble.joinPolicy),
   )
@@ -101,6 +123,47 @@ export function BubbleSettings({
   const [showDanger, setShowDanger] = useState(false)
   const [keywordInput, setKeywordInput] = useState('')
 
+  const handlePhotoSelect = async (file: File) => {
+    if (!file.type.startsWith('image/') || !onUploadPhoto) return
+    const previewUrl = URL.createObjectURL(file)
+    setPhotoPreview(previewUrl)
+    setPendingFile(file)
+    setUploadError(false)
+    setIsUploading(true)
+    try {
+      const publicUrl = await onUploadPhoto(file)
+      setSelectedIcon(publicUrl)
+      setPendingFile(null)
+    } catch {
+      setUploadError(true)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const retryUpload = async () => {
+    if (!pendingFile || !onUploadPhoto) return
+    setUploadError(false)
+    setIsUploading(true)
+    try {
+      const publicUrl = await onUploadPhoto(pendingFile)
+      setSelectedIcon(publicUrl)
+      setPendingFile(null)
+    } catch {
+      setUploadError(true)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const clearPhoto = () => {
+    setPhotoPreview(null)
+    setPendingFile(null)
+    setUploadError(false)
+    setSelectedIcon('utensils-crossed')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const isOwner = myRole === 'owner'
   const isAdmin = myRole === 'admin'
   const showBubbleSettings = isOwner
@@ -108,11 +171,31 @@ export function BubbleSettings({
   const showStats = isOwner || isAdmin
   const showDangerZone = isOwner
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 사진 업로드 실패 상태에서 저장 → 재시도
+    let finalIcon = selectedIcon
+    if (pendingFile && onUploadPhoto) {
+      setIsUploading(true)
+      try {
+        const publicUrl = await onUploadPhoto(pendingFile)
+        finalIcon = publicUrl
+        setSelectedIcon(publicUrl)
+        setPendingFile(null)
+        setUploadError(false)
+      } catch {
+        setUploadError(true)
+        setIsUploading(false)
+        return
+      } finally {
+        setIsUploading(false)
+      }
+    }
     const access = ACCESS_OPTIONS.find(o => o.value === accessMode)
     onSave({
       name: name.trim(),
       description: description.trim() || null,
+      icon: finalIcon,
+      iconBgColor: isPhoto ? '#6B7280' : selectedColor,
       visibility: access?.visibility ?? 'public',
       joinPolicy: access?.joinPolicy ?? 'manual_approve',
       minRecords,
@@ -146,8 +229,127 @@ export function BubbleSettings({
       {/* ── Owner: 기본 정보 ── */}
       {showBubbleSettings && (
         <Section title="기본 정보" icon={<Info size={16} style={{ color: 'var(--accent-social)' }} />}>
-          <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
-          <InputField label="설명" value={description} onChange={setDescription} maxLength={100} multiline />
+          {/* 아이콘 + 이름/설명 2컬럼 */}
+          <div className="flex gap-3">
+            {/* 아이콘 */}
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowIconPicker(!showIconPicker)}
+                className="flex items-center justify-center overflow-hidden rounded-full"
+                style={{ width: 56, height: 56, backgroundColor: isPhoto ? 'transparent' : selectedColor }}
+              >
+                {isPhoto ? (
+                  <Image src={photoPreview ?? selectedIcon} alt="icon" width={56} height={56} className="h-full w-full object-cover" />
+                ) : (
+                  <BubbleIcon icon={selectedIcon} size={24} />
+                )}
+              </button>
+              <span className="text-[10px]" style={{ color: uploadError ? 'var(--destructive)' : 'var(--text-hint)' }}>
+                {isUploading ? '...' : uploadError ? (
+                  <button type="button" onClick={retryUpload} className="underline">재시도</button>
+                ) : '변경'}
+              </span>
+            </div>
+            {/* 이름 + 설명 */}
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
+              <InputField label="설명" value={description} onChange={setDescription} maxLength={100} multiline />
+            </div>
+          </div>
+
+          {/* 아이콘 피커 */}
+          {showIconPicker && (
+            <div className="rounded-xl p-2.5" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              {/* 사진 업로드 */}
+              {onUploadPhoto && (
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => { const file = e.target.files?.[0]; if (file) handlePhotoSelect(file) }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold transition-colors"
+                    style={{
+                      backgroundColor: isPhoto ? 'var(--accent-social)' : 'var(--bg-elevated)',
+                      color: isPhoto ? '#FFFFFF' : 'var(--text-sub)',
+                      border: `1px solid ${isPhoto ? 'var(--accent-social)' : 'var(--border)'}`,
+                    }}
+                  >
+                    <ImagePlus size={14} />
+                    사진 업로드
+                  </button>
+                  {isPhoto && (
+                    <button
+                      type="button"
+                      onClick={clearPhoto}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    >
+                      <X size={14} style={{ color: 'var(--text-sub)' }} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* 아이콘 그리드 */}
+              {!isPhoto && (
+                <div className="flex max-h-[200px] flex-col gap-2 overflow-y-auto">
+                  {BUBBLE_ICON_CATEGORIES.map((cat) => (
+                    <div key={cat.label}>
+                      <p className="mb-1 text-[10px] font-semibold text-[var(--text-hint)]">{cat.label}</p>
+                      <div className="grid grid-cols-8 gap-1">
+                        {cat.icons.map((iconName) => {
+                          const Icon = BUBBLE_ICON_MAP[iconName]
+                          if (!Icon) return null
+                          const isActive = selectedIcon === iconName
+                          return (
+                            <button
+                              key={iconName}
+                              type="button"
+                              onClick={() => setSelectedIcon(iconName)}
+                              className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+                              style={{
+                                backgroundColor: isActive ? 'var(--accent-social-light)' : 'transparent',
+                                border: isActive ? '1.5px solid var(--accent-social)' : '1.5px solid transparent',
+                              }}
+                            >
+                              <Icon size={16} style={{ color: isActive ? 'var(--accent-social)' : 'var(--text-sub)' }} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 색상 */}
+              {!isPhoto && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {COLOR_OPTIONS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setSelectedColor(color)}
+                      className="h-6 w-6 rounded-full transition-transform"
+                      style={{
+                        backgroundColor: color,
+                        border: selectedColor === color ? '2px solid var(--text)' : '2px solid transparent',
+                        transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </Section>
       )}
 

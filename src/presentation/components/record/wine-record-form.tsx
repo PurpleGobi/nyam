@@ -309,7 +309,7 @@ export function WineRecordForm({
       visitDate,
       linkedRestaurantId: linkedRestaurant?.id,
     })
-  }, [isValid, producer, vintage, region, subRegion, appellation, country, varieties, wineType, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
+  }, [isValid, producer, vintage, region, subRegion, appellation, country, varieties, abv, bodyLevel, acidityLevel, sweetnessLevel, classification, servingTemp, decanting, referencePriceMin, referencePriceMax, drinkingWindowStart, drinkingWindowEnd, vivinoRating, criticRP, criticWS, tastingNotes, quadrant, aroma, structure, autoScore, pairingCategories, comment, purchasePrice, companions, privateNote, visitDate, target.id, onSave, linkedRestaurant])
 
   const buildWineMetaUpdate = useCallback(() => ({
     vintage: vintage ? Number(vintage) : null,

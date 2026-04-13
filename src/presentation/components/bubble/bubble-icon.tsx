@@ -179,6 +179,7 @@ export function BubbleIcon({ icon, size }: BubbleIconProps) {
 
   if (isImageUrl(icon)) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={icon}
         alt="bubble icon"

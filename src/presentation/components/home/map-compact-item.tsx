@@ -27,31 +27,6 @@ function formatDistance(km: number): string {
   return `${km.toFixed(1)}km`
 }
 
-function ScoreBadge({
-  label,
-  value,
-  color,
-}: {
-  label: string
-  value: string
-  color: string
-}) {
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5"
-      style={{
-        fontSize: '10px',
-        fontWeight: 600,
-        background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        color,
-      }}
-    >
-      <span style={{ fontSize: '9px' }}>{label}</span>
-      {value}
-    </span>
-  )
-}
-
 export function MapCompactItem({
   name,
   genre,
@@ -123,23 +98,21 @@ export function MapCompactItem({
         )}
       </div>
 
-      {/* 우: 점수 뱃지들 (우선순위 순) */}
-      <div className="flex shrink-0 items-center gap-1">
-        {myScore != null && (
-          <ScoreBadge label="내" value={String(myScore)} color="var(--accent-food)" />
-        )}
-        {followingScore != null && (
-          <ScoreBadge label="F" value={String(followingScore)} color="var(--text-sub)" />
-        )}
-        {bubbleScore != null && (
-          <ScoreBadge label="B" value={String(bubbleScore)} color="var(--text-sub)" />
-        )}
-        {nyamScore != null && (
-          <ScoreBadge label="N" value={String(nyamScore)} color="var(--text-sub)" />
-        )}
-        {googleRating != null && (
-          <ScoreBadge label="G" value={String(googleRating)} color="var(--text-hint)" />
-        )}
+      {/* 우: 최우선 점수 1개 표시 (내 > 버블 > nyam > google) */}
+      <div className="flex shrink-0 items-center">
+        {(() => {
+          const score = myScore ?? bubbleScore ?? nyamScore ?? googleRating
+          if (score == null) return null
+          const color = myScore != null ? 'var(--accent-food)' : 'var(--text-sub)'
+          return (
+            <span
+              className="text-[15px] font-bold"
+              style={{ color }}
+            >
+              {score}
+            </span>
+          )
+        })()}
       </div>
 
     </button>

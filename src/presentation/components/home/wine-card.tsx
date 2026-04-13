@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Wine } from 'lucide-react'
 import { SourceTag } from '@/presentation/components/home/source-tag'
 import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
-import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
-import type { ScoreSource } from '@/domain/entities/score'
 
 export interface WineBubbleMember {
   nickname: string
@@ -36,10 +34,6 @@ export interface WineCardProps {
   bubbleMembers?: WineBubbleMember[]
   visitCount?: number
   latestDate?: string | null
-  scoreSource?: ScoreSource
-  myScore?: number | null
-  nyamScore?: number | null
-  bubbleScore?: number | null
   /** 버블 추가 선택 모드 */
   isSelecting?: boolean
   /** 선택 여부 */
@@ -48,7 +42,7 @@ export interface WineCardProps {
   onSelectToggle?: () => void
 }
 
-export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, scoreSource, myScore, nyamScore, bubbleScore, isSelecting, isSelected, onSelectToggle }: WineCardProps) {
+export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate, isSelecting, isSelected, onSelectToggle }: WineCardProps) {
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
@@ -103,20 +97,12 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
             />
           )}
           {myRecord?.satisfaction != null && (
-            <div className="flex flex-col items-start gap-0.5">
-              <span
-                className="text-[32px] font-extrabold leading-none"
-                style={{ color: 'var(--accent-wine)' }}
-              >
-                {myRecord.satisfaction}
-              </span>
-              <MiniScoreBadges
-                myScore={myScore ?? null}
-                nyamScore={nyamScore ?? null}
-                bubbleScore={bubbleScore ?? null}
-                accentType="wine"
-              />
-            </div>
+            <span
+              className="text-[32px] font-extrabold leading-none"
+              style={{ color: 'var(--accent-wine)' }}
+            >
+              {myRecord.satisfaction}
+            </span>
           )}
         </div>
 

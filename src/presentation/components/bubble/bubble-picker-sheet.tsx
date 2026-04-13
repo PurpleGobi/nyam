@@ -3,26 +3,32 @@
 import { useCallback } from 'react'
 import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
+
+interface BubblePickerItem {
+  id: string
+  name: string
+  description?: string | null
+  icon: string | null
+  iconBgColor: string | null
+}
 
 interface BubblePickerSheetProps {
   isOpen: boolean
   onClose: () => void
-  bubbles: Bubble[]
-  /** 선택된 대상 수 (표시용) */
-  selectedCount: number
+  bubbles: BubblePickerItem[]
   /** 버블 선택 시 콜백 */
   onSelect: (bubbleId: string) => void
+  isLoading?: boolean
 }
 
 export function BubblePickerSheet({
   isOpen,
   onClose,
   bubbles,
-  selectedCount,
   onSelect,
+  isLoading = false,
 }: BubblePickerSheetProps) {
   const router = useRouter()
 
@@ -35,11 +41,15 @@ export function BubblePickerSheet({
     <BottomSheet isOpen={isOpen} onClose={onClose}>
       <div className="px-4 pb-6 pt-2">
         <p className="mb-4 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-          {selectedCount}개를 어디에 추가할까요?
+          어디에 추가할까요?
         </p>
 
         <div className="flex flex-col">
-          {bubbles.map((bubble) => (
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="h-5 w-5 animate-spin rounded-full border-[2px] border-[var(--accent-social)] border-t-transparent" />
+            </div>
+          ) : bubbles.map((bubble) => (
             <button
               key={bubble.id}
               type="button"
@@ -72,7 +82,8 @@ export function BubblePickerSheet({
           ))}
         </div>
 
-        {/* 새 버블 만들기 */}
+        {/* 새 버블 만들기 — 로딩 중엔 숨김 */}
+        {!isLoading && (
         <button
           type="button"
           onClick={() => { onClose(); router.push('/bubbles/create') }}
@@ -87,6 +98,7 @@ export function BubblePickerSheet({
           </div>
           <span className="text-[14px] font-medium">새 버블 만들기</span>
         </button>
+        )}
       </div>
     </BottomSheet>
   )

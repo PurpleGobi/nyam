@@ -1,25 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { Bubble, BubbleMember, BubbleMemberRole } from '@/domain/entities/bubble'
+import { useState, useEffect, useTransition } from 'react'
+import type { Bubble, BubbleMemberRole } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
 export function useBubbleDetail(bubbleId: string | null, userId: string | null) {
   const [bubble, setBubble] = useState<Bubble | null>(null)
   const [myRole, setMyRole] = useState<BubbleMemberRole | null>(null)
   const [tasteMatch, setTasteMatch] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    if (!bubbleId) {
-      setIsLoading(false)
-      return
-    }
+    if (!bubbleId) return
     let cancelled = false
-    Promise.all([
-      bubbleRepo.findById(bubbleId),
-      bubbleRepo.getMembers(bubbleId),
-    ]).then(([b, result]) => {
+    startTransition(async () => {
+      const [b, result] = await Promise.all([
+        bubbleRepo.findById(bubbleId),
+        bubbleRepo.getMembers(bubbleId),
+      ])
       if (cancelled) return
       setBubble(b)
       if (userId) {
@@ -27,14 +25,13 @@ export function useBubbleDetail(bubbleId: string | null, userId: string | null) 
         setMyRole(me?.role ?? null)
         setTasteMatch(me?.tasteMatchPct ?? null)
       }
-      setIsLoading(false)
     })
     return () => { cancelled = true }
-  }, [bubbleId, userId])
+  }, [bubbleId, userId, startTransition])
 
   const refetch = () => {
     if (bubbleId) bubbleRepo.findById(bubbleId).then(setBubble)
   }
 
-  return { bubble, myRole, tasteMatch, isLoading, refetch }
+  return { bubble, myRole, tasteMatch, isLoading: isPending, refetch }
 }

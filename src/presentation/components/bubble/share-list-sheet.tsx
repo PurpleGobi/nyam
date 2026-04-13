@@ -97,13 +97,15 @@ export function ShareListSheet({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isSearchOpen])
 
-  // 탭 전환 시 필터/소팅 초기화
-  useEffect(() => {
+  // 탭 전환 시 필터/소팅 초기화 (렌더 중 setState 패턴)
+  const [prevFilter, setPrevFilter] = useState(filter)
+  if (prevFilter !== filter) {
+    setPrevFilter(filter)
     setFilterRules([])
     setCurrentSort('latest')
     setIsFilterOpen(false)
     setIsSortOpen(false)
-  }, [filter])
+  }
 
   const accentType = filter === 'restaurant' ? 'food' : 'wine'
   const filterAttributes = filter === 'restaurant' ? RESTAURANT_FILTER_ATTRIBUTES : WINE_FILTER_ATTRIBUTES

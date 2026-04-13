@@ -1,6 +1,7 @@
 import nextConfig from 'eslint-config-next'
 
 const eslintConfig = [
+  { ignores: ['DB/**', 'node_modules/**'] },
   ...nextConfig.map((config) => {
     if (config.plugins?.['@typescript-eslint']) {
       return {

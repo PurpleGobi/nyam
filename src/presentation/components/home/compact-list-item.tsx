@@ -5,8 +5,6 @@ import { MiniQuadrant } from '@/presentation/components/home/mini-quadrant'
 import { BubbleQuadrant } from '@/presentation/components/bubble/bubble-quadrant'
 import type { MemberDot } from '@/presentation/components/bubble/bubble-quadrant'
 import { formatRelativeDate } from '@/shared/utils/date-format'
-import type { ScoreSource } from '@/domain/entities/score'
-import { MiniScoreBadges } from '@/presentation/components/home/mini-score-badges'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
@@ -25,11 +23,7 @@ interface CompactListItemProps {
   memberCount?: number
   latestReviewAt?: string | null
   visitCount?: number
-  scoreSource?: ScoreSource
   prestige?: RestaurantPrestige[]
-  myScore?: number | null
-  nyamScore?: number | null
-  bubbleScore?: number | null
   /** 버블 추가 선택 모드 */
   isSelecting?: boolean
   /** 선택 여부 */
@@ -52,11 +46,7 @@ export function CompactListItem({
   memberCount,
   latestReviewAt,
   visitCount,
-  scoreSource,
   prestige,
-  myScore,
-  nyamScore,
-  bubbleScore,
   isSelecting,
   isSelected,
   onSelectToggle,
@@ -133,17 +123,9 @@ export function CompactListItem({
             ? <BubbleQuadrant dots={bubbleDots} size={48} />
             : <MiniQuadrant axisX={axisX!} axisY={axisY!} satisfaction={score!} accentColor={accentColor} size={48} />
         )}
-        <div className="flex flex-col items-end gap-0.5">
-          <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
-            {score != null ? score : '—'}
-          </span>
-          <MiniScoreBadges
-            myScore={myScore ?? null}
-            nyamScore={nyamScore ?? null}
-            bubbleScore={bubbleScore ?? null}
-            accentType={accentType}
-          />
-        </div>
+        <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
+          {score != null ? score : '—'}
+        </span>
       </div>
 
     </button>

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings'
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
+import { useBubbleIconUpload } from '@/application/hooks/use-bubble-icon-upload'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
@@ -27,6 +28,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const { user } = useAuth()
   const userId = user?.id ?? null
   const { updateSettings, deleteBubble, isLoading: settingsLoading } = useBubbleSettings(bubbleId)
+  const { upload: uploadIcon } = useBubbleIconUpload()
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
@@ -47,13 +49,13 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const [visibilityOverride, setVisibilityOverride] = useState<VisibilityOverride | null>(null)
   const memberLoaded = !memberLoading
 
-  // 현재 멤버의 shareRule + visibilityOverride 반영
-  useEffect(() => {
-    if (currentMember) {
-      setShareRule(currentMember.shareRule)
-      setVisibilityOverride(currentMember.visibilityOverride)
-    }
-  }, [currentMember])
+  // 현재 멤버의 shareRule + visibilityOverride 반영 (렌더 중 setState 패턴)
+  const [prevMember, setPrevMember] = useState(currentMember)
+  if (prevMember !== currentMember && currentMember) {
+    setPrevMember(currentMember)
+    setShareRule(currentMember.shareRule)
+    setVisibilityOverride(currentMember.visibilityOverride)
+  }
 
   const pendingMembers: PendingMemberInfo[] = rawPendingMembers.map((m) => ({
     userId: m.userId,
@@ -99,6 +101,11 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     await inviteUser(targetUserId, userId, currentBubble.name, nickname)
   }
 
+  const handleUploadPhoto = useCallback(async (file: File): Promise<string> => {
+    if (!userId) throw new Error('Not authenticated')
+    return uploadIcon(file, userId)
+  }, [userId, uploadIcon])
+
   const handleApprove = async (targetUserId: string) => {
     await approveJoin(targetUserId)
     refreshPending()
@@ -131,6 +138,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onInviteSearch={inviteSearch}
           onInviteUser={handleInviteUser}
           existingMemberIds={existingMemberIds}
+          onUploadPhoto={handleUploadPhoto}
           shareRule={memberLoaded ? shareRule : undefined}
           onShareRuleChange={handleShareRuleChange}
           visibilityOverride={memberLoaded ? visibilityOverride : undefined}

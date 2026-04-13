@@ -38,13 +38,16 @@ export function AdvancedFilterSheet({
 
   const accentColor = accentType === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)'
 
-  // 열릴 때 editing 칩이 있으면 로드
-  useEffect(() => {
-    if (isOpen) {
-      setRules(editingChip?.rules ?? [])
-      setConjunction(editingChip?.conjunction ?? 'and')
-    }
-  }, [isOpen, editingChip])
+  // 열릴 때 editing 칩이 있으면 로드 (렌더 중 setState 패턴)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
+  if (prevIsOpen !== isOpen && isOpen) {
+    setPrevIsOpen(isOpen)
+    setRules(editingChip?.rules ?? [])
+    setConjunction(editingChip?.conjunction ?? 'and')
+  }
+  if (prevIsOpen !== isOpen && !isOpen) {
+    setPrevIsOpen(isOpen)
+  }
 
   // 바깥 클릭으로 닫기
   useEffect(() => {

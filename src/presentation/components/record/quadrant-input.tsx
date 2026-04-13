@@ -71,9 +71,9 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
   const [isDragging, setIsDragging] = useState(false)
   const [selectedRefIdx, setSelectedRefIdx] = useState<number | null>(null)
   const [showLabels, setShowLabels] = useState(false)
-  const prevMode = useRef(quadrantMode)
-  if (prevMode.current !== quadrantMode) {
-    prevMode.current = quadrantMode
+  const [prevMode, setPrevMode] = useState(quadrantMode)
+  if (prevMode !== quadrantMode) {
+    setPrevMode(quadrantMode)
     if (selectedRefIdx !== null) setSelectedRefIdx(null)
   }
 

@@ -16,7 +16,7 @@ import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
-import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
+import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
 
@@ -366,12 +366,16 @@ function AddFlowInner() {
         </>
       )}
 
-      <AddToBubbleSheet
+      <BubblePickerSheet
         isOpen={showAddToBubble}
         onClose={() => setShowAddToBubble(false)}
-        targetName={target?.name ?? ''}
-        bubbles={bubblesWithStatus}
-        onToggle={toggleBubbleItem}
+        bubbles={bubblesWithStatus.map((b) => ({
+          id: b.bubbleId,
+          name: b.bubbleName,
+          icon: b.bubbleIcon,
+          iconBgColor: b.bubbleIconBgColor,
+        }))}
+        onSelect={(bubbleId) => toggleBubbleItem(bubbleId, true)}
         isLoading={isBubblesLoading}
       />
     </div>

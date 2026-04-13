@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
 
 interface PhotoViewerProps {
@@ -18,10 +18,14 @@ interface PhotoViewerProps {
 export function PhotoViewer({ photos, initialIndex = 0, isOpen, onClose }: PhotoViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
 
-  // isOpen 또는 initialIndex 변경 시 동기화
-  useEffect(() => {
+  // isOpen 또는 initialIndex 변경 시 동기화 (렌더 중 setState 패턴)
+  const [prevOpen, setPrevOpen] = useState(isOpen)
+  const [prevInitialIndex, setPrevInitialIndex] = useState(initialIndex)
+  if (prevOpen !== isOpen || prevInitialIndex !== initialIndex) {
+    setPrevOpen(isOpen)
+    setPrevInitialIndex(initialIndex)
     if (isOpen) setCurrentIndex(initialIndex)
-  }, [isOpen, initialIndex])
+  }
 
   const handleClick = useCallback(() => {
     if (photos.length <= 1) return

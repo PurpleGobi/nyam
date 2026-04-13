@@ -307,7 +307,7 @@ export function ConditionFilterBar({
     setIsAddOpen(false)
     setCascadingState(null)
 
-  }, [chips, onChipsChange])
+  }, [chips, onChipsChange, usedPrestigeTypes])
 
   /** multi-select에서 editingChipId를 추적하는 ref (실시간 적용에 필요) */
   const multiSelectChipIdRef = useRef<string | null>(null)
@@ -561,7 +561,7 @@ export function ConditionFilterBar({
     }
     setEditingChipId(null)
     setCascadingState(null)
-  }, [chips, conditionChips, attributes, onChipsChange])
+  }, [chips, conditionChips, onChipsChange])
 
   /** 칩 값 변경 (일반 select) */
   const handleChangeChipValue = useCallback((chipId: string, newValue: string) => {

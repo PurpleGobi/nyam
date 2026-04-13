@@ -3,7 +3,7 @@
 // src/application/hooks/use-target-scores.ts
 // R3: domain 인터페이스에만 의존. infrastructure 직접 사용 금지.
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import type { TargetScores, ScoreSource, BubbleScoreEntry } from '@/domain/entities/score'
 import { getScoreFallback } from '@/domain/services/score-fallback'
 
@@ -76,22 +76,21 @@ export function useTargetScores(params: UseTargetScoresParams) {
     expandedPanel: null,
   })
 
-  // 데이터 로딩 후 최초 1회 fallback 소스로 초기화
-  const initializedRef = useRef(false)
-  useEffect(() => {
-    if (initializedRef.current || !fallback) return
-    initializedRef.current = true
+  // 데이터 로딩 후 최초 1회 fallback 소스로 동기화 (렌더 중 setState 패턴)
+  const [initialized, setInitialized] = useState(false)
+  if (!initialized && fallback) {
+    setInitialized(true)
     setState((prev) => ({
       ...prev,
       selectedSources: [fallback.source],
     }))
-  }, [fallback])
+  }
 
   // 카드 데이터 배열 (ScoreCards 컴포넌트에 직접 전달)
   const cards = useMemo(() => [
     { source: 'mine' as const, label: '나', score: myAvgScore, subText: myCount > 0 ? `${myCount}회` : '미방문', available: myAvgScore !== null },
-    { source: 'nyam' as const, label: 'Nyam', score: nyamAvgScore, subText: nyamConfidence !== null ? `확신 ${Math.round(nyamConfidence * 100)}%` : '', available: nyamAvgScore !== null, confidence: nyamConfidence, expandable: true },
     { source: 'bubble' as const, label: '버블', score: bubbleRepresentative.score, subText: bubbleRepresentative.confidence > 0 ? `확신 ${Math.round(bubbleRepresentative.confidence * 100)}%` : '', available: bubbleRepresentative.score !== null, confidence: bubbleRepresentative.confidence, expandable: true },
+    { source: 'nyam' as const, label: 'Nyam', score: nyamAvgScore, subText: nyamConfidence !== null ? `확신 ${Math.round(nyamConfidence * 100)}%` : '', available: nyamAvgScore !== null, confidence: nyamConfidence, expandable: true },
   ], [myAvgScore, myCount, bubbleRepresentative, nyamAvgScore, nyamConfidence])
 
   const toggleSource = (source: ScoreSource) => {

@@ -842,11 +842,7 @@ export function HomeContainer() {
               axisY={target.axisY}
               accentType={recordTab}
               visitCount={target.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
               prestige={target.prestige ?? []}
-              myScore={target.myScore}
-              nyamScore={target.nyamScore}
-              bubbleScore={target.bubbleScore}
               isSelecting={isBubbleSelectMode}
               isSelected={bubbleSelectIds.has(target.targetId)}
               onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
@@ -893,10 +889,6 @@ export function HomeContainer() {
               }}
               latestDate={target.latestVisitDate}
               visitCount={target.visitCount}
-              scoreSource={mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
-              myScore={target.myScore}
-              nyamScore={target.nyamScore}
-              bubbleScore={target.bubbleScore}
               isSelecting={isBubbleSelectMode}
               isSelected={bubbleSelectIds.has(target.targetId)}
               onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
@@ -915,17 +907,11 @@ export function HomeContainer() {
               axisY={target.axisY}
               status={status}
               visitCount={target.visitCount}
-              scoreSource={target.satisfaction !== null
-                ? mapRecordSourceToScoreSource(target.scoreSource ?? undefined)
-                : feedScores.has(target.targetId) ? 'nyam' : mapRecordSourceToScoreSource(target.scoreSource ?? undefined)}
               latestDate={target.latestVisitDate}
               distanceKm={userCoords && target.lat != null && target.lng != null
                 ? haversineDistance(userCoords.lat, userCoords.lng, target.lat, target.lng)
                 : null}
               prestige={target.prestige ?? []}
-              myScore={target.myScore}
-              nyamScore={target.nyamScore}
-              bubbleScore={target.bubbleScore}
               isSelecting={isBubbleSelectMode}
               isSelected={bubbleSelectIds.has(target.targetId)}
               onSelectToggle={() => toggleBubbleSelectItem(target.targetId)}
@@ -1323,7 +1309,6 @@ export function HomeContainer() {
         isOpen={showBubblePicker}
         onClose={() => { setShowBubblePicker(false); stopBubbleSelect() }}
         bubbles={myBubbles}
-        selectedCount={bubbleSelectIds.size}
         onSelect={async (bubbleId) => {
           const targets = displayTargets
             .filter((t) => bubbleSelectIds.has(t.targetId))

@@ -141,11 +141,11 @@ export function useAllTargetRecords({
     } finally {
       setIsLoading(false)
     }
-  }, [targetId, targetType, userId, bubbleIdsKey])
+  }, [targetId, targetType, userId])
 
   useEffect(() => {
     fetchAll()
-  }, [fetchAll])
+  }, [fetchAll, bubbleIdsKey])
 
   // 소스별 필터 + 중복 제거 (같은 recordId가 여러 소스에 존재 가능)
   const records = useMemo(() => {

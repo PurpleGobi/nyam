@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useRef, useSyncExternalStore, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useState, useSyncExternalStore, type ReactNode } from 'react'
 
 /* ── 타입 ── */
 interface ToastItem {
@@ -65,11 +65,7 @@ function createToastStore() {
 
 /* ── Provider ── */
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const storeRef = useRef<ReturnType<typeof createToastStore> | null>(null)
-  if (!storeRef.current) {
-    storeRef.current = createToastStore()
-  }
-  const store = storeRef.current
+  const [store] = useState(() => createToastStore())
 
   const toasts = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
 

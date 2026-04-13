@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -17,38 +17,28 @@ interface UseInviteValidationReturn {
 export function useInviteValidation(inviteCode: string): UseInviteValidationReturn {
   const [bubble, setBubble] = useState<Bubble | null>(null)
   const [isExpired, setIsExpired] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    if (!inviteCode) {
-      setBubble(null)
-      setIsExpired(false)
-      setIsLoading(false)
-      return
-    }
+    if (!inviteCode) return
 
     let cancelled = false
-    setIsLoading(true)
-
-    bubbleRepo.validateInviteCode(inviteCode).then(({ valid, bubble: b, expired }) => {
-      if (cancelled) return
-      if (valid && b) {
-        setBubble(b)
-      } else {
-        setBubble(null)
-      }
-      setIsExpired(expired)
-      setIsLoading(false)
-    }).catch(() => {
-      if (!cancelled) {
-        setBubble(null)
-        setIsExpired(false)
-        setIsLoading(false)
+    startTransition(async () => {
+      try {
+        const { valid, bubble: b, expired } = await bubbleRepo.validateInviteCode(inviteCode)
+        if (cancelled) return
+        setBubble(valid && b ? b : null)
+        setIsExpired(expired)
+      } catch {
+        if (!cancelled) {
+          setBubble(null)
+          setIsExpired(false)
+        }
       }
     })
 
     return () => { cancelled = true }
   }, [inviteCode])
 
-  return { bubble, isExpired, isLoading }
+  return { bubble, isExpired, isLoading: isPending }
 }

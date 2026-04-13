@@ -110,6 +110,17 @@ export function createDefaultViewChip(): ConditionChip {
   }
 }
 
+/** '보기: 버블' 칩 (URL ?bubbleId= 진입 시 사용) */
+export function createBubbleViewChip(): ConditionChip {
+  return {
+    id: generateChipId(),
+    attribute: 'view',
+    operator: 'eq',
+    value: 'bubble',
+    displayLabel: '버블',
+  }
+}
+
 /* ── cascading-select 헬퍼 ── */
 
 /** cascading "전체" 플레이스홀더 값 */

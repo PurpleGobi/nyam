@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, UtensilsCrossed, ListPlus } from 'lucide-react'
+import { MapPin, UtensilsCrossed, PenLine, FolderPlus } from 'lucide-react'
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -30,7 +30,7 @@ import { AllRecordsSection } from '@/presentation/components/detail/all-records-
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
 import { DeleteConfirmModal } from '@/presentation/components/record/delete-confirm-modal'
 import { ShareToBubbleSheet } from '@/presentation/components/share/share-to-bubble-sheet'
-import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
+import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
 import { useToast } from '@/presentation/components/ui/toast'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import type { BadgeItem } from '@/presentation/components/detail/badge-row'
@@ -510,7 +510,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
               <h3 className="mb-4" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
                 {(() => {
                   const SCORE_SOURCES: ScoreSource[] = ['mine', 'nyam', 'bubble']
-                  const LABELS: Record<ScoreSource, string> = { mine: '나의 평가', nyam: 'Nyam 평가', bubble: '버블 평가' }
+                  const LABELS: Record<ScoreSource, string> = { mine: '평가', nyam: '평가', bubble: '평가' }
                   const top = SCORE_SOURCES.find((s) => selectedSources.includes(s)) ?? 'mine'
                   return LABELS[top]
                 })()}
@@ -606,23 +606,24 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       </div>
 
       {/* FAB + 액션 버튼 — 같은 높이 */}
-      <DetailFab onBack={handleBack} onAdd={handleAdd} />
-
-      {/* 리스트에 추가 버튼 */}
-      <button
-        type="button"
-        onClick={() => setShowAddToBubble(true)}
-        className="fixed z-40 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-semibold shadow-md transition-opacity active:opacity-70"
-        style={{
-          bottom: myRecords.length > 0 ? '148px' : '88px',
-          right: '20px',
-          backgroundColor: 'var(--accent-social)',
-          color: '#FFFFFF',
-        }}
-      >
-        <ListPlus size={14} />
-        리스트
-      </button>
+      <DetailFab
+        onBack={handleBack}
+        onAdd={handleAdd}
+        menuItems={[
+          {
+            key: 'record',
+            icon: <PenLine size={16} />,
+            label: '기록 추가',
+            onClick: handleAdd,
+          },
+          {
+            key: 'bubble-add',
+            icon: <FolderPlus size={16} />,
+            label: '버블에 추가',
+            onClick: () => setShowAddToBubble(true),
+          },
+        ]}
+      />
 
       {myRecords.length > 0 && (
         <FabActions
@@ -646,12 +647,16 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         onShareMultiple={shareToBubbles}
       />
 
-      <AddToBubbleSheet
+      <BubblePickerSheet
         isOpen={showAddToBubble}
         onClose={() => setShowAddToBubble(false)}
-        targetName={restaurant.name}
-        bubbles={bubblesWithStatus}
-        onToggle={toggleBubbleItem}
+        bubbles={bubblesWithStatus.map((b) => ({
+          id: b.bubbleId,
+          name: b.bubbleName,
+          icon: b.bubbleIcon,
+          iconBgColor: b.bubbleIconBgColor,
+        }))}
+        onSelect={(bubbleId) => toggleBubbleItem(bubbleId, true)}
         isLoading={isBubblesLoading}
       />
 

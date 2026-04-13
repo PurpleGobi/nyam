@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, Suspense } from 'react'
+import { useState, useCallback, useEffect, useTransition, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { RecordTargetType, CreateRecordInput, DiningRecord } from '@/domain/entities/record'
 import type { AddFlowEntryPath } from '@/domain/entities/add-flow'
@@ -30,7 +30,7 @@ import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { RestaurantRecordForm } from '@/presentation/components/record/restaurant-record-form'
 import { WineRecordForm } from '@/presentation/components/record/wine-record-form'
 import { useToast } from '@/presentation/components/ui/toast'
-import { AddToBubbleSheet } from '@/presentation/components/bubble/add-to-bubble-sheet'
+import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
 
 interface RecordFlowState {
   targetType: RecordTargetType
@@ -72,28 +72,23 @@ function RecordFlowInner() {
     savedTargetId ?? (state.targetId || null),
     state.targetType,
   )
-  const [genreHint, setGenreHint] = useState<string | null>(null)
-  const [recordExtra, setRecordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(null)
-
-  // sessionStorage에서 장르 힌트 + 추가 정보 읽기
-  useEffect(() => {
+  const [genreHint] = useState<string | null>(() => {
     try {
       const hint = sessionStorage.getItem('nyam_genre_hint')
-      if (hint) {
-        setGenreHint(hint)
-        sessionStorage.removeItem('nyam_genre_hint')
-      }
+      if (hint) { sessionStorage.removeItem('nyam_genre_hint'); return hint }
     } catch {}
+    return null
+  })
+  const [recordExtra] = useState<{ categoryPath?: string; address?: string; distance?: string } | null>(() => {
     try {
       const extra = sessionStorage.getItem('nyam_record_extra')
-      if (extra) {
-        setRecordExtra(JSON.parse(extra))
-        sessionStorage.removeItem('nyam_record_extra')
-      }
+      if (extra) { sessionStorage.removeItem('nyam_record_extra'); return JSON.parse(extra) as { categoryPath?: string; address?: string; distance?: string } }
     } catch {}
-  }, [])
+    return null
+  })
 
   const { settings } = useSettings()
+  const prefTimezone = settings?.prefTimezone ?? null
   const { deleteRecord, isDeleting } = useDeleteRecord()
   const { savePhotos, deletePhoto: deletePhotoById, getPhotosByRecordId, deleteImage } = usePhotoManagement()
   const { updateRecord } = useRecordUpdate()
@@ -104,9 +99,10 @@ function RecordFlowInner() {
   // 수정 모드: 기존 기록 + 사진 + 대상 정보 로드
   const { record: editingRecord, photos: editPhotos, targetMeta: editorTargetMeta, isLoading: isEditLoading } = useRecordEditor(editRecordId)
 
-  // 수정 모드 기록 로드 완료 시 state 반영
-  useEffect(() => {
-    if (!editorTargetMeta || !editingRecord) return
+  // 수정 모드 기록 로드 완료 시 state 반영 (렌더 중 setState 패턴)
+  const [prevEditingRecord, setPrevEditingRecord] = useState(editingRecord)
+  if (prevEditingRecord !== editingRecord && editorTargetMeta && editingRecord) {
+    setPrevEditingRecord(editingRecord)
     setState((prev) => ({
       ...prev,
       targetId: editingRecord.targetId,
@@ -114,7 +110,6 @@ function RecordFlowInner() {
       targetName: editorTargetMeta.targetName || prev.targetName,
       targetMeta: editorTargetMeta.targetMeta || prev.targetMeta,
     }))
-    // 기존 사진을 PhotoPicker에 표시
     if (editPhotos.length > 0) {
       initExistingPhotos(
         editPhotos.map((p) => ({
@@ -125,7 +120,7 @@ function RecordFlowInner() {
         })),
       )
     }
-  }, [editorTargetMeta, editingRecord, editPhotos, initExistingPhotos])
+  }
 
   // 이전 기록 참조점 + 최근 동행자
   const { referenceRecords, recentCompanions } = useRecordReferences(
@@ -144,30 +139,38 @@ function RecordFlowInner() {
   const [isSaving, setIsSaving] = useState(false)
   const isLoading = isSaving || isRecordLoading || isUploading
 
-  // sessionStorage에서 촬영 사진 URL + AI prefill 읽기
-  const [aiPrefill, setAiPrefill] = useState<{ genre?: string; foodType?: string } | null>(null)
+  // sessionStorage에서 AI prefill 읽기 (lazy initializer)
+  const [aiPrefill] = useState<{ genre?: string; foodType?: string } | null>(() => {
+    if (isEditMode) return null
+    try {
+      const prefillStr = sessionStorage.getItem('nyam_ai_prefill')
+      if (prefillStr) {
+        sessionStorage.removeItem('nyam_ai_prefill')
+        return JSON.parse(prefillStr) as { genre?: string; foodType?: string }
+      }
+    } catch {}
+    return null
+  })
 
+  // sessionStorage에서 촬영 사진 URL 읽기 (비동기 fetch 필요)
+  const [, startPhotoTransition] = useTransition()
   useEffect(() => {
     if (isEditMode) return
     try {
       const photoUrl = sessionStorage.getItem('nyam_captured_photo_url')
       if (photoUrl) {
         sessionStorage.removeItem('nyam_captured_photo_url')
-        fetch(photoUrl).then((res) => res.blob()).then((blob) => {
-          const file = new File([blob], 'camera-capture.webp', { type: blob.type || 'image/webp' })
-          addFiles([file])
-        }).catch(() => {})
+        startPhotoTransition(async () => {
+          try {
+            const res = await fetch(photoUrl)
+            const blob = await res.blob()
+            const file = new File([blob], 'camera-capture.webp', { type: blob.type || 'image/webp' })
+            addFiles([file])
+          } catch {}
+        })
       }
     } catch {}
-    try {
-      const prefillStr = sessionStorage.getItem('nyam_ai_prefill')
-      if (prefillStr) {
-        sessionStorage.removeItem('nyam_ai_prefill')
-        const prefill = JSON.parse(prefillStr)
-        setAiPrefill(prefill)
-      }
-    } catch {}
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isEditMode, addFiles, startPhotoTransition])
 
   const handleSave = useCallback(
     async (formData: { targetId: string; targetType: RecordTargetType; [key: string]: unknown }) => {
@@ -198,7 +201,7 @@ function RecordFlowInner() {
             intensity: (formData.intensity as number) ?? null,
             autoScore: (formData.autoScore as number) ?? null,
             mealTime: (formData.mealTime as DiningRecord['mealTime']) ?? null,
-            visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
+            visitDate: (formData.visitDate as string) ?? todayInTz(prefTimezone ?? detectBrowserTimezone()),
             menuTags: (formData.menuTags as string[]) ?? null,
             pairingCategories: formData.pairingCategories as DiningRecord['pairingCategories'],
             linkedWineId: formData.linkedWineId as string | undefined,
@@ -290,7 +293,7 @@ function RecordFlowInner() {
             companionCount: (formData.companionCount as number) ?? null,
             totalPrice: (formData.totalPrice as number) ?? null,
             purchasePrice: (formData.purchasePrice as number) ?? null,
-            visitDate: (formData.visitDate as string) ?? todayInTz(settings?.prefTimezone ?? detectBrowserTimezone()),
+            visitDate: (formData.visitDate as string) ?? todayInTz(prefTimezone ?? detectBrowserTimezone()),
             aromaPrimary: (formData.aromaPrimary as string[]) ?? [],
             aromaSecondary: (formData.aromaSecondary as string[]) ?? [],
             aromaTertiary: (formData.aromaTertiary as string[]) ?? [],
@@ -382,7 +385,7 @@ function RecordFlowInner() {
         setIsSaving(false)
       }
     },
-    [user, isSaving, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, settings?.prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta],
+    [user, isSaving, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta, showToast],
   )
 
   const handleBack = useCallback(() => router.back(), [router])
@@ -556,15 +559,19 @@ function RecordFlowInner() {
         />
       )}
 
-      <AddToBubbleSheet
+      <BubblePickerSheet
         isOpen={showAddToBubble}
         onClose={() => {
           setShowAddToBubble(false)
           router.replace('/')
         }}
-        targetName={state.targetName}
-        bubbles={bubblesWithStatus}
-        onToggle={toggleBubbleItem}
+        bubbles={bubblesWithStatus.map((b) => ({
+          id: b.bubbleId,
+          name: b.bubbleName,
+          icon: b.bubbleIcon,
+          iconBgColor: b.bubbleIconBgColor,
+        }))}
+        onSelect={(bubbleId) => toggleBubbleItem(bubbleId, true)}
         isLoading={isBubblesLoading}
       />
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import type { BubbleMember } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -19,52 +19,42 @@ interface UseBubbleMemberReturn {
 export function useBubbleMember(bubbleId: string, userId: string | null): UseBubbleMemberReturn {
   const [member, setMember] = useState<BubbleMember | null>(null)
   const [pendingMembers, setPendingMembers] = useState<BubbleMember[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [pendingVersion, setPendingVersion] = useState(0)
 
   // 현재 멤버 정보 로드
   useEffect(() => {
-    if (!userId || !bubbleId) {
-      setMember(null)
-      return
-    }
+    if (!userId || !bubbleId) return
 
     let cancelled = false
-    setIsLoading(true)
-
-    bubbleRepo.getMember(bubbleId, userId).then((result) => {
-      if (!cancelled) {
-        setMember(result)
-        setIsLoading(false)
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setMember(null)
-        setIsLoading(false)
+    startTransition(async () => {
+      try {
+        const result = await bubbleRepo.getMember(bubbleId, userId)
+        if (!cancelled) setMember(result)
+      } catch {
+        if (!cancelled) setMember(null)
       }
     })
 
     return () => { cancelled = true }
-  }, [bubbleId, userId])
+  }, [bubbleId, userId, startTransition])
 
   // 가입 대기 멤버 목록 로드
   useEffect(() => {
-    if (!bubbleId) {
-      setPendingMembers([])
-      return
-    }
+    if (!bubbleId) return
 
     let cancelled = false
-    bubbleRepo.getPendingMembers(bubbleId).then((pending) => {
-      if (!cancelled) {
-        setPendingMembers(pending)
+    startTransition(async () => {
+      try {
+        const pending = await bubbleRepo.getPendingMembers(bubbleId)
+        if (!cancelled) setPendingMembers(pending)
+      } catch {
+        if (!cancelled) setPendingMembers([])
       }
-    }).catch(() => {
-      if (!cancelled) setPendingMembers([])
     })
 
     return () => { cancelled = true }
-  }, [bubbleId, pendingVersion])
+  }, [bubbleId, pendingVersion, startTransition])
 
   const updateMember = useCallback(async (data: Partial<BubbleMember>) => {
     if (!userId || !bubbleId) return
@@ -77,5 +67,5 @@ export function useBubbleMember(bubbleId: string, userId: string | null): UseBub
     setPendingVersion((v) => v + 1)
   }, [])
 
-  return { member, pendingMembers, updateMember, refreshPending, isLoading }
+  return { member, pendingMembers, updateMember, refreshPending, isLoading: isPending }
 }

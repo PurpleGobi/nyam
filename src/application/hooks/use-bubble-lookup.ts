@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
@@ -15,31 +15,30 @@ interface UseBubbleLookupReturn {
  */
 export function useBubbleLookup(bubbleId: string | null): UseBubbleLookupReturn {
   const [bubble, setBubble] = useState<Bubble | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  // bubbleId가 null로 변경 시 bubble 즉시 초기화 (렌더 중 setState)
+  const [prevBubbleId, setPrevBubbleId] = useState(bubbleId)
+  if (prevBubbleId !== bubbleId) {
+    setPrevBubbleId(bubbleId)
+    if (!bubbleId) setBubble(null)
+  }
 
   useEffect(() => {
-    if (!bubbleId) {
-      setBubble(null)
-      return
-    }
+    if (!bubbleId) return
 
     let cancelled = false
-    setIsLoading(true)
-
-    bubbleRepo.findById(bubbleId).then((result) => {
-      if (!cancelled) {
-        setBubble(result)
-        setIsLoading(false)
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setBubble(null)
-        setIsLoading(false)
+    startTransition(async () => {
+      try {
+        const result = await bubbleRepo.findById(bubbleId)
+        if (!cancelled) setBubble(result)
+      } catch {
+        if (!cancelled) setBubble(null)
       }
     })
 
     return () => { cancelled = true }
-  }, [bubbleId])
+  }, [bubbleId, startTransition])
 
-  return { bubble, isLoading }
+  return { bubble, isLoading: isPending }
 }
