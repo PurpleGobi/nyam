@@ -358,7 +358,6 @@ export default function DesignSystemPage() {
           </Row>
           <Row>
             <button type="button" className="btn-card-action active-food">가봤음</button>
-            <button type="button" className="btn-card-action active-wish">찜</button>
             <button type="button" className="btn-card-action active-wine">맞아요</button>
           </Row>
         </div>
@@ -438,18 +437,6 @@ export default function DesignSystemPage() {
           </div>
         </NyamCard>
 
-        <Sub title="Bookmarked" />
-        <NyamCard state="bookmarked" className="p-4" style={{ maxWidth: '380px' }}>
-          <div className="card-top" style={{ gap: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: 'var(--r-md)', background: '#FBF8F1', border: '1px solid var(--caution)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--caution)' }}>
-              <Heart size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)' }}>토속촌</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px' }}>한식 · 광화문</div>
-            </div>
-          </div>
-        </NyamCard>
       </Section>
 
       {/* ── 6. Satisfaction Gauge ── */}
@@ -811,7 +798,7 @@ export default function DesignSystemPage() {
             variant="food"
             icon={<Utensils size={20} style={{ color: 'var(--accent-food)' }} />}
             title="맛집 기록"
-            description="가본 식당에 점수를 매기고 찜하기"
+            description="가본 식당에 점수를 매기고 기록하기"
           />
           <IntroCard
             variant="wine"
@@ -1153,8 +1140,8 @@ export default function DesignSystemPage() {
         <div style={{ marginTop: '40px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
           <Sub title="Wine Rating — 사분면 + 바 게이지" />
           <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: 1.6 }}>
-            X축: 구조 · 완성도 — "이 와인은 객관적으로 얼마나 잘 만들어졌나?"<br />
-            Y축: 경험 만족도 — "내가 실제로 마시면서 얼마나 만족했나 (가격 포함)"<br />
+            X축: 구조 · 완성도 — &ldquo;이 와인은 객관적으로 얼마나 잘 만들어졌나?&rdquo;<br />
+            Y축: 경험 만족도 — &ldquo;내가 실제로 마시면서 얼마나 만족했나 (가격 포함)&rdquo;<br />
             가격대 없음 (와인은 별도 구매가격 입력).
           </p>
           <RatingInput

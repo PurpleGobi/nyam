@@ -339,10 +339,6 @@ export class SupabaseProfileRepository implements ProfileRepository {
     const avgScore = vals.length > 0
       ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0
 
-    const { count: cellarCount } = await this.supabase
-      .from('bookmarks').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('type', 'cellar')
-
     const thisMonth = new Date().toISOString().slice(0, 7)
     const { count: thisMonthTastings } = await this.supabase
       .from('records').select('id', { count: 'exact', head: true })
@@ -352,7 +348,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return {
       totalTastings: totalTastings ?? 0,
       avgScore,
-      cellarCount: cellarCount ?? 0,
+      cellarCount: 0,
       thisMonthTastings: thisMonthTastings ?? 0,
       thisMonthNewCellar: await this.getThisMonthNewCellar(userId, thisMonth),
       scoreDelta: await this.getScoreDelta(userId, 'wine'),
@@ -642,13 +638,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return newCount
   }
 
-  private async getThisMonthNewCellar(userId: string, thisMonth: string): Promise<number> {
-    const { count } = await this.supabase
-      .from('bookmarks').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('target_type', 'wine').eq('type', 'cellar')
-      .gte('created_at', `${thisMonth}-01`)
-
-    return count ?? 0
+  private async getThisMonthNewCellar(_userId: string, _thisMonth: string): Promise<number> {
+    return 0
   }
 
   private async getScoreDelta(userId: string, targetType: string): Promise<number> {

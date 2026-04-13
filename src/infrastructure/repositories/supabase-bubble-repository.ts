@@ -631,7 +631,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       userMap[u.id as string] = u
     }
 
-    // 기록이 있는 아이템만 필터 (찜만 있는 아이템은 평가 데이터 없으므로 제외)
+    // 기록이 있는 아이템만 필터
     const filtered = (itemData as Record<string, unknown>[]).filter((i) => {
       const userId = i.added_by as string
       return recByUser[userId] != null

@@ -32,7 +32,7 @@ export interface MapDiscoveryItem {
 
   // --- 메타 ---
   prestige: RestaurantPrestige[]
-  /** 이 아이템의 출처들 ('mine'|'bookmark'|'following'|'bubble'|'nearby') */
+  /** 이 아이템의 출처들 ('mine'|'following'|'bubble'|'nearby') */
   sources: MapViewFilter[]
 }
 
@@ -50,7 +50,7 @@ export function getRepresentativeScore(item: MapDiscoveryItem): number | null {
 }
 
 /** 보기 필터 (멀티셀렉) */
-export type MapViewFilter = 'mine' | 'bookmark' | 'following' | 'bubble'
+export type MapViewFilter = 'mine' | 'following' | 'bubble'
 
 /** 명성 필터 (멀티셀렉) */
 export type MapPrestigeFilter = 'michelin' | 'blue_ribbon' | 'tv'

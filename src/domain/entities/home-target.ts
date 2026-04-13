@@ -48,7 +48,7 @@ export interface HomeTarget {
   bubbleConfidence: number | null
 
   // --- 최신 기록 요약 ---
-  latestRecordId: string | null   // null = 기록 없음 (찜만)
+  latestRecordId: string | null
   latestVisitDate: string | null
   latestScene: string | null
   latestCreatedAt: string | null

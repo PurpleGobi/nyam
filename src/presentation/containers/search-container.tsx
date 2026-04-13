@@ -39,7 +39,6 @@ function SearchInner() {
   const [toast, setToast] = useState<string | null>(null)
   const [mapChips, setMapChips] = useState<FilterChipItem[]>([])
 
-  // ── 찜 + 다중 선택 ──
   const filterBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

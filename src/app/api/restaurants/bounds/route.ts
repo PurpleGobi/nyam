@@ -4,7 +4,7 @@ import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 /**
  * GET /api/restaurants/bounds?north=...&south=...&east=...&west=...
- *   &sort=name&limit=20&offset=0&source=mine,bookmark&keyword=미역&prestige=michelin,blue_ribbon
+ *   &sort=name&limit=20&offset=0&source=mine,following,bubble&keyword=미역&prestige=michelin,blue_ribbon
  *   &genre=한식&district=서울&area=강남구
  *
  * 모든 필터가 DB(RPC)에서 처리됨. LIMIT+1 페이지네이션.
