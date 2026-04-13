@@ -44,41 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      bookmarks: {
-        Row: {
-          created_at: string
-          id: string
-          target_id: string
-          target_type: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          target_id: string
-          target_type: string
-          type?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          target_id?: string
-          target_type?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bookmarks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bubble_items: {
         Row: {
           added_at: string
@@ -857,6 +822,7 @@ export type Database = {
           external_id_kakao: string | null
           external_id_naver: string | null
           genre: string | null
+          geom: unknown
           google_rating: number | null
           hours: Json | null
           id: string
@@ -890,6 +856,7 @@ export type Database = {
           external_id_kakao?: string | null
           external_id_naver?: string | null
           genre?: string | null
+          geom?: unknown
           google_rating?: number | null
           hours?: Json | null
           id?: string
@@ -923,6 +890,7 @@ export type Database = {
           external_id_kakao?: string | null
           external_id_naver?: string | null
           genre?: string | null
+          geom?: unknown
           google_rating?: number | null
           hours?: Json | null
           id?: string
@@ -1916,6 +1884,99 @@ export type Database = {
           prestige: Json
         }[]
       }
+      search_restaurants_bounds_auth: {
+        Args: {
+          p_area?: string
+          p_district?: string
+          p_east: number
+          p_genre?: string
+          p_keyword?: string
+          p_limit?: number
+          p_north: number
+          p_offset?: number
+          p_prestige_types?: string[]
+          p_sort?: string
+          p_south: number
+          p_user_id: string
+          p_west: number
+        }
+        Returns: {
+          address: string
+          area: string[]
+          district: string
+          genre: string
+          has_record: boolean
+          id: string
+          kakao_map_url: string
+          lat: number
+          lng: number
+          name: string
+          phone: string
+          prestige: Json
+        }[]
+      }
+      search_restaurants_bounds_simple: {
+        Args: {
+          p_area?: string
+          p_district?: string
+          p_east: number
+          p_genre?: string
+          p_keyword?: string
+          p_limit?: number
+          p_north: number
+          p_offset?: number
+          p_prestige_types?: string[]
+          p_sort?: string
+          p_south: number
+          p_west: number
+        }
+        Returns: {
+          address: string
+          area: string[]
+          district: string
+          genre: string
+          has_record: boolean
+          id: string
+          kakao_map_url: string
+          lat: number
+          lng: number
+          name: string
+          phone: string
+          prestige: Json
+        }[]
+      }
+      search_restaurants_bounds_source: {
+        Args: {
+          p_area?: string
+          p_district?: string
+          p_east: number
+          p_genre?: string
+          p_keyword?: string
+          p_limit?: number
+          p_north: number
+          p_offset?: number
+          p_prestige_types?: string[]
+          p_sort?: string
+          p_sources?: string[]
+          p_south: number
+          p_user_id: string
+          p_west: number
+        }
+        Returns: {
+          address: string
+          area: string[]
+          district: string
+          genre: string
+          has_record: boolean
+          id: string
+          kakao_map_url: string
+          lat: number
+          lng: number
+          name: string
+          phone: string
+          prestige: Json
+        }[]
+      }
       search_restaurants_in_bounds: {
         Args: {
           p_area?: string
@@ -1938,7 +1999,6 @@ export type Database = {
           area: string[]
           district: string
           genre: string
-          has_bookmark: boolean
           has_record: boolean
           id: string
           kakao_map_url: string
