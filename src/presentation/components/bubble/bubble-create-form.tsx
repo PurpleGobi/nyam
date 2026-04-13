@@ -34,7 +34,7 @@ const VISIBILITY_FIELD_LABELS: { key: keyof VisibilityOverride; label: string }[
   { key: 'comment', label: '한줄평' },
   { key: 'photos', label: '사진' },
   { key: 'level', label: '레벨 뱃지' },
-  { key: 'quadrant', label: '맛 사분면' },
+  { key: 'quadrant', label: '평가 사분면' },
   { key: 'bubbles', label: '소속 버블 목록' },
   { key: 'price', label: '가격 정보' },
 ]
@@ -508,7 +508,7 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
               type="button"
               onClick={() => setVisibilityFields((prev) => ({ ...prev, [key]: !prev[key] }))}
               className="flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors"
-              style={{ backgroundColor: visibilityFields[key] ? 'var(--accent-social-light)' : 'transparent' }}
+              style={{ backgroundColor: 'transparent' }}
             >
               <span className="text-[12px]" style={{ color: 'var(--text)' }}>{label}</span>
               <ToggleSwitch on={visibilityFields[key]} />

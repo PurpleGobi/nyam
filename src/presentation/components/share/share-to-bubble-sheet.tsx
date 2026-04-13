@@ -58,10 +58,11 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }
   const selectableCount = selectedIds.size
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
       <div
         className="flex w-full max-w-[480px] flex-col rounded-t-2xl"
         style={{ backgroundColor: 'var(--bg-elevated)', maxHeight: '70vh' }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* 드래그 핸들 */}
         <div className="flex justify-center pt-3 pb-1">

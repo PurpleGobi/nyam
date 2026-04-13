@@ -69,8 +69,8 @@ export function LinkSearchSheet({ isOpen, onClose, type, onSelect }: LinkSearchS
   const Icon = isWine ? Wine : UtensilsCrossed
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="mt-auto flex max-h-[80dvh] flex-col rounded-t-2xl" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
+      <div className="mt-auto flex max-h-[80dvh] flex-col rounded-t-2xl" style={{ backgroundColor: 'var(--bg)' }} onClick={(e) => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2">
