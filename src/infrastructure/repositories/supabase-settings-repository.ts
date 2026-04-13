@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { UserSettings, VisibilityConfig, FollowPolicy, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
 
-const SETTINGS_SELECT = 'nickname, bio, avatar_url, is_public, follow_policy, follow_min_records, follow_min_level, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_timezone, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
+const SETTINGS_SELECT = 'nickname, handle, bio, avatar_url, is_public, follow_policy, follow_min_records, follow_min_level, visibility_public, visibility_bubble, notify_push, notify_level_up, notify_bubble_join, notify_follow, dnd_start, dnd_end, pref_landing, pref_home_tab, pref_restaurant_sub, pref_wine_sub, pref_bubble_tab, pref_default_sort, pref_record_input, pref_bubble_share, pref_temp_unit, pref_timezone, pref_view_mode, deleted_at, delete_mode, delete_scheduled_at'
 
 export class SupabaseSettingsRepository implements SettingsRepository {
   private get supabase() {
@@ -22,6 +22,7 @@ export class SupabaseSettingsRepository implements SettingsRepository {
 
     return {
       nickname: data.nickname as string,
+      handle: data.handle as string | null,
       bio: data.bio as string | null,
       avatarUrl: data.avatar_url as string | null,
       isPublic: (data.is_public as boolean) ?? false,
@@ -58,6 +59,14 @@ export class SupabaseSettingsRepository implements SettingsRepository {
   async updateNickname(userId: string, nickname: string): Promise<void> {
     const { error } = await this.supabase.from('users').update({ nickname }).eq('id', userId)
     if (error) throw error
+  }
+
+  async updateHandle(userId: string, handle: string): Promise<void> {
+    const { error } = await this.supabase.from('users').update({ handle }).eq('id', userId)
+    if (error) {
+      if (error.code === '23505') throw new Error('DUPLICATE_HANDLE')
+      throw error
+    }
   }
 
   async updateBio(userId: string, bio: string): Promise<void> {

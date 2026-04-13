@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Pencil, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
+  Pencil, AtSign, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
   Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
   Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe, Map, FileSpreadsheet, Wand2,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
+import { useToast } from '@/presentation/components/ui/toast'
 import { useCleanManualShares } from '@/application/hooks/use-clean-manual-shares'
 import { useNaverImport } from '@/application/hooks/use-naver-import'
 import { SettingsSection } from '@/presentation/components/settings/settings-section'
@@ -130,17 +131,18 @@ export function SettingsContainer() {
     updateVisibilityPublic, updateVisibilityBubble,
     updateNotify, updatePreference,
     requestDeletion, updateBubbleVisibility,
-    updateNickname, updateBio, updateAvatar, updateDndTime,
+    updateNickname, updateHandle, updateBio, updateAvatar, updateDndTime,
     exportData, importData, downloadTemplate, autoFillFile, clearCache,
   } = useSettings()
 
+  const { showToast } = useToast()
   const { cleanShares, isLoading: isCleaningManualShares } = useCleanManualShares()
   const naverImport = useNaverImport(user?.id ?? null)
   const [naverImportSheetOpen, setNaverImportSheetOpen] = useState(false)
   const [manualShareCleanResult, setManualShareCleanResult] = useState<string | null>(null)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
-  const [editField, setEditField] = useState<'nickname' | 'bio' | null>(null)
+  const [editField, setEditField] = useState<'nickname' | 'handle' | 'bio' | null>(null)
   const [dndSheetOpen, setDndSheetOpen] = useState(false)
   const [cacheSize, setCacheSize] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -196,6 +198,7 @@ export function SettingsContainer() {
         <SettingsSection title="계정">
           <SettingsCard>
             <SettingsItem icon={<Pencil size={18} />} label="닉네임 변경" value={settings.nickname} showChevron onPress={() => setEditField('nickname')} />
+            <SettingsItem icon={<AtSign size={18} />} label="핸들 변경" value={settings.handle ? `@${settings.handle}` : '미설정'} showChevron onPress={() => setEditField('handle')} />
             <SettingsItem icon={<MessageSquare size={18} />} label="한줄 소개 변경" showChevron onPress={() => setEditField('bio')} />
             <SettingsItem icon={<ImageIcon size={18} />} label="아바타 변경" showChevron onPress={() => avatarRef.current?.click()} />
           </SettingsCard>
@@ -604,13 +607,36 @@ export function SettingsContainer() {
       {/* Edit Field Sheet */}
       <EditFieldSheet
         isOpen={editField !== null}
-        title={editField === 'nickname' ? '닉네임 변경' : '한줄 소개 변경'}
-        initialValue={editField === 'nickname' ? (settings.nickname ?? '') : (settings.bio ?? '')}
-        placeholder={editField === 'nickname' ? '닉네임을 입력하세요' : '한줄 소개를 입력하세요'}
-        maxLength={editField === 'nickname' ? 20 : 50}
-        onSave={(value) => {
-          if (editField === 'nickname') updateNickname(value)
-          else updateBio(value)
+        title={editField === 'nickname' ? '닉네임 변경' : editField === 'handle' ? '핸들 변경' : '한줄 소개 변경'}
+        initialValue={
+          editField === 'nickname' ? (settings.nickname ?? '')
+            : editField === 'handle' ? (settings.handle ?? '')
+              : (settings.bio ?? '')
+        }
+        placeholder={
+          editField === 'nickname' ? '닉네임을 입력하세요'
+            : editField === 'handle' ? 'my_handle'
+              : '한줄 소개를 입력하세요'
+        }
+        maxLength={editField === 'nickname' ? 20 : editField === 'handle' ? 20 : 50}
+        prefix={editField === 'handle' ? '@' : undefined}
+        description={editField === 'handle' ? '영문 소문자, 숫자, 밑줄(_)만 사용 가능. 2자 이상.' : undefined}
+        inputFilter={editField === 'handle' ? (v: string) => v.toLowerCase().replace(/[^a-z0-9_]/g, '') : undefined}
+        onSave={async (value) => {
+          if (editField === 'nickname') {
+            updateNickname(value)
+          } else if (editField === 'handle') {
+            if (value.length < 2) {
+              showToast('핸들은 2자 이상이어야 합니다', 3000)
+              return
+            }
+            const result = await updateHandle(value)
+            if (!result.success) {
+              showToast(result.error === 'duplicate' ? '이미 사용 중인 핸들입니다' : '핸들 변경에 실패했습니다', 3000)
+            }
+          } else {
+            updateBio(value)
+          }
         }}
         onClose={() => setEditField(null)}
       />

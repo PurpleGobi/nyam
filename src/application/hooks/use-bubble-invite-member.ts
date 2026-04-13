@@ -2,8 +2,14 @@
 
 import { useState, useCallback } from 'react'
 import type { SearchUserResult } from '@/domain/repositories/bubble-repository'
-import { bubbleRepo } from '@/shared/di/container'
-import { notificationRepo } from '@/shared/di/container'
+import type { PendingBubbleInvite } from '@/domain/repositories/notification-repository'
+import { bubbleRepo, notificationRepo } from '@/shared/di/container'
+
+export interface InviteResult {
+  success: boolean
+  /** 중복 초대인 경우 true */
+  duplicate: boolean
+}
 
 export function useBubbleInviteMember(bubbleId: string) {
   const [searchResults, setSearchResults] = useState<SearchUserResult[]>([])
@@ -26,13 +32,26 @@ export function useBubbleInviteMember(bubbleId: string) {
     }
   }, [])
 
-  /** 특정 유저에게 버블 초대 알림 전송 */
+  /**
+   * 특정 유저에게 버블 초대 알림 전송
+   * @param pendingInvites 현재 대기 중인 초대 목록 (중복 체크용)
+   */
   const inviteUser = useCallback(async (
     targetUserId: string,
     inviterUserId: string,
     bubbleName: string,
     inviterNickname: string,
-  ) => {
+    pendingInvites?: PendingBubbleInvite[],
+  ): Promise<InviteResult> => {
+    // 세션 내 중복 체크
+    if (invitedIds.has(targetUserId)) {
+      return { success: false, duplicate: true }
+    }
+    // DB 기반 중복 체크
+    if (pendingInvites?.some((inv) => inv.userId === targetUserId)) {
+      return { success: false, duplicate: true }
+    }
+
     setIsInviting(true)
     try {
       await notificationRepo.createNotification({
@@ -47,10 +66,16 @@ export function useBubbleInviteMember(bubbleId: string) {
         bubbleId,
       })
       setInvitedIds((prev) => new Set([...prev, targetUserId]))
+      return { success: true, duplicate: false }
     } finally {
       setIsInviting(false)
     }
-  }, [bubbleId])
+  }, [bubbleId, invitedIds])
+
+  /** 초대 취소 (pending 알림 삭제) */
+  const cancelInvite = useCallback(async (notificationId: string) => {
+    await notificationRepo.deleteNotification(notificationId)
+  }, [])
 
   const clearSearch = useCallback(() => {
     setSearchResults([])
@@ -63,6 +88,7 @@ export function useBubbleInviteMember(bubbleId: string) {
     invitedIds,
     searchUsers,
     inviteUser,
+    cancelInvite,
     clearSearch,
   }
 }

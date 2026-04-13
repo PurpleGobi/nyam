@@ -140,6 +140,21 @@ export function useSettings() {
     await settingsRepo.updateNickname(userId, nickname)
   }, [userId, settings, mutate])
 
+  const updateHandle = useCallback(async (handle: string): Promise<{ success: boolean; error?: string }> => {
+    if (!userId || !settings) return { success: false }
+    mutate(['settings', userId], { ...settings, handle }, false)
+    try {
+      await settingsRepo.updateHandle(userId, handle)
+      return { success: true }
+    } catch (err) {
+      mutate(['settings', userId])
+      if (err instanceof Error && err.message === 'DUPLICATE_HANDLE') {
+        return { success: false, error: 'duplicate' }
+      }
+      return { success: false, error: 'unknown' }
+    }
+  }, [userId, settings, mutate])
+
   const updateBio = useCallback(async (bio: string) => {
     if (!userId || !settings) return
     mutate(['settings', userId], { ...settings, bio }, false)
@@ -233,6 +248,7 @@ export function useSettings() {
     requestDeletion,
     cancelDeletion,
     updateNickname,
+    updateHandle,
     updateBio,
     updateDndTime,
     updateAvatar,

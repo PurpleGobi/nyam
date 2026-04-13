@@ -1,5 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
-import type { NotificationRepository } from '@/domain/repositories/notification-repository'
+import type { NotificationRepository, PendingBubbleInvite } from '@/domain/repositories/notification-repository'
 import type { Notification } from '@/domain/entities/notification'
 
 export class SupabaseNotificationRepository implements NotificationRepository {
@@ -74,6 +74,36 @@ export class SupabaseNotificationRepository implements NotificationRepository {
       isRead: false,
       createdAt: new Date().toISOString(),
     }
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+    if (error) throw error
+  }
+
+  async getPendingBubbleInvites(bubbleId: string): Promise<PendingBubbleInvite[]> {
+    const { data, error } = await this.supabase
+      .from('notifications')
+      .select('id, user_id, created_at, users!notifications_user_id_fkey(nickname, avatar_url, avatar_color)')
+      .eq('bubble_id', bubbleId)
+      .eq('notification_type', 'bubble_invite')
+      .eq('action_status', 'pending')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map((row: Record<string, unknown>) => {
+      const u = row.users as Record<string, unknown> | null
+      return {
+        notificationId: row.id as string,
+        userId: row.user_id as string,
+        nickname: (u?.nickname as string) ?? '',
+        avatarUrl: (u?.avatar_url as string) ?? null,
+        avatarColor: (u?.avatar_color as string) ?? null,
+        invitedAt: row.created_at as string,
+      }
+    })
   }
 
   subscribeToNotifications(

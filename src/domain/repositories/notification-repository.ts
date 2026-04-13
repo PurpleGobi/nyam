@@ -10,8 +10,22 @@ export interface NotificationRepository {
   markAllAsRead(userId: string): Promise<void>
   updateActionStatus(notificationId: string, status: 'accepted' | 'rejected'): Promise<void>
   createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>): Promise<Notification>
+  /** 알림 삭제 */
+  deleteNotification(notificationId: string): Promise<void>
+  /** 버블의 수락 대기 중인 초대 목록 (owner/admin 전용) */
+  getPendingBubbleInvites(bubbleId: string): Promise<PendingBubbleInvite[]>
   subscribeToNotifications(
     userId: string,
     onNew: (notification: Notification) => void,
   ): { unsubscribe: () => void }
+}
+
+/** 초대 수락 대기 정보 */
+export interface PendingBubbleInvite {
+  notificationId: string
+  userId: string
+  nickname: string
+  avatarUrl: string | null
+  avatarColor: string | null
+  invitedAt: string
 }

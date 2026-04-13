@@ -13,6 +13,7 @@ import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useBubbleInviteMember } from '@/application/hooks/use-bubble-invite-member'
 import { useBubbleMember } from '@/application/hooks/use-bubble-member'
 import { useAuth } from '@/presentation/providers/auth-provider'
+import { useToast } from '@/presentation/components/ui/toast'
 import type { Bubble, BubbleMemberRole, BubbleShareRule, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 
@@ -32,13 +33,15 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
+  const { showToast } = useToast()
   const {
     searchResults: inviteSearchResults, isSearching: isInviteSearching,
-    isInviting, invitedIds, searchUsers: inviteSearch, inviteUser,
+    isInviting, invitedIds, searchUsers: inviteSearch, inviteUser, cancelInvite,
   } = useBubbleInviteMember(bubbleId)
   const {
     member: currentMember,
     pendingMembers: rawPendingMembers,
+    pendingInvites,
     updateMember: updateCurrentMember,
     refreshPending,
     isLoading: memberLoading,
@@ -95,12 +98,23 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     router.push('/bubbles')
   }
 
-  // 멤버 초대
+  // 멤버 초대 — 중복 체크 + 초대 후 대기 목록 즉시 새로고침
   const existingMemberIds = pendingMembers.map((m) => m.userId)
   const handleInviteUser = async (targetUserId: string) => {
     if (!userId) return
     const nickname = user?.nickname ?? '사용자'
-    await inviteUser(targetUserId, userId, currentBubble.name, nickname)
+    const result = await inviteUser(targetUserId, userId, currentBubble.name, nickname, pendingInvites)
+    if (result.duplicate) {
+      showToast('이미 초대한 사용자입니다', 3000)
+      return
+    }
+    refreshPending()
+  }
+
+  // 초대 취소
+  const handleCancelInvite = async (notificationId: string) => {
+    await cancelInvite(notificationId)
+    refreshPending()
   }
 
   const handleUploadPhoto = useCallback(async (file: File): Promise<string> => {
@@ -131,6 +145,8 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onDelete={handleDelete}
           isLoading={isSaving || settingsLoading || rolesLoading}
           pendingMembers={pendingMembers}
+          pendingInvites={pendingInvites}
+          onCancelInvite={handleCancelInvite}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
           inviteSearchResults={inviteSearchResults}

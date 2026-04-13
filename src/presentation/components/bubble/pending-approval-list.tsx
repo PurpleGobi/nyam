@@ -20,10 +20,13 @@ interface PendingApprovalListProps {
   onReject: (userId: string) => void
   maxPreview?: number
   onViewAll?: () => void
+  /** true이면 빈 상태 메시지를 숨김 (초대 대기가 별도로 있을 때) */
+  hideEmptyMessage?: boolean
 }
 
-export function PendingApprovalList({ members, onApprove, onReject, maxPreview = 3, onViewAll }: PendingApprovalListProps) {
+export function PendingApprovalList({ members, onApprove, onReject, maxPreview = 3, onViewAll, hideEmptyMessage }: PendingApprovalListProps) {
   if (members.length === 0) {
+    if (hideEmptyMessage) return null
     return <p className="py-6 text-center text-[13px] text-[var(--text-hint)]">대기 중인 멤버가 없습니다</p>
   }
 

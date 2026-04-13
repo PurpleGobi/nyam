@@ -4,7 +4,8 @@ import { useState, useCallback } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
-export type InviteExpiry = '1d' | '7d' | '30d' | 'unlimited'
+/** 초대 링크 만료: 3일 고정 */
+const INVITE_EXPIRY_DAYS = 3
 
 export interface InviteValidation {
   valid: boolean
@@ -12,21 +13,15 @@ export interface InviteValidation {
   expired: boolean
 }
 
-function expiryToDate(expiry: InviteExpiry): string | null {
-  if (expiry === 'unlimited') return null
-  const days = expiry === '1d' ? 1 : expiry === '7d' ? 7 : 30
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
-}
-
 export function useInviteLink(bubbleId: string) {
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  /** 초대 링크 생성 (만료 옵션 지원) */
-  const generateLink = useCallback(async (expiry: InviteExpiry = '30d'): Promise<string> => {
+  /** 초대 링크 생성 (만료 3일 고정) */
+  const generateLink = useCallback(async (): Promise<string> => {
     setIsLoading(true)
     try {
-      const expiresAt = expiryToDate(expiry)
+      const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString()
       const code = await bubbleRepo.generateInviteCode(bubbleId, expiresAt)
       setInviteCode(code)
       return code

@@ -7,6 +7,7 @@ import type { Bubble, BubbleJoinPolicy, BubbleVisibility, BubbleShareRule, Bubbl
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
+import type { PendingBubbleInvite } from '@/domain/repositories/notification-repository'
 import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
 import { MemberInviteSection } from '@/presentation/components/bubble/member-invite-section'
 import type { SearchUserResult } from '@/domain/repositories/bubble-repository'
@@ -40,7 +41,7 @@ const VISIBILITY_FIELD_LABELS: { key: keyof VisibilityOverride; label: string }[
   { key: 'comment', label: '한줄평' },
   { key: 'photos', label: '사진' },
   { key: 'level', label: '레벨 뱃지' },
-  { key: 'quadrant', label: '맛 사분면' },
+  { key: 'quadrant', label: '평가 사분면' },
   { key: 'bubbles', label: '소속 버블 목록' },
   { key: 'price', label: '가격 정보' },
 ]
@@ -63,6 +64,8 @@ interface BubbleSettingsProps {
   onDelete: () => void
   isLoading: boolean
   pendingMembers: PendingMemberInfo[]
+  pendingInvites?: PendingBubbleInvite[]
+  onCancelInvite?: (notificationId: string) => void
   onApproveJoin: (userId: string) => void
   onRejectJoin: (userId: string) => void
   onViewAllPending?: () => void
@@ -82,7 +85,7 @@ interface BubbleSettingsProps {
 
 export function BubbleSettings({
   bubble, myRole, onSave, onDelete, isLoading,
-  pendingMembers, onApproveJoin, onRejectJoin, onViewAllPending,
+  pendingMembers, pendingInvites, onCancelInvite, onApproveJoin, onRejectJoin, onViewAllPending,
   shareRule, onShareRuleChange,
   inviteSearchResults, isInviteSearching, isInviting, invitedIds,
   onInviteSearch, onInviteUser, existingMemberIds,
@@ -542,7 +545,66 @@ export function BubbleSettings({
             onReject={onRejectJoin}
             maxPreview={3}
             onViewAll={onViewAllPending}
+            hideEmptyMessage={pendingInvites != null && pendingInvites.length > 0}
           />
+
+          {/* 초대 수락 대기 */}
+          {pendingInvites && pendingInvites.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[13px] font-semibold text-[var(--text)]">
+                초대 수락 대기 ({pendingInvites.length})
+              </p>
+              {pendingInvites.map((inv) => (
+                <div
+                  key={inv.notificationId}
+                  className="flex items-center gap-3 rounded-xl p-3"
+                  style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+                >
+                  {inv.avatarUrl ? (
+                    <Image
+                      src={inv.avatarUrl}
+                      alt={inv.nickname}
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+                      style={{ backgroundColor: inv.avatarColor ?? 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+                    >
+                      {inv.nickname.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-[var(--text)]">
+                      {inv.nickname}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-hint)]">
+                      {formatRelativeTime(inv.invitedAt)} 초대됨
+                    </p>
+                  </div>
+                  {onCancelInvite ? (
+                    <button
+                      type="button"
+                      onClick={() => onCancelInvite(inv.notificationId)}
+                      className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-opacity active:opacity-70"
+                      style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                    >
+                      취소
+                    </button>
+                  ) : (
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                      style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+                    >
+                      대기중
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </Section>
       )}
 
@@ -654,6 +716,17 @@ function CompactNumberField({ label, value, onChange, min, suffix, placeholder }
       </div>
     </div>
   )
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return '방금'
+  if (mins < 60) return `${mins}분 전`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  return `${days}일 전`
 }
 
 function ToggleRow({ label, value, onChange, description }: { label: string; value: boolean; onChange: (v: boolean) => void; description?: string }) {

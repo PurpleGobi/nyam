@@ -8,6 +8,7 @@ export interface SettingsRepository {
 
   // 계정
   updateNickname(userId: string, nickname: string): Promise<void>
+  updateHandle(userId: string, handle: string): Promise<void>
   updateBio(userId: string, bio: string): Promise<void>
   updateAvatar(userId: string, avatarUrl: string): Promise<void>
 

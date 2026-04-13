@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import type { BubbleMember } from '@/domain/entities/bubble'
-import { bubbleRepo } from '@/shared/di/container'
+import type { PendingBubbleInvite } from '@/domain/repositories/notification-repository'
+import { bubbleRepo, notificationRepo } from '@/shared/di/container'
 
 interface UseBubbleMemberReturn {
   member: BubbleMember | null
   pendingMembers: BubbleMember[]
+  pendingInvites: PendingBubbleInvite[]
   updateMember: (data: Partial<BubbleMember>) => Promise<void>
   refreshPending: () => void
   isLoading: boolean
@@ -19,6 +21,7 @@ interface UseBubbleMemberReturn {
 export function useBubbleMember(bubbleId: string, userId: string | null): UseBubbleMemberReturn {
   const [member, setMember] = useState<BubbleMember | null>(null)
   const [pendingMembers, setPendingMembers] = useState<BubbleMember[]>([])
+  const [pendingInvites, setPendingInvites] = useState<PendingBubbleInvite[]>([])
   const [isPending, startTransition] = useTransition()
   const [pendingVersion, setPendingVersion] = useState(0)
 
@@ -39,17 +42,26 @@ export function useBubbleMember(bubbleId: string, userId: string | null): UseBub
     return () => { cancelled = true }
   }, [bubbleId, userId, startTransition])
 
-  // 가입 대기 멤버 목록 로드
+  // 가입 대기 멤버 + 초대 수락 대기 목록 로드
   useEffect(() => {
     if (!bubbleId) return
 
     let cancelled = false
     startTransition(async () => {
       try {
-        const pending = await bubbleRepo.getPendingMembers(bubbleId)
-        if (!cancelled) setPendingMembers(pending)
+        const [pending, invites] = await Promise.all([
+          bubbleRepo.getPendingMembers(bubbleId),
+          notificationRepo.getPendingBubbleInvites(bubbleId).catch(() => [] as PendingBubbleInvite[]),
+        ])
+        if (!cancelled) {
+          setPendingMembers(pending)
+          setPendingInvites(invites)
+        }
       } catch {
-        if (!cancelled) setPendingMembers([])
+        if (!cancelled) {
+          setPendingMembers([])
+          setPendingInvites([])
+        }
       }
     })
 
@@ -67,5 +79,5 @@ export function useBubbleMember(bubbleId: string, userId: string | null): UseBub
     setPendingVersion((v) => v + 1)
   }, [])
 
-  return { member, pendingMembers, updateMember, refreshPending, isLoading: isPending }
+  return { member, pendingMembers, pendingInvites, updateMember, refreshPending, isLoading: isPending }
 }

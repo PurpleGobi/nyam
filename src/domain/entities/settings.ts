@@ -22,6 +22,7 @@ export type DeleteMode = 'anonymize' | 'hard_delete'
 export interface UserSettings {
   // 계정
   nickname: string
+  handle: string | null
   bio: string | null
   avatarUrl: string | null
 

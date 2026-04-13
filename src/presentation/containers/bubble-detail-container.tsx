@@ -10,15 +10,18 @@ import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import { useSingleBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
+import { useBubbleInviteMember } from '@/application/hooks/use-bubble-invite-member'
+import { useBubbleMember } from '@/application/hooks/use-bubble-member'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useSearch } from '@/application/hooks/use-search'
+import { useToast } from '@/presentation/components/ui/toast'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
 import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
 import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
 import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import Image from 'next/image'
-import { InviteLinkGenerator } from '@/presentation/components/bubble/invite-link-generator'
+import { InvitePopup } from '@/presentation/components/bubble/invite-popup'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import { AddItemSearchSheet } from '@/presentation/components/bubble/add-item-search-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -39,14 +42,47 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
+  const { showToast } = useToast()
   const { expertise } = useSingleBubbleExpertise(bubbleId)
   const { inviteCode, generateLink, copyToClipboard, isLoading: inviteLoading } = useInviteLink(bubbleId)
+  const {
+    searchResults: inviteSearchResults,
+    isSearching: inviteIsSearching,
+    isInviting,
+    invitedIds,
+    searchUsers: inviteSearchUsers,
+    inviteUser,
+    clearSearch: inviteClearSearch,
+  } = useBubbleInviteMember(bubbleId)
+  const { pendingInvites, refreshPending } = useBubbleMember(bubbleId, user?.id ?? null)
   const { members, isLoading: membersLoading } = useBubbleMembers(bubbleId)
   const { rankings: ranking, isLoading: rankingLoading } = useBubbleRanking(bubbleId, rankingType)
 
   // 대상 추가 검색
   const { addItemToBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
   const { setQuery: setSearchQuery, results: searchResults, isSearching: isSearchLoading, executeSearch } = useSearch({ targetType: 'restaurant' })
+
+  // 직접 초대 — 멤버 ID 제외 검색
+  const memberIds = useMemo(() => members.map((m) => m.userId), [members])
+
+  const handleInviteSearch = useCallback((query: string) => {
+    inviteSearchUsers(query, memberIds)
+  }, [inviteSearchUsers, memberIds])
+
+  const handleInviteUser = useCallback(async (targetUserId: string) => {
+    if (!user) return
+    const result = await inviteUser(targetUserId, user.id, bubble?.name ?? '', user.nickname, pendingInvites)
+    if (result.duplicate) {
+      showToast('이미 초대한 사용자입니다', 3000)
+      return
+    }
+    refreshPending()
+  }, [user, bubble?.name, inviteUser, pendingInvites, showToast, refreshPending])
+
+  const handleInviteClose = useCallback(() => {
+    setShowInviteModal(false)
+    inviteClearSearch()
+  }, [inviteClearSearch])
 
   const handleSearchInSheet = useCallback((q: string) => {
     setSearchQuery(q)
@@ -490,15 +526,21 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <Plus size={22} color="var(--primary-foreground)" />
       </button>
 
-      {/* 초대 모달 */}
+      {/* 초대 팝업 */}
       {showInviteModal && (
-        <InviteLinkGenerator
-          bubbleId={bubbleId}
+        <InvitePopup
+          bubbleName={bubble.name}
           inviteCode={inviteCode}
-          inviteExpiresAt={null}
-          onGenerate={(expiry) => generateLink(expiry)}
-          onCopy={(code) => copyToClipboard(code)}
-          isLoading={inviteLoading}
+          isLinkLoading={inviteLoading}
+          onGenerateLink={generateLink}
+          onCopyLink={copyToClipboard}
+          onClose={handleInviteClose}
+          searchResults={inviteSearchResults}
+          isSearching={inviteIsSearching}
+          invitedIds={invitedIds}
+          onSearchUsers={handleInviteSearch}
+          onInviteUser={handleInviteUser}
+          isInviting={isInviting}
         />
       )}
 
