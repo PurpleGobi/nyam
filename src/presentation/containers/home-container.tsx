@@ -425,20 +425,25 @@ export function HomeContainer() {
   const dbLimit = useDbPagination ? pageSize : null
   const dbOffset = useDbPagination ? (currentRecordPage - 1) * pageSize : 0
 
-  // ── useHomeTargets: view 기반 서버 데이터 페칭 ──
+  // ── useHomeTargets: 항상 ALL views fetch (view 칩 변경은 클라이언트 필터링) ──
   const {
-    targets,
+    targets: allViewTargets,
     hasMore,
   } = useHomeTargets({
     userId: user?.id ?? null,
     tab: activeTab,
-    viewTypes,
     socialFilter: (socialFilter.followingUserId || socialFilter.bubbleId) ? socialFilter : undefined,
     dbFilters: homeDbFilters,
     sort: currentSort,
     limit: dbLimit,
     offset: dbOffset,
   })
+
+  // view 칩 기반 클라이언트 필터링 (서버 왕복 없이 즉시 반영)
+  const targets = useMemo(() => {
+    if (viewTypes.length === 0) return allViewTargets
+    return allViewTargets.filter((t) => t.sources.some((s) => viewTypes.includes(s as typeof viewTypes[number])))
+  }, [allViewTargets, viewTypes])
 
   const restaurantStats = useRestaurantStats(user?.id ?? null)
   const wineStats = useWineStats(user?.id ?? null)
