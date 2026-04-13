@@ -32,6 +32,7 @@ export function useHomeTargets(params: {
 
   // 탭별 캐시 (stale-while-revalidate)
   const cacheRef = useRef<Map<string, HomeTarget[]>>(new Map())
+  const prevTabRef = useRef(tab)
 
   const socialFilterKey = useMemo(() => {
     if (!socialFilter) return ''
@@ -49,10 +50,16 @@ export function useHomeTargets(params: {
     const cacheKey = `${tab}:${socialFilterKey}:${dbFiltersKey}:${sort ?? ''}:${limit ?? ''}:${offset ?? 0}`
     const cached = cacheRef.current.get(cacheKey)
 
-    // 캐시 히트 → 즉시 표시, 미스 → 이전 데이터 유지 (빈 화면 방지)
+    // 탭 전환 → 즉시 클리어 (잔상 방지), 같은 탭 내 필터 변경 → 이전 데이터 유지
+    const tabChanged = prevTabRef.current !== tab
+    prevTabRef.current = tab
+
     if (cached) {
       setAllTargets(cached)
       setIsLoading(false)
+    } else if (tabChanged) {
+      setAllTargets([])
+      setIsLoading(true)
     } else {
       setIsLoading(true)
     }
