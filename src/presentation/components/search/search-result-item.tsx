@@ -1,6 +1,6 @@
 'use client'
 
-import { UtensilsCrossed, Wine, MapPin, Heart } from 'lucide-react'
+import { UtensilsCrossed, Wine, MapPin } from 'lucide-react'
 import type { SearchResult } from '@/domain/entities/search'
 import { PrestigeBadges } from '@/presentation/components/ui/prestige-badges'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
@@ -10,13 +10,9 @@ interface SearchResultItemProps {
   onSelect: (result: SearchResult) => void
   prestige?: RestaurantPrestige[]
   isSelected?: boolean
-  /** 찜 상태 */
-  isBookmarked?: boolean
-  /** 찜 토글 */
-  onBookmarkToggle?: () => void
 }
 
-export function SearchResultItem({ result, onSelect, prestige, isSelected, isBookmarked, onBookmarkToggle }: SearchResultItemProps) {
+export function SearchResultItem({ result, onSelect, prestige, isSelected }: SearchResultItemProps) {
   const isRestaurant = result.type === 'restaurant'
   const accentClass = isRestaurant ? 'text-[var(--accent-food)]' : 'text-[var(--accent-wine)]'
   const bgClass = isRestaurant
@@ -87,22 +83,6 @@ export function SearchResultItem({ result, onSelect, prestige, isSelected, isBoo
         )}
       </div>
 
-      {/* 찜 Heart */}
-      {onBookmarkToggle && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="flex shrink-0 cursor-pointer items-center justify-center pl-1"
-          onClick={(e) => { e.stopPropagation(); onBookmarkToggle() }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBookmarkToggle() } }}
-        >
-          <Heart
-            size={16}
-            style={{ color: isBookmarked ? '#FF6038' : 'var(--text-hint)' }}
-            fill={isBookmarked ? '#FF6038' : 'transparent'}
-          />
-        </div>
-      )}
     </button>
   )
 }

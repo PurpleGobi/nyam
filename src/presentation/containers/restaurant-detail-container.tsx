@@ -7,9 +7,7 @@ import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { RatingInput } from '@/presentation/components/record/rating-input'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useRestaurantDetail } from '@/application/hooks/use-restaurant-detail'
-import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
-import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -98,15 +96,8 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
     nyamConfidence,
   })
 
-  const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, restaurantId, 'restaurant')
 
-  const { isBookmarked, toggle: toggleBookmark } = useBookmark(
-    user?.id ?? null,
-    restaurantId,
-    'restaurant',
-    (tId, tType, isB) => syncBookmarkToAllBubbles({ targetId: tId, targetType: tType }, isB),
-  )
 
   // 세부 축 레벨 (장르, 지역)
   const areaAxisValue = restaurant?.area?.[0] ?? restaurant?.district ?? null
@@ -371,8 +362,6 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="restaurant"
-          isBookmarked={isBookmarked}
-          onBookmarkToggle={toggleBookmark}
           onShare={handlePageShare}
         />
 

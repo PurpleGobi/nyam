@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { ReactionType } from '@/domain/entities/reaction'
-import { reactionRepo, bookmarkRepo, notificationRepo } from '@/shared/di/container'
+import { reactionRepo, notificationRepo } from '@/shared/di/container'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 
 interface UseReactionsParams {
@@ -72,16 +72,6 @@ export function useReactions({
     try {
       const result = await reactionRepo.toggle(targetType, targetId, reactionType, userId)
 
-      // bookmark + added -> bookmarks INSERT
-      if (result.added && reactionType === 'bookmark' && bookmarkTarget) {
-        await bookmarkRepo.toggle(
-          userId,
-          bookmarkTarget.targetId,
-          bookmarkTarget.targetType,
-          'bookmark',
-        )
-      }
-
       // like + added → 소셜 XP (기록 작성자에게, 본인 제외)
       if (result.added && reactionType === 'like' && targetOwnerId && targetOwnerId !== userId) {
         await awardSocialXp(targetOwnerId, 'like')
@@ -108,7 +98,7 @@ export function useReactions({
     } finally {
       setIsLoading(false)
     }
-  }, [targetType, targetId, userId, isLoading, counts, myReactions, targetOwnerId, bookmarkTarget, awardSocialXp])
+  }, [targetType, targetId, userId, isLoading, counts, myReactions, targetOwnerId, awardSocialXp])
 
   return { counts, myReactions, toggle, isLoading }
 }

@@ -2,22 +2,17 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Share2, UtensilsCrossed, Wine } from 'lucide-react'
-import { BookmarkButton } from '@/presentation/components/detail/bookmark-button'
 import { PhotoViewer } from '@/presentation/components/ui/photo-viewer'
 
 interface HeroCarouselProps {
   photos: string[]
   fallbackIcon: 'restaurant' | 'wine'
-  isBookmarked: boolean
-  onBookmarkToggle: () => void
   onShare: () => void
 }
 
 export function HeroCarousel({
   photos,
   fallbackIcon,
-  isBookmarked,
-  onBookmarkToggle,
   onShare,
 }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -148,22 +143,14 @@ export function HeroCarousel({
           </div>
         )}
 
-        {/* 좋아요/공유 버튼 — 우하단 */}
-        <div className="absolute flex gap-3" style={{ bottom: '10px', right: '12px' }}>
+        {/* 공유 버튼 — 우하단 */}
+        <div className="absolute" style={{ bottom: '10px', right: '12px' }}>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onShare() }}
           >
             <Share2 size={20} style={{ color: 'rgba(255,255,255,0.85)' }} />
           </button>
-          <span onClick={(e) => e.stopPropagation()}>
-            <BookmarkButton
-              isBookmarked={isBookmarked}
-              onToggle={onBookmarkToggle}
-              variant="hero"
-              size={20}
-            />
-          </span>
         </div>
       </div>
 

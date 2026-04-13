@@ -17,10 +17,6 @@ interface SearchResultsProps {
   onSelectAiCandidate?: (candidate: WineSearchCandidate) => void
   /** 현재 선택된 항목 ID (지도 연동 강조용) */
   selectedId?: string | null
-  /** 찜 상태 getter */
-  getIsBookmarked?: (id: string) => boolean
-  /** 개별 찜 토글 */
-  onBookmarkToggle?: (id: string, targetType: 'restaurant' | 'wine') => void
 }
 
 const wineTypeMap: Record<string, string> = {
@@ -40,8 +36,6 @@ export function SearchResults({
   isSelectingAi = false,
   onSelectAiCandidate,
   selectedId,
-  getIsBookmarked,
-  onBookmarkToggle,
 }: SearchResultsProps) {
   if (screenState === 'searching' && results.length === 0 && aiCandidates.length === 0) {
     return (
@@ -87,8 +81,6 @@ export function SearchResults({
                   onSelect={onSelect}
                   prestige={result.type === 'restaurant' ? result.prestige : undefined}
                   isSelected={selectedId === result.id}
-                  isBookmarked={getIsBookmarked?.(result.id)}
-                  onBookmarkToggle={onBookmarkToggle ? () => onBookmarkToggle(result.id, result.type) : undefined}
                 />
               </li>
             ))}

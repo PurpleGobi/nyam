@@ -12,7 +12,6 @@ import type { MapDiscoveryItem } from '@/domain/entities/map-discovery'
 import { MAP_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { useSearch } from '@/application/hooks/use-search'
 import { useMapDiscovery } from '@/application/hooks/use-map-discovery'
-import { useBookmarkMap } from '@/application/hooks/use-bookmark'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -41,7 +40,6 @@ function SearchInner() {
   const [mapChips, setMapChips] = useState<FilterChipItem[]>([])
 
   // ── 찜 + 다중 선택 ──
-  const { getIsBookmarked, toggle: toggleBookmark } = useBookmarkMap(user?.id ?? null)
   const filterBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -396,8 +394,6 @@ function SearchInner() {
             isAiSearching={isAiSearching}
             isSelectingAi={isSelectingAi}
             onSelectAiCandidate={handleSelectAiCandidate}
-            getIsBookmarked={(id) => getIsBookmarked(id, false)}
-            onBookmarkToggle={(id, tt) => toggleBookmark(id, tt, getIsBookmarked(id, false))}
           />
         </div>
       )}

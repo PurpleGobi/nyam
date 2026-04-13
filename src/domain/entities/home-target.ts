@@ -31,8 +31,6 @@ export interface HomeTarget {
   vintage: number | null
 
   // --- 관계 상태 ---
-  isBookmarked: boolean
-  isCellar: boolean               // 와인 전용
   visitCount: number              // 내 records 수 (0 = 방문/시음 없음)
   sources: RecordSource[]         // 이 target이 어떤 경로로 내 목록에 들어왔는지
 

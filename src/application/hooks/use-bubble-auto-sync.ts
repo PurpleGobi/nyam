@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { bubbleRepo } from '@/shared/di/container'
-import { evaluateShareRule, computeShareDiff, evaluateBookmarkTargets } from '@/domain/services/bubble-share-sync'
+import { evaluateShareRule, computeShareDiff } from '@/domain/services/bubble-share-sync'
 import type { BubbleShareRule } from '@/domain/entities/bubble'
 
 export interface SyncResult {
@@ -94,38 +94,5 @@ export function useBubbleAutoSync(userId: string | null) {
     ])
   }, [userId])
 
-  /**
-   * 트리거 3: 찜(bookmark) 토글 시
-   * includeBookmarks가 true인 버블의 shareRule로 평가하여 bubble_items에 동기화
-   */
-  const syncBookmarkToAllBubbles = useCallback(async (
-    target: { targetId: string; targetType: 'restaurant' | 'wine' } & Record<string, unknown>,
-    isBookmarked: boolean,
-  ): Promise<void> => {
-    if (!userId) return
-
-    const memberships = await bubbleRepo.getUserBubbles(userId)
-    const activeMemberships = memberships.filter(
-      (m) => m.status === 'active' && m.shareRule?.includeBookmarks
-    )
-
-    for (const membership of activeMemberships) {
-      if (isBookmarked) {
-        const shouldInclude = evaluateBookmarkTargets([target], membership.shareRule)
-        if (shouldInclude.length > 0) {
-          await bubbleRepo.batchUpsertAutoItems(
-            [{ targetId: target.targetId, targetType: target.targetType }],
-            membership.bubbleId, userId,
-          )
-        }
-      } else {
-        // 찜 해제 시 — auto source인 경우만 제거
-        await bubbleRepo.batchDeleteAutoItems(
-          [target.targetId], target.targetType, membership.bubbleId,
-        )
-      }
-    }
-  }, [userId])
-
-  return { syncRecordToAllBubbles, syncAllRecordsToBubble, syncBookmarkToAllBubbles }
+  return { syncRecordToAllBubbles, syncAllRecordsToBubble }
 }

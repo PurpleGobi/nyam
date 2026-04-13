@@ -52,7 +52,6 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
   const router = useRouter()
   const hasQuadrant =
     myRecord?.axisX != null && myRecord?.axisY != null && myRecord?.satisfaction != null
-  const isCellar = false  // TODO: bookmarks 테이블에서 cellar 여부 판단
 
   const sortedMembers = [...(bubbleMembers ?? [])].sort((a, b) => b.satisfaction - a.satisfaction)
   const visibleMembers = sortedMembers.slice(0, 2)
@@ -127,17 +126,6 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
           </p>
         )}
 
-        {isCellar && (
-          <div className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-sub)' }}>
-            <SourceTag type="cellar">셀러</SourceTag>
-            <span className="truncate">
-              {myRecord?.purchasePrice != null
-                ? `${myRecord.purchasePrice.toLocaleString()}원`
-                : '보관 중'}
-              {myRecord?.visitDate ? ` · ${myRecord.visitDate}` : ''}
-            </span>
-          </div>
-        )}
 
         {visibleMembers.length > 0 && (
           <div className="mt-auto flex items-center gap-1.5 pt-1.5">

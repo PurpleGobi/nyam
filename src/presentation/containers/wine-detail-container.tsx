@@ -6,9 +6,7 @@ import { MapPin, Grape, Thermometer, GlassWater, CalendarRange, UtensilsCrossed,
 import { FabActions } from '@/presentation/components/layout/fab-actions'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useWineDetail } from '@/application/hooks/use-wine-detail'
-import { useBookmark } from '@/application/hooks/use-bookmark'
 import { useShareRecord } from '@/application/hooks/use-share-record'
-import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useAxisLevel } from '@/application/hooks/use-axis-level'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -108,13 +106,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     nyamConfidence,
   })
 
-  const { syncBookmarkToAllBubbles } = useBubbleAutoSync(user?.id ?? null)
   const { bubblesWithStatus, isLoading: isBubblesLoading, toggleItem: toggleBubbleItem } = useBubbleItems(user?.id ?? null, wineId, 'wine')
 
-  const { isBookmarked, toggle: toggleBookmark } = useBookmark(
-    user?.id ?? null, wineId, 'wine',
-    (tId, tType, isB) => syncBookmarkToAllBubbles({ targetId: tId, targetType: tType }, isB),
-  )
 
   // 세부 축 레벨 (산지, 품종)
   const bestVariety = wine?.variety ?? (wine?.grapeVarieties?.[0]?.name ?? null)
@@ -426,8 +419,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
         <HeroCarousel
           photos={heroPhotos}
           fallbackIcon="wine"
-          isBookmarked={isBookmarked}
-          onBookmarkToggle={toggleBookmark}
           onShare={handlePageShare}
         />
 

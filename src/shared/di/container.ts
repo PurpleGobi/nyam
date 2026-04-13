@@ -16,7 +16,6 @@ import { SupabaseCommentRepository } from '@/infrastructure/repositories/supabas
 import { SupabaseReactionRepository } from '@/infrastructure/repositories/supabase-reaction-repository'
 import { SupabaseOnboardingRepository } from '@/infrastructure/repositories/supabase-onboarding-repository'
 import { SupabaseFilterStateRepository } from '@/infrastructure/repositories/supabase-filter-state-repository'
-import { SupabaseBookmarkRepository } from '@/infrastructure/repositories/supabase-bookmark-repository'
 import { SupabaseHomeRepository } from '@/infrastructure/repositories/supabase-home-repository'
 import { SupabaseSimilarityRepository } from '@/infrastructure/repositories/supabase-similarity-repository'
 import { SupabasePredictionRepository } from '@/infrastructure/repositories/supabase-prediction-repository'
@@ -37,7 +36,6 @@ import type { CommentRepository } from '@/domain/repositories/comment-repository
 import type { ReactionRepository } from '@/domain/repositories/reaction-repository'
 import type { OnboardingRepository } from '@/domain/repositories/onboarding-repository'
 import type { FilterStateRepository } from '@/domain/repositories/filter-state-repository'
-import type { BookmarkRepository } from '@/domain/repositories/bookmark-repository'
 import type { HomeRepository } from '@/domain/repositories/home-repository'
 import type { SimilarityRepository } from '@/domain/repositories/similarity-repository'
 import type { PredictionRepository } from '@/domain/repositories/prediction-repository'
@@ -65,7 +63,6 @@ export const commentRepo: CommentRepository = new SupabaseCommentRepository()
 export const reactionRepo: ReactionRepository = new SupabaseReactionRepository()
 export const onboardingRepo: OnboardingRepository = new SupabaseOnboardingRepository()
 export const filterStateRepo: FilterStateRepository = new SupabaseFilterStateRepository()
-export const bookmarkRepo: BookmarkRepository = new SupabaseBookmarkRepository()
 export const homeRepo: HomeRepository = new SupabaseHomeRepository()
 export const similarityRepo: SimilarityRepository = new SupabaseSimilarityRepository()
 export const predictionRepo: PredictionRepository = new SupabasePredictionRepository()

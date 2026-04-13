@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { bookmarkRepo, restaurantRepo } from '@/shared/di/container'
+import { restaurantRepo } from '@/shared/di/container'
 
 export interface NaverPlace {
   name: string
@@ -120,12 +120,6 @@ export function useNaverImport(userId: string | null) {
           importResult.created++
         }
 
-        // 2) 찜 등록 (이미 찜한 경우 스킵)
-        const alreadyBookmarked = await bookmarkRepo.isBookmarked(userId, restaurant.id, 'restaurant')
-        if (!alreadyBookmarked) {
-          await bookmarkRepo.toggle(userId, restaurant.id, 'restaurant', 'bookmark')
-          importResult.bookmarked++
-        }
       } catch {
         importResult.failed++
       }

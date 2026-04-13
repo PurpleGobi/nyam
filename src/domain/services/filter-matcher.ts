@@ -190,18 +190,6 @@ export function matchRule(record: Record<string, unknown>, rule: FilterRule): bo
       const matches = sources ? sources.includes('mine') : record.source === 'mine'
       return operator === 'eq' ? matches : !matches
     }
-    if (viewValue === 'bookmark') {
-      const matches = sources ? sources.includes('bookmark') : record.source === 'bookmark'
-      return operator === 'eq' ? matches : !matches
-    }
-    if (viewValue === 'cellar') {
-      // HomeTarget: isCellar 직접 확인, RecordWithTarget: 서버에서 이미 필터링
-      if (sources) {
-        const matches = record.isCellar === true
-        return operator === 'eq' ? matches : !matches
-      }
-      return true
-    }
     if (viewValue === 'unrated') {
       if (sources) {
         // HomeTarget: axisX가 null인지 확인

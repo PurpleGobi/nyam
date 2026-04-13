@@ -98,14 +98,12 @@ export class SupabaseHomeRepository implements HomeRepository {
     const allTargetIds = [...targetSourceMap.keys()]
     if (allTargetIds.length === 0) return { targets: [], hasMore: false }
 
-    // ── Stage 2: 메타 필터 + records + bookmarks 병렬 (P2) ──
-    // 필터가 없으면 meta와 records/bookmarks를 동시 시작 가능
+    // ── Stage 2: 메타 필터 + records 병렬 (P2) ──
     const hasDbFilters = dbFilters && Object.values(dbFilters).some((v) => v != null)
     const dbLimit = limit != null ? limit + 1 : null
 
     let targetMeta: Map<string, TargetMeta>
     let allRecords: (DiningRecord & { source: RecordSource })[]
-    let bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>
     let photoMap: Map<string, string[]>
 
     if (hasDbFilters || dbLimit != null) {
@@ -122,34 +120,31 @@ export class SupabaseHomeRepository implements HomeRepository {
       const filteredTargetIds = [...targetMeta.keys()]
       if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
 
-      // records(+photos join) + bookmarks 병렬
-      const result = await this.fetchRecordsAndBookmarks(userId, filteredTargetIds, targetType, views, shared)
+      const result = await this.fetchRecordsAndPhotos(userId, filteredTargetIds, targetType, views, shared)
       allRecords = result.records
-      bookmarks = result.bookmarks
       photoMap = result.photoMap
 
       return {
-        targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, bookmarks, photoMap, targetSourceMap, userId),
+        targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId),
         hasMore,
       }
     }
 
-    // 필터 없음 → meta + records + bookmarks 전부 병렬 (P2: 최대 병렬화)
+    // 필터 없음 → meta + records 전부 병렬 (P2: 최대 병렬화)
     const [metaResult, recordsResult] = await Promise.all([
       this.fetchTargetMeta(allTargetIds, targetType, dbFilters, sort, dbLimit, offset),
-      this.fetchRecordsAndBookmarks(userId, allTargetIds, targetType, views, shared),
+      this.fetchRecordsAndPhotos(userId, allTargetIds, targetType, views, shared),
     ])
 
     targetMeta = metaResult
     allRecords = recordsResult.records
-    bookmarks = recordsResult.bookmarks
     photoMap = recordsResult.photoMap
 
     const filteredTargetIds = [...targetMeta.keys()]
     if (filteredTargetIds.length === 0) return { targets: [], hasMore: false }
 
     return {
-      targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, bookmarks, photoMap, targetSourceMap, userId),
+      targets: this.assembleTargets(filteredTargetIds, targetType, targetMeta, allRecords, photoMap, targetSourceMap, userId),
       hasMore: false,
     }
   }
@@ -342,7 +337,7 @@ export class SupabaseHomeRepository implements HomeRepository {
   /** 소셜 기록 집계에 필요한 최소 컬럼 + photos join (P3) */
   private static readonly SOCIAL_RECORD_COLS = 'id, user_id, target_id, target_type, satisfaction, axis_x, axis_y, visit_date, created_at, record_photos(url, order_index)' as const
 
-  private async fetchRecordsAndBookmarks(
+  private async fetchRecordsAndPhotos(
     userId: string,
     targetIds: string[],
     targetType: RecordTargetType,
@@ -350,18 +345,16 @@ export class SupabaseHomeRepository implements HomeRepository {
     shared: SharedPrefetch,
   ): Promise<{
     records: (DiningRecord & { source: RecordSource })[]
-    bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>
     photoMap: Map<string, string[]>
   }> {
     if (targetIds.length === 0) {
-      return { records: [], bookmarks: new Map(), photoMap: new Map() }
+      return { records: [], photoMap: new Map() }
     }
 
     const targetIdSet = new Set(targetIds)
 
-    // P2: records(3소스) + bookmarks = 4개 병렬, photos는 join으로 포함 (별도 쿼리 제거)
-    const [myRows, followingRows, bubbleRows, bookmarkData] = await Promise.all([
-      // 내 기록 — 전체 필드 + photos join (캘린더/상세용)
+    // P2: records(3소스) 병렬, photos는 join으로 포함
+    const [myRows, followingRows, bubbleRows] = await Promise.all([
       this.supabase
         .from('records')
         .select('*, record_photos(url, order_index)')
@@ -371,7 +364,6 @@ export class SupabaseHomeRepository implements HomeRepository {
         .order('visit_date', { ascending: false })
         .then(({ data }) => data ?? []),
 
-      // 팔로잉 기록 — 최소 필드 + photos join (P3)
       views.includes('following') && shared.followingIds.length > 0
         ? this.supabase
             .from('records')
@@ -383,7 +375,6 @@ export class SupabaseHomeRepository implements HomeRepository {
             .then(({ data }) => data ?? [])
         : Promise.resolve([]),
 
-      // 버블 기록 — 최소 필드 + photos join (P3)
       views.includes('bubble') && shared.bubbleItemTargetIds.size > 0
         ? (() => {
             const filteredBubbleTargetIds = [...shared.bubbleItemTargetIds].filter((id) => targetIdSet.has(id))
@@ -397,18 +388,9 @@ export class SupabaseHomeRepository implements HomeRepository {
               .then(({ data }) => data ?? [])
           })()
         : Promise.resolve([]),
-
-      // Bookmarks
-      this.supabase
-        .from('bookmarks')
-        .select('target_id, type')
-        .eq('user_id', userId)
-        .eq('target_type', targetType)
-        .in('target_id', targetIds)
-        .then(({ data }) => data ?? []),
     ])
 
-    // photoMap 구축 (join된 record_photos에서 추출)
+    // photoMap 구축
     const photoMap = new Map<string, string[]>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const extractPhotos = (rows: any[]) => {
@@ -424,22 +406,12 @@ export class SupabaseHomeRepository implements HomeRepository {
     extractPhotos(followingRows)
     extractPhotos(bubbleRows)
 
-    // records 조립
     const records: (DiningRecord & { source: RecordSource })[] = []
     for (const row of myRows) records.push({ ...mapDbToRecord(row), source: 'mine' })
     for (const row of followingRows) records.push({ ...mapDbToRecord(row), source: 'following' })
     for (const row of bubbleRows) records.push({ ...mapDbToRecord(row), source: 'bubble' })
 
-    // bookmarks 조립
-    const bookmarks = new Map<string, { isBookmarked: boolean; isCellar: boolean }>()
-    for (const row of bookmarkData) {
-      const existing = bookmarks.get(row.target_id) ?? { isBookmarked: false, isCellar: false }
-      if (row.type === 'bookmark') existing.isBookmarked = true
-      if (row.type === 'cellar') existing.isCellar = true
-      bookmarks.set(row.target_id, existing)
-    }
-
-    return { records, bookmarks, photoMap }
+    return { records, photoMap }
   }
 
   // --- Step 6-7: HomeTarget[] 조립 ---
@@ -449,7 +421,6 @@ export class SupabaseHomeRepository implements HomeRepository {
     targetType: RecordTargetType,
     targetMeta: Map<string, TargetMeta>,
     allRecords: (DiningRecord & { source: RecordSource })[],
-    bookmarks: Map<string, { isBookmarked: boolean; isCellar: boolean }>,
     photoMap: Map<string, string[]>,
     targetSourceMap: Map<string, Set<RecordSource>>,
     currentUserId: string,
@@ -550,7 +521,6 @@ export class SupabaseHomeRepository implements HomeRepository {
         ? Math.round(bubbleRecords.reduce((s, r) => s + (r.satisfaction ?? 0), 0) / bubbleRecords.length)
         : null
 
-      const bookmark = bookmarks.get(targetId) ?? { isBookmarked: false, isCellar: false }
       const sources = [...(targetSourceMap.get(targetId) ?? [])]
 
       // 타인의 기록: companions/privateNote 비공개 처리
@@ -583,8 +553,6 @@ export class SupabaseHomeRepository implements HomeRepository {
         region: meta.region,
         vintage: meta.vintage,
 
-        isBookmarked: bookmark.isBookmarked,
-        isCellar: bookmark.isCellar,
         visitCount: myRecords.length,
         sources,
 

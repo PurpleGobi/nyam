@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-12 (DB 쿼리 최적화 리팩토링)
+> 마지막 갱신: 2026-04-13 (찜(bookmark) 기능 전체 제거)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -12,7 +12,7 @@
 ### domain/ (순수 비즈니스 로직, 외부 의존 0)
 | 경로 | 파일 수 | 역할 | 상태 |
 |------|---------|------|------|
-| entities/ | 35 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, bookmark, home-target, similarity, map-discovery 등). map-discovery.ts(신규): MapDiscoveryItem, MapScoreType, MapViewFilter, MapPrestigeFilter, MapFilterState, MapCluster, MapDisplayResult. restaurant.ts: RestaurantPrestige 인터페이스. score.ts: ScoreSource 3종. bubble.ts: BubbleItem, BubbleItemSource 타입 | 안정 |
+| entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, home-target, similarity, map-discovery 등). bookmark.ts 삭제됨. map-discovery.ts: MapDiscoveryItem 등. restaurant.ts: RestaurantPrestige. score.ts: ScoreSource 3종. bubble.ts: BubbleItem, BubbleItemSource 타입 | 안정 |
 | repositories/ | 19 | 인터페이스 (RecordRepository, BookmarkRepository, BubbleRepository, HomeRepository, SimilarityRepository, PredictionRepository 등). BubbleRepository에 큐레이션 메서드 4개 추가. HomeRepository에 HomeDbFilters 인터페이스 + findHomeTargets dbFilters 파라미터 확장 | 안정 |
 | services/ | 19 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback, visibility-filter, profile-visibility, cf-calculator, map-cluster 등). filter-query-builder.ts 삭제(dead code — DB RPC로 대체). map-cluster.ts: selectTopN(cascade 소팅), clusterPoints(그리드 기반). cf-calculator 테스트 32개. bubble-share-sync에 evaluateBookmarkTargets, computeItemDiff 추가 | 안정 |
 | constants/ | 1 | source-priority.ts (SOURCE_PRIORITY: 'mine'\|'nyam'\|'bubble'\|'bookmark' 4종) | 안정 |
@@ -29,7 +29,6 @@
 ### application/hooks/ (비즈니스 로직 훅, 63개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
 - 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats, use-target-scores
-- 찜/셀러: use-bookmark (onBubbleSync 콜백 추가)
 - 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubblers-list, use-bubble-items(신규: 수동 큐레이션 CRUD), use-bubble-auto-sync(syncBookmarkToAllBubbles 추가) 등
 - 소셜: use-follow, use-follow-list-with-similarity (팔로우 목록+적합도 enrichment), use-comments, use-reactions, use-share-record
 - XP/프로필: use-xp, use-xp-award, use-profile, use-wrapped
@@ -66,7 +65,7 @@
 - functions/ (6): process-account-deletion, refresh-active-xp, weekly-ranking-snapshot(bubble_items 전환 완료), compute-similarity(CF 증분 갱신), predict-score(단건 CF 예측, JWT+service_role), batch-predict(배치 CF 예측, 최대 50건)
 
 ## DI 등록 현황 (container.ts)
-19개 repo 모두 등록 완료: record, restaurant, wine, photo, xp, notification, bubble, follow, savedFilter, bookmark, profile, settings, comment, reaction, onboarding, userCoords(hook), home, similarity, prediction
+18개 repo 등록: record, restaurant, wine, photo, xp, notification, bubble, follow, savedFilter, profile, settings, comment, reaction, onboarding, userCoords(hook), home, similarity, prediction (bookmark 제거됨)
 + imageService, uploadBubbleIcon, getSupabaseClient, signInWithProvider, signOutUser
 
 ## 알려진 기술 부채

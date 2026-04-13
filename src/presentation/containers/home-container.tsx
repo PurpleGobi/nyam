@@ -11,7 +11,7 @@ import type { HomeViewType, HomeDbFilters } from '@/domain/repositories/home-rep
 import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
-import { chipsToFilterRules, isAdvancedChip, createDefaultViewChip } from '@/domain/entities/condition-chip'
+import { chipsToFilterRules, isAdvancedChip, createDefaultViewChip, createBubbleViewChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, MAP_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
@@ -293,11 +293,20 @@ export function HomeContainer() {
     let cancelled = false
     void loadState(activeTab).then((loaded) => {
       if (cancelled) return
-      // 식당/와인 탭: 로드된 칩에 view 칩이 없으면 디폴트 '내기록' 칩 추가
-      const hasViewChip = loaded.some((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
-      const chips = (!hasViewChip && activeTab !== 'bubble')
-        ? [createDefaultViewChip(), ...loaded]
-        : loaded
+
+      let chips: FilterChipItem[]
+      if (urlBubbleId && activeTab !== 'bubble') {
+        // URL ?bubbleId= 진입 시: persisted view 칩 무시, bubble view 칩 강제 적용
+        const nonViewChips = loaded.filter((c) => isAdvancedChip(c) || (c as { attribute: string }).attribute !== 'view')
+        chips = [createBubbleViewChip(), ...nonViewChips]
+      } else {
+        // 일반 진입: 로드된 칩에 view 칩이 없으면 디폴트 '내기록' 칩 추가
+        const hasViewChip = loaded.some((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
+        chips = (!hasViewChip && activeTab !== 'bubble')
+          ? [createDefaultViewChip(), ...loaded]
+          : loaded
+      }
+
       setInitializedTabs((prev) => {
         if (prev.has(activeTab)) return prev
         const next = new Set(prev)
@@ -310,7 +319,7 @@ export function HomeContainer() {
     })
 
     return () => { cancelled = true }
-  }, [activeTab, user?.id, loadState, setFilterRules])
+  }, [activeTab, user?.id, loadState, setFilterRules, urlBubbleId])
 
   // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화 (URL 버블 필터는 유지)
   if (prevTab !== activeTab) {
@@ -857,10 +866,9 @@ export function HomeContainer() {
     return (
       <div className="flex flex-col gap-3 px-4 pb-24 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
         {displayTargets.map((target) => {
-          // [FIX #6] status 분기: 식당 vs 와인
-          const status: 'visited' | 'bookmark' | 'cellar' | 'tasted' = activeTab === 'wine'
-            ? (target.isCellar ? 'cellar' : (target.visitCount > 0 ? 'tasted' : 'bookmark'))
-            : (target.visitCount > 0 ? 'visited' : 'bookmark')
+          const status: 'visited' | 'tasted' = activeTab === 'wine'
+            ? 'tasted'
+            : 'visited'
 
           return activeTab === 'wine' ? (
             <WineCard
