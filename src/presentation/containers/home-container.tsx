@@ -154,7 +154,8 @@ export function HomeContainer() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const urlBubbleId = searchParams.get('bubbleId')
+  const activeBubbleIdParam = searchParams.get('bubbleId')
+  const [activeBubbleId, setActiveBubbleId] = useState<string | null>(activeBubbleIdParam)
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
@@ -266,9 +267,9 @@ export function HomeContainer() {
     currentSort, setCurrentSort,
     searchQuery, setSearchQuery,
   } = useHomeState({
-    initialTab: urlBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined),
+    initialTab: activeBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined),
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
-    initialSort: urlBubbleId ? 'distance' : undefined,
+    initialSort: activeBubbleId ? 'distance' : undefined,
   })
 
   // 거리순 소팅 시에만 위치 좌표 요청
@@ -277,7 +278,7 @@ export function HomeContainer() {
   // ── 소셜 필터 상태 (URL ?bubbleId= 파라미터로 진입 시 프리셋) ──
   const [socialFilter, setSocialFilter] = useState<SocialFilterState>(() => ({
     followingUserId: null,
-    bubbleId: urlBubbleId ?? null,
+    bubbleId: activeBubbleId ?? null,
   }))
   // 소셜 필터 옵션: 초기 로딩 후 지연 fetch (follows + bubbles 중복 쿼리 제거)
   const [socialFilterReady, setSocialFilterReady] = useState(false)
@@ -307,7 +308,7 @@ export function HomeContainer() {
       if (cancelled) return
 
       let chips: FilterChipItem[]
-      if (urlBubbleId && activeTab !== 'bubble') {
+      if (activeBubbleIdParam && activeTab !== 'bubble') {
         // URL ?bubbleId= 진입 시: persisted view 칩 무시, bubble view 칩 강제 적용
         const nonViewChips = loaded.filter((c) => isAdvancedChip(c) || (c as { attribute: string }).attribute !== 'view')
         chips = [createBubbleViewChip(), ...nonViewChips]
@@ -331,12 +332,13 @@ export function HomeContainer() {
     })
 
     return () => { cancelled = true }
-  }, [activeTab, user?.id, loadState, setFilterRules, urlBubbleId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id, loadState, setFilterRules])
 
   // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화 (URL 버블 필터는 유지)
   if (prevTab !== activeTab) {
     setPrevTab(activeTab)
-    if (!urlBubbleId) {
+    if (!activeBubbleId) {
       setSocialFilter({ followingUserId: null, bubbleId: null })
     }
     if (!initializedTabs.has(activeTab)) {
@@ -360,12 +362,16 @@ export function HomeContainer() {
     const viewChip = chips.find((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
     if (viewChip) {
       const views = String((viewChip as { value: string }).value).split(',').map((v) => v.trim())
+      if (!views.includes('bubble')) {
+        setActiveBubbleId(null)
+      }
       setSocialFilter((prev) => ({
         followingUserId: views.includes('following') ? prev.followingUserId : null,
         bubbleId: views.includes('bubble') ? prev.bubbleId : null,
       }))
     } else {
-      // view 칩이 없으면 (전체 보기) 소셜 필터 유지
+      // view 칩이 없으면 bubble 모드 해제
+      setActiveBubbleId(null)
     }
   }, [setFilterRules, saveState, activeTab])
 
@@ -385,7 +391,7 @@ export function HomeContainer() {
   // ── conditionChips에서 view 값 추출 ──
   const viewTypes: HomeViewType[] = useMemo(() => {
     // URL ?bubbleId= 로 진입 시 bubble viewType 강제 포함
-    if (urlBubbleId) return ['bubble']
+    if (activeBubbleId) return ['bubble']
 
     const views: HomeViewType[] = []
     for (const chip of conditionChips) {
@@ -400,7 +406,7 @@ export function HomeContainer() {
       }
     }
     return views
-  }, [conditionChips, urlBubbleId])
+  }, [conditionChips, activeBubbleId])
 
   // view 칩은 데이터 소스 변경용이므로 filterRules에서 제외
   const nonViewFilterRules = useMemo(() => {
@@ -555,6 +561,16 @@ export function HomeContainer() {
     setCurrentSort(sort)
     toggleSort()
   }, [setCurrentSort, toggleSort])
+
+  const handleLogoReset = useCallback(() => {
+    setActiveBubbleId(null)
+    setSocialFilter({ followingUserId: null, bubbleId: null })
+    const defaultChips = [createDefaultViewChip()]
+    setConditionChips(defaultChips)
+    setFilterRules(chipsToFilterRules(defaultChips))
+    setCurrentSort('latest')
+    setSearchQuery('')
+  }, [setFilterRules, setCurrentSort, setSearchQuery])
 
   // 필터/검색 적용 (타겟 기반, 그룹화 불필요)
   const filteredTargets = useMemo(() => {
@@ -941,7 +957,7 @@ export function HomeContainer() {
 
   return (
     <div className={`content-feed flex flex-col bg-[var(--bg)] ${isMapMode ? 'h-dvh overflow-hidden' : 'min-h-dvh'}`}>
-      <AppHeader />
+      <AppHeader onLogoClick={handleLogoReset} />
 
       <div className="flex min-h-0 flex-1 flex-col">
         {isGreetingVisible && (

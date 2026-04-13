@@ -10,7 +10,11 @@ import { NotificationBell } from '@/presentation/components/layout/notification-
 import { HeaderLevelBar } from '@/presentation/components/layout/header-level-bar'
 import { AvatarDropdown } from '@/presentation/components/layout/avatar-dropdown'
 
-export function AppHeader() {
+interface AppHeaderProps {
+  onLogoClick?: () => void
+}
+
+export function AppHeader({ onLogoClick }: AppHeaderProps = {}) {
   const router = useRouter()
   const { user } = useAuth()
   const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
@@ -37,7 +41,7 @@ export function AppHeader() {
     <>
       <header ref={headerRef} className="top-fixed">
         <div className="app-header">
-          <h1 onClick={() => router.push('/')} className="header-brand">
+          <h1 onClick={() => { onLogoClick?.(); router.push('/') }} className="header-brand">
             nyam
           </h1>
 
