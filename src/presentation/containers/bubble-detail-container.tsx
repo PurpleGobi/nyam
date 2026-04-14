@@ -285,6 +285,17 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               </p>
             )}
 
+            {/* 오너: 닉네임 + @핸들 */}
+            {bubble.ownerNickname && (
+              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-hint)' }}>
+                운영자{' '}
+                <span style={{ color: 'var(--text-sub)', fontWeight: 600 }}>{bubble.ownerNickname}</span>
+                {bubble.ownerHandle && (
+                  <span className="ml-1" style={{ color: 'var(--text-hint)' }}>@{bubble.ownerHandle}</span>
+                )}
+              </p>
+            )}
+
             <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '10px 0' }} />
 
             {/* 멤버 · 기록 · 지역 메타 */}

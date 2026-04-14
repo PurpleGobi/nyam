@@ -6,11 +6,17 @@
 
 ---
 
+### 2026-04-14 #40 — 버블 오너 표시 (카드=닉네임, 상세=닉네임+@핸들)
+- **영역**: domain/entities/bubble.ts(ownerNickname/ownerHandle 추가), infrastructure/supabase-bubble-repository(BUBBLE_SELECT_WITH_OWNER FK 조인, toBubble 확장, findById/findByUserId/findPublic/create/update/findByInviteCode 전체 교체, toEntityRow READ_ONLY_FIELDS로 조인파생필드 쓰기 차단), presentation/components/bubble/bubble-card.tsx(오너 닉네임 by 라인 추가), presentation/containers/bubble-detail-container.tsx(설명 아래 운영자 닉네임+@핸들 노출)
+- **맥락**: 버블이 누가 만든 건지 불명확하던 문제 해결. A안(엔티티 조인) 선택 — Bubble 엔티티에 ownerNickname/ownerHandle 옵셔널 필드 추가, Supabase PostgREST FK 조인(`owner:users!created_by`)으로 별도 쿼리 없이 자연스럽게 전달. 카드뷰는 공간 제약으로 닉네임만 (`by 닉네임`), 상세페이지는 닉네임+@핸들 병기 (기존 Nyam 컨벤션). toEntityRow에 READ_ONLY_FIELDS 세트를 둬서 update 시 조인 파생 필드가 실수로 DB에 쓰이는 것 차단.
+- **미완료**: 없음
+- **다음**: 브라우저 QA (FK 조인 정상 동작, handle null 케이스, 카드 레이아웃)
+
 ### 2026-04-14 #39 — 버블 카드 레벨 벳지 상위 2개만 노출
 - **영역**: presentation/components/bubble/bubble-card.tsx(expertise 정렬+slice(0,2))
 - **맥락**: 버블 카드뷰의 전문 분야 태그(Lv.X)가 home-container.getExpertiseTop3에서 넘어온 3개를 모두 표시하고 있었음. 카드 공간 대비 정보량이 많아 상위 2개만 노출하도록 카드 내부에서 sort(avgLevel desc) + slice(0,2)로 강제. CompactListBubble(리스트뷰)은 영향 없음.
-- **미완료**: 버블 카드뷰·상세페이지에 오너 닉네임/핸들 표시 (파이프라인 방식 사용자 확인 대기)
-- **다음**: 오너 표시 구현 (A안 엔티티 조인 vs B안 별도 훅 결정 후)
+- **미완료**: 없음
+- **다음**: 없음
 
 ### 2026-04-14 #38 — 버블 상세 비멤버 액션 버튼 정리 (가입하기/대상추가 FAB 게이트)
 - **영역**: presentation/containers/bubble-detail-container.tsx(isMember/canJoin 게이트, 가입하기 버튼 + BubbleJoinContainer 연결, 대상추가 FAB 멤버전용), application/hooks/use-bubble-detail.ts(refetch를 멤버정보까지 재조회하도록 확장)
@@ -59,10 +65,4 @@
 - **맥락**: (1) 쿼리 최적화 5대 원칙(P1~P5) 수립. (2) homeRepo: follows/bubble_members 중복 조회 제거(P1), 3체인 병렬+필터 없을 때 meta+records 전부 병렬(P2), record_photos FK join으로 별도 쿼리 제거, 소셜 records 9컬럼 최소 SELECT(P3). (3) stats/XP/소셜 필터를 지연 로드하여 초기 네트워크 경합 제거. (4) 탭 전환 race condition: requestIdRef로 stale 응답 무시. (5) 검색 UI: 필터 추가 버튼과 같은 줄에 인라인 검색. Supabase 요청 62% 감소(100+→38).
 - **미완료**: 없음
 - **다음**: 브라우저 QA, 프로덕션 EXPLAIN ANALYZE 성능 검증
-
-### 2026-04-13 #30 — FAB Speed Dial + 버블에 추가 선택 모드 (찜→버블 전환)
-- **영역**: presentation/(layout/fab-add 전면 리디자인, bubble/bubble-picker-sheet 신규, home/compact-list-item+map-compact-item+map-view+record-card+wine-card에서 Heart 제거+선택 모드 추가), containers/(home, bubble-create), application/hooks/use-bubble-items(batchAddToBubble), globals.css(바텀시트 z-index)
-- **맥락**: 찜(bookmark) 기능을 버블 기반 큐레이션으로 전환 결정. (1) FabAdd를 Speed Dial로 변경(기록 추가/버블에 추가 2개 메뉴, dim overlay, ×전환). (2) "버블에 추가" → 아이템 배경 틴트 선택 모드 → FAB "N개 추가" 버튼 변환 → BubblePickerSheet(버블 목록+BubbleIcon+새 버블 만들기). (3) Heart/전체찜 UI 전면 제거. (4) 바텀시트 z-index 90/91로 상향(지도 위). (5) 버블 생성 후 sync 에러 시에도 라우팅 진행.
-- **미완료**: 상세 페이지 FAB Speed Dial 적용, 버블 포크(복제) 기능, bookmarks 테이블 deprecation
-- **다음**: 상세 페이지에서 FAB "버블에 추가" → 바로 버블 선택 시트, 버블 포크 1탭 복제
 

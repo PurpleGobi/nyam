@@ -99,8 +99,13 @@ export function BubbleCard({
         </p>
 
         {/* 메타: 설명 또는 멤버수 · 기록수 */}
-        <p className="mb-2.5 truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
+        <p className="truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
           {bubble.description ?? `멤버 ${bubble.memberCount}명 · 기록 ${bubble.recordCount}개`}
+        </p>
+
+        {/* 오너 */}
+        <p className="mb-2 mt-0.5 truncate text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          {bubble.ownerNickname ? `by ${bubble.ownerNickname}` : '\u00A0'}
         </p>
 
         {/* 핵심 수치: 멤버 수 (대형 폰트) — 식당의 만족도 자리 */}

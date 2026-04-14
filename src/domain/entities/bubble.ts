@@ -37,6 +37,10 @@ export interface Bubble {
   icon: string | null
   iconBgColor: string | null
   createdBy: string | null
+  /** 오너 닉네임 (users 테이블 조인 결과, null이면 오너 없음 또는 조회 안 됨) */
+  ownerNickname: string | null
+  /** 오너 핸들 (optional, @prefix 없이 원본) */
+  ownerHandle: string | null
   inviteCode: string | null
   inviteExpiresAt: string | null
   createdAt: string

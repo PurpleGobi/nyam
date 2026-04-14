@@ -27,10 +27,13 @@ const MEMBER_FIELD_MAP: Record<string, string> = {
   badgeLabel: 'badge_label', joinedAt: 'joined_at',
 }
 
+/** DB 컬럼이 아닌 조인 파생 필드 + id — update에서 제외 */
+const READ_ONLY_FIELDS = new Set(['id', 'ownerNickname', 'ownerHandle'])
+
 function toEntityRow(data: Record<string, unknown>, fieldMap: Record<string, string>): Record<string, unknown> {
   const row: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(data)) {
-    if (key === 'id') continue
+    if (READ_ONLY_FIELDS.has(key)) continue
     row[fieldMap[key] ?? key] = value
   }
   return row
@@ -38,7 +41,11 @@ function toEntityRow(data: Record<string, unknown>, fieldMap: Record<string, str
 
 // ─── snake_case → camelCase 변환 (DB → Entity) ───
 
+/** SELECT 표현식: bubbles + owner(users) FK 조인 (bubbles.created_by → users.id) */
+const BUBBLE_SELECT_WITH_OWNER = '*, owner:users!created_by(nickname, handle)'
+
 function toBubble(row: Record<string, unknown>): Bubble {
+  const ownerRow = row.owner as { nickname?: string; handle?: string | null } | null | undefined
   return {
     id: row.id as string,
     name: row.name as string,
@@ -67,6 +74,8 @@ function toBubble(row: Record<string, unknown>): Bubble {
     icon: row.icon as string | null,
     iconBgColor: row.icon_bg_color as string | null,
     createdBy: row.created_by as string | null,
+    ownerNickname: ownerRow?.nickname ?? null,
+    ownerHandle: ownerRow?.handle ?? null,
     inviteCode: row.invite_code as string | null,
     inviteExpiresAt: row.invite_expires_at as string | null,
     createdAt: row.created_at as string,
@@ -161,7 +170,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       icon: input.icon ?? null,
       icon_bg_color: input.iconBgColor ?? null,
       created_by: input.createdBy,
-    }).select().single()
+    }).select(BUBBLE_SELECT_WITH_OWNER).single()
     if (error) throw new Error(`Bubble 생성 실패: ${error.message}`)
     const bubble = toBubble(data as Record<string, unknown>)
     // owner 자동 추가
@@ -170,7 +179,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async findById(id: string): Promise<Bubble | null> {
-    const { data } = await this.supabase.from('bubbles').select('*').eq('id', id).single()
+    const { data } = await this.supabase.from('bubbles').select(BUBBLE_SELECT_WITH_OWNER).eq('id', id).single()
     return data ? toBubble(data as Record<string, unknown>) : null
   }
 
@@ -178,7 +187,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     const { data } = await this.supabase.from('bubble_members').select('bubble_id').eq('user_id', userId).eq('status', 'active')
     if (!data || data.length === 0) return []
     const ids = data.map((m) => m.bubble_id)
-    const { data: bubbles } = await this.supabase.from('bubbles').select('*').in('id', ids)
+    const { data: bubbles } = await this.supabase.from('bubbles').select(BUBBLE_SELECT_WITH_OWNER).in('id', ids)
     return (bubbles ?? []).map((r) => toBubble(r as Record<string, unknown>))
   }
 
@@ -192,7 +201,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }): Promise<{ data: Bubble[]; total: number }> {
     const limit = options?.limit ?? 20
     const offset = options?.offset ?? 0
-    let query = this.supabase.from('bubbles').select('*', { count: 'exact' })
+    let query = this.supabase.from('bubbles').select(BUBBLE_SELECT_WITH_OWNER, { count: 'exact' })
       .eq('visibility', 'public').eq('is_searchable', true)
 
     if (options?.search) {
@@ -217,7 +226,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   async update(id: string, updates: Partial<Bubble>): Promise<Bubble> {
     const row = toEntityRow(updates as Record<string, unknown>, BUBBLE_FIELD_MAP)
     row.updated_at = new Date().toISOString()
-    const { data, error } = await this.supabase.from('bubbles').update(row).eq('id', id).select().single()
+    const { data, error } = await this.supabase.from('bubbles').update(row).eq('id', id).select(BUBBLE_SELECT_WITH_OWNER).single()
     if (error) throw new Error(`Bubble 수정 실패: ${error.message}`)
     return toBubble(data as Record<string, unknown>)
   }
@@ -571,7 +580,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async findByInviteCode(code: string): Promise<Bubble | null> {
-    const { data } = await this.supabase.from('bubbles').select('*').eq('invite_code', code).single()
+    const { data } = await this.supabase.from('bubbles').select(BUBBLE_SELECT_WITH_OWNER).eq('invite_code', code).single()
     return data ? toBubble(data as Record<string, unknown>) : null
   }
 
