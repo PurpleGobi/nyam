@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-14 #36 — BottomSheet 컴포넌트 중앙화 (15개 시트 마이그레이션)
+- **영역**: presentation/components/ui/bottom-sheet.tsx(규격 강제화: title 필수, 핸들/헤더/X 항상 표시), globals.css(bottom-sheet-header/body/handle CSS 표준화), 15개 바텀시트 전체 마이그레이션(bubble-info/discover/preview/picker/add-item/join-flow, edit-field/delete-account/bubble-privacy/naver-import/level-detail, link-search/share-to-bubble/comment-sheet/follow-button)
+- **맥락**: 바텀시트 UI가 제각각(핸들 유무, 헤더 스타일, 닫기 방식, 애니메이션 유무 불일치). BottomSheet 컴포넌트를 props 4개(isOpen/onClose/title/maxHeight)로 단순화하고, 핸들·헤더·X 버튼을 항상 렌더링하도록 강제. 소비자가 내부 구조를 override할 수 없게 함. 15개 시트를 전부 마이그레이션하여 일관된 UX 확보. 브라우저에서 하나씩 테스트 완료.
+- **미완료**: share-list-sheet(풀스크린 전용) 미마이그레이션
+- **다음**: share-list-sheet 풀스크린 모드 검토, 브라우저 QA 추가 검증
+
 ### 2026-04-13 #35 — 초대 팝업 리디자인 + 핸들 설정 + 중복/취소 관리
 - **영역**: application/hooks/(use-invite-link 3일 고정, use-bubble-invite-member 중복체크+취소, use-bubble-member pendingInvites, use-settings updateHandle), domain/(notification-repo deleteNotification+getPendingBubbleInvites, settings handle), infrastructure/(supabase-notification-repo, supabase-settings-repo updateHandle), presentation/(invite-popup 신규, bubble-settings 초대대기+취소, pending-approval-list hideEmptyMessage, edit-field-sheet prefix/description/inputFilter, settings-container 핸들변경, bubble-detail-container+bubble-settings-container 토스트+새로고침), supabase/migrations/065+066(RLS)
 - **맥락**: (1) 초대 링크(만료 3일 고정) + 직접 초대(닉네임/핸들/이메일 검색) 통합 팝업으로 리디자인. (2) 중복 초대 방지(DB pendingInvites + 세션 invitedIds 이중 체크, 토스트 알림). (3) 초대 취소(notification 삭제 + RLS 066). (4) 설정 멤버관리에 "초대 수락 대기" 목록 표시(RLS 065) + 즉시 새로고침. (5) 핸들 설정/변경 UI(설정>계정, @접두사, 영문소문자+숫자+밑줄 필터, UNIQUE 검증).
@@ -53,12 +59,6 @@
 - **맥락**: 지도뷰 명성 필터를 cascade 방식으로 전면 리디자인. type 선택 시 grade sub-chip 자동 생성(위치 필터 패턴). 상위 칩 1개에 type 누적, X로 전체 리셋. 뱃지에 grade 반영(아이콘 개수, 빕 구르망 전용 아이콘, TV 프로그램명). filter-matcher에 prestige_grade:* 매칭 추가. use-map-discovery에 grade 클라이언트 사이드 필터링 추가.
 - **미완료**: 없음
 - **다음**: 브라우저 QA, grade 필터 실제 데이터 검증
-
-### 2026-04-10 #27 — rp → prestige 용어 통일 리팩토링
-- **영역**: supabase/migrations/058(신규), domain/(entities/restaurant+home-target+map-discovery+record+search, services/nyam-score+filter-matcher+filter-query-builder), infrastructure/(supabase-restaurant+record+home-repository, supabase/types.ts), app/api/restaurants/(nearby+search+bounds+prestige/match), application/hooks/use-map-discovery, presentation/(prestige-badges, record-card, compact-list-item, map-compact-item, search-result-item, search-results, nearby-list, map-view, home+restaurant-detail-container), middleware.ts, DATA_MODEL.md, CODEBASE.md
-- **맥락**: restaurant_rp(reputation) → restaurant_prestige 용어 통일. DB: 테이블/컬럼/인덱스/RLS/트리거/RPC rename. 코드: RestaurantRp→RestaurantPrestige 타입, .rp→.prestige 필드, /api/restaurants/rp/match→/prestige/match 경로. 약 25개 파일 변경. pnpm build PASS.
-- **미완료**: 058 마이그레이션 원격 적용, supabase/types.ts 재생성
-- **다음**: 마이그레이션 원격 적용, supabase gen types 실행
 
 ### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
 - **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
