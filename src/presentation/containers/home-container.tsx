@@ -49,6 +49,7 @@ import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
+import { CompactListBubble } from '@/presentation/components/bubble/compact-list-bubble'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 import { useUserCoords } from '@/application/hooks/use-user-coords'
 import { useSocialFilterOptions } from '@/application/hooks/use-social-filter-options'
@@ -225,7 +226,9 @@ export function HomeContainer() {
   const [bubbleSort, setBubbleSort] = useState<BubbleSortOption>('records')
 
   // ── 버블 탭 필터 칩 ──
-  const [bubbleConditionChips, _setBubbleConditionChips] = useState<FilterChipItem[]>([])
+  const [bubbleConditionChips, _setBubbleConditionChips] = useState<FilterChipItem[]>([
+    { id: 'default_bubble_type', attribute: 'bubble_type', operator: 'eq', value: 'mine', displayLabel: '나의 버블' },
+  ])
   // bubble_type이 mine이 아닐 때 role 칩 자동 제거
   const setBubbleConditionChips = useCallback((chips: FilterChipItem[] | ((prev: FilterChipItem[]) => FilterChipItem[])) => {
     _setBubbleConditionChips((prev) => {
@@ -246,16 +249,20 @@ export function HomeContainer() {
   const bubbleTypeValue = bubbleTypeChip
     ? String((bubbleTypeChip as { value: string }).value)
     : null
-  const isFollowingBubbleMode = bubbleTypeValue === 'following'
+  const isMineOnlyMode = bubbleTypeValue === 'mine'
+  const isFollowingOnlyMode = bubbleTypeValue === 'following'
+  const isPublicOnlyMode = bubbleTypeValue === 'public'
+  // 디폴트(무선택) = 전체 = my + public 합산
+  const needPublicBubbles = !isMineOnlyMode // mine 전용일 때만 fetch 안 함
   const userAreas = useMemo(
     () => [...new Set(myBubbles.map((b) => b.area).filter(Boolean))] as string[],
     [myBubbles],
   )
   const excludeBubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
-  const { recommended: followingBubbles, isLoading: followingBubblesLoading } = useBubbleDiscover(
+  const { recommended: publicBubbles, isLoading: publicBubblesLoading } = useBubbleDiscover(
     userAreas,
     excludeBubbleIds,
-    isFollowingBubbleMode,
+    needPublicBubbles,
   )
 
   // ── 버블 필터 속성에 전문 분야 동적 옵션 주입 ──
@@ -1119,8 +1126,21 @@ export function HomeContainer() {
         {/* 버블 탭 콘텐츠 */}
         {isBubbleTab && (() => {
           // 종류에 따라 데이터 소스 선택
-          const baseBubbles = isFollowingBubbleMode ? followingBubbles : myBubbles
-          const loading = isFollowingBubbleMode ? followingBubblesLoading : bubblesLoading
+          // 디폴트(무선택) = 전체 = my + public 합산 (중복 제거)
+          let baseBubbles: typeof myBubbles
+          let loading: boolean
+          if (isMineOnlyMode) {
+            baseBubbles = myBubbles
+            loading = bubblesLoading
+          } else if (isFollowingOnlyMode || isPublicOnlyMode) {
+            baseBubbles = publicBubbles
+            loading = publicBubblesLoading
+          } else {
+            // 전체: my + public 합산 (중복 제거)
+            const myIds = new Set(myBubbles.map((b) => b.id))
+            baseBubbles = [...myBubbles, ...publicBubbles.filter((b) => !myIds.has(b.id))]
+            loading = bubblesLoading || publicBubblesLoading
+          }
 
           // 칩 필터 적용
           let filtered = baseBubbles
@@ -1204,34 +1224,62 @@ export function HomeContainer() {
               <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
                 <Users size={48} style={{ color: 'var(--text-hint)' }} />
                 <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {isFollowingBubbleMode ? '팔로잉 유저의 버블이 없어요' : '첫 나만의 버블을 만들어 보세요'}
+                  {isFollowingOnlyMode ? '팔로잉 유저의 버블이 없어요' : isPublicOnlyMode ? '공개 버블이 없어요' : isMineOnlyMode ? '첫 나만의 버블을 만들어 보세요' : '버블이 없어요'}
                 </p>
                 <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                  {isFollowingBubbleMode ? '다른 유저를 팔로우해 보세요' : '+버튼을 눌러 시작하세요'}
+                  {isFollowingOnlyMode ? '다른 유저를 팔로우해 보세요' : isMineOnlyMode ? '+버튼을 눌러 시작하세요' : '조건을 변경해 보세요'}
                 </p>
               </div>
             )
           }
 
-          return (
-            <div className="flex flex-col gap-3 px-4 pb-4 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-              {sorted.map((b) => {
-                const bubbleExpertise = expertiseMap.get(b.id)
-                const top3 = bubbleExpertise
-                  ? [...bubbleExpertise].sort((a, c) => c.avgLevel - a.avgLevel).slice(0, 3).map((e) => ({ axisValue: e.axisValue, avgLevel: e.avgLevel }))
-                  : undefined
+          // 공통 데이터 준비
+          const myBubbleIds = new Set(myBubbles.map((b) => b.id))
+          const getBubbleRole = (b: typeof myBubbles[number]): 'owner' | 'member' | null => {
+            if (!myBubbleIds.has(b.id)) return null
+            return b.createdBy === user?.id ? 'owner' : 'member'
+          }
+          const getExpertiseTop3 = (id: string) => {
+            const exp = expertiseMap.get(id)
+            return exp
+              ? [...exp].sort((a, c) => c.avgLevel - a.avgLevel).slice(0, 3).map((e) => ({ axisValue: e.axisValue, avgLevel: e.avgLevel }))
+              : undefined
+          }
 
-                return (
-                  <BubbleCard
+          // 리스트 뷰
+          if (viewMode === 'list') {
+            return (
+              <div className="content-detail px-4 pb-4 md:px-8">
+                {sorted.map((b, i) => (
+                  <CompactListBubble
                     key={b.id}
                     bubble={b}
-                    role={b.createdBy === user?.id ? 'mine' : 'joined'}
+                    rank={i + 1}
+                    role={getBubbleRole(b)}
                     isRecentlyActive={b.lastActivityAt ? renderTimestamp - new Date(b.lastActivityAt).getTime() < 86400000 : false}
-                    expertise={top3}
+                    expertise={getExpertiseTop3(b.id)}
                     onClick={() => router.push(`/bubbles/${b.id}`)}
+                    onJoin={!myBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}`) : undefined}
                   />
-                )
-              })}
+                ))}
+              </div>
+            )
+          }
+
+          // 카드 뷰 (기본)
+          return (
+            <div className="flex flex-col gap-3 px-4 pb-4 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
+              {sorted.map((b) => (
+                <BubbleCard
+                  key={b.id}
+                  bubble={b}
+                  role={getBubbleRole(b)}
+                  isRecentlyActive={b.lastActivityAt ? renderTimestamp - new Date(b.lastActivityAt).getTime() < 86400000 : false}
+                  expertise={getExpertiseTop3(b.id)}
+                  onClick={() => router.push(`/bubbles/${b.id}`)}
+                  onJoin={!myBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}`) : undefined}
+                />
+              ))}
             </div>
           )
         })()}

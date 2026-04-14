@@ -65,7 +65,7 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
       style={{
         backgroundColor: isSelecting && isSelected ? 'var(--accent-wine-light)' : 'var(--bg-card)',
         border: isSelecting && isSelected ? '2px solid var(--accent-wine)' : '1px solid var(--border)',
-        minHeight: '170px',
+        height: '170px',
       }}
     >
       <div className="relative w-[46%] shrink-0">

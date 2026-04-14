@@ -7,6 +7,10 @@ import { FabBack } from '@/presentation/components/layout/fab-back'
 import { BubbleSettings } from '@/presentation/components/bubble/bubble-settings'
 import { useBubbleSettings } from '@/application/hooks/use-bubble-settings'
 import { useBubbleIconUpload } from '@/application/hooks/use-bubble-icon-upload'
+import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
+import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
+import { PhotoPicker } from '@/presentation/components/record/photo-picker'
+import { BUBBLE_PHOTO_CONSTANTS } from '@/domain/entities/bubble-photo'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
@@ -30,6 +34,9 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const userId = user?.id ?? null
   const { updateSettings, deleteBubble, isLoading: settingsLoading } = useBubbleSettings(bubbleId)
   const { upload: uploadIcon } = useBubbleIconUpload()
+  const { photos: bubblePhotos, savePhotos: saveBubblePhotos, deletePhoto: deleteBubblePhoto } = useBubblePhotos(bubbleId)
+  const { photos: pendingPhotos, addFiles, removePhoto: removePendingPhoto, initExistingPhotos, replacePhoto, reorderPhotos, uploadAll, isUploading } = usePhotoUpload()
+  const [photosInitialized, setPhotosInitialized] = useState(false)
   const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
@@ -46,6 +53,12 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     refreshPending,
     isLoading: memberLoading,
   } = useBubbleMember(bubbleId, userId)
+
+  // 기존 버블 사진을 PendingPhoto 상태로 초기화
+  if (!photosInitialized && bubblePhotos.length > 0) {
+    setPhotosInitialized(true)
+    initExistingPhotos(bubblePhotos.map((p) => ({ id: p.id, url: p.url, orderIndex: p.orderIndex, isPublic: true })))
+  }
 
   const [currentBubble] = useState<Bubble>(bubble)
   const [isSaving, setIsSaving] = useState(false)
@@ -72,8 +85,31 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     joinedAt: m.joinedAt,
   }))
 
+  const handleRemovePhoto = useCallback(async (photoId: string) => {
+    const existing = bubblePhotos.find((p) => p.id === photoId)
+    if (existing) {
+      await deleteBubblePhoto(photoId, existing.url)
+    }
+    await removePendingPhoto(photoId)
+  }, [bubblePhotos, deleteBubblePhoto, removePendingPhoto])
+
   const handleSave = async (updates: Partial<Bubble>) => {
     setIsSaving(true)
+    // 새 사진 업로드
+    if (userId && pendingPhotos.some((p) => p.status === 'pending')) {
+      try {
+        const uploaded = await uploadAll(userId, bubbleId)
+        const newPhotos = uploaded.filter((p) => !bubblePhotos.some((bp) => bp.url === p.url))
+        if (newPhotos.length > 0) {
+          await saveBubblePhotos(bubbleId, userId, newPhotos.map((p) => ({ url: p.url, orderIndex: p.orderIndex })))
+        }
+      } catch { /* 사진 업로드 실패해도 설정은 저장 */ }
+    }
+    // 첫 번째 사진이 있으면 대표 아이콘으로 설정
+    const firstPendingPhoto = pendingPhotos.find((p) => p.status === 'uploaded' && p.orderIndex === 0)
+    if (firstPendingPhoto?.uploadedUrl) {
+      updates = { ...updates, icon: firstPendingPhoto.uploadedUrl, iconBgColor: '#6B7280' }
+    }
     await updateSettings(updates)
     router.push(`/bubbles/${bubbleId}`)
   }
@@ -157,6 +193,19 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onInviteUser={handleInviteUser}
           existingMemberIds={existingMemberIds}
           onUploadPhoto={handleUploadPhoto}
+          hasPhotos={pendingPhotos.length > 0}
+          photoSlot={
+            <PhotoPicker
+              photos={pendingPhotos}
+              onAddFiles={addFiles}
+              onRemovePhoto={handleRemovePhoto}
+              onReplacePhoto={replacePhoto}
+              onReorderPhotos={reorderPhotos}
+              isUploading={isUploading}
+              isMaxReached={pendingPhotos.length >= BUBBLE_PHOTO_CONSTANTS.MAX_PHOTOS}
+              theme="social"
+            />
+          }
           shareRule={memberLoaded ? shareRule : undefined}
           onShareRuleChange={handleShareRuleChange}
           visibilityOverride={memberLoaded ? visibilityOverride : undefined}

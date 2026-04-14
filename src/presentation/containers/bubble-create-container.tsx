@@ -1,14 +1,18 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleCreate } from '@/application/hooks/use-bubble-create'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
-import { useBubbleIconUpload } from '@/application/hooks/use-bubble-icon-upload'
+import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
+import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
+import { bubbleRepo } from '@/shared/di/container'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
+import { PhotoPicker } from '@/presentation/components/record/photo-picker'
+import { BUBBLE_PHOTO_CONSTANTS } from '@/domain/entities/bubble-photo'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 
@@ -18,7 +22,8 @@ export function BubbleCreateContainer() {
   const { createBubble, updateMemberAfterCreate, isLoading: isCreating } = useBubbleCreate()
   const { records } = useRecordsWithTarget(user?.id ?? null)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
-  const { upload: uploadIcon } = useBubbleIconUpload()
+  const { photos, addFiles, removePhoto, replacePhoto, reorderPhotos, uploadAll, isUploading } = usePhotoUpload()
+  const { savePhotos: saveBubblePhotos } = useBubblePhotos(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (data: {
@@ -49,14 +54,14 @@ export function BubbleCreateContainer() {
         createdBy: user.id,
       })
 
-      // 정보공개 범위 → bubble_members.visibility_override (이 버블 개별)
+      // 정보공개 범위
       try {
         await updateMemberAfterCreate(result.bubble.id, user.id, {
           visibilityOverride: data.privacy.visibilityOverride,
         })
       } catch { /* 부가 설정 실패해도 진행 */ }
 
-      // 공유 규칙 저장 + 소급 적용 (실패해도 라우팅)
+      // 공유 규칙 소급 적용
       try {
         await syncAllRecordsToBubble(
           result.bubble.id,
@@ -65,22 +70,47 @@ export function BubbleCreateContainer() {
         )
       } catch { /* 동기화 실패해도 진행 */ }
 
+      // 사진첩 업로드 + 대표 사진을 icon으로 설정
+      if (photos.length > 0) {
+        try {
+          const uploaded = await uploadAll(user.id, result.bubble.id)
+          await saveBubblePhotos(result.bubble.id, user.id, uploaded.map((p) => ({ url: p.url, orderIndex: p.orderIndex })))
+          // 첫 번째 사진을 버블 아이콘으로 설정
+          const firstUrl = uploaded.sort((a, b) => a.orderIndex - b.orderIndex)[0]?.url
+          if (firstUrl) {
+            await bubbleRepo.update(result.bubble.id, { icon: firstUrl, iconBgColor: '#6B7280' })
+          }
+        } catch { /* 사진 업로드 실패해도 진행 */ }
+      }
+
       router.replace(`/bubbles/${result.bubble.id}`)
     } catch {
       setIsSubmitting(false)
     }
   }
 
-  const handleUploadPhoto = useCallback(async (file: File): Promise<string> => {
-    if (!user) throw new Error('Not authenticated')
-    return uploadIcon(file, user.id)
-  }, [user, uploadIcon])
-
   return (
     <div className="content-detail flex min-h-dvh flex-col bg-[var(--bg)]">
       <AppHeader />
       <FabBack />
-      <BubbleCreateForm onSubmit={handleSubmit} onUploadPhoto={handleUploadPhoto} isLoading={isCreating || isSubmitting} />
+      <BubbleCreateForm
+        onSubmit={handleSubmit}
+        isLoading={isCreating || isSubmitting || isUploading}
+        hasPhotos={photos.length > 0}
+        firstPhotoPreview={photos.length > 0 ? photos[0].previewUrl : null}
+        photoSlot={
+          <PhotoPicker
+            photos={photos}
+            onAddFiles={addFiles}
+            onRemovePhoto={removePhoto}
+            onReplacePhoto={replacePhoto}
+            onReorderPhotos={reorderPhotos}
+            isUploading={isUploading}
+            isMaxReached={photos.length >= BUBBLE_PHOTO_CONSTANTS.MAX_PHOTOS}
+            theme="social"
+          />
+        }
+      />
     </div>
   )
 }

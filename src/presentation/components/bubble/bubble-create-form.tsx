@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import Image from 'next/image'
-import { Lock, Eye, ShieldCheck, Zap, DoorOpen, ImagePlus, X } from 'lucide-react'
+import { useState } from 'react'
+import { Lock, Eye, ShieldCheck, Zap, DoorOpen } from 'lucide-react'
 import type { BubbleJoinPolicy, BubbleVisibility, VisibilityOverride, BubbleShareRule } from '@/domain/entities/bubble'
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
 import { ShareRuleEditor } from '@/presentation/components/bubble/share-rule-editor'
@@ -25,8 +24,13 @@ interface BubbleCreateFormProps {
     maxMembers: number | null
     privacy: BubblePrivacySettings
   }) => void
-  onUploadPhoto: (file: File) => Promise<string>
   isLoading: boolean
+  /** 통합 사진 섹션 (PhotoPicker) */
+  photoSlot?: React.ReactNode
+  /** 사진첩에 사진이 있는지 여부 — 있으면 첫 번째 사진이 대표 */
+  hasPhotos?: boolean
+  /** 사진첩 첫 번째 사진 프리뷰 URL */
+  firstPhotoPreview?: string | null
 }
 
 const VISIBILITY_FIELD_LABELS: { key: keyof VisibilityOverride; label: string }[] = [
@@ -44,7 +48,6 @@ const ALL_VISIBLE: VisibilityOverride = {
   level: true, quadrant: true, bubbles: true, price: true,
 }
 
-/** 공개+가입 정책 통합 옵션. 하나만 선택하면 visibility+joinPolicy 동시 결정 */
 type AccessMode = 'private' | 'closed' | 'manual_approve' | 'auto_approve' | 'open'
 
 const ACCESS_OPTIONS: {
@@ -96,7 +99,9 @@ function SectionHeader({ num, label }: { num: number; label: string }) {
   )
 }
 
-export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleCreateFormProps) {
+type CoverMode = 'photo' | 'icon'
+
+export function BubbleCreateForm({ onSubmit, isLoading, photoSlot, hasPhotos, firstPhotoPreview }: BubbleCreateFormProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [accessMode, setAccessMode] = useState<AccessMode>('manual_approve')
@@ -105,64 +110,12 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   const [maxMembers, setMaxMembers] = useState<number | null>(null)
   const [selectedIcon, setSelectedIcon] = useState('utensils-crossed')
   const [selectedColor, setSelectedColor] = useState('#F97316')
-  const [showIconPicker, setShowIconPicker] = useState(false)
-  // 공유 모드: 수동(디폴트) / 자동
+  const [coverMode, setCoverMode] = useState<CoverMode>('photo')
   const [isAutoShare, setIsAutoShare] = useState(false)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
-  // 정보 공개 범위 (디폴트 모두 ON, 원하지 않는 항목만 OFF)
   const [visibilityFields, setVisibilityFields] = useState<VisibilityOverride>({ ...ALL_VISIBLE })
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [uploadError, setUploadError] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const isPhoto = photoPreview !== null
-
-  const handlePhotoSelect = async (file: File) => {
-    if (!file.type.startsWith('image/')) return
-
-    // 즉시 프리뷰 표시
-    const previewUrl = URL.createObjectURL(file)
-    setPhotoPreview(previewUrl)
-    setPendingFile(file)
-    setUploadError(false)
-    setIsUploading(true)
-
-    try {
-      const publicUrl = await onUploadPhoto(file)
-      setSelectedIcon(publicUrl)
-      setPendingFile(null)
-    } catch {
-      setUploadError(true)
-      // 프리뷰는 유지, 아이콘은 프리뷰 URL 사용 (submit 시 재시도)
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const retryUpload = async () => {
-    if (!pendingFile) return
-    setUploadError(false)
-    setIsUploading(true)
-    try {
-      const publicUrl = await onUploadPhoto(pendingFile)
-      setSelectedIcon(publicUrl)
-      setPendingFile(null)
-    } catch {
-      setUploadError(true)
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const clearPhoto = () => {
-    setPhotoPreview(null)
-    setPendingFile(null)
-    setUploadError(false)
-    setSelectedIcon('utensils-crossed')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+  const usePhotoAsCover = coverMode === 'photo' && hasPhotos && firstPhotoPreview
 
   const allOn = VISIBILITY_FIELD_LABELS.every(f => visibilityFields[f.key])
   const buildPrivacy = (): BubblePrivacySettings => ({
@@ -170,46 +123,20 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
     visibilityOverride: allOn ? null : visibilityFields,
   })
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!name.trim()) return
     const privacy = buildPrivacy()
     const access = ACCESS_OPTIONS.find(o => o.value === accessMode)
     const vis = access?.visibility ?? 'public'
     const jp = access?.joinPolicy ?? 'manual_approve'
-    // 업로드 실패 상태에서 submit → 재시도
-    if (pendingFile) {
-      setIsUploading(true)
-      try {
-        const publicUrl = await onUploadPhoto(pendingFile)
-        setSelectedIcon(publicUrl)
-        setPendingFile(null)
-        setUploadError(false)
-        onSubmit({
-          name: name.trim(),
-          description: description.trim(),
-          visibility: vis,
-          joinPolicy: jp,
-          icon: publicUrl,
-          iconBgColor: '#6B7280',
-          minRecords,
-          minLevel,
-          maxMembers,
-          privacy,
-        })
-      } catch {
-        setUploadError(true)
-      } finally {
-        setIsUploading(false)
-      }
-      return
-    }
     onSubmit({
       name: name.trim(),
       description: description.trim(),
       visibility: vis,
       joinPolicy: jp,
+      // 사진 대표가 있으면 나중에 컨테이너에서 첫 번째 사진 URL로 덮어씀
       icon: selectedIcon,
-      iconBgColor: isPhoto ? '#6B7280' : selectedColor,
+      iconBgColor: selectedColor,
       minRecords,
       minLevel,
       maxMembers,
@@ -220,97 +147,56 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
   return (
     <div className="flex flex-col gap-4 px-4 py-4">
 
-      {/* ━━ 아이콘(좌) + 이름/설명(우) 2컬럼 ━━ */}
-      <div className="flex gap-3">
-        {/* 좌: 아이콘 */}
-        <div className="flex shrink-0 flex-col items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setShowIconPicker(!showIconPicker)}
-            className="flex items-center justify-center overflow-hidden rounded-full"
-            style={{ width: 72, height: 72, backgroundColor: isPhoto ? 'transparent' : selectedColor }}
-          >
-            {isPhoto ? (
-              <Image src={photoPreview ?? selectedIcon} alt="icon" width={72} height={72} className="h-full w-full object-cover" />
-            ) : (
-              <BubbleIcon icon={selectedIcon} size={32} />
-            )}
-          </button>
-          <span className="text-[10px]" style={{ color: uploadError ? 'var(--destructive)' : 'var(--text-hint)' }}>
-            {isUploading ? '...' : uploadError ? (
-              <button type="button" onClick={retryUpload} className="underline">재시도</button>
-            ) : '변경'}
-          </span>
-        </div>
-
-        {/* 우: 이름 + 설명 */}
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="버블 이름 *"
-              maxLength={20}
-              className="nyam-input w-full text-[14px] font-semibold"
-            />
-            <span className="block text-right text-[10px] text-[var(--text-hint)]">{name.length}/20</span>
-          </div>
-          <div>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="한줄 설명 (선택)"
-              maxLength={100}
-              rows={2}
-              className="nyam-input w-full resize-none text-[12px]"
-            />
-            <span className="block text-right text-[10px] text-[var(--text-hint)]">{description.length}/100</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 아이콘 피커 (펼침) */}
-      {showIconPicker && (
-        <div className="rounded-xl p-2.5" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          {/* 사진 업로드 */}
-          <div className="mb-2 flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => { const file = e.target.files?.[0]; if (file) handlePhotoSelect(file) }}
-            />
+      {/* ━━ 대표 이미지 (사진 / 아이콘 탭) ━━ */}
+      <div className="flex flex-col gap-2">
+        <SectionHeader num={1} label="대표 이미지" />
+        {/* 탭 전환 */}
+        <div className="flex gap-1 rounded-lg p-0.5" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          {(['photo', 'icon'] as const).map((mode) => (
             <button
+              key={mode}
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold transition-colors"
+              onClick={() => setCoverMode(mode)}
+              className="flex-1 rounded-md py-1.5 text-[12px] font-semibold transition-colors"
               style={{
-                backgroundColor: isPhoto ? 'var(--accent-social)' : 'var(--bg-elevated)',
-                color: isPhoto ? '#FFFFFF' : 'var(--text-sub)',
-                border: `1px solid ${isPhoto ? 'var(--accent-social)' : 'var(--border)'}`,
+                backgroundColor: coverMode === mode ? 'var(--accent-social-light)' : 'transparent',
+                color: coverMode === mode ? 'var(--accent-social)' : 'var(--text-hint)',
               }}
             >
-              <ImagePlus size={14} />
-              사진 업로드
+              {mode === 'photo' ? '사진' : '아이콘'}
             </button>
-            {isPhoto && (
-              <button
-                type="button"
-                onClick={clearPhoto}
-                className="flex h-8 w-8 items-center justify-center rounded-lg"
-                style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-              >
-                <X size={14} style={{ color: 'var(--text-sub)' }} />
-              </button>
+          ))}
+        </div>
+
+        {/* 사진 모드 */}
+        {coverMode === 'photo' && photoSlot && (
+          <div>
+            {photoSlot}
+            {hasPhotos && (
+              <p className="mt-1 text-[10px]" style={{ color: 'var(--accent-social)' }}>
+                첫 번째 사진이 대표 이미지로 사용됩니다 · 드래그로 순서 변경
+              </p>
             )}
           </div>
+        )}
 
-          {/* 아이콘 그리드 */}
-          {!isPhoto && (
-            <div className="flex max-h-[200px] flex-col gap-2 overflow-y-auto">
+        {/* 아이콘 모드 */}
+        {coverMode === 'icon' && (
+          <div className="flex flex-col gap-2">
+            {/* 프리뷰 */}
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: selectedColor }}
+              >
+                <BubbleIcon icon={selectedIcon} size={28} />
+              </div>
+              <span className="text-[12px]" style={{ color: 'var(--text-hint)' }}>
+                아이콘과 색상을 선택하세요
+              </span>
+            </div>
+            {/* 아이콘 그리드 */}
+            <div className="flex max-h-[180px] flex-col gap-2 overflow-y-auto rounded-xl p-2" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               {BUBBLE_ICON_CATEGORIES.map((cat) => (
                 <div key={cat.label}>
                   <p className="mb-1 text-[10px] font-semibold text-[var(--text-hint)]">{cat.label}</p>
@@ -338,11 +224,8 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
                 </div>
               ))}
             </div>
-          )}
-
-          {/* 색상 */}
-          {!isPhoto && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            {/* 색상 */}
+            <div className="flex flex-wrap gap-1.5">
               {COLOR_OPTIONS.map((color) => (
                 <button
                   key={color}
@@ -357,13 +240,39 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
                 />
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
-      {/* ━━ 섹션 1: 공개 · 가입 정책 ━━ */}
+      {/* ━━ 이름 + 설명 ━━ */}
       <div className="flex flex-col gap-1.5">
-        <SectionHeader num={1} label="공개 · 가입 정책" />
+        <div>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="버블 이름 *"
+            maxLength={20}
+            className="nyam-input w-full text-[14px] font-semibold"
+          />
+          <span className="block text-right text-[10px] text-[var(--text-hint)]">{name.length}/20</span>
+        </div>
+        <div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="한줄 설명 (선택)"
+            maxLength={100}
+            rows={2}
+            className="nyam-input w-full resize-none text-[12px]"
+          />
+          <span className="block text-right text-[10px] text-[var(--text-hint)]">{description.length}/100</span>
+        </div>
+      </div>
+
+      {/* ━━ 섹션 2: 공개 · 가입 정책 ━━ */}
+      <div className="flex flex-col gap-1.5">
+        <SectionHeader num={2} label="공개 · 가입 정책" />
         <div
           className="flex flex-col gap-0.5 rounded-xl p-1.5"
           style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
@@ -397,58 +306,27 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
           })}
         </div>
 
-        {/* 자동 승인 조건 */}
         {accessMode === 'auto_approve' && (
           <div className="flex gap-2 px-1 pt-1">
             <div className="flex flex-1 flex-col gap-0.5">
               <span className="text-[10px] font-medium text-[var(--text-hint)]">최소 기록</span>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={minRecords || ''}
-                  onChange={(e) => setMinRecords(Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="0"
-                  min={0}
-                  className="nyam-input w-full py-1.5 pr-6 text-center text-[12px]"
-                />
-                {minRecords > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-hint)]">개</span>}
-              </div>
+              <input type="number" value={minRecords || ''} onChange={(e) => setMinRecords(Math.max(0, parseInt(e.target.value) || 0))} placeholder="0" min={0} className="nyam-input w-full py-1.5 text-center text-[12px]" />
             </div>
             <div className="flex flex-1 flex-col gap-0.5">
               <span className="text-[10px] font-medium text-[var(--text-hint)]">최소 레벨</span>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={minLevel || ''}
-                  onChange={(e) => setMinLevel(Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="0"
-                  min={0}
-                  className="nyam-input w-full py-1.5 pr-6 text-center text-[12px]"
-                />
-                {minLevel > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-hint)]">Lv</span>}
-              </div>
+              <input type="number" value={minLevel || ''} onChange={(e) => setMinLevel(Math.max(0, parseInt(e.target.value) || 0))} placeholder="0" min={0} className="nyam-input w-full py-1.5 text-center text-[12px]" />
             </div>
             <div className="flex flex-1 flex-col gap-0.5">
               <span className="text-[10px] font-medium text-[var(--text-hint)]">최대 인원</span>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={maxMembers ?? ''}
-                  onChange={(e) => { const v = parseInt(e.target.value) || 0; setMaxMembers(v === 0 ? null : v) }}
-                  placeholder="∞"
-                  min={0}
-                  className="nyam-input w-full py-1.5 pr-6 text-center text-[12px]"
-                />
-                {maxMembers && maxMembers > 0 && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-hint)]">명</span>}
-              </div>
+              <input type="number" value={maxMembers ?? ''} onChange={(e) => { const v = parseInt(e.target.value) || 0; setMaxMembers(v === 0 ? null : v) }} placeholder="∞" min={0} className="nyam-input w-full py-1.5 text-center text-[12px]" />
             </div>
           </div>
         )}
       </div>
 
-      {/* ━━ 섹션 2: 목록 공유 방식 ━━ */}
+      {/* ━━ 섹션 3: 목록 공유 방식 ━━ */}
       <div className="flex flex-col gap-1.5">
-        <SectionHeader num={2} label="목록 공유 방식" />
+        <SectionHeader num={3} label="목록 공유 방식" />
         <div
           className="flex flex-col gap-1 rounded-xl p-2.5"
           style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
@@ -487,14 +365,12 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
             )
           })}
         </div>
-        {isAutoShare && (
-          <ShareRuleEditor value={shareRule} onChange={setShareRule} />
-        )}
+        {isAutoShare && <ShareRuleEditor value={shareRule} onChange={setShareRule} />}
       </div>
 
-      {/* ━━ 섹션 3: 정보 공개 범위 ━━ */}
+      {/* ━━ 섹션 4: 정보 공개 범위 ━━ */}
       <div className="flex flex-col gap-1.5">
-        <SectionHeader num={3} label="정보 공개 범위" />
+        <SectionHeader num={4} label="정보 공개 범위" />
         <p className="text-[10px] text-[var(--text-hint)]" style={{ marginTop: -4 }}>
           동반자·개인 메모 등 개인정보는 항상 비공개
         </p>
@@ -508,7 +384,6 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
               type="button"
               onClick={() => setVisibilityFields((prev) => ({ ...prev, [key]: !prev[key] }))}
               className="flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors"
-              style={{ backgroundColor: 'transparent' }}
             >
               <span className="text-[12px]" style={{ color: 'var(--text)' }}>{label}</span>
               <ToggleSwitch on={visibilityFields[key]} />
@@ -521,7 +396,7 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!name.trim() || isLoading || isUploading}
+        disabled={!name.trim() || isLoading}
         className="mt-1 rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
         style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
       >
@@ -531,4 +406,3 @@ export function BubbleCreateForm({ onSubmit, onUploadPhoto, isLoading }: BubbleC
     </div>
   )
 }
-

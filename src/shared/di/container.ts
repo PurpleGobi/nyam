@@ -19,6 +19,7 @@ import { SupabaseFilterStateRepository } from '@/infrastructure/repositories/sup
 import { SupabaseHomeRepository } from '@/infrastructure/repositories/supabase-home-repository'
 import { SupabaseSimilarityRepository } from '@/infrastructure/repositories/supabase-similarity-repository'
 import { SupabasePredictionRepository } from '@/infrastructure/repositories/supabase-prediction-repository'
+import { SupabaseBubblePhotoRepository } from '@/infrastructure/repositories/supabase-bubble-photo-repository'
 import { resizeImage, uploadImage, deleteImage } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
@@ -39,6 +40,7 @@ import type { FilterStateRepository } from '@/domain/repositories/filter-state-r
 import type { HomeRepository } from '@/domain/repositories/home-repository'
 import type { SimilarityRepository } from '@/domain/repositories/similarity-repository'
 import type { PredictionRepository } from '@/domain/repositories/prediction-repository'
+import type { BubblePhotoRepository } from '@/domain/repositories/bubble-photo-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -66,6 +68,7 @@ export const filterStateRepo: FilterStateRepository = new SupabaseFilterStateRep
 export const homeRepo: HomeRepository = new SupabaseHomeRepository()
 export const similarityRepo: SimilarityRepository = new SupabaseSimilarityRepository()
 export const predictionRepo: PredictionRepository = new SupabasePredictionRepository()
+export const bubblePhotoRepo: BubblePhotoRepository = new SupabaseBubblePhotoRepository()
 
 /** Upload a bubble icon image: resize to 256x256 WebP, store in avatars bucket */
 export async function uploadBubbleIcon(file: File, userId: string): Promise<string> {

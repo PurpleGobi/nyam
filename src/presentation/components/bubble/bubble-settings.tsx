@@ -81,6 +81,9 @@ interface BubbleSettingsProps {
   onInviteUser?: (userId: string) => void
   existingMemberIds?: string[]
   onUploadPhoto?: (file: File) => Promise<string>
+  /** 통합 사진/아이콘 섹션 */
+  photoSlot?: React.ReactNode
+  hasPhotos?: boolean
 }
 
 export function BubbleSettings({
@@ -91,6 +94,8 @@ export function BubbleSettings({
   onInviteSearch, onInviteUser, existingMemberIds,
   visibilityOverride, onVisibilityChange,
   onUploadPhoto,
+  photoSlot,
+  hasPhotos,
 }: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
   const [description, setDescription] = useState(bubble.description ?? '')
@@ -99,7 +104,9 @@ export function BubbleSettings({
   const initIsPhoto = bubble.icon !== null && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://'))
   const [selectedIcon, setSelectedIcon] = useState(bubble.icon ?? 'utensils-crossed')
   const [selectedColor, setSelectedColor] = useState(bubble.iconBgColor ?? '#F97316')
-  const [showIconPicker, setShowIconPicker] = useState(false)
+  const [coverMode, setCoverMode] = useState<'photo' | 'icon'>(
+    bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? 'photo' : 'icon',
+  )
   const [photoPreview, setPhotoPreview] = useState<string | null>(initIsPhoto ? bubble.icon : null)
   const [uploadError, setUploadError] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -224,78 +231,55 @@ export function BubbleSettings({
       {/* ── Owner: 기본 정보 ── */}
       {showBubbleSettings && (
         <Section title="기본 정보" icon={<Info size={16} style={{ color: 'var(--accent-social)' }} />}>
-          {/* 아이콘 + 이름/설명 2컬럼 */}
-          <div className="flex items-center gap-3">
-            {/* 아이콘 */}
-            <div className="flex shrink-0 flex-col items-center gap-1 px-2">
-              <button
-                type="button"
-                onClick={() => setShowIconPicker(!showIconPicker)}
-                className="flex items-center justify-center overflow-hidden rounded-full"
-                style={{ width: 56, height: 56, backgroundColor: isPhoto ? 'transparent' : selectedColor }}
-              >
-                {isPhoto ? (
-                  <Image src={photoPreview ?? selectedIcon} alt="icon" width={56} height={56} className="h-full w-full object-cover" />
-                ) : (
-                  <BubbleIcon icon={selectedIcon} size={24} />
-                )}
-              </button>
-              <span className="text-[10px]" style={{ color: uploadError ? 'var(--destructive)' : 'var(--text-hint)' }}>
-                {isUploading ? '...' : uploadError ? (
-                  <button type="button" onClick={retryUpload} className="underline">재시도</button>
-                ) : '변경'}
-              </span>
-            </div>
-            {/* 이름 + 설명 */}
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
-              <InputField label="설명" value={description} onChange={setDescription} maxLength={100} multiline />
-            </div>
+          {/* 이름 + 설명 */}
+          <div className="flex flex-col gap-1.5">
+            <InputField label="버블 이름" value={name} onChange={setName} maxLength={30} />
+            <InputField label="설명" value={description} onChange={setDescription} maxLength={100} multiline />
           </div>
 
-          {/* 아이콘 피커 */}
-          {showIconPicker && (
-            <div className="rounded-xl p-2.5" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              {/* 사진 업로드 */}
-              {onUploadPhoto && (
-                <div className="mb-2 flex items-center gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) handlePhotoSelect(file) }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold transition-colors"
-                    style={{
-                      backgroundColor: isPhoto ? 'var(--accent-social)' : 'var(--bg-elevated)',
-                      color: isPhoto ? '#FFFFFF' : 'var(--text-sub)',
-                      border: `1px solid ${isPhoto ? 'var(--accent-social)' : 'var(--border)'}`,
-                    }}
-                  >
-                    <ImagePlus size={14} />
-                    사진 업로드
-                  </button>
-                  {isPhoto && (
-                    <button
-                      type="button"
-                      onClick={clearPhoto}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    >
-                      <X size={14} style={{ color: 'var(--text-sub)' }} />
-                    </button>
-                  )}
-                </div>
-              )}
+          {/* 대표 이미지: 사진/아이콘 탭 */}
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>대표 이미지</p>
+            <div className="flex gap-1 rounded-lg p-0.5" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              {(['photo', 'icon'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setCoverMode(mode)}
+                  className="flex-1 rounded-md py-1.5 text-[12px] font-semibold transition-colors"
+                  style={{
+                    backgroundColor: coverMode === mode ? 'var(--accent-social-light)' : 'transparent',
+                    color: coverMode === mode ? 'var(--accent-social)' : 'var(--text-hint)',
+                  }}
+                >
+                  {mode === 'photo' ? '사진' : '아이콘'}
+                </button>
+              ))}
+            </div>
 
-              {/* 아이콘 그리드 */}
-              {!isPhoto && (
-                <div className="flex max-h-[200px] flex-col gap-2 overflow-y-auto">
+            {coverMode === 'photo' && photoSlot && (
+              <div>
+                {photoSlot}
+                {hasPhotos && (
+                  <p className="mt-1 text-[10px]" style={{ color: 'var(--accent-social)' }}>
+                    첫 번째 사진이 대표 이미지로 사용됩니다
+                  </p>
+                )}
+              </div>
+            )}
+
+            {coverMode === 'icon' && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: selectedColor }}
+                  >
+                    <BubbleIcon icon={selectedIcon} size={24} />
+                  </div>
+                  <span className="text-[12px]" style={{ color: 'var(--text-hint)' }}>아이콘과 색상을 선택하세요</span>
+                </div>
+                <div className="flex max-h-[180px] flex-col gap-2 overflow-y-auto rounded-xl p-2" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                   {BUBBLE_ICON_CATEGORIES.map((cat) => (
                     <div key={cat.label}>
                       <p className="mb-1 text-[10px] font-semibold text-[var(--text-hint)]">{cat.label}</p>
@@ -323,11 +307,7 @@ export function BubbleSettings({
                     </div>
                   ))}
                 </div>
-              )}
-
-              {/* 색상 */}
-              {!isPhoto && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {COLOR_OPTIONS.map((color) => (
                     <button
                       key={color}
@@ -342,9 +322,9 @@ export function BubbleSettings({
                     />
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </Section>
       )}
 

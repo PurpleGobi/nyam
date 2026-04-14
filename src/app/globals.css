@@ -1408,6 +1408,10 @@ html, body, * {
   color: var(--accent-wine);
 }
 
+.compact-rank.top.social {
+  color: var(--accent-social);
+}
+
 .compact-thumb {
   width: 48px;
   height: 48px;
@@ -1443,6 +1447,7 @@ html, body, * {
 
 .compact-score.food { color: var(--accent-food); }
 .compact-score.wine { color: var(--accent-wine); }
+.compact-score.social { color: var(--accent-social); }
 
 .compact-score.unrated {
   font-size: 15px;

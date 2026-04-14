@@ -433,6 +433,7 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     options: [
       { value: 'mine', label: '나의 버블' },
       { value: 'following', label: '팔로잉 버블' },
+      { value: 'public', label: '공개 버블' },
     ],
   },
   // 1-1. 나의 버블 하위: 역할 (bubble_type=mine 선택 시에만 노출)

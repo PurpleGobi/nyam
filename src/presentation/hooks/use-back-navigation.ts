@@ -10,6 +10,15 @@ import { getRouteConfig } from '@/shared/constants/navigation'
  * - modal: router.back()
  * - independent: redirectTo가 있으면 해당 경로로, 없으면 '/'
  */
+/** parent 패턴의 [param]을 현재 pathname의 실제 값으로 치환 */
+function resolveParent(pattern: string, pathname: string): string {
+  const patternParts = pattern.split('/')
+  const pathParts = pathname.split('/')
+  return patternParts
+    .map((seg, i) => (seg.startsWith('[') && seg.endsWith(']') ? pathParts[i] ?? seg : seg))
+    .join('/')
+}
+
 export function useBackNavigation() {
   const router = useRouter()
   const pathname = usePathname()
@@ -35,11 +44,11 @@ export function useBackNavigation() {
 
     // stack: parent 기반
     if (config.parent) {
-      router.push(config.parent)
+      router.push(resolveParent(config.parent, pathname))
     } else {
       router.back()
     }
-  }, [config, router])
+  }, [config, router, pathname])
 
   return { goBack, needsBack }
 }

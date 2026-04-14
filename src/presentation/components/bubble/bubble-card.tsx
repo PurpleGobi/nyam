@@ -1,29 +1,28 @@
 'use client'
 
-import { Users, Lock, Globe, Flame, Clock } from 'lucide-react'
+import Image from 'next/image'
+import { Users, Flame, Lock, Globe } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleCardProps {
   bubble: Bubble
-  role: 'mine' | 'joined' | null
+  /** owner=내가 만든 버블, member=가입한 버블, null=외부 버블 */
+  role: 'owner' | 'member' | null
   isRecentlyActive?: boolean
-  tasteMatchPct?: number | null
-  memberAvatars?: Array<{ name: string; color: string }>
-  lastActivityText?: string | null
   expertise?: Array<{ axisValue: string; avgLevel: number }>
   onClick: () => void
+  /** 외부 버블에 가입하기 콜백 */
+  onJoin?: () => void
 }
 
 export function BubbleCard({
   bubble,
   role,
   isRecentlyActive = false,
-  tasteMatchPct = null,
-  memberAvatars = [],
-  lastActivityText = null,
   expertise,
   onClick,
+  onJoin,
 }: BubbleCardProps) {
   const isHot = bubble.weeklyRecordCount > 0 &&
     bubble.prevWeeklyRecordCount > 0 &&
@@ -33,155 +32,122 @@ export function BubbleCard({
     <button
       type="button"
       onClick={onClick}
-      className="card flex flex-col gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.98]"
+      className="flex w-full overflow-hidden rounded-2xl text-left transition-all active:scale-[0.985]"
       style={{
-        border: isHot ? '1px solid var(--accent-social)' : undefined,
+        backgroundColor: 'var(--bg-card)',
+        border: isHot ? '2px solid var(--accent-social)' : '1px solid var(--border)',
+        minHeight: '170px',
       }}
     >
-      {/* 상단: 아이콘 + 이름 + 메타 */}
-      <div className="flex items-start gap-3">
-        {/* 아이콘 */}
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+      {/* 좌측 46%: RecordCard의 이미지 영역과 동일 구조 */}
+      <div className="relative w-[46%] shrink-0">
+        {bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
+          <Image src={bubble.icon} alt="" fill className="object-cover" sizes="46vw" />
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)' }}
+          >
+            <BubbleIcon icon={bubble.icon} size={40} />
+          </div>
+        )}
+        {/* 공개/비공개 뱃지 */}
+        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full px-1.5 py-0.5"
+          style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
         >
-          <BubbleIcon icon={bubble.icon} size={20} />
-        </div>
-
-        {/* 이름 + 뱃지 행 */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-[14px] font-bold" style={{ color: 'var(--text)' }}>{bubble.name}</p>
-            {role && (
-              <span
-                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={
-                  role === 'mine'
-                    ? { backgroundColor: 'var(--accent-food-light)', color: 'var(--accent-food)' }
-                    : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-sub)' }
-                }
-              >
-                {role === 'mine' ? '운영' : '가입'}
-              </span>
-            )}
-            {isHot && (
-              <span
-                className="flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
-                style={{ backgroundColor: '#FFF3E0', color: '#E65100' }}
-              >
-                <Flame size={9} />
-                HOT
-              </span>
-            )}
-          </div>
-
-          {/* 설명 (있으면) */}
-          {bubble.description && (
-            <p className="mt-0.5 truncate text-[11px] leading-snug" style={{ color: 'var(--text-sub)' }}>
-              {bubble.description}
-            </p>
-          )}
-
-          {/* 숫자 메타 */}
-          <div className="mt-1 flex items-center gap-2 text-[11px]" style={{ color: 'var(--text-hint)' }}>
-            <span className="flex items-center gap-0.5">
-              <Users size={10} />
-              {bubble.memberCount}
-            </span>
-            <span>·</span>
-            <span>기록 {bubble.recordCount}</span>
-            {bubble.weeklyRecordCount > 0 && (
-              <>
-                <span>·</span>
-                <span style={{ color: 'var(--positive)' }}>+{bubble.weeklyRecordCount}w</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 우측: 공개/비공개 */}
-        <div className="flex shrink-0 flex-col items-center gap-1.5">
           {bubble.visibility === 'private' ? (
-            <Lock size={13} style={{ color: 'var(--text-hint)' }} />
+            <Lock size={10} color="#FFFFFF" />
           ) : (
-            <Globe size={13} style={{ color: 'var(--text-hint)' }} />
+            <Globe size={10} color="#FFFFFF" />
           )}
-          {isRecentlyActive && (
-            <div className="h-[6px] w-[6px] rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-          )}
+          <span className="text-[9px] font-semibold text-white">
+            {bubble.visibility === 'private' ? '비공개' : '공개'}
+          </span>
         </div>
+        {/* 최근 활동 표시 */}
+        {isRecentlyActive && (
+          <div className="absolute right-2 top-2 h-[8px] w-[8px] rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
+        )}
       </div>
 
-      {/* 전문 분야 Top 3 */}
-      {expertise && expertise.length > 0 && (
-        <p className="truncate text-[11px]" style={{ color: 'var(--text-hint)' }}>
-          {expertise.map((e, i) => (
-            <span key={e.axisValue}>
-              {i > 0 && ' · '}
-              {e.axisValue} Lv.{Math.round(e.avgLevel)}
-            </span>
-          ))}
-        </p>
-      )}
-
-      {/* 하단: 멤버 아바타 + 취향 일치도 + 최근 활동 */}
-      <div className="flex items-center gap-2" style={{ borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
-        {/* 멤버 미니 아바타 */}
-        {memberAvatars.length > 0 && (
-          <div className="flex -space-x-1.5">
-            {memberAvatars.slice(0, 4).map((m, i) => (
-              <div
-                key={i}
-                className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[7px] font-bold ring-1 ring-[var(--bg-card)]"
-                style={{ backgroundColor: m.color, color: '#FFFFFF', zIndex: 4 - i }}
-              >
-                {m.name.charAt(0)}
-              </div>
-            ))}
-            {memberAvatars.length > 4 && (
-              <div
-                className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[7px] font-bold ring-1 ring-[var(--bg-card)]"
-                style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-hint)' }}
-              >
-                +{memberAvatars.length - 4}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 취향 일치도 바 */}
-        {tasteMatchPct !== null && (
-          <div className="flex items-center gap-1.5">
-            <div
-              className="h-[4px] w-[40px] overflow-hidden rounded-full"
-              style={{ backgroundColor: 'var(--border)' }}
+      {/* 우측 54%: 콘텐츠 */}
+      <div className="flex flex-1 flex-col p-3.5" style={{ minWidth: 0 }}>
+        {/* 이름 + 역할 뱃지 */}
+        <p className="flex items-center gap-1 truncate text-[16px] font-bold" style={{ color: 'var(--text)' }}>
+          <span className="truncate">{bubble.name}</span>
+          {role && (
+            <span
+              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              style={
+                role === 'owner'
+                  ? { backgroundColor: 'var(--accent-food-light)', color: 'var(--accent-food)' }
+                  : { backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }
+              }
             >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${tasteMatchPct}%`,
-                  backgroundColor: tasteMatchPct >= 80 ? 'var(--positive)' : tasteMatchPct >= 50 ? 'var(--caution)' : 'var(--text-hint)',
-                }}
-              />
-            </div>
-            <span className="text-[10px] font-semibold" style={{
-              color: tasteMatchPct >= 80 ? 'var(--positive)' : tasteMatchPct >= 50 ? 'var(--caution)' : 'var(--text-hint)',
-            }}>
-              {tasteMatchPct}%
+              {role === 'owner' ? '운영' : '멤버'}
             </span>
-          </div>
-        )}
+          )}
+          {isHot && (
+            <span
+              className="flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+              style={{ backgroundColor: '#FFF3E0', color: '#E65100' }}
+            >
+              <Flame size={9} />
+              HOT
+            </span>
+          )}
+        </p>
 
-        {/* 스페이서 */}
-        <div className="flex-1" />
+        {/* 메타: 설명 또는 멤버수 · 기록수 */}
+        <p className="mb-2.5 truncate text-[12px]" style={{ color: 'var(--text-sub)' }}>
+          {bubble.description ?? `멤버 ${bubble.memberCount}명 · 기록 ${bubble.recordCount}개`}
+        </p>
 
-        {/* 최근 활동 */}
-        {lastActivityText && (
-          <span className="flex items-center gap-0.5 truncate text-[10px]" style={{ color: 'var(--text-hint)', maxWidth: '140px' }}>
-            <Clock size={9} />
-            {lastActivityText}
+        {/* 핵심 수치: 멤버 수 (대형 폰트) — 식당의 만족도 자리 */}
+        <div className="mb-2.5 flex items-center gap-2.5">
+          <Users size={24} style={{ color: 'var(--accent-social)' }} />
+          <span
+            className="text-[32px] font-extrabold leading-none"
+            style={{ color: 'var(--accent-social)' }}
+          >
+            {bubble.memberCount}
           </span>
-        )}
+        </div>
+
+        {/* 기록 · 주간 활동 */}
+        <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
+          {[
+            `기록 ${bubble.recordCount}개`,
+            bubble.weeklyRecordCount > 0 ? `이번 주 +${bubble.weeklyRecordCount}` : null,
+          ].filter(Boolean).join(' · ')}
+        </p>
+
+        {/* 전문 분야 태그 또는 가입 버튼 */}
+        <div className="mt-auto pt-1.5">
+          {expertise && expertise.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              {expertise.map((e) => (
+                <span
+                  key={e.axisValue}
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                  style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+                >
+                  {e.axisValue} Lv.{Math.round(e.avgLevel)}
+                </span>
+              ))}
+            </div>
+          )}
+          {onJoin && !role && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onJoin() }}
+              className="mt-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
+              style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            >
+              가입하기
+            </button>
+          )}
+        </div>
       </div>
     </button>
   )

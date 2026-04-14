@@ -104,7 +104,7 @@ export function RecordCard({
       style={{
         backgroundColor: isSelecting && isSelected ? selectedBg : 'var(--bg-card)',
         border: isSelecting && isSelected ? `2px solid ${selectedBorder}` : '1px solid var(--border)',
-        minHeight: '170px',
+        height: '170px',
       }}
     >
       <div className="relative w-[46%] shrink-0">

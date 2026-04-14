@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Trophy, Users, Settings, UserPlus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
+import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
+import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
 import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
@@ -36,6 +38,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const router = useRouter()
   const { user } = useAuth()
   const { bubble, myRole, tasteMatch, isLoading } = useBubbleDetail(bubbleId, user?.id ?? null)
+  const { photos: bubblePhotos } = useBubblePhotos(bubbleId)
 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddItemSearch, setShowAddItemSearch] = useState(false)
@@ -193,6 +196,15 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
     }))
   }, [ranking])
 
+  const handlePageShare = useCallback(() => {
+    if (!bubble) return
+    if (navigator.share) {
+      navigator.share({ title: bubble.name, url: window.location.href }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(window.location.href).catch(() => {})
+    }
+  }, [bubble])
+
   if (isLoading || !bubble) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
@@ -210,61 +222,97 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
 
       <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
 
-        {/* ─── 버블 헤더 ─── */}
-        <div className="flex flex-col items-center px-5 pt-6 pb-4">
+        {/* ─── 히어로 (식당/와인 상세와 동일 HeroCarousel) ─── */}
+        {bubblePhotos.length > 0 ? (
+          <HeroCarousel
+            photos={bubblePhotos.map((p) => p.url)}
+            fallbackIcon="restaurant"
+            onShare={handlePageShare}
+          />
+        ) : (
           <div
-            className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)' }}
+            className="relative w-full overflow-hidden"
+            style={{ height: '224px' }}
           >
-            <BubbleIcon icon={bubble.icon} size={36} />
+            {bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
+              <Image src={bubble.icon} alt="" fill className="object-cover" sizes="100vw" />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center"
+                style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)' }}
+              >
+                <BubbleIcon icon={bubble.icon} size={48} />
+              </div>
+            )}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0"
+              style={{ height: '80px', background: 'linear-gradient(transparent, rgba(0,0,0,0.4))' }}
+            />
           </div>
-          <div className="mt-3 flex items-center gap-1.5">
-            <h1 className="text-[20px] font-[800]" style={{ color: 'var(--text)' }}>
-              {bubble.name}
-            </h1>
-            {isOwner && (
+        )}
+
+        {/* ─── 이름 + 메타 (식당/와인 상세와 동일 패딩/폰트) ─── */}
+        <div>
+          <section style={{ padding: '14px 20px 0' }}>
+            <div className="flex items-center gap-1.5">
+              <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
+                {bubble.name}
+              </h1>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
+                  className="flex items-center justify-center rounded-full p-1 transition-opacity active:opacity-70"
+                >
+                  <Settings size={16} style={{ color: 'var(--text-hint)' }} />
+                </button>
+              )}
+            </div>
+
+            {bubble.description && (
+              <p className="mt-1 text-[13px] leading-relaxed" style={{ color: 'var(--text-sub)' }}>
+                {bubble.description}
+              </p>
+            )}
+
+            <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '10px 0' }} />
+
+            {/* 멤버 · 기록 · 지역 메타 */}
+            <div className="flex flex-wrap items-center gap-2 py-1" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '12px', fontWeight: 700, backgroundColor: 'color-mix(in srgb, var(--accent-social) 12%, transparent)', color: 'var(--accent-social)' }}>
+                <Users size={11} />
+                멤버 {bubble.memberCount}명
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
+              <span>기록 {bubble.recordCount}개</span>
+              {bubble.area && (
+                <>
+                  <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
+                  <span>{bubble.area}</span>
+                </>
+              )}
+            </div>
+
+            {/* 액션 버튼 행 */}
+            <div className="mt-3 flex flex-wrap gap-2 pb-3">
               <button
                 type="button"
-                onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
-                className="flex items-center justify-center rounded-full p-1 transition-opacity active:opacity-70"
+                onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
+                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+                style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
               >
-                <Settings size={16} style={{ color: 'var(--text-hint)' }} />
+                <List size={13} /> 리스트 보기
               </button>
-            )}
-          </div>
-          {bubble.description && (
-            <p className="mt-1 text-center text-[13px] leading-relaxed" style={{ color: 'var(--text-sub)' }}>
-              {bubble.description}
-            </p>
-          )}
-
-          {/* 버블 메타 */}
-          <div className="mt-3 flex items-center gap-4 text-[12px]" style={{ color: 'var(--text-hint)' }}>
-            <span className="flex items-center gap-1">
-              <Users size={13} /> 멤버 {bubble.memberCount}명
-            </span>
-            {bubble.area && <span>{bubble.area}</span>}
-          </div>
-
-          {/* 액션 버튼 행 */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-              style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
-            >
-              <List size={13} /> 리스트 보기
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-              style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
-            >
-              <UserPlus size={13} /> 초대
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setShowInviteModal(true)}
+                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+                style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+              >
+                <UserPlus size={13} /> 초대
+              </button>
+            </div>
+          </section>
         </div>
 
         <Divider />

@@ -89,15 +89,19 @@ export function useHomeState(options?: UseHomeStateOptions) {
 
   const cycleViewMode = useCallback(() => {
     _setViewMode((prev) => {
-      // map 뷰에서 뷰토글 클릭 시 card로 복귀, 그 외에는 card→list→calendar 순환
-      const idx = VIEW_MODE_CYCLE.indexOf(prev)
+      // 버블 탭: card↔list만 순환 (캘린더 없음)
+      // 그 외: map→card, card→list→calendar 순환
+      const cycle: ViewMode[] = activeTab === 'bubble'
+        ? ['card', 'list']
+        : VIEW_MODE_CYCLE
+      const idx = cycle.indexOf(prev)
       const next = idx === -1
-        ? VIEW_MODE_CYCLE[0]
-        : VIEW_MODE_CYCLE[(idx + 1) % VIEW_MODE_CYCLE.length]
+        ? cycle[0]
+        : cycle[(idx + 1) % cycle.length]
       sessionStorage.setItem(VIEW_STORAGE_KEY, next)
       return next
     })
-  }, [])
+  }, [activeTab])
 
   const toggleMap = useCallback(() => {
     _setViewMode((prev) => {

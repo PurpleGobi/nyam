@@ -15,7 +15,7 @@ interface PhotoPickerProps {
   onTogglePublic?: (photoId: string) => void
   isUploading: boolean
   isMaxReached: boolean
-  theme: 'food' | 'wine'
+  theme: 'food' | 'wine' | 'social'
 }
 
 export function PhotoPicker({
@@ -46,7 +46,7 @@ export function PhotoPicker({
     longPressTimer: ReturnType<typeof setTimeout> | null
   } | null>(null)
 
-  const accentVar = theme === 'food' ? '--accent-food' : '--accent-wine'
+  const accentVar = theme === 'food' ? '--accent-food' : theme === 'social' ? '--accent-social' : '--accent-wine'
 
   const handleFiles = useCallback(
     (fileList: FileList | null) => {

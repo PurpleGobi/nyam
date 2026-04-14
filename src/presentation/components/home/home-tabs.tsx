@@ -124,11 +124,9 @@ export function HomeTabs({
                 <Map size={20} />
               </button>
             )}
-            {!isBubbleTab && (
-              <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
-                <ViewIcon size={20} />
-              </button>
-            )}
+            <button type="button" onClick={onViewCycle} className="view-cycle-btn" title="보기 전환">
+              <ViewIcon size={20} />
+            </button>
             <button type="button" onClick={onSortToggle} className={`icon-button ${isSortOpen ? `active ${isBubbleTab ? 'social' : tabType}` : ''}`} title="정렬">
               <ArrowUpDown size={20} />
             </button>
