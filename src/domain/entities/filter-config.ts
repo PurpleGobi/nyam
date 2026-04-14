@@ -309,15 +309,21 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
 
 // ─── 지도뷰 필터 속성 (식당 탭 지도 모드 전용) ───
 
+const MAP_SOURCE_SCORE_CHILDREN: FilterAttributeOption[] = [
+  { value: '90', label: '90+' },
+  { value: '80', label: '80+' },
+  { value: '70', label: '70+' },
+]
+
 export const MAP_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
     key: 'map_source',
     label: '보기',
-    type: 'multi-select',
+    type: 'select',
     options: [
-      { value: 'mine', label: '내 기록' },
-      { value: 'following', label: '팔로잉' },
-      { value: 'bubble', label: '버블' },
+      { value: 'mine', label: '내 기록', children: MAP_SOURCE_SCORE_CHILDREN },
+      { value: 'following', label: '팔로잉', children: MAP_SOURCE_SCORE_CHILDREN },
+      { value: 'bubble', label: '버블', children: MAP_SOURCE_SCORE_CHILDREN },
     ],
   },
   {

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { Plus, X, SlidersHorizontal, Check, MapPin, ChevronDown } from 'lucide-react'
 import type { FilterAttribute, CascadingOption, LocationTab } from '@/domain/entities/filter-config'
 import type { FilterChipItem, ConditionChip } from '@/domain/entities/condition-chip'
-import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL, LOCATION_TAB_KEY, LOCATION_CITY_KEY, LOCATION_DETAIL_KEY, isLocationChipKey, PRESTIGE_TYPE_KEY, PRESTIGE_GRADE_PREFIX, isPrestigeChipKey, getPrestigeGradeType } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, generateChipId, cascadingKey, isCascadingKey, getCascadingBaseKey, getCascadingLevel, CASCADING_ALL, LOCATION_TAB_KEY, LOCATION_CITY_KEY, LOCATION_DETAIL_KEY, isLocationChipKey, childrenCascadeTypeKey, childrenCascadeGradeKey, isGradeSubChipKey, isChildrenCascadeChipKey, parseGradeSubChipKey } from '@/domain/entities/condition-chip'
 import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { InlinePager } from '@/presentation/components/home/inline-pager'
@@ -170,21 +170,38 @@ export function ConditionFilterBar({
   const conditionChips = chips.filter((c) => !isAdvancedChip(c)) as ConditionChip[]
   const advancedChips = chips.filter(isAdvancedChip)
 
-  // 이미 추가된 속성 키 (중복 방지) — cascading 칩은 base key로 그룹, location/prestige 칩 그룹도 고려
-  const usedPrestigeTypes = conditionChips
-    .filter((c) => c.attribute === PRESTIGE_TYPE_KEY)
-    .map((c) => String(c.value))
+  // children-cascade 속성 목록 (options에 children이 있는 select 속성)
+  const childrenCascadeAttrs = useMemo(() => attributes.filter(
+    (a) => a.type === 'select' && a.options?.some((o) => o.children && o.children.length > 0),
+  ), [attributes])
+
+  // 각 children-cascade 속성별 이미 선택된 type values
+  const usedCascadeTypes: Map<string, string[]> = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const attr of childrenCascadeAttrs) {
+      const typeKey = childrenCascadeTypeKey(attr.key)
+      const typeChip = conditionChips.find((c) => c.attribute === typeKey)
+      map.set(attr.key, typeChip ? String(typeChip.value).split(',').map((v) => v.trim()) : [])
+    }
+    return map
+  }, [childrenCascadeAttrs, conditionChips])
+
+  // 이미 추가된 속성 키 (중복 방지) — cascading 칩은 base key로 그룹, location/children-cascade 칩 그룹도 고려
   const usedBaseKeys = new Set(conditionChips.map((c) => {
     if (isLocationChipKey(c.attribute)) return 'location'
-    if (isPrestigeChipKey(c.attribute)) return '__prestige_internal__'
+    // children-cascade (prestige, map_source 등): 내부 키로 그룹
+    for (const attr of childrenCascadeAttrs) {
+      if (isChildrenCascadeChipKey(c.attribute, attr.key)) return `__cascade_${attr.key}__`
+    }
     return isCascadingKey(c.attribute) ? getCascadingBaseKey(c.attribute) : c.attribute
   }))
   const availableAttributes = attributes.filter((a) => {
     if (usedBaseKeys.has(a.key)) return false
-    // prestige (cascade 모드): 아직 선택 안 한 type이 있으면 표시
-    if (a.key === 'prestige' && a.options?.some((o) => o.children && o.children.length > 0)) {
+    // children-cascade 모드: 아직 선택 안 한 type이 있으면 표시
+    if (childrenCascadeAttrs.some((ca) => ca.key === a.key)) {
+      const used = usedCascadeTypes.get(a.key) ?? []
       const allTypes = a.options?.map((o) => o.value) ?? []
-      return allTypes.some((t) => !usedPrestigeTypes.includes(t))
+      return allTypes.some((t) => !used.includes(t))
     }
     return true
   })
@@ -228,46 +245,48 @@ export function ConditionFilterBar({
       const attr = attributes.find((a) => a.key === baseKey)
       return attr?.cascadingLabels?.[level] ?? attr?.label ?? baseKey
     }
-    if (chip.attribute === PRESTIGE_TYPE_KEY) return '명성'
-    if (chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX)) {
-      const type = getPrestigeGradeType(chip.attribute)
-      const prestigeAttr = attributes.find((a) => a.key === 'prestige')
-      const typeOpt = prestigeAttr?.options?.find((o) => o.value === type)
-      return typeOpt?.label ?? type
+    // children-cascade type 칩 (예: prestige_type, map_source_type)
+    for (const ca of childrenCascadeAttrs) {
+      if (chip.attribute === childrenCascadeTypeKey(ca.key)) return ca.label
+    }
+    // children-cascade grade 서브칩 (예: prestige_grade:michelin)
+    const gradeInfo = parseGradeSubChipKey(chip.attribute)
+    if (gradeInfo) {
+      const parentAttr = attributes.find((a) => a.key === gradeInfo.baseKey)
+      const typeOpt = parentAttr?.options?.find((o) => o.value === gradeInfo.typeValue)
+      return typeOpt?.label ?? gradeInfo.typeValue
     }
     return attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
-  }, [attributes, conditionChips])
+  }, [attributes, conditionChips, childrenCascadeAttrs])
 
   /* ── handlers ── */
   const handleAddCondition = useCallback((attr: FilterAttribute, value: string) => {
-    // prestige 전용 (children 있는 경우만): 상위 type칩 1개 (누적) + grade칩 추가
-    if (attr.key === 'prestige' && attr.options?.some((o) => o.children && o.children.length > 0)) {
+    // children-cascade (prestige, map_source 등): 상위 type칩 1개 (누적) + grade 서브칩 추가
+    if (attr.options?.some((o) => o.children && o.children.length > 0)) {
+      const typeKey = childrenCascadeTypeKey(attr.key)
       const opt = attr.options?.find((o) => o.value === value)
-      const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === PRESTIGE_TYPE_KEY) as ConditionChip | undefined
+      const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
 
       let next: FilterChipItem[]
       if (existingTypeChip) {
-        // 기존 type칩에 값 추가
         const newValue = `${existingTypeChip.value},${value}`
         const newLabel = newValue.split(',').map((v) => attr.options?.find((o) => o.value === v.trim())?.label ?? v).join(', ')
         next = chips.map((c) =>
           c.id === existingTypeChip.id ? { ...c, value: newValue, displayLabel: newLabel } : c,
         )
       } else {
-        // 첫 type칩 생성
         const typeChip: ConditionChip = {
           id: generateChipId(),
-          attribute: PRESTIGE_TYPE_KEY,
+          attribute: typeKey,
           operator: 'eq',
           value,
           displayLabel: opt?.label ?? value,
         }
         next = [...chips, typeChip]
       }
-      // grade칩 추가
       const gradeChip: ConditionChip = {
         id: generateChipId(),
-        attribute: `${PRESTIGE_GRADE_PREFIX}${value}`,
+        attribute: childrenCascadeGradeKey(attr.key, value),
         operator: 'eq',
         value: CASCADING_ALL,
         displayLabel: '전체',
@@ -275,14 +294,12 @@ export function ConditionFilterBar({
       next.push(gradeChip)
       onChipsChange(next)
 
-      // 남은 미선택 type이 있으면 팝오버 유지, 없으면 닫기
-      const usedAfter = [...usedPrestigeTypes, value]
+      const usedAfter = [...(usedCascadeTypes.get(attr.key) ?? []), value]
       const remaining = attr.options?.filter((o) => !usedAfter.includes(o.value)) ?? []
       if (remaining.length === 0) {
         setSelectedAttribute(null)
         setIsAddOpen(false)
       }
-      // selectedAttribute 유지 → 팝오버가 열린 채로 남은 type 표시
       setCascadingState(null)
       return
     }
@@ -307,7 +324,7 @@ export function ConditionFilterBar({
     setIsAddOpen(false)
     setCascadingState(null)
 
-  }, [chips, onChipsChange, usedPrestigeTypes])
+  }, [chips, onChipsChange, usedCascadeTypes])
 
   /** multi-select에서 editingChipId를 추적하는 ref (실시간 적용에 필요) */
   const multiSelectChipIdRef = useRef<string | null>(null)
@@ -553,15 +570,16 @@ export function ConditionFilterBar({
           return c
         }))
       }
-    } else if (chip.attribute === PRESTIGE_TYPE_KEY) {
-      // prestige type 칩 삭제 → 모든 prestige 칩 제거 (전체 리셋)
-      onChipsChange(chips.filter((c) => !isAdvancedChip(c) ? !isPrestigeChipKey(c.attribute) : true))
+    } else if (childrenCascadeAttrs.some((ca) => chip.attribute === childrenCascadeTypeKey(ca.key))) {
+      // children-cascade type 칩 삭제 → 해당 cascade 그룹 전체 제거
+      const baseKey = chip.attribute.slice(0, -5) // remove '_type'
+      onChipsChange(chips.filter((c) => !isAdvancedChip(c) ? !isChildrenCascadeChipKey(c.attribute, baseKey) : true))
     } else {
       onChipsChange(chips.filter((c) => c.id !== chipId))
     }
     setEditingChipId(null)
     setCascadingState(null)
-  }, [chips, conditionChips, onChipsChange])
+  }, [chips, conditionChips, onChipsChange, childrenCascadeAttrs])
 
   /** 칩 값 변경 (일반 select) */
   const handleChangeChipValue = useCallback((chipId: string, newValue: string) => {
@@ -685,8 +703,8 @@ export function ConditionFilterBar({
           const attrLabel = getChipAttrLabel(chip)
           const isAllPlaceholder = chip.value === CASCADING_ALL
           const isLocChild = chip.attribute === LOCATION_DETAIL_KEY
-          const isPrestigeGrade = chip.attribute.startsWith(PRESTIGE_GRADE_PREFIX)
-          const isChildChip = isLocChild || isPrestigeGrade
+          const isCascadeGrade = isGradeSubChipKey(chip.attribute)
+          const isChildChip = isLocChild || isCascadeGrade
           const isLocTab = chip.attribute === LOCATION_TAB_KEY
           return (
             <button
@@ -873,8 +891,8 @@ export function ConditionFilterBar({
           >
             ← {selectedAttribute.label}
           </button>
-          {(selectedAttribute.key === 'prestige' && selectedAttribute.options?.some((o) => o.children && o.children.length > 0)
-            ? selectedAttribute.options?.filter((o) => !usedPrestigeTypes.includes(o.value))
+          {(selectedAttribute.options?.some((o) => o.children && o.children.length > 0)
+            ? selectedAttribute.options?.filter((o) => !(usedCascadeTypes.get(selectedAttribute.key) ?? []).includes(o.value))
             : selectedAttribute.options
           )?.map((opt) => (
             <button

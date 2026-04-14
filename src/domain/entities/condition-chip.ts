@@ -136,7 +136,7 @@ export function isLocationChipKey(key: string): boolean {
   return key === LOCATION_TAB_KEY || key === LOCATION_CITY_KEY || key === LOCATION_DETAIL_KEY
 }
 
-/* ── prestige 칩 키 상수 ── */
+/* ── prestige 칩 키 상수 (하위 호환) ── */
 export const PRESTIGE_TYPE_KEY = 'prestige_type'
 export const PRESTIGE_GRADE_PREFIX = 'prestige_grade:'
 
@@ -148,6 +148,36 @@ export function isPrestigeChipKey(key: string): boolean {
 /** prestige grade 칩에서 type 추출 (prestige_grade:michelin → michelin) */
 export function getPrestigeGradeType(key: string): string {
   return key.slice(PRESTIGE_GRADE_PREFIX.length)
+}
+
+/* ── Generic children-cascade (type + grade sub-chip) helpers ── */
+// options에 children이 있는 select 속성은 type+grade 패턴 사용
+// 패턴: {attrKey}_type (타입 집계 칩), {attrKey}_grade:{typeValue} (grade 서브칩)
+
+/** type 칩 키 생성 (예: prestige → prestige_type) */
+export function childrenCascadeTypeKey(attrKey: string): string {
+  return `${attrKey}_type`
+}
+
+/** grade 서브칩 키 생성 (예: prestige, michelin → prestige_grade:michelin) */
+export function childrenCascadeGradeKey(attrKey: string, typeValue: string): string {
+  return `${attrKey}_grade:${typeValue}`
+}
+
+/** grade 서브칩 키인지 판별 (_grade: 패턴) */
+export function isGradeSubChipKey(key: string): boolean {
+  return /_grade:/.test(key)
+}
+
+/** grade 서브칩 키 파싱 (prestige_grade:michelin → { baseKey: 'prestige', typeValue: 'michelin' }) */
+export function parseGradeSubChipKey(key: string): { baseKey: string; typeValue: string } | null {
+  const match = key.match(/^(.+)_grade:(.+)$/)
+  return match ? { baseKey: match[1], typeValue: match[2] } : null
+}
+
+/** children-cascade의 type 칩 or grade 칩인지 통합 판별 */
+export function isChildrenCascadeChipKey(key: string, attrKey: string): boolean {
+  return key === childrenCascadeTypeKey(attrKey) || key.startsWith(`${attrKey}_grade:`)
 }
 
 /** cascading 칩 키 생성 (예: district__0, district__1) */
