@@ -19,6 +19,7 @@ const CONFIDENCE_QUALITY_WEIGHT = 0.15
 const MIN_OVERLAP = 1
 const TOP_K = 50
 const BASE_WEIGHT = 0.1
+const SHRINKAGE_LAMBDA = 10  // shrinkage 강도: 기록 10개쯤부터 유저 고유 평균 지배적
 
 // ===== 인라인 타입 =====
 
@@ -193,6 +194,21 @@ type SupabaseClient = ReturnType<typeof createClient>
 
 // ===== 헬퍼: 팔로우 관계 판정 =====
 
+// ===== Shrinkage Mean: 데이터량에 따라 유저평균 ↔ 전체평균 보간 =====
+
+function shrinkageMean(
+  userMean: ScorePoint,
+  globalMean: ScorePoint,
+  recordCount: number,
+): ScorePoint {
+  const n = recordCount
+  const denom = n + SHRINKAGE_LAMBDA
+  return {
+    x: (userMean.x * n + globalMean.x * SHRINKAGE_LAMBDA) / denom,
+    y: (userMean.y * n + globalMean.y * SHRINKAGE_LAMBDA) / denom,
+  }
+}
+
 function determineRelation(
   userId: string,
   raterId: string,
@@ -358,17 +374,43 @@ async function predictScoreForUser(
     }
   }
 
-  // Step 4: 내 평균 조회
-  const { data: myMeanRow } = await supabase
-    .from('user_score_means')
-    .select('mean_x, mean_y, record_count')
-    .eq('user_id', userId)
-    .eq('category', category)
-    .single()
+  // Step 4: 전체 평균 + 내 평균 조회 → shrinkage 보정
+  const [{ data: globalMeanRows }, { data: myMeanRow }] = await Promise.all([
+    supabase
+      .from('user_score_means')
+      .select('mean_x, mean_y, record_count')
+      .eq('category', category),
+    supabase
+      .from('user_score_means')
+      .select('mean_x, mean_y, record_count')
+      .eq('user_id', userId)
+      .eq('category', category)
+      .single(),
+  ])
+
+  // 전체 평균: 모든 유저의 record_count 가중 평균 (유저 수가 아닌 기록 수 기반)
+  let globalMean: ScorePoint = { x: 50, y: 50 }
+  if (globalMeanRows && globalMeanRows.length > 0) {
+    let totalRecords = 0
+    let sumX = 0
+    let sumY = 0
+    for (const row of globalMeanRows) {
+      totalRecords += row.record_count
+      sumX += row.mean_x * row.record_count
+      sumY += row.mean_y * row.record_count
+    }
+    if (totalRecords > 0) {
+      globalMean = { x: sumX / totalRecords, y: sumY / totalRecords }
+    }
+  }
 
   const myMean: ScorePoint = myMeanRow
-    ? { x: myMeanRow.mean_x, y: myMeanRow.mean_y }
-    : { x: 50, y: 50 }
+    ? shrinkageMean(
+        { x: myMeanRow.mean_x, y: myMeanRow.mean_y },
+        globalMean,
+        myMeanRow.record_count,
+      )
+    : globalMean
 
   // Step 5: 기록자 필터링 (적합도 있는 + MIN_OVERLAP 충족)
   interface RaterCandidate {
@@ -443,10 +485,10 @@ async function predictScoreForUser(
     scoreMap.set(row.user_id, { x: row.axis_x, y: row.axis_y })
   }
 
-  // Step 7: 기록자 평균 조회
+  // Step 7: 기록자 평균 조회 → shrinkage 보정
   const { data: meanRows, error: meanError } = await supabase
     .from('user_score_means')
-    .select('user_id, mean_x, mean_y')
+    .select('user_id, mean_x, mean_y, record_count')
     .eq('category', category)
     .in('user_id', topKRaterIds)
 
@@ -454,7 +496,11 @@ async function predictScoreForUser(
 
   const meanMap = new Map<string, ScorePoint>()
   for (const row of (meanRows ?? [])) {
-    meanMap.set(row.user_id, { x: row.mean_x, y: row.mean_y })
+    meanMap.set(row.user_id, shrinkageMean(
+      { x: row.mean_x, y: row.mean_y },
+      globalMean,
+      row.record_count,
+    ))
   }
 
   // Step 8: RaterInput 구성 + 예측 계산
@@ -487,7 +533,7 @@ async function predictScoreForUser(
   if (followingRaters.length > 0) {
     const followingIds = followingRaters.map(r => r.raterId)
     const { data: profileRows } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id, nickname')
       .in('id', followingIds)
 
