@@ -6,7 +6,7 @@ import type {
   MapDiscoveryItem,
 } from '@/domain/entities/map-discovery'
 import type { FilterChipItem } from '@/domain/entities/condition-chip'
-import { isAdvancedChip, PRESTIGE_GRADE_PREFIX, CASCADING_ALL } from '@/domain/entities/condition-chip'
+import { isAdvancedChip, PRESTIGE_GRADE_PREFIX, CASCADING_ALL, parseGradeSubChipKey } from '@/domain/entities/condition-chip'
 import { haversineDistance } from '@/domain/services/distance'
 
 /** bounds API 응답 아이템 */
@@ -56,16 +56,31 @@ export function useMapDiscovery(params: {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // --- 칩에서 필터 추출 ---
+  // map_source: children-cascade 패턴 (map_source_type 칩에서 추출)
   const sourceFilter: MapSourceValue[] = useMemo(() => {
     const values: MapSourceValue[] = []
     for (const chip of mapChips) {
       if (isAdvancedChip(chip)) continue
       const attr = chip.filterKey ?? chip.attribute
-      if (attr === 'map_source') {
+      // 기존 multi-select 호환 + 새 cascade type 칩
+      if (attr === 'map_source' || attr === 'map_source_type') {
         values.push(...String(chip.value).split(',').map((v) => v.trim()) as MapSourceValue[])
       }
     }
     return values
+  }, [mapChips])
+
+  // map_source grade sub-chip: source별 점수 임계값 (CASCADING_ALL이 아닌 것만)
+  const sourceScoreFilter: Map<string, number> = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const chip of mapChips) {
+      if (isAdvancedChip(chip)) continue
+      const parsed = parseGradeSubChipKey(chip.attribute)
+      if (parsed && parsed.baseKey === 'map_source' && chip.value !== CASCADING_ALL) {
+        map.set(parsed.typeValue, Number(chip.value))
+      }
+    }
+    return map
   }, [mapChips])
 
   const prestigeFilter: string[] = useMemo(() => {
@@ -122,6 +137,8 @@ export function useMapDiscovery(params: {
 
   const sourceFilterRef = useRef(sourceFilter)
   sourceFilterRef.current = sourceFilter
+  const sourceScoreFilterRef = useRef(sourceScoreFilter)
+  sourceScoreFilterRef.current = sourceScoreFilter
   const prestigeFilterRef = useRef(prestigeFilter)
   const prestigeGradeFilterRef = useRef(prestigeGradeFilter)
   prestigeGradeFilterRef.current = prestigeGradeFilter
@@ -190,18 +207,27 @@ export function useMapDiscovery(params: {
         prestige: r.prestige ?? [],
         sources: (r.sources.length > 0 ? r.sources : ['mine']) as MapDiscoveryItem['sources'],
       }))
-      // grade sub-chip 클라이언트 사이드 필터링
+      // grade sub-chip 클라이언트 사이드 필터링 (prestige)
       const gradeMap = prestigeGradeFilterRef.current
-      const filtered = gradeMap.size > 0
+      let filtered = gradeMap.size > 0
         ? mapped.filter((item) => {
           for (const [type, grade] of gradeMap) {
-            // 해당 type의 grade 조건: prestige 배열에 type+grade 매칭 항목 필요
             const has = item.prestige.some((p) => p.type === type && p.grade === grade)
             if (!has) return false
           }
           return true
         })
         : mapped
+      // source score sub-chip 클라이언트 사이드 필터링 (map_source_grade:mine 등)
+      const scoreMap = sourceScoreFilterRef.current
+      if (scoreMap.size > 0) {
+        filtered = filtered.filter((item) => {
+          const mineThreshold = scoreMap.get('mine')
+          if (mineThreshold != null && item.myScore != null && item.myScore < mineThreshold) return false
+          if (mineThreshold != null && item.myScore == null) return false
+          return true
+        })
+      }
       setItems(filtered)
     } catch {
       // 조용히 무시
@@ -246,7 +272,7 @@ export function useMapDiscovery(params: {
     setCurrentPage(1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => fetchCurrent(1), 150)
-  }, [searchQuery, sourceFilter, prestigeFilter, prestigeGradeFilter, genreFilter, districtFilter, areaFilter, fetchCurrent])
+  }, [searchQuery, sourceFilter, sourceScoreFilter, prestigeFilter, prestigeGradeFilter, genreFilter, districtFilter, areaFilter, fetchCurrent])
 
   // --- 페이지 변경 ---
   const setPage = useCallback((page: number) => {
