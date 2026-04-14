@@ -1,7 +1,8 @@
 'use client'
 
-import { Users, Flame } from 'lucide-react'
+import { Users, Flame, Sparkles } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import type { BubbleSimilarityResult } from '@/domain/repositories/similarity-repository'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface CompactListBubbleProps {
@@ -10,6 +11,8 @@ interface CompactListBubbleProps {
   /** owner=내가 만든 버블, member=가입한 버블, null=외부 버블 */
   role: 'owner' | 'member' | null
   expertise?: Array<{ axisValue: string; avgLevel: number }>
+  /** 나와의 버블 적합도 (선택) */
+  similarity?: BubbleSimilarityResult | null
   onClick: () => void
   /** 외부 버블에 가입하기 콜백 */
   onJoin?: () => void
@@ -24,6 +27,7 @@ export function CompactListBubble({
   rank,
   role,
   expertise,
+  similarity,
   onClick,
   onJoin,
   isPending,
@@ -50,7 +54,12 @@ export function CompactListBubble({
       )}
 
       {/* 썸네일 — 48x48, CompactListItem과 동일 */}
-      {bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
+      {bubble.coverPhotoUrl ? (
+        <div
+          className="compact-thumb bg-cover bg-center"
+          style={{ backgroundImage: `url(${bubble.coverPhotoUrl})` }}
+        />
+      ) : bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
         <div
           className="compact-thumb bg-cover bg-center"
           style={{ backgroundImage: `url(${bubble.icon})` }}
@@ -99,6 +108,18 @@ export function CompactListBubble({
             <>
               <span className="shrink-0">·</span>
               <span className="shrink-0" style={{ color: 'var(--positive)' }}>+{bubble.weeklyRecordCount}w</span>
+            </>
+          )}
+          {similarity && (
+            <>
+              <span className="shrink-0">·</span>
+              <Sparkles size={8} className="shrink-0" style={{ color: 'var(--accent-food)' }} />
+              <span className="shrink-0 font-bold" style={{ color: 'var(--accent-food)' }}>
+                적합도 {Math.round(similarity.similarity * 100)}%
+              </span>
+              <span className="shrink-0" style={{ color: 'var(--text-hint)' }}>
+                신뢰 {Math.round(similarity.avgConfidence * 100)}%
+              </span>
             </>
           )}
         </p>

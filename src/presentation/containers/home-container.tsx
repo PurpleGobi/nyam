@@ -49,6 +49,7 @@ import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
+import { useBubbleSimilarities } from '@/application/hooks/use-bubble-similarity'
 import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
 import { CompactListBubble } from '@/presentation/components/bubble/compact-list-bubble'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
@@ -223,6 +224,7 @@ export function HomeContainer() {
   // ── 버블 전문성 ──
   const bubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
   const { expertiseMap } = useBubbleExpertise(bubbleIds)
+  const bubbleSimilarityMap = useBubbleSimilarities(user?.id ?? null, bubbleIds)
 
   // ── 버블 탭 소팅 ──
   const [bubbleSort, setBubbleSort] = useState<BubbleSortOption>('records')
@@ -1268,6 +1270,7 @@ export function HomeContainer() {
                     rank={i + 1}
                     role={getBubbleRole(b)}
                     expertise={getExpertiseTopPerAxis(b.id)}
+                    similarity={bubbleSimilarityMap.get(b.id) ?? null}
                     onClick={() => router.push(`/bubbles/${b.id}`)}
                     onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
                     isPending={pendingBubbleIds.has(b.id)}
@@ -1287,6 +1290,7 @@ export function HomeContainer() {
                   bubble={b}
                   role={getBubbleRole(b)}
                   expertise={getExpertiseTopPerAxis(b.id)}
+                  similarity={bubbleSimilarityMap.get(b.id) ?? null}
                   onClick={() => router.push(`/bubbles/${b.id}`)}
                   onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
                   isPending={pendingBubbleIds.has(b.id)}

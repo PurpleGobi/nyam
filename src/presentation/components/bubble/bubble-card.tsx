@@ -1,8 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { Users, Flame, Lock, Globe } from 'lucide-react'
+import { Users, Flame, Lock, Globe, Sparkles } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
+import type { BubbleSimilarityResult } from '@/domain/repositories/similarity-repository'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 
 interface BubbleCardProps {
@@ -10,6 +11,8 @@ interface BubbleCardProps {
   /** owner=내가 만든 버블, member=가입한 버블, null=외부 버블 */
   role: 'owner' | 'member' | null
   expertise?: Array<{ axisValue: string; avgLevel: number }>
+  /** 나와의 버블 적합도 (선택) */
+  similarity?: BubbleSimilarityResult | null
   onClick: () => void
   /** 외부 버블에 가입하기 콜백 */
   onJoin?: () => void
@@ -23,6 +26,7 @@ export function BubbleCard({
   bubble,
   role,
   expertise,
+  similarity,
   onClick,
   onJoin,
   isPending,
@@ -47,7 +51,9 @@ export function BubbleCard({
     >
       {/* 좌측 46%: RecordCard의 이미지 영역과 동일 구조 */}
       <div className="relative w-[46%] shrink-0">
-        {bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
+        {bubble.coverPhotoUrl ? (
+          <Image src={bubble.coverPhotoUrl} alt="" fill className="object-cover" sizes="46vw" />
+        ) : bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
           <Image src={bubble.icon} alt="" fill className="object-cover" sizes="46vw" />
         ) : (
           <div
@@ -114,7 +120,7 @@ export function BubbleCard({
           ].filter(Boolean).join(' · ')}
         </p>
 
-        {/* 멤버수(좌) + 레벨 뱃지(우) 2컬럼 */}
+        {/* 멤버수(좌) + 레벨 뱃지(우) */}
         <div className="flex items-center gap-2">
           {/* 좌: 멤버수 */}
           <div className="flex items-center gap-1.5">
@@ -141,6 +147,19 @@ export function BubbleCard({
             </div>
           )}
         </div>
+
+        {/* 적합도 (멤버수 아래줄) */}
+        {similarity && (
+          <div className="mt-1 flex items-center gap-1.5">
+            <Sparkles size={10} style={{ color: 'var(--accent-food)' }} />
+            <span className="text-[11px] font-bold" style={{ color: 'var(--accent-food)' }}>
+              적합도 {Math.round(similarity.similarity * 100)}%
+            </span>
+            <span className="text-[9px]" style={{ color: 'var(--text-hint)' }}>
+              신뢰 {Math.round(similarity.avgConfidence * 100)}% · {similarity.matchedMembers}명 기반
+            </span>
+          </div>
+        )}
 
         {/* 가입/취소 버튼 */}
         {isPending && onCancelJoin ? (

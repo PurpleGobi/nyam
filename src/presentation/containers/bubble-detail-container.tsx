@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, UserMinus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info } from 'lucide-react'
+import { Trophy, Users, Settings, UserPlus, UserMinus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info, Sparkles } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
@@ -26,6 +26,7 @@ import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile
 import { AddItemSearchSheet } from '@/presentation/components/bubble/add-item-search-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
+import { useBubbleSimilarities } from '@/application/hooks/use-bubble-similarity'
 import type { RankingTargetType, ExpertiseAxisType } from '@/domain/entities/bubble'
 
 interface BubbleDetailContainerProps {
@@ -59,6 +60,8 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   } = useBubbleInviteMember(bubbleId)
   const { pendingInvites, refreshPending } = useBubbleMember(bubbleId, user?.id ?? null)
   const { members, isLoading: membersLoading } = useBubbleMembers(bubbleId)
+  const bubbleSimilarityMap = useBubbleSimilarities(user?.id ?? null, [bubbleId])
+  const bubbleSimilarity = bubbleSimilarityMap.get(bubbleId) ?? null
   // 실시간 랭킹: bubble_items feed에서 집계 (크론 기반 스냅샷 대체)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
@@ -348,6 +351,20 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                 <>
                   <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
                   <span>{bubble.area}</span>
+                </>
+              )}
+              {bubbleSimilarity && (
+                <>
+                  <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Sparkles size={11} style={{ color: 'var(--accent-food)' }} />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-food)' }}>
+                      적합도 {Math.round(bubbleSimilarity.similarity * 100)}%
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>
+                      신뢰 {Math.round(bubbleSimilarity.avgConfidence * 100)}% · {bubbleSimilarity.matchedMembers}명 기반
+                    </span>
+                  </span>
                 </>
               )}
             </div>

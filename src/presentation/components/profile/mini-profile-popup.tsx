@@ -2,12 +2,13 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { MapPin, Calendar, UtensilsCrossed, Wine } from 'lucide-react'
+import { MapPin, Calendar, UtensilsCrossed, Wine, Sparkles } from 'lucide-react'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
 import { useMiniProfile } from '@/application/hooks/use-mini-profile'
+import { useSimilarity } from '@/application/hooks/use-similarity'
 import { getGaugeColor } from '@/shared/utils/gauge-color'
 
 interface MiniProfilePopupProps {
@@ -21,6 +22,8 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
   const { user } = useAuth()
   const { data, isLoading } = useMiniProfile(isOpen ? targetUserId : null)
   const { accessLevel, isLoading: followLoading, toggleFollow } = useFollow(user?.id ?? null, targetUserId)
+  const { similarity: restaurantSim } = useSimilarity(user?.id ?? null, targetUserId, 'restaurant')
+  const { similarity: wineSim } = useSimilarity(user?.id ?? null, targetUserId, 'wine')
 
   const isSelf = user?.id === targetUserId
 
@@ -114,6 +117,41 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
                 />
               </div>
 
+              {/* ─── 취향 적합도 ─── */}
+              {!isSelf && (restaurantSim || wineSim) && (
+                <div
+                  className="mt-3 rounded-xl px-3.5 py-3"
+                  style={{ backgroundColor: 'var(--bg-section)', border: '1px solid var(--border)' }}
+                >
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Sparkles size={12} style={{ color: 'var(--accent-social)' }} />
+                    <span className="text-[11px] font-semibold" style={{ color: 'var(--text-sub)' }}>
+                      나와의 취향 적합도
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    {restaurantSim && (
+                      <SimilarityBadge
+                        label="식당"
+                        similarity={restaurantSim.similarity}
+                        confidence={restaurantSim.confidence}
+                        nOverlap={restaurantSim.nOverlap}
+                        accentColor="var(--accent-food)"
+                      />
+                    )}
+                    {wineSim && (
+                      <SimilarityBadge
+                        label="와인"
+                        similarity={wineSim.similarity}
+                        confidence={wineSim.confidence}
+                        nOverlap={wineSim.nOverlap}
+                        accentColor="var(--accent-wine)"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* ─── 소셜 통계 ─── */}
               <div className="mt-2 flex gap-4 px-1">
                 <span className="text-[12px]" style={{ color: 'var(--text-hint)' }}>
@@ -167,11 +205,11 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
                 </div>
               )}
 
-              {/* ─── 활동 모임 ─── */}
+              {/* ─── 활동 버블 ─── */}
               {data.bubbles.length > 0 && (
                 <div className="mt-3">
                   <p className="mb-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                    활동 모임
+                    활동 버블
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {data.bubbles.map((b) => (
@@ -267,6 +305,39 @@ function RecordStatCard({
             </span>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── 적합도 뱃지 ───
+
+function SimilarityBadge({
+  label,
+  similarity,
+  confidence,
+  nOverlap,
+  accentColor,
+}: {
+  label: string
+  similarity: number
+  confidence: number
+  nOverlap: number
+  accentColor: string
+}) {
+  const simPercent = Math.round(similarity * 100)
+  const confPercent = Math.round(confidence * 100)
+
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[11px] font-medium" style={{ color: 'var(--text-hint)' }}>{label}</span>
+        <span className="text-[16px] font-[800]" style={{ color: accentColor }}>{simPercent}%</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-[10px]" style={{ color: 'var(--text-hint)' }}>
+        <span>신뢰 {confPercent}%</span>
+        <span>·</span>
+        <span>겹침 {nOverlap}곳</span>
       </div>
     </div>
   )

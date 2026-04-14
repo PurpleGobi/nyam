@@ -23,6 +23,19 @@ export interface UserSimilarityRow {
   nOverlap: number
 }
 
+/** 버블 단위 적합도 집계 결과 */
+export interface BubbleSimilarityResult {
+  bubbleId: string
+  /** 신뢰도 가중 적합도 (0~1) */
+  similarity: number
+  /** 평균 신뢰도 (0~1) */
+  avgConfidence: number
+  /** 적합도 데이터가 있는 멤버 수 */
+  matchedMembers: number
+  /** 전체 멤버 수 (본인 제외) */
+  totalMembers: number
+}
+
 export interface SimilarityRepository {
   /** 두 유저 간 적합도 조회 (순서 무관 — 내부에서 정규화) */
   getSimilarity(
@@ -42,4 +55,11 @@ export interface SimilarityRepository {
     userId: string,
     category: SimilarityCategory,
   ): Promise<UserScoreMean | null>
+
+  /** 여러 버블의 적합도를 일괄 계산 (멤버별 적합도의 신뢰도 가중 평균) */
+  getBubbleSimilarities(
+    userId: string,
+    bubbleIds: string[],
+    category: SimilarityCategory,
+  ): Promise<BubbleSimilarityResult[]>
 }
