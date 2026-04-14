@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-14 #37 — 지도 "검색 중" 배지 가독성 개선
+- **영역**: presentation/components/home/map-view.tsx(isNearbyLoading 배지 글자색 토큰 교체)
+- **맥락**: 홈 지도 뷰 상단에 뜨는 "지도 검색 중..." 인라인 배지의 글자색이 `--text-hint`(#B5AFA8)로 흐려 읽기 어려웠음. `--text`(#3D3833, 메인 토큰)로 교체해 또렷하게 표시. 배경·테두리·폰트 크기 등 나머지 스타일은 유지.
+- **미완료**: 없음
+- **다음**: 필요 시 fontWeight/fontSize 추가 강조 검토
+
 ### 2026-04-14 #36 — BottomSheet 컴포넌트 중앙화 (15개 시트 마이그레이션)
 - **영역**: presentation/components/ui/bottom-sheet.tsx(규격 강제화: title 필수, 핸들/헤더/X 항상 표시), globals.css(bottom-sheet-header/body/handle CSS 표준화), 15개 바텀시트 전체 마이그레이션(bubble-info/discover/preview/picker/add-item/join-flow, edit-field/delete-account/bubble-privacy/naver-import/level-detail, link-search/share-to-bubble/comment-sheet/follow-button)
 - **맥락**: 바텀시트 UI가 제각각(핸들 유무, 헤더 스타일, 닫기 방식, 애니메이션 유무 불일치). BottomSheet 컴포넌트를 props 4개(isOpen/onClose/title/maxHeight)로 단순화하고, 핸들·헤더·X 버튼을 항상 렌더링하도록 강제. 소비자가 내부 구조를 override할 수 없게 함. 15개 시트를 전부 마이그레이션하여 일관된 UX 확보. 브라우저에서 하나씩 테스트 완료.
@@ -59,11 +65,4 @@
 - **맥락**: 지도뷰 명성 필터를 cascade 방식으로 전면 리디자인. type 선택 시 grade sub-chip 자동 생성(위치 필터 패턴). 상위 칩 1개에 type 누적, X로 전체 리셋. 뱃지에 grade 반영(아이콘 개수, 빕 구르망 전용 아이콘, TV 프로그램명). filter-matcher에 prestige_grade:* 매칭 추가. use-map-discovery에 grade 클라이언트 사이드 필터링 추가.
 - **미완료**: 없음
 - **다음**: 브라우저 QA, grade 필터 실제 데이터 검증
-
-### 2026-04-12 #29 — DB 쿼리 최적화 리팩토링 (홈뷰 RPC + 지도뷰 필터 + 맞팔 RPC)
-- **영역**: supabase/migrations/059+061(신규), domain/(repositories/home-repository, services/filter-query-builder 삭제), infrastructure/(supabase-home-repository RPC 전환, supabase-follow-repository RPC+병렬화, supabase/types.ts RPC 타입), application/hooks/(use-home-targets, use-map-discovery), presentation/containers/home-container, app/api/restaurants/bounds/route.ts
-- **맥락**: DB 쿼리 최적화. (1) 홈뷰: JS 필터를 DB RPC(filter_home_restaurants/wines)로 이관, HomeDbFilters 인터페이스 추가. (2) 지도뷰: bounds API에 genre/district/area 파라미터 추가, search_restaurants_in_bounds RPC 재작성. (3) 맞팔: is_mutual_follow RPC, getMutualFollows 병렬화. (4) filter-query-builder.ts dead code 삭제. 크리티컬 게이트 전체 PASS.
-- **미완료**: 059/061 마이그레이션 원격 적용, supabase/types.ts 재생성(supabase gen types), 완전한 DB 페이지네이션(hasMore 패턴)
-- **다음**: 마이그레이션 원격 적용, types 재생성, EXPLAIN ANALYZE로 성능 검증
-
 
