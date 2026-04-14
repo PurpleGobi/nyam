@@ -6,15 +6,23 @@ import { bubbleRepo } from '@/shared/di/container'
 
 export function useBubbleList(userId: string | null) {
   const [bubbles, setBubbles] = useState<Bubble[]>([])
+  const [pendingBubbleIds, setPendingBubbleIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(!!userId)
 
   useEffect(() => {
     if (!userId) return
-    bubbleRepo.findByUserId(userId).then((data) => {
+    let cancelled = false
+    Promise.all([
+      bubbleRepo.findByUserId(userId),
+      bubbleRepo.getPendingBubbleIds(userId),
+    ]).then(([data, pendingIds]) => {
+      if (cancelled) return
       setBubbles(data)
+      setPendingBubbleIds(new Set(pendingIds))
       setIsLoading(false)
     })
+    return () => { cancelled = true }
   }, [userId])
 
-  return { bubbles, isLoading }
+  return { bubbles, pendingBubbleIds, isLoading }
 }

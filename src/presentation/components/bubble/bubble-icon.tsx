@@ -185,8 +185,7 @@ export function BubbleIcon({ icon, size }: BubbleIconProps) {
         alt="bubble icon"
         width={size}
         height={size}
-        className="rounded-full object-cover"
-        style={{ width: size, height: size }}
+        className="h-full w-full object-cover"
       />
     )
   }

@@ -9,34 +9,40 @@ interface BubbleCardProps {
   bubble: Bubble
   /** owner=내가 만든 버블, member=가입한 버블, null=외부 버블 */
   role: 'owner' | 'member' | null
-  isRecentlyActive?: boolean
   expertise?: Array<{ axisValue: string; avgLevel: number }>
   onClick: () => void
   /** 외부 버블에 가입하기 콜백 */
   onJoin?: () => void
+  /** 가입 신청 pending 상태 */
+  isPending?: boolean
+  /** 가입 신청 취소 콜백 */
+  onCancelJoin?: () => void
 }
 
 export function BubbleCard({
   bubble,
   role,
-  isRecentlyActive = false,
   expertise,
   onClick,
   onJoin,
+  isPending,
+  onCancelJoin,
 }: BubbleCardProps) {
   const isHot = bubble.weeklyRecordCount > 0 &&
     bubble.prevWeeklyRecordCount > 0 &&
     bubble.weeklyRecordCount > bubble.prevWeeklyRecordCount * 1.5
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full overflow-hidden rounded-2xl text-left transition-all active:scale-[0.985]"
+      onKeyDown={(e) => { if (e.key === 'Enter') onClick() }}
+      className="flex w-full cursor-pointer overflow-hidden rounded-2xl text-left transition-all active:scale-[0.985]"
       style={{
         backgroundColor: 'var(--bg-card)',
         border: isHot ? '2px solid var(--accent-social)' : '1px solid var(--border)',
-        minHeight: '170px',
+        height: '170px',
       }}
     >
       {/* 좌측 46%: RecordCard의 이미지 영역과 동일 구조 */}
@@ -64,10 +70,6 @@ export function BubbleCard({
             {bubble.visibility === 'private' ? '비공개' : '공개'}
           </span>
         </div>
-        {/* 최근 활동 표시 */}
-        {isRecentlyActive && (
-          <div className="absolute right-2 top-2 h-[8px] w-[8px] rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-        )}
       </div>
 
       {/* 우측 54%: 콘텐츠 */}
@@ -103,60 +105,68 @@ export function BubbleCard({
           {bubble.description ?? `멤버 ${bubble.memberCount}명 · 기록 ${bubble.recordCount}개`}
         </p>
 
-        {/* 오너 */}
-        <p className="mb-2 mt-0.5 truncate text-[11px]" style={{ color: 'var(--text-hint)' }}>
-          {bubble.ownerNickname ? `by ${bubble.ownerNickname}` : '\u00A0'}
-        </p>
-
-        {/* 핵심 수치: 멤버 수 (대형 폰트) — 식당의 만족도 자리 */}
-        <div className="mb-2.5 flex items-center gap-2.5">
-          <Users size={24} style={{ color: 'var(--accent-social)' }} />
-          <span
-            className="text-[32px] font-extrabold leading-none"
-            style={{ color: 'var(--accent-social)' }}
-          >
-            {bubble.memberCount}
-          </span>
-        </div>
-
-        {/* 기록 · 주간 활동 */}
-        <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
+        {/* 오너 · 기록수 */}
+        <p className="mb-2.5 mt-0.5 truncate text-[11px]" style={{ color: 'var(--text-hint)' }}>
           {[
+            bubble.ownerNickname ? `by ${bubble.ownerNickname}` : null,
             `기록 ${bubble.recordCount}개`,
-            bubble.weeklyRecordCount > 0 ? `이번 주 +${bubble.weeklyRecordCount}` : null,
+            bubble.weeklyRecordCount > 0 ? `+${bubble.weeklyRecordCount}w` : null,
           ].filter(Boolean).join(' · ')}
         </p>
 
-        {/* 전문 분야 태그 또는 가입 버튼 (상위 레벨 2개만) */}
-        <div className="mt-auto pt-1.5">
+        {/* 멤버수(좌) + 레벨 뱃지(우) 2컬럼 */}
+        <div className="flex items-center gap-2">
+          {/* 좌: 멤버수 */}
+          <div className="flex items-center gap-1.5">
+            <Users size={20} style={{ color: 'var(--accent-social)' }} />
+            <span
+              className="text-[28px] font-extrabold leading-none"
+              style={{ color: 'var(--accent-social)' }}
+            >
+              {bubble.memberCount}
+            </span>
+          </div>
+          {/* 우: 전문분야 레벨 뱃지 */}
           {expertise && expertise.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              {[...expertise]
-                .sort((a, b) => b.avgLevel - a.avgLevel)
-                .slice(0, 2)
-                .map((e) => (
-                  <span
-                    key={e.axisValue}
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
-                  >
-                    {e.axisValue} Lv.{Math.round(e.avgLevel)}
-                  </span>
-                ))}
+            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1 overflow-hidden" style={{ maxHeight: '40px' }}>
+              {expertise.map((e) => (
+                <span
+                  key={e.axisValue}
+                  className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[9px] font-medium"
+                  style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+                >
+                  {e.axisValue} Lv.{Math.round(e.avgLevel)}
+                </span>
+              ))}
             </div>
           )}
-          {onJoin && !role && (
+        </div>
+
+        {/* 가입/취소 버튼 */}
+        {isPending && onCancelJoin ? (
+          <div className="mt-auto pt-1">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onCancelJoin() }}
+              className="rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
+              style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+            >
+              가입 신청 취소
+            </button>
+          </div>
+        ) : onJoin && !role && (
+          <div className="mt-auto pt-1">
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onJoin() }}
-              className="mt-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
+              className="rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
               style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
             >
-              가입하기
+              가입 신청
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </button>
+    </div>
   )
 }

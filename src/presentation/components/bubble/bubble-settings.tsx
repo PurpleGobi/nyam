@@ -272,7 +272,7 @@ export function BubbleSettings({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
                     style={{ backgroundColor: selectedColor }}
                   >
                     <BubbleIcon icon={selectedIcon} size={24} />

@@ -191,6 +191,11 @@ export class SupabaseBubbleRepository implements BubbleRepository {
     return (bubbles ?? []).map((r) => toBubble(r as Record<string, unknown>))
   }
 
+  async getPendingBubbleIds(userId: string): Promise<string[]> {
+    const { data } = await this.supabase.from('bubble_members').select('bubble_id').eq('user_id', userId).eq('status', 'pending')
+    return (data ?? []).map((m) => m.bubble_id as string)
+  }
+
   async findPublic(options?: {
     search?: string
     focusType?: string

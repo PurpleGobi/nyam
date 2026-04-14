@@ -186,7 +186,7 @@ export function BubbleCreateForm({ onSubmit, isLoading, photoSlot, hasPhotos, fi
             {/* 프리뷰 */}
             <div className="flex items-center gap-3">
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
                 style={{ backgroundColor: selectedColor }}
               >
                 <BubbleIcon icon={selectedIcon} size={28} />

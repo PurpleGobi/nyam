@@ -61,7 +61,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6">
         <div
-          className="flex h-16 w-16 items-center justify-center rounded-2xl"
+          className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl"
           style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
         >
           <BubbleIcon icon={bubble.icon} size={32} />

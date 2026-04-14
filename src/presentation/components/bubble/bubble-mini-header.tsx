@@ -46,7 +46,7 @@ export function BubbleMiniHeader({
         </button>
       )}
       <div
-        className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md"
+        className="flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-md"
         style={{ backgroundColor: iconBgColor ?? 'var(--accent-social)', color: '#FFFFFF' }}
       >
         <BubbleIcon icon={icon} size={12} />

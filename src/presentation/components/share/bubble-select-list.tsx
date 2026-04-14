@@ -44,7 +44,7 @@ export function BubbleSelectList({ bubbles, selectedIds, onToggle }: BubbleSelec
             style={{ borderBottom: '1px solid var(--border)' }}
           >
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl"
               style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
             >
               <BubbleIcon icon={b.icon} size={18} />

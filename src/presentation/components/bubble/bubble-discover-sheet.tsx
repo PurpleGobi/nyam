@@ -78,7 +78,7 @@ export function BubbleDiscoverSheet({
                 className="card flex items-center gap-3 rounded-xl p-3 text-left"
               >
                 <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl"
                   style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
                 >
                   <BubbleIcon icon={b.icon} size={20} />

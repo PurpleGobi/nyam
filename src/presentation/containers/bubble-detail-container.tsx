@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Trophy, Users, Settings, UserPlus, UserMinus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
+import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
@@ -37,12 +38,14 @@ interface BubbleDetailContainerProps {
 
 export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const { bubble, myRole, tasteMatch, isLoading, refetch } = useBubbleDetail(bubbleId, user?.id ?? null)
+  const { bubble, myRole, myStatus, tasteMatch, isLoading, refetch } = useBubbleDetail(bubbleId, user?.id ?? null)
+  const { cancelJoin, isLoading: isJoinLoading } = useBubbleJoin()
   const { photos: bubblePhotos } = useBubblePhotos(bubbleId)
 
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [showJoinFlow, setShowJoinFlow] = useState(false)
+  const [showJoinFlow, setShowJoinFlow] = useState(searchParams.get('join') === 'true')
   const [showAddItemSearch, setShowAddItemSearch] = useState(false)
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
@@ -207,6 +210,13 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
     }
   }, [bubble])
 
+  const handleCancelJoin = useCallback(async () => {
+    if (!user) return
+    await cancelJoin(bubbleId, user.id)
+    showToast('가입 신청을 취소했습니다')
+    refetch()
+  }, [user, cancelJoin, bubbleId, showToast, refetch])
+
   if (isLoading || !bubble) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
@@ -216,14 +226,12 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   }
 
   const isOwner = myRole === 'owner'
-  const isMember = myRole === 'owner' || myRole === 'admin' || myRole === 'member'
+  const isMember = myStatus === 'active' && (myRole === 'owner' || myRole === 'admin' || myRole === 'member')
+  const isPending = myStatus === 'pending'
   const joinButtonLabel = bubble.joinPolicy === 'closed'
     ? '팔로우'
-    : bubble.joinPolicy === 'manual_approve'
-      ? '가입 신청'
-      : '가입하기'
-  // invite_only는 초대 링크 없이는 가입 불가 → 버튼 숨김
-  const canJoin = !isMember && bubble.joinPolicy !== 'invite_only'
+    : '가입 신청'
+  const canJoin = !isMember && !isPending && bubble.joinPolicy !== 'invite_only'
 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
@@ -342,6 +350,17 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                   style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
                 >
                   <UserPlus size={13} /> {joinButtonLabel}
+                </button>
+              )}
+              {isPending && (
+                <button
+                  type="button"
+                  onClick={handleCancelJoin}
+                  disabled={isJoinLoading}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70 disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                >
+                  <UserMinus size={13} /> 가입 신청 취소
                 </button>
               )}
             </div>

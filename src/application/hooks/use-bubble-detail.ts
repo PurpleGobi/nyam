@@ -7,8 +7,23 @@ import { bubbleRepo } from '@/shared/di/container'
 export function useBubbleDetail(bubbleId: string | null, userId: string | null) {
   const [bubble, setBubble] = useState<Bubble | null>(null)
   const [myRole, setMyRole] = useState<BubbleMemberRole | null>(null)
+  const [myStatus, setMyStatus] = useState<'active' | 'pending' | null>(null)
   const [tasteMatch, setTasteMatch] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const applyMembers = useCallback((members: Array<{ userId: string; role: BubbleMemberRole; status: string; tasteMatchPct: number | null }>, uid: string | null) => {
+    if (!uid) { setMyRole(null); setMyStatus(null); setTasteMatch(null); return }
+    // active 먼저, 없으면 pending
+    const active = members.find((m) => m.userId === uid && m.status === 'active')
+    if (active) {
+      setMyRole(active.role); setMyStatus('active'); setTasteMatch(active.tasteMatchPct); return
+    }
+    const pending = members.find((m) => m.userId === uid && m.status === 'pending')
+    if (pending) {
+      setMyRole(pending.role); setMyStatus('pending'); setTasteMatch(null); return
+    }
+    setMyRole(null); setMyStatus(null); setTasteMatch(null)
+  }, [])
 
   const load = useCallback(async () => {
     if (!bubbleId) return
@@ -17,15 +32,8 @@ export function useBubbleDetail(bubbleId: string | null, userId: string | null) 
       bubbleRepo.getMembers(bubbleId),
     ])
     setBubble(b)
-    if (userId) {
-      const me = result.data.find((m) => m.userId === userId && m.status === 'active')
-      setMyRole(me?.role ?? null)
-      setTasteMatch(me?.tasteMatchPct ?? null)
-    } else {
-      setMyRole(null)
-      setTasteMatch(null)
-    }
-  }, [bubbleId, userId])
+    applyMembers(result.data, userId)
+  }, [bubbleId, userId, applyMembers])
 
   useEffect(() => {
     if (!bubbleId) return
@@ -37,14 +45,10 @@ export function useBubbleDetail(bubbleId: string | null, userId: string | null) 
       ])
       if (cancelled) return
       setBubble(b)
-      if (userId) {
-        const me = result.data.find((m) => m.userId === userId && m.status === 'active')
-        setMyRole(me?.role ?? null)
-        setTasteMatch(me?.tasteMatchPct ?? null)
-      }
+      applyMembers(result.data, userId)
     })
     return () => { cancelled = true }
-  }, [bubbleId, userId, startTransition])
+  }, [bubbleId, userId, startTransition, applyMembers])
 
-  return { bubble, myRole, tasteMatch, isLoading: isPending, refetch: load }
+  return { bubble, myRole, myStatus, tasteMatch, isLoading: isPending, refetch: load }
 }

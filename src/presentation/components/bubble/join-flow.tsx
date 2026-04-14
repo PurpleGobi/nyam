@@ -3,7 +3,6 @@
 import { Users, MapPin, Heart, Check } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import type { JoinApplicantProfile } from '@/domain/services/bubble-join-service'
-import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
 
 interface TasteMatch {
@@ -53,19 +52,10 @@ export function JoinFlow({
       onClose={onClose}
       title={isClosed ? '버블 팔로우' : `${bubble.name}에 가입하시겠어요?`}
     >
-      {/* 버블 히어로 */}
-      <div className="flex flex-col items-center gap-2 pb-3">
-        <div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-        >
-          <BubbleIcon icon={bubble.icon} size={28} />
-        </div>
-        <span className="text-[16px] font-bold text-[var(--text)]">{bubble.name}</span>
-        {bubble.description && (
-          <p className="text-center text-[13px] text-[var(--text-sub)]">{bubble.description}</p>
-        )}
-      </div>
+      {/* 버블 설명 */}
+      {bubble.description && (
+        <p className="pb-2 text-center text-[13px] text-[var(--text-sub)]">{bubble.description}</p>
+      )}
 
       {/* 양방향 프리뷰: 버블 통계 */}
       <div className="card rounded-xl p-3">

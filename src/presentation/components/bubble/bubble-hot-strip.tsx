@@ -46,7 +46,7 @@ export function BubbleHotStrip({ bubbles, onBubbleClick }: BubbleHotStripProps) 
             >
               {/* 아이콘 */}
               <div
-                className="flex h-[48px] w-[48px] items-center justify-center rounded-xl"
+                className="flex h-[48px] w-[48px] items-center justify-center overflow-hidden rounded-xl"
                 style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
               >
                 <BubbleIcon icon={bubble.icon} size={22} />

@@ -999,7 +999,7 @@ export function ConditionFilterBar({
                     <span className="flex items-center gap-1.5 truncate">
                       {(item.iconName || item.iconBgColor) ? (
                         <span
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg"
+                          className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-lg"
                           style={{ backgroundColor: item.iconBgColor ?? 'var(--bg-elevated)' }}
                         >
                           <BubbleIcon icon={item.iconName ?? null} size={12} />

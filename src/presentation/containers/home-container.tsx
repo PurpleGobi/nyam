@@ -45,6 +45,7 @@ import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
 import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import type { BubbleSortOption } from '@/domain/entities/saved-filter'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
+import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
@@ -216,7 +217,8 @@ export function HomeContainer() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
-  const { bubbles: myBubbles, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null)
+  const { bubbles: myBubbles, pendingBubbleIds, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null)
+  const { cancelJoin } = useBubbleJoin()
 
   // ── 버블 전문성 ──
   const bubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
@@ -1241,11 +1243,18 @@ export function HomeContainer() {
             if (!myBubbleIds.has(b.id)) return null
             return b.createdBy === user?.id ? 'owner' : 'member'
           }
-          const getExpertiseTop3 = (id: string) => {
+          // 각 축(지역/장르/산지/품종)에서 최고 레벨 1개씩, 레벨 높은 순
+          const getExpertiseTopPerAxis = (id: string) => {
             const exp = expertiseMap.get(id)
-            return exp
-              ? [...exp].sort((a, c) => c.avgLevel - a.avgLevel).slice(0, 3).map((e) => ({ axisValue: e.axisValue, avgLevel: e.avgLevel }))
-              : undefined
+            if (!exp || exp.length === 0) return undefined
+            const byAxis = new Map<string, { axisValue: string; avgLevel: number }>()
+            for (const e of exp) {
+              const prev = byAxis.get(e.axisType)
+              if (!prev || e.avgLevel > prev.avgLevel) {
+                byAxis.set(e.axisType, { axisValue: e.axisValue, avgLevel: e.avgLevel })
+              }
+            }
+            return [...byAxis.values()].sort((a, b) => b.avgLevel - a.avgLevel)
           }
 
           // 리스트 뷰
@@ -1258,10 +1267,11 @@ export function HomeContainer() {
                     bubble={b}
                     rank={i + 1}
                     role={getBubbleRole(b)}
-                    isRecentlyActive={b.lastActivityAt ? renderTimestamp - new Date(b.lastActivityAt).getTime() < 86400000 : false}
-                    expertise={getExpertiseTop3(b.id)}
+                    expertise={getExpertiseTopPerAxis(b.id)}
                     onClick={() => router.push(`/bubbles/${b.id}`)}
-                    onJoin={!myBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}`) : undefined}
+                    onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
+                    isPending={pendingBubbleIds.has(b.id)}
+                    onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); showToast('가입 신청을 취소했습니다') } } : undefined}
                   />
                 ))}
               </div>
@@ -1276,10 +1286,11 @@ export function HomeContainer() {
                   key={b.id}
                   bubble={b}
                   role={getBubbleRole(b)}
-                  isRecentlyActive={b.lastActivityAt ? renderTimestamp - new Date(b.lastActivityAt).getTime() < 86400000 : false}
-                  expertise={getExpertiseTop3(b.id)}
+                  expertise={getExpertiseTopPerAxis(b.id)}
                   onClick={() => router.push(`/bubbles/${b.id}`)}
-                  onJoin={!myBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}`) : undefined}
+                  onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
+                  isPending={pendingBubbleIds.has(b.id)}
+                  onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); showToast('가입 신청을 취소했습니다') } } : undefined}
                 />
               ))}
             </div>

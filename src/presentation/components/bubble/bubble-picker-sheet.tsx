@@ -65,7 +65,7 @@ export function BubblePickerSheet({
               >
                 {/* 버블 아이콘 */}
                 <div
-                  className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl"
+                  className="flex h-[40px] w-[40px] shrink-0 items-center justify-center overflow-hidden rounded-xl"
                   style={{
                     backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)',
                     color: '#FFFFFF',
@@ -102,7 +102,7 @@ export function BubblePickerSheet({
           style={{ borderColor: 'var(--border)', color: 'var(--text-sub)' }}
         >
           <div
-            className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl"
+            className="flex h-[40px] w-[40px] shrink-0 items-center justify-center overflow-hidden rounded-xl"
             style={{ backgroundColor: 'var(--bg-elevated)' }}
           >
             <Plus size={20} style={{ color: 'var(--text-hint)' }} />

@@ -35,7 +35,7 @@ export function BubbleExpandPanel({ isOpen, bubbleScores, accentColor }: BubbleE
               style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
             >
               <div
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md"
                 style={{
                   backgroundColor: b.iconBgColor ?? 'var(--bg)',
                   color: '#FFFFFF',

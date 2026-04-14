@@ -98,6 +98,7 @@ export interface BubbleRepository {
   create(input: CreateBubbleInput): Promise<Bubble>
   findById(id: string): Promise<Bubble | null>
   findByUserId(userId: string): Promise<Bubble[]>
+  getPendingBubbleIds(userId: string): Promise<string[]>
   findPublic(options?: {
     search?: string
     focusType?: string

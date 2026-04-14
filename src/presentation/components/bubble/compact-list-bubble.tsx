@@ -9,21 +9,25 @@ interface CompactListBubbleProps {
   rank: number | null
   /** owner=내가 만든 버블, member=가입한 버블, null=외부 버블 */
   role: 'owner' | 'member' | null
-  isRecentlyActive?: boolean
   expertise?: Array<{ axisValue: string; avgLevel: number }>
   onClick: () => void
   /** 외부 버블에 가입하기 콜백 */
   onJoin?: () => void
+  /** 가입 신청 pending 상태 */
+  isPending?: boolean
+  /** 가입 신청 취소 콜백 */
+  onCancelJoin?: () => void
 }
 
 export function CompactListBubble({
   bubble,
   rank,
   role,
-  isRecentlyActive = false,
   expertise,
   onClick,
   onJoin,
+  isPending,
+  onCancelJoin,
 }: CompactListBubbleProps) {
   const isTop3 = rank != null && rank <= 3
   const isHot = bubble.weeklyRecordCount > 0 &&
@@ -31,10 +35,12 @@ export function CompactListBubble({
     bubble.weeklyRecordCount > bubble.prevWeeklyRecordCount * 1.5
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="compact-item w-full text-left transition-all active:scale-[0.985]"
+      onKeyDown={(e) => { if (e.key === 'Enter') onClick() }}
+      className="compact-item w-full cursor-pointer text-left transition-all active:scale-[0.985]"
     >
       {/* 순위 — CompactListItem과 동일 */}
       {rank != null && (
@@ -43,13 +49,20 @@ export function CompactListBubble({
         </span>
       )}
 
-      {/* 썸네일 — 48x48 rounded-xl, CompactListItem의 compact-thumb과 동일 크기 */}
-      <div
-        className="compact-thumb flex items-center justify-center"
-        style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-      >
-        <BubbleIcon icon={bubble.icon} size={18} />
-      </div>
+      {/* 썸네일 — 48x48, CompactListItem과 동일 */}
+      {bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? (
+        <div
+          className="compact-thumb bg-cover bg-center"
+          style={{ backgroundImage: `url(${bubble.icon})` }}
+        />
+      ) : (
+        <div
+          className="compact-thumb flex items-center justify-center"
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+        >
+          <BubbleIcon icon={bubble.icon} size={18} />
+        </div>
+      )}
 
       {/* 이름 + 메타 — CompactListItem과 동일 구조 */}
       <div className="min-w-0 flex-1">
@@ -105,28 +118,30 @@ export function CompactListBubble({
         )}
       </div>
 
-      {/* 우측 고정 영역 — CompactListItem의 88px score 영역과 동일 구조 */}
-      <div className="flex w-[88px] shrink-0 items-center justify-end gap-2">
-        {onJoin && !role ? (
+      {/* 우측: 가입 신청 / 가입 신청 취소 버튼 */}
+      {isPending && onCancelJoin ? (
+        <div className="flex shrink-0 items-center justify-end">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onCancelJoin() }}
+            className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity active:opacity-80"
+            style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+          >
+            가입 신청 취소
+          </button>
+        </div>
+      ) : onJoin && !role && (
+        <div className="flex shrink-0 items-center justify-end">
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onJoin() }}
-            className="shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity active:opacity-80"
+            className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity active:opacity-80"
             style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
           >
-            가입
+            가입 신청
           </button>
-        ) : (
-          <>
-            {isRecentlyActive && (
-              <div className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-            )}
-            <span className="compact-score social">
-              {bubble.memberCount}
-            </span>
-          </>
-        )}
-      </div>
-    </button>
+        </div>
+      )}
+    </div>
   )
 }

@@ -58,7 +58,7 @@ export function BubblePreviewPopup({
       {/* 헤더: 아이콘 + 이름 + 설명 + 뱃지 */}
       <div className="flex flex-col items-center gap-2 pb-3">
         <div
-          className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl"
+          className="flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-2xl"
           style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
         >
           <BubbleIcon icon={bubble.icon} size={26} />
