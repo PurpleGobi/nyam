@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-14 #41 — 팔로우 시스템 단순화 (B안: 즉시 팔로우, 2상태)
+- **영역**: domain/(follow.ts AccessLevel 2종, follow-access.ts 단순화, follow-repository.ts pending 제거), infrastructure/supabase-follow-repository(즉시 accepted, getAccessLevel 단일조회, follow_counts RPC, Realtime 구독), application/(use-follow 2상태 토글, use-follow-list Realtime 연동, use-user-search 신규 DB 검색), presentation/(follow-button 팔로우/팔로잉 2종, followers-container 요청섹션 제거+DB검색, bubbler-hero mutual 분기 제거, bubbler-profile mutual→following)
+- **맥락**: 기존 4종 AccessLevel(none/pending/follow/mutual) + follow_policy 승인 로직을 X(트위터) 모델로 전환. 팔로우 즉시 반영, 승인 과정 없음. getCounts RPC로 5회→1회 최적화. Realtime으로 타인의 팔로우가 실시간 반영. 팔로워 페이지에서 전체 Supabase 사용자 DB 실시간 검색(debounce 300ms). use-follow-requests.ts 삭제.
+- **미완료**: following-feed의 mutual 필터 라벨 정리, member-grid의 FollowStatus 타입 정리
+- **다음**: 홈 소셜 피드 mutual 필터 검토, supabase/types.ts 재생성
+
 ### 2026-04-14 #40 — 버블 오너 표시 (카드=닉네임, 상세=닉네임+@핸들)
 - **영역**: domain/entities/bubble.ts(ownerNickname/ownerHandle 추가), infrastructure/supabase-bubble-repository(BUBBLE_SELECT_WITH_OWNER FK 조인, toBubble 확장, findById/findByUserId/findPublic/create/update/findByInviteCode 전체 교체, toEntityRow READ_ONLY_FIELDS로 조인파생필드 쓰기 차단), presentation/components/bubble/bubble-card.tsx(오너 닉네임 by 라인 추가), presentation/containers/bubble-detail-container.tsx(설명 아래 운영자 닉네임+@핸들 노출)
 - **맥락**: 버블이 누가 만든 건지 불명확하던 문제 해결. A안(엔티티 조인) 선택 — Bubble 엔티티에 ownerNickname/ownerHandle 옵셔널 필드 추가, Supabase PostgREST FK 조인(`owner:users!created_by`)으로 별도 쿼리 없이 자연스럽게 전달. 카드뷰는 공간 제약으로 닉네임만 (`by 닉네임`), 상세페이지는 닉네임+@핸들 병기 (기존 Nyam 컨벤션). toEntityRow에 READ_ONLY_FIELDS 세트를 둬서 update 시 조인 파생 필드가 실수로 DB에 쓰이는 것 차단.
@@ -60,9 +66,4 @@
 - **미완료**: bookmarks DB 테이블 DROP 마이그레이션 (데이터 백업 후 별도 진행)
 - **다음**: bookmarks 테이블 마이그레이션 정리, supabase/types.ts 재생성
 
-### 2026-04-13 #31 — 홈 초기 로딩 최적화 + 검색 UI + 탭 전환 버그 수정
-- **영역**: infrastructure/supabase-home-repository(prefetchSharedData+fetchRecordsAndBookmarks 통합), application/hooks/(use-home-targets race condition fix, use-restaurant-stats+use-wine-stats+use-xp+use-social-filter-options에 enabled/levelOnly 지연 로드), presentation/(search-container 인라인 검색, home-container stats 지연, app-header XP levelOnly), development_docs/systems/QUERY_OPTIMIZATION.md(신규), CLAUDE.md 참조맵
-- **맥락**: (1) 쿼리 최적화 5대 원칙(P1~P5) 수립. (2) homeRepo: follows/bubble_members 중복 조회 제거(P1), 3체인 병렬+필터 없을 때 meta+records 전부 병렬(P2), record_photos FK join으로 별도 쿼리 제거, 소셜 records 9컬럼 최소 SELECT(P3). (3) stats/XP/소셜 필터를 지연 로드하여 초기 네트워크 경합 제거. (4) 탭 전환 race condition: requestIdRef로 stale 응답 무시. (5) 검색 UI: 필터 추가 버튼과 같은 줄에 인라인 검색. Supabase 요청 62% 감소(100+→38).
-- **미완료**: 없음
-- **다음**: 브라우저 QA, 프로덕션 EXPLAIN ANALYZE 성능 검증
 
