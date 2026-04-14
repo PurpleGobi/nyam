@@ -195,6 +195,13 @@ export function ConditionFilterBar({
     }
     return isCascadingKey(c.attribute) ? getCascadingBaseKey(c.attribute) : c.attribute
   }))
+  // children-cascade 속성에서 children 없는 옵션(예: 내 기록)이 일반 칩으로 추가된 경우도 같은 그룹으로 취급
+  for (const attr of childrenCascadeAttrs) {
+    if (usedBaseKeys.has(attr.key)) {
+      usedBaseKeys.delete(attr.key)
+      usedBaseKeys.add(`__cascade_${attr.key}__`)
+    }
+  }
   const availableAttributes = attributes.filter((a) => {
     if (usedBaseKeys.has(a.key)) return false
     // children-cascade 모드: 아직 선택 안 한 type이 있으면 표시
@@ -261,12 +268,16 @@ export function ConditionFilterBar({
 
   /* ── handlers ── */
   const handleAddCondition = useCallback((attr: FilterAttribute, value: string) => {
-    // children-cascade (prestige, map_source 등): 상위 type칩 1개 (누적) + grade 서브칩 추가
-    if (attr.options?.some((o) => o.children && o.children.length > 0)) {
+    // children-cascade 속성 판별 (속성 내 옵션 중 하나라도 children이 있으면)
+    const isCascadeAttr = childrenCascadeAttrs.some((ca) => ca.key === attr.key)
+    const selectedOpt = attr.options?.find((o) => o.value === value)
+    const hasChildren = selectedOpt?.children && selectedOpt.children.length > 0
+
+    if (isCascadeAttr) {
       const typeKey = childrenCascadeTypeKey(attr.key)
-      const opt = attr.options?.find((o) => o.value === value)
       const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
 
+      // type칩 누적 (내 기록/팔로잉/버블 등 동일 속성의 선택값을 하나의 칩에 합침)
       let next: FilterChipItem[]
       if (existingTypeChip) {
         const newValue = `${existingTypeChip.value},${value}`
@@ -280,18 +291,22 @@ export function ConditionFilterBar({
           attribute: typeKey,
           operator: 'eq',
           value,
-          displayLabel: opt?.label ?? value,
+          displayLabel: selectedOpt?.label ?? value,
         }
         next = [...chips, typeChip]
       }
-      const gradeChip: ConditionChip = {
-        id: generateChipId(),
-        attribute: childrenCascadeGradeKey(attr.key, value),
-        operator: 'eq',
-        value: CASCADING_ALL,
-        displayLabel: '전체',
+
+      // children이 있는 옵션만 grade 서브칩 추가 (내 기록 등 children 없으면 스킵)
+      if (hasChildren) {
+        const gradeChip: ConditionChip = {
+          id: generateChipId(),
+          attribute: childrenCascadeGradeKey(attr.key, value),
+          operator: 'eq',
+          value: CASCADING_ALL,
+          displayLabel: '전체',
+        }
+        next.push(gradeChip)
       }
-      next.push(gradeChip)
       onChipsChange(next)
 
       const usedAfter = [...(usedCascadeTypes.get(attr.key) ?? []), value]

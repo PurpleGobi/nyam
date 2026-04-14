@@ -6,6 +6,7 @@ import { followRepo, bubbleRepo } from '@/shared/di/container'
 interface FollowingUser {
   id: string
   nickname: string
+  handle: string | null
   avatarUrl: string | null
 }
 

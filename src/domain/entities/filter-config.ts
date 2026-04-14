@@ -309,50 +309,82 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
 
 // ─── 지도뷰 필터 속성 (식당 탭 지도 모드 전용) ───
 
-const MAP_SOURCE_SCORE_CHILDREN: FilterAttributeOption[] = [
-  { value: '90', label: '90+' },
-  { value: '80', label: '80+' },
-  { value: '70', label: '70+' },
-]
+/** 지도 필터 동적 빌더용 입력 */
+export interface MapFilterFollowingUser {
+  id: string
+  nickname: string
+  handle?: string | null
+}
 
-export const MAP_FILTER_ATTRIBUTES: FilterAttribute[] = [
-  {
-    key: 'map_source',
-    label: '보기',
-    type: 'select',
-    options: [
-      { value: 'mine', label: '내 기록', children: MAP_SOURCE_SCORE_CHILDREN },
-      { value: 'following', label: '팔로잉', children: MAP_SOURCE_SCORE_CHILDREN },
-      { value: 'bubble', label: '버블', children: MAP_SOURCE_SCORE_CHILDREN },
-    ],
-  },
-  {
-    key: 'prestige',
-    label: '명성',
-    type: 'select',
-    options: [
-      { value: 'michelin', label: '미슐랭', children: [
-        { value: '3_star', label: '★★★' },
-        { value: '2_star', label: '★★' },
-        { value: '1_star', label: '★' },
-        { value: 'bib', label: '빕 구르망' },
-      ]},
-      { value: 'blue_ribbon', label: '블루리본', children: [
-        { value: '3_ribbon', label: '3리본' },
-        { value: '2_ribbon', label: '2리본' },
-        { value: '1_ribbon', label: '1리본' },
-      ]},
-      { value: 'tv', label: 'TV출연', children: [
-        { value: '흑백요리사', label: '흑백요리사' },
-        { value: '줄서는식당', label: '줄서는식당' },
-        { value: '생활의달인', label: '생활의달인' },
-        { value: '맛있는녀석들', label: '맛있는녀석들' },
-        { value: '성시경_먹을텐데', label: '성시경 먹을텐데' },
-        { value: '허영만_백반기행', label: '허영만 백반기행' },
-      ]},
-    ],
-  },
-]
+export interface MapFilterBubble {
+  id: string
+  name: string
+}
+
+/**
+ * 지도뷰 필터 속성을 동적으로 생성.
+ * 팔로잉 → 하위에 팔로잉 유저 목록, 버블 → 하위에 내 버블 목록.
+ */
+export function buildMapFilterAttributes(
+  followingUsers: MapFilterFollowingUser[],
+  myBubbles: MapFilterBubble[],
+): FilterAttribute[] {
+  const followingChildren: FilterAttributeOption[] = followingUsers.map((u) => ({
+    value: u.id,
+    label: u.handle ? `${u.nickname} @${u.handle}` : u.nickname,
+  }))
+
+  const bubbleChildren: FilterAttributeOption[] = myBubbles.map((b) => ({
+    value: b.id,
+    label: b.name,
+  }))
+
+  return [
+    {
+      key: 'map_source',
+      label: '보기',
+      type: 'select',
+      options: [
+        { value: 'mine', label: '내 기록' },
+        ...(followingChildren.length > 0
+          ? [{ value: 'following', label: '팔로잉', children: followingChildren }]
+          : []),
+        ...(bubbleChildren.length > 0
+          ? [{ value: 'bubble', label: '버블', children: bubbleChildren }]
+          : []),
+      ],
+    },
+    {
+      key: 'prestige',
+      label: '명성',
+      type: 'select',
+      options: [
+        { value: 'michelin', label: '미슐랭', children: [
+          { value: '3_star', label: '★★★' },
+          { value: '2_star', label: '★★' },
+          { value: '1_star', label: '★' },
+          { value: 'bib', label: '빕 구르망' },
+        ]},
+        { value: 'blue_ribbon', label: '블루리본', children: [
+          { value: '3_ribbon', label: '3리본' },
+          { value: '2_ribbon', label: '2리본' },
+          { value: '1_ribbon', label: '1리본' },
+        ]},
+        { value: 'tv', label: 'TV출연', children: [
+          { value: '흑백요리사', label: '흑백요리사' },
+          { value: '줄서는식당', label: '줄서는식당' },
+          { value: '생활의달인', label: '생활의달인' },
+          { value: '맛있는녀석들', label: '맛있는녀석들' },
+          { value: '성시경_먹을텐데', label: '성시경 먹을텐데' },
+          { value: '허영만_백반기행', label: '허영만 백반기행' },
+        ]},
+      ],
+    },
+  ]
+}
+
+/** 하위 호환: 정적 MAP_FILTER_ATTRIBUTES (동적 데이터 없을 때 폴백) */
+export const MAP_FILTER_ATTRIBUTES: FilterAttribute[] = buildMapFilterAttributes([], [])
 
 // ─── 버블 필터 속성 (5종) ───
 // SSOT: pages/08_BUBBLE.md §11-2

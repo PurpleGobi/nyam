@@ -91,16 +91,17 @@ export class SupabaseFollowRepository implements FollowRepository {
     }
   }
 
-  async getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; avatarUrl: string | null }>> {
+  async getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; handle: string | null; avatarUrl: string | null }>> {
     const { data: followRows } = await this.supabase
       .from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted')
     if (!followRows || followRows.length === 0) return []
 
     const followingIds = followRows.map((f) => f.following_id as string)
-    const { data: users } = await this.supabase.from('users').select('id, nickname, avatar_url').in('id', followingIds)
+    const { data: users } = await this.supabase.from('users').select('id, nickname, handle, avatar_url').in('id', followingIds)
     return (users ?? []).map((u) => ({
       id: u.id as string,
       nickname: (u.nickname as string) ?? '',
+      handle: (u.handle as string) ?? null,
       avatarUrl: (u.avatar_url as string) ?? null,
     }))
   }

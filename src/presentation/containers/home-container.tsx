@@ -12,7 +12,7 @@ import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
 import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip, createDefaultViewChip, createBubbleViewChip } from '@/domain/entities/condition-chip'
-import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, MAP_FILTER_ATTRIBUTES } from '@/domain/entities/filter-config'
+import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, buildMapFilterAttributes } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useHomeTargets } from '@/application/hooks/use-home-targets'
@@ -310,6 +310,15 @@ export function HomeContainer() {
     return () => clearTimeout(timer)
   }, [])
   const socialFilterOptions = useSocialFilterOptions(user?.id ?? null, socialFilterReady)
+
+  // ── 지도 필터 속성 (팔로잉/버블 동적 children 주입) ──
+  const mapFilterAttributes = useMemo(
+    () => buildMapFilterAttributes(
+      socialFilterOptions.followingUsers.map((u) => ({ id: u.id, nickname: u.nickname, handle: u.handle })),
+      socialFilterOptions.myBubbles.map((b) => ({ id: b.id, name: b.name })),
+    ),
+    [socialFilterOptions.followingUsers, socialFilterOptions.myBubbles],
+  )
 
   // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
   const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
@@ -1088,7 +1097,7 @@ export function HomeContainer() {
             <ConditionFilterBar
               chips={mapConditionChips}
               onChipsChange={setMapConditionChips}
-              attributes={MAP_FILTER_ATTRIBUTES}
+              attributes={mapFilterAttributes}
               accentType="food"
             />
           ) : (
