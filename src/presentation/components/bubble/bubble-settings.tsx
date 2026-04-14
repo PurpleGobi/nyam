@@ -68,6 +68,7 @@ interface BubbleSettingsProps {
   onCancelInvite?: (notificationId: string) => void
   onApproveJoin: (userId: string) => void
   onRejectJoin: (userId: string) => void
+  onMemberClick?: (userId: string) => void
   onViewAllPending?: () => void
   shareRule?: BubbleShareRule | null
   onShareRuleChange?: (rule: BubbleShareRule | null) => void
@@ -88,7 +89,7 @@ interface BubbleSettingsProps {
 
 export function BubbleSettings({
   bubble, myRole, onSave, onDelete, isLoading,
-  pendingMembers, pendingInvites, onCancelInvite, onApproveJoin, onRejectJoin, onViewAllPending,
+  pendingMembers, pendingInvites, onCancelInvite, onApproveJoin, onRejectJoin, onMemberClick, onViewAllPending,
   shareRule, onShareRuleChange,
   inviteSearchResults, isInviteSearching, isInviting, invitedIds,
   onInviteSearch, onInviteUser, existingMemberIds,
@@ -523,6 +524,7 @@ export function BubbleSettings({
             members={pendingMembers}
             onApprove={onApproveJoin}
             onReject={onRejectJoin}
+            onMemberClick={onMemberClick}
             maxPreview={3}
             onViewAll={onViewAllPending}
             hideEmptyMessage={pendingInvites != null && pendingInvites.length > 0}

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { MapPin, Calendar, UtensilsCrossed, Wine } from 'lucide-react'
 import { PopupWindow } from '@/presentation/components/ui/popup-window'
 import { FollowButton } from '@/presentation/components/follow/follow-button'
-import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useFollow } from '@/application/hooks/use-follow'
 import { useMiniProfile } from '@/application/hooks/use-mini-profile'
@@ -187,8 +186,7 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
                           border: '1px solid var(--border)',
                         }}
                       >
-                        <BubbleIcon icon={b.icon} size={12} />
-                        <span className="truncate" style={{ maxWidth: '100px' }}>{b.name}</span>
+                        <span className="truncate" style={{ maxWidth: '120px' }}>{b.name}</span>
                       </button>
                     ))}
                   </div>

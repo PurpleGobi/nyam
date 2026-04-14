@@ -3,11 +3,18 @@
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import type { BubbleMember } from '@/domain/entities/bubble'
 import type { PendingBubbleInvite } from '@/domain/repositories/notification-repository'
-import { bubbleRepo, notificationRepo } from '@/shared/di/container'
+import { bubbleRepo, notificationRepo, profileRepo } from '@/shared/di/container'
+
+export interface PendingMemberWithProfile extends BubbleMember {
+  nickname: string
+  handle: string | null
+  avatarUrl: string | null
+  avatarColor: string | null
+}
 
 interface UseBubbleMemberReturn {
   member: BubbleMember | null
-  pendingMembers: BubbleMember[]
+  pendingMembers: PendingMemberWithProfile[]
   pendingInvites: PendingBubbleInvite[]
   updateMember: (data: Partial<BubbleMember>) => Promise<void>
   refreshPending: () => void
@@ -20,7 +27,7 @@ interface UseBubbleMemberReturn {
  */
 export function useBubbleMember(bubbleId: string, userId: string | null): UseBubbleMemberReturn {
   const [member, setMember] = useState<BubbleMember | null>(null)
-  const [pendingMembers, setPendingMembers] = useState<BubbleMember[]>([])
+  const [pendingMembers, setPendingMembers] = useState<PendingMemberWithProfile[]>([])
   const [pendingInvites, setPendingInvites] = useState<PendingBubbleInvite[]>([])
   const [isPending, startTransition] = useTransition()
   const [pendingVersion, setPendingVersion] = useState(0)
@@ -53,10 +60,22 @@ export function useBubbleMember(bubbleId: string, userId: string | null): UseBub
           bubbleRepo.getPendingMembers(bubbleId),
           notificationRepo.getPendingBubbleInvites(bubbleId).catch(() => [] as PendingBubbleInvite[]),
         ])
-        if (!cancelled) {
-          setPendingMembers(pending)
-          setPendingInvites(invites)
-        }
+        if (cancelled) return
+        // pending 멤버 프로필 병합
+        const userIds = pending.map((m) => m.userId)
+        const profiles = userIds.length > 0 ? await profileRepo.getUserProfiles(userIds) : new Map()
+        const enriched: PendingMemberWithProfile[] = pending.map((m) => {
+          const p = profiles.get(m.userId)
+          return {
+            ...m,
+            nickname: p?.nickname ?? m.userId.substring(0, 8),
+            handle: p?.handle ?? null,
+            avatarUrl: p?.avatarUrl ?? null,
+            avatarColor: p?.avatarColor ?? null,
+          }
+        })
+        setPendingMembers(enriched)
+        setPendingInvites(invites)
       } catch {
         if (!cancelled) {
           setPendingMembers([])

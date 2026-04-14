@@ -64,21 +64,40 @@ export function BubbleStatsCard({
       {/* 주간 기록 추이 바 차트 */}
       {weeklyChartData.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-[12px] font-semibold text-[var(--text-sub)]">주간 기록 추이</p>
-          <div className="flex items-end gap-1" style={{ height: '64px' }}>
-            {weeklyChartData.map((count, i) => (
-              <div key={DAY_LABELS[i]} className="flex flex-1 flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t"
-                  style={{
-                    height: `${Math.max(4, (count / maxCount) * 48)}px`,
-                    backgroundColor: i === todayIndex ? 'var(--accent-social)' : 'var(--primary)',
-                    opacity: i === todayIndex ? 1 : 0.3,
-                  }}
-                />
-                <span className="text-[9px] text-[var(--text-hint)]">{DAY_LABELS[i]}</span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] font-semibold text-[var(--text-sub)]">주간 기록 추이</p>
+            <p className="text-[11px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+              총 {weeklyChartData.reduce((a, b) => a + b, 0)}건
+            </p>
+          </div>
+          <div className="flex items-end gap-1" style={{ height: '80px' }}>
+            {weeklyChartData.map((count, i) => {
+              const isToday = i === todayIndex
+              return (
+                <div key={DAY_LABELS[i]} className="flex flex-1 flex-col items-center gap-0.5">
+                  <span
+                    className="text-[9px] font-semibold"
+                    style={{ color: isToday ? 'var(--accent-social)' : 'var(--text-hint)', opacity: count > 0 ? 1 : 0.4 }}
+                  >
+                    {count}
+                  </span>
+                  <div
+                    className="w-full rounded-t"
+                    style={{
+                      height: `${Math.max(4, (count / maxCount) * 48)}px`,
+                      backgroundColor: isToday ? 'var(--accent-social)' : 'var(--primary)',
+                      opacity: isToday ? 1 : 0.3,
+                    }}
+                  />
+                  <span
+                    className="text-[9px]"
+                    style={{ color: isToday ? 'var(--accent-social)' : 'var(--text-hint)', fontWeight: isToday ? 600 : 400 }}
+                  >
+                    {DAY_LABELS[i]}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

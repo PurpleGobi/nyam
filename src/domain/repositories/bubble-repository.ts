@@ -167,10 +167,6 @@ export interface BubbleRepository {
 
   // 자동 공유 동기화
   updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>
-  batchUpsertAutoShares(records: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void>
-  batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void>
-  getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]>
-  cleanManualShares(userId: string): Promise<number>
 
   // ─── 큐레이션 아이템 (bubble_items) ───
   addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine', source: BubbleItemSource): Promise<void>

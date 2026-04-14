@@ -12,6 +12,8 @@ export interface NotificationRepository {
   createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>): Promise<Notification>
   /** 알림 삭제 */
   deleteNotification(notificationId: string): Promise<void>
+  /** 특정 조건의 알림 삭제 (가입 신청 취소 등) */
+  deleteNotificationsByCondition(params: { type: string; actorId: string; bubbleId: string }): Promise<void>
   /** 버블의 수락 대기 중인 초대 목록 (owner/admin 전용) */
   getPendingBubbleInvites(bubbleId: string): Promise<PendingBubbleInvite[]>
   subscribeToNotifications(

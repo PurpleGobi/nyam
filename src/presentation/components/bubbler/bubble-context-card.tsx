@@ -47,7 +47,9 @@ export function BubbleContextCard({
         {/* 헤더 (목업 .bc-header) */}
         <div className="mb-3 flex items-center gap-1.5">
           {bubbleIcon ? (
-            <BubbleIcon icon={bubbleIcon} size={20} />
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded">
+              <BubbleIcon icon={bubbleIcon} size={20} />
+            </div>
           ) : (
             <div
               className="flex items-center justify-center rounded-md"

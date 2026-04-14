@@ -21,7 +21,9 @@ export function FollowingSourceBadge({
   return (
     <div className="flex items-center gap-1.5">
       {sourceType === 'bubble' ? (
-        <BubbleIcon icon={sourceIcon} size={16} />
+        <div className="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded">
+          <BubbleIcon icon={sourceIcon} size={16} />
+        </div>
       ) : (
         <div
           className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"

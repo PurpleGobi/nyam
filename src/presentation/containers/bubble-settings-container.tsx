@@ -18,6 +18,7 @@ import { useBubbleInviteMember } from '@/application/hooks/use-bubble-invite-mem
 import { useBubbleMember } from '@/application/hooks/use-bubble-member'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useToast } from '@/presentation/components/ui/toast'
+import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import type { Bubble, BubbleMemberRole, BubbleShareRule, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
 
@@ -60,6 +61,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     initExistingPhotos(bubblePhotos.map((p) => ({ id: p.id, url: p.url, orderIndex: p.orderIndex, isPublic: true })))
   }
 
+  const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [currentBubble] = useState<Bubble>(bubble)
   const [isSaving, setIsSaving] = useState(false)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
@@ -76,9 +78,10 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
 
   const pendingMembers: PendingMemberInfo[] = rawPendingMembers.map((m) => ({
     userId: m.userId,
-    nickname: m.userId.substring(0, 8),
-    avatarUrl: null,
-    avatarColor: null,
+    nickname: m.nickname,
+    handle: m.handle,
+    avatarUrl: m.avatarUrl,
+    avatarColor: m.avatarColor,
     level: 1,
     recordCount: 0,
     tasteMatchPct: m.tasteMatchPct,
@@ -185,6 +188,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onCancelInvite={handleCancelInvite}
           onApproveJoin={handleApprove}
           onRejectJoin={handleReject}
+          onMemberClick={setMiniProfileUserId}
           inviteSearchResults={inviteSearchResults}
           isInviteSearching={isInviteSearching}
           isInviting={isInviting}
@@ -212,6 +216,14 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onVisibilityChange={handleVisibilityChange}
         />
       </div>
+
+      {miniProfileUserId && (
+        <MiniProfilePopup
+          isOpen={true}
+          onClose={() => setMiniProfileUserId(null)}
+          targetUserId={miniProfileUserId}
+        />
+      )}
     </div>
   )
 }

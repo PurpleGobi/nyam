@@ -171,9 +171,16 @@ function isImageUrl(value: string): boolean {
 
 interface BubbleIconProps {
   icon: string | null
+  /** lucide 아이콘 크기. 이미지 URL일 때는 부모 컨테이너를 꽉 채움. */
   size: number
 }
 
+/**
+ * 버블 아이콘 컴포넌트.
+ * - lucide 아이콘: `size` px로 렌더링
+ * - 이미지 URL: **항상** 부모를 꽉 채움 (`h-full w-full object-cover`)
+ *   → 부모에 크기(`w-N h-N`) + `overflow-hidden` + `rounded-*` 필요
+ */
 export function BubbleIcon({ icon, size }: BubbleIconProps) {
   if (!icon) return <DefaultIcon size={size} />
 
@@ -183,8 +190,6 @@ export function BubbleIcon({ icon, size }: BubbleIconProps) {
       <img
         src={icon}
         alt="bubble icon"
-        width={size}
-        height={size}
         className="h-full w-full object-cover"
       />
     )

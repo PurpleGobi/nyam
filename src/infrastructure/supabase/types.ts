@@ -200,61 +200,6 @@ export type Database = {
           },
         ]
       }
-      bubble_shares: {
-        Row: {
-          auto_synced: boolean
-          bubble_id: string
-          id: string
-          record_id: string
-          shared_at: string
-          shared_by: string
-          target_id: string
-          target_type: string
-        }
-        Insert: {
-          auto_synced?: boolean
-          bubble_id: string
-          id?: string
-          record_id: string
-          shared_at?: string
-          shared_by: string
-          target_id: string
-          target_type: string
-        }
-        Update: {
-          auto_synced?: boolean
-          bubble_id?: string
-          id?: string
-          record_id?: string
-          shared_at?: string
-          shared_by?: string
-          target_id?: string
-          target_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bubble_shares_bubble_id_fkey"
-            columns: ["bubble_id"]
-            isOneToOne: false
-            referencedRelation: "bubbles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bubble_shares_record_id_fkey"
-            columns: ["record_id"]
-            isOneToOne: false
-            referencedRelation: "records"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bubble_shares_shared_by_fkey"
-            columns: ["shared_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bubbles: {
         Row: {
           allow_comments: boolean

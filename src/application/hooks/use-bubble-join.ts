@@ -93,9 +93,14 @@ export function useBubbleJoin() {
     await bubbleRepo.updateMember(bubbleId, userId, { status: 'rejected' } as Partial<BubbleMember>)
   }, [])
 
-  /** 본인 가입 신청 취소 */
+  /** 본인 가입 신청 취소 — 멤버 제거 + 오너에게 보낸 가입 요청 알림 삭제 */
   const cancelJoin = useCallback(async (bubbleId: string, userId: string): Promise<void> => {
     await bubbleRepo.removeMember(bubbleId, userId)
+    notificationRepo.deleteNotificationsByCondition({
+      type: 'bubble_join_request',
+      actorId: userId,
+      bubbleId,
+    }).catch(() => {})
   }, [])
 
   return { requestJoin, follow, approveMember, rejectMember, cancelJoin, isLoading }

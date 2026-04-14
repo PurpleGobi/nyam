@@ -503,28 +503,16 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
-    // bubble_shares INSERT 유지 (deprecated — 롤백 안전망)
-    const { data, error } = await this.supabase.from('bubble_shares').insert({ record_id: recordId, bubble_id: bubbleId, shared_by: sharedBy, target_id: targetId, target_type: targetType }).select().single()
-    if (error) throw new Error(`공유 실패: ${error.message}`)
-    // bubble_items에도 동시 upsert (수동 공유 → source='manual')
-    await this.supabase.from('bubble_items').upsert(
+    const { data, error } = await this.supabase.from('bubble_items').upsert(
       { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: sharedBy, source: 'manual', record_id: recordId },
       { onConflict: 'bubble_id,target_id,target_type' }
-    )
+    ).select().single()
+    if (error) throw new Error(`공유 실패: ${error.message}`)
     return toBubbleShare(data as Record<string, unknown>)
   }
 
   async removeShare(shareId: string): Promise<void> {
-    // bubble_shares에서 target 정보 조회 후 삭제
-    const { data } = await this.supabase.from('bubble_shares').select('bubble_id, target_id, target_type').eq('id', shareId).single()
-    await this.supabase.from('bubble_shares').delete().eq('id', shareId)
-    // bubble_items에서도 삭제
-    if (data) {
-      await this.supabase.from('bubble_items').delete()
-        .eq('bubble_id', data.bubble_id as string)
-        .eq('target_id', data.target_id as string)
-        .eq('target_type', data.target_type as string)
-    }
+    await this.supabase.from('bubble_items').delete().eq('id', shareId)
   }
 
   async getRankings(bubbleId: string, options: {
@@ -878,13 +866,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   }
 
   async unshareRecord(recordId: string, bubbleId: string): Promise<void> {
-    // bubble_shares에서도 삭제 (deprecated — 롤백 안전망)
-    await this.supabase
-      .from('bubble_shares')
-      .delete()
-      .eq('record_id', recordId)
-      .eq('bubble_id', bubbleId)
-    // bubble_items에서도 삭제 — record_id 기반
     await this.supabase
       .from('bubble_items')
       .delete()
@@ -949,60 +930,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .update({ share_rule: shareRule })
       .eq('bubble_id', bubbleId)
       .eq('user_id', userId)
-  }
-
-  async batchUpsertAutoShares(records: Array<{ id: string; targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void> {
-    if (records.length === 0) return
-    const rows = records.map((r) => ({
-      record_id: r.id,
-      bubble_id: bubbleId,
-      shared_by: userId,
-      auto_synced: true,
-      target_id: r.targetId,
-      target_type: r.targetType,
-    }))
-    const { error } = await this.supabase
-      .from('bubble_shares')
-      .upsert(rows, { onConflict: 'record_id,bubble_id' })
-    if (error) throw new Error(`자동 공유 일괄 추가 실패: ${error.message}`)
-  }
-
-  async batchDeleteAutoShares(recordIds: string[], bubbleId: string, userId: string): Promise<void> {
-    if (recordIds.length === 0) return
-    await this.supabase
-      .from('bubble_shares')
-      .delete()
-      .in('record_id', recordIds)
-      .eq('bubble_id', bubbleId)
-      .eq('shared_by', userId)
-      .eq('auto_synced', true)
-  }
-
-  async getAutoSharedRecordIds(bubbleId: string, userId: string): Promise<string[]> {
-    const { data } = await this.supabase
-      .from('bubble_shares')
-      .select('record_id')
-      .eq('bubble_id', bubbleId)
-      .eq('shared_by', userId)
-      .eq('auto_synced', true)
-    return (data ?? []).map((r) => r.record_id as string)
-  }
-
-  async cleanManualShares(userId: string): Promise<number> {
-    // 수동 공유(auto_synced=false) 중 현재 shareRule에 매칭 안 되는 것들 삭제
-    // 서버에서 필터 평가가 복잡하므로, 수동 공유 전체를 삭제하는 단순 방식 사용
-    const { data } = await this.supabase
-      .from('bubble_shares')
-      .select('id')
-      .eq('shared_by', userId)
-      .eq('auto_synced', false)
-    const ids = (data ?? []).map((r) => r.id as string)
-    if (ids.length === 0) return 0
-    await this.supabase
-      .from('bubble_shares')
-      .delete()
-      .in('id', ids)
-    return ids.length
   }
 
   // ─── 큐레이션 아이템 (bubble_items) ───

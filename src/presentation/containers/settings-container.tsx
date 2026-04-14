@@ -5,13 +5,12 @@ import { useRouter } from 'next/navigation'
 import {
   Pencil, AtSign, MessageSquare, ImageIcon, Bell, Trophy, CircleDot, UserPlus,
   Moon, Home, Utensils, MapPin, Wine, LayoutGrid, ArrowUpDown, Camera, Share2,
-  Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2, Unlink,
+  Thermometer, Upload, Download, Eraser, ScrollText, Shield, Info, LogOut, Trash2,
   Star, MessageCircle, Award, ScatterChart, Wallet, ChevronRight, Globe, Map, FileSpreadsheet, Wand2,
 } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useSettings } from '@/application/hooks/use-settings'
 import { useToast } from '@/presentation/components/ui/toast'
-import { useCleanManualShares } from '@/application/hooks/use-clean-manual-shares'
 import { useNaverImport } from '@/application/hooks/use-naver-import'
 import { SettingsSection } from '@/presentation/components/settings/settings-section'
 import { SettingsCard } from '@/presentation/components/settings/settings-card'
@@ -136,10 +135,8 @@ export function SettingsContainer() {
   } = useSettings()
 
   const { showToast } = useToast()
-  const { cleanShares, isLoading: isCleaningManualShares } = useCleanManualShares()
   const naverImport = useNaverImport(user?.id ?? null)
   const [naverImportSheetOpen, setNaverImportSheetOpen] = useState(false)
-  const [manualShareCleanResult, setManualShareCleanResult] = useState<string | null>(null)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
   const [editField, setEditField] = useState<'nickname' | 'handle' | 'bio' | null>(null)
@@ -488,21 +485,6 @@ export function SettingsContainer() {
               label="타임존"
               hint="날짜·시간 표시 기준"
               rightElement={<NyamSelect options={TIMEZONE_OPTIONS} value={settings.prefTimezone ?? detectBrowserTimezone()} onChange={(v) => updatePreference('pref_timezone', v)} />}
-            />
-            <SettingsItem
-              icon={<Unlink size={18} />}
-              label="수동 공유 항목 정리"
-              value={manualShareCleanResult ?? '규칙에 맞지 않는 수동 공유 삭제'}
-              showChevron
-              onPress={async () => {
-                if (isCleaningManualShares) return
-                try {
-                  const count = await cleanShares(user?.id ?? '')
-                  setManualShareCleanResult(count > 0 ? `${count}건 삭제됨` : '정리할 항목 없음')
-                } catch {
-                  setManualShareCleanResult('정리 실패')
-                }
-              }}
             />
           </SettingsCard>
         </SettingsSection>

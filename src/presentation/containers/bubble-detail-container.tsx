@@ -9,7 +9,6 @@ import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
 import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
 import { HeroCarousel } from '@/presentation/components/detail/hero-carousel'
 import { useBubbleFeed } from '@/application/hooks/use-bubble-feed'
-import { useBubbleRanking } from '@/application/hooks/use-bubble-ranking'
 import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import { useSingleBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useInviteLink } from '@/application/hooks/use-invite-link'
@@ -20,9 +19,6 @@ import { useSearch } from '@/application/hooks/use-search'
 import { useToast } from '@/presentation/components/ui/toast'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleStatsCard } from '@/presentation/components/bubble/bubble-stats-card'
-import { RankingPodium } from '@/presentation/components/bubble/ranking-podium'
-import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking-podium'
-import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import Image from 'next/image'
 import { InvitePopup } from '@/presentation/components/bubble/invite-popup'
 import { BubbleJoinContainer } from '@/presentation/containers/bubble-join-container'
@@ -48,7 +44,6 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   const [showJoinFlow, setShowJoinFlow] = useState(searchParams.get('join') === 'true')
   const [showAddItemSearch, setShowAddItemSearch] = useState(false)
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
-  const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
   const { showToast } = useToast()
   const { expertise } = useSingleBubbleExpertise(bubbleId)
@@ -64,7 +59,8 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   } = useBubbleInviteMember(bubbleId)
   const { pendingInvites, refreshPending } = useBubbleMember(bubbleId, user?.id ?? null)
   const { members, isLoading: membersLoading } = useBubbleMembers(bubbleId)
-  const { rankings: ranking, isLoading: rankingLoading } = useBubbleRanking(bubbleId, rankingType)
+  // 실시간 랭킹: bubble_items feed에서 집계 (크론 기반 스냅샷 대체)
+  const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
 
   // 대상 추가 검색
   const { addItemToBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
@@ -135,13 +131,60 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       ? Math.round(rated.reduce((sum, s) => sum + (s.satisfaction ?? 0), 0) / rated.length)
       : null
 
+    // 주간 요일별 기록 수 [월,화,수,목,금,토,일]
+    const weeklyChartData = [0, 0, 0, 0, 0, 0, 0]
+    for (const s of weeklyShares) {
+      const day = new Date(s.sharedAt).getDay()
+      // JS: 일=0 → 인덱스 6, 월=1 → 인덱스 0, ...
+      const idx = day === 0 ? 6 : day - 1
+      weeklyChartData[idx]++
+    }
+
     return {
       totalRecords: shares.length,
       weeklyRecords: weeklyShares.length,
       avgSatisfaction,
       topTargets,
+      weeklyChartData,
     }
   }, [shares, mountTime])
+
+  // 실시간 랭킹: shares(bubble_items feed)에서 target별 집계
+  const liveRanking = useMemo(() => {
+    const filtered = shares.filter((s) =>
+      s.targetType === rankingType && s.targetId,
+    )
+    const map = new Map<string, { targetId: string; targetName: string; targetType: string; totalSatisfaction: number; count: number; ratedCount: number }>()
+    for (const s of filtered) {
+      const key = s.targetId ?? ''
+      if (!key) continue
+      const existing = map.get(key)
+      if (existing) {
+        existing.count++
+        if (s.satisfaction != null) { existing.totalSatisfaction += s.satisfaction; existing.ratedCount++ }
+      } else {
+        map.set(key, {
+          targetId: key,
+          targetName: s.targetName ?? '',
+          targetType: s.targetType ?? 'restaurant',
+          totalSatisfaction: s.satisfaction ?? 0,
+          count: 1,
+          ratedCount: s.satisfaction != null ? 1 : 0,
+        })
+      }
+    }
+    return [...map.values()]
+      .sort((a, b) => b.count - a.count || (b.ratedCount > 0 ? b.totalSatisfaction / b.ratedCount : 0) - (a.ratedCount > 0 ? a.totalSatisfaction / a.ratedCount : 0))
+      .slice(0, 10)
+      .map((item, i) => ({
+        targetId: item.targetId,
+        targetType: item.targetType as RankingTargetType,
+        rankPosition: i + 1,
+        avgSatisfaction: item.ratedCount > 0 ? Math.round(item.totalSatisfaction / item.ratedCount) : null,
+        recordCount: item.count,
+        delta: { value: 'new' as const, direction: 'new' as const },
+      }))
+  }, [shares, rankingType])
 
   // 기존 아이템 ID 목록 (중복 방지)
   const existingTargetIds = useMemo(() => {
@@ -187,20 +230,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
       .filter((g) => g.items.length > 0)
   }, [expertise])
 
-  // 랭킹 포디움 데이터 (target 기반: 이 버블에서 인기 있는 식당/와인)
-  const podiumItems: RankingPodiumItem[] = useMemo(() => {
-    return ranking.slice(0, 3).map((r, i) => ({
-      rank: (i + 1) as 1 | 2 | 3,
-      targetId: r.targetId,
-      targetName: r.targetId, // TODO: target name은 별도 조회 필요
-      targetMeta: null,
-      photoUrl: null,
-      avgSatisfaction: r.avgSatisfaction ?? 0,
-      recordCount: r.recordCount,
-      delta: typeof r.delta.value === 'number' ? r.delta.value : r.delta.value === 'new' ? ('new' as const) : null,
-    }))
-  }, [ranking])
-
+  // 랭킹 포디움: shares 데이터에서 targetName 활용
   const handlePageShare = useCallback(() => {
     if (!bubble) return
     if (navigator.share) {
@@ -313,7 +343,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                 멤버 {bubble.memberCount}명
               </span>
               <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
-              <span>기록 {bubble.recordCount}개</span>
+              <span>기록 {activitySummary.totalRecords}개</span>
               {bubble.area && (
                 <>
                   <span style={{ fontSize: '11px', color: 'var(--text-hint)' }}>·</span>
@@ -374,51 +404,52 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           <h2 className="mb-3 flex items-center gap-1.5 text-[14px] font-bold" style={{ color: 'var(--text)' }}>
             <Info size={15} style={{ color: 'var(--accent-social)' }} /> 정보
           </h2>
-          <div className="flex flex-col gap-3">
-            {/* 가입 조건 */}
-            <div>
-              <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                <ShieldCheck size={12} /> 가입 조건
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {(() => {
-                  const conditions: Array<{ icon: typeof FileCheck; label: string }> = []
-                  if (bubble.joinPolicy === 'invite_only') conditions.push({ icon: FileCheck, label: '초대만' })
-                  else if (bubble.joinPolicy === 'closed') conditions.push({ icon: FileCheck, label: '팔로우만' })
-                  else if (bubble.joinPolicy === 'manual_approve') conditions.push({ icon: FileCheck, label: '승인 필요' })
-                  else if (bubble.joinPolicy === 'auto_approve') conditions.push({ icon: FileCheck, label: '자동 승인' })
-                  else conditions.push({ icon: Users, label: '자유 가입' })
-                  if (bubble.minRecords > 0) conditions.push({ icon: PencilLine, label: `기록 ${bubble.minRecords}개+` })
-                  if (bubble.minLevel > 0) conditions.push({ icon: Star, label: `Lv.${bubble.minLevel}+` })
-                  if (bubble.maxMembers !== null) conditions.push({ icon: Users, label: `최대 ${bubble.maxMembers}명` })
-                  return conditions.map((c, i) => (
-                    <span
-                      key={i}
-                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium"
-                      style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-                    >
-                      <c.icon size={11} /> {c.label}
-                    </span>
-                  ))
-                })()}
+          <div className="flex gap-3">
+            {/* 좌측 컬럼: 공개 설정 */}
+            <div className="flex-1 rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>공개 범위</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.visibility === 'private' ? '비공개' : '공개'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>가입 방식</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.joinPolicy === 'invite_only' ? '초대만'
+                    : bubble.joinPolicy === 'closed' ? '팔로우만'
+                    : bubble.joinPolicy === 'manual_approve' ? '승인 필요'
+                    : bubble.joinPolicy === 'auto_approve' ? '자동 승인'
+                    : '자유 가입'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>탐색 노출</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.isSearchable ? 'ON' : 'OFF'}
+                </span>
               </div>
             </div>
-            {/* 공개 설정 */}
-            <div className="flex flex-wrap gap-1.5">
-              <span
-                className="rounded-full px-2.5 py-1 text-[11px] font-medium"
-                style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-              >
-                {bubble.visibility === 'private' ? '비공개' : '공개'}
-              </span>
-              {bubble.isSearchable && (
-                <span
-                  className="rounded-full px-2.5 py-1 text-[11px] font-medium"
-                  style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-                >
-                  탐색 노출
+            {/* 우측 컬럼: 가입 조건 */}
+            <div className="flex-1 rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>최소 기록</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.minRecords > 0 ? `${bubble.minRecords}개` : '없음'}
                 </span>
-              )}
+              </div>
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>최소 레벨</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.minLevel > 0 ? `Lv.${bubble.minLevel}` : '없음'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>최대 인원</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>
+                  {bubble.maxMembers !== null ? `${bubble.maxMembers}명` : '무제한'}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -429,12 +460,12 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <section className="px-5 py-4">
           <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>버블 통계</h2>
           <BubbleStatsCard
-            recordCount={bubble.recordCount}
+            recordCount={activitySummary.totalRecords}
             memberCount={bubble.memberCount}
             weeklyRecordCount={activitySummary.weeklyRecords}
-            prevWeeklyRecordCount={0}
-            avgSatisfaction={bubble.avgSatisfaction}
-            weeklyChartData={[0, 0, 0, 0, 0, 0, 0]}
+            prevWeeklyRecordCount={bubble.prevWeeklyRecordCount}
+            avgSatisfaction={activitySummary.avgSatisfaction ?? bubble.avgSatisfaction}
+            weeklyChartData={activitySummary.weeklyChartData}
           />
 
           {/* 인기 대상 */}
@@ -463,27 +494,50 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
           <>
             <Divider />
             <section className="px-5 py-4">
-              <h2 className="mb-3 text-[14px] font-bold" style={{ color: 'var(--text)' }}>전문 분야</h2>
-              <div className="flex flex-col gap-3">
-                {expertiseGroups.map((group) => (
-                  <div key={group.axisType}>
-                    <p className="mb-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                      {group.label}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.items.map((item) => (
-                        <span
-                          key={item.axisValue}
-                          className="rounded-full px-2.5 py-[3px] text-[11px] font-medium"
-                          style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-                        >
-                          {item.axisValue} Lv.{Math.round(item.avgLevel)} ({item.memberCount}명)
-                        </span>
-                      ))}
-                    </div>
+              <h2 className="mb-1 text-[14px] font-bold" style={{ color: 'var(--text)' }}>전문 분야</h2>
+              <p className="mb-3 text-[11px]" style={{ color: 'var(--text-hint)' }}>
+                멤버들의 경험치 기반 전문성 집계
+              </p>
+              {(() => {
+                const foodGroups = expertiseGroups.filter((g) => g.axisType === 'genre' || g.axisType === 'area')
+                const wineGroups = expertiseGroups.filter((g) => g.axisType === 'wine_region' || g.axisType === 'wine_variety')
+                const renderColumn = (groups: typeof expertiseGroups, accent: string) => (
+                  <div className="flex min-w-0 flex-1 flex-col gap-3">
+                    {groups.map((group) => (
+                      <div key={group.axisType}>
+                        <p className="mb-1.5 text-[12px] font-semibold" style={{ color: accent }}>
+                          {group.label}
+                        </p>
+                        <div className="rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                          {group.items.map((item, i) => (
+                            <div
+                              key={item.axisValue}
+                              className="flex items-center justify-between px-3 py-2"
+                              style={i < group.items.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}
+                            >
+                              <span className="min-w-0 flex-1 truncate text-[12px] font-medium" style={{ color: 'var(--text)' }}>
+                                {item.axisValue}
+                              </span>
+                              <span className="shrink-0 text-[11px] font-semibold" style={{ color: accent }}>
+                                Lv.{Math.round(item.avgLevel)}
+                              </span>
+                              <span className="ml-1.5 w-[30px] shrink-0 text-right text-[10px]" style={{ color: 'var(--text-hint)' }}>
+                                {item.memberCount}명
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+                return (
+                  <div className="flex gap-3">
+                    {foodGroups.length > 0 && renderColumn(foodGroups, 'var(--accent-food)')}
+                    {wineGroups.length > 0 && renderColumn(wineGroups, 'var(--accent-wine)')}
+                  </div>
+                )
+              })()}
             </section>
           </>
         )}
@@ -563,21 +617,49 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
             </div>
           </div>
 
-          {rankingLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="h-5 w-5 animate-spin rounded-full border-[2px] border-[var(--accent-social)] border-t-transparent" />
+          {liveRanking.length > 0 ? (
+            <div className="rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              {liveRanking.map((entry, i) => {
+                const nameMap = new Map<string, string>()
+                for (const s of shares) { if (s.targetId && s.targetName) nameMap.set(s.targetId, s.targetName) }
+                const name = nameMap.get(entry.targetId) ?? entry.targetId.substring(0, 8)
+                const accentColor = rankingType === 'restaurant' ? 'var(--accent-food)' : 'var(--accent-wine)'
+                const isTop3 = i < 3
+                const medalColors = ['#D4A017', '#A0A0A0', '#CD7F32']
+                return (
+                  <button
+                    key={entry.targetId}
+                    type="button"
+                    onClick={() => router.push(rankingType === 'restaurant' ? `/restaurants/${entry.targetId}` : `/wines/${entry.targetId}`)}
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors active:bg-[var(--bg-elevated)]"
+                    style={i < liveRanking.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}
+                  >
+                    {/* 순위 */}
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                      style={isTop3
+                        ? { backgroundColor: medalColors[i], color: '#FFFFFF' }
+                        : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-hint)' }}
+                    >
+                      {i + 1}
+                    </span>
+                    {/* 이름 */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{name}</p>
+                      <p className="text-[11px]" style={{ color: 'var(--text-hint)' }}>
+                        {entry.recordCount}개 기록
+                      </p>
+                    </div>
+                    {/* 점수 */}
+                    {entry.avgSatisfaction != null && (
+                      <span className="shrink-0 text-[16px] font-bold" style={{ color: accentColor }}>
+                        {entry.avgSatisfaction}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
-          ) : ranking.length > 0 ? (
-            <>
-              <RankingPodium items={podiumItems} targetType={rankingType} />
-              {ranking.length > 3 && (
-                <RankingList
-                  entries={ranking.slice(3)}
-                  targetType={rankingType}
-                  targetNames={{}}
-                />
-              )}
-            </>
           ) : (
             <p className="py-4 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
               아직 랭킹 데이터가 없어요
