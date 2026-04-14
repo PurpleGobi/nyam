@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-14 #38 — 버블 상세 비멤버 액션 버튼 정리 (가입하기/대상추가 FAB 게이트)
+- **영역**: presentation/containers/bubble-detail-container.tsx(isMember/canJoin 게이트, 가입하기 버튼 + BubbleJoinContainer 연결, 대상추가 FAB 멤버전용), application/hooks/use-bubble-detail.ts(refetch를 멤버정보까지 재조회하도록 확장)
+- **맥락**: 비멤버·비오너 사용자에게 "초대" 버튼이 노출되던 버그 수정. 가입 상태(owner/admin/member)에 따라 초대 버튼과 "가입하기" 버튼을 상호배타적으로 노출. joinPolicy에 따라 라벨 분기(closed→팔로우, manual_approve→가입신청, open/auto_approve→가입하기, invite_only→숨김). 기존 미사용 상태였던 BubbleJoinContainer를 재활용해 JoinFlow 시트 연결. 가입 성공 시 useBubbleDetail.refetch로 멤버 정보 재조회. 대상추가 FAB도 멤버전용으로 게이트.
+- **미완료**: 없음
+- **다음**: 브라우저 QA (각 joinPolicy별 버튼 라벨·가입 후 UI 전환 확인)
+
 ### 2026-04-14 #37 — 지도 "검색 중" 배지 가독성 개선
 - **영역**: presentation/components/home/map-view.tsx(isNearbyLoading 배지 글자색 토큰 교체)
 - **맥락**: 홈 지도 뷰 상단에 뜨는 "지도 검색 중..." 인라인 배지의 글자색이 `--text-hint`(#B5AFA8)로 흐려 읽기 어려웠음. `--text`(#3D3833, 메인 토큰)로 교체해 또렷하게 표시. 배경·테두리·폰트 크기 등 나머지 스타일은 유지.
@@ -59,10 +65,4 @@
 - **맥락**: 찜 기능을 상세 페이지 히어로에서 전체 리스트/카드 뷰로 확장. 이후 찜→버블 전환 결정으로 #30에서 Heart UI 전면 제거.
 - **미완료**: 없음 (#30으로 대체)
 - **다음**: 없음
-
-### 2026-04-10 #28 — 지도뷰 명성 cascade 필터 + 뱃지 grade 표시
-- **영역**: domain/(entities/filter-config+condition-chip, services/filter-matcher+filter-query-builder), presentation/(prestige-badges, bib-gourmand-icon 신규, condition-filter-bar, icons/index), application/hooks/use-map-discovery
-- **맥락**: 지도뷰 명성 필터를 cascade 방식으로 전면 리디자인. type 선택 시 grade sub-chip 자동 생성(위치 필터 패턴). 상위 칩 1개에 type 누적, X로 전체 리셋. 뱃지에 grade 반영(아이콘 개수, 빕 구르망 전용 아이콘, TV 프로그램명). filter-matcher에 prestige_grade:* 매칭 추가. use-map-discovery에 grade 클라이언트 사이드 필터링 추가.
-- **미완료**: 없음
-- **다음**: 브라우저 QA, grade 필터 실제 데이터 검증
 

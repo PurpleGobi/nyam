@@ -24,6 +24,7 @@ import type { RankingPodiumItem } from '@/presentation/components/bubble/ranking
 import { RankingList } from '@/presentation/components/bubble/ranking-list'
 import Image from 'next/image'
 import { InvitePopup } from '@/presentation/components/bubble/invite-popup'
+import { BubbleJoinContainer } from '@/presentation/containers/bubble-join-container'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import { AddItemSearchSheet } from '@/presentation/components/bubble/add-item-search-sheet'
 import { AppHeader } from '@/presentation/components/layout/app-header'
@@ -37,10 +38,11 @@ interface BubbleDetailContainerProps {
 export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { bubble, myRole, tasteMatch, isLoading } = useBubbleDetail(bubbleId, user?.id ?? null)
+  const { bubble, myRole, tasteMatch, isLoading, refetch } = useBubbleDetail(bubbleId, user?.id ?? null)
   const { photos: bubblePhotos } = useBubblePhotos(bubbleId)
 
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showJoinFlow, setShowJoinFlow] = useState(false)
   const [showAddItemSearch, setShowAddItemSearch] = useState(false)
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [rankingType, setRankingType] = useState<RankingTargetType>('restaurant')
@@ -214,6 +216,14 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   }
 
   const isOwner = myRole === 'owner'
+  const isMember = myRole === 'owner' || myRole === 'admin' || myRole === 'member'
+  const joinButtonLabel = bubble.joinPolicy === 'closed'
+    ? '팔로우'
+    : bubble.joinPolicy === 'manual_approve'
+      ? '가입 신청'
+      : '가입하기'
+  // invite_only는 초대 링크 없이는 가입 불가 → 버튼 숨김
+  const canJoin = !isMember && bubble.joinPolicy !== 'invite_only'
 
   return (
     <div className="content-detail flex min-h-dvh flex-col" style={{ backgroundColor: 'var(--bg)' }}>
@@ -303,14 +313,26 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               >
                 <List size={13} /> 리스트 보기
               </button>
-              <button
-                type="button"
-                onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-                style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
-              >
-                <UserPlus size={13} /> 초대
-              </button>
+              {isMember && (
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(true)}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+                  style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+                >
+                  <UserPlus size={13} /> 초대
+                </button>
+              )}
+              {canJoin && (
+                <button
+                  type="button"
+                  onClick={() => setShowJoinFlow(true)}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+                  style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+                >
+                  <UserPlus size={13} /> {joinButtonLabel}
+                </button>
+              )}
             </div>
           </section>
         </div>
@@ -560,19 +582,29 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         <div style={{ height: '100px' }} />
       </div>
 
-      {/* 대상 추가 FAB */}
-      <button
-        type="button"
-        onClick={() => setShowAddItemSearch(true)}
-        className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-opacity active:opacity-70"
-        style={{
-          bottom: '24px',
-          right: '20px',
-          backgroundColor: 'var(--accent-social)',
-        }}
-      >
-        <Plus size={22} color="var(--primary-foreground)" />
-      </button>
+      {/* 대상 추가 FAB (멤버 전용) */}
+      {isMember && (
+        <button
+          type="button"
+          onClick={() => setShowAddItemSearch(true)}
+          className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-opacity active:opacity-70"
+          style={{
+            bottom: '24px',
+            right: '20px',
+            backgroundColor: 'var(--accent-social)',
+          }}
+        >
+          <Plus size={22} color="var(--primary-foreground)" />
+        </button>
+      )}
+
+      {/* 가입 플로우 */}
+      <BubbleJoinContainer
+        bubbleId={bubbleId}
+        isOpen={showJoinFlow}
+        onClose={() => setShowJoinFlow(false)}
+        onSuccess={refetch}
+      />
 
       {/* 초대 팝업 */}
       {showInviteModal && (
