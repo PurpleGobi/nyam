@@ -7,7 +7,6 @@ const PAGE_NAMES: Record<string, string> = {
   '/': '홈',
   '/profile': '프로필',
   '/settings': '설정',
-  '/bubbles': '버블',
   '/search': '검색',
   '/record': '기록',
   '/onboarding': '온보딩',

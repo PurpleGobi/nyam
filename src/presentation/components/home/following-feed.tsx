@@ -81,7 +81,7 @@ export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onS
             버블에 가입하거나 다른 유저를 팔로우해보세요
           </p>
           <Link
-            href="/bubbles"
+            href="/?tab=bubble"
             className="mt-4 rounded-lg px-4 py-2 text-[13px] font-semibold no-underline"
             style={{ backgroundColor: 'var(--accent-social)', color: '#fff' }}
           >

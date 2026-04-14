@@ -779,7 +779,7 @@ export default function DesignSystemPage() {
       {/* ── 9. Bottom Sheet ── */}
       <Section title="9. Bottom Sheet">
         <button type="button" className="btn-primary" onClick={() => setSheetOpen(true)}>바텀 시트 열기</button>
-        <BottomSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)}>
+        <BottomSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} title="와인 검색">
           <div style={{ padding: '16px' }}>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               <input type="text" className="nyam-input" placeholder="와인 이름 검색..." style={{ flex: 1 }} />

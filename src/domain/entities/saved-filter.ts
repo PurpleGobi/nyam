@@ -12,7 +12,7 @@ export interface FilterRule {
 
 export type SortOption = 'latest' | 'score_high' | 'score_low' | 'name' | 'visit_count' | 'distance'
 
-export type BubbleSortOption = 'activity' | 'members' | 'records' | 'name'
+export type BubbleSortOption = 'records' | 'members' | 'weekly_activity' | 'activity' | 'name'
 
 export type FilterTargetType = 'restaurant' | 'wine'
 

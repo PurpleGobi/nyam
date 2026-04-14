@@ -44,12 +44,8 @@ export function BubblePickerSheet({
   }, [onSelect, onClose])
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose}>
-      <div className="px-4 pb-6 pt-2">
-        <p className="mb-4 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-          {title ?? '어디에 추가할까요?'}
-        </p>
-
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={title ?? '어디에 추가할까요?'}>
+      <div>
         <div className="flex flex-col">
           {isLoading ? (
             <div className="flex justify-center py-8">

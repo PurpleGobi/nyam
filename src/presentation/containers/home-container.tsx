@@ -132,10 +132,11 @@ const MAP_SORT_LABELS: Partial<Record<SortOption, string>> = {
 
 /** 버블탭 소팅 옵션 */
 const HOME_BUBBLE_SORT_LABELS: Record<BubbleSortOption, string> = {
-  activity: '최근 활동순',
-  members: '멤버 많은순',
-  records: '기록 많은순',
-  name: '이름순',
+  records: '기록 많은 순',
+  members: '회원 많은 순',
+  weekly_activity: '활동량 많은 순',
+  activity: '최근 활동 순',
+  name: '이름 순',
 }
 
 const MEAL_TIME_LABELS: Record<string, string> = {
@@ -157,6 +158,7 @@ export function HomeContainer() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeBubbleIdParam = searchParams.get('bubbleId')
+  const tabParam = searchParams.get('tab') as 'restaurant' | 'wine' | 'bubble' | null
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(activeBubbleIdParam)
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
@@ -220,44 +222,51 @@ export function HomeContainer() {
   const { expertiseMap } = useBubbleExpertise(bubbleIds)
 
   // ── 버블 탭 소팅 ──
-  const [bubbleSort, setBubbleSort] = useState<BubbleSortOption>('activity')
+  const [bubbleSort, setBubbleSort] = useState<BubbleSortOption>('records')
 
   // ── 버블 탭 필터 칩 ──
-  const [bubbleConditionChips, setBubbleConditionChips] = useState<FilterChipItem[]>([])
+  const [bubbleConditionChips, _setBubbleConditionChips] = useState<FilterChipItem[]>([])
+  // bubble_type이 mine이 아닐 때 role 칩 자동 제거
+  const setBubbleConditionChips = useCallback((chips: FilterChipItem[] | ((prev: FilterChipItem[]) => FilterChipItem[])) => {
+    _setBubbleConditionChips((prev) => {
+      const next = typeof chips === 'function' ? chips(prev) : chips
+      const typeChip = next.find((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'bubble_type')
+      const typeValue = typeChip ? String((typeChip as { value: string }).value) : null
+      if (typeValue !== 'mine') {
+        return next.filter((c) => isAdvancedChip(c) || (c as { attribute: string }).attribute !== 'role')
+      }
+      return next
+    })
+  }, [])
 
-  // ── 공개 버블 탐색 (membership=public 필터 시) ──
-  const bubbleMembershipChip = bubbleConditionChips.find(
-    (c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'membership',
+  // ── 버블 종류 필터 (bubble_type 칩) ──
+  const bubbleTypeChip = bubbleConditionChips.find(
+    (c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'bubble_type',
   )
-  const isPublicBubbleMode = bubbleMembershipChip
-    ? String((bubbleMembershipChip as { value: string }).value) === 'public'
-    : false
+  const bubbleTypeValue = bubbleTypeChip
+    ? String((bubbleTypeChip as { value: string }).value)
+    : null
+  const isFollowingBubbleMode = bubbleTypeValue === 'following'
   const userAreas = useMemo(
     () => [...new Set(myBubbles.map((b) => b.area).filter(Boolean))] as string[],
     [myBubbles],
   )
   const excludeBubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
-  const { recommended: publicBubbles, isLoading: publicBubblesLoading } = useBubbleDiscover(
+  const { recommended: followingBubbles, isLoading: followingBubblesLoading } = useBubbleDiscover(
     userAreas,
     excludeBubbleIds,
-    isPublicBubbleMode,
+    isFollowingBubbleMode,
   )
 
   // ── 버블 필터 속성에 전문 분야 동적 옵션 주입 ──
   const bubbleFilterAttributes = useMemo(() => {
-    const allExpertise = [...expertiseMap.values()].flat()
-    const buildOptions = (axisType: string) => {
-      const unique = [...new Set(allExpertise.filter((e) => e.axisType === axisType).map((e) => e.axisValue))]
-      return unique.sort().map((v) => ({ value: v, label: v }))
-    }
-    return HOME_BUBBLE_FILTER_ATTRIBUTES.map((attr) => {
-      if (attr.key === 'expertise_area') return { ...attr, options: buildOptions('area') }
-      if (attr.key === 'expertise_genre') return { ...attr, options: buildOptions('genre') }
-      if (attr.key === 'expertise_wine_region') return { ...attr, options: buildOptions('wine_region') }
-      if (attr.key === 'expertise_wine_variety') return { ...attr, options: buildOptions('wine_variety') }
-      return attr
-    }).filter((attr) => !attr.key.startsWith('expertise_') || (attr.options && attr.options.length > 0))
-  }, [expertiseMap])
+    // 나의 버블이 선택된 경우에만 역할 필터 노출
+    const isMineSelected = bubbleTypeValue === 'mine'
+    return HOME_BUBBLE_FILTER_ATTRIBUTES.filter((attr) => {
+      if (attr.key === 'role') return isMineSelected
+      return true
+    })
+  }, [bubbleTypeValue])
 
   const {
     activeTab, setActiveTab, viewMode, cycleViewMode,
@@ -269,7 +278,7 @@ export function HomeContainer() {
     currentSort, setCurrentSort,
     searchQuery, setSearchQuery,
   } = useHomeState({
-    initialTab: activeBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined),
+    initialTab: tabParam ?? (activeBubbleId ? 'restaurant' : (settings?.prefHomeTab && settings.prefHomeTab !== 'last' ? settings.prefHomeTab as 'restaurant' | 'wine' : undefined)),
     initialViewMode: settings?.prefViewMode && settings.prefViewMode !== 'last' ? settings.prefViewMode as 'card' | 'list' | 'calendar' : undefined,
     initialSort: activeBubbleId ? 'distance' : undefined,
   })
@@ -1109,44 +1118,45 @@ export function HomeContainer() {
 
         {/* 버블 탭 콘텐츠 */}
         {isBubbleTab && (() => {
-          // 공개 모드 vs 내 버블
-          const baseBubbles = isPublicBubbleMode ? publicBubbles : myBubbles
-          const loading = isPublicBubbleMode ? publicBubblesLoading : bubblesLoading
+          // 종류에 따라 데이터 소스 선택
+          const baseBubbles = isFollowingBubbleMode ? followingBubbles : myBubbles
+          const loading = isFollowingBubbleMode ? followingBubblesLoading : bubblesLoading
 
           // 칩 필터 적용
           let filtered = baseBubbles
           for (const chip of bubbleConditionChips) {
             if (isAdvancedChip(chip)) continue
             const simpleChip = chip as { attribute: string; value: string }
-            if (simpleChip.attribute === 'membership') continue // 소스 전환용이므로 스킵
-            if (simpleChip.attribute === 'focus_type' && simpleChip.value !== 'all') {
-              filtered = filtered.filter((b) => b.focusType === simpleChip.value)
-            }
+            // bubble_type은 데이터 소스 전환용이므로 스킵
+            if (simpleChip.attribute === 'bubble_type') continue
+            // 역할 필터 (나의 버블 하위)
             if (simpleChip.attribute === 'role') {
               filtered = filtered.filter((b) =>
                 simpleChip.value === 'owner' ? b.createdBy === user?.id : b.createdBy !== user?.id,
               )
             }
-            if (simpleChip.attribute === 'member_count') {
-              const min = Number(simpleChip.value)
-              filtered = filtered.filter((b) => b.memberCount >= min)
-            }
-            if (simpleChip.attribute === 'activity') {
-              const now = renderTimestamp
-              const thresholds: Record<string, number> = { '1d': 86400000, '1w': 604800000, '1m': 2592000000 }
-              const ms = thresholds[simpleChip.value]
-              if (ms) {
-                filtered = filtered.filter((b) =>
-                  b.lastActivityAt ? now - new Date(b.lastActivityAt).getTime() < ms : false,
-                )
-              }
-            }
-            // 전문 분야 필터: 해당 축에서 expertise가 있는 버블만
-            if (simpleChip.attribute.startsWith('expertise_')) {
-              const axisType = simpleChip.attribute.replace('expertise_', '')
+            // 전문분야 레벨: "expertise_level:axisType:axisValue:minLevel" 형식
+            if (simpleChip.attribute === 'expertise_level') {
+              const [axisType, axisValue, minLevel] = simpleChip.value.split(':')
               filtered = filtered.filter((b) => {
                 const exp = expertiseMap.get(b.id) ?? []
-                return exp.some((e) => e.axisType === axisType && e.axisValue === simpleChip.value)
+                return exp.some((e) =>
+                  e.axisType === axisType
+                  && e.axisValue === axisValue
+                  && e.avgLevel >= Number(minLevel || 0),
+                )
+              })
+            }
+            // 전문분야 기록 수: "expertise_records:axisType:axisValue:minRecords" 형식
+            if (simpleChip.attribute === 'expertise_records') {
+              const [axisType, axisValue, minRecords] = simpleChip.value.split(':')
+              filtered = filtered.filter((b) => {
+                const exp = expertiseMap.get(b.id) ?? []
+                return exp.some((e) =>
+                  e.axisType === axisType
+                  && e.axisValue === axisValue
+                  && e.memberCount >= Number(minRecords || 0),
+                )
               })
             }
           }
@@ -1164,14 +1174,17 @@ export function HomeContainer() {
           // 소팅
           const sorted = [...filtered]
           switch (bubbleSort) {
-            case 'activity':
-              sorted.sort((a, b) => (b.lastActivityAt ?? '').localeCompare(a.lastActivityAt ?? ''))
+            case 'records':
+              sorted.sort((a, b) => b.recordCount - a.recordCount)
               break
             case 'members':
               sorted.sort((a, b) => b.memberCount - a.memberCount)
               break
-            case 'records':
-              sorted.sort((a, b) => b.recordCount - a.recordCount)
+            case 'weekly_activity':
+              sorted.sort((a, b) => b.weeklyRecordCount - a.weeklyRecordCount)
+              break
+            case 'activity':
+              sorted.sort((a, b) => (b.lastActivityAt ?? '').localeCompare(a.lastActivityAt ?? ''))
               break
             case 'name':
               sorted.sort((a, b) => a.name.localeCompare(b.name))
@@ -1191,10 +1204,10 @@ export function HomeContainer() {
               <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
                 <Users size={48} style={{ color: 'var(--text-hint)' }} />
                 <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {isPublicBubbleMode ? '공개 버블이 없어요' : '첫 나만의 버블을 만들어 보세요'}
+                  {isFollowingBubbleMode ? '팔로잉 유저의 버블이 없어요' : '첫 나만의 버블을 만들어 보세요'}
                 </p>
                 <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                  {isPublicBubbleMode ? '조건을 변경해 보세요' : '+버튼을 눌러 시작하세요'}
+                  {isFollowingBubbleMode ? '다른 유저를 팔로우해 보세요' : '+버튼을 눌러 시작하세요'}
                 </p>
               </div>
             )

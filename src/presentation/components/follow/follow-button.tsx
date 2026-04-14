@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { UserPlus, UserCheck, Users } from 'lucide-react'
 import type { AccessLevel } from '@/domain/entities/follow'
+import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
 
 interface FollowButtonProps {
   accessLevel: AccessLevel
@@ -84,40 +85,32 @@ export function FollowButton({ accessLevel, onToggle, isLoading, isPrivate = fal
       </button>
 
       {/* 언팔 확인 시트 */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-          <div
-            className="w-full max-w-[390px] rounded-t-2xl px-5 pb-8 pt-4"
-            style={{ backgroundColor: 'var(--bg)' }}
+      <BottomSheet isOpen={showConfirm} onClose={() => setShowConfirm(false)} title="팔로우 취소">
+        <p className="text-center text-[14px]" style={{ color: 'var(--text-sub)' }}>
+          이 사용자의 팔로우를 취소하시겠어요?
+        </p>
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={() => setShowConfirm(false)}
+            className="flex-1 rounded-xl py-3.5 text-[14px] font-semibold"
+            style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
           >
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full" style={{ backgroundColor: 'var(--border)' }} />
-            <p className="text-center text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-              팔로우를 취소하시겠어요?
-            </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 rounded-xl py-3.5 text-[14px] font-semibold"
-                style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowConfirm(false)
-                  onToggle()
-                }}
-                className="flex-1 rounded-xl py-3.5 text-[14px] font-semibold"
-                style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
-              >
-                팔로우 취소
-              </button>
-            </div>
-          </div>
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowConfirm(false)
+              onToggle()
+            }}
+            className="flex-1 rounded-xl py-3.5 text-[14px] font-semibold"
+            style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+          >
+            팔로우 취소
+          </button>
         </div>
-      )}
+      </BottomSheet>
     </>
   )
 }

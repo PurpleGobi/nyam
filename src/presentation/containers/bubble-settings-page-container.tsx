@@ -26,8 +26,8 @@ export function BubbleSettingsPageContainer({ bubbleId }: Props) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[var(--bg)]">
         <p className="text-[14px] text-[var(--text-sub)]">버블을 찾을 수 없습니다</p>
-        <button type="button" onClick={() => router.push('/bubbles')} className="text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
-          버블 목록으로
+        <button type="button" onClick={() => router.push('/?tab=bubble')} className="text-[13px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+          홈으로
         </button>
       </div>
     )

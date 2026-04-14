@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Sparkles, MapPin, TrendingUp, Zap } from 'lucide-react'
+import { Sparkles, MapPin, TrendingUp, Zap } from 'lucide-react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { BubbleIcon } from '@/presentation/components/bubble/bubble-icon'
+import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
 
 interface BubbleDiscoverSheetProps {
   isOpen: boolean
@@ -30,8 +31,6 @@ export function BubbleDiscoverSheet({
 }: BubbleDiscoverSheetProps) {
   const [activeTab, setActiveTab] = useState<Tab>('recommended')
 
-  if (!isOpen) return null
-
   const tabs: { key: Tab; label: string; icon: typeof Sparkles }[] = [
     { key: 'recommended', label: '추천', icon: Sparkles },
     { key: 'nearby', label: '근처', icon: MapPin },
@@ -39,94 +38,66 @@ export function BubbleDiscoverSheet({
     { key: 'new', label: '새로운', icon: Zap },
   ]
 
-  const listMap: Record<Tab, Bubble[]> = {
-    recommended,
-    nearby,
-    trending,
-    new: newest,
-  }
-
-  const labelMap: Record<Tab, string> = {
-    recommended: '추천',
-    nearby: '근처',
-    trending: '활발',
-    new: '새로운',
-  }
-
+  const listMap: Record<Tab, Bubble[]> = { recommended, nearby, trending, new: newest }
+  const labelMap: Record<Tab, string> = { recommended: '추천', nearby: '근처', trending: '활발', new: '새로운' }
   const currentList = listMap[activeTab]
 
   return (
-    <div className="bottom-sheet-overlay flex items-end justify-center" style={{ zIndex: 50 }} onClick={onClose}>
-      <div
-        className="bottom-sheet flex w-full max-w-[480px] flex-col"
-        style={{ maxHeight: '80vh', position: 'relative' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>버블 탐색</span>
-          <button type="button" onClick={onClose}>
-            <X size={20} style={{ color: 'var(--text-sub)' }} />
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="버블 탐색" maxHeight="80vh">
+      {/* 탭 */}
+      <div className="-mx-4 -mt-4 flex gap-1 px-4 py-2">
+        {tabs.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setActiveTab(key)}
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-[12px] font-semibold transition-colors"
+            style={{
+              backgroundColor: activeTab === key ? 'var(--accent-social-light)' : 'transparent',
+              color: activeTab === key ? 'var(--accent-social)' : 'var(--text-hint)',
+            }}
+          >
+            <Icon size={14} />
+            {label}
           </button>
-        </div>
-
-        {/* 탭 */}
-        <div className="flex gap-1 px-4 py-2">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setActiveTab(key)}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-[12px] font-semibold transition-colors"
-              style={{
-                backgroundColor: activeTab === key ? 'var(--accent-social-light)' : 'transparent',
-                color: activeTab === key ? 'var(--accent-social)' : 'var(--text-hint)',
-              }}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* 목록 */}
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
-          {currentList.length === 0 ? (
-            <p className="py-8 text-center text-[14px] text-[var(--text-hint)]">버블이 없습니다</p>
-          ) : (
-            <div className="flex flex-col gap-2 py-2">
-              {currentList.map((b) => {
-                const matchPct = tasteMatchMap?.[b.id]
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => onSelectBubble(b)}
-                    className="card flex items-center gap-3 rounded-xl p-3 text-left"
-                  >
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
-                    >
-                      <BubbleIcon icon={b.icon} size={20} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-[var(--text)]">{b.name}</p>
-                      <p className="mt-0.5 text-[12px] text-[var(--text-hint)]">
-                        멤버 {b.memberCount}명 · 기록 {b.recordCount}개
-                        {matchPct !== undefined && ` · 취향 ${matchPct}%`}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[11px] font-semibold" style={{ color: 'var(--accent-social)' }}>
-                      {labelMap[activeTab]}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
+        ))}
       </div>
-    </div>
+
+      {/* 목록 */}
+      {currentList.length === 0 ? (
+        <p className="py-8 text-center text-[14px] text-[var(--text-hint)]">버블이 없습니다</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {currentList.map((b) => {
+            const matchPct = tasteMatchMap?.[b.id]
+            return (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => onSelectBubble(b)}
+                className="card flex items-center gap-3 rounded-xl p-3 text-left"
+              >
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+                >
+                  <BubbleIcon icon={b.icon} size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-semibold text-[var(--text)]">{b.name}</p>
+                  <p className="mt-0.5 text-[12px] text-[var(--text-hint)]">
+                    멤버 {b.memberCount}명 · 기록 {b.recordCount}개
+                    {matchPct !== undefined && ` · 취향 ${matchPct}%`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] font-semibold" style={{ color: 'var(--accent-social)' }}>
+                  {labelMap[activeTab]}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </BottomSheet>
   )
 }

@@ -289,17 +289,17 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       const result = await deleteRecord(activeRecordId, user.id, restaurantId, 'restaurant')
 
       setShowDeleteConfirm(false)
-      showToast('기록이 삭제���었습니다')
+      showToast('기록이 삭제되었습니다')
       if (result.sharesCount > 0) {
         showToast(`${result.sharesCount}개 버블 공유도 함께 삭제되었습니다`)
       }
       if (result.remainingCount > 0) {
-        showToast(`이 식당의 기록이 ${result.remainingCount}건 ���아있습니다`)
+        showToast(`이 식당의 기록이 ${result.remainingCount}건 남아있습니다`)
       }
 
       router.replace('/')
     } catch {
-      showToast('삭제에 실패했습니���')
+      showToast('삭제에 실패했습니다')
     }
   }, [activeRecordId, user, router, restaurantId, showToast, deleteRecord])
 

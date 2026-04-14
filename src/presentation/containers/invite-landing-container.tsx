@@ -44,11 +44,11 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
         </p>
         <button
           type="button"
-          onClick={() => router.push('/bubbles')}
+          onClick={() => router.push('/?tab=bubble')}
           className="rounded-xl px-5 py-2.5 text-[14px] font-semibold"
           style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
         >
-          버블 목록으로
+          홈으로
         </button>
       </div>
     )

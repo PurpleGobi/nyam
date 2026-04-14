@@ -420,29 +420,22 @@ export const BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
   },
 ]
 
-// ─── 홈 버블 탭 필터 속성 (6종) ───
+// ─── 홈 버블 탭 필터 속성 ───
+// 기본(칩 없음) = 전체보기. '전체' 옵션은 불필요.
 // HomeContainer 버블 탭 전용
 
 export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
+  // 1. 종류 — 나의 버블 / 팔로잉 버블
   {
-    key: 'membership',
-    label: '소속',
+    key: 'bubble_type',
+    label: '종류',
     type: 'select',
     options: [
-      { value: 'mine', label: '내 버블' },
-      { value: 'public', label: '공개 전체' },
+      { value: 'mine', label: '나의 버블' },
+      { value: 'following', label: '팔로잉 버블' },
     ],
   },
-  {
-    key: 'focus_type',
-    label: '집중 유형',
-    type: 'select',
-    options: [
-      { value: 'all', label: '전체' },
-      { value: 'restaurant', label: '식당' },
-      { value: 'wine', label: '와인' },
-    ],
-  },
+  // 1-1. 나의 버블 하위: 역할 (bubble_type=mine 선택 시에만 노출)
   {
     key: 'role',
     label: '역할',
@@ -452,50 +445,46 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
       { value: 'member', label: '멤버' },
     ],
   },
+  // 2. 전문분야 레벨 — 축 타입 → 세부 항목 (동적) → 레벨/기록수 임계값
   {
-    key: 'member_count',
-    label: '멤버 수',
+    key: 'expertise_level',
+    label: '전문분야 레벨',
     type: 'select',
     options: [
-      { value: '5', label: '5명 이상' },
-      { value: '10', label: '10명 이상' },
-      { value: '20', label: '20명 이상' },
+      { value: 'genre', label: '장르' },
+      { value: 'area', label: '지역' },
+      { value: 'wine_region', label: '산지' },
+      { value: 'wine_variety', label: '품종' },
     ],
   },
+  // 3. 전문분야 기록 수 — 축 타입 → 세부 항목 (동적) → 기록수 임계값
   {
-    key: 'activity',
-    label: '활동',
+    key: 'expertise_records',
+    label: '전문분야 기록 수',
     type: 'select',
     options: [
-      { value: '1d', label: '24시간 이내' },
-      { value: '1w', label: '1주 이내' },
-      { value: '1m', label: '1개월 이내' },
+      { value: 'genre', label: '장르' },
+      { value: 'area', label: '지역' },
+      { value: 'wine_region', label: '산지' },
+      { value: 'wine_variety', label: '품종' },
     ],
   },
-  {
-    key: 'expertise_area',
-    label: '전문 지역',
-    type: 'select',
-    options: [],  // 동적: HomeContainer에서 expertise 데이터 기반으로 주입
-  },
-  {
-    key: 'expertise_genre',
-    label: '전문 장르',
-    type: 'select',
-    options: [],
-  },
-  {
-    key: 'expertise_wine_region',
-    label: '전문 산지',
-    type: 'select',
-    options: [],
-  },
-  {
-    key: 'expertise_wine_variety',
-    label: '전문 품종',
-    type: 'select',
-    options: [],
-  },
+]
+
+// 전문분야 하위칩: 레벨 임계값
+export const EXPERTISE_LEVEL_THRESHOLDS: Array<{ value: string; label: string }> = [
+  { value: '1', label: 'Lv.1+' },
+  { value: '3', label: 'Lv.3+' },
+  { value: '5', label: 'Lv.5+' },
+  { value: '10', label: 'Lv.10+' },
+]
+
+// 전문분야 하위칩: 기록 수 임계값
+export const EXPERTISE_RECORD_THRESHOLDS: Array<{ value: string; label: string }> = [
+  { value: '5', label: '5개+' },
+  { value: '10', label: '10개+' },
+  { value: '30', label: '30개+' },
+  { value: '50', label: '50개+' },
 ]
 
 // ─── 버블러 필터 속성 ───

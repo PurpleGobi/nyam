@@ -19,7 +19,6 @@ export interface RouteConfig {
 export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   // ── D0: 바닥 (뒤로가기 종착점) ─────────────────────────────
   '/':                          { depth: 0, parent: null,           type: 'stack' },
-  '/bubbles':                   { depth: 0, parent: null,           type: 'stack' },
 
   // ── D1: 홈 계열 ────────────────────────────────────────────
   '/search':                    { depth: 1, parent: '/',            type: 'stack' },
@@ -29,9 +28,9 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/record':                    { depth: 1, parent: '/',            type: 'stack' },
   '/register':                  { depth: 1, parent: '/',            type: 'stack' },
 
-  // ── D1: 버블 계열 ──────────────────────────────────────────
-  '/bubbles/[id]':              { depth: 1, parent: '/bubbles',     type: 'stack' },
-  '/bubbles/create':            { depth: 1, parent: '/bubbles',     type: 'stack' },
+  // ── D1: 버블 계열 (홈 버블 탭에서 진입) ────────────────────
+  '/bubbles/[id]':              { depth: 1, parent: '/',            type: 'stack' },
+  '/bubbles/create':            { depth: 1, parent: '/',            type: 'stack' },
 
   // ── D2 ─────────────────────────────────────────────────────
   '/bubbles/[id]/settings':     { depth: 2, parent: '/bubbles/[id]', type: 'stack' },

@@ -95,7 +95,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
 
   const handleDelete = async () => {
     await deleteBubble()
-    router.push('/bubbles')
+    router.push('/?tab=bubble')
   }
 
   // 멤버 초대 — 중복 체크 + 초대 후 대기 목록 즉시 새로고침
