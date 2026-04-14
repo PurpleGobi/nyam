@@ -42,10 +42,14 @@ function toEntityRow(data: Record<string, unknown>, fieldMap: Record<string, str
 // ─── snake_case → camelCase 변환 (DB → Entity) ───
 
 /** SELECT 표현식: bubbles + owner(users) FK 조인 (bubbles.created_by → users.id) */
-const BUBBLE_SELECT_WITH_OWNER = '*, owner:users!created_by(nickname, handle)'
+const BUBBLE_SELECT_WITH_OWNER = '*, owner:users!created_by(nickname, handle), bubble_photos(url, order_index)'
 
 function toBubble(row: Record<string, unknown>): Bubble {
   const ownerRow = row.owner as { nickname?: string; handle?: string | null } | null | undefined
+  const photos = row.bubble_photos as Array<{ url: string; order_index: number }> | null | undefined
+  const sortedPhotos = photos && photos.length > 0
+    ? [...photos].sort((a, b) => a.order_index - b.order_index)
+    : null
   return {
     id: row.id as string,
     name: row.name as string,
@@ -76,6 +80,7 @@ function toBubble(row: Record<string, unknown>): Bubble {
     createdBy: row.created_by as string | null,
     ownerNickname: ownerRow?.nickname ?? null,
     ownerHandle: ownerRow?.handle ?? null,
+    coverPhotoUrl: sortedPhotos ? sortedPhotos[0].url : null,
     inviteCode: row.invite_code as string | null,
     inviteExpiresAt: row.invite_expires_at as string | null,
     createdAt: row.created_at as string,

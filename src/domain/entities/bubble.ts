@@ -41,6 +41,8 @@ export interface Bubble {
   ownerNickname: string | null
   /** 오너 핸들 (optional, @prefix 없이 원본) */
   ownerHandle: string | null
+  /** bubble_photos 첫 번째 사진 URL (카드/리스트 썸네일용) */
+  coverPhotoUrl: string | null
   inviteCode: string | null
   inviteExpiresAt: string | null
   createdAt: string

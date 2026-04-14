@@ -23,7 +23,7 @@ interface AllRecordCardProps {
 }
 
 const SOURCE_LABELS: Record<RecordSource, string> = {
-  bubble: '모임',
+  bubble: '버블',
   following: '팔로잉',
   public: '공개',
 }
@@ -106,23 +106,16 @@ export function AllRecordCard({
             {SOURCE_LABELS[source]}
           </span>
         </div>
-        <p className="mt-0.5 flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-hint)' }}>
-          {comment && (
-            <span className="truncate" style={{ color: 'var(--text-sub)' }}>{comment}</span>
-          )}
-          {scene && (
-            <>
-              {comment && <span>·</span>}
-              <span className="shrink-0">{scene}</span>
-            </>
-          )}
-          {visitDate && (
-            <>
-              {(comment || scene) && <span>·</span>}
-              <span className="shrink-0">{visitDate}</span>
-            </>
-          )}
-        </p>
+        {comment && (
+          <p className="mt-0.5 text-[11px] leading-relaxed" style={{ color: 'var(--text-sub)' }}>{comment}</p>
+        )}
+        {(scene || visitDate) && (
+          <p className="mt-0.5 flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-hint)' }}>
+            {scene && <span className="shrink-0">{scene}</span>}
+            {scene && visitDate && <span>·</span>}
+            {visitDate && <span className="shrink-0">{visitDate}</span>}
+          </p>
+        )}
       </div>
 
       {/* 미니 사분면 + 점수 */}

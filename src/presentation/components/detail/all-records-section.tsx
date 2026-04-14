@@ -17,7 +17,7 @@ interface AllRecordsSectionProps {
 
 const SOURCE_CHIPS: { key: SourceFilter; label: string }[] = [
   { key: 'all', label: '전체' },
-  { key: 'bubble', label: '모임' },
+  { key: 'bubble', label: '버블' },
   { key: 'following', label: '팔로잉' },
   { key: 'public', label: '공개' },
 ]
@@ -75,9 +75,9 @@ export function AllRecordsSection({ targetId, targetType }: AllRecordsSectionPro
         </div>
       ) : records.length > 0 ? (
         <div className="mt-3 flex flex-col">
-          {records.map((r) => (
+          {records.map((r, idx) => (
             <AllRecordCard
-              key={`${r.source}-${r.id}`}
+              key={`${r.source}-${r.id}-${idx}`}
               authorNickname={r.authorNickname}
               authorAvatar={r.authorAvatar}
               authorAvatarColor={r.authorAvatarColor}
