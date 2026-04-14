@@ -122,19 +122,22 @@ export function BubbleCard({
           ].filter(Boolean).join(' · ')}
         </p>
 
-        {/* 전문 분야 태그 또는 가입 버튼 */}
+        {/* 전문 분야 태그 또는 가입 버튼 (상위 레벨 2개만) */}
         <div className="mt-auto pt-1.5">
           {expertise && expertise.length > 0 && (
             <div className="flex flex-wrap items-center gap-1">
-              {expertise.map((e) => (
-                <span
-                  key={e.axisValue}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                  style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
-                >
-                  {e.axisValue} Lv.{Math.round(e.avgLevel)}
-                </span>
-              ))}
+              {[...expertise]
+                .sort((a, b) => b.avgLevel - a.avgLevel)
+                .slice(0, 2)
+                .map((e) => (
+                  <span
+                    key={e.axisValue}
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{ backgroundColor: 'var(--accent-social-light)', color: 'var(--accent-social)' }}
+                  >
+                    {e.axisValue} Lv.{Math.round(e.avgLevel)}
+                  </span>
+                ))}
             </div>
           )}
           {onJoin && !role && (

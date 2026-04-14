@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-14 #39 — 버블 카드 레벨 벳지 상위 2개만 노출
+- **영역**: presentation/components/bubble/bubble-card.tsx(expertise 정렬+slice(0,2))
+- **맥락**: 버블 카드뷰의 전문 분야 태그(Lv.X)가 home-container.getExpertiseTop3에서 넘어온 3개를 모두 표시하고 있었음. 카드 공간 대비 정보량이 많아 상위 2개만 노출하도록 카드 내부에서 sort(avgLevel desc) + slice(0,2)로 강제. CompactListBubble(리스트뷰)은 영향 없음.
+- **미완료**: 버블 카드뷰·상세페이지에 오너 닉네임/핸들 표시 (파이프라인 방식 사용자 확인 대기)
+- **다음**: 오너 표시 구현 (A안 엔티티 조인 vs B안 별도 훅 결정 후)
+
 ### 2026-04-14 #38 — 버블 상세 비멤버 액션 버튼 정리 (가입하기/대상추가 FAB 게이트)
 - **영역**: presentation/containers/bubble-detail-container.tsx(isMember/canJoin 게이트, 가입하기 버튼 + BubbleJoinContainer 연결, 대상추가 FAB 멤버전용), application/hooks/use-bubble-detail.ts(refetch를 멤버정보까지 재조회하도록 확장)
 - **맥락**: 비멤버·비오너 사용자에게 "초대" 버튼이 노출되던 버그 수정. 가입 상태(owner/admin/member)에 따라 초대 버튼과 "가입하기" 버튼을 상호배타적으로 노출. joinPolicy에 따라 라벨 분기(closed→팔로우, manual_approve→가입신청, open/auto_approve→가입하기, invite_only→숨김). 기존 미사용 상태였던 BubbleJoinContainer를 재활용해 JoinFlow 시트 연결. 가입 성공 시 useBubbleDetail.refetch로 멤버 정보 재조회. 대상추가 FAB도 멤버전용으로 게이트.
@@ -59,10 +65,4 @@
 - **맥락**: 찜(bookmark) 기능을 버블 기반 큐레이션으로 전환 결정. (1) FabAdd를 Speed Dial로 변경(기록 추가/버블에 추가 2개 메뉴, dim overlay, ×전환). (2) "버블에 추가" → 아이템 배경 틴트 선택 모드 → FAB "N개 추가" 버튼 변환 → BubblePickerSheet(버블 목록+BubbleIcon+새 버블 만들기). (3) Heart/전체찜 UI 전면 제거. (4) 바텀시트 z-index 90/91로 상향(지도 위). (5) 버블 생성 후 sync 에러 시에도 라우팅 진행.
 - **미완료**: 상세 페이지 FAB Speed Dial 적용, 버블 포크(복제) 기능, bookmarks 테이블 deprecation
 - **다음**: 상세 페이지에서 FAB "버블에 추가" → 바로 버블 선택 시트, 버블 포크 1탭 복제
-
-### 2026-04-12 #29 — 찜(Heart) 토글 리스트/카드 뷰 전체 적용
-- **영역**: domain/repositories/bookmark-repository(batchAdd/batchRemove), infrastructure/supabase-bookmark-repository, application/hooks/use-bookmark(useBookmarkMap), presentation/(bookmark-button, record-card, wine-card, compact-list-item, map-compact-item, search-result-item, nearby-list, search-results), containers/(home, search)
-- **맥락**: 찜 기능을 상세 페이지 히어로에서 전체 리스트/카드 뷰로 확장. 이후 찜→버블 전환 결정으로 #30에서 Heart UI 전면 제거.
-- **미완료**: 없음 (#30으로 대체)
-- **다음**: 없음
 
