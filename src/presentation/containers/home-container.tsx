@@ -276,7 +276,7 @@ export function HomeContainer() {
   }, [bubbleTypeValue])
 
   const {
-    activeTab, setActiveTab, viewMode, cycleViewMode,
+    activeTab, setActiveTab, viewMode, setViewMode, cycleViewMode,
     toggleMap,
     isSortOpen, toggleSort, closeSort,
     isSearchOpen, toggleSearch,
@@ -581,6 +581,8 @@ export function HomeContainer() {
   }, [setCurrentSort, toggleSort])
 
   const handleLogoReset = useCallback(() => {
+    setActiveTab('restaurant')
+    setViewMode('card')
     setActiveBubbleId(null)
     setSocialFilter({ followingUserId: null, bubbleId: null })
     const defaultChips = [createDefaultViewChip()]
@@ -588,7 +590,7 @@ export function HomeContainer() {
     setFilterRules(chipsToFilterRules(defaultChips))
     setCurrentSort('latest')
     setSearchQuery('')
-  }, [setFilterRules, setCurrentSort, setSearchQuery])
+  }, [setActiveTab, setViewMode, setFilterRules, setCurrentSort, setSearchQuery])
 
   // 필터/검색 적용 (타겟 기반, 그룹화 불필요)
   const filteredTargets = useMemo(() => {

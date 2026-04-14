@@ -129,7 +129,7 @@ export function useHomeState(options?: UseHomeStateOptions) {
   const closeSort = useCallback(() => setIsSortOpen(false), [])
 
   return {
-    activeTab, setActiveTab, viewMode, cycleViewMode,
+    activeTab, setActiveTab, viewMode, setViewMode, cycleViewMode,
     toggleMap,
     isSortOpen, toggleSort, closeSort,
     isSearchOpen, toggleSearch,
