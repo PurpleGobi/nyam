@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { UserPlus, UserCheck, Users } from 'lucide-react'
+import { UserPlus, UserCheck } from 'lucide-react'
 import type { AccessLevel } from '@/domain/entities/follow'
 import { BottomSheet } from '@/presentation/components/ui/bottom-sheet'
 
@@ -9,32 +9,28 @@ interface FollowButtonProps {
   accessLevel: AccessLevel
   onToggle: () => void
   isLoading: boolean
-  /** 대상이 비공개 프로필인지 */
-  isPrivate?: boolean
 }
 
-const CONFIG: Record<AccessLevel, { label: string; icon: typeof UserPlus; variant: 'cta' | 'muted' | 'positive' }> = {
+const CONFIG: Record<AccessLevel, { label: string; icon: typeof UserPlus; variant: 'cta' | 'muted' }> = {
   none: { label: '팔로우', icon: UserPlus, variant: 'cta' },
-  follow: { label: '팔로잉', icon: UserCheck, variant: 'muted' },
-  mutual: { label: '맞팔로우', icon: Users, variant: 'positive' },
+  following: { label: '팔로잉', icon: UserCheck, variant: 'muted' },
 }
 
 const VARIANT_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   cta: { bg: 'var(--accent-social)', color: '#FFFFFF', border: 'none' },
   muted: { bg: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' },
-  positive: { bg: 'var(--positive)', color: '#FFFFFF', border: 'none' },
 }
 
 const LONG_PRESS_DURATION = 500
 
-export function FollowButton({ accessLevel, onToggle, isLoading, isPrivate = false }: FollowButtonProps) {
+export function FollowButton({ accessLevel, onToggle, isLoading }: FollowButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const didLongPress = useRef(false)
 
   const { label, icon: Icon, variant } = CONFIG[accessLevel]
   const style = VARIANT_STYLES[variant]
-  const isFollowing = accessLevel === 'follow' || accessLevel === 'mutual'
+  const isFollowing = accessLevel === 'following'
 
   const handlePointerDown = useCallback(() => {
     if (!isFollowing) return
@@ -57,11 +53,8 @@ export function FollowButton({ accessLevel, onToggle, isLoading, isPrivate = fal
       didLongPress.current = false
       return
     }
-    if (isPrivate && accessLevel === 'none') return
     onToggle()
-  }, [accessLevel, isPrivate, onToggle])
-
-  const disabled = isLoading || (isPrivate && accessLevel === 'none')
+  }, [onToggle])
 
   return (
     <>
@@ -71,8 +64,7 @@ export function FollowButton({ accessLevel, onToggle, isLoading, isPrivate = fal
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        disabled={disabled}
-        title={isPrivate && accessLevel === 'none' ? '비공개 프로필' : undefined}
+        disabled={isLoading}
         className="flex items-center gap-1.5 rounded-[10px] px-4 py-[9px] text-[13px] font-bold transition-opacity active:opacity-75 disabled:opacity-50"
         style={{
           backgroundColor: style.bg,

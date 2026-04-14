@@ -63,13 +63,9 @@ export function useBubblerProfile(
       try {
         let accessLevel: AccessLevel = 'none'
         if (currentUserId && currentUserId !== targetUserId) {
-          const [iFollow, theyFollow] = await Promise.all([
-            followRepo.getAccessLevel(currentUserId, targetUserId).then((l) => l !== 'none'),
-            followRepo.getAccessLevel(targetUserId, currentUserId).then((l) => l !== 'none'),
-          ])
-          accessLevel = getAccessLevel(iFollow, theyFollow)
+          accessLevel = await followRepo.getAccessLevel(currentUserId, targetUserId)
         } else if (currentUserId === targetUserId) {
-          accessLevel = 'mutual'
+          accessLevel = 'following'
         }
 
         const profile = await profileRepo.getBubblerProfile(targetUserId, bubbleId, activeTab)

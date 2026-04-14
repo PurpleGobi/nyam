@@ -70,7 +70,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         />
 
         {/* 버블 컨텍스트 카드 — mutual only (버블 멤버끼리) */}
-        {data.accessLevel === 'mutual' && data.bubbleContext && (
+        {data.accessLevel === 'following' && data.bubbleContext && (
           <BubbleContextCard
             bubbleId={data.bubbleContext.bubbleId}
             bubbleName={data.bubbleContext.bubbleName}
@@ -107,7 +107,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         )}
 
         {/* 강력 추천 (Picks) — mutual only */}
-        {data.accessLevel === 'mutual' && (
+        {data.accessLevel === 'following' && (
           <PicksGrid
             picks={data.topPicks}
             title={`${data.nickname}의 강력 추천`}
@@ -116,7 +116,7 @@ export function BubblerProfileContainer({ userId, bubbleId = null }: BubblerProf
         )}
 
         {/* 최근 기록 — mutual only */}
-        {data.accessLevel === 'mutual' && (
+        {data.accessLevel === 'following' && (
           <RecentRecords
             records={data.recentRecords}
             accentType={activeTab === 'restaurant' ? 'food' : 'wine'}

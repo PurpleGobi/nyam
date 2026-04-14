@@ -12,10 +12,12 @@ export interface FollowRepository {
   getAccessLevel(userId: string, targetUserId: string): Promise<AccessLevel>
   getFollowers(userId: string, options?: { limit?: number; offset?: number }): Promise<Follow[]>
   getFollowing(userId: string, options?: { limit?: number; offset?: number }): Promise<Follow[]>
-  /** 맞팔 목록 (양쪽 모두 accepted) */
+  /** 맞팔 목록 (양쪽 모두 팔로우) — 소셜 피드 등 내부 용도 */
   getMutualFollows(userId: string): Promise<Follow[]>
   getCounts(userId: string): Promise<{ followers: number; following: number; mutual: number }>
   isMutualFollow(userId: string, targetUserId: string): Promise<boolean>
   /** 팔로잉 유저 프로필 목록 (소셜 필터용) */
   getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; avatarUrl: string | null }>>
+  /** follows 테이블 실시간 구독 (나와 관련된 변경 감지) */
+  subscribeToChanges(userId: string, onChange: () => void): { unsubscribe: () => void }
 }

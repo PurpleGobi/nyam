@@ -1,8 +1,5 @@
 'use client'
 
-// src/application/hooks/use-follow-list-with-similarity.ts
-// R3: domain 인터페이스에만 의존. infrastructure 직접 사용 금지.
-
 import { useState, useEffect, useMemo, useRef } from 'react'
 import type { SimilarityResult } from '@/domain/entities/similarity'
 import { profileRepo, similarityRepo } from '@/shared/di/container'
@@ -17,9 +14,8 @@ export interface EnrichedFollowUser {
   avatarColor: string | null
   level: number
   levelColor: string
-  // CF 적합도
-  similarity: number | null       // 0~1
-  confidence: number | null       // 0~1
+  similarity: number | null
+  confidence: number | null
 }
 
 interface UseFollowListWithSimilarityResult {
@@ -27,23 +23,17 @@ interface UseFollowListWithSimilarityResult {
   following: EnrichedFollowUser[]
   counts: { followers: number; following: number }
   isLoading: boolean
-  // 정렬 옵션
   sortedBy: 'default' | 'similarity'
   setSortedBy: (sort: 'default' | 'similarity') => void
+  refresh: () => void
 }
 
-async function enrichIds(
-  ids: string[],
-  currentUserId: string,
-): Promise<EnrichedFollowUser[]> {
+async function enrichIds(ids: string[], currentUserId: string): Promise<EnrichedFollowUser[]> {
   if (ids.length === 0) return []
 
-  // 프로필 배치 + 적합도 배치를 병렬 실행 (N+1 → 2 쿼리)
   const [profileResults, similarityResults] = await Promise.allSettled([
     profileRepo.getUserProfiles(ids),
-    Promise.allSettled(
-      ids.map((id) => similarityRepo.getSimilarity(currentUserId, id, 'restaurant')),
-    ),
+    Promise.allSettled(ids.map((id) => similarityRepo.getSimilarity(currentUserId, id, 'restaurant'))),
   ])
 
   const profileMap = profileResults.status === 'fulfilled' ? profileResults.value : new Map()
@@ -54,11 +44,8 @@ async function enrichIds(
       const p = profileMap.get(id)
       if (!p) return null
       const level = Math.max(1, Math.floor(p.totalXp / 100) + 1)
-
       const simResult = simResults[i]
-      const sim: SimilarityResult | null =
-        simResult?.status === 'fulfilled' ? simResult.value : null
-
+      const sim: SimilarityResult | null = simResult?.status === 'fulfilled' ? simResult.value : null
       return {
         userId: id,
         nickname: p.nickname,
@@ -74,43 +61,37 @@ async function enrichIds(
     .filter((x): x is EnrichedFollowUser => x !== null)
 }
 
-export function useFollowListWithSimilarity(
-  userId: string | null,
-): UseFollowListWithSimilarityResult {
-  const { followers, following, counts, isLoading } = useFollowList(userId)
+export function useFollowListWithSimilarity(userId: string | null): UseFollowListWithSimilarityResult {
+  const { followers, following, counts, isLoading, refresh } = useFollowList(userId)
 
   const [followerUsers, setFollowerUsers] = useState<EnrichedFollowUser[]>([])
   const [followingUsers, setFollowingUsers] = useState<EnrichedFollowUser[]>([])
-  const [enrichDone, setEnrichDone] = useState(false)
+  const [enriching, setEnriching] = useState(false)
   const [sortedBy, setSortedBy] = useState<'default' | 'similarity'>('default')
   const cancelRef = useRef(false)
 
   useEffect(() => {
     if (isLoading || !userId) return
-
     cancelRef.current = false
 
     const followerIds = followers.map((f) => f.followerId)
     const followingIds = following.map((f) => f.followingId)
+    if (followerIds.length + followingIds.length === 0) return
+
+    void Promise.resolve().then(() => { if (!cancelRef.current) setEnriching(true) })
 
     Promise.all([enrichIds(followerIds, userId), enrichIds(followingIds, userId)])
       .then(([fUsers, gUsers]) => {
         if (!cancelRef.current) {
           setFollowerUsers(fUsers)
           setFollowingUsers(gUsers)
-          setEnrichDone(true)
         }
       })
-      .catch(() => {
-        if (!cancelRef.current) {
-          setEnrichDone(true)
-        }
-      })
+      .finally(() => { if (!cancelRef.current) setEnriching(false) })
 
     return () => { cancelRef.current = true }
   }, [isLoading, followers, following, userId])
 
-  // 정렬 적용
   const sortedFollowers = useMemo(() => {
     if (sortedBy !== 'similarity') return followerUsers
     return [...followerUsers].sort((a, b) => (b.similarity ?? -1) - (a.similarity ?? -1))
@@ -121,9 +102,6 @@ export function useFollowListWithSimilarity(
     return [...followingUsers].sort((a, b) => (b.similarity ?? -1) - (a.similarity ?? -1))
   }, [followingUsers, sortedBy])
 
-  // enrichment 진행 중 = followList 로드 완료 && enrichDone 아직 false
-  const enriching = !isLoading && !!userId && !enrichDone
-
   return {
     followers: sortedFollowers,
     following: sortedFollowing,
@@ -131,5 +109,6 @@ export function useFollowListWithSimilarity(
     isLoading: isLoading || enriching,
     sortedBy,
     setSortedBy,
+    refresh,
   }
 }

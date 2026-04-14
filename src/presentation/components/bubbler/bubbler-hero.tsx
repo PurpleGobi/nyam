@@ -104,12 +104,8 @@ export function BubblerHero({
           {/* 통계 행 (목업 .profile-stats-row) */}
           <div className="flex gap-3.5">
             <StatItem label="기록" value={recordCount} />
-            {accessLevel !== 'none' && (
-              <>
-                <StatItem label="팔로워" value={followerCount} />
-                <StatItem label="팔로잉" value={followingCount} />
-              </>
-            )}
+            <StatItem label="팔로워" value={followerCount} />
+            <StatItem label="팔로잉" value={followingCount} />
           </div>
         </div>
       </div>
@@ -146,20 +142,18 @@ export function BubblerHero({
               isLoading={isFollowLoading}
             />
           </div>
-          {accessLevel === 'mutual' && (
-            <button
-              type="button"
-              className="flex items-center gap-[5px] rounded-[10px] px-3.5 py-[9px] text-[13px] font-semibold transition-colors active:opacity-75"
-              style={{
-                backgroundColor: 'var(--bg-section)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <BarChart2 size={14} />
-              취향 비교
-            </button>
-          )}
+          <button
+            type="button"
+            className="flex items-center gap-[5px] rounded-[10px] px-3.5 py-[9px] text-[13px] font-semibold transition-colors active:opacity-75"
+            style={{
+              backgroundColor: 'var(--bg-section)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <BarChart2 size={14} />
+            취향 비교
+          </button>
         </div>
       )}
     </div>

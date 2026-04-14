@@ -6,31 +6,12 @@ export class SupabaseFollowRepository implements FollowRepository {
   private get supabase() { return createClient() }
 
   async follow(followerId: string, followingId: string): Promise<Follow> {
-    // follow_policy 기반 팔로우 정책 확인
-    const { data: target } = await this.supabase
-      .from('users')
-      .select('is_public, follow_policy')
-      .eq('id', followingId)
-      .single()
-
-    if (!target?.is_public && target?.follow_policy === 'blocked') {
-      throw new Error('팔로우가 차단된 프로필입니다')
-    }
-
-    // follow_policy에 따른 status 결정
-    let status: FollowStatus = 'pending'
-    if (target?.is_public || target?.follow_policy === 'auto_approve') {
-      status = 'accepted'
-    } else if (target?.follow_policy === 'manual_approve') {
-      status = 'pending'
-    } else if (target?.follow_policy === 'conditional') {
-      // conditional 로직은 후속 구현. 보수적으로 pending 처리
-      status = 'pending'
-    }
-
     const { data, error } = await this.supabase
       .from('follows')
-      .insert({ follower_id: followerId, following_id: followingId, status })
+      .upsert(
+        { follower_id: followerId, following_id: followingId, status: 'accepted' as FollowStatus },
+        { onConflict: 'follower_id,following_id' },
+      )
       .select()
       .single()
     if (error) throw new Error(`팔로우 실패: ${error.message}`)
@@ -46,17 +27,14 @@ export class SupabaseFollowRepository implements FollowRepository {
   }
 
   async getAccessLevel(userId: string, targetUserId: string): Promise<AccessLevel> {
-    if (userId === targetUserId) return 'mutual'
-    const isMutual = await this.isMutualFollow(userId, targetUserId)
-    if (isMutual) return 'mutual'
+    if (userId === targetUserId) return 'following'
     const { data } = await this.supabase
       .from('follows')
       .select('status')
       .eq('follower_id', userId)
       .eq('following_id', targetUserId)
-      .eq('status', 'accepted')
       .single()
-    return data ? 'follow' : 'none'
+    return data ? 'following' : 'none'
   }
 
   async getFollowStatus(followerId: string, followingId: string): Promise<Follow | null> {
@@ -86,61 +64,40 @@ export class SupabaseFollowRepository implements FollowRepository {
   }
 
   async getMutualFollows(userId: string): Promise<Follow[]> {
-    // 내가 팔로우하는 사람 + 나를 팔로우하는 사람을 병렬 조회 후 교집합
     const [{ data: myFollowing }, { data: theirFollowing }] = await Promise.all([
-      this.supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId)
-        .eq('status', 'accepted'),
-      this.supabase
-        .from('follows')
-        .select('follower_id')
-        .eq('following_id', userId)
-        .eq('status', 'accepted'),
+      this.supabase.from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted'),
+      this.supabase.from('follows').select('follower_id').eq('following_id', userId).eq('status', 'accepted'),
     ])
     if (!myFollowing || myFollowing.length === 0) return []
     if (!theirFollowing || theirFollowing.length === 0) return []
 
     const myFollowingSet = new Set(myFollowing.map((f) => f.following_id as string))
-    const mutualIds = (theirFollowing ?? [])
-      .map((f) => f.follower_id as string)
-      .filter((id) => myFollowingSet.has(id))
-
+    const mutualIds = (theirFollowing ?? []).map((f) => f.follower_id as string).filter((id) => myFollowingSet.has(id))
     if (mutualIds.length === 0) return []
 
     const { data: mutuals } = await this.supabase
-      .from('follows')
-      .select('*')
-      .eq('follower_id', userId)
-      .eq('status', 'accepted')
-      .in('following_id', mutualIds)
+      .from('follows').select('*').eq('follower_id', userId).eq('status', 'accepted').in('following_id', mutualIds)
     return (mutuals ?? []).map(mapFollow)
   }
 
   async getCounts(userId: string): Promise<{ followers: number; following: number; mutual: number }> {
-    const [{ count: followers }, { count: following }] = await Promise.all([
-      this.supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId).eq('status', 'accepted'),
-      this.supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId).eq('status', 'accepted'),
-    ])
-    // mutual = 양방향 모두 accepted인 수
-    const mutualList = await this.getMutualFollows(userId)
-    return { followers: followers ?? 0, following: following ?? 0, mutual: mutualList.length }
+    const { data } = await this.supabase
+      .rpc('follow_counts', { p_user_id: userId })
+      .single() as { data: { followers: number; following: number; mutual: number } | null }
+    return {
+      followers: Number(data?.followers ?? 0),
+      following: Number(data?.following ?? 0),
+      mutual: Number(data?.mutual ?? 0),
+    }
   }
 
   async getFollowingProfiles(userId: string): Promise<Array<{ id: string; nickname: string; avatarUrl: string | null }>> {
     const { data: followRows } = await this.supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', userId)
-      .eq('status', 'accepted')
+      .from('follows').select('following_id').eq('follower_id', userId).eq('status', 'accepted')
     if (!followRows || followRows.length === 0) return []
 
     const followingIds = followRows.map((f) => f.following_id as string)
-    const { data: users } = await this.supabase
-      .from('users')
-      .select('id, nickname, avatar_url')
-      .in('id', followingIds)
+    const { data: users } = await this.supabase.from('users').select('id, nickname, avatar_url').in('id', followingIds)
     return (users ?? []).map((u) => ({
       id: u.id as string,
       nickname: (u.nickname as string) ?? '',
@@ -149,11 +106,17 @@ export class SupabaseFollowRepository implements FollowRepository {
   }
 
   async isMutualFollow(userId: string, targetUserId: string): Promise<boolean> {
-    const { data } = await this.supabase.rpc('is_mutual_follow', {
-      p_user_id: userId,
-      p_target_id: targetUserId,
-    })
+    const { data } = await this.supabase.rpc('is_mutual_follow', { p_user_id: userId, p_target_id: targetUserId })
     return data === true
+  }
+
+  subscribeToChanges(userId: string, onChange: () => void): { unsubscribe: () => void } {
+    const channel = this.supabase
+      .channel(`follows:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `following_id=eq.${userId}` }, () => onChange())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `follower_id=eq.${userId}` }, () => onChange())
+      .subscribe()
+    return { unsubscribe: () => { this.supabase.removeChannel(channel) } }
   }
 }
 
