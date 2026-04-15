@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-15 #43 — 버블 카드/리스트뷰 최신 데이터 싱크 수정
+- **영역**: application/hooks/(use-bubble-list, use-bubble-discover, use-bubble-expertise, use-bubble-similarity에 refreshKey 추가), presentation/containers/home-container(bubbleRefreshKey 상태+visibilitychange 자동 갱신, 아이템 추가/제거·가입취소 후 refreshBubbles 호출)
+- **맥락**: 버블 카드/리스트뷰의 기록수·멤버수·전문성·적합도가 일회성 로드 후 갱신되지 않던 문제. DB 트리거는 즉시 갱신하지만 UI 재조회 메커니즘 부재. 4개 훅에 refreshKey 파라미터 추가, home-container에서 액션 후 + visibilitychange 시 자동 갱신.
+- **미완료**: 없음
+- **다음**: bubble-detail-container의 isOwner→isMember 변경 커밋 (별도)
+
 ### 2026-04-15 #42 — CF Shrinkage mean centering + 적합도 UI
 - **영역**: supabase/functions/predict-score(shrinkage 보정 평균 도입, λ=10, 전체평균 가중 보간, profiles→users 수정), docs/CF_SYSTEM.md(§3.1·§3.3 수식 업데이트), domain/similarity-repository(BubbleSimilarityResult+getBubbleSimilarities), infrastructure/supabase-similarity-repository(버블 적합도 일괄 조회), application/use-bubble-similarity(restaurant+wine 병합 훅), presentation/(mini-profile-popup 유저 적합도, bubble-card·compact-list-bubble·bubble-detail-container 버블 적합도), supabase migrations(user_score_means+user_similarities 테이블 생성, records RLS 인증유저 전체 읽기, redundant SELECT 정책 제거)
 - **맥락**: (1) records 공개 기록 표시 불일치 → records_authenticated_read RLS 추가 + redundant 정책 4개 제거. (2) Nyam 점수 미산출 → user_score_means/user_similarities 테이블 DB 미적용 발견·생성·시드. (3) Edge Function 배포 버전 불일치(MIN_OVERLAP=3, mutual 4상태) → repo 코드로 재배포(v2→v3). (4) full mean centering이 n=2~3에서 왜곡(50+58→69) → shrinkage 도입으로 57로 개선. (5) 미니 프로필에 유저간 적합도, 버블 카드/리스트/상세에 버블 적합도 표시.
@@ -65,11 +71,5 @@
 - **맥락**: (1) 홈뷰에서 버블 필터 활성 시 FAB에 "버블에서 제거" 메뉴 추가 — 선택 모드로 아이템 선택 후 BubblePickerSheet 없이 바로 제거+리스트 갱신. (2) BubblePickerSheet에서 현재 보고 있는 버블 제외(자기 버블 중복 추가 방지). (3) 버블 생성/설정: 공유 규칙을 수동/자동 라디오로 변경(디폴트 수동). (4) 버블 상세: 가입조건·공개설정 태그, 통계 카드를 상세로 이동. (5) 설정: stats prop 제거, 토글 레이아웃 정리, 저장 후 상세 페이지 복귀.
 - **미완료**: 없음
 - **다음**: 브라우저 QA
-
-### 2026-04-13 #32 — 찜(bookmark) 기능 전체 제거
-- **영역**: domain/(entities/bookmark 삭제, repositories/bookmark-repository 삭제, entities/home-target에서 isBookmarked/isCellar 제거, services/filter-matcher에서 bookmark/cellar 필터 제거), infrastructure/(supabase-bookmark-repository 삭제, supabase-home-repository에서 bookmarks 쿼리 제거), application/(use-bookmark 삭제, use-bubble-auto-sync에서 syncBookmarkToAllBubbles 제거, use-naver-import+use-reactions에서 bookmarkRepo 제거), presentation/(bookmark-button 삭제, hero-carousel에서 하트 제거, search-result-item에서 Heart 제거, wine-card isCellar dead code 제거, home-container isCellar 분기 제거, restaurant/wine-detail-container useBookmark 제거), shared/di/container.ts bookmarkRepo 제거, CODEBASE.md+DATA_MODEL.md 갱신
-- **맥락**: 찜 → 버블 큐레이션 전환 완료에 따른 dead code 전면 삭제. 5파일 삭제 + 17파일 정리, 순 -558줄. bookmarks 테이블 Supabase 쿼리 1개 추가 제거로 홈 성능 소폭 개선.
-- **미완료**: bookmarks DB 테이블 DROP 마이그레이션 (데이터 백업 후 별도 진행)
-- **다음**: bookmarks 테이블 마이그레이션 정리, supabase/types.ts 재생성
 
 
