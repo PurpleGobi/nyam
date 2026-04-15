@@ -853,6 +853,7 @@ export function HomeContainer() {
             setMapSearchSelectedId(id)
             mapSearchSuppressIdleRef.current = true
           } : undefined}
+          navigateOnFirstClick
           isBubbleSelecting={isBubbleSelectMode}
           bubbleSelectIds={bubbleSelectIds}
           onBubbleSelectToggle={toggleBubbleSelectItem}

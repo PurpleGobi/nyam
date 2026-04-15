@@ -348,7 +348,7 @@ function SearchInner() {
             externalSelectedId={screenState !== 'idle' ? searchSelectedId : undefined}
             onExternalSelect={screenState !== 'idle' ? setSearchSelectedId : undefined}
             disablePanOnSelect={screenState === 'idle'}
-            navigateOnFirstClick={screenState !== 'idle'}
+            navigateOnFirstClick
             listFooter={
               <>
                 {/* 검색 중 로딩 */}
