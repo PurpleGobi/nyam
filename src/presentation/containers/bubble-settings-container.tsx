@@ -12,6 +12,7 @@ import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
 import { BUBBLE_PHOTO_CONSTANTS } from '@/domain/entities/bubble-photo'
 import { useBubbleRoles } from '@/application/hooks/use-bubble-roles'
+import { useBubbleMembers } from '@/application/hooks/use-bubble-members'
 import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { useBubbleInviteMember } from '@/application/hooks/use-bubble-invite-member'
@@ -21,6 +22,7 @@ import { useToast } from '@/presentation/components/ui/toast'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
 import type { Bubble, BubbleMemberRole, BubbleShareRule, VisibilityOverride } from '@/domain/entities/bubble'
 import type { PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
+import type { EnrichedBubbleMember } from '@/application/hooks/use-bubble-members'
 
 interface BubbleSettingsContainerProps {
   bubbleId: string
@@ -38,7 +40,8 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const { photos: bubblePhotos, savePhotos: saveBubblePhotos, deletePhoto: deleteBubblePhoto } = useBubblePhotos(bubbleId)
   const { photos: pendingPhotos, addFiles, removePhoto: removePendingPhoto, initExistingPhotos, replacePhoto, reorderPhotos, uploadAll, isUploading } = usePhotoUpload()
   const [photosInitialized, setPhotosInitialized] = useState(false)
-  const { approveJoin, rejectJoin, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
+  const { approveJoin, rejectJoin, changeRole, removeMember, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
+  const { members: activeMembers, refetch: refetchMembers, isLoading: membersLoading } = useBubbleMembers(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
   const { showToast } = useToast()
@@ -164,11 +167,23 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const handleApprove = async (targetUserId: string) => {
     await approveJoin(targetUserId)
     refreshPending()
+    refetchMembers()
   }
 
   const handleReject = async (targetUserId: string) => {
     await rejectJoin(targetUserId)
     refreshPending()
+  }
+
+  const handleChangeRole = async (targetUserId: string, newRole: BubbleMemberRole) => {
+    await changeRole(targetUserId, newRole)
+    refetchMembers()
+  }
+
+  const handleRemoveMember = async (targetUserId: string) => {
+    await removeMember(targetUserId)
+    refetchMembers()
+    showToast('멤버가 추방되었습니다', 3000)
   }
 
   return (
@@ -183,6 +198,10 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
           onSave={handleSave}
           onDelete={handleDelete}
           isLoading={isSaving || settingsLoading || rolesLoading}
+          activeMembers={activeMembers}
+          isMembersLoading={membersLoading}
+          onChangeRole={handleChangeRole}
+          onRemoveMember={handleRemoveMember}
           pendingMembers={pendingMembers}
           pendingInvites={pendingInvites}
           onCancelInvite={handleCancelInvite}

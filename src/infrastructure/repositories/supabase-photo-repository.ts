@@ -78,4 +78,20 @@ export class SupabasePhotoRepository implements PhotoRepository {
 
     if (error) throw new Error(`record_photos batch DELETE failed: ${error.message}`)
   }
+
+  async updatePhotoMeta(updates: Array<{ id: string; orderIndex: number; isPublic: boolean }>): Promise<void> {
+    // 개별 UPDATE를 병렬 실행 (Supabase PostgREST는 배치 UPDATE 미지원)
+    const results = await Promise.allSettled(
+      updates.map((u) =>
+        this.supabase
+          .from('record_photos')
+          .update({ order_index: u.orderIndex, is_public: u.isPublic })
+          .eq('id', u.id)
+      ),
+    )
+    const failed = results.find((r) => r.status === 'rejected')
+    if (failed && failed.status === 'rejected') {
+      throw new Error(`record_photos UPDATE failed: ${failed.reason}`)
+    }
+  }
 }

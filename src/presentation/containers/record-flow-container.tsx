@@ -90,7 +90,7 @@ function RecordFlowInner() {
   const { settings } = useSettings()
   const prefTimezone = settings?.prefTimezone ?? null
   const { deleteRecord, isDeleting } = useDeleteRecord()
-  const { savePhotos, deletePhoto: deletePhotoById, getPhotosByRecordId, deleteImage } = usePhotoManagement()
+  const { savePhotos, deletePhoto: deletePhotoById, getPhotosByRecordId, deleteImage, updatePhotoMeta } = usePhotoManagement()
   const { updateRecord } = useRecordUpdate()
   const { fetchTargetXpMeta } = useTargetMeta()
 
@@ -256,6 +256,14 @@ function RecordFlowInner() {
             }
           }
 
+          // 4. 기존 사진의 order_index + isPublic 업데이트 (순서 변경·공개 토글 반영)
+          const existingPhotosToUpdate = photos
+            .filter((p) => p.status === 'uploaded' && dbIds.has(p.id))
+            .map((p) => ({ id: p.id, orderIndex: p.orderIndex, isPublic: p.isPublic }))
+          if (existingPhotosToUpdate.length > 0) {
+            await updatePhotoMeta(existingPhotosToUpdate)
+          }
+
           // 수정 모드에서도 식당 가격대 업데이트
           if (formData.targetType === 'restaurant' && formData.priceRange != null) {
             await fetch('/api/restaurants', {
@@ -395,7 +403,7 @@ function RecordFlowInner() {
         setIsSaving(false)
       }
     },
-    [user, isSaving, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, fetchTargetXpMeta, showToast],
+    [user, isSaving, createRecord, photos, uploadAll, entryPath, targetLat, targetLng, isEditMode, editRecordId, editingRecord, router, state.targetId, state.targetType, syncRecordToAllBubbles, awardXp, thresholds, prefTimezone, updateRecord, getPhotosByRecordId, deleteImage, deletePhotoById, savePhotos, updatePhotoMeta, fetchTargetXpMeta, showToast],
   )
 
   const handleBack = useCallback(() => router.back(), [router])

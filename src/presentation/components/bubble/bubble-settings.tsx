@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, AlertTriangle, Share2, UserPlus, ImagePlus, X } from 'lucide-react'
+import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, AlertTriangle, Share2, UserPlus, Crown, Shield, UserX, Loader2 } from 'lucide-react'
 import type { Bubble, BubbleJoinPolicy, BubbleVisibility, BubbleShareRule, BubbleMemberRole, VisibilityOverride } from '@/domain/entities/bubble'
+import type { EnrichedBubbleMember } from '@/application/hooks/use-bubble-members'
 import { BubbleIcon, BUBBLE_ICON_MAP, BUBBLE_ICON_CATEGORIES } from '@/presentation/components/bubble/bubble-icon'
 import { BubbleDangerZone } from '@/presentation/components/bubble/bubble-danger-zone'
 import { PendingApprovalList, type PendingMemberInfo } from '@/presentation/components/bubble/pending-approval-list'
@@ -63,6 +64,10 @@ interface BubbleSettingsProps {
   onSave: (updates: Partial<Bubble>) => void
   onDelete: () => void
   isLoading: boolean
+  activeMembers?: EnrichedBubbleMember[]
+  isMembersLoading?: boolean
+  onChangeRole?: (userId: string, newRole: BubbleMemberRole) => void
+  onRemoveMember?: (userId: string) => void
   pendingMembers: PendingMemberInfo[]
   pendingInvites?: PendingBubbleInvite[]
   onCancelInvite?: (notificationId: string) => void
@@ -89,6 +94,7 @@ interface BubbleSettingsProps {
 
 export function BubbleSettings({
   bubble, myRole, onSave, onDelete, isLoading,
+  activeMembers, isMembersLoading, onChangeRole, onRemoveMember,
   pendingMembers, pendingInvites, onCancelInvite, onApproveJoin, onRejectJoin, onMemberClick, onViewAllPending,
   shareRule, onShareRuleChange,
   inviteSearchResults, isInviteSearching, isInviting, invitedIds,
@@ -587,6 +593,16 @@ export function BubbleSettings({
               ))}
             </div>
           )}
+
+          {/* 활성 멤버 목록 */}
+          <ActiveMemberList
+            members={activeMembers ?? []}
+            isLoading={isMembersLoading ?? false}
+            isOwner={isOwner}
+            onChangeRole={onChangeRole}
+            onRemoveMember={onRemoveMember}
+            onMemberClick={onMemberClick}
+          />
         </Section>
       )}
 
@@ -696,6 +712,172 @@ function CompactNumberField({ label, value, onChange, min, suffix, placeholder }
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-hint)]">{suffix}</span>
         )}
       </div>
+    </div>
+  )
+}
+
+const ROLE_LABELS: Record<BubbleMemberRole, string> = {
+  owner: '오너',
+  admin: '관리자',
+  member: '멤버',
+  follower: '팔로워',
+}
+
+function ActiveMemberList({
+  members,
+  isLoading,
+  isOwner,
+  onChangeRole,
+  onRemoveMember,
+  onMemberClick,
+}: {
+  members: EnrichedBubbleMember[]
+  isLoading: boolean
+  isOwner: boolean
+  onChangeRole?: (userId: string, newRole: BubbleMemberRole) => void
+  onRemoveMember?: (userId: string) => void
+  onMemberClick?: (userId: string) => void
+}) {
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 size={18} className="animate-spin" style={{ color: 'var(--text-hint)' }} />
+      </div>
+    )
+  }
+
+  if (members.length === 0) return null
+
+  // owner를 먼저, admin, member 순
+  const sorted = [...members].sort((a, b) => {
+    const order: Record<BubbleMemberRole, number> = { owner: 0, admin: 1, member: 2, follower: 3 }
+    return order[a.role] - order[b.role]
+  })
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-[13px] font-semibold text-[var(--text)]">
+        멤버 ({members.length})
+      </p>
+      {sorted.map((m) => {
+        const isOwnerMember = m.role === 'owner'
+        const isAdminMember = m.role === 'admin'
+        const showControls = isOwner && !isOwnerMember
+        const isConfirming = confirmRemoveId === m.userId
+
+        return (
+          <div
+            key={m.userId}
+            className="flex items-center gap-3 rounded-xl p-3"
+            style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+          >
+            {/* 아바타 */}
+            <button
+              type="button"
+              onClick={() => onMemberClick?.(m.userId)}
+              className="shrink-0"
+            >
+              {m.avatarUrl ? (
+                <Image
+                  src={m.avatarUrl}
+                  alt={m.nickname}
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold"
+                  style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+                >
+                  {m.nickname.charAt(0)}
+                </div>
+              )}
+            </button>
+
+            {/* 이름 + 역할 뱃지 */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onMemberClick?.(m.userId)}
+                  className="truncate text-[13px] font-semibold text-[var(--text)]"
+                >
+                  {m.nickname}
+                </button>
+                {isOwnerMember && <Crown size={12} style={{ color: 'var(--accent-social)', flexShrink: 0 }} />}
+                {isAdminMember && <Shield size={12} style={{ color: 'var(--accent-social)', flexShrink: 0 }} />}
+              </div>
+              <p className="text-[11px] text-[var(--text-hint)]">
+                {ROLE_LABELS[m.role]} · Lv.{m.level}
+              </p>
+            </div>
+
+            {/* 오너만: 역할 토글 + 추방 */}
+            {showControls && (
+              <div className="flex shrink-0 items-center gap-1.5">
+                {/* 관리자 토글 */}
+                <button
+                  type="button"
+                  onClick={() => onChangeRole?.(m.userId, isAdminMember ? 'member' : 'admin')}
+                  className="rounded-full px-2 py-1 text-[10px] font-semibold transition-opacity active:opacity-70"
+                  style={{
+                    backgroundColor: isAdminMember ? 'var(--accent-social-light)' : 'var(--bg-section)',
+                    color: isAdminMember ? 'var(--accent-social)' : 'var(--text-sub)',
+                    border: `1px solid ${isAdminMember ? 'var(--accent-social)' : 'var(--border)'}`,
+                  }}
+                >
+                  {isAdminMember ? '관리자' : '일반'}
+                </button>
+
+                {/* 추방 */}
+                {isConfirming ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onRemoveMember?.(m.userId)
+                        setConfirmRemoveId(null)
+                      }}
+                      className="rounded-full px-2 py-1 text-[10px] font-semibold"
+                      style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+                    >
+                      확인
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveId(null)}
+                      className="rounded-full px-2 py-1 text-[10px] font-semibold"
+                      style={{ backgroundColor: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmRemoveId(m.userId)}
+                    className="rounded-full p-1.5 transition-opacity active:opacity-70"
+                    style={{ color: 'var(--text-hint)' }}
+                    title="추방"
+                  >
+                    <UserX size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* 권한 안내 */}
+      {isOwner && (
+        <p className="text-[10px] text-[var(--text-hint)]">
+          관리자는 멤버 초대가 가능합니다. 추방은 오너만 가능합니다.
+        </p>
+      )}
     </div>
   )
 }

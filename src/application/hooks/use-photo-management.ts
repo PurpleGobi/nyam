@@ -38,5 +38,11 @@ export function usePhotoManagement() {
     [],
   )
 
-  return { savePhotos, deletePhoto, getPhotosByRecordId, deleteImage, resizeAndUploadImage }
+  const updatePhotoMeta = useCallback(
+    (updates: Array<{ id: string; orderIndex: number; isPublic: boolean }>) =>
+      photoRepo.updatePhotoMeta(updates),
+    [],
+  )
+
+  return { savePhotos, deletePhoto, getPhotosByRecordId, deleteImage, resizeAndUploadImage, updatePhotoMeta }
 }
