@@ -61,7 +61,7 @@
 - onboarding/, design-system/
 
 ## supabase/
-- migrations/ (77개, 000~077): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개 + 073~077 bubble_items 단순화(source+record_id DROP, 트리거 SECURITY DEFINER, 기록삭제 정리 트리거)
+- migrations/ (78개, 000~078): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052→078 pg_net) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개 + 073~078 bubble_items 완전 단순화(source+record_id+added_by DROP, 기록삭제/멤버탈퇴 트리거, 성능 인덱스)
 - functions/ (6): process-account-deletion, refresh-active-xp, weekly-ranking-snapshot(bubble_items 전환 완료), compute-similarity(CF 증분 갱신), predict-score(단건 CF 예측, JWT+service_role), batch-predict(배치 CF 예측, 최대 50건)
 
 ## DI 등록 현황 (container.ts)

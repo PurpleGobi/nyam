@@ -6,11 +6,11 @@
 
 ---
 
-### 2026-04-15 #46 — bubble_items 테이블 단순화 (source + record_id 제거)
-- **영역**: domain/(bubble.ts: BubbleItemSource 타입+BubbleItem.recordId+BubbleShare.recordId 제거), domain/repositories/(addShare·shareRecord·unshareRecord·getTargetShares·batchUpsertAutoItems 시그니처 변경), infrastructure/supabase-bubble-repository(record_id 기반→target_id+user_id 기반 전환, feed 조회 로직 단순화), application/(use-share-record·use-delete-record·use-bubble-auto-sync·use-bubble-items target 기반 전환), supabase/migrations/073~077(트리거 SECURITY DEFINER 추가+source 컬럼 DROP+record_id 컬럼 DROP+RLS 단순화+기록 삭제 트리거 target_id 기반 재작성)
-- **맥락**: (1) bubble_items의 source(auto/manual) 구분이 불필요한 복잡성 유발 → 제거. (2) record_id가 UNIQUE(bubble_id,target_id,target_type)와 맞지 않는 약한 참조 → target_id+user_id 기반으로 전환. (3) 통계 트리거에 SECURITY DEFINER 없어서 RLS가 UPDATE 차단하던 근본 원인 수정. (4) 기록 삭제 시 해당 타겟의 남은 기록이 0개면 bubble_item 자동 삭제. (5) 수동 버블 공유 시 토스트 알림 추가 (4개 컨테이너).
+### 2026-04-15 #47 — bubble_items 완전 단순화 (source + record_id + added_by 제거)
+- **영역**: domain/(BubbleItem: addedBy+recordId+source 전부 제거), infrastructure/(supabase-bubble-repository ~30곳 added_by→bubble_members+records JOIN, supabase-restaurant/wine/profile-repository 동일 전환), application/(use-bubble-auto-sync·use-bubble-items·use-share-record userId 인자 정리), supabase/migrations/073~078(source DROP→record_id DROP→added_by DROP, 기록삭제 트리거 활성멤버 전체 체크, 멤버탈퇴 트리거 신규, member_item_stats 성능 최적화, RLS 단순화, 성능 인덱스 2개, CF 트리거+Edge Function 배포)
+- **맥락**: bubble_items가 (id, bubble_id, target_id, target_type, added_at)만 남는 순수 큐레이션 테이블로 완전 단순화. "누가 기록했는지"는 records+bubble_members JOIN으로 확인. 기록 삭제 시 활성 멤버 전체 기록 체크 → 아무도 없으면 삭제. 멤버 탈퇴 시에도 동일 정리. CF 적합도/신뢰도 자동 갱신 (compute-similarity 배포 + pg_net 트리거).
 - **미완료**: 없음
-- **다음**: 없음
+- **다음**: 브라우저 QA
 
 ### 2026-04-15 #44 — 버블 설정 페이지 멤버 진입점 개방
 - **영역**: presentation/containers/bubble-detail-container.tsx (설정 아이콘 isOwner→isMember)
