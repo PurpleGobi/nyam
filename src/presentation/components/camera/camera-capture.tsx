@@ -26,9 +26,11 @@ export function CameraCapture({
   previewUrl,
 }: CameraCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const isCameraModeRef = useRef(false)
 
   const handleCameraCapture = useCallback(() => {
     if (inputRef.current) {
+      isCameraModeRef.current = true
       inputRef.current.setAttribute('capture', 'environment')
       inputRef.current.click()
     }
@@ -38,6 +40,17 @@ export function CameraCapture({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
+
+      if (isCameraModeRef.current) {
+        const url = URL.createObjectURL(file)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nyam_${Date.now()}.jpg`
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(url), 3000)
+        isCameraModeRef.current = false
+      }
+
       onCapture(file)
       e.target.value = ''
     },
