@@ -19,10 +19,10 @@ BEGIN
 
   IF TG_OP = 'UPDATE' THEN
     IF NEW.axis_x IS NULL AND OLD.axis_x IS NOT NULL THEN
-      PERFORM extensions.http_post(
+      PERFORM net.http_post(
         url := v_url,
         headers := jsonb_build_object('Authorization', 'Bearer ' || v_key, 'Content-Type', 'application/json'),
-        body := jsonb_build_object('user_id', NEW.user_id, 'item_id', NEW.target_id, 'category', NEW.target_type, 'action', 'DELETE')
+        body := jsonb_build_object('user_id', NEW.user_id, 'item_id', NEW.target_id, 'category', NEW.target_type, 'action', 'DELETE')::text
       );
       RETURN NULL;
     ELSIF NEW.axis_x IS NOT NULL THEN
@@ -32,10 +32,10 @@ BEGIN
     END IF;
   END IF;
 
-  PERFORM extensions.http_post(
+  PERFORM net.http_post(
     url := v_url,
     headers := jsonb_build_object('Authorization', 'Bearer ' || v_key, 'Content-Type', 'application/json'),
-    body := jsonb_build_object('user_id', COALESCE(NEW.user_id, OLD.user_id), 'item_id', COALESCE(NEW.target_id, OLD.target_id), 'category', COALESCE(NEW.target_type, OLD.target_type), 'action', TG_OP::text)
+    body := jsonb_build_object('user_id', COALESCE(NEW.user_id, OLD.user_id), 'item_id', COALESCE(NEW.target_id, OLD.target_id), 'category', COALESCE(NEW.target_type, OLD.target_type), 'action', TG_OP::text)::text
   );
 
   RETURN NULL;
