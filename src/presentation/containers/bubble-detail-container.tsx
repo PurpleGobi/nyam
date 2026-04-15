@@ -97,7 +97,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   }, [setSearchQuery, executeSearch])
 
   const handleAddItemFromSearch = useCallback(async (targetId: string, targetType: 'restaurant' | 'wine') => {
-    await addItemToBubble(bubbleId, targetId, targetType, 'manual')
+    await addItemToBubble(bubbleId, targetId, targetType)
   }, [bubbleId, addItemToBubble])
 
   // 피드에서 활동 요약 계산

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { bubbleRepo } from '@/shared/di/container'
-import type { BubbleItemSource } from '@/domain/entities/bubble'
 
 interface BubbleWithItemStatus {
   bubbleId: string
@@ -52,7 +51,7 @@ export function useBubbleItems(userId: string | null, targetId: string | null, t
   const toggleItem = useCallback(async (bubbleId: string, include: boolean) => {
     if (!targetId) return
     if (include) {
-      await bubbleRepo.addItem(bubbleId, targetId, targetType, 'manual' as BubbleItemSource)
+      await bubbleRepo.addItem(bubbleId, targetId, targetType)
     } else {
       await bubbleRepo.removeItem(bubbleId, targetId, targetType)
     }
@@ -62,9 +61,9 @@ export function useBubbleItems(userId: string | null, targetId: string | null, t
   }, [targetId, targetType])
 
   const addItemToBubble = useCallback(async (
-    bubbleId: string, itemTargetId: string, itemTargetType: 'restaurant' | 'wine', source: BubbleItemSource = 'manual',
+    bubbleId: string, itemTargetId: string, itemTargetType: 'restaurant' | 'wine',
   ) => {
-    await bubbleRepo.addItem(bubbleId, itemTargetId, itemTargetType, source)
+    await bubbleRepo.addItem(bubbleId, itemTargetId, itemTargetType)
   }, [])
 
   /** 여러 대상을 한번에 버블에 추가 */

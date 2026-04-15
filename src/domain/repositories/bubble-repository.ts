@@ -1,7 +1,7 @@
 // src/domain/repositories/bubble-repository.ts
 // R1: 외부 의존 0
 
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule, BubbleExpertise, BubbleItem, BubbleItemSource } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleShareRule, BubbleExpertise, BubbleItem } from '@/domain/entities/bubble'
 
 export interface CreateBubbleInput {
   name: string
@@ -169,7 +169,7 @@ export interface BubbleRepository {
   updateShareRule(bubbleId: string, userId: string, shareRule: BubbleShareRule | null): Promise<void>
 
   // ─── 큐레이션 아이템 (bubble_items) ───
-  addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine', source: BubbleItemSource): Promise<void>
+  addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<void>
   removeItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<void>
   getItems(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleItem[]>
   isItemInBubble(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<boolean>

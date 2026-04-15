@@ -1,6 +1,6 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem, SearchUserResult } from '@/domain/repositories/bubble-repository'
-import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType, BubbleItem, BubbleItemSource } from '@/domain/entities/bubble'
+import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType, BubbleItem } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 
 // ─── camelCase → snake_case 변환 (Entity → DB) ───
@@ -125,7 +125,6 @@ function toBubbleItem(row: Record<string, unknown>): BubbleItem {
     targetId: row.target_id as string,
     targetType: row.target_type as 'restaurant' | 'wine',
     addedBy: row.added_by as string,
-    source: row.source as BubbleItemSource,
     recordId: (row.record_id as string) ?? null,
     addedAt: row.added_at as string,
   }
@@ -509,7 +508,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
   async addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare> {
     const { data, error } = await this.supabase.from('bubble_items').upsert(
-      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: sharedBy, source: 'manual', record_id: recordId },
+      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: sharedBy, record_id: recordId },
       { onConflict: 'bubble_id,target_id,target_type' }
     ).select().single()
     if (error) throw new Error(`공유 실패: ${error.message}`)
@@ -939,11 +938,11 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
   // ─── 큐레이션 아이템 (bubble_items) ───
 
-  async addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine', source: BubbleItemSource): Promise<void> {
+  async addItem(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<void> {
     const { data: { user } } = await this.supabase.auth.getUser()
     if (!user) throw new Error('인증 필요')
     const { error } = await this.supabase.from('bubble_items').upsert(
-      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: user.id, source },
+      { bubble_id: bubbleId, target_id: targetId, target_type: targetType, added_by: user.id },
       { onConflict: 'bubble_id,target_id,target_type' }
     )
     if (error) throw new Error(`아이템 추가 실패: ${error.message}`)
@@ -989,7 +988,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       target_id: t.targetId,
       target_type: t.targetType,
       added_by: userId,
-      source: 'auto',
       record_id: t.recordId ?? null,
     }))
     const { error } = await this.supabase
@@ -1010,7 +1008,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .in('target_id', targetIds)
       .eq('bubble_id', bubbleId)
       .eq('target_type', targetType)
-      .eq('source', 'auto')
   }
 
   async getAutoItemTargetIds(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<string[]> {
@@ -1018,7 +1015,6 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .from('bubble_items')
       .select('target_id')
       .eq('bubble_id', bubbleId)
-      .eq('source', 'auto')
     if (targetType) query = query.eq('target_type', targetType)
     const { data } = await query
     return (data ?? []).map((r) => r.target_id as string)

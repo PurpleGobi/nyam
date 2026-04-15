@@ -104,15 +104,12 @@ export interface BubbleShare {
 
 // ─── 버블 큐레이션 아이템 (bubble_items 테이블) ───
 
-export type BubbleItemSource = 'auto' | 'manual'
-
 export interface BubbleItem {
   id: string
   bubbleId: string
   targetId: string
   targetType: 'restaurant' | 'wine'
   addedBy: string
-  source: BubbleItemSource
   recordId: string | null
   addedAt: string
 }
