@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-15 (R3/R4 위반 수정 + WineSearchCandidate domain 이동, 기술 부채 항목 정리)
+> 마지막 갱신: 2026-04-15 (Phase 3 Dead Code 제거: domain services 5개 + application hooks 5개 삭제, haversine 중복 통합)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -14,7 +14,7 @@
 |------|---------|------|------|
 | entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, home-target, similarity, map-discovery 등). bookmark.ts 삭제됨. map-discovery.ts: MapDiscoveryItem 등. restaurant.ts: RestaurantPrestige. score.ts: ScoreSource 3종. bubble.ts: BubbleItem (source/recordId 제거됨) | 안정 |
 | repositories/ | 19 | 인터페이스 (RecordRepository, BookmarkRepository, BubbleRepository, HomeRepository, SimilarityRepository, PredictionRepository 등). BubbleRepository에 큐레이션 메서드 4개 추가. HomeRepository에 HomeDbFilters 인터페이스 + findHomeTargets dbFilters 파라미터 확장 | 안정 |
-| services/ | 19 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback, visibility-filter, profile-visibility, cf-calculator, map-cluster 등). filter-query-builder.ts 삭제(dead code — DB RPC로 대체). map-cluster.ts: selectTopN(cascade 소팅), clusterPoints(그리드 기반). cf-calculator 테스트 32개. bubble-share-sync에 evaluateBookmarkTargets, computeItemDiff 추가 | 안정 |
+| services/ | 14 | 순수 로직 (xp-calculator, bubble-share-sync, filter-matcher, score-fallback, cf-calculator 등). map-cluster/nyam-score/onboarding-xp/profile-visibility/visibility-filter 5개 삭제(dead code). cf-calculator 테스트 32개. bubble-share-sync에 evaluateBookmarkTargets, computeItemDiff 추가 | 안정 |
 | constants/ | 1 | source-priority.ts (SOURCE_PRIORITY: 'mine'\|'nyam'\|'bubble'\|'bookmark' 4종) | 안정 |
 
 ### infrastructure/ (외부 시스템 구현체)
@@ -26,15 +26,15 @@
 | api/providers/ | 1 | gemini.ts (Gemini Vision) | 안정 |
 | storage/ | 1 | image-upload.ts | 안정 |
 
-### application/hooks/ (비즈니스 로직 훅, 63개)
+### application/hooks/ (비즈니스 로직 훅, 58개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
 - 식당/와인: use-restaurant-detail, use-wine-detail, use-wine-search, use-wine-stats, use-target-scores
-- 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubblers-list, use-bubble-items(신규: 수동 큐레이션 CRUD), use-bubble-auto-sync(syncBookmarkToAllBubbles 추가) 등
+- 버블: use-bubble-create, use-bubble-detail, use-bubble-feed, use-bubble-join, use-bubble-members, use-bubble-roles, use-bubble-ranking, use-bubble-items(수동 큐레이션 CRUD), use-bubble-auto-sync(syncBookmarkToAllBubbles 추가) 등. use-bubble-permissions/use-bubblers-list 삭제(dead code)
 - 소셜: use-follow, use-follow-list-with-similarity (팔로우 목록+적합도 enrichment), use-comments, use-reactions, use-share-record
 - XP/프로필: use-xp, use-xp-award, use-profile, use-wrapped
 - 홈: use-home-targets (target 중심 홈뷰, dbFilters/sort 파라미터 추가), use-map-discovery(HomeTarget→MapDiscoveryItem 변환, nearby fetch+merge, 필터/소팅/클러스터링, genre/district/area 추출→bounds API 전달)
 - CF: use-nyam-score (단건 CF 예측), use-feed-scores (배치 CF 예측), use-similarity (적합도 조회)
-- 기타: use-search, use-notifications, use-onboarding (use-accolades 삭제됨 — restaurants.prestige 캐시로 대체)
+- 기타: use-search, use-notifications (use-onboarding/use-onboarding-bubbles/use-onboarding-restaurants 삭제 — dead code)
 
 ### presentation/
 | 경로 | 역할 | 상태 |
@@ -71,7 +71,6 @@
 ## 알려진 기술 부채
 - container.ts에 uploadBubbleIcon 유틸이 DI 파일 안에 있음 (storage로 이동 권장)
 - presentation/components 일부가 대형 파일 (share-rule-editor, condition-filter-bar 수정 중)
-- visibility-filter/profile-visibility 서비스가 정의만 되어 있음 (사용처 점진 적용 필요)
 - supabase/types.ts 재생성 필요 (bookmarks + home + CF 캐시 + bubble_items + 055 prestige + 058 rename + 059 인덱스 + 061 RPC 반영)
 - bubble-detail-container.tsx #FFFFFF 하드코딩 4건 (pre-existing)
 - 지도뷰 bubbleScore enrichment 미구현 — nearby API에서 항상 null 반환 (Phase 2로 이연)
