@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-15 (Phase 4 하드코딩 색상 정리: globals.css에 --text-inverse 토큰 추가, 68파일 디자인 토큰 교체)
+> 마지막 갱신: 2026-04-16 (Phase 5+6: 대형 파일 분할 + uploadBubbleIcon 이동 + types.ts 재생성)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -24,7 +24,7 @@
 | supabase/ | 5 | client, server, auth-service, auth-mapper, types | 안정 |
 | api/ | 7 | llm, kakao-local, naver-local, google-places, google-image-search, ai-recognition, tavily | 안정 |
 | api/providers/ | 1 | gemini.ts (Gemini Vision) | 안정 |
-| storage/ | 1 | image-upload.ts | 안정 |
+| storage/ | 1 | image-upload.ts (uploadBubbleIcon 포함 — shared/di에서 이동) | 안정 |
 
 ### application/hooks/ (비즈니스 로직 훅, 58개)
 - 기록: use-create-record, use-records, use-record-detail, use-calendar-records
@@ -39,9 +39,9 @@
 ### presentation/
 | 경로 | 역할 | 상태 |
 |------|------|------|
-| containers/ (23) | 페이지별 hook+조합 (home, record-flow, bubble-detail 등). restaurant/wine/bubble-detail-container에 "리스트에 추가" 기능. record-flow/add-flow-container에 기록 후 "리스트에 추가". useAccolades 제거 → restaurants.prestige 직접 사용 | 안정 |
-| components/ (19 dirs) | 순수 UI. home/map-view.tsx 전면 리디자인(통합 displayResult 기반, createDotHtml/createClusterHtml). home/map-filter-bar.tsx(신규: 3그룹 필터 UI). home/map-compact-item.tsx(신규: 사진 없는 컴팩트 리스트 아이템, 4종 점수 뱃지). ui/prestige-badges.tsx. accolade-badges.tsx 삭제됨 | 안정 |
-| hooks/ (3) | UI 전용 (use-back-navigation, use-dropdown, use-referrer) | 안정 |
+| containers/ (24) | 페이지별 hook+조합 (home, record-flow, bubble-detail 등). bubble-tab-content.tsx(버블 탭 데이터/렌더 — home-container에서 분할). restaurant/wine/bubble-detail-container에 "리스트에 추가" 기능. record-flow/add-flow-container에 기록 후 "리스트에 추가". useAccolades 제거 → restaurants.prestige 직접 사용 | 안정 |
+| components/ (19 dirs) | 순수 UI. home/map-view.tsx 전면 리디자인(통합 displayResult 기반, createDotHtml/createClusterHtml). home/map-filter-bar.tsx(신규: 3그룹 필터 UI). home/map-compact-item.tsx(신규: 사진 없는 컴팩트 리스트 아이템, 4종 점수 뱃지). home/filter-popover.tsx(범용 팝오버), home/filter-popover-group.tsx(7종 팝오버 렌더링), home/home-stats-panel.tsx(통계 차트 UI) — condition-filter-bar.tsx에서 분할. ui/prestige-badges.tsx. accolade-badges.tsx 삭제됨 | 안정 |
+| hooks/ (6) | UI 전용 (use-back-navigation, use-dropdown, use-referrer, use-bubble-select-mode, use-home-filter-chips, use-condition-chip-handlers) | 안정 |
 | providers/ (1) | auth-provider.tsx | 안정 |
 | guards/ | 라우트 가드 | 안정 |
 
@@ -66,11 +66,9 @@
 
 ## DI 등록 현황 (container.ts)
 18개 repo 등록: record, restaurant, wine, photo, xp, notification, bubble, follow, savedFilter, profile, settings, comment, reaction, onboarding, userCoords(hook), home, similarity, prediction (bookmark 제거됨)
-+ imageService, uploadBubbleIcon, getSupabaseClient, signInWithProvider, signOutUser
++ imageService, uploadBubbleIcon(infrastructure/storage에서 re-export), getSupabaseClient, signInWithProvider, signOutUser
 
 ## 알려진 기술 부채
-- container.ts에 uploadBubbleIcon 유틸이 DI 파일 안에 있음 (storage로 이동 권장)
-- presentation/components 일부가 대형 파일 (share-rule-editor, condition-filter-bar 수정 중)
-- supabase/types.ts 재생성 필요 (bookmarks + home + CF 캐시 + bubble_items + 055 prestige + 058 rename + 059 인덱스 + 061 RPC 반영)
+- presentation/components 일부가 대형 파일 (share-rule-editor 등 — home-container, condition-filter-bar는 Phase 5에서 분할 완료)
 - 지도뷰 bubbleScore enrichment 미구현 — nearby API에서 항상 null 반환 (Phase 2로 이연)
 - 지도뷰 Google Places 별점 캐싱 미구현 — 미매칭 nearby 식당마다 매번 API 호출 (restaurants.google_rating 저장 권장)

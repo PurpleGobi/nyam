@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-16 #52 — 대형 파일 분할 + 기타 정비 (Phase 5+6)
+- **영역**: presentation/containers/home-container.tsx, presentation/components/home/condition-filter-bar.tsx, infrastructure/storage, shared/di, supabase/types.ts
+- **맥락**: home-container.tsx(1,525→1,120줄, -27%) 4파일 분할: use-bubble-select-mode.ts, use-home-filter-chips.ts, home-stats-panel.tsx, bubble-tab-content.tsx. condition-filter-bar.tsx(1,361→~230줄, -83%) 3파일 분할: filter-popover.tsx, use-condition-chip-handlers.ts, filter-popover-group.tsx. uploadBubbleIcon을 shared/di→infrastructure/storage로 이동. supabase/types.ts 재생성.
+- **미완료**: 없음
+- **다음**: 남은 기술 부채 점검
+
 ### 2026-04-15 #51 — 하드코딩 색상 정리 (Phase 4)
 - **영역**: globals.css, presentation/components 및 containers 68파일
 - **맥락**: globals.css에 `--text-inverse: #FFFFFF` 토큰 추가. 68파일에서 #FFFFFF/#fff/bg-white/text-white → 디자인 토큰 교체 (color: var(--text-inverse), text-text-inverse, bg-elevated 등 120건+). rgba 반투명 오버레이, 브랜드 SVG, 카카오맵 인라인은 제외. pre-existing lint 에러(bubble-settings-container useRef) 수정. pnpm build/lint 통과.
@@ -59,11 +65,5 @@
 - **맥락**: 버블이 누가 만든 건지 불명확하던 문제 해결. A안(엔티티 조인) 선택 — Bubble 엔티티에 ownerNickname/ownerHandle 옵셔널 필드 추가, Supabase PostgREST FK 조인(`owner:users!created_by`)으로 별도 쿼리 없이 자연스럽게 전달. 카드뷰는 공간 제약으로 닉네임만 (`by 닉네임`), 상세페이지는 닉네임+@핸들 병기 (기존 Nyam 컨벤션). toEntityRow에 READ_ONLY_FIELDS 세트를 둬서 update 시 조인 파생 필드가 실수로 DB에 쓰이는 것 차단.
 - **미완료**: 없음
 - **다음**: 브라우저 QA (FK 조인 정상 동작, handle null 케이스, 카드 레이아웃)
-
-### 2026-04-14 #39 — 버블 카드 레벨 벳지 상위 2개만 노출
-- **영역**: presentation/components/bubble/bubble-card.tsx(expertise 정렬+slice(0,2))
-- **맥락**: 버블 카드뷰의 전문 분야 태그(Lv.X)가 home-container.getExpertiseTop3에서 넘어온 3개를 모두 표시하고 있었음. 카드 공간 대비 정보량이 많아 상위 2개만 노출하도록 카드 내부에서 sort(avgLevel desc) + slice(0,2)로 강제. CompactListBubble(리스트뷰)은 영향 없음.
-- **미완료**: 없음
-- **다음**: 없음
 
 
