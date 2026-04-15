@@ -339,7 +339,7 @@ export function ConditionFilterBar({
     setIsAddOpen(false)
     setCascadingState(null)
 
-  }, [chips, onChipsChange, usedCascadeTypes])
+  }, [chips, onChipsChange, usedCascadeTypes, childrenCascadeAttrs])
 
   /** multi-select에서 editingChipId를 추적하는 ref (실시간 적용에 필요) */
   const multiSelectChipIdRef = useRef<string | null>(null)
