@@ -250,13 +250,17 @@ export function MapView({
   const handleSelect = useCallback((id: string) => {
     const item = itemsMapRef.current.get(id)
     if (!item) return
+    if (navigateOnFirstClick) {
+      onItemNavigateRef.current(item)
+      return
+    }
     if (selectedIdRef.current === id) {
       onItemNavigateRef.current(item)
     } else {
       setSelectedId(id)
       onItemSelectRef.current(item)
     }
-  }, [setSelectedId])
+  }, [setSelectedId, navigateOnFirstClick])
 
   /** 리스트 전용: navigateOnFirstClick이면 바로 navigate, 아니면 기존 select 로직 */
   const handleListSelect = useCallback((id: string) => {
