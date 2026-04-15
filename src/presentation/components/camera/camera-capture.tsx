@@ -6,7 +6,6 @@ import { Camera, ImagePlus, List, Wine, UtensilsCrossed } from 'lucide-react'
 interface CameraCaptureProps {
   targetType: 'restaurant' | 'wine'
   onCapture: (file: File) => void
-  onAlbumSelect: () => void
   onSearchFallback: () => void
   onShelfMode?: () => void
   onReceiptMode?: () => void
@@ -18,7 +17,6 @@ interface CameraCaptureProps {
 export function CameraCapture({
   targetType,
   onCapture,
-  onAlbumSelect,
   onSearchFallback,
   onShelfMode,
   onReceiptMode,
@@ -26,11 +24,24 @@ export function CameraCapture({
   previewUrl,
 }: CameraCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const albumInputRef = useRef<HTMLInputElement>(null)
+
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
   const handleCameraCapture = useCallback(() => {
     if (inputRef.current) {
-      inputRef.current.setAttribute('capture', 'environment')
+      if (isMobile) {
+        inputRef.current.setAttribute('capture', 'environment')
+      } else {
+        inputRef.current.removeAttribute('capture')
+      }
       inputRef.current.click()
+    }
+  }, [isMobile])
+
+  const handleAlbumClick = useCallback(() => {
+    if (albumInputRef.current) {
+      albumInputRef.current.click()
     }
   }, [])
 
@@ -51,6 +62,13 @@ export function CameraCapture({
     <div className="flex flex-col items-center px-6 py-8">
       <input
         ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <input
+        ref={albumInputRef}
         type="file"
         accept="image/*"
         className="hidden"
@@ -106,7 +124,7 @@ export function CameraCapture({
       <div className={`flex w-full justify-center gap-3 ${targetType === 'wine' ? 'flex-wrap' : ''}`}>
         <button
           type="button"
-          onClick={onAlbumSelect}
+          onClick={handleAlbumClick}
           className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-[14px] text-[var(--text)]"
         >
           <ImagePlus size={18} />
