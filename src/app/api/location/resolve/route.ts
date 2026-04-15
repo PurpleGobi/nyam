@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import { haversineDistanceMeters } from '@/domain/services/distance'
 
 /**
  * GET /api/location/resolve?lat=37.497&lng=127.053
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
   if (zones && zones.length > 0) {
     let closest: { name: string; dist: number } | null = null
     for (const zone of zones) {
-      const dist = haversine(lat, lng, zone.lat, zone.lng)
+      const dist = haversineDistanceMeters(lat, lng, zone.lat, zone.lng)
       if (dist <= zone.radius_m) {
         if (!closest || dist < closest.dist) {
           closest = { name: zone.name, dist }
@@ -67,14 +68,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ country, city, district, area })
-}
-
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }

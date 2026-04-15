@@ -8,6 +8,7 @@ import {
 import type { WineLabelRecognition } from '@/infrastructure/api/ai-recognition'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { isConfidentMatch } from '@/domain/services/ai-recognition'
+import { haversineDistanceMeters } from '@/domain/services/distance'
 import type {
   IdentifyRequest,
   IdentifyResponse,
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
         name: k.name,
         genre: k.category ?? null,
         area: k.address ? k.address.split(' ').slice(1, 3).join(' ') : null,
-        distance: haversineDistance(latitude, longitude, k.lat, k.lng),
+        distance: haversineDistanceMeters(latitude, longitude, k.lat, k.lng),
         matchScore: 0,
       }))
 
@@ -282,12 +283,3 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
   }
 }
 
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}

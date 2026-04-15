@@ -4,6 +4,7 @@ import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { searchNaverLocal } from '@/infrastructure/api/naver-local'
 import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
+import { haversineDistanceMeters } from '@/domain/services/distance'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 
 export async function GET(request: NextRequest) {
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
     kakaoMapUrl: r.kakao_map_url,
     prestige: (r.prestige ?? []) as RestaurantPrestige[],
     distance: lat && lng && r.lat && r.lng
-      ? haversineDistance(Number(lat), Number(lng), r.lat, r.lng)
+      ? haversineDistanceMeters(Number(lat), Number(lng), r.lat, r.lng)
       : null,
     hasRecord: recordedIds.has(r.id),
     myScore: scoreMap.get(r.id) ?? null,
@@ -181,7 +182,7 @@ export async function GET(request: NextRequest) {
     kakaoMapUrl: ext.kakaoMapUrl,
     prestige: [],
     distance: latNum && lngNum && ext.lat && ext.lng
-      ? haversineDistance(latNum, lngNum, ext.lat, ext.lng)
+      ? haversineDistanceMeters(latNum, lngNum, ext.lat, ext.lng)
       : null,
     hasRecord: false,
   }))
@@ -361,7 +362,7 @@ function isSameRestaurant(
     const eName = normalizeForDedup(e.name)
     const hasCoords = candidate.lat && candidate.lng && e.lat && e.lng
     const dist = hasCoords
-      ? haversineDistance(candidate.lat ?? 0, candidate.lng ?? 0, e.lat ?? 0, e.lng ?? 0)
+      ? haversineDistanceMeters(candidate.lat ?? 0, candidate.lng ?? 0, e.lat ?? 0, e.lng ?? 0)
       : null
 
     // 1) 이름 완전 일치: 좌표 200m 이내 or 좌표 없으면 동일 판정
@@ -397,13 +398,3 @@ function editDistance(a: string, b: string): number {
   return dp[a.length][b.length]
 }
 
-/** Haversine 거리 (미터) */
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
