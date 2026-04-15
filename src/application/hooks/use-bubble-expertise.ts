@@ -8,7 +8,7 @@ import { bubbleRepo } from '@/shared/di/container'
  * 여러 버블의 전문성 데이터를 한번에 가져오는 훅
  * HomeContainer에서 버블 카드에 Top 3 전문 분야를 표시할 때 사용
  */
-export function useBubbleExpertise(bubbleIds: string[]) {
+export function useBubbleExpertise(bubbleIds: string[], refreshKey = 0) {
   const [expertiseMap, setExpertiseMap] = useState<Map<string, BubbleExpertise[]>>(new Map())
   const [isLoading, setIsLoading] = useState(bubbleIds.length > 0)
 
@@ -29,7 +29,7 @@ export function useBubbleExpertise(bubbleIds: string[]) {
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey])
+  }, [idsKey, refreshKey])
 
   return { expertiseMap, isLoading }
 }

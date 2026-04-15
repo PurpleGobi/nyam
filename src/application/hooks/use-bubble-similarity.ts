@@ -15,6 +15,7 @@ import type { BubbleSimilarityResult } from '@/domain/repositories/similarity-re
 export function useBubbleSimilarities(
   userId: string | null,
   bubbleIds: string[],
+  refreshKey = 0,
 ): Map<string, BubbleSimilarityResult> {
   const [resultMap, setResultMap] = useState<Map<string, BubbleSimilarityResult>>(new Map())
   const idsKey = useMemo(() => bubbleIds.join(','), [bubbleIds])
@@ -66,7 +67,7 @@ export function useBubbleSimilarities(
 
     load()
     return () => { cancelled = true }
-  }, [userId, idsKey])
+  }, [userId, idsKey, refreshKey])
 
   return resultMap
 }

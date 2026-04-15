@@ -193,6 +193,17 @@ export function HomeContainer() {
   }, [])
 
   const [homeRefreshKey, setHomeRefreshKey] = useState(0)
+  const [bubbleRefreshKey, setBubbleRefreshKey] = useState(0)
+  const refreshBubbles = useCallback(() => setBubbleRefreshKey((k) => k + 1), [])
+
+  // 페이지 포커스 복귀 시 버블 데이터 자동 갱신 (상세→홈 복귀 등)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshBubbles()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [refreshBubbles])
 
   const toggleBubbleSelectItem = useCallback((id: string) => {
     setBubbleSelectIds((prev) => {
@@ -218,13 +229,13 @@ export function HomeContainer() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
-  const { bubbles: myBubbles, pendingBubbleIds, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null)
+  const { bubbles: myBubbles, pendingBubbleIds, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null, bubbleRefreshKey)
   const { cancelJoin } = useBubbleJoin()
 
   // ── 버블 전문성 ──
   const bubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
-  const { expertiseMap } = useBubbleExpertise(bubbleIds)
-  const bubbleSimilarityMap = useBubbleSimilarities(user?.id ?? null, bubbleIds)
+  const { expertiseMap } = useBubbleExpertise(bubbleIds, bubbleRefreshKey)
+  const bubbleSimilarityMap = useBubbleSimilarities(user?.id ?? null, bubbleIds, bubbleRefreshKey)
 
   // ── 버블 탭 소팅 ──
   const [bubbleSort, setBubbleSort] = useState<BubbleSortOption>('records')
@@ -267,6 +278,7 @@ export function HomeContainer() {
     userAreas,
     excludeBubbleIds,
     needPublicBubbles,
+    bubbleRefreshKey,
   )
 
   // ── 버블 필터 속성에 전문 분야 동적 옵션 주입 ──
@@ -1284,7 +1296,7 @@ export function HomeContainer() {
                     onClick={() => router.push(`/bubbles/${b.id}`)}
                     onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
                     isPending={pendingBubbleIds.has(b.id)}
-                    onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); showToast('가입 신청을 취소했습니다') } } : undefined}
+                    onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); refreshBubbles(); showToast('가입 신청을 취소했습니다') } } : undefined}
                   />
                 ))}
               </div>
@@ -1304,7 +1316,7 @@ export function HomeContainer() {
                   onClick={() => router.push(`/bubbles/${b.id}`)}
                   onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
                   isPending={pendingBubbleIds.has(b.id)}
-                  onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); showToast('가입 신청을 취소했습니다') } } : undefined}
+                  onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); refreshBubbles(); showToast('가입 신청을 취소했습니다') } } : undefined}
                 />
               ))}
             </div>
@@ -1493,6 +1505,7 @@ export function HomeContainer() {
             showToast(msg, 3000)
           }
           setHomeRefreshKey((k) => k + 1)
+          refreshBubbles()
           stopBubbleSelect()
         }}
         duplicateCounts={(() => {

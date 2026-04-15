@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { Bubble } from '@/domain/entities/bubble'
 import { bubbleRepo } from '@/shared/di/container'
 
-export function useBubbleList(userId: string | null) {
+export function useBubbleList(userId: string | null, refreshKey = 0) {
   const [bubbles, setBubbles] = useState<Bubble[]>([])
   const [pendingBubbleIds, setPendingBubbleIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(!!userId)
@@ -22,7 +22,7 @@ export function useBubbleList(userId: string | null) {
       setIsLoading(false)
     })
     return () => { cancelled = true }
-  }, [userId])
+  }, [userId, refreshKey])
 
   return { bubbles, pendingBubbleIds, isLoading }
 }

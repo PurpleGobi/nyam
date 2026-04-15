@@ -20,6 +20,7 @@ export function useBubbleDiscover(
   userAreas: string[],
   excludeIds: string[],
   enabled: boolean,
+  refreshKey = 0,
 ): BubbleDiscoverResult {
   const [recommended, setRecommended] = useState<Bubble[]>([])
   const [nearby, setNearby] = useState<Bubble[]>([])
@@ -61,7 +62,7 @@ export function useBubbleDiscover(
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, areasKey, excludeKey])
+  }, [enabled, areasKey, excludeKey, refreshKey])
 
   return { recommended, nearby, trending, newest, isLoading }
 }
