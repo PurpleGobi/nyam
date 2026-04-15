@@ -70,7 +70,7 @@ export function CameraCapture({
       <input
         ref={albumInputRef}
         type="file"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
         className="hidden"
         onChange={handleFileChange}
       />
