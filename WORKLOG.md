@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-04-15 #49 — 타입 안전성 수정 (non-null assertion 57건 + as any 1건 제거)
+- **영역**: presentation 8파일, infrastructure 4파일, app/api 1파일
+- **맥락**: non-null assertion(!) 57건을 ?? defaultValue 또는 early guard로 교체. as any 1건을 RecordRow 타입으로 교체. useCallback deps 누락 lint 경고 2건 수정. pnpm build/lint 통과.
+- **미완료**: 없음
+- **다음**: 남은 기술 부채 점검
+
+### 2026-04-15 #48 — Clean Architecture R3/R4 위반 수정
+- **영역**: domain/entities/wine.ts, application 2파일, presentation 2파일, app/api 1파일, presentation/containers/bubble-create-container.tsx
+- **맥락**: WineSearchCandidate를 infrastructure→domain으로 이동하여 R3/R4 위반 해소. bubble-create-container에서 shared/di 직접 import 제거 → useBubbleCreate.updateBubble hook 래핑. R3 위반 2→0건, R4 위반 3→0건.
+- **미완료**: 없음
+- **다음**: 타입 안전성 수정
+
 ### 2026-04-15 #47 — bubble_items 완전 단순화 (source + record_id + added_by 제거)
 - **영역**: domain/(BubbleItem: addedBy+recordId+source 전부 제거), infrastructure/(supabase-bubble-repository ~30곳 added_by→bubble_members+records JOIN, supabase-restaurant/wine/profile-repository 동일 전환), application/(use-bubble-auto-sync·use-bubble-items·use-share-record userId 인자 정리), supabase/migrations/073~078(source DROP→record_id DROP→added_by DROP, 기록삭제 트리거 활성멤버 전체 체크, 멤버탈퇴 트리거 신규, member_item_stats 성능 최적화, RLS 단순화, 성능 인덱스 2개, CF 트리거+Edge Function 배포)
 - **맥락**: bubble_items가 (id, bubble_id, target_id, target_type, added_at)만 남는 순수 큐레이션 테이블로 완전 단순화. "누가 기록했는지"는 records+bubble_members JOIN으로 확인. 기록 삭제 시 활성 멤버 전체 기록 체크 → 아무도 없으면 삭제. 멤버 탈퇴 시에도 동일 정리. CF 적합도/신뢰도 자동 갱신 (compute-similarity 배포 + pg_net 트리거).
@@ -53,17 +65,5 @@
 - **맥락**: 홈 지도 뷰 상단에 뜨는 "지도 검색 중..." 인라인 배지의 글자색이 `--text-hint`(#B5AFA8)로 흐려 읽기 어려웠음. `--text`(#3D3833, 메인 토큰)로 교체해 또렷하게 표시. 배경·테두리·폰트 크기 등 나머지 스타일은 유지.
 - **미완료**: 없음
 - **다음**: 필요 시 fontWeight/fontSize 추가 강조 검토
-
-### 2026-04-14 #36 — BottomSheet 컴포넌트 중앙화 (15개 시트 마이그레이션)
-- **영역**: presentation/components/ui/bottom-sheet.tsx(규격 강제화: title 필수, 핸들/헤더/X 항상 표시), globals.css(bottom-sheet-header/body/handle CSS 표준화), 15개 바텀시트 전체 마이그레이션(bubble-info/discover/preview/picker/add-item/join-flow, edit-field/delete-account/bubble-privacy/naver-import/level-detail, link-search/share-to-bubble/comment-sheet/follow-button)
-- **맥락**: 바텀시트 UI가 제각각(핸들 유무, 헤더 스타일, 닫기 방식, 애니메이션 유무 불일치). BottomSheet 컴포넌트를 props 4개(isOpen/onClose/title/maxHeight)로 단순화하고, 핸들·헤더·X 버튼을 항상 렌더링하도록 강제. 소비자가 내부 구조를 override할 수 없게 함. 15개 시트를 전부 마이그레이션하여 일관된 UX 확보. 브라우저에서 하나씩 테스트 완료.
-- **미완료**: share-list-sheet(풀스크린 전용) 미마이그레이션
-- **다음**: share-list-sheet 풀스크린 모드 검토, 브라우저 QA 추가 검증
-
-### 2026-04-13 #35 — 초대 팝업 리디자인 + 핸들 설정 + 중복/취소 관리
-- **영역**: application/hooks/(use-invite-link 3일 고정, use-bubble-invite-member 중복체크+취소, use-bubble-member pendingInvites, use-settings updateHandle), domain/(notification-repo deleteNotification+getPendingBubbleInvites, settings handle), infrastructure/(supabase-notification-repo, supabase-settings-repo updateHandle), presentation/(invite-popup 신규, bubble-settings 초대대기+취소, pending-approval-list hideEmptyMessage, edit-field-sheet prefix/description/inputFilter, settings-container 핸들변경, bubble-detail-container+bubble-settings-container 토스트+새로고침), supabase/migrations/065+066(RLS)
-- **맥락**: (1) 초대 링크(만료 3일 고정) + 직접 초대(닉네임/핸들/이메일 검색) 통합 팝업으로 리디자인. (2) 중복 초대 방지(DB pendingInvites + 세션 invitedIds 이중 체크, 토스트 알림). (3) 초대 취소(notification 삭제 + RLS 066). (4) 설정 멤버관리에 "초대 수락 대기" 목록 표시(RLS 065) + 즉시 새로고침. (5) 핸들 설정/변경 UI(설정>계정, @접두사, 영문소문자+숫자+밑줄 필터, UNIQUE 검증).
-- **미완료**: 065/066 마이그레이션 로컬 파일은 생성했으나 원격은 MCP로 적용 완료. 초대 수락/거절 알림 처리 UI 미구현.
-- **다음**: 브라우저 QA, 초대 수락 처리 UX
 
 

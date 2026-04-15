@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-13 (찜(bookmark) 기능 전체 제거)
+> 마지막 갱신: 2026-04-15 (R3/R4 위반 수정 + WineSearchCandidate domain 이동, 기술 부채 항목 정리)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -74,6 +74,5 @@
 - visibility-filter/profile-visibility 서비스가 정의만 되어 있음 (사용처 점진 적용 필요)
 - supabase/types.ts 재생성 필요 (bookmarks + home + CF 캐시 + bubble_items + 055 prestige + 058 rename + 059 인덱스 + 061 RPC 반영)
 - bubble-detail-container.tsx #FFFFFF 하드코딩 4건 (pre-existing)
-- search-results.tsx/search-container.tsx의 WineSearchCandidate infrastructure import (pre-existing R4 위반)
 - 지도뷰 bubbleScore enrichment 미구현 — nearby API에서 항상 null 반환 (Phase 2로 이연)
 - 지도뷰 Google Places 별점 캐싱 미구현 — 미매칭 nearby 식당마다 매번 API 호출 (restaurants.google_rating 저장 권장)
