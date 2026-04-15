@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import type { SearchUserResult } from '@/domain/repositories/bubble-repository'
 import type { PendingBubbleInvite } from '@/domain/repositories/notification-repository'
 import { bubbleRepo, notificationRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 
 export interface InviteResult {
   success: boolean
@@ -54,7 +55,7 @@ export function useBubbleInviteMember(bubbleId: string) {
 
     setIsInviting(true)
     try {
-      await notificationRepo.createNotification({
+      await sendNotification({
         userId: targetUserId,
         type: 'bubble_invite',
         title: `${inviterNickname}님이 "${bubbleName}" 버블에 초대했어요`,

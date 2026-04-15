@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { ReactionType } from '@/domain/entities/reaction'
-import { reactionRepo, notificationRepo } from '@/shared/di/container'
+import { reactionRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 import { useSocialXp } from '@/application/hooks/use-social-xp'
 
 interface UseReactionsParams {
@@ -73,7 +74,7 @@ export function useReactions({
 
       // like/want + added → 알림: reaction_like → 기록 작성자 (본인 제외)
       if (result.added && (reactionType === 'like' || reactionType === 'want') && targetOwnerId && targetOwnerId !== userId) {
-        await notificationRepo.createNotification({
+        sendNotification({
           userId: targetOwnerId,
           type: 'reaction_like',
           title: reactionType === 'like' ? '좋아요를 받았습니다' : '누군가 가고싶다고 했습니다',
@@ -83,7 +84,7 @@ export function useReactions({
           targetType,
           targetId,
           bubbleId: null,
-        })
+        }).catch(() => {})
       }
     } catch {
       // 실패 시 롤백

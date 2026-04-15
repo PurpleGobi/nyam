@@ -1,9 +1,11 @@
 // src/domain/repositories/notification-repository.ts
 // R1: 외부 의존 0
 
-import type { Notification } from '@/domain/entities/notification'
+import type { Notification, NotifyPreferences } from '@/domain/entities/notification'
 
 export interface NotificationRepository {
+  /** 수신자의 알림 설정 조회 */
+  getNotifyPreferences(userId: string): Promise<NotifyPreferences>
   getNotifications(userId: string, limit: number): Promise<Notification[]>
   getUnreadCount(userId: string): Promise<number>
   markAsRead(notificationId: string): Promise<void>

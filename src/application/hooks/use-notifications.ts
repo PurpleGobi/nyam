@@ -3,6 +3,7 @@
 import useSWR, { useSWRConfig } from 'swr'
 import { useCallback, useEffect, useState } from 'react'
 import { notificationRepo, bubbleRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import type { Notification } from '@/domain/entities/notification'
 
@@ -174,7 +175,7 @@ async function executeNotificationSideEffect(
       await bubbleRepo.updateMember(bubbleId, actorId, { status: 'active' } as Partial<import('@/domain/entities/bubble').BubbleMember>)
       await bubbleRepo.updateShareRule(bubbleId, actorId, DEFAULT_SHARE_RULE)
       // 신청자에게 승인 알림
-      notificationRepo.createNotification({
+      sendNotification({
         userId: actorId,
         type: 'bubble_join_approved',
         title: '버블 가입이 승인되었어요!',
@@ -197,7 +198,7 @@ async function executeNotificationSideEffect(
       await bubbleRepo.updateShareRule(bubbleId, currentUserId, DEFAULT_SHARE_RULE)
       // owner에게 가입 알림
       if (actorId) {
-        notificationRepo.createNotification({
+        sendNotification({
           userId: actorId,
           type: 'bubble_member_joined',
           title: '초대한 멤버가 버블에 가입했어요!',

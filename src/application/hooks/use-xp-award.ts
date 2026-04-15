@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { XpCalculationResult, LevelThreshold } from '@/domain/entities/xp'
 import { useXpCalculation } from '@/application/hooks/use-xp-calculation'
-import { notificationRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 
 /**
  * 기록 저장 시 XP 지급 진입점.
@@ -39,7 +39,7 @@ export function useXpAward() {
           const scopeLabel = levelUp.scope === 'total' ? '종합'
             : levelUp.scope === 'category' ? (levelUp.axisValue === 'restaurant' ? '식당' : '와인')
             : levelUp.axisValue ?? ''
-          await notificationRepo.createNotification({
+          await sendNotification({
             userId,
             type: 'level_up',
             title: '레벨 업!',

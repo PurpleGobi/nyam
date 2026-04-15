@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { Comment } from '@/domain/entities/comment'
-import { commentRepo, notificationRepo } from '@/shared/di/container'
+import { commentRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 
 const MAX_COMMENT_LENGTH = 300
 
@@ -47,7 +48,7 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
 
     // 알림: comment_reply → 기록 작성자 (본인 제외)
     if (targetOwnerId && targetOwnerId !== userId) {
-      await notificationRepo.createNotification({
+      sendNotification({
         userId: targetOwnerId,
         type: 'comment_reply',
         title: isAnonymous ? '익명이 댓글을 남겼습니다' : '새 댓글이 달렸습니다',
@@ -57,7 +58,7 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
         targetType,
         targetId,
         bubbleId,
-      })
+      }).catch(() => {})
     }
 
     return comment

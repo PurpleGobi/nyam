@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { AccessLevel } from '@/domain/entities/follow'
-import { followRepo, notificationRepo } from '@/shared/di/container'
+import { followRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 
 export function useFollow(userId: string | null, targetUserId: string) {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('none')
@@ -23,7 +24,7 @@ export function useFollow(userId: string | null, targetUserId: string) {
       if (accessLevel === 'none') {
         await followRepo.follow(userId, targetUserId)
         setAccessLevel('following')
-        await notificationRepo.createNotification({
+        sendNotification({
           userId: targetUserId,
           type: 'follow_request',
           title: '새로운 팔로워가 생겼어요!',
@@ -33,7 +34,7 @@ export function useFollow(userId: string | null, targetUserId: string) {
           targetType: 'user',
           targetId: userId,
           bubbleId: null,
-        })
+        }).catch(() => {})
       } else {
         await followRepo.unfollow(userId, targetUserId)
         setAccessLevel('none')

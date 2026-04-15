@@ -1,10 +1,27 @@
 import { createClient } from '@/infrastructure/supabase/client'
 import type { NotificationRepository, PendingBubbleInvite } from '@/domain/repositories/notification-repository'
-import type { Notification } from '@/domain/entities/notification'
+import type { Notification, NotifyPreferences } from '@/domain/entities/notification'
 
 export class SupabaseNotificationRepository implements NotificationRepository {
   private get supabase() {
     return createClient()
+  }
+
+  async getNotifyPreferences(userId: string): Promise<NotifyPreferences> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('notify_push, notify_level_up, notify_bubble_join, notify_follow')
+      .eq('id', userId)
+      .single()
+    if (error || !data) {
+      return { notifyPush: true, notifyLevelUp: true, notifyBubbleJoin: true, notifyFollow: true }
+    }
+    return {
+      notifyPush: (data.notify_push as boolean) ?? true,
+      notifyLevelUp: (data.notify_level_up as boolean) ?? true,
+      notifyBubbleJoin: (data.notify_bubble_join as boolean) ?? true,
+      notifyFollow: (data.notify_follow as boolean) ?? true,
+    }
   }
 
   async getNotifications(userId: string, limit: number): Promise<Notification[]> {

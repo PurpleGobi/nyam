@@ -33,6 +33,36 @@ export interface Notification {
   createdAt: string
 }
 
+/** 알림 유형 → 수신자 설정 필드 매핑 (순수 함수, 외부 의존 0) */
+export type NotifySettingField = 'notifyLevelUp' | 'notifyBubbleJoin' | 'notifyFollow' | null
+
+export function getNotifySettingField(type: NotificationType): NotifySettingField {
+  switch (type) {
+    case 'level_up':
+      return 'notifyLevelUp'
+    case 'bubble_join_request':
+    case 'bubble_join_approved':
+    case 'bubble_invite':
+    case 'bubble_new_record':
+    case 'bubble_member_joined':
+      return 'notifyBubbleJoin'
+    case 'follow_request':
+    case 'follow_accepted':
+      return 'notifyFollow'
+    case 'reaction_like':
+    case 'comment_reply':
+      return null // notifyPush(마스터)만 적용
+  }
+}
+
+/** 수신자 알림 설정 (users 테이블에서 조회) */
+export interface NotifyPreferences {
+  notifyPush: boolean
+  notifyLevelUp: boolean
+  notifyBubbleJoin: boolean
+  notifyFollow: boolean
+}
+
 /** 알림 유형별 설정 */
 export interface NotificationTypeConfig {
   type: NotificationType

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import type { Bubble, BubbleMember, BubbleShareRule } from '@/domain/entities/bubble'
 import { checkJoinEligibility, type JoinApplicantProfile, type JoinEligibility } from '@/domain/services/bubble-join-service'
 import { bubbleRepo, notificationRepo } from '@/shared/di/container'
+import { sendNotification } from '@/application/helpers/send-notification'
 
 const DEFAULT_SHARE_RULE: BubbleShareRule = { mode: 'all', rules: [], conjunction: 'and' }
 
@@ -50,7 +51,7 @@ export function useBubbleJoin() {
 
       // pending 상태 (manual_approve) → 버블 owner에게 가입 요청 알림
       if (status === 'pending' && bubble.createdBy) {
-        notificationRepo.createNotification({
+        sendNotification({
           userId: bubble.createdBy,
           type: 'bubble_join_request',
           title: `"${bubble.name}" 버블에 새 가입 신청이 왔어요`,
