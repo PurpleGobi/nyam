@@ -178,11 +178,11 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       .map((r, i) => ({ r, i }))
       .filter(({ i }) => i !== focusedRecordIdx)
       .map(({ r, i }) => ({
-        x: r.axisX!,
-        y: r.axisY!,
-        satisfaction: r.satisfaction!,
+        x: r.axisX ?? 0,
+        y: r.axisY ?? 0,
+        satisfaction: r.satisfaction ?? 0,
         name: r.visitDate ?? r.createdAt.split('T')[0],
-        score: r.satisfaction!,
+        score: r.satisfaction ?? 0,
         _refIdx: i, // 롱프레스 시 focus 전환용
       })),
     [sortedRecords, focusedRecordIdx],
@@ -347,7 +347,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       {isBubbleMode && bubbleInfo && (
         <div style={{ position: 'sticky', top: '46px', zIndex: 80 }}>
           <BubbleMiniHeader
-            bubbleId={bubbleId!}
+            bubbleId={bubbleId ?? ''}
             name={bubbleInfo.name}
             description={bubbleInfo.description}
             icon={bubbleInfo.icon}
@@ -409,7 +409,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                   </>
                 )}
                 {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === areaAxisValue) && (
-                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === areaAxisValue)!.level} />
+                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === areaAxisValue)?.level ?? 0} />
                 )}
               </div>
             )}
@@ -445,7 +445,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                   )
                 })()}
                 {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === restaurant.genre) && (
-                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.genre)!.level} />
+                  <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === restaurant.genre)?.level ?? 0} />
                 )}
               </div>
             )}

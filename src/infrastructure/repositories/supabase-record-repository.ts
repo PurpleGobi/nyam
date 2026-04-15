@@ -3,6 +3,9 @@ import type { DiningRecord, CreateRecordInput, RecordTargetType, RecordWithTarge
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import { createClient } from '@/infrastructure/supabase/client'
+import type { Database } from '@/infrastructure/supabase/types'
+
+type RecordRow = Database['public']['Tables']['records']['Row']
 
 // --- DB -> Domain 매핑 ---
 
@@ -151,8 +154,7 @@ export class SupabaseRecordRepository implements RecordRepository {
    * restaurants/wines 메타데이터 batch 조회 + record_photos 첫 사진 + source tagging
    */
   private async enrichRecordsWithTarget(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rows: any[],
+    rows: RecordRow[],
     currentUserId: string,
     source: RecordSource,
   ): Promise<RecordWithTarget[]> {
@@ -282,8 +284,7 @@ export class SupabaseRecordRepository implements RecordRepository {
     const { data, error } = await query
     if (error) throw new Error(`Records+Target 조회 실패: ${error.message}`)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = data as any[]
+    const rows = data
 
     // source 태깅을 위해 팔로잉 대상 target_id 수집
     const followingTargetIds = new Set<string>()

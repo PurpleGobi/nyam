@@ -135,11 +135,11 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       .map((s) => {
         const isMe = s.sharedBy === user?.id
         return {
-          x: s.axisX!,
-          y: s.axisY!,
-          satisfaction: isMe ? s.satisfaction! : 0,
+          x: s.axisX ?? 0,
+          y: s.axisY ?? 0,
+          satisfaction: isMe ? (s.satisfaction ?? 0) : 0,
           name: s.authorName ?? '',
-          score: s.satisfaction!,
+          score: s.satisfaction ?? 0,
         }
       })
   }, [bubbleMemberShares, user?.id])
@@ -153,9 +153,9 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     () => allRecordsWithAxis.map((r) => ({
       targetId: r.id,
       targetName: r.visitDate ?? r.createdAt.split('T')[0],
-      avgAxisX: r.axisX!,
-      avgAxisY: r.axisY!,
-      avgSatisfaction: r.satisfaction!,
+      avgAxisX: r.axisX ?? 0,
+      avgAxisY: r.axisY ?? 0,
+      avgSatisfaction: r.satisfaction ?? 0,
     })),
     [allRecordsWithAxis],
   )
@@ -178,18 +178,18 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   )
   const focusedRecord = sortedRecords[focusedRecordIdx] ?? sortedRecords[0] ?? null
   const focusedDot = focusedRecord
-    ? { axisX: focusedRecord.axisX!, axisY: focusedRecord.axisY!, satisfaction: focusedRecord.satisfaction! }
+    ? { axisX: focusedRecord.axisX ?? 0, axisY: focusedRecord.axisY ?? 0, satisfaction: focusedRecord.satisfaction ?? 0 }
     : null
   const otherRecordRefs = useMemo(() =>
     sortedRecords
       .map((r, i) => ({ r, i }))
       .filter(({ i }) => i !== focusedRecordIdx)
       .map(({ r, i }) => ({
-        x: r.axisX!,
-        y: r.axisY!,
-        satisfaction: r.satisfaction!,
+        x: r.axisX ?? 0,
+        y: r.axisY ?? 0,
+        satisfaction: r.satisfaction ?? 0,
         name: r.visitDate ?? r.createdAt.split('T')[0],
-        score: r.satisfaction!,
+        score: r.satisfaction ?? 0,
         _refIdx: i,
       })),
     [sortedRecords, focusedRecordIdx],
@@ -404,7 +404,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       {isBubbleMode && bubbleInfo && (
         <div style={{ position: 'sticky', top: '46px', zIndex: 80 }}>
           <BubbleMiniHeader
-            bubbleId={bubbleId!}
+            bubbleId={bubbleId ?? ''}
             name={bubbleInfo.name}
             description={bubbleInfo.description}
             icon={bubbleInfo.icon}
@@ -515,7 +515,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                 </>
               )}
               {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === wine.region) && (
-                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === wine.region)!.level} />
+                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === wine.region)?.level ?? 0} />
               )}
             </div>
           )}
@@ -547,7 +547,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                 </span>
               )}
               {viewMode === 'my_records' && axisLevels.find((al) => al.axisValue === bestVariety) && (
-                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === bestVariety)!.level} />
+                <AxisLevelBadge level={axisLevels.find((al) => al.axisValue === bestVariety)?.level ?? 0} />
               )}
             </div>
           )}

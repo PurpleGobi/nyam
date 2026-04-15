@@ -432,7 +432,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
           regions: new Map(),
         })
       }
-      const c = countryMap.get(country)!
+      const c = countryMap.get(country)
+      if (!c) continue
       c.totalWines++
 
       const wineType = (wine.wine_type as string) ?? ''
@@ -444,7 +445,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
       if (!c.regions.has(region)) {
         c.regions.set(region, { count: 0, subRegions: new Map() })
       }
-      const reg = c.regions.get(region)!
+      const reg = c.regions.get(region)
+      if (!reg) continue
       reg.count++
 
       const subRegion = wine.sub_region as string | null

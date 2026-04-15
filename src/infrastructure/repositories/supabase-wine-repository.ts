@@ -200,15 +200,16 @@ export class SupabaseWineRepository implements WineRepository {
 
     const nameMap = new Map((wines ?? []).map((w) => [w.id, w.name]))
 
-    return targetIds.map((tid) => {
-      const g = grouped.get(tid)!
-      return {
+    return targetIds.flatMap((tid) => {
+      const g = grouped.get(tid)
+      if (!g) return []
+      return [{
         targetId: tid,
         targetName: nameMap.get(tid) ?? '',
         avgAxisX: Math.round(g.sumX / g.count),
         avgAxisY: Math.round(g.sumY / g.count),
         avgSatisfaction: Math.round(g.sumS / g.count),
-      }
+      }]
     })
   }
 

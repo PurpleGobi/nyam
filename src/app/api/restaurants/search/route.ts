@@ -361,7 +361,7 @@ function isSameRestaurant(
     const eName = normalizeForDedup(e.name)
     const hasCoords = candidate.lat && candidate.lng && e.lat && e.lng
     const dist = hasCoords
-      ? haversineDistance(candidate.lat!, candidate.lng!, e.lat!, e.lng!)
+      ? haversineDistance(candidate.lat ?? 0, candidate.lng ?? 0, e.lat ?? 0, e.lng ?? 0)
       : null
 
     // 1) 이름 완전 일치: 좌표 200m 이내 or 좌표 없으면 동일 판정
