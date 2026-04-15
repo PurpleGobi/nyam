@@ -35,20 +35,9 @@ export function CameraCapture({
   }, [])
 
   const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-
-      // 촬영 원본을 앨범에 저장 — 완료될 때까지 대기 후 캡처 플로우 진행
-      try {
-        const saveFile = new File([file], `nyam_${Date.now()}.jpg`, { type: file.type })
-        if (navigator.share && navigator.canShare?.({ files: [saveFile] })) {
-          await navigator.share({ files: [saveFile] })
-        }
-      } catch {
-        // 사용자가 공유 시트를 닫은 경우 — 무시하고 계속 진행
-      }
-
       onCapture(file)
       e.target.value = ''
     },
