@@ -302,17 +302,9 @@ Respond with JSON array only:
 
 Return empty array [] if query is unrelated to wine.`
 
-export interface WineSearchCandidate {
-  name: string
-  nameKo: string | null
-  producer: string | null
-  vintage: number | null
-  wineType: string
-  region: string | null
-  country: string | null
-  confidence: number
-  labelImageUrl: string | null
-}
+// WineSearchCandidate 타입은 domain/entities/wine.ts로 이동됨
+import type { WineSearchCandidate } from '@/domain/entities/wine'
+export type { WineSearchCandidate }
 
 export async function searchWineByName(query: string): Promise<WineSearchCandidate[]> {
   const text = await callText(WINE_SEARCH_PROMPT(query))

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
 import { searchWineByName } from '@/infrastructure/api/ai-recognition'
-import type { WineSearchCandidate } from '@/infrastructure/api/ai-recognition'
+import type { WineSearchCandidate } from '@/domain/entities/wine'
 import { searchWineLabelImages } from '@/infrastructure/api/google-image-search'
 
 export interface WineSearchAIResponse {

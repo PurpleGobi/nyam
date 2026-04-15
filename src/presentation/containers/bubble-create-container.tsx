@@ -8,7 +8,6 @@ import { useRecordsWithTarget } from '@/application/hooks/use-records'
 import { useBubbleAutoSync } from '@/application/hooks/use-bubble-auto-sync'
 import { usePhotoUpload } from '@/application/hooks/use-photo-upload'
 import { useBubblePhotos } from '@/application/hooks/use-bubble-photos'
-import { bubbleRepo } from '@/shared/di/container'
 import { BubbleCreateForm } from '@/presentation/components/bubble/bubble-create-form'
 import type { BubblePrivacySettings } from '@/presentation/components/bubble/bubble-create-form'
 import { PhotoPicker } from '@/presentation/components/record/photo-picker'
@@ -19,7 +18,7 @@ import { FabBack } from '@/presentation/components/layout/fab-back'
 export function BubbleCreateContainer() {
   const router = useRouter()
   const { user } = useAuth()
-  const { createBubble, updateMemberAfterCreate, isLoading: isCreating } = useBubbleCreate()
+  const { createBubble, updateMemberAfterCreate, updateBubble, isLoading: isCreating } = useBubbleCreate()
   const { records } = useRecordsWithTarget(user?.id ?? null)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(user?.id ?? null)
   const { photos, addFiles, removePhoto, replacePhoto, reorderPhotos, uploadAll, isUploading } = usePhotoUpload()
@@ -78,7 +77,7 @@ export function BubbleCreateContainer() {
           // 첫 번째 사진을 버블 아이콘으로 설정
           const firstUrl = uploaded.sort((a, b) => a.orderIndex - b.orderIndex)[0]?.url
           if (firstUrl) {
-            await bubbleRepo.update(result.bubble.id, { icon: firstUrl, iconBgColor: '#6B7280' })
+            await updateBubble(result.bubble.id, { icon: firstUrl, iconBgColor: '#6B7280' })
           }
         } catch { /* 사진 업로드 실패해도 진행 */ }
       }

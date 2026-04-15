@@ -78,6 +78,19 @@ export const WINE_TYPE_LABELS: Record<WineType, string> = {
   dessert: '디저트',
 }
 
+/** AI 와인 텍스트 검색 결과 후보 */
+export interface WineSearchCandidate {
+  name: string
+  nameKo: string | null
+  producer: string | null
+  vintage: number | null
+  wineType: string
+  region: string | null
+  country: string | null
+  confidence: number
+  labelImageUrl: string | null
+}
+
 export const WINE_TYPE_COLORS: Record<WineType, string> = {
   red: '#8B2252',
   white: '#C9A96E',

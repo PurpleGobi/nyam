@@ -86,5 +86,13 @@ export function useBubbleCreate() {
     await bubbleRepo.updateMember(bubbleId, userId, data)
   }, [])
 
-  return { createBubble, updateMemberAfterCreate, isLoading }
+  /** 버블 부분 업데이트 (아이콘 변경 등) */
+  const updateBubble = useCallback(async (
+    bubbleId: string,
+    data: Partial<Omit<Bubble, 'id'>>,
+  ): Promise<void> => {
+    await bubbleRepo.update(bubbleId, data)
+  }, [])
+
+  return { createBubble, updateMemberAfterCreate, updateBubble, isLoading }
 }
