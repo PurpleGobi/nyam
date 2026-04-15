@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-04-15 #51 — 하드코딩 색상 정리 (Phase 4)
+- **영역**: globals.css, presentation/components 및 containers 68파일
+- **맥락**: globals.css에 `--text-inverse: #FFFFFF` 토큰 추가. 68파일에서 #FFFFFF/#fff/bg-white/text-white → 디자인 토큰 교체 (color: var(--text-inverse), text-text-inverse, bg-elevated 등 120건+). rgba 반투명 오버레이, 브랜드 SVG, 카카오맵 인라인은 제외. pre-existing lint 에러(bubble-settings-container useRef) 수정. pnpm build/lint 통과.
+- **미완료**: 없음
+- **다음**: 남은 기술 부채 점검
+
 ### 2026-04-15 #50 — Dead Code 제거 (Phase 3)
 - **영역**: domain/services 5파일 삭제, application/hooks 5파일 삭제, shared/utils/distance.ts, package.json
 - **맥락**: 미사용 domain services 5개(map-cluster, nyam-score, onboarding-xp, profile-visibility, visibility-filter) 삭제. 미사용 application hooks 5개(use-bubble-permissions, use-bubblers-list, use-onboarding, use-onboarding-bubbles, use-onboarding-restaurants) 삭제. haversineDistance 중복 4곳 제거 → distance.ts에 haversineDistanceMeters 통합. @base-ui/react, tw-animate-css 제거, shadcn devDeps 이동. 순 삭제 -808줄.
@@ -59,11 +65,5 @@
 - **맥락**: 버블 카드뷰의 전문 분야 태그(Lv.X)가 home-container.getExpertiseTop3에서 넘어온 3개를 모두 표시하고 있었음. 카드 공간 대비 정보량이 많아 상위 2개만 노출하도록 카드 내부에서 sort(avgLevel desc) + slice(0,2)로 강제. CompactListBubble(리스트뷰)은 영향 없음.
 - **미완료**: 없음
 - **다음**: 없음
-
-### 2026-04-14 #38 — 버블 상세 비멤버 액션 버튼 정리 (가입하기/대상추가 FAB 게이트)
-- **영역**: presentation/containers/bubble-detail-container.tsx(isMember/canJoin 게이트, 가입하기 버튼 + BubbleJoinContainer 연결, 대상추가 FAB 멤버전용), application/hooks/use-bubble-detail.ts(refetch를 멤버정보까지 재조회하도록 확장)
-- **맥락**: 비멤버·비오너 사용자에게 "초대" 버튼이 노출되던 버그 수정. 가입 상태(owner/admin/member)에 따라 초대 버튼과 "가입하기" 버튼을 상호배타적으로 노출. joinPolicy에 따라 라벨 분기(closed→팔로우, manual_approve→가입신청, open/auto_approve→가입하기, invite_only→숨김). 기존 미사용 상태였던 BubbleJoinContainer를 재활용해 JoinFlow 시트 연결. 가입 성공 시 useBubbleDetail.refetch로 멤버 정보 재조회. 대상추가 FAB도 멤버전용으로 게이트.
-- **미완료**: 없음
-- **다음**: 브라우저 QA (각 joinPolicy별 버튼 라벨·가입 후 UI 전환 확인)
 
 

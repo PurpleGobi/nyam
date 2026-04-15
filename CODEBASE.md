@@ -1,7 +1,7 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-15 (Phase 3 Dead Code 제거: domain services 5개 + application hooks 5개 삭제, haversine 중복 통합)
+> 마지막 갱신: 2026-04-15 (Phase 4 하드코딩 색상 정리: globals.css에 --text-inverse 토큰 추가, 68파일 디자인 토큰 교체)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
@@ -72,6 +72,5 @@
 - container.ts에 uploadBubbleIcon 유틸이 DI 파일 안에 있음 (storage로 이동 권장)
 - presentation/components 일부가 대형 파일 (share-rule-editor, condition-filter-bar 수정 중)
 - supabase/types.ts 재생성 필요 (bookmarks + home + CF 캐시 + bubble_items + 055 prestige + 058 rename + 059 인덱스 + 061 RPC 반영)
-- bubble-detail-container.tsx #FFFFFF 하드코딩 4건 (pre-existing)
 - 지도뷰 bubbleScore enrichment 미구현 — nearby API에서 항상 null 반환 (Phase 2로 이연)
 - 지도뷰 Google Places 별점 캐싱 미구현 — 미매칭 nearby 식당마다 매번 API 호출 (restaurants.google_rating 저장 권장)
