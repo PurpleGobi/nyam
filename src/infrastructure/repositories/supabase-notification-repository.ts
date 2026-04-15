@@ -84,6 +84,15 @@ export class SupabaseNotificationRepository implements NotificationRepository {
     if (error) throw error
   }
 
+  async deleteNotifications(notificationIds: string[]): Promise<void> {
+    if (notificationIds.length === 0) return
+    const { error } = await this.supabase
+      .from('notifications')
+      .delete()
+      .in('id', notificationIds)
+    if (error) throw error
+  }
+
   async deleteNotificationsByCondition(params: { type: string; actorId: string; bubbleId: string }): Promise<void> {
     await this.supabase
       .from('notifications')

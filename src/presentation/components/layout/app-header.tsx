@@ -17,7 +17,10 @@ interface AppHeaderProps {
 export function AppHeader({ onLogoClick }: AppHeaderProps = {}) {
   const router = useRouter()
   const { user } = useAuth()
-  const { notifications, unreadCount, markAsRead, markAllAsRead, handleAction } = useNotifications()
+  const {
+    notifications, unreadCount, markAsRead, markAllAsRead, handleAction,
+    isSelectMode, selectedIds, toggleSelectMode, toggleSelect, selectAll, deleteSelected,
+  } = useNotifications()
   const { levelInfo } = useXp(user?.id ?? null, true)
   const [notifOpen, setNotifOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
@@ -67,13 +70,19 @@ export function AppHeader({ onLogoClick }: AppHeaderProps = {}) {
 
       <NotificationDropdown
         isOpen={notifOpen}
-        onClose={() => setNotifOpen(false)}
+        onClose={() => { setNotifOpen(false); if (isSelectMode) toggleSelectMode() }}
         notifications={notifications}
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
         onAction={handleAction}
         anchorRef={bellRef}
+        isSelectMode={isSelectMode}
+        selectedIds={selectedIds}
+        onToggleSelectMode={toggleSelectMode}
+        onToggleSelect={toggleSelect}
+        onSelectAll={selectAll}
+        onDeleteSelected={deleteSelected}
       />
     </>
   )

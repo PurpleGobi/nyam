@@ -41,7 +41,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const { photos: pendingPhotos, addFiles, removePhoto: removePendingPhoto, initExistingPhotos, replacePhoto, reorderPhotos, uploadAll, isUploading } = usePhotoUpload()
   const [photosInitialized, setPhotosInitialized] = useState(false)
   const { approveJoin, rejectJoin, changeRole, removeMember, isLoading: rolesLoading } = useBubbleRoles(bubbleId)
-  const { members: activeMembers, refetch: refetchMembers, isLoading: membersLoading } = useBubbleMembers(bubbleId)
+  const { members: activeMembers, refetch: refetchMembers, updateMemberLocal, removeMemberLocal, isLoading: membersLoading } = useBubbleMembers(bubbleId)
   const { records } = useRecordsWithTarget(userId)
   const { syncAllRecordsToBubble } = useBubbleAutoSync(userId)
   const { showToast } = useToast()
@@ -66,7 +66,6 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
 
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [currentBubble] = useState<Bubble>(bubble)
-  const [isSaving, setIsSaving] = useState(false)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
   const [visibilityOverride, setVisibilityOverride] = useState<VisibilityOverride | null>(null)
   const memberLoaded = !memberLoading
@@ -99,26 +98,26 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
     await removePendingPhoto(photoId)
   }, [bubblePhotos, deleteBubblePhoto, removePendingPhoto])
 
-  const handleSave = async (updates: Partial<Bubble>) => {
-    setIsSaving(true)
-    // 새 사진 업로드
-    if (userId && pendingPhotos.some((p) => p.status === 'pending')) {
-      try {
-        const uploaded = await uploadAll(userId, bubbleId)
-        const newPhotos = uploaded.filter((p) => !bubblePhotos.some((bp) => bp.url === p.url))
-        if (newPhotos.length > 0) {
-          await saveBubblePhotos(bubbleId, userId, newPhotos.map((p) => ({ url: p.url, orderIndex: p.orderIndex })))
-        }
-      } catch { /* 사진 업로드 실패해도 설정은 저장 */ }
-    }
-    // 첫 번째 사진이 있으면 대표 아이콘으로 설정
-    const firstPendingPhoto = pendingPhotos.find((p) => p.status === 'uploaded' && p.orderIndex === 0)
-    if (firstPendingPhoto?.uploadedUrl) {
-      updates = { ...updates, icon: firstPendingPhoto.uploadedUrl, iconBgColor: '#6B7280' }
-    }
+  /** 개별 필드 즉시 저장 (네비게이션 없음) */
+  const handleAutoSave = useCallback(async (updates: Partial<Bubble>) => {
     await updateSettings(updates)
-    router.push(`/bubbles/${bubbleId}`)
-  }
+  }, [updateSettings])
+
+  /** 사진 업로드 + 갤러리 저장 (아이콘과 별도) */
+  const handleSavePhotos = useCallback(async () => {
+    if (!userId || !pendingPhotos.some((p) => p.status === 'pending')) return
+    try {
+      const uploaded = await uploadAll(userId, bubbleId)
+      const newPhotos = uploaded.filter((p) => !bubblePhotos.some((bp) => bp.url === p.url))
+      if (newPhotos.length > 0) {
+        await saveBubblePhotos(bubbleId, userId, newPhotos.map((p) => ({ url: p.url, orderIndex: p.orderIndex })))
+      }
+      const firstPhoto = pendingPhotos.find((p) => p.status === 'uploaded' && p.orderIndex === 0)
+      if (firstPhoto?.uploadedUrl) {
+        await updateSettings({ icon: firstPhoto.uploadedUrl, iconBgColor: '#6B7280' })
+      }
+    } catch { /* 사진 업로드 실패 무시 */ }
+  }, [userId, bubbleId, pendingPhotos, bubblePhotos, uploadAll, saveBubblePhotos, updateSettings])
 
   const handleShareRuleChange = async (newRule: BubbleShareRule | null) => {
     setShareRule(newRule)
@@ -176,13 +175,13 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   }
 
   const handleChangeRole = async (targetUserId: string, newRole: BubbleMemberRole) => {
+    updateMemberLocal(targetUserId, { role: newRole })
     await changeRole(targetUserId, newRole)
-    refetchMembers()
   }
 
   const handleRemoveMember = async (targetUserId: string) => {
+    removeMemberLocal(targetUserId)
     await removeMember(targetUserId)
-    refetchMembers()
     showToast('멤버가 추방되었습니다', 3000)
   }
 
@@ -195,9 +194,10 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
         <BubbleSettings
           bubble={currentBubble}
           myRole={myRole}
-          onSave={handleSave}
+          onAutoSave={handleAutoSave}
+          onSavePhotos={handleSavePhotos}
           onDelete={handleDelete}
-          isLoading={isSaving || settingsLoading || rolesLoading}
+          isLoading={settingsLoading || rolesLoading}
           activeMembers={activeMembers}
           isMembersLoading={membersLoading}
           onChangeRole={handleChangeRole}

@@ -259,6 +259,8 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
   }
 
   const isOwner = myRole === 'owner'
+  const isAdmin = myRole === 'admin'
+  const canInvite = isOwner || isAdmin
   const isMember = myStatus === 'active' && (myRole === 'owner' || myRole === 'admin' || myRole === 'member')
   const isPending = myStatus === 'pending'
   const joinButtonLabel = bubble.joinPolicy === 'closed'
@@ -393,9 +395,19 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               {isMember && (
                 <button
                   type="button"
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-                  style={{ backgroundColor: 'var(--accent-social)', color: 'var(--primary-foreground)' }}
+                  onClick={() => {
+                    if (canInvite) {
+                      setShowInviteModal(true)
+                    } else {
+                      showToast('관리자 등급만 초대가 가능합니다', 3000)
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity"
+                  style={{
+                    backgroundColor: canInvite ? 'var(--accent-social)' : 'var(--bg-card)',
+                    color: canInvite ? 'var(--primary-foreground)' : 'var(--text-hint)',
+                    border: canInvite ? 'none' : '1px solid var(--border)',
+                  }}
                 >
                   <UserPlus size={13} /> 초대
                 </button>

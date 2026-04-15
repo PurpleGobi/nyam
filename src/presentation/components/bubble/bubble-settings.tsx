@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { Info, Lock, Eye, ShieldCheck, Zap, DoorOpen, Users, AlertTriangle, Share2, UserPlus, Crown, Shield, UserX, Loader2 } from 'lucide-react'
 import type { Bubble, BubbleJoinPolicy, BubbleVisibility, BubbleShareRule, BubbleMemberRole, VisibilityOverride } from '@/domain/entities/bubble'
@@ -61,7 +61,8 @@ const COLOR_OPTIONS = [
 interface BubbleSettingsProps {
   bubble: Bubble
   myRole: BubbleMemberRole | null
-  onSave: (updates: Partial<Bubble>) => void
+  onAutoSave: (updates: Partial<Bubble>) => void
+  onSavePhotos?: () => void
   onDelete: () => void
   isLoading: boolean
   activeMembers?: EnrichedBubbleMember[]
@@ -93,7 +94,7 @@ interface BubbleSettingsProps {
 }
 
 export function BubbleSettings({
-  bubble, myRole, onSave, onDelete, isLoading,
+  bubble, myRole, onAutoSave, onSavePhotos, onDelete, isLoading,
   activeMembers, isMembersLoading, onChangeRole, onRemoveMember,
   pendingMembers, pendingInvites, onCancelInvite, onApproveJoin, onRejectJoin, onMemberClick, onViewAllPending,
   shareRule, onShareRuleChange,
@@ -144,6 +145,7 @@ export function BubbleSettings({
       const publicUrl = await onUploadPhoto(file)
       setSelectedIcon(publicUrl)
       setPendingFile(null)
+      saveField({ icon: publicUrl, iconBgColor: '#6B7280' })
     } catch {
       setUploadError(true)
     } finally {
@@ -159,6 +161,7 @@ export function BubbleSettings({
       const publicUrl = await onUploadPhoto(pendingFile)
       setSelectedIcon(publicUrl)
       setPendingFile(null)
+      saveField({ icon: publicUrl, iconBgColor: '#6B7280' })
     } catch {
       setUploadError(true)
     } finally {
@@ -180,53 +183,80 @@ export function BubbleSettings({
   const showMemberManagement = isOwner || isAdmin
   const showDangerZone = isOwner
 
-  const handleSave = async () => {
-    // 사진 업로드 실패 상태에서 저장 → 재시도
-    let finalIcon = selectedIcon
-    if (pendingFile && onUploadPhoto) {
-      setIsUploading(true)
-      try {
-        const publicUrl = await onUploadPhoto(pendingFile)
-        finalIcon = publicUrl
-        setSelectedIcon(publicUrl)
-        setPendingFile(null)
-        setUploadError(false)
-      } catch {
-        setUploadError(true)
-        setIsUploading(false)
-        return
-      } finally {
-        setIsUploading(false)
-      }
-    }
-    const access = ACCESS_OPTIONS.find(o => o.value === accessMode)
-    onSave({
-      name: name.trim(),
-      description: description.trim() || null,
-      icon: finalIcon,
-      iconBgColor: isPhoto ? '#6B7280' : selectedColor,
-      visibility: access?.visibility ?? 'public',
-      joinPolicy: access?.joinPolicy ?? 'manual_approve',
-      minRecords,
-      minLevel,
-      maxMembers,
-      isSearchable,
-      searchKeywords: searchKeywords.length > 0 ? searchKeywords : null,
-      allowComments,
-      allowExternalShare,
-    })
+  // ── 자동 저장 헬퍼 ──
+  const saveField = useCallback((updates: Partial<Bubble>) => {
+    onAutoSave(updates)
+  }, [onAutoSave])
+
+  // 텍스트 필드 debounce (500ms)
+  const nameRef = useRef(bubble.name)
+  const descRef = useRef(bubble.description ?? '')
+
+  useEffect(() => {
+    if (name.trim() === nameRef.current) return
+    const timer = setTimeout(() => {
+      nameRef.current = name.trim()
+      saveField({ name: name.trim() })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [name, saveField])
+
+  useEffect(() => {
+    const trimmed = description.trim() || null
+    const prev = descRef.current.trim() || null
+    if (trimmed === prev) return
+    const timer = setTimeout(() => {
+      descRef.current = description
+      saveField({ description: trimmed })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [description, saveField])
+
+  // 아이콘/색상 즉시 저장
+  const handleIconChange = (iconName: string) => {
+    setSelectedIcon(iconName)
+    saveField({ icon: iconName, iconBgColor: selectedColor })
   }
+
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color)
+    saveField({ icon: selectedIcon, iconBgColor: color })
+  }
+
+  // 접근 모드 즉시 저장
+  const handleAccessModeChange = (mode: AccessMode) => {
+    setAccessMode(mode)
+    const access = ACCESS_OPTIONS.find(o => o.value === mode)
+    if (access) saveField({ visibility: access.visibility, joinPolicy: access.joinPolicy })
+  }
+
+  // 자동 승인 조건 즉시 저장
+  const handleMinRecordsChange = (v: number) => { setMinRecords(v); saveField({ minRecords: v }) }
+  const handleMinLevelChange = (v: number) => { setMinLevel(v); saveField({ minLevel: v }) }
+  const handleMaxMembersChange = (v: number) => { const val = v === 0 ? null : v; setMaxMembers(val); saveField({ maxMembers: val }) }
+
+  // 토글 즉시 저장
+  const handleSearchableChange = (v: boolean) => { setIsSearchable(v); saveField({ isSearchable: v }) }
+  const handleCommentsChange = (v: boolean) => { setAllowComments(v); saveField({ allowComments: v }) }
+  const handleExternalShareChange = (v: boolean) => { setAllowExternalShare(v); saveField({ allowExternalShare: v }) }
+
+  // 키워드 즉시 저장
+  const saveKeywords = (kws: string[]) => saveField({ searchKeywords: kws.length > 0 ? kws : null })
 
   const addKeyword = () => {
     const kw = keywordInput.trim()
     if (kw && !searchKeywords.includes(kw)) {
-      setSearchKeywords([...searchKeywords, kw])
+      const next = [...searchKeywords, kw]
+      setSearchKeywords(next)
       setKeywordInput('')
+      saveKeywords(next)
     }
   }
 
   const removeKeyword = (kw: string) => {
-    setSearchKeywords(searchKeywords.filter((k) => k !== kw))
+    const next = searchKeywords.filter((k) => k !== kw)
+    setSearchKeywords(next)
+    saveKeywords(next)
   }
 
   // 정보 공개 범위: null=모두 공개, 객체=부분 공개
@@ -299,7 +329,7 @@ export function BubbleSettings({
                             <button
                               key={iconName}
                               type="button"
-                              onClick={() => setSelectedIcon(iconName)}
+                              onClick={() => handleIconChange(iconName)}
                               className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
                               style={{
                                 backgroundColor: isActive ? 'var(--accent-social-light)' : 'transparent',
@@ -319,7 +349,7 @@ export function BubbleSettings({
                     <button
                       key={color}
                       type="button"
-                      onClick={() => setSelectedColor(color)}
+                      onClick={() => handleColorChange(color)}
                       className="h-6 w-6 rounded-full transition-transform"
                       style={{
                         backgroundColor: color,
@@ -345,7 +375,7 @@ export function BubbleSettings({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setAccessMode(value)}
+                  onClick={() => handleAccessModeChange(value)}
                   className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors"
                   style={{ backgroundColor: isActive ? 'var(--accent-social-light)' : 'transparent' }}
                 >
@@ -371,15 +401,15 @@ export function BubbleSettings({
           {/* 자동 승인 조건 */}
           {accessMode === 'auto_approve' && (
             <div className="flex gap-2 pt-1">
-              <CompactNumberField label="최소 기록" value={minRecords} onChange={setMinRecords} min={0} suffix="개" />
-              <CompactNumberField label="최소 레벨" value={minLevel} onChange={setMinLevel} min={0} suffix="Lv" />
-              <CompactNumberField label="최대 인원" value={maxMembers ?? 0} onChange={(v) => setMaxMembers(v === 0 ? null : v)} min={0} suffix="명" placeholder="무제한" />
+              <CompactNumberField label="최소 기록" value={minRecords} onChange={handleMinRecordsChange} min={0} suffix="개" />
+              <CompactNumberField label="최소 레벨" value={minLevel} onChange={handleMinLevelChange} min={0} suffix="Lv" />
+              <CompactNumberField label="최대 인원" value={maxMembers ?? 0} onChange={handleMaxMembersChange} min={0} suffix="명" placeholder="무제한" />
             </div>
           )}
 
           {/* 검색·기타 토글 */}
           <div className="flex flex-col gap-1 border-t pt-1.5" style={{ borderColor: 'var(--border)' }}>
-            <ToggleRow label="탐색에 노출" value={isSearchable} onChange={setIsSearchable} description="다른 사용자가 버블 탐색에서 발견 가능" />
+            <ToggleRow label="탐색에 노출" value={isSearchable} onChange={handleSearchableChange} description="다른 사용자가 버블 탐색에서 발견 가능" />
             {isSearchable && (
               <div className="flex flex-col gap-1.5 pl-1">
                 <div className="flex gap-1.5">
@@ -418,8 +448,8 @@ export function BubbleSettings({
                 )}
               </div>
             )}
-            <ToggleRow label="댓글 허용" value={allowComments} onChange={setAllowComments} />
-            <ToggleRow label="외부 공유 허용" value={allowExternalShare} onChange={setAllowExternalShare} />
+            <ToggleRow label="댓글 허용" value={allowComments} onChange={handleCommentsChange} />
+            <ToggleRow label="외부 공유 허용" value={allowExternalShare} onChange={handleExternalShareChange} />
           </div>
         </Section>
       )}
@@ -604,19 +634,6 @@ export function BubbleSettings({
             onMemberClick={onMemberClick}
           />
         </Section>
-      )}
-
-      {/* ── Owner: 저장 ── */}
-      {showBubbleSettings && (
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isLoading || !name.trim()}
-          className="rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
-          style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
-        >
-          {isLoading ? '저장 중...' : '설정 저장'}
-        </button>
       )}
 
       {/* ── Owner: 위험 영역 ── */}
@@ -815,22 +832,16 @@ function ActiveMemberList({
               </p>
             </div>
 
-            {/* 오너만: 역할 토글 + 추방 */}
+            {/* 오너만: 관리자 토글 + 추방 */}
             {showControls && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                {/* 관리자 토글 */}
-                <button
-                  type="button"
-                  onClick={() => onChangeRole?.(m.userId, isAdminMember ? 'member' : 'admin')}
-                  className="rounded-full px-2 py-1 text-[10px] font-semibold transition-opacity active:opacity-70"
-                  style={{
-                    backgroundColor: isAdminMember ? 'var(--accent-social-light)' : 'var(--bg-section)',
-                    color: isAdminMember ? 'var(--accent-social)' : 'var(--text-sub)',
-                    border: `1px solid ${isAdminMember ? 'var(--accent-social)' : 'var(--border)'}`,
-                  }}
-                >
-                  {isAdminMember ? '관리자' : '일반'}
-                </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {/* 관리자 토글 스위치 */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-[var(--text-hint)]">관리자</span>
+                  <button type="button" onClick={() => onChangeRole?.(m.userId, isAdminMember ? 'member' : 'admin')}>
+                    <ToggleSwitchUI on={isAdminMember} />
+                  </button>
+                </div>
 
                 {/* 추방 */}
                 {isConfirming ? (

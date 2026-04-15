@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { BubbleMember } from '@/domain/entities/bubble'
 import type { UserProfile } from '@/domain/entities/profile'
 import { bubbleRepo, profileRepo } from '@/shared/di/container'
@@ -40,11 +40,13 @@ export function useBubbleMembers(bubbleId: string) {
   const [sort, setSort] = useState<MemberSortType>('match')
   const [isLoading, setIsLoading] = useState(true)
 
+  const initialLoadDone = useRef(false)
+
   const fetchMembers = useCallback(async () => {
-    setIsLoading(true)
+    // 최초 로딩만 스피너 표시, 이후 refetch는 백그라운드
+    if (!initialLoadDone.current) setIsLoading(true)
     try {
       const result = await bubbleRepo.getMembers(bubbleId)
-      // 유저 프로필 병렬 로딩
       const profiles = await Promise.all(
         result.data.map((m) =>
           profileRepo.getUserProfile(m.userId).catch(() => null)
@@ -63,6 +65,7 @@ export function useBubbleMembers(bubbleId: string) {
         }
       })
       setMembers(enriched)
+      initialLoadDone.current = true
     } finally {
       setIsLoading(false)
     }
@@ -117,6 +120,16 @@ export function useBubbleMembers(bubbleId: string) {
     }
   }, [filtered, sort])
 
+  /** 낙관적 업데이트: 로컬 상태만 즉시 변경 (서버 동기화는 호출자 책임) */
+  const updateMemberLocal = useCallback((userId: string, patch: Partial<EnrichedBubbleMember>) => {
+    setMembers((prev) => prev.map((m) => m.userId === userId ? { ...m, ...patch } : m))
+  }, [])
+
+  /** 낙관적 삭제: 로컬 상태에서 즉시 제거 */
+  const removeMemberLocal = useCallback((userId: string) => {
+    setMembers((prev) => prev.filter((m) => m.userId !== userId))
+  }, [])
+
   return {
     members: sorted,
     activeMembers,
@@ -127,5 +140,7 @@ export function useBubbleMembers(bubbleId: string) {
     setSort,
     isLoading,
     refetch: fetchMembers,
+    updateMemberLocal,
+    removeMemberLocal,
   }
 }

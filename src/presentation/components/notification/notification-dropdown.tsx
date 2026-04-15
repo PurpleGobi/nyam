@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
+import { Trash2, CheckSquare, Square, CheckCircle2 } from 'lucide-react'
 import type { Notification } from '@/domain/entities/notification'
 import { NOTIFICATION_TYPE_CONFIG } from '@/domain/entities/notification'
 import { NotificationIcon } from '@/presentation/components/notification/notification-icon'
@@ -35,11 +36,18 @@ interface NotificationDropdownProps {
   onAction: (id: string, status: 'accepted' | 'rejected') => void
   onNavigate?: (notification: Notification) => void
   anchorRef: RefObject<HTMLDivElement | null>
+  isSelectMode: boolean
+  selectedIds: Set<string>
+  onToggleSelectMode: () => void
+  onToggleSelect: (id: string) => void
+  onSelectAll: () => void
+  onDeleteSelected: () => void
 }
 
 export function NotificationDropdown({
   isOpen, onClose, notifications, unreadCount,
   onMarkAsRead, onMarkAllAsRead, onAction, onNavigate, anchorRef,
+  isSelectMode, selectedIds, onToggleSelectMode, onToggleSelect, onSelectAll, onDeleteSelected,
 }: NotificationDropdownProps) {
   const ref = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -57,6 +65,10 @@ export function NotificationDropdown({
   }, [isOpen, updatePos])
 
   const handleItemClick = (n: Notification) => {
+    if (isSelectMode) {
+      onToggleSelect(n.id)
+      return
+    }
     if (!n.isRead) onMarkAsRead(n.id)
     if (n.actionStatus === 'pending') return
 
@@ -72,6 +84,8 @@ export function NotificationDropdown({
     onClose()
   }
 
+  const allSelected = notifications.length > 0 && selectedIds.size === notifications.length
+
   return (
     <PopupWindow isOpen={isOpen} onClose={onClose}>
       <div
@@ -82,11 +96,42 @@ export function NotificationDropdown({
         {/* 헤더 */}
         <div className="notif-header" style={{ borderBottom: '1px solid var(--border)' }}>
           <span className="notif-header-title">알림</span>
-          {unreadCount > 0 && (
-            <button type="button" onClick={onMarkAllAsRead} className="notif-header-action">
-              모두 읽음
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isSelectMode ? (
+              <>
+                <button type="button" onClick={onSelectAll} className="notif-header-action flex items-center gap-1">
+                  {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                  전체선택
+                </button>
+                <button
+                  type="button"
+                  onClick={onDeleteSelected}
+                  disabled={selectedIds.size === 0}
+                  className="notif-header-action flex items-center gap-1"
+                  style={{ color: selectedIds.size > 0 ? 'var(--negative)' : 'var(--text-hint)' }}
+                >
+                  <Trash2 size={14} />
+                  삭제 {selectedIds.size > 0 && `(${selectedIds.size})`}
+                </button>
+                <button type="button" onClick={onToggleSelectMode} className="notif-header-action">
+                  취소
+                </button>
+              </>
+            ) : (
+              <>
+                {unreadCount > 0 && (
+                  <button type="button" onClick={onMarkAllAsRead} className="notif-header-action">
+                    모두 읽음
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button type="button" onClick={onToggleSelectMode} className="notif-header-action">
+                    선택
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* 목록 */}
@@ -101,27 +146,37 @@ export function NotificationDropdown({
                 onClick={() => handleItemClick(n)}
                 className={`notif-item w-full text-left ${!n.isRead ? 'unread' : ''}`}
                 style={{
-                  backgroundColor: n.isRead ? 'transparent' : 'color-mix(in srgb, var(--accent-food) 5%, transparent)',
+                  backgroundColor: isSelectMode && selectedIds.has(n.id)
+                    ? 'color-mix(in srgb, var(--accent-food) 12%, transparent)'
+                    : n.isRead ? 'transparent' : 'color-mix(in srgb, var(--accent-food) 5%, transparent)',
                   borderBottom: '1px solid var(--border)',
                 }}
               >
-                <div className="notif-icon mt-0.5">
-                  <NotificationIcon type={n.type} />
-                </div>
+                {isSelectMode ? (
+                  <div className="mt-0.5 flex-shrink-0" style={{ color: selectedIds.has(n.id) ? 'var(--accent-food)' : 'var(--text-hint)' }}>
+                    {selectedIds.has(n.id) ? <CheckCircle2 size={20} /> : <div className="rounded-full border-2" style={{ width: 20, height: 20, borderColor: 'var(--border)' }} />}
+                  </div>
+                ) : (
+                  <div className="notif-icon mt-0.5">
+                    <NotificationIcon type={n.type} />
+                  </div>
+                )}
 
                 <div className="min-w-0 flex-1">
                   <p className="notif-title">{n.title}</p>
                   {n.body && <p className="notif-body mt-0.5">{n.body}</p>}
                   <p className="notif-time mt-0.5">{formatTimeAgo(n.createdAt)}</p>
 
-                  <NotificationActions
-                    actionStatus={n.actionStatus}
-                    onAccept={() => onAction(n.id, 'accepted')}
-                    onReject={() => onAction(n.id, 'rejected')}
-                  />
+                  {!isSelectMode && (
+                    <NotificationActions
+                      actionStatus={n.actionStatus}
+                      onAccept={() => onAction(n.id, 'accepted')}
+                      onReject={() => onAction(n.id, 'rejected')}
+                    />
+                  )}
                 </div>
 
-                {!n.isRead && <div className="notif-unread-dot mt-2" />}
+                {!isSelectMode && !n.isRead && <div className="notif-unread-dot mt-2" />}
               </button>
             ))
           )}

@@ -1,7 +1,7 @@
 'use client'
 
 import useSWR, { useSWRConfig } from 'swr'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { notificationRepo, bubbleRepo } from '@/shared/di/container'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import type { Notification } from '@/domain/entities/notification'
@@ -63,6 +63,54 @@ export function useNotifications() {
     await notificationRepo.markAllAsRead(userId)
   }, [userId, mutate])
 
+  // ── 선택 모드 ──
+  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const toggleSelectMode = useCallback(() => {
+    setIsSelectMode((prev) => {
+      if (prev) setSelectedIds(new Set())
+      return !prev
+    })
+  }, [])
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    const allIds = (notifications ?? []).map((n) => n.id)
+    setSelectedIds((prev) => prev.size === allIds.length ? new Set() : new Set(allIds))
+  }, [notifications])
+
+  const deleteSelected = useCallback(async () => {
+    if (!userId || selectedIds.size === 0) return
+    const ids = Array.from(selectedIds)
+
+    // 낙관적 업데이트
+    const unreadDelta = (notifications ?? []).filter((n) => ids.includes(n.id) && !n.isRead).length
+    mutate(
+      ['notifications', userId],
+      (prev: Notification[] | undefined) => prev?.filter((n) => !ids.includes(n.id)),
+      false,
+    )
+    mutate(
+      ['unread-count', userId],
+      (prev: number | undefined) => Math.max(0, (prev ?? 0) - unreadDelta),
+      false,
+    )
+
+    setSelectedIds(new Set())
+    setIsSelectMode(false)
+
+    await notificationRepo.deleteNotifications(ids)
+  }, [userId, selectedIds, notifications, mutate])
+
   const handleAction = useCallback(async (
     notificationId: string,
     action: 'accepted' | 'rejected',
@@ -103,6 +151,12 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     handleAction,
+    isSelectMode,
+    selectedIds,
+    toggleSelectMode,
+    toggleSelect,
+    selectAll,
+    deleteSelected,
   }
 }
 
