@@ -28,7 +28,10 @@ export function CameraCapture({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleCameraCapture = useCallback(() => {
-    inputRef.current?.click()
+    if (inputRef.current) {
+      inputRef.current.removeAttribute('capture')
+      inputRef.current.click()
+    }
   }, [])
 
   const handleFileChange = useCallback(
