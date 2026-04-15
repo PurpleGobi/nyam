@@ -8,7 +8,7 @@ import type {
 import type { Restaurant, RestaurantPrestige } from '@/domain/entities/restaurant'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
-import type { RestaurantSearchResult, NearbyRestaurant } from '@/domain/entities/search'
+import type { RestaurantSearchResult } from '@/domain/entities/search'
 import { createClient } from '@/infrastructure/supabase/client'
 
 function mapDbToRestaurant(data: Record<string, unknown>): Restaurant {
@@ -359,44 +359,6 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
       kakaoMapUrl: r.kakao_map_url ?? null,
       prestige: (r.prestige ?? []) as RestaurantPrestige[],
       distance: null,
-      hasRecord: recordedIds.has(r.id),
-    }))
-  }
-
-  async findNearby(lat: number, lng: number, radiusMeters: number, userId: string): Promise<NearbyRestaurant[]> {
-    const { data, error } = await this.supabase.rpc('restaurants_within_radius', {
-      lat,
-      lng,
-      radius_meters: radiusMeters,
-    })
-
-    if (error) throw new Error(`근처 식당 조회 실패: ${error.message}`)
-
-    const nearbyIds = ((data as Array<{ id: string }>) ?? []).map((r) => r.id)
-    const { data: userRecords } = nearbyIds.length > 0
-      ? await this.supabase
-          .from('records')
-          .select('target_id')
-          .eq('user_id', userId)
-          .eq('target_type', 'restaurant')
-          .in('target_id', nearbyIds)
-      : { data: [] }
-
-    const recordedIds = new Set((userRecords ?? []).map((r) => r.target_id))
-
-    return (
-      (data as Array<{ id: string; name: string; genre: string | null; area: string | null; address: string | null; lat: number | null; lng: number | null; prestige: unknown; distance: number }>) ?? []
-    ).map((r) => ({
-      id: r.id,
-      name: r.name,
-      genre: r.genre,
-      area: r.area,
-      address: r.address ?? null,
-      categoryPath: null,
-      lat: r.lat ?? null,
-      lng: r.lng ?? null,
-      prestige: (r.prestige ?? []) as RestaurantPrestige[],
-      distance: r.distance,
       hasRecord: recordedIds.has(r.id),
     }))
   }

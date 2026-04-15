@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
   const genre = sp.get('genre')?.trim() || null
   const district = sp.get('district')?.trim() || null
   const area = sp.get('area')?.trim() || null
+  const userLat = sp.get('userLat') ? Number(sp.get('userLat')) : null
+  const userLng = sp.get('userLng') ? Number(sp.get('userLng')) : null
 
   if ([north, south, east, west].some((v) => Number.isNaN(v) || v === 0)) {
     return NextResponse.json({ restaurants: [], hasMore: false })
@@ -50,6 +52,7 @@ export async function GET(request: NextRequest) {
       p_prestige_types: prestige.length > 0 ? prestige : null,
       p_genre: genre, p_district: district, p_area: area,
       p_sort: sort, p_limit: limit, p_offset: offset,
+      p_user_lat: userLat, p_user_lng: userLng,
     })
     data = result.data as Record<string, unknown>[] | null
     error = result.error
@@ -64,6 +67,7 @@ export async function GET(request: NextRequest) {
         p_prestige_types: prestige.length > 0 ? prestige : null,
         p_genre: genre, p_district: district, p_area: area,
         p_sort: sort, p_limit: limit, p_offset: offset,
+        p_user_lat: userLat, p_user_lng: userLng,
       })
       data = result.data as Record<string, unknown>[] | null
       error = result.error
@@ -74,6 +78,7 @@ export async function GET(request: NextRequest) {
         p_prestige_types: prestige.length > 0 ? prestige : null,
         p_genre: genre, p_district: district, p_area: area,
         p_sort: sort, p_limit: limit, p_offset: offset,
+        p_user_lat: userLat, p_user_lng: userLng,
       })
       data = result.data as Record<string, unknown>[] | null
       error = result.error

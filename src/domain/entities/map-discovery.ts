@@ -2,9 +2,7 @@
 // R1: 외부 의존 0
 
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
-import type { NearbyRestaurant } from '@/domain/entities/search'
-
-/** 지도 뷰 통합 아이템 — 내 기록 + nearby 모두 이 타입으로 표현 */
+/** 지도 뷰 통합 아이템 */
 export interface MapDiscoveryItem {
   /** 표시용 ID. Nyam DB 식당: restaurants.id, 미등록: "kakao_{카카오ID}" */
   id: string
@@ -71,26 +69,3 @@ export interface MapDisplayResult {
   clusters: MapCluster[]
 }
 
-/** NearbyRestaurant → MapDiscoveryItem 변환. lat/lng null이면 null 반환 */
-export function nearbyToMapItem(r: NearbyRestaurant): MapDiscoveryItem | null {
-  if (r.lat == null || r.lng == null) return null
-  return {
-    id: r.id,
-    kakaoId: r.id.startsWith('kakao_') ? r.id.replace('kakao_', '') : null,
-    name: r.name,
-    genre: r.genre,
-    area: r.area,
-    lat: r.lat,
-    lng: r.lng,
-    distanceKm: r.distance < 1000 ? Math.round(r.distance) / 1000 : r.distance / 1000,
-    inNyamDb: !r.id.startsWith('kakao_'),
-    restaurantId: r.id.startsWith('kakao_') ? null : r.id,
-    myScore: null,
-    followingScore: null,
-    bubbleScore: null,
-    nyamScore: null,
-    googleRating: null,
-    prestige: r.prestige ?? [],
-    sources: r.hasRecord ? ['mine'] : [],
-  }
-}

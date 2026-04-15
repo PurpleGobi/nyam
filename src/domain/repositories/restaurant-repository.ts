@@ -4,7 +4,7 @@
 import type { Restaurant } from '@/domain/entities/restaurant'
 import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
-import type { RestaurantSearchResult, NearbyRestaurant } from '@/domain/entities/search'
+import type { RestaurantSearchResult } from '@/domain/entities/search'
 import type { CreateRestaurantInput } from '@/domain/entities/register'
 
 export type { CreateRestaurantInput }
@@ -13,7 +13,6 @@ export interface RestaurantRepository {
   // ─── S3: 검색/등록 ───
 
   search(query: string, userId: string): Promise<RestaurantSearchResult[]>
-  findNearby(lat: number, lng: number, radiusMeters: number, userId: string): Promise<NearbyRestaurant[]>
   create(input: CreateRestaurantInput): Promise<{ id: string; name: string; isExisting: boolean }>
 
   // ─── S4: 상세 페이지 ───

@@ -177,6 +177,10 @@ export function useMapDiscovery(params: {
       if (genreFilterRef.current) sp.set('genre', genreFilterRef.current)
       if (districtFilterRef.current) sp.set('district', districtFilterRef.current)
       if (areaFilterRef.current) sp.set('area', areaFilterRef.current)
+      if (userLat != null && userLng != null) {
+        sp.set('userLat', String(userLat))
+        sp.set('userLng', String(userLng))
+      }
 
       const res = await fetch(`/api/restaurants/bounds?${sp}`)
       if (!res.ok) {

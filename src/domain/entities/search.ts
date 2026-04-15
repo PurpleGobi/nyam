@@ -44,17 +44,3 @@ export interface RecentSearch {
   targetType: 'restaurant' | 'wine'
   timestamp: number
 }
-
-export interface NearbyRestaurant {
-  id: string
-  name: string
-  genre: string | null
-  categoryPath: string | null
-  area: string | null
-  address: string | null
-  lat: number | null
-  lng: number | null
-  distance: number
-  hasRecord: boolean
-  prestige?: RestaurantPrestige[]
-}

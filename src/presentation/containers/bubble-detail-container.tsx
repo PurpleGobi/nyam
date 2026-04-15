@@ -144,13 +144,13 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
     }
 
     return {
-      totalRecords: shares.length,
+      totalRecords: bubble?.recordCount ?? 0,
       weeklyRecords: weeklyShares.length,
       avgSatisfaction,
       topTargets,
       weeklyChartData,
     }
-  }, [shares, mountTime])
+  }, [shares, mountTime, bubble?.recordCount])
 
   // 실시간 랭킹: shares(bubble_items feed)에서 target별 집계
   const liveRanking = useMemo(() => {
@@ -371,14 +371,25 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
 
             {/* 액션 버튼 행 */}
             <div className="mt-3 flex flex-wrap gap-2 pb-3">
-              <button
-                type="button"
-                onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
-                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-                style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
-              >
-                <List size={13} /> 리스트 보기
-              </button>
+              {isMember ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
+                  style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+                >
+                  <List size={13} /> 리스트 보기
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold opacity-40"
+                  style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+                >
+                  <List size={13} /> 리스트 보기
+                </button>
+              )}
               {isMember && (
                 <button
                   type="button"
