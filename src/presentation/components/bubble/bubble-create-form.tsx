@@ -78,7 +78,7 @@ function ToggleSwitch({ on, accent = 'var(--accent-social)' }: { on: boolean; ac
       style={{ backgroundColor: on ? accent : 'var(--border)' }}
     >
       <div
-        className="h-3.5 w-3.5 rounded-full bg-white transition-transform"
+        className="h-3.5 w-3.5 rounded-full bg-elevated transition-transform"
         style={{ transform: on ? 'translateX(13px)' : 'translateX(0)' }}
       />
     </div>
@@ -90,7 +90,7 @@ function SectionHeader({ num, label }: { num: number; label: string }) {
     <div className="flex items-center gap-2 pb-1">
       <span
         className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
-        style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+        style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
       >
         {num}
       </span>
@@ -398,7 +398,7 @@ export function BubbleCreateForm({ onSubmit, isLoading, photoSlot, hasPhotos, fi
         onClick={handleSubmit}
         disabled={!name.trim() || isLoading}
         className="mt-1 rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+        style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
       >
         {isLoading ? '생성 중...' : '버블 만들기'}
       </button>

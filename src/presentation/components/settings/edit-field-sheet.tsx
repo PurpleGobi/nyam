@@ -93,7 +93,7 @@ function EditFieldSheetInner({
           fontSize: '14px',
           fontWeight: 700,
           backgroundColor: value.trim() ? 'var(--text)' : 'var(--bg-elevated)',
-          color: value.trim() ? '#FFFFFF' : 'var(--text-hint)',
+          color: value.trim() ? 'var(--text-inverse)' : 'var(--text-hint)',
         }}
       >
         저장

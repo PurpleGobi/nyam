@@ -79,7 +79,7 @@ export function BubbleDiscoverSheet({
               >
                 <div
                   className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl"
-                  style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+                  style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
                 >
                   <BubbleIcon icon={b.icon} size={20} />
                 </div>

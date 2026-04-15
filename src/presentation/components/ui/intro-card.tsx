@@ -39,7 +39,7 @@ export function IntroCard({ selected, variant = 'food', icon, title, description
           background: selected
             ? (variant === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)')
             : 'var(--border)',
-          color: selected ? '#fff' : 'transparent',
+          color: selected ? 'var(--text-inverse)' : 'transparent',
         }}
       >
         <Check size={14} />

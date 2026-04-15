@@ -73,7 +73,7 @@ export function ShareToBubbleSheet({ isOpen, onClose, bubbles, onShareMultiple }
           className="w-full rounded-xl py-[14px] text-[15px] font-bold transition-opacity active:opacity-80 disabled:pointer-events-none"
           style={{
             backgroundColor: selectableCount > 0 ? 'var(--accent-social)' : 'var(--bg-section)',
-            color: selectableCount > 0 ? '#FFFFFF' : 'var(--text-hint)',
+            color: selectableCount > 0 ? 'var(--text-inverse)' : 'var(--text-hint)',
           }}
         >
           {selectableCount > 0 ? `공유 (${selectableCount}개)` : '버블을 선택해주세요'}

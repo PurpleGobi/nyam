@@ -81,7 +81,7 @@ function WineCard({ item, onTap }: { item: ConnectedItemCard; onTap: (id: string
             : 'linear-gradient(135deg, #C4A8D4 0%, #8B6AA0 100%)',
         }}
       >
-        {!item.imageUrl && <Wine size={20} color="#FFFFFF" />}
+        {!item.imageUrl && <Wine size={20} color="var(--text-inverse)" />}
       </div>
 
       {/* 와인명 */}

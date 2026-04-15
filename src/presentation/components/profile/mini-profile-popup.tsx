@@ -52,7 +52,7 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
                       width: '56px',
                       height: '56px',
                       backgroundColor: data.avatarColor ?? 'var(--accent-social-light)',
-                      color: '#FFFFFF',
+                      color: 'var(--text-inverse)',
                       boxShadow: `0 0 0 2.5px var(--bg-card), 0 0 0 4px ${data.levelColor}`,
                     }}
                   >
@@ -68,7 +68,7 @@ export function MiniProfilePopup({ isOpen, onClose, targetUserId }: MiniProfileP
                       bottom: '-2px',
                       right: '-4px',
                       backgroundColor: data.levelColor,
-                      color: '#fff',
+                      color: 'var(--text-inverse)',
                       border: '2px solid var(--bg-card)',
                     }}
                   >

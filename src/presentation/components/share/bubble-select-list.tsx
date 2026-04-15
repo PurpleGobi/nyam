@@ -45,7 +45,7 @@ export function BubbleSelectList({ bubbles, selectedIds, onToggle }: BubbleSelec
           >
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl"
-              style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+              style={{ backgroundColor: b.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
             >
               <BubbleIcon icon={b.icon} size={18} />
             </div>
@@ -75,7 +75,7 @@ export function BubbleSelectList({ bubbles, selectedIds, onToggle }: BubbleSelec
                   border: isSelected ? '2px solid var(--accent-social)' : '2px solid var(--border)',
                 }}
               >
-                {isSelected && <Check size={14} color="#FFFFFF" />}
+                {isSelected && <Check size={14} color="var(--text-inverse)" />}
               </div>
             )}
           </button>

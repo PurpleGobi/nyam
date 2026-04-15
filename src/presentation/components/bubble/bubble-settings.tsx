@@ -427,7 +427,7 @@ export function BubbleSettings({
                     onClick={addKeyword}
                     disabled={!keywordInput.trim()}
                     className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-opacity disabled:opacity-40"
-                    style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+                    style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
                   >
                     추가
                   </button>
@@ -673,7 +673,7 @@ function ToggleSwitchUI({ on }: { on: boolean }) {
       style={{ backgroundColor: on ? 'var(--accent-social)' : 'var(--border)' }}
     >
       <div
-        className="h-3.5 w-3.5 rounded-full bg-white transition-transform"
+        className="h-3.5 w-3.5 rounded-full bg-elevated transition-transform"
         style={{ transform: on ? 'translateX(13px)' : 'translateX(0)' }}
       />
     </div>
@@ -853,7 +853,7 @@ function ActiveMemberList({
                         setConfirmRemoveId(null)
                       }}
                       className="rounded-full px-2 py-1 text-[10px] font-semibold"
-                      style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+                      style={{ backgroundColor: 'var(--negative)', color: 'var(--text-inverse)' }}
                     >
                       확인
                     </button>

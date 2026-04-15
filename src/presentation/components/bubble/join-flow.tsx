@@ -147,7 +147,7 @@ export function JoinFlow({
             onClick={onFollow}
             disabled={isLoading}
             className="flex-1 rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             {isLoading ? '처리 중...' : '팔로우'}
           </button>
@@ -157,7 +157,7 @@ export function JoinFlow({
             onClick={onJoin}
             disabled={isLoading || !!eligibilityError}
             className="flex-1 rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             {isLoading ? '처리 중...' : isManualApprove ? '가입 신청' : '가입하기'}
           </button>

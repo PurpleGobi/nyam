@@ -27,14 +27,14 @@ export function ProfileHeader({ profile, level, levelColor, tasteSummary, tasteT
               {profile.avatarUrl ? (
                 <Image src={profile.avatarUrl} alt="" width={64} height={64} className="h-full w-full rounded-full object-cover" />
               ) : (
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#FFFFFF' }}>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-inverse)' }}>
                   {profile.nickname[0]}
                 </span>
               )}
             </div>
             <span
               className="absolute -bottom-0.5 -right-0.5 rounded-full px-1.5 py-0.5"
-              style={{ fontSize: '10px', fontWeight: 700, backgroundColor: levelColor, color: '#FFFFFF' }}
+              style={{ fontSize: '10px', fontWeight: 700, backgroundColor: levelColor, color: 'var(--text-inverse)' }}
             >
               Lv.{level}
             </span>

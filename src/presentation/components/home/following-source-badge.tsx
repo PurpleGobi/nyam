@@ -27,7 +27,7 @@ export function FollowingSourceBadge({
       ) : (
         <div
           className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold"
-          style={{ backgroundColor: sourceAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+          style={{ backgroundColor: sourceAvatarColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
         >
           {sourceAvatar ? (
             <Image src={sourceAvatar} alt="" width={16} height={16} className="h-full w-full rounded-full object-cover" />

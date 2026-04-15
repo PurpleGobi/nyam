@@ -141,7 +141,7 @@ export function AdvancedFilterSheet({
           type="button"
           onClick={handleApply}
           disabled={rules.length === 0}
-          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity disabled:opacity-40"
+          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-text-inverse transition-opacity disabled:opacity-40"
           style={{ backgroundColor: accentColor }}
         >
           <Check size={12} />

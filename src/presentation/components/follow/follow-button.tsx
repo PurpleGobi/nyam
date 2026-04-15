@@ -17,7 +17,7 @@ const CONFIG: Record<AccessLevel, { label: string; icon: typeof UserPlus; varian
 }
 
 const VARIANT_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  cta: { bg: 'var(--accent-social)', color: '#FFFFFF', border: 'none' },
+  cta: { bg: 'var(--accent-social)', color: 'var(--text-inverse)', border: 'none' },
   muted: { bg: 'var(--bg-section)', color: 'var(--text-sub)', border: '1px solid var(--border)' },
 }
 
@@ -97,7 +97,7 @@ export function FollowButton({ accessLevel, onToggle, isLoading }: FollowButtonP
               onToggle()
             }}
             className="flex-1 rounded-xl py-3.5 text-[14px] font-semibold"
-            style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--negative)', color: 'var(--text-inverse)' }}
           >
             팔로우 취소
           </button>

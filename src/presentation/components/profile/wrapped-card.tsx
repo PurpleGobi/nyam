@@ -34,7 +34,7 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
     >
       {/* Header */}
       <div className="flex items-center gap-2">
-        <span style={{ fontSize: '16px', fontWeight: 800, color: '#FFFFFF' }}>
+        <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-inverse)' }}>
           {showNickname ? '나의 기록 요약' : '미식 탐험가의 기록'}
         </span>
       </div>
@@ -46,10 +46,10 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
             className="flex h-10 w-10 items-center justify-center rounded-xl"
             style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
           >
-            <Award size={18} style={{ color: '#FFFFFF' }} />
+            <Award size={18} style={{ color: 'var(--text-inverse)' }} />
           </div>
           <div>
-            <p style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF' }}>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-inverse)' }}>
               Lv.{data.level.level} {data.level.title}
             </p>
             {data.level.axisLabel && (
@@ -65,7 +65,7 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
           {data.stats.map((stat) => (
             <div key={stat.label} className="flex items-center justify-between">
               <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{stat.label}</span>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>{stat.value}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-inverse)' }}>{stat.value}</span>
             </div>
           ))}
         </div>
@@ -78,7 +78,7 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
             <span
               key={tag}
               className="rounded-full px-3 py-1"
-              style={{ fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.15)', color: '#FFFFFF' }}
+              style={{ fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.15)', color: 'var(--text-inverse)' }}
             >
               {tag}
             </span>
@@ -89,21 +89,21 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
       {/* Top Items — gaugeDetail === 2 */}
       {showTopItems && data.topItems.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>Top Picks</p>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-inverse)' }}>Top Picks</p>
           {data.topItems.map((item) => (
             <div key={item.rank} className="flex items-center gap-2">
               <span
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                style={{ fontSize: '10px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFFFFF' }}
+                style={{ fontSize: '10px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.2)', color: 'var(--text-inverse)' }}
               >
                 {item.rank}
               </span>
               <div className="min-w-0 flex-1">
-                <span className="truncate" style={{ fontSize: '13px', color: '#FFFFFF' }}>{item.name}</span>
+                <span className="truncate" style={{ fontSize: '13px', color: 'var(--text-inverse)' }}>{item.name}</span>
                 <span className="ml-1" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>{item.meta}</span>
               </div>
               {item.score > 0 && (
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF' }}>{item.score}</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-inverse)' }}>{item.score}</span>
               )}
             </div>
           ))}
@@ -113,7 +113,7 @@ export function WrappedCard({ category, data, gaugePrivacy, gaugeDetail, visibil
       {/* Bubbles — gaugePrivacy === 2 + visibility_public.bubbles */}
       {showBubbles && data.bubbles.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#FFFFFF' }}>활동 버블</p>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-inverse)' }}>활동 버블</p>
           <div className="flex flex-wrap gap-1.5">
             {data.bubbles.map((bubble) => (
               <span

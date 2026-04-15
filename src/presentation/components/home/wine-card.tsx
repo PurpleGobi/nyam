@@ -118,7 +118,7 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
             {visibleMembers.map((member) => (
               <div key={member.nickname} className="flex items-center gap-1">
                 <div
-                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white"
+                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-text-inverse"
                   style={{ backgroundColor: member.avatarColor }}
                 >
                   {member.nickname.charAt(0)}

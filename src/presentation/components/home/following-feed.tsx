@@ -55,7 +55,7 @@ export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onS
               className="rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
               style={{
                 backgroundColor: isActive ? 'var(--accent-social)' : 'var(--bg-card)',
-                color: isActive ? '#FFFFFF' : 'var(--text-sub)',
+                color: isActive ? 'var(--text-inverse)' : 'var(--text-sub)',
                 border: isActive ? 'none' : '1px solid var(--border)',
               }}
             >
@@ -83,7 +83,7 @@ export function FollowingFeed({ items, isLoading, onItemPress, sourceFilter, onS
           <Link
             href="/?tab=bubble"
             className="mt-4 rounded-lg px-4 py-2 text-[13px] font-semibold no-underline"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#fff' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             버블 탐색하기
           </Link>

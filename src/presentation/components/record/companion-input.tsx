@@ -87,7 +87,7 @@ export function CompanionInput({ value, onChange, aiCompanions, recentCompanions
               background: getAvatarGradient(name),
             }}
           >
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-inverse)' }}>
               {name[0]}
             </span>
           </div>
@@ -177,7 +177,7 @@ export function CompanionInput({ value, onChange, aiCompanions, recentCompanions
                         background: getAvatarGradient(name),
                       }}
                     >
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#FFFFFF' }}>
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-inverse)' }}>
                         {name[0]}
                       </span>
                     </div>

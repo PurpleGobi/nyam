@@ -61,7 +61,7 @@ export function PicksGrid({ picks, title, onItemPress }: PicksGridProps) {
                 <Wine size={24} style={{ color: 'var(--text-hint)' }} />
               )}
               {item.satisfaction !== null && (
-                <span className="absolute bottom-[5px] right-[5px] text-[11px] font-extrabold" style={{ color: '#FFFFFF' }}>
+                <span className="absolute bottom-[5px] right-[5px] text-[11px] font-extrabold" style={{ color: 'var(--text-inverse)' }}>
                   {item.satisfaction}
                 </span>
               )}

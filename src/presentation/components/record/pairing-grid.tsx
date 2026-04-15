@@ -77,7 +77,7 @@ export function PairingGrid({
                   style={{
                     fontSize: '8px',
                     fontWeight: 700,
-                    color: '#FFFFFF',
+                    color: 'var(--text-inverse)',
                     backgroundColor: 'var(--accent-wine)',
                     padding: '1px 4px',
                     borderRadius: '4px',

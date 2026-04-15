@@ -36,7 +36,7 @@ export function PriceLevelSelector({ value, onChange }: PriceLevelSelectorProps)
             style={{
               backgroundColor: selected === level.value ? 'var(--accent-food)' : 'var(--bg-card)',
               border: `1px solid ${selected === level.value ? 'var(--accent-food)' : 'var(--border)'}`,
-              color: selected === level.value ? '#FFFFFF' : 'var(--text-sub)',
+              color: selected === level.value ? 'var(--text-inverse)' : 'var(--text-sub)',
               fontSize: '13px',
               fontWeight: 600,
             }}

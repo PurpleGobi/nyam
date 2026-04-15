@@ -67,7 +67,7 @@ export function CompactListBubble({
       ) : (
         <div
           className="compact-thumb flex items-center justify-center"
-          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
         >
           <BubbleIcon icon={bubble.icon} size={18} />
         </div>
@@ -157,7 +157,7 @@ export function CompactListBubble({
             type="button"
             onClick={(e) => { e.stopPropagation(); onJoin() }}
             className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity active:opacity-80"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             가입 신청
           </button>

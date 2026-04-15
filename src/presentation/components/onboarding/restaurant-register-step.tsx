@@ -101,7 +101,7 @@ export function RestaurantRegisterStep({
                       border: isRegistered ? 'none' : '1px solid var(--border)',
                     }}
                   >
-                    {isRegistered ? <Check size={14} color="#FFFFFF" /> : <Plus size={14} style={{ color: 'var(--text-hint)' }} />}
+                    {isRegistered ? <Check size={14} color="var(--text-inverse)" /> : <Plus size={14} style={{ color: 'var(--text-hint)' }} />}
                   </div>
                 </button>
               )

@@ -425,7 +425,7 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
             style={{
               fontSize: '13px',
               fontWeight: 700,
-              color: '#FFFFFF',
+              color: 'var(--text-inverse)',
               backgroundColor: 'var(--accent-food, #f97316)',
             }}
           >
@@ -524,10 +524,10 @@ export function PhotoCropEditor({ imageUrl, onDone, onCancel }: PhotoCropEditorP
             >
               {/* 3분할 그리드 */}
               <div className="absolute inset-0" style={{ opacity: 0.2 }}>
-                <div className="absolute left-1/3 top-0 h-full" style={{ width: '1px', backgroundColor: '#FFF' }} />
-                <div className="absolute left-2/3 top-0 h-full" style={{ width: '1px', backgroundColor: '#FFF' }} />
-                <div className="absolute left-0 top-1/3 w-full" style={{ height: '1px', backgroundColor: '#FFF' }} />
-                <div className="absolute left-0 top-2/3 w-full" style={{ height: '1px', backgroundColor: '#FFF' }} />
+                <div className="absolute left-1/3 top-0 h-full" style={{ width: '1px', backgroundColor: 'var(--bg-elevated)' }} />
+                <div className="absolute left-2/3 top-0 h-full" style={{ width: '1px', backgroundColor: 'var(--bg-elevated)' }} />
+                <div className="absolute left-0 top-1/3 w-full" style={{ height: '1px', backgroundColor: 'var(--bg-elevated)' }} />
+                <div className="absolute left-0 top-2/3 w-full" style={{ height: '1px', backgroundColor: 'var(--bg-elevated)' }} />
               </div>
 
               {/* 코너 리사이즈 핸들 */}

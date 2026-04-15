@@ -46,7 +46,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
           type="button"
           onClick={() => router.push('/?tab=bubble')}
           className="rounded-xl px-5 py-2.5 text-[14px] font-semibold"
-          style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+          style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
         >
           홈으로
         </button>
@@ -62,7 +62,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6">
         <div
           className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl"
-          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
         >
           <BubbleIcon icon={bubble.icon} size={32} />
         </div>
@@ -84,7 +84,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
           onClick={handleJoin}
           disabled={isJoining || !user}
           className="w-full max-w-[280px] rounded-xl py-3 text-[15px] font-bold transition-opacity disabled:opacity-50"
-          style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+          style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
         >
           {isJoining ? '가입 중...' : '버블 가입하기'}
         </button>
@@ -94,7 +94,7 @@ export function InviteLandingContainer({ inviteCode }: InviteLandingContainerPro
             type="button"
             onClick={() => router.push(`/auth/login?redirect=/bubbles/invite/${inviteCode}`)}
             className="w-full max-w-[280px] rounded-xl py-3 text-[15px] font-bold"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             로그인하고 가입하기
           </button>

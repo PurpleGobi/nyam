@@ -88,7 +88,7 @@ export function DeleteAccountSheet({ isOpen, onClose, onConfirm }: DeleteAccount
           type="button"
           onClick={() => onConfirm(selectedMode)}
           className="flex-1 rounded-xl py-3 text-center"
-          style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+          style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--negative)', color: 'var(--text-inverse)' }}
         >
           계정 삭제 요청
         </button>

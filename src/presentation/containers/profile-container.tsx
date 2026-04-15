@@ -194,7 +194,7 @@ function MiniTab({ label, active, onClick, accentColor = 'var(--accent-food)' }:
         fontSize: '12px',
         fontWeight: active ? 700 : 500,
         backgroundColor: active ? accentColor : 'var(--bg-card)',
-        color: active ? '#FFFFFF' : 'var(--text-sub)',
+        color: active ? 'var(--text-inverse)' : 'var(--text-sub)',
         border: active ? 'none' : '1px solid var(--border)',
       }}
     >

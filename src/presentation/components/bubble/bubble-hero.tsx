@@ -31,7 +31,7 @@ export function BubbleHero({
         <div className="flex items-start gap-3">
           <div
             className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+            style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
           >
             <BubbleIcon icon={bubble.icon} size={24} />
           </div>
@@ -69,7 +69,7 @@ export function BubbleHero({
                   <div
                     key={i}
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-full text-[8px] font-bold ring-[1.5px] ring-[var(--bg)]"
-                    style={{ backgroundColor: m.color, color: '#FFFFFF', zIndex: 4 - i }}
+                    style={{ backgroundColor: m.color, color: 'var(--text-inverse)', zIndex: 4 - i }}
                   >
                     {m.name.charAt(0)}
                   </div>
@@ -124,7 +124,7 @@ export function BubbleHero({
                 type="button"
                 onClick={onInviteClick}
                 className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-transform active:scale-95"
-                style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+                style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
               >
                 <UserPlus size={11} />
                 초대

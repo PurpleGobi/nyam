@@ -24,9 +24,9 @@ interface FabAddProps {
 
 const VARIANT_STYLES: Record<FabVariant, { bg: string; color: string }> = {
   default: { bg: 'rgba(248, 246, 243, 0.88)', color: 'var(--text)' },
-  food: { bg: 'var(--accent-food)', color: '#FFFFFF' },
-  wine: { bg: 'var(--accent-wine)', color: '#FFFFFF' },
-  social: { bg: 'var(--accent-social)', color: '#FFFFFF' },
+  food: { bg: 'var(--accent-food)', color: 'var(--text-inverse)' },
+  wine: { bg: 'var(--accent-wine)', color: 'var(--text-inverse)' },
+  social: { bg: 'var(--accent-social)', color: 'var(--text-inverse)' },
 }
 
 export function FabAdd({ variant = 'default', menuItems, onClick, selectMode }: FabAddProps) {

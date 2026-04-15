@@ -64,7 +64,7 @@ export function AllRecordCard({
         type="button"
         onClick={onAuthorPress}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-opacity active:opacity-70"
-        style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+        style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
       >
         {authorAvatar ? (
           <Image src={authorAvatar} alt="" width={40} height={40} className="h-full w-full rounded-full object-cover" />

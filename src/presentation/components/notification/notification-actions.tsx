@@ -33,7 +33,7 @@ export function NotificationActions({ actionStatus, onAccept, onReject }: Notifi
         type="button"
         onClick={(e) => { e.stopPropagation(); onAccept() }}
         className="rounded-md px-2.5 text-[11px] font-semibold"
-        style={{ backgroundColor: 'var(--text)', color: '#FFFFFF', paddingTop: '3px', paddingBottom: '3px' }}
+        style={{ backgroundColor: 'var(--text)', color: 'var(--text-inverse)', paddingTop: '3px', paddingBottom: '3px' }}
       >
         수락
       </button>

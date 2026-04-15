@@ -686,7 +686,7 @@ function DndSheet({ initialStart, initialEnd, onSave, onClose }: {
           type="button"
           onClick={() => onSave(enabled ? start : null, enabled ? end : null)}
           className="mt-5 w-full rounded-xl py-3.5"
-          style={{ fontSize: '15px', fontWeight: 600, backgroundColor: 'var(--text)', color: '#FFFFFF' }}
+          style={{ fontSize: '15px', fontWeight: 600, backgroundColor: 'var(--text)', color: 'var(--text-inverse)' }}
         >
           저장
         </button>

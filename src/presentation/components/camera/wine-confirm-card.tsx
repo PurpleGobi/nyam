@@ -68,7 +68,7 @@ export function WineConfirmCard({
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold text-white"
+          className="w-full rounded-xl bg-[var(--accent-wine)] py-3.5 text-[15px] font-semibold text-text-inverse"
         >
           맞아요
         </button>

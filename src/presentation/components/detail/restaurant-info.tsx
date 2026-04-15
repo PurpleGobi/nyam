@@ -149,7 +149,7 @@ export function RestaurantInfo({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2"
-                  style={{ backgroundColor: '#03C75A', color: '#fff', fontSize: '12px', fontWeight: 600 }}
+                  style={{ backgroundColor: '#03C75A', color: 'var(--text-inverse)', fontSize: '12px', fontWeight: 600 }}
                 >
                   네이버지도
                   <ExternalLink size={12} />
@@ -161,7 +161,7 @@ export function RestaurantInfo({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2"
-                  style={{ backgroundColor: '#4285F4', color: '#fff', fontSize: '12px', fontWeight: 600 }}
+                  style={{ backgroundColor: '#4285F4', color: 'var(--text-inverse)', fontSize: '12px', fontWeight: 600 }}
                 >
                   구글맵
                   <ExternalLink size={12} />

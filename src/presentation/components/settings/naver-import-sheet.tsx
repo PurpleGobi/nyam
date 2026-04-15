@@ -169,7 +169,7 @@ export function NaverImportSheet({
               fontSize: '15px',
               fontWeight: 700,
               backgroundColor: url.trim() ? 'var(--primary)' : 'var(--border)',
-              color: url.trim() ? '#FFFFFF' : 'var(--text-hint)',
+              color: url.trim() ? 'var(--text-inverse)' : 'var(--text-hint)',
             }}
           >
             목록 불러오기
@@ -190,7 +190,7 @@ export function NaverImportSheet({
               type="button"
               onClick={onImport}
               className="flex-1 rounded-xl py-3 text-center"
-              style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+              style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--accent-food)', color: 'var(--text-inverse)' }}
             >
               {places.length}개 가져오기
             </button>
@@ -202,7 +202,7 @@ export function NaverImportSheet({
             type="button"
             onClick={handleClose}
             className="w-full rounded-xl py-3 text-center"
-            style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
+            style={{ fontSize: '15px', fontWeight: 700, backgroundColor: 'var(--primary)', color: 'var(--text-inverse)' }}
           >
             확인
           </button>

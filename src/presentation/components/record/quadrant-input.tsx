@@ -247,8 +247,8 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 opacity: showLabels ? 1 : 0.7,
               }}
             >
-              <Info size={11} style={{ color: showLabels ? '#fff' : 'var(--text-sub)' }} />
-              <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? '#fff' : 'var(--text-sub)' }}>
+              <Info size={11} style={{ color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }}>
                 가이드
               </span>
             </button>
@@ -273,7 +273,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                     fontWeight: 600,
                     transition: 'all 0.15s',
                     backgroundColor: quadrantMode === 'compare' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
-                    color: quadrantMode === 'compare' ? '#fff' : 'var(--text-hint)',
+                    color: quadrantMode === 'compare' ? 'var(--text-inverse)' : 'var(--text-hint)',
                     borderRadius: quadrantMode === 'compare' ? '6px' : 0,
                   }}
                 >
@@ -286,7 +286,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                     fontWeight: 600,
                     transition: 'all 0.15s',
                     backgroundColor: quadrantMode === 'visits' ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'transparent',
-                    color: quadrantMode === 'visits' ? '#fff' : 'var(--text-hint)',
+                    color: quadrantMode === 'visits' ? 'var(--text-inverse)' : 'var(--text-hint)',
                     borderRadius: quadrantMode === 'visits' ? '6px' : 0,
                   }}
                 >
@@ -528,7 +528,7 @@ function VerticalGauge({ label, value, color, onChange, readOnly = false }: Vert
             transform: 'translateX(-50%)',
             fontSize: '11px',
             fontWeight: 800,
-            color: value > 20 ? '#FFFFFF' : color,
+            color: value > 20 ? 'var(--text-inverse)' : color,
             zIndex: 2,
           }}
         >

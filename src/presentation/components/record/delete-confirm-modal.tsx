@@ -47,7 +47,7 @@ export function DeleteConfirmModal({ isOpen, isDeleting, onConfirm, onCancel }: 
             }}
             disabled={isDeleting}
             className="flex-1 rounded-xl py-3 text-[14px] font-semibold disabled:opacity-50"
-            style={{ backgroundColor: 'var(--negative)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--negative)', color: 'var(--text-inverse)' }}
           >
             {isDeleting ? '삭제 중...' : '삭제하기'}
           </AlertDialogAction>

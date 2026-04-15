@@ -68,11 +68,11 @@ export function BubbleCard({
           style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
         >
           {bubble.visibility === 'private' ? (
-            <Lock size={10} color="#FFFFFF" />
+            <Lock size={10} color="var(--text-inverse)" />
           ) : (
-            <Globe size={10} color="#FFFFFF" />
+            <Globe size={10} color="var(--text-inverse)" />
           )}
-          <span className="text-[9px] font-semibold text-white">
+          <span className="text-[9px] font-semibold text-text-inverse">
             {bubble.visibility === 'private' ? '비공개' : '공개'}
           </span>
         </div>
@@ -179,7 +179,7 @@ export function BubbleCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onJoin() }}
               className="rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
-              style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+              style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
             >
               가입 신청
             </button>

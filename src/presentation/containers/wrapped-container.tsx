@@ -87,7 +87,7 @@ export function WrappedContainer() {
                 fontSize: '13px',
                 fontWeight: isActive ? 700 : 500,
                 backgroundColor: isActive ? 'var(--accent-food)' : 'var(--bg-card)',
-                color: isActive ? '#FFFFFF' : 'var(--text-sub)',
+                color: isActive ? 'var(--text-inverse)' : 'var(--text-sub)',
                 border: isActive ? 'none' : '1px solid var(--border)',
               }}
             >
@@ -154,7 +154,7 @@ export function WrappedContainer() {
                   fontSize: '13px',
                   fontWeight: 600,
                   backgroundColor: 'var(--accent-food)',
-                  color: '#FFFFFF',
+                  color: 'var(--text-inverse)',
                 }}
               >
                 <Share2 size={14} />

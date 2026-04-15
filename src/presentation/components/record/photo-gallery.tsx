@@ -71,7 +71,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full"
             style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
           >
-            <X size={24} color="#FFFFFF" />
+            <X size={24} color="var(--text-inverse)" />
           </button>
 
           {/* 이전 */}
@@ -82,7 +82,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
               className="absolute left-2 flex h-10 w-10 items-center justify-center rounded-full"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
             >
-              <ChevronLeft size={24} color="#FFFFFF" />
+              <ChevronLeft size={24} color="var(--text-inverse)" />
             </button>
           )}
 
@@ -94,7 +94,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
               className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
             >
-              <ChevronRight size={24} color="#FFFFFF" />
+              <ChevronRight size={24} color="var(--text-inverse)" />
             </button>
           )}
 
@@ -124,7 +124,7 @@ export function PhotoGallery({ photos }: PhotoGalleryProps) {
                   style={{
                     width: i === fullscreenIndex ? '8px' : '6px',
                     height: i === fullscreenIndex ? '8px' : '6px',
-                    backgroundColor: i === fullscreenIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                    backgroundColor: i === fullscreenIndex ? 'var(--text-inverse)' : 'rgba(255,255,255,0.4)',
                     transition: 'all 150ms ease-out',
                   }}
                 />

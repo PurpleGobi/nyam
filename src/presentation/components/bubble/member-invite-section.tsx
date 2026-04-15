@@ -78,7 +78,7 @@ export function MemberInviteSection({
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
                     style={{
                       backgroundColor: user.avatarColor ?? 'var(--accent-social-light)',
-                      color: '#FFFFFF',
+                      color: 'var(--text-inverse)',
                     }}
                   >
                     {user.nickname.charAt(0)}
@@ -104,7 +104,7 @@ export function MemberInviteSection({
                     className="flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
                     style={{
                       backgroundColor: alreadyInvited ? 'var(--positive-light, rgba(16,185,129,0.1))' : 'var(--accent-social)',
-                      color: alreadyInvited ? 'var(--positive)' : '#FFFFFF',
+                      color: alreadyInvited ? 'var(--positive)' : 'var(--text-inverse)',
                     }}
                   >
                     {alreadyInvited ? (

@@ -53,7 +53,7 @@ export function LevelList({ experiences, thresholds, category, onItemPress }: Le
                 backgroundColor: levelColor,
               }}
             >
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-inverse)' }}>
                 {levelInfo.level}
               </span>
             </div>

@@ -103,7 +103,7 @@ export function CircleRating({ value, onChange, disabled = false }: CircleRating
       <span
         style={{
           fontWeight: 800,
-          color: '#FFFFFF',
+          color: 'var(--text-inverse)',
           fontSize: `${fontSize}px`,
           lineHeight: 1,
         }}

@@ -61,7 +61,7 @@ export function MemberGrid({ members, onMemberClick, onFollowToggle }: MemberGri
           {/* 아바타 48×48 */}
           <div
             className="flex h-12 w-12 items-center justify-center rounded-full text-[16px] font-bold"
-            style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+            style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
           >
             {m.avatarUrl ? (
               <Image src={m.avatarUrl} alt="" width={48} height={48} className="h-full w-full rounded-full object-cover" />
@@ -143,7 +143,7 @@ function getFollowButtonStyle(status: FollowStatus): React.CSSProperties {
     case 'following':
       return { backgroundColor: 'transparent', color: 'var(--text-sub)', border: '1px solid var(--border)' }
     default:
-      return { backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }
+      return { backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }
   }
 }
 

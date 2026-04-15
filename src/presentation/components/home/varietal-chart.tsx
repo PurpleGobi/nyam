@@ -45,7 +45,7 @@ export function VarietalChart({ varieties, onVarietyTap }: VarietalChartProps) {
             }}
           >
             <div
-              className="absolute top-[2px] rounded-full bg-white"
+              className="absolute top-[2px] rounded-full bg-elevated"
               style={{
                 width: 14,
                 height: 14,

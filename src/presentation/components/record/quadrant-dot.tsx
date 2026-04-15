@@ -43,7 +43,7 @@ export function QuadrantDot({ x, y, satisfaction, isDragging }: QuadrantDotProps
       <span
         style={{
           fontWeight: 800,
-          color: '#FFFFFF',
+          color: 'var(--text-inverse)',
           fontSize: `${fontSize}px`,
           lineHeight: 1,
           userSelect: 'none',

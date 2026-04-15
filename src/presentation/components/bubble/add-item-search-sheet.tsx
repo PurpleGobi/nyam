@@ -92,7 +92,7 @@ export function AddItemSearchSheet({
             className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all"
             style={{
               backgroundColor: tab === key ? 'var(--accent-social)' : 'var(--bg-section)',
-              color: tab === key ? '#FFFFFF' : 'var(--text-sub)',
+              color: tab === key ? 'var(--text-inverse)' : 'var(--text-sub)',
               border: tab === key ? 'none' : '1px solid var(--border)',
             }}
           >
@@ -164,7 +164,7 @@ export function AddItemSearchSheet({
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                     style={{ backgroundColor: 'var(--accent-social)' }}
                   >
-                    <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                    <Check size={14} color="var(--text-inverse)" strokeWidth={3} />
                   </div>
                 ) : isAdding ? (
                   <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-[2px] border-[var(--accent-social)] border-t-transparent" />

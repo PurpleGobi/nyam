@@ -68,7 +68,7 @@ export function FeedCard({
               className="absolute bottom-2 left-2 flex items-center justify-center rounded-lg px-2 py-1 backdrop-blur-sm"
               style={{ backgroundColor: 'rgba(0,0,0,0.6)', border: `1.5px solid ${scoreColor}` }}
             >
-              <span className="text-[20px] font-black text-white">{Math.round(satisfaction)}</span>
+              <span className="text-[20px] font-black text-text-inverse">{Math.round(satisfaction)}</span>
             </div>
           )}
         </div>
@@ -79,7 +79,7 @@ export function FeedCard({
         <div className="flex items-center gap-2">
           <div
             className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-            style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+            style={{ backgroundColor: authorAvatarColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
           >
             {authorName.charAt(0)}
           </div>

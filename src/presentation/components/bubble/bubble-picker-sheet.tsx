@@ -68,7 +68,7 @@ export function BubblePickerSheet({
                   className="flex h-[40px] w-[40px] shrink-0 items-center justify-center overflow-hidden rounded-xl"
                   style={{
                     backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)',
-                    color: '#FFFFFF',
+                    color: 'var(--text-inverse)',
                   }}
                 >
                   <BubbleIcon icon={bubble.icon} size={20} />

@@ -59,7 +59,7 @@ export function BubblePreviewPopup({
       <div className="flex flex-col items-center gap-2 pb-3">
         <div
           className="flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-2xl"
-          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}
+          style={{ backgroundColor: bubble.iconBgColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}
         >
           <BubbleIcon icon={bubble.icon} size={26} />
         </div>
@@ -201,7 +201,7 @@ export function BubblePreviewPopup({
             onClick={onJoin}
             disabled={isLoading}
             className="flex-1 rounded-xl py-3 text-center text-[14px] font-bold transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             {isLoading ? '처리 중...' : bubble.joinPolicy === 'manual_approve' ? '가입 신청' : '가입하기'}
           </button>

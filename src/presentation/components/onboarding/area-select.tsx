@@ -21,7 +21,7 @@ export function AreaSelect({ selected, onSelect }: AreaSelectProps) {
             className="rounded-full px-4 py-2 text-[13px] font-semibold transition-colors"
             style={{
               backgroundColor: isActive ? 'var(--accent-food)' : 'var(--bg-card)',
-              color: isActive ? '#FFFFFF' : 'var(--text-sub)',
+              color: isActive ? 'var(--text-inverse)' : 'var(--text-sub)',
               border: isActive ? 'none' : '1px solid var(--border)',
             }}
           >

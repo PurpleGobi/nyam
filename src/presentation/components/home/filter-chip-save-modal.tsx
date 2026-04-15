@@ -60,7 +60,7 @@ export function FilterChipSaveModal({ isOpen, onClose, onSave, accentColor = 'va
         className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors"
         style={{
           backgroundColor: name.trim().length > 0 ? accentColor : 'var(--bg-card)',
-          color: name.trim().length > 0 ? '#FFFFFF' : 'var(--text-hint)',
+          color: name.trim().length > 0 ? 'var(--text-inverse)' : 'var(--text-hint)',
           cursor: name.trim().length > 0 ? 'pointer' : 'not-allowed',
         }}
       >

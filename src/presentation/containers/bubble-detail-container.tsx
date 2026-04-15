@@ -378,7 +378,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                   type="button"
                   onClick={() => router.push(`/?bubbleId=${bubbleId}`)}
                   className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-opacity active:opacity-70"
-                  style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+                  style={{ backgroundColor: 'var(--accent-food)', color: 'var(--text-inverse)' }}
                 >
                   <List size={13} /> 리스트 보기
                 </button>
@@ -387,7 +387,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                   type="button"
                   disabled
                   className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold opacity-40"
-                  style={{ backgroundColor: 'var(--accent-food)', color: '#FFFFFF' }}
+                  style={{ backgroundColor: 'var(--accent-food)', color: 'var(--text-inverse)' }}
                 >
                   <List size={13} /> 리스트 보기
                 </button>
@@ -678,7 +678,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                     <span
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
                       style={isTop3
-                        ? { backgroundColor: medalColors[i], color: '#FFFFFF' }
+                        ? { backgroundColor: medalColors[i], color: 'var(--text-inverse)' }
                         : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-hint)' }}
                     >
                       {i + 1}

@@ -65,7 +65,7 @@ export function ScoreDistribution({
                 {isLong && bucket.count > 0 && (
                   <span
                     className="absolute bottom-[4px] w-full text-center text-[10px]"
-                    style={{ fontWeight: 800, color: '#fff' }}
+                    style={{ fontWeight: 800, color: 'var(--text-inverse)' }}
                   >
                     {bucket.count}
                   </span>

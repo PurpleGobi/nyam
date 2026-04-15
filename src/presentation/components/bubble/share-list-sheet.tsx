@@ -343,7 +343,7 @@ export function ShareListSheet({
                       border: `1.5px solid ${isSelected ? 'var(--accent-social)' : 'var(--border-bold)'}`,
                     }}
                   >
-                    {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    {isSelected && <Check size={12} color="var(--text-inverse)" strokeWidth={3} />}
                   </div>
 
                   {/* 타입 아이콘 */}
@@ -388,7 +388,7 @@ export function ShareListSheet({
             type="button"
             onClick={onClose}
             className="w-full rounded-xl py-3.5 text-center text-[15px] font-bold transition-opacity"
-            style={{ backgroundColor: 'var(--accent-social)', color: '#FFFFFF' }}
+            style={{ backgroundColor: 'var(--accent-social)', color: 'var(--text-inverse)' }}
           >
             {selectedIds.size}개 항목 공유 · 완료
           </button>

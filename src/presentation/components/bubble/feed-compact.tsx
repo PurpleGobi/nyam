@@ -34,7 +34,7 @@ export function FeedCompact({
     >
       {/* 점수 배지 42×42 */}
       <div
-        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-black text-white"
+        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-[16px] font-black text-text-inverse"
         style={{ backgroundColor: scoreColor }}
       >
         {satisfaction !== null ? Math.round(satisfaction) : '-'}

@@ -60,7 +60,7 @@ export function BubblerHero({
               width: '72px',
               height: '72px',
               backgroundColor: avatarColor ?? 'var(--accent-food)',
-              color: '#FFFFFF',
+              color: 'var(--text-inverse)',
               border: '3px solid var(--bg)',
               boxShadow: `0 0 0 2px ${levelColor}`,
             }}
@@ -77,7 +77,7 @@ export function BubblerHero({
               bottom: '-2px',
               right: '-4px',
               backgroundColor: levelColor,
-              color: '#fff',
+              color: 'var(--text-inverse)',
               border: '2px solid var(--bg)',
             }}
           >

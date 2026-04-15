@@ -15,7 +15,7 @@ export function VarietyToggle({ showAll, onChange }: VarietyToggleProps) {
         fontSize: '11px',
         fontWeight: 600,
         backgroundColor: showAll ? 'var(--accent-wine)' : 'var(--bg-card)',
-        color: showAll ? '#FFFFFF' : 'var(--text-sub)',
+        color: showAll ? 'var(--text-inverse)' : 'var(--text-sub)',
         border: showAll ? 'none' : '1px solid var(--border)',
       }}
     >

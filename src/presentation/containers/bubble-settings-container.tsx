@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -118,6 +118,16 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
       }
     } catch { /* 사진 업로드 실패 무시 */ }
   }, [userId, bubbleId, pendingPhotos, bubblePhotos, uploadAll, saveBubblePhotos, updateSettings])
+
+  // 사진 추가 시 자동 업로드+저장
+  const savePhotosRef = useRef(handleSavePhotos)
+  useEffect(() => {
+    savePhotosRef.current = handleSavePhotos
+  }, [handleSavePhotos])
+  useEffect(() => {
+    if (!pendingPhotos.some((p) => p.status === 'pending')) return
+    savePhotosRef.current()
+  }, [pendingPhotos])
 
   const handleShareRuleChange = async (newRule: BubbleShareRule | null) => {
     setShareRule(newRule)

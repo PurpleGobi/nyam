@@ -249,7 +249,7 @@ export function RestaurantRecordForm({
               onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
               className={`rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 selectedGenre === g
-                  ? 'bg-[var(--accent-food)] text-white'
+                  ? 'bg-[var(--accent-food)] text-text-inverse'
                   : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-sub)]'
               }`}
             >

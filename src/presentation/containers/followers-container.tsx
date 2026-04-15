@@ -133,7 +133,7 @@ function FollowUserRow({ item, currentUserId, onAvatarPress }: { item: EnrichedF
 
   return (
     <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-      <button type="button" onClick={onAvatarPress} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-bold transition-opacity active:opacity-70" style={{ backgroundColor: item.avatarColor ?? 'var(--accent-social-light)', color: '#FFFFFF' }}>
+      <button type="button" onClick={onAvatarPress} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-bold transition-opacity active:opacity-70" style={{ backgroundColor: item.avatarColor ?? 'var(--accent-social-light)', color: 'var(--text-inverse)' }}>
         {item.avatarUrl ? (
           <Image src={item.avatarUrl} alt="" width={44} height={44} className="h-full w-full rounded-full object-cover" />
         ) : (

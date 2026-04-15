@@ -37,7 +37,7 @@ export function GaugeSlider({ icon: Icon, label, options, value, onChange }: Gau
                 fontSize: '13px',
                 fontWeight: isActive ? 600 : 400,
                 backgroundColor: isActive ? 'var(--accent-food)' : 'var(--bg-page)',
-                color: isActive ? '#fff' : 'var(--text-sub)',
+                color: isActive ? 'var(--text-inverse)' : 'var(--text-sub)',
                 transition: 'all 0.2s',
               }}
             >

@@ -72,7 +72,7 @@ export function PendingApprovalList({ members, onApprove, onReject, onMemberClic
               />
             ) : (
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-text-inverse"
                 style={{ backgroundColor: m.avatarColor ?? 'var(--accent-social)' }}
               >
                 {m.nickname.charAt(0)}
@@ -105,7 +105,7 @@ export function PendingApprovalList({ members, onApprove, onReject, onMemberClic
               type="button"
               onClick={() => onApprove(m.userId)}
               className="rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-opacity active:opacity-80"
-              style={{ backgroundColor: 'var(--positive)', color: '#FFFFFF' }}
+              style={{ backgroundColor: 'var(--positive)', color: 'var(--text-inverse)' }}
             >
               승인
             </button>

@@ -245,11 +245,11 @@ export function PhotoPicker({
                   backgroundColor: `var(${accentVar})`,
                   fontSize: '9px',
                   fontWeight: 700,
-                  color: '#FFFFFF',
+                  color: 'var(--text-inverse)',
                   lineHeight: '14px',
                 }}
               >
-                <Star size={8} fill="#FFFFFF" />
+                <Star size={8} fill="var(--text-inverse)" />
                 대표
               </div>
             )}
@@ -265,7 +265,7 @@ export function PhotoPicker({
                   backgroundColor: 'rgba(0,0,0,0.5)',
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: '#FFFFFF',
+                  color: 'var(--text-inverse)',
                 }}
               >
                 {index + 1}
@@ -283,7 +283,7 @@ export function PhotoPicker({
                   backgroundColor: photo.isPublic ? 'rgba(34,197,94,0.85)' : 'rgba(0,0,0,0.55)',
                   fontSize: '9px',
                   fontWeight: 700,
-                  color: '#FFFFFF',
+                  color: 'var(--text-inverse)',
                 }}
                 onClick={(e) => { e.stopPropagation(); onTogglePublic(photo.id) }}
               >
@@ -304,18 +304,18 @@ export function PhotoPicker({
               }}
               onClick={(e) => { e.stopPropagation(); onRemovePhoto(photo.id) }}
             >
-              <X size={14} color="#FFFFFF" />
+              <X size={14} color="var(--text-inverse)" />
             </button>
 
             {/* 업로드 상태 오버레이 */}
             {photo.status === 'uploading' && (
               <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
-                <Loader2 size={24} color="#FFFFFF" className="animate-spin" />
+                <Loader2 size={24} color="var(--text-inverse)" className="animate-spin" />
               </div>
             )}
             {photo.status === 'error' && (
               <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(185,28,28,0.3)' }}>
-                <AlertCircle size={24} color="#FFFFFF" />
+                <AlertCircle size={24} color="var(--text-inverse)" />
               </div>
             )}
           </div>

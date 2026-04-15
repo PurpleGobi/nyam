@@ -30,7 +30,7 @@ export function TotalLevelCard({ level, title, color, totalXp, nextLevelXp, prog
             className="flex h-10 w-10 items-center justify-center rounded-full"
             style={{ backgroundColor: levelColor }}
           >
-            <Award size={18} style={{ color: '#FFFFFF' }} />
+            <Award size={18} style={{ color: 'var(--text-inverse)' }} />
           </div>
           <div>
             <p style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>

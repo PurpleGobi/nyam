@@ -117,7 +117,7 @@ export function CalendarView({
               <span
                 className="absolute left-1 top-0.5 z-[1] text-[11px] font-semibold"
                 style={{
-                  color: data?.photoUrl ? '#fff' : 'var(--text-sub)',
+                  color: data?.photoUrl ? 'var(--text-inverse)' : 'var(--text-sub)',
                   textShadow: data?.photoUrl ? '0 1px 2px rgba(0,0,0,0.5)' : undefined,
                 }}
               >

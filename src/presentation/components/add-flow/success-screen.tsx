@@ -19,7 +19,7 @@ export function SuccessScreen({
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6">
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accentColor }}>
-        <Check size={32} strokeWidth={3} className="text-white" />
+        <Check size={32} strokeWidth={3} className="text-text-inverse" />
       </div>
       <h2 className="mb-2" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>
         추가되었습니다!
@@ -31,7 +31,7 @@ export function SuccessScreen({
       <div className="mt-10 flex w-full max-w-[280px] flex-col gap-3">
         <button type="button" onClick={onAddDetail}
           className="w-full rounded-xl py-3.5 text-[15px] font-semibold"
-          style={{ backgroundColor: accentColor, color: '#FFFFFF' }}>
+          style={{ backgroundColor: accentColor, color: 'var(--text-inverse)' }}>
           내용 추가하기
         </button>
         <button type="button" onClick={onAddAnother}

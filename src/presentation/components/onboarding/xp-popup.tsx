@@ -31,8 +31,8 @@ export function XpPopup({ amount, isVisible, onDismiss }: XpPopupProps) {
           transition: 'transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
-        <Sparkles size={20} color="#FFFFFF" />
-        <span className="text-[20px] font-extrabold" style={{ color: '#FFFFFF' }}>+{amount} XP</span>
+        <Sparkles size={20} color="var(--text-inverse)" />
+        <span className="text-[20px] font-extrabold" style={{ color: 'var(--text-inverse)' }}>+{amount} XP</span>
       </div>
     </div>
   )

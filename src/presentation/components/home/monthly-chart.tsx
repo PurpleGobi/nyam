@@ -90,7 +90,7 @@ export function MonthlyChart({
                 {isLong && month.count > 0 && (
                   <span
                     className="absolute top-[4px] w-full text-center text-[10px]"
-                    style={{ fontWeight: 800, color: '#fff' }}
+                    style={{ fontWeight: 800, color: 'var(--text-inverse)' }}
                   >
                     {month.count}
                   </span>

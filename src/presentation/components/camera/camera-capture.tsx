@@ -82,8 +82,8 @@ export function CameraCapture({
             <img src={previewUrl} alt="" className="h-full w-full object-cover" />
             {isRecognizing && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-                <div className="h-8 w-8 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                <p className="mt-3 text-[13px] font-medium text-white">{isRestaurant ? '식당 검색 중...' : '와인 검색 중...'}</p>
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-text-inverse border-t-transparent" />
+                <p className="mt-3 text-[13px] font-medium text-text-inverse">{isRestaurant ? '식당 검색 중...' : '와인 검색 중...'}</p>
               </div>
             )}
           </>
@@ -106,9 +106,9 @@ export function CameraCapture({
               }`}
             >
               {isRecognizing ? (
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-text-inverse border-t-transparent" />
               ) : (
-                <Camera size={28} color="#FFFFFF" />
+                <Camera size={28} color="var(--text-inverse)" />
               )}
             </button>
           </>

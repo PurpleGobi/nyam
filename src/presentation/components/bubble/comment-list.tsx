@@ -107,7 +107,7 @@ export function CommentList({ comments, currentUserId, onDelete, onLike }: Comme
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold text-white"
+                className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold text-text-inverse"
                 style={{ backgroundColor: 'var(--negative)' }}
               >
                 삭제
