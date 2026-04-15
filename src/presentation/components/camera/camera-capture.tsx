@@ -29,20 +29,24 @@ export function CameraCapture({
 
   const handleCameraCapture = useCallback(() => {
     if (inputRef.current) {
-      inputRef.current.removeAttribute('capture')
+      inputRef.current.setAttribute('capture', 'environment')
       inputRef.current.click()
     }
   }, [])
 
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
 
-      // iOS Chrome: 촬영 원본을 앨범에 저장 (navigator.share → "이미지 저장")
-      const saveFile = new File([file], `nyam_${Date.now()}.jpg`, { type: file.type })
-      if (navigator.share && navigator.canShare?.({ files: [saveFile] })) {
-        navigator.share({ files: [saveFile] }).catch(() => { /* 닫기 무시 */ })
+      // 촬영 원본을 앨범에 저장 — 완료될 때까지 대기 후 캡처 플로우 진행
+      try {
+        const saveFile = new File([file], `nyam_${Date.now()}.jpg`, { type: file.type })
+        if (navigator.share && navigator.canShare?.({ files: [saveFile] })) {
+          await navigator.share({ files: [saveFile] })
+        }
+      } catch {
+        // 사용자가 공유 시트를 닫은 경우 — 무시하고 계속 진행
       }
 
       onCapture(file)
