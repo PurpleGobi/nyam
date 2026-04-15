@@ -12,7 +12,7 @@
 ### domain/ (순수 비즈니스 로직, 외부 의존 0)
 | 경로 | 파일 수 | 역할 | 상태 |
 |------|---------|------|------|
-| entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, home-target, similarity, map-discovery 등). bookmark.ts 삭제됨. map-discovery.ts: MapDiscoveryItem 등. restaurant.ts: RestaurantPrestige. score.ts: ScoreSource 3종. bubble.ts: BubbleItem, BubbleItemSource 타입 | 안정 |
+| entities/ | 34 | 타입 정의 (record, restaurant, wine, bubble, xp, score, calendar, home-target, similarity, map-discovery 등). bookmark.ts 삭제됨. map-discovery.ts: MapDiscoveryItem 등. restaurant.ts: RestaurantPrestige. score.ts: ScoreSource 3종. bubble.ts: BubbleItem (source/recordId 제거됨) | 안정 |
 | repositories/ | 19 | 인터페이스 (RecordRepository, BookmarkRepository, BubbleRepository, HomeRepository, SimilarityRepository, PredictionRepository 등). BubbleRepository에 큐레이션 메서드 4개 추가. HomeRepository에 HomeDbFilters 인터페이스 + findHomeTargets dbFilters 파라미터 확장 | 안정 |
 | services/ | 19 | 순수 로직 (nyam-score, xp-calculator, bubble-share-sync, filter-matcher, score-fallback, visibility-filter, profile-visibility, cf-calculator, map-cluster 등). filter-query-builder.ts 삭제(dead code — DB RPC로 대체). map-cluster.ts: selectTopN(cascade 소팅), clusterPoints(그리드 기반). cf-calculator 테스트 32개. bubble-share-sync에 evaluateBookmarkTargets, computeItemDiff 추가 | 안정 |
 | constants/ | 1 | source-priority.ts (SOURCE_PRIORITY: 'mine'\|'nyam'\|'bubble'\|'bookmark' 4종) | 안정 |
@@ -61,7 +61,7 @@
 - onboarding/, design-system/
 
 ## supabase/
-- migrations/ (57개, 000~061): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개(filter_home_restaurants/wines, search_restaurants_in_bounds 재작성, is_mutual_follow)
+- migrations/ (77개, 000~077): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개 + 073~077 bubble_items 단순화(source+record_id DROP, 트리거 SECURITY DEFINER, 기록삭제 정리 트리거)
 - functions/ (6): process-account-deletion, refresh-active-xp, weekly-ranking-snapshot(bubble_items 전환 완료), compute-similarity(CF 증분 갱신), predict-score(단건 CF 예측, JWT+service_role), batch-predict(배치 CF 예측, 최대 50건)
 
 ## DI 등록 현황 (container.ts)

@@ -6,21 +6,15 @@
 
 ---
 
-### 2026-04-15 #45 — 기록 삭제 시 auto bubble_items 자동 정리 트리거
-- **영역**: supabase/migrations/073(BEFORE DELETE 트리거 + 고아 auto 항목 일괄 정리)
-- **맥락**: bubble_items.record_id FK가 ON DELETE SET NULL이라 기록 삭제 후 auto 항목이 고아로 남아 버블 리스트에 계속 표시되던 버그. BEFORE DELETE 트리거로 source='auto' 행 자동 삭제, manual은 기존 SET NULL 유지. 기존 고아 auto 항목도 일괄 정리.
+### 2026-04-15 #46 — bubble_items 테이블 단순화 (source + record_id 제거)
+- **영역**: domain/(bubble.ts: BubbleItemSource 타입+BubbleItem.recordId+BubbleShare.recordId 제거), domain/repositories/(addShare·shareRecord·unshareRecord·getTargetShares·batchUpsertAutoItems 시그니처 변경), infrastructure/supabase-bubble-repository(record_id 기반→target_id+user_id 기반 전환, feed 조회 로직 단순화), application/(use-share-record·use-delete-record·use-bubble-auto-sync·use-bubble-items target 기반 전환), supabase/migrations/073~077(트리거 SECURITY DEFINER 추가+source 컬럼 DROP+record_id 컬럼 DROP+RLS 단순화+기록 삭제 트리거 target_id 기반 재작성)
+- **맥락**: (1) bubble_items의 source(auto/manual) 구분이 불필요한 복잡성 유발 → 제거. (2) record_id가 UNIQUE(bubble_id,target_id,target_type)와 맞지 않는 약한 참조 → target_id+user_id 기반으로 전환. (3) 통계 트리거에 SECURITY DEFINER 없어서 RLS가 UPDATE 차단하던 근본 원인 수정. (4) 기록 삭제 시 해당 타겟의 남은 기록이 0개면 bubble_item 자동 삭제. (5) 수동 버블 공유 시 토스트 알림 추가 (4개 컨테이너).
 - **미완료**: 없음
 - **다음**: 없음
 
 ### 2026-04-15 #44 — 버블 설정 페이지 멤버 진입점 개방
 - **영역**: presentation/containers/bubble-detail-container.tsx (설정 아이콘 isOwner→isMember)
-- **맥락**: 설정 페이지 내부는 이미 role 기반 섹션 분리 완료(멤버: 공유방식+공개범위만 노출). 진입점만 오너 전용이어서 일반 멤버가 자신의 자동공유/공개범위 설정 불가했음. 1줄 수정으로 해결.
-- **미완료**: 없음
-- **다음**: 없음
-
-### 2026-04-15 #43 — 버블 카드/리스트뷰 최신 데이터 싱크 수정
-- **영역**: application/hooks/(use-bubble-list, use-bubble-discover, use-bubble-expertise, use-bubble-similarity에 refreshKey 추가), presentation/containers/home-container(bubbleRefreshKey 상태+visibilitychange 자동 갱신, 아이템 추가/제거·가입취소 후 refreshBubbles 호출)
-- **맥락**: 버블 카드/리스트뷰의 기록수·멤버수·전문성·적합도가 일회성 로드 후 갱신되지 않던 문제. DB 트리거는 즉시 갱신하지만 UI 재조회 메커니즘 부재. 4개 훅에 refreshKey 파라미터 추가, home-container에서 액션 후 + visibilitychange 시 자동 갱신.
+- **맥락**: 1줄 수정으로 해결.
 - **미완료**: 없음
 - **다음**: 없음
 
@@ -71,11 +65,5 @@
 - **맥락**: (1) 초대 링크(만료 3일 고정) + 직접 초대(닉네임/핸들/이메일 검색) 통합 팝업으로 리디자인. (2) 중복 초대 방지(DB pendingInvites + 세션 invitedIds 이중 체크, 토스트 알림). (3) 초대 취소(notification 삭제 + RLS 066). (4) 설정 멤버관리에 "초대 수락 대기" 목록 표시(RLS 065) + 즉시 새로고침. (5) 핸들 설정/변경 UI(설정>계정, @접두사, 영문소문자+숫자+밑줄 필터, UNIQUE 검증).
 - **미완료**: 065/066 마이그레이션 로컬 파일은 생성했으나 원격은 MCP로 적용 완료. 초대 수락/거절 알림 처리 UI 미구현.
 - **다음**: 브라우저 QA, 초대 수락 처리 UX
-
-### 2026-04-13 #34 — 홈뷰 버블 필터 미작동 수정 + 로고 클릭 초기화
-- **영역**: presentation/(home-container: urlBubbleId→activeBubbleId state 전환, handleLogoReset 추가, components/layout/app-header: onLogoClick prop)
-- **맥락**: 버블 상세→리스트 보기 진입 시 필터 변경이 작동하지 않던 버그 수정. urlBubbleId가 상수여서 viewTypes가 항상 ['bubble']로 고정되고 칩 변경 시 초기화 effect가 재실행되며 덮어쓰기됨. state로 전환하여 필터 변경 시 bubble 모드 해제. 로고 클릭 시 필터/소팅/검색/소셜필터 전체 디폴트 복원.
-- **미완료**: 없음
-- **다음**: 브라우저 QA
 
 
