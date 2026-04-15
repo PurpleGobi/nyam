@@ -108,7 +108,6 @@ export interface BubbleItem {
   bubbleId: string
   targetId: string
   targetType: 'restaurant' | 'wine'
-  addedBy: string
   addedAt: string
 }
 

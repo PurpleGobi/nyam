@@ -125,10 +125,9 @@ export interface BubbleRepository {
 
   getShares(bubbleId: string, options?: {
     targetType?: 'restaurant' | 'wine'
-    sharedBy?: string
     period?: 'week' | 'month' | '3months' | 'all'
     minSatisfaction?: number
-    sortBy?: 'newest' | 'reactions' | 'score' | 'member'
+    sortBy?: 'newest' | 'reactions' | 'score'
     limit?: number
     offset?: number
   }): Promise<{ data: BubbleShare[]; total: number }>
@@ -136,7 +135,7 @@ export interface BubbleRepository {
     limit?: number
     offset?: number
   }): Promise<{ data: BubbleFeedItem[]; total: number }>
-  addShare(bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  addShare(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   removeShare(shareId: string): Promise<void>
 
   getRankings(bubbleId: string, options: {
@@ -158,7 +157,7 @@ export interface BubbleRepository {
   getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]>
   getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
   getTargetShares(targetId: string, targetType: 'restaurant' | 'wine', userId: string): Promise<BubbleShare[]>
-  shareRecord(bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  shareRecord(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   unshareRecord(targetId: string, targetType: 'restaurant' | 'wine', bubbleId: string): Promise<void>
 
   // 전문성 집계
@@ -175,7 +174,7 @@ export interface BubbleRepository {
   isItemInBubble(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<boolean>
 
   // ─── target 기반 자동 큐레이션 동기화 (bubble_items) ───
-  batchUpsertAutoItems(targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void>
+  batchUpsertAutoItems(targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string): Promise<void>
   batchDeleteAutoItems(targetIds: string[], targetType: 'restaurant' | 'wine', bubbleId: string): Promise<void>
   getAutoItemTargetIds(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<string[]>
 }

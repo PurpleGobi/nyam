@@ -47,54 +47,31 @@ export type Database = {
       bubble_items: {
         Row: {
           added_at: string
-          added_by: string
           bubble_id: string
           id: string
-          record_id: string | null
-          source: string
           target_id: string
           target_type: string
         }
         Insert: {
           added_at?: string
-          added_by: string
           bubble_id: string
           id?: string
-          record_id?: string | null
-          source?: string
           target_id: string
           target_type: string
         }
         Update: {
           added_at?: string
-          added_by?: string
           bubble_id?: string
           id?: string
-          record_id?: string | null
-          source?: string
           target_id?: string
           target_type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "bubble_items_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bubble_items_bubble_id_fkey"
             columns: ["bubble_id"]
             isOneToOne: false
             referencedRelation: "bubbles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bubble_items_record_id_fkey"
-            columns: ["record_id"]
-            isOneToOne: false
-            referencedRelation: "records"
             referencedColumns: ["id"]
           },
         ]

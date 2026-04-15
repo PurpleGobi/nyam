@@ -783,18 +783,28 @@ export class SupabaseProfileRepository implements ProfileRepository {
           const memberUserIds = allMembers.map((m: Record<string, unknown>) => m.user_id as string)
           weeklyTotal = memberUserIds.length
 
-          const { data: weekShares } = await this.supabase
+          // 주간 기록 수 기반 랭킹 (bubble_items의 타겟 중 멤버별 기록 수)
+          const { data: biTargets } = await this.supabase
             .from('bubble_items')
-            .select('added_by')
+            .select('target_id, target_type')
             .eq('bubble_id', bubbleId)
-            .gte('added_at', weekStartIso)
+
+          const targetIds = (biTargets ?? []).map((t) => t.target_id as string)
+          const { data: weekRecords } = targetIds.length > 0
+            ? await this.supabase
+              .from('records')
+              .select('user_id')
+              .in('target_id', targetIds)
+              .in('user_id', memberUserIds)
+              .gte('created_at', weekStartIso)
+            : { data: [] }
 
           const shareCounts = new Map<string, number>()
           for (const uid of memberUserIds) {
             shareCounts.set(uid, 0)
           }
-          for (const s of weekShares ?? []) {
-            const uid = s.added_by as string
+          for (const r of weekRecords ?? []) {
+            const uid = r.user_id as string
             shareCounts.set(uid, (shareCounts.get(uid) ?? 0) + 1)
           }
 

@@ -38,7 +38,7 @@ export function useBubbleAutoSync(userId: string | null) {
       if (shouldShare.length > 0) {
         await bubbleRepo.batchUpsertAutoItems(
           [{ targetId: record.targetId, targetType: record.targetType }],
-          membership.bubbleId, userId,
+          membership.bubbleId,
         )
         result.sharedTo.push(info)
       } else {
@@ -78,7 +78,7 @@ export function useBubbleAutoSync(userId: string | null) {
       .map((r) => ({ targetId: r.targetId, targetType: r.targetType }))
 
     await Promise.all([
-      toAddTargets.length > 0 ? bubbleRepo.batchUpsertAutoItems(toAddTargets, bubbleId, userId) : Promise.resolve(),
+      toAddTargets.length > 0 ? bubbleRepo.batchUpsertAutoItems(toAddTargets, bubbleId) : Promise.resolve(),
       toRemove.length > 0 ? bubbleRepo.batchDeleteAutoItems(toRemove, 'restaurant', bubbleId) : Promise.resolve(),
     ])
   }, [userId])

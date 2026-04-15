@@ -260,29 +260,41 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
     // bubble_items 기반으로 해당 식당 포함 버블 조회
     const { data: items } = await this.supabase
       .from('bubble_items')
-      .select('bubble_id, target_id, added_by')
+      .select('bubble_id')
       .in('bubble_id', bubbleIds)
       .eq('target_id', restaurantId)
       .eq('target_type', 'restaurant')
 
     if (!items || items.length === 0) return []
 
-    // 해당 식당의 기록을 별도 조회 (본인 제외)
-    const itemUserIds = [...new Set(items.map((i) => i.added_by as string).filter((uid) => uid !== userId))]
-    const { data: recData } = await this.supabase
-      .from('records')
-      .select('satisfaction, axis_x, axis_y, user_id')
-      .eq('target_id', restaurantId)
-      .eq('target_type', 'restaurant')
-      .in('user_id', itemUserIds)
+    const itemBubbleIds = [...new Set(items.map((i) => i.bubble_id as string))]
+
+    // 해당 버블들의 활성 멤버 조회 (본인 제외)
+    const { data: memberData } = await this.supabase
+      .from('bubble_members')
+      .select('bubble_id, user_id')
+      .in('bubble_id', itemBubbleIds)
+      .eq('status', 'active')
+      .neq('user_id', userId)
+
+    const memberUserIds = [...new Set((memberData ?? []).map((m) => m.user_id as string))]
+
+    // 해당 식당의 기록을 별도 조회 (본인 제외, 멤버만)
+    const { data: recData } = memberUserIds.length > 0
+      ? await this.supabase
+        .from('records')
+        .select('satisfaction, axis_x, axis_y, user_id')
+        .eq('target_id', restaurantId)
+        .eq('target_type', 'restaurant')
+        .in('user_id', memberUserIds)
+      : { data: [] }
 
     // user_id → bubble_id 매핑 (한 유저가 여러 버블에 있을 수 있음)
     const userBubbleMap = new Map<string, Set<string>>()
-    for (const item of items) {
-      const uid = item.added_by as string
-      if (uid === userId) continue
+    for (const m of memberData ?? []) {
+      const uid = m.user_id as string
       const bids = userBubbleMap.get(uid) ?? new Set()
-      bids.add(item.bubble_id as string)
+      bids.add(m.bubble_id as string)
       userBubbleMap.set(uid, bids)
     }
 

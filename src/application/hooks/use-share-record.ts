@@ -73,7 +73,7 @@ export function useShareRecord(
 
   const shareToBubble = useCallback(async (bubbleId: string) => {
     if (!userId || !targetId || !targetType) return
-    await bubbleRepo.shareRecord(bubbleId, userId, targetId, targetType)
+    await bubbleRepo.shareRecord(bubbleId, targetId, targetType)
     setAvailableBubbles((prev) =>
       prev.map((b) => (b.id === bubbleId ? { ...b, isShared: true } : b)),
     )
@@ -84,7 +84,7 @@ export function useShareRecord(
   const shareToBubbles = useCallback(async (bubbleIds: string[]) => {
     if (!userId || !targetId || !targetType) return
     for (const bubbleId of bubbleIds) {
-      await bubbleRepo.shareRecord(bubbleId, userId, targetId, targetType)
+      await bubbleRepo.shareRecord(bubbleId, targetId, targetType)
       await awardSocialXp(userId, 'share')
     }
     if (bubbleIds.length > 0) {

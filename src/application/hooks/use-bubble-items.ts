@@ -75,9 +75,8 @@ export function useBubbleItems(userId: string | null, targetId: string | null, t
     await bubbleRepo.batchUpsertAutoItems(
       targets.map((t) => ({ targetId: t.targetId, targetType: t.targetType })),
       bubbleId,
-      userId,
     )
-  }, [userId])
+  }, [])
 
   /** 여러 대상을 한번에 버블에서 제거 */
   const batchRemoveFromBubble = useCallback(async (
