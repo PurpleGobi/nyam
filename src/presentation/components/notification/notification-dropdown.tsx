@@ -140,12 +140,15 @@ export function NotificationDropdown({
             <NotificationEmpty />
           ) : (
             notifications.map((n) => (
-              <button
+              <div
                 key={n.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => handleItemClick(n)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleItemClick(n) }}
                 className={`notif-item w-full text-left ${!n.isRead ? 'unread' : ''}`}
                 style={{
+                  cursor: 'pointer',
                   backgroundColor: isSelectMode && selectedIds.has(n.id)
                     ? 'color-mix(in srgb, var(--accent-food) 12%, transparent)'
                     : n.isRead ? 'transparent' : 'color-mix(in srgb, var(--accent-food) 5%, transparent)',
@@ -177,7 +180,7 @@ export function NotificationDropdown({
                 </div>
 
                 {!isSelectMode && !n.isRead && <div className="notif-unread-dot mt-2" />}
-              </button>
+              </div>
             ))
           )}
         </div>
