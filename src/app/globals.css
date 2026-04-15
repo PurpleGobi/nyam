@@ -13,6 +13,7 @@
   --color-page: var(--bg-page);
   --color-text-sub: var(--text-sub);
   --color-text-hint: var(--text-hint);
+  --color-text-inverse: var(--text-inverse);
   --color-border: var(--border);
   --color-border-bold: var(--border-bold);
   --color-brand: var(--brand);
@@ -64,6 +65,7 @@
   --text: #3D3833;
   --text-sub: #8C8580;
   --text-hint: #B5AFA8;
+  --text-inverse: #FFFFFF;
 
   /* ── §1 Border ── */
   --border: #E8E4DF;
