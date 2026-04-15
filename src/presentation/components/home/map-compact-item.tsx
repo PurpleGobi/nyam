@@ -60,7 +60,7 @@ export function MapCompactItem({
     <button
       type="button"
       onClick={handleClick}
-      className="flex w-full items-center gap-2 text-left transition-all"
+      className="flex w-full items-center gap-2 text-left transition-all active:scale-[0.98] active:opacity-70"
       style={{
         padding: '8px 12px',
         backgroundColor: bgColor,

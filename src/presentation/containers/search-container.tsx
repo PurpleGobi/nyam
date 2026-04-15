@@ -88,6 +88,7 @@ function SearchInner() {
 
   // 검색 결과 선택 상태 (지도 연동)
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
+  const navigatingRef = useRef(false)
 
   // 텍스트 검색 후 panTo로 지도가 이동했을 때 bounds 갱신 억제
   const [suppressIdle, setSuppressIdle] = useState(false)
@@ -133,6 +134,8 @@ function SearchInner() {
 
   const handleSelect = useCallback(
     async (result: SearchResult) => {
+      if (navigatingRef.current) return
+      navigatingRef.current = true
       addRecentSearch(query)
       const meta =
         result.type === 'restaurant'
@@ -239,6 +242,8 @@ function SearchInner() {
 
   const handleSelectAiCandidate = useCallback(
     async (candidate: WineSearchCandidate) => {
+      if (navigatingRef.current) return
+      navigatingRef.current = true
       addRecentSearch(query)
       const wine = await selectAiCandidate(candidate)
       if (!wine) {

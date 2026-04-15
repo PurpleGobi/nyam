@@ -247,14 +247,20 @@ export function MapView({
     itemsMapRef.current = new Map(items.map((i) => [i.id, i]))
   }, [items])
 
+  const navigatingRef = useRef(false)
+
   const handleSelect = useCallback((id: string) => {
     const item = itemsMapRef.current.get(id)
     if (!item) return
     if (navigateOnFirstClick) {
+      if (navigatingRef.current) return
+      navigatingRef.current = true
       onItemNavigateRef.current(item)
       return
     }
     if (selectedIdRef.current === id) {
+      if (navigatingRef.current) return
+      navigatingRef.current = true
       onItemNavigateRef.current(item)
     } else {
       setSelectedId(id)
@@ -265,6 +271,8 @@ export function MapView({
   /** 리스트 전용: navigateOnFirstClick이면 바로 navigate, 아니면 기존 select 로직 */
   const handleListSelect = useCallback((id: string) => {
     if (navigateOnFirstClick) {
+      if (navigatingRef.current) return
+      navigatingRef.current = true
       const item = itemsMapRef.current.get(id)
       if (item) onItemNavigateRef.current(item)
     } else {
