@@ -3,14 +3,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { UtensilsCrossed, Wine, Users } from 'lucide-react'
+import { UtensilsCrossed, Wine } from 'lucide-react'
 import type { FilterRule, SortOption } from '@/domain/entities/saved-filter'
 import type { RecordWithTarget, RecordSource } from '@/domain/entities/record'
 import type { HomeTarget } from '@/domain/entities/home-target'
-import type { HomeViewType, HomeDbFilters } from '@/domain/repositories/home-repository'
+import type { HomeViewType } from '@/domain/repositories/home-repository'
 import type { ScoreSource } from '@/domain/entities/score'
 import { haversineDistance } from '@/domain/services/distance'
-import type { FilterChipItem, AdvancedFilterChip } from '@/domain/entities/condition-chip'
+import type { FilterChipItem } from '@/domain/entities/condition-chip'
 import { chipsToFilterRules, isAdvancedChip, createDefaultViewChip, createBubbleViewChip } from '@/domain/entities/condition-chip'
 import { RESTAURANT_FILTER_ATTRIBUTES, WINE_FILTER_ATTRIBUTES, HOME_BUBBLE_FILTER_ATTRIBUTES, buildMapFilterAttributes } from '@/domain/entities/filter-config'
 import { matchesAllRules } from '@/domain/services/filter-matcher'
@@ -22,7 +22,6 @@ import { useRestaurantStats } from '@/application/hooks/use-restaurant-stats'
 import { useWineStats } from '@/application/hooks/use-wine-stats'
 import { useAiGreeting } from '@/application/hooks/use-ai-greeting'
 import { useSettings } from '@/application/hooks/use-settings'
-import { usePersistedFilterState } from '@/application/hooks/use-persisted-filter-state'
 import { useFeedScores } from '@/application/hooks/use-feed-scores'
 import { PenLine, FolderPlus, FolderMinus } from 'lucide-react'
 import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
@@ -41,35 +40,25 @@ import type { RestaurantSearchResult } from '@/domain/entities/search'
 import { ConditionFilterBar } from '@/presentation/components/home/condition-filter-bar'
 import { AdvancedFilterSheet } from '@/presentation/components/home/advanced-filter-sheet'
 import { SortDropdown } from '@/presentation/components/home/sort-dropdown'
-// StatsToggle card removed — stats now toggled via icon in HomeTabs
-import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import type { BubbleSortOption } from '@/domain/entities/saved-filter'
 import { useBubbleList } from '@/application/hooks/use-bubble-list'
-import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
-import { useBubbleItems } from '@/application/hooks/use-bubble-items'
 import { useBubbleExpertise } from '@/application/hooks/use-bubble-expertise'
 import { useBubbleDiscover } from '@/application/hooks/use-bubble-discover'
 import { useBubbleSimilarities } from '@/application/hooks/use-bubble-similarity'
-import { BubbleCard } from '@/presentation/components/bubble/bubble-card'
-import { CompactListBubble } from '@/presentation/components/bubble/compact-list-bubble'
 import { useFollowingFeed } from '@/application/hooks/use-following-feed'
 import { useUserCoords } from '@/application/hooks/use-user-coords'
 import { useSocialFilterOptions } from '@/application/hooks/use-social-filter-options'
 import type { SocialFilterState } from '@/presentation/components/home/condition-filter-bar'
+import { useBubbleSelectMode } from '@/presentation/hooks/use-bubble-select-mode'
+import { useHomeFilterChips } from '@/presentation/hooks/use-home-filter-chips'
+import { HomeStatsPanel } from '@/presentation/components/home/home-stats-panel'
+import { BubbleTabContent } from '@/presentation/containers/bubble-tab-content'
 
 // --- Heavy components: lazy-loaded (only fetched when actually rendered) ---
 const CalendarView = dynamic(() => import('@/presentation/components/home/calendar-view').then(m => ({ default: m.CalendarView })), { ssr: false })
 const CalendarDayDetail = dynamic(() => import('@/presentation/components/home/calendar-day-detail').then(m => ({ default: m.CalendarDayDetail })), { ssr: false })
 const MapView = dynamic(() => import('@/presentation/components/home/map-view').then(m => ({ default: m.MapView })), { ssr: false })
 const FollowingFeed = dynamic(() => import('@/presentation/components/home/following-feed').then(m => ({ default: m.FollowingFeed })), { ssr: false })
-const WorldMapChart = dynamic(() => import('@/presentation/components/home/world-map-chart').then(m => ({ default: m.WorldMapChart })), { ssr: false })
-const GenreChart = dynamic(() => import('@/presentation/components/home/genre-chart').then(m => ({ default: m.GenreChart })), { ssr: false })
-const ScoreDistribution = dynamic(() => import('@/presentation/components/home/score-distribution').then(m => ({ default: m.ScoreDistribution })), { ssr: false })
-const MonthlyChart = dynamic(() => import('@/presentation/components/home/monthly-chart').then(m => ({ default: m.MonthlyChart })), { ssr: false })
-const SceneChart = dynamic(() => import('@/presentation/components/home/scene-chart').then(m => ({ default: m.SceneChart })), { ssr: false })
-const WineRegionMap = dynamic(() => import('@/presentation/components/home/wine-region-map').then(m => ({ default: m.WineRegionMap })), { ssr: false })
-const VarietalChart = dynamic(() => import('@/presentation/components/home/varietal-chart').then(m => ({ default: m.VarietalChart })), { ssr: false })
-const WineTypeChart = dynamic(() => import('@/presentation/components/home/wine-type-chart').then(m => ({ default: m.WineTypeChart })), { ssr: false })
 
 function mapRecordSourceToScoreSource(source?: RecordSource): ScoreSource | undefined {
   if (!source) return undefined
@@ -149,12 +138,6 @@ const MEAL_TIME_LABELS: Record<string, string> = {
   snack: '간식',
 }
 
-/** DB에서 처리할 필터 속성 (SQL WHERE로 처리) */
-const DB_FILTER_ATTRIBUTES = new Set([
-  'genre', 'district', 'area', 'prestige', 'price_range',
-  'wine_type', 'variety', 'country', 'vintage', 'acidity_level', 'sweetness_level',
-])
-
 export function HomeContainer() {
   const { user } = useAuth()
   const { showToast } = useToast()
@@ -166,31 +149,21 @@ export function HomeContainer() {
   const { settings } = useSettings()
   const [renderTimestamp] = useState(() => Date.now())
 
-  // ── 버블에 추가/제거: 선택 모드 ──
-  const [isBubbleSelectMode, setIsBubbleSelectMode] = useState(false)
-  const [isBubbleRemoveMode, setIsBubbleRemoveMode] = useState(false)
-  const [bubbleSelectIds, setBubbleSelectIds] = useState<Set<string>>(new Set())
-  const [showBubblePicker, setShowBubblePicker] = useState(false)
-
-  const startBubbleSelect = useCallback(() => {
-    setIsBubbleSelectMode(true)
-    setIsBubbleRemoveMode(false)
-    setBubbleSelectIds(new Set())
-  }, [])
-
-  const startBubbleRemove = useCallback(() => {
-    setIsBubbleSelectMode(true)
-    setIsBubbleRemoveMode(true)
-    setBubbleSelectIds(new Set())
-  }, [])
-
-  const { batchAddToBubble, batchRemoveFromBubble } = useBubbleItems(user?.id ?? null, null, 'restaurant')
-
-  const stopBubbleSelect = useCallback(() => {
-    setIsBubbleSelectMode(false)
-    setIsBubbleRemoveMode(false)
-    setBubbleSelectIds(new Set())
-  }, [])
+  // ── 버블 선택 모드 (추출된 hook) ──
+  const {
+    isBubbleSelectMode,
+    isBubbleRemoveMode,
+    bubbleSelectIds,
+    showBubblePicker,
+    startBubbleSelect,
+    startBubbleRemove,
+    stopBubbleSelect,
+    toggleBubbleSelectItem,
+    openBubblePicker,
+    closeBubblePicker,
+    batchAddToBubble,
+    batchRemoveFromBubble,
+  } = useBubbleSelectMode({ userId: user?.id ?? null })
 
   const [homeRefreshKey, setHomeRefreshKey] = useState(0)
   const [bubbleRefreshKey, setBubbleRefreshKey] = useState(0)
@@ -204,15 +177,6 @@ export function HomeContainer() {
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [refreshBubbles])
-
-  const toggleBubbleSelectItem = useCallback((id: string) => {
-    setBubbleSelectIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
 
   // 탭+필터 sticky 영역 ref → 지도 stickyTop 동적 계산
   const stickyBarRef = useRef<HTMLDivElement>(null)
@@ -230,7 +194,6 @@ export function HomeContainer() {
     return () => observer.disconnect()
   }, [])
   const { bubbles: myBubbles, pendingBubbleIds, isLoading: bubblesLoading } = useBubbleList(user?.id ?? null, bubbleRefreshKey)
-  const { cancelJoin } = useBubbleJoin()
 
   // ── 버블 전문성 ──
   const bubbleIds = useMemo(() => myBubbles.map((b) => b.id), [myBubbles])
@@ -267,8 +230,7 @@ export function HomeContainer() {
   const isMineOnlyMode = bubbleTypeValue === 'mine'
   const isFollowingOnlyMode = bubbleTypeValue === 'following'
   const isPublicOnlyMode = bubbleTypeValue === 'public'
-  // 디폴트(무선택) = 전체 = my + public 합산
-  const needPublicBubbles = !isMineOnlyMode // mine 전용일 때만 fetch 안 함
+  const needPublicBubbles = !isMineOnlyMode
   const userAreas = useMemo(
     () => [...new Set(myBubbles.map((b) => b.area).filter(Boolean))] as string[],
     [myBubbles],
@@ -283,7 +245,6 @@ export function HomeContainer() {
 
   // ── 버블 필터 속성에 전문 분야 동적 옵션 주입 ──
   const bubbleFilterAttributes = useMemo(() => {
-    // 나의 버블이 선택된 경우에만 역할 필터 노출
     const isMineSelected = bubbleTypeValue === 'mine'
     return HOME_BUBBLE_FILTER_ATTRIBUTES.filter((attr) => {
       if (attr.key === 'role') return isMineSelected
@@ -309,21 +270,19 @@ export function HomeContainer() {
   // 거리순 소팅 시에만 위치 좌표 요청
   const userCoords = useUserCoords(currentSort === 'distance' || activeTab === 'restaurant')
 
-  // ── 소셜 필터 상태 (URL ?bubbleId= 파라미터로 진입 시 프리셋) ──
+  // ── 소셜 필터 상태 ──
   const [socialFilter, setSocialFilter] = useState<SocialFilterState>(() => ({
     followingUserId: null,
     bubbleId: activeBubbleId ?? null,
   }))
-  // 소셜 필터 옵션: 초기 로딩 후 지연 fetch (follows + bubbles 중복 쿼리 제거)
   const [socialFilterReady, setSocialFilterReady] = useState(false)
   useEffect(() => {
-    // 메인 데이터 로딩 후 소셜 필터 옵션 fetch
     const timer = setTimeout(() => setSocialFilterReady(true), 100)
     return () => clearTimeout(timer)
   }, [])
   const socialFilterOptions = useSocialFilterOptions(user?.id ?? null, socialFilterReady)
 
-  // ── 지도 필터 속성 (팔로잉/버블 동적 children 주입) ──
+  // ── 지도 필터 속성 ──
   const mapFilterAttributes = useMemo(
     () => buildMapFilterAttributes(
       socialFilterOptions.followingUsers.map((u) => ({ id: u.id, nickname: u.nickname, handle: u.handle })),
@@ -332,177 +291,47 @@ export function HomeContainer() {
     [socialFilterOptions.followingUsers, socialFilterOptions.myBubbles],
   )
 
-  // ── 조건 칩 상태 (디폴트: 빈 배열 = 전체보기) ──
-  const [conditionChips, setConditionChips] = useState<FilterChipItem[]>([])
-  const [mapConditionChips, setMapConditionChips] = useState<FilterChipItem[]>([])
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
-  const [prevTab, setPrevTab] = useState(activeTab)
+  // ── 조건 칩 (추출된 hook) ──
+  const {
+    conditionChips,
+    setConditionChips,
+    mapConditionChips,
+    setMapConditionChips,
+    isAdvancedOpen,
+    setIsAdvancedOpen,
+    handleChipsChange,
+    handleAdvancedApply,
+    handleTabTransition,
+    viewTypes,
+    dbFilterRules,
+    jsFilterRules,
+    homeDbFilters,
+  } = useHomeFilterChips({
+    userId: user?.id ?? null,
+    activeTab,
+    activeBubbleId,
+    activeBubbleIdParam,
+    setFilterRules,
+    setActiveBubbleId,
+    setSocialFilter,
+  })
 
-  // ── Write-Behind Cache: 칩 상태 저장/복원 ──
-  const { loadState, saveState } = usePersistedFilterState(user?.id ?? null)
-  const [initializedTabs, setInitializedTabs] = useState<Set<string>>(new Set())
-
-  // 초기 마운트 + 탭 전환 시 저장된 칩 복원
-  useEffect(() => {
-    if (!user?.id) return
-
-    let cancelled = false
-    void loadState(activeTab).then((loaded) => {
-      if (cancelled) return
-
-      let chips: FilterChipItem[]
-      if (activeBubbleIdParam && activeTab !== 'bubble') {
-        // URL ?bubbleId= 진입 시: persisted view 칩 무시, bubble view 칩 강제 적용
-        const nonViewChips = loaded.filter((c) => isAdvancedChip(c) || (c as { attribute: string }).attribute !== 'view')
-        chips = [createBubbleViewChip(), ...nonViewChips]
-      } else {
-        // 일반 진입: 로드된 칩에 view 칩이 없으면 디폴트 '내기록' 칩 추가
-        const hasViewChip = loaded.some((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
-        chips = (!hasViewChip && activeTab !== 'bubble')
-          ? [createDefaultViewChip(), ...loaded]
-          : loaded
-      }
-
-      setInitializedTabs((prev) => {
-        if (prev.has(activeTab)) return prev
-        const next = new Set(prev)
-        next.add(activeTab)
-        return next
-      })
-      setConditionChips(chips)
-      const rules = chipsToFilterRules(chips)
-      setFilterRules(rules)
-    })
-
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id, loadState, setFilterRules])
-
-  // 탭 전환 시 아직 로드 안 된 탭이면 칩 초기화 + 소셜 필터 초기화 (URL 버블 필터는 유지)
-  if (prevTab !== activeTab) {
-    setPrevTab(activeTab)
-    if (!activeBubbleId) {
-      setSocialFilter({ followingUserId: null, bubbleId: null })
-    }
-    if (!initializedTabs.has(activeTab)) {
-      setConditionChips(activeTab !== 'bubble' ? [createDefaultViewChip()] : [])
-    }
-  }
+  // 탭 전환 처리
+  handleTabTransition(activeBubbleId)
 
   // 소셜 필터 변경 콜백
   const handleSocialFilterChange = useCallback((filter: SocialFilterState) => {
     setSocialFilter(filter)
   }, [])
 
-  // 칩 변경 → filterRules 동기화 + 저장 + 소셜 필터 정합성
-  const handleChipsChange = useCallback((chips: FilterChipItem[]) => {
-    setConditionChips(chips)
-    const rules = chipsToFilterRules(chips)
-    setFilterRules(rules)
-    saveState(activeTab, chips)
-
-    // 보기 필터에서 following/bubble 해제 시 소셜 필터도 초기화
-    const viewChip = chips.find((c) => !isAdvancedChip(c) && (c as { attribute: string }).attribute === 'view')
-    if (viewChip) {
-      const views = String((viewChip as { value: string }).value).split(',').map((v) => v.trim())
-      if (!views.includes('bubble')) {
-        setActiveBubbleId(null)
-      }
-      setSocialFilter((prev) => ({
-        followingUserId: views.includes('following') ? prev.followingUserId : null,
-        bubbleId: views.includes('bubble') ? prev.bubbleId : null,
-      }))
-    } else {
-      // view 칩이 없으면 bubble 모드 해제
-      setActiveBubbleId(null)
-    }
-  }, [setFilterRules, saveState, activeTab])
-
-  // Advanced Filter 적용
-  const handleAdvancedApply = useCallback((chip: AdvancedFilterChip) => {
-    // 기존 advanced 칩을 교체하거나 추가
-    const hasExisting = conditionChips.some(isAdvancedChip)
-    let nextChips: FilterChipItem[]
-    if (hasExisting) {
-      nextChips = conditionChips.map((c) => isAdvancedChip(c) ? chip : c)
-    } else {
-      nextChips = [...conditionChips, chip]
-    }
-    handleChipsChange(nextChips)
-  }, [conditionChips, handleChipsChange])
-
-  // ── conditionChips에서 view 값 추출 ──
-  const viewTypes: HomeViewType[] = useMemo(() => {
-    // URL ?bubbleId= 로 진입 시 bubble viewType 강제 포함
-    if (activeBubbleId) return ['bubble']
-
-    const views: HomeViewType[] = []
-    for (const chip of conditionChips) {
-      if (isAdvancedChip(chip)) continue
-      if (chip.attribute !== 'view') continue
-      const vals = String(chip.value).split(',')
-      for (const v of vals) {
-        const trimmed = v.trim()
-        if (trimmed === 'mine' || trimmed === 'bubble' || trimmed === 'following') {
-          views.push(trimmed)
-        }
-      }
-    }
-    return views
-  }, [conditionChips, activeBubbleId])
-
-  // view 칩은 데이터 소스 변경용이므로 filterRules에서 제외
-  const nonViewFilterRules = useMemo(() => {
-    return filterRules.filter((r) => r.attribute !== 'view')
-  }, [filterRules])
-
-  const { dbFilterRules, jsFilterRules } = useMemo(() => {
-    const db: FilterRule[] = []
-    const js: FilterRule[] = []
-    for (const rule of nonViewFilterRules) {
-      if (rule.attribute.startsWith('prestige_grade:')) {
-        js.push(rule)
-      } else if (DB_FILTER_ATTRIBUTES.has(rule.attribute)) {
-        db.push(rule)
-      } else {
-        js.push(rule)
-      }
-    }
-    return { dbFilterRules: db, jsFilterRules: js }
-  }, [nonViewFilterRules])
-
-  const homeDbFilters: HomeDbFilters | undefined = useMemo(() => {
-    if (dbFilterRules.length === 0) return undefined
-    const filters: HomeDbFilters = {}
-    for (const rule of dbFilterRules) {
-      switch (rule.attribute) {
-        case 'genre': filters.genre = String(rule.value); break
-        case 'district': filters.district = String(rule.value); break
-        case 'area': filters.area = String(rule.value); break
-        case 'prestige': filters.prestige = String(rule.value); break
-        case 'price_range': filters.priceRange = Number(rule.value); break
-        case 'wine_type': filters.wineType = String(rule.value); break
-        case 'variety': filters.variety = String(rule.value); break
-        case 'country': filters.country = String(rule.value); break
-        case 'vintage':
-          filters.vintage = Number(rule.value)
-          filters.vintageOp = rule.operator === 'lte' ? 'lte' : 'eq'
-          break
-        case 'acidity_level': filters.acidity = Number(rule.value); break
-        case 'sweetness_level': filters.sweetness = Number(rule.value); break
-      }
-    }
-    return filters
-  }, [dbFilterRules])
-
-  // ── DB 페이지네이션 조건: name 소팅 + JS필터 없음 + 검색어 없음 ──
+  // ── DB 페이지네이션 조건 ──
   const pageSize = viewMode === 'list' || viewMode === 'map' ? 10 : 5
   const [currentRecordPage, setCurrentRecordPage] = useState(1)
   const useDbPagination = currentSort === 'name' && jsFilterRules.length === 0 && !searchQuery.trim()
   const dbLimit = useDbPagination ? pageSize : null
   const dbOffset = useDbPagination ? (currentRecordPage - 1) * pageSize : 0
 
-  // ── useHomeTargets: 항상 ALL views fetch (view 칩 변경은 클라이언트 필터링) ──
+  // ── useHomeTargets ──
   const {
     targets: allViewTargets,
     hasMore,
@@ -517,19 +346,19 @@ export function HomeContainer() {
     refreshKey: homeRefreshKey,
   })
 
-  // view 칩 기반 클라이언트 필터링 (서버 왕복 없이 즉시 반영)
+  // view 칩 기반 클라이언트 필터링
   const targets = useMemo(() => {
     if (viewTypes.length === 0) return allViewTargets
     return allViewTargets.filter((t) => t.sources.some((s) => viewTypes.includes(s as typeof viewTypes[number])))
   }, [allViewTargets, viewTypes])
 
-  // P2: stats는 패널 열릴 때만 fetch (초기 로딩에서 records 풀스캔 2회 제거)
+  // P2: stats는 패널 열릴 때만 fetch
   const [isStatsOpen, setIsStatsOpen] = useState(false)
   const canShowStatsButton = targets.length >= 5
   const restaurantStats = useRestaurantStats(user?.id ?? null, isStatsOpen && activeTab === 'restaurant')
   const wineStats = useWineStats(user?.id ?? null, isStatsOpen && activeTab === 'wine')
 
-  // AI 인사말 — targets 기반
+  // AI 인사말
   const recentRecordsForGreeting = useMemo(() => {
     return targets
       .filter((t) => t.targetType === 'restaurant' && t.latestVisitDate)
@@ -615,9 +444,9 @@ export function HomeContainer() {
     setFilterRules(chipsToFilterRules(defaultChips))
     setCurrentSort('latest')
     setSearchQuery('')
-  }, [setActiveTab, setViewMode, setFilterRules, setCurrentSort, setSearchQuery])
+  }, [setActiveTab, setViewMode, setFilterRules, setCurrentSort, setSearchQuery, setConditionChips])
 
-  // 필터/검색 적용 (타겟 기반, 그룹화 불필요)
+  // 필터/검색 적용
   const filteredTargets = useMemo(() => {
     let result = targets
     if (jsFilterRules.length > 0) {
@@ -643,20 +472,18 @@ export function HomeContainer() {
     return sortHomeTargets(filteredTargets, currentSort, userCoords)
   }, [filteredTargets, currentSort, userCoords])
 
-  // 페이지네이션: DB 페이지네이션(name 소팅+JS필터 없음) vs JS slice
+  // 페이지네이션
   const totalRecordPages = useDbPagination
     ? currentRecordPage + (hasMore ? 1 : 0)
     : Math.max(1, Math.ceil(allSortedTargets.length / pageSize))
   const displayTargets = useDbPagination
-    ? allSortedTargets  // DB에서 이미 LIMIT/OFFSET 적용됨
+    ? allSortedTargets
     : allSortedTargets.slice(
         (currentRecordPage - 1) * pageSize,
         currentRecordPage * pageSize,
       )
 
-
-  // ── CF 기반 Nyam 점수: 미방문 아이템에 예측 점수 표시 ──
-  // 전체 필터링된 대상에서 1회 배치 조회 (페이지 변경 시 재요청 방지)
+  // ── CF 기반 Nyam 점수 ──
   const feedCategory = activeTab === 'wine' ? 'wine' as const : 'restaurant' as const
   const allUnvisitedIds = useMemo(() =>
     filteredTargets
@@ -667,7 +494,7 @@ export function HomeContainer() {
   )
   const { scores: feedScores } = useFeedScores(allUnvisitedIds, feedCategory, user?.id ?? null)
 
-  // 필터/탭/뷰모드 변경 시 페이지 리셋 (useEffect 대신 렌더 중 비교)
+  // 필터/탭/뷰모드 변경 시 페이지 리셋
   const pageResetKey = `${activeTab}-${dbFilterRules.length}-${jsFilterRules.length}-${currentSort}-${searchQuery}-${conditionChips.length}-${viewMode}`
   const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey)
   if (prevPageResetKey !== pageResetKey) {
@@ -675,7 +502,7 @@ export function HomeContainer() {
     setCurrentRecordPage(1)
   }
 
-  // [FIX #1] targets에서 RecordWithTarget 호환 배열 생성 (캘린더용)
+  // 캘린더용 RecordWithTarget 배열
   const visitedRecords: RecordWithTarget[] = useMemo(() => {
     const seen = new Set<string>()
     return targets
@@ -717,7 +544,6 @@ export function HomeContainer() {
     month: calMonth,
   })
 
-  // 캘린더 선택 날짜의 상세 기록
   const allSortedVisitedRecords = useMemo(() =>
     [...visitedRecords].sort((a, b) =>
       (b.visitDate ?? b.createdAt).localeCompare(a.visitDate ?? a.createdAt),
@@ -737,7 +563,7 @@ export function HomeContainer() {
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`
   }, [selectedDate])
 
-  // 지도 뷰 데이터 — 식당 탭 필터 영향 없이 전체 targets 전달 (지도뷰 자체 필터 사용)
+  // 지도 뷰 데이터
   const mapDiscovery = useMapDiscovery({
     userId: user?.id ?? null,
     targets: activeTab === 'restaurant' ? targets : [],
@@ -745,10 +571,10 @@ export function HomeContainer() {
     userLng: userCoords?.lng ?? null,
     mapChips: mapConditionChips,
     sortOption: (viewMode === 'map' ? currentSort : 'score_high') as 'score_high' | 'name' | 'distance',
-    searchQuery: '', // 지도뷰 검색은 useSearch로 별도 처리 (전체 DB + 폴백)
+    searchQuery: '',
   })
 
-  // 지도뷰 전체 DB 검색 (폴백 포함)
+  // 지도뷰 전체 DB 검색
   const mapSearch = useSearch({
     targetType: 'restaurant',
     lat: userCoords?.lat,
@@ -756,7 +582,6 @@ export function HomeContainer() {
     initialQuery: '',
   })
 
-  // searchQuery 변경 → useSearch에 전달
   useEffect(() => {
     if (viewMode === 'map') {
       mapSearch.setQuery(searchQuery)
@@ -796,7 +621,6 @@ export function HomeContainer() {
   isMapSearchModeRef.current = isMapSearchMode
   const mapSearchSuppressIdleRef = useRef(false)
   const [mapSearchSelectedId, setMapSearchSelectedId] = useState<string | null>(null)
-  // 검색 모드에서 지도 idle 시 마지막 bounds 저장 (초기화 시 현재 위치에서 nearby 검색용)
   const lastMapIdleRef = useRef<{ center: { lat: number; lng: number }; zoom: number; bounds: { north: number; south: number; east: number; west: number } | null } | null>(null)
 
   // 빈 상태
@@ -824,7 +648,6 @@ export function HomeContainer() {
         <MapView
           items={isMapSearchMode ? mapSearchItems : mapDiscovery.pageItems}
           onMapIdle={(center, zoom, bounds) => {
-            // 검색 모드에서는 bounds만 저장하고 nearby 검색은 하지 않음
             if (isMapSearchModeRef.current) {
               lastMapIdleRef.current = { center, zoom, bounds }
               if (mapSearchSuppressIdleRef.current) {
@@ -1042,7 +865,6 @@ export function HomeContainer() {
             toggleSearch()
             setSearchQuery('')
             setMapSearchSelectedId(null)
-            // 현재 지도 위치에서 nearby 검색 재시작
             if (lastMapIdleRef.current) {
               const { center, zoom, bounds } = lastMapIdleRef.current
               mapDiscovery.onMapIdle(center, zoom, bounds)
@@ -1054,7 +876,6 @@ export function HomeContainer() {
           onSearchClear={() => {
             setSearchQuery('')
             setMapSearchSelectedId(null)
-            // 현재 지도 위치에서 nearby 검색 재시작
             if (lastMapIdleRef.current) {
               const { center, zoom, bounds } = lastMapIdleRef.current
               mapDiscovery.onMapIdle(center, zoom, bounds)
@@ -1097,7 +918,7 @@ export function HomeContainer() {
           )
         )}
 
-        {/* 조건 필터 칩 바 — 캘린더 모드에서만 숨김 */}
+        {/* 조건 필터 칩 바 */}
         {!isCalendarMode && (
           isBubbleTab ? (
             <ConditionFilterBar
@@ -1152,176 +973,26 @@ export function HomeContainer() {
         </div>
 
         {/* 버블 탭 콘텐츠 */}
-        {isBubbleTab && (() => {
-          // 종류에 따라 데이터 소스 선택
-          // 디폴트(무선택) = 전체 = my + public 합산 (중복 제거)
-          let baseBubbles: typeof myBubbles
-          let loading: boolean
-          if (isMineOnlyMode) {
-            baseBubbles = myBubbles
-            loading = bubblesLoading
-          } else if (isFollowingOnlyMode || isPublicOnlyMode) {
-            baseBubbles = publicBubbles
-            loading = publicBubblesLoading
-          } else {
-            // 전체: my + public 합산 (중복 제거)
-            const myIds = new Set(myBubbles.map((b) => b.id))
-            baseBubbles = [...myBubbles, ...publicBubbles.filter((b) => !myIds.has(b.id))]
-            loading = bubblesLoading || publicBubblesLoading
-          }
-
-          // 칩 필터 적용
-          let filtered = baseBubbles
-          for (const chip of bubbleConditionChips) {
-            if (isAdvancedChip(chip)) continue
-            const simpleChip = chip as { attribute: string; value: string }
-            // bubble_type은 데이터 소스 전환용이므로 스킵
-            if (simpleChip.attribute === 'bubble_type') continue
-            // 역할 필터 (나의 버블 하위)
-            if (simpleChip.attribute === 'role') {
-              filtered = filtered.filter((b) =>
-                simpleChip.value === 'owner' ? b.createdBy === user?.id : b.createdBy !== user?.id,
-              )
-            }
-            // 전문분야 레벨: "expertise_level:axisType:axisValue:minLevel" 형식
-            if (simpleChip.attribute === 'expertise_level') {
-              const [axisType, axisValue, minLevel] = simpleChip.value.split(':')
-              filtered = filtered.filter((b) => {
-                const exp = expertiseMap.get(b.id) ?? []
-                return exp.some((e) =>
-                  e.axisType === axisType
-                  && e.axisValue === axisValue
-                  && e.avgLevel >= Number(minLevel || 0),
-                )
-              })
-            }
-            // 전문분야 기록 수: "expertise_records:axisType:axisValue:minRecords" 형식
-            if (simpleChip.attribute === 'expertise_records') {
-              const [axisType, axisValue, minRecords] = simpleChip.value.split(':')
-              filtered = filtered.filter((b) => {
-                const exp = expertiseMap.get(b.id) ?? []
-                return exp.some((e) =>
-                  e.axisType === axisType
-                  && e.axisValue === axisValue
-                  && e.memberCount >= Number(minRecords || 0),
-                )
-              })
-            }
-          }
-
-          // 검색
-          if (searchQuery.trim()) {
-            const q = searchQuery.trim().toLowerCase()
-            filtered = filtered.filter((b) =>
-              b.name.toLowerCase().includes(q)
-              || (b.description ?? '').toLowerCase().includes(q)
-              || (b.area ?? '').toLowerCase().includes(q),
-            )
-          }
-
-          // 소팅
-          const sorted = [...filtered]
-          switch (bubbleSort) {
-            case 'records':
-              sorted.sort((a, b) => b.recordCount - a.recordCount)
-              break
-            case 'members':
-              sorted.sort((a, b) => b.memberCount - a.memberCount)
-              break
-            case 'weekly_activity':
-              sorted.sort((a, b) => b.weeklyRecordCount - a.weeklyRecordCount)
-              break
-            case 'activity':
-              sorted.sort((a, b) => (b.lastActivityAt ?? '').localeCompare(a.lastActivityAt ?? ''))
-              break
-            case 'name':
-              sorted.sort((a, b) => a.name.localeCompare(b.name))
-              break
-          }
-
-          if (loading) {
-            return (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[var(--accent-social)] border-t-transparent" />
-              </div>
-            )
-          }
-
-          if (sorted.length === 0) {
-            return (
-              <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-                <Users size={48} style={{ color: 'var(--text-hint)' }} />
-                <p className="mt-4 text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
-                  {isFollowingOnlyMode ? '팔로잉 유저의 버블이 없어요' : isPublicOnlyMode ? '공개 버블이 없어요' : isMineOnlyMode ? '첫 나만의 버블을 만들어 보세요' : '버블이 없어요'}
-                </p>
-                <p className="mt-1 text-center text-[13px]" style={{ color: 'var(--text-hint)' }}>
-                  {isFollowingOnlyMode ? '다른 유저를 팔로우해 보세요' : isMineOnlyMode ? '+버튼을 눌러 시작하세요' : '조건을 변경해 보세요'}
-                </p>
-              </div>
-            )
-          }
-
-          // 공통 데이터 준비
-          const myBubbleIds = new Set(myBubbles.map((b) => b.id))
-          const getBubbleRole = (b: typeof myBubbles[number]): 'owner' | 'member' | null => {
-            if (!myBubbleIds.has(b.id)) return null
-            return b.createdBy === user?.id ? 'owner' : 'member'
-          }
-          // 각 축(지역/장르/산지/품종)에서 최고 레벨 1개씩, 레벨 높은 순
-          const getExpertiseTopPerAxis = (id: string) => {
-            const exp = expertiseMap.get(id)
-            if (!exp || exp.length === 0) return undefined
-            const byAxis = new Map<string, { axisValue: string; avgLevel: number }>()
-            for (const e of exp) {
-              const prev = byAxis.get(e.axisType)
-              if (!prev || e.avgLevel > prev.avgLevel) {
-                byAxis.set(e.axisType, { axisValue: e.axisValue, avgLevel: e.avgLevel })
-              }
-            }
-            return [...byAxis.values()].sort((a, b) => b.avgLevel - a.avgLevel)
-          }
-
-          // 리스트 뷰
-          if (viewMode === 'list') {
-            return (
-              <div className="content-detail px-4 pb-4 md:px-8">
-                {sorted.map((b, i) => (
-                  <CompactListBubble
-                    key={b.id}
-                    bubble={b}
-                    rank={i + 1}
-                    role={getBubbleRole(b)}
-                    expertise={getExpertiseTopPerAxis(b.id)}
-                    similarity={bubbleSimilarityMap.get(b.id) ?? null}
-                    onClick={() => router.push(`/bubbles/${b.id}`)}
-                    onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
-                    isPending={pendingBubbleIds.has(b.id)}
-                    onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); refreshBubbles(); showToast('가입 신청을 취소했습니다') } } : undefined}
-                  />
-                ))}
-              </div>
-            )
-          }
-
-          // 카드 뷰 (기본)
-          return (
-            <div className="flex flex-col gap-3 px-4 pb-4 pt-2 md:grid md:grid-cols-2 md:gap-4 md:px-8">
-              {sorted.map((b) => (
-                <BubbleCard
-                  key={b.id}
-                  bubble={b}
-                  role={getBubbleRole(b)}
-                  expertise={getExpertiseTopPerAxis(b.id)}
-                  similarity={bubbleSimilarityMap.get(b.id) ?? null}
-                  onClick={() => router.push(`/bubbles/${b.id}`)}
-                  onJoin={!myBubbleIds.has(b.id) && !pendingBubbleIds.has(b.id) ? () => router.push(`/bubbles/${b.id}?join=true`) : undefined}
-                  isPending={pendingBubbleIds.has(b.id)}
-                  onCancelJoin={pendingBubbleIds.has(b.id) ? async () => { if (user) { await cancelJoin(b.id, user.id); refreshBubbles(); showToast('가입 신청을 취소했습니다') } } : undefined}
-                />
-              ))}
-            </div>
-          )
-        })()}
+        {isBubbleTab && (
+          <BubbleTabContent
+            userId={user?.id}
+            myBubbles={myBubbles}
+            publicBubbles={publicBubbles}
+            bubblesLoading={bubblesLoading}
+            publicBubblesLoading={publicBubblesLoading}
+            pendingBubbleIds={pendingBubbleIds}
+            expertiseMap={expertiseMap}
+            bubbleSimilarityMap={bubbleSimilarityMap}
+            bubbleSort={bubbleSort}
+            bubbleConditionChips={bubbleConditionChips}
+            searchQuery={searchQuery}
+            viewMode={viewMode}
+            isMineOnlyMode={isMineOnlyMode}
+            isFollowingOnlyMode={isFollowingOnlyMode}
+            isPublicOnlyMode={isPublicOnlyMode}
+            refreshBubbles={refreshBubbles}
+          />
+        )}
 
         {/* 팔로잉 피드 */}
         {!isBubbleTab && isFollowingMode && (
@@ -1337,89 +1008,17 @@ export function HomeContainer() {
           />
         )}
 
-        {/* 통계 패널 — 아이콘으로 토글 (버블/지도/팔로잉 모드에서는 숨김) */}
+        {/* 통계 패널 (추출된 컴포넌트) */}
         {!isBubbleTab && isStatsOpen && !isFollowingMode && canShowStats && (
-          <div className="px-4 pt-2 md:px-8">
-            <div className="flex flex-col gap-5">
-              {activeTab === 'restaurant' && (
-                <>
-                  <WorldMapChart
-                    cities={restaurantStats.cityStats}
-                    totalCountries={totalCountries}
-                    totalPlaces={restaurantStats.cityStats.length}
-                  />
-
-                  {restaurantStats.genreStats.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>장르</p>
-                      <GenreChart genres={restaurantStats.genreStats} />
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
-                    <ScoreDistribution
-                      buckets={restaurantStats.scoreBuckets}
-                      accentColor="var(--accent-food)"
-                    />
-                  </div>
-
-                  <MonthlyChart
-                    months={restaurantStats.monthlyStats}
-                    totalAmount={restaurantStats.totalSpending}
-                    accentColor="var(--accent-food)"
-                    unit="곳"
-                  />
-
-                  {restaurantStats.sceneStats.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>상황</p>
-                      <SceneChart scenes={restaurantStats.sceneStats} />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {activeTab === 'wine' && (
-                <>
-                  <PdLockOverlay minRecords={5} currentCount={wineStats.totalRecordCount}>
-                    <WineRegionMap data={wineStats.countryStats} />
-                  </PdLockOverlay>
-
-                  <PdLockOverlay minRecords={10} currentCount={wineStats.totalRecordCount}>
-                    <div className="flex flex-col gap-5">
-                      <div>
-                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>품종</p>
-                        <VarietalChart varieties={wineStats.varietalStats} />
-                      </div>
-                      <div>
-                        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--text)' }}>점수 분포</p>
-                        <ScoreDistribution
-                          buckets={wineStats.scoreBuckets}
-                          accentColor="var(--accent-wine)"
-                        />
-                      </div>
-                    </div>
-                  </PdLockOverlay>
-
-                  <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount}>
-                    <div className="flex flex-col gap-5">
-                      <MonthlyChart
-                        months={wineStats.monthlyStats}
-                        totalAmount={wineStats.totalSpending}
-                        accentColor="var(--accent-wine)"
-                        unit="병"
-                      />
-                      <WineTypeChart types={wineStats.wineTypeStats} />
-                    </div>
-                  </PdLockOverlay>
-                </>
-              )}
-            </div>
-          </div>
+          <HomeStatsPanel
+            activeTab={activeTab as 'restaurant' | 'wine'}
+            restaurantStats={restaurantStats}
+            wineStats={wineStats}
+            totalCountries={totalCountries}
+          />
         )}
 
-        {/* 뷰 모드별 콘텐츠 — 버블/팔로잉 모드에서는 숨김 */}
+        {/* 뷰 모드별 콘텐츠 */}
         {!isBubbleTab && !isFollowingMode && renderContent()}
       </div>
 
@@ -1452,8 +1051,8 @@ export function HomeContainer() {
             : '취소',
           onClick: bubbleSelectIds.size > 0
             ? (isBubbleRemoveMode
-              ? () => setShowBubblePicker(true)
-              : () => setShowBubblePicker(true))
+              ? () => openBubblePicker()
+              : () => openBubblePicker())
             : stopBubbleSelect,
         } : undefined}
       />
@@ -1461,11 +1060,10 @@ export function HomeContainer() {
       {/* 버블 선택 시트 — 추가/제거 공용 */}
       <BubblePickerSheet
         isOpen={showBubblePicker}
-        onClose={() => { setShowBubblePicker(false); stopBubbleSelect() }}
+        onClose={closeBubblePicker}
         title={isBubbleRemoveMode ? '어디에서 제거할까요?' : undefined}
         bubbles={(() => {
           if (isBubbleRemoveMode) {
-            // 제거 모드: 선택한 아이템이 속한 버블만 표시
             const selectedItems = displayTargets.filter((t) => bubbleSelectIds.has(t.targetId))
             const bubbleIdSet = new Set<string>()
             for (const t of selectedItems) {
@@ -1473,7 +1071,6 @@ export function HomeContainer() {
             }
             return myBubbles.filter((b) => bubbleIdSet.has(b.id))
           }
-          // 추가 모드: 현재 필터 버블 제외
           return socialFilter.bubbleId ? myBubbles.filter((b) => b.id !== socialFilter.bubbleId) : myBubbles
         })()}
         onSelect={async (bubbleId) => {
@@ -1481,7 +1078,6 @@ export function HomeContainer() {
           const bubbleName = myBubbles.find((b) => b.id === bubbleId)?.name ?? '버블'
 
           if (isBubbleRemoveMode) {
-            // 제거: 해당 버블에 속한 아이템만 제거
             const removeTargets = selected
               .filter((t) => t.memberBubbles.some((b) => b.bubbleId === bubbleId))
               .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))
@@ -1489,7 +1085,6 @@ export function HomeContainer() {
             await batchRemoveFromBubble(bubbleId, removeTargets)
             showToast(`${removeTargets.length}개 항목을 "${bubbleName}"에서 제거했습니다`, 3000)
           } else {
-            // 추가: 중복 제외
             const newTargets = selected
               .filter((t) => !t.memberBubbles.some((b) => b.bubbleId === bubbleId))
               .map((t) => ({ targetId: t.targetId, targetType: t.targetType }))

@@ -37,7 +37,7 @@ interface WineTypeStats {
   count: number
 }
 
-interface WineStatsResult {
+export interface WineStatsResult {
   countryStats: CountryStats[]
   varietalStats: VarietalStats[]
   scoreBuckets: ScoreBucket[]

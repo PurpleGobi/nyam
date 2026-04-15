@@ -36,7 +36,7 @@ interface SceneStats {
   color: string
 }
 
-interface RestaurantStatsResult {
+export interface RestaurantStatsResult {
   cityStats: CityStats[]
   genreStats: GenreStats[]
   scoreBuckets: ScoreBucket[]
