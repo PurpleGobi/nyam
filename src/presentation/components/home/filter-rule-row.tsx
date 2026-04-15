@@ -223,7 +223,7 @@ export function FilterRuleRow({
           {/* 값 */}
           {isCascading ? (
             <CascadingSelect
-              options={selectedAttr.cascadingOptions!}
+              options={selectedAttr.cascadingOptions ?? []}
               labels={selectedAttr.cascadingLabels}
               value={String(rule.value ?? '')}
               onChange={(val) => onUpdate(index, { ...rule, value: val })}

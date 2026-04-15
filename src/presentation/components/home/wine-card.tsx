@@ -90,9 +90,9 @@ export function WineCard({ wine, myRecord, bubbleMembers, visitCount, latestDate
         <div className="mb-2.5 flex items-center gap-2.5">
           {hasQuadrant && (
             <MiniQuadrant
-              axisX={myRecord!.axisX!}
-              axisY={myRecord!.axisY!}
-              satisfaction={myRecord!.satisfaction!}
+              axisX={myRecord?.axisX ?? 0}
+              axisY={myRecord?.axisY ?? 0}
+              satisfaction={myRecord?.satisfaction ?? 0}
               accentColor="var(--accent-wine)"
             />
           )}

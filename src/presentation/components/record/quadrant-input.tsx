@@ -365,7 +365,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                   onRefLongPress
                     ? () => onRefLongPress(i)
                     : onRefNavigate && point.targetId && point.targetType
-                      ? () => onRefNavigate(point.targetId!, point.targetType!)
+                      ? () => onRefNavigate(point.targetId ?? '', point.targetType ?? 'restaurant')
                       : undefined
                 }
               />

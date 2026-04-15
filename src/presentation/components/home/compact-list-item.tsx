@@ -142,7 +142,7 @@ export function CompactListItem({
         {hasQuadrant && (
           isBubbleMode
             ? <BubbleQuadrant dots={bubbleDots} size={48} />
-            : <MiniQuadrant axisX={axisX!} axisY={axisY!} satisfaction={score!} accentColor={accentColor} size={48} />
+            : <MiniQuadrant axisX={axisX ?? 0} axisY={axisY ?? 0} satisfaction={score ?? 0} accentColor={accentColor} size={48} />
         )}
         <span className={`compact-score ${score != null ? (accentType === 'wine' ? 'wine' : 'food') : 'unrated'}`}>
           {score != null ? score : '—'}

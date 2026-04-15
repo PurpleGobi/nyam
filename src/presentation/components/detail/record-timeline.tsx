@@ -212,7 +212,7 @@ export function RecordTimeline({
                     className="mt-1 flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation()
-                      onLinkedWineTap?.(record.linkedWineId!)
+                      onLinkedWineTap?.(record.linkedWineId ?? '')
                     }}
                   >
                     <Wine size={11} style={{ color: 'var(--accent-wine)' }} />
@@ -229,7 +229,7 @@ export function RecordTimeline({
                     className="mt-0.5 flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation()
-                      onLinkedRestaurantTap?.(record.linkedRestaurantId!)
+                      onLinkedRestaurantTap?.(record.linkedRestaurantId ?? '')
                     }}
                   >
                     <MapPin size={12} style={{ color: 'var(--text-sub)' }} />

@@ -34,7 +34,7 @@ interface FilterChipGroupProps {
 export const FilterChipGroup = forwardRef<HTMLDivElement, FilterChipGroupProps>(
   function FilterChipGroup({ children, className = '', style }, ref) {
     const innerRef = useRef<HTMLDivElement>(null)
-    useImperativeHandle(ref, () => innerRef.current!)
+    useImperativeHandle(ref, () => innerRef.current ?? document.createElement('div'))
 
     const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false })
 

@@ -138,11 +138,11 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       .map((s) => {
         const isMe = s.sharedBy === user?.id
         return {
-          x: s.axisX!,
-          y: s.axisY!,
-          satisfaction: isMe ? s.satisfaction! : 0,  // 0 → gaugeColor가 회색 계열
+          x: s.axisX ?? 0,
+          y: s.axisY ?? 0,
+          satisfaction: isMe ? (s.satisfaction ?? 0) : 0,  // 0 → gaugeColor가 회색 계열
           name: s.authorName ?? '',
-          score: s.satisfaction!,
+          score: s.satisfaction ?? 0,
         }
       })
   }, [bubbleMemberShares, user?.id])
@@ -156,9 +156,9 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   const avgDot = useMemo(
     () => allRecordsWithAxis.length > 0
       ? {
-          axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisX!, 0) / allRecordsWithAxis.length),
-          axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.axisY!, 0) / allRecordsWithAxis.length),
-          satisfaction: Math.round(allRecordsWithAxis.reduce((s, r) => s + r.satisfaction!, 0) / allRecordsWithAxis.length),
+          axisX: Math.round(allRecordsWithAxis.reduce((s, r) => s + (r.axisX ?? 0), 0) / allRecordsWithAxis.length),
+          axisY: Math.round(allRecordsWithAxis.reduce((s, r) => s + (r.axisY ?? 0), 0) / allRecordsWithAxis.length),
+          satisfaction: Math.round(allRecordsWithAxis.reduce((s, r) => s + (r.satisfaction ?? 0), 0) / allRecordsWithAxis.length),
         }
       : null,
     [allRecordsWithAxis],
@@ -171,7 +171,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   )
   const focusedRecord = sortedRecords[focusedRecordIdx] ?? sortedRecords[0] ?? null
   const focusedDot = focusedRecord
-    ? { axisX: focusedRecord.axisX!, axisY: focusedRecord.axisY!, satisfaction: focusedRecord.satisfaction! }
+    ? { axisX: focusedRecord.axisX ?? 0, axisY: focusedRecord.axisY ?? 0, satisfaction: focusedRecord.satisfaction ?? 0 }
     : null
   const otherRecordRefs = useMemo(() =>
     sortedRecords
