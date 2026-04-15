@@ -50,6 +50,8 @@ interface MapViewProps {
   bubbleSelectIds?: Set<string>
   /** 버블 추가 선택 토글 */
   onBubbleSelectToggle?: (id: string) => void
+  /** true이면 리스트 아이템 첫 클릭에 바로 navigate (검색 모드용) */
+  navigateOnFirstClick?: boolean
 }
 
 const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
@@ -206,6 +208,7 @@ export function MapView({
   isBubbleSelecting,
   bubbleSelectIds,
   onBubbleSelectToggle,
+  navigateOnFirstClick = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -254,6 +257,16 @@ export function MapView({
       onItemSelectRef.current(item)
     }
   }, [setSelectedId])
+
+  /** 리스트 전용: navigateOnFirstClick이면 바로 navigate, 아니면 기존 select 로직 */
+  const handleListSelect = useCallback((id: string) => {
+    if (navigateOnFirstClick) {
+      const item = itemsMapRef.current.get(id)
+      if (item) onItemNavigateRef.current(item)
+    } else {
+      handleSelect(id)
+    }
+  }, [navigateOnFirstClick, handleSelect])
 
   // SDK 로드
   useEffect(() => {
@@ -468,7 +481,7 @@ export function MapView({
       <MapItemList
         items={items}
         selectedId={selectedId}
-        onSelect={handleSelect}
+        onSelect={handleListSelect}
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
@@ -570,7 +583,7 @@ export function MapView({
     <MapItemList
       items={items}
       selectedId={selectedId}
-      onSelect={handleSelect}
+      onSelect={handleListSelect}
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={onPageChange}
