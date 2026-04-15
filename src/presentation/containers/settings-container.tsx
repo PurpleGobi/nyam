@@ -23,6 +23,8 @@ import { BubblePrivacySheet } from '@/presentation/components/settings/bubble-pr
 import { DeleteAccountSheet } from '@/presentation/components/settings/delete-account-sheet'
 import { EditFieldSheet } from '@/presentation/components/settings/edit-field-sheet'
 import { NaverImportSheet } from '@/presentation/components/settings/naver-import-sheet'
+import { TermsSheet } from '@/presentation/components/settings/terms-sheet'
+import { PrivacySheet } from '@/presentation/components/settings/privacy-sheet'
 import { NyamSelect } from '@/presentation/components/ui/nyam-select'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
@@ -141,6 +143,8 @@ export function SettingsContainer() {
   const [activeBubbleSheet, setActiveBubbleSheet] = useState<BubblePrivacyOverride | null>(null)
   const [editField, setEditField] = useState<'nickname' | 'handle' | 'bio' | null>(null)
   const [dndSheetOpen, setDndSheetOpen] = useState(false)
+  const [termsSheetOpen, setTermsSheetOpen] = useState(false)
+  const [privacySheetOpen, setPrivacySheetOpen] = useState(false)
   const [cacheSize, setCacheSize] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const autoFillRef = useRef<HTMLInputElement>(null)
@@ -526,8 +530,8 @@ export function SettingsContainer() {
         {/* ── 정보 ── */}
         <SettingsSection title="정보">
           <SettingsCard>
-            <SettingsItem icon={<ScrollText size={18} />} label="이용약관" showChevron onPress={() => router.push('/terms')} />
-            <SettingsItem icon={<Shield size={18} />} label="개인정보처리방침" showChevron onPress={() => router.push('/privacy')} />
+            <SettingsItem icon={<ScrollText size={18} />} label="이용약관" showChevron onPress={() => setTermsSheetOpen(true)} />
+            <SettingsItem icon={<Shield size={18} />} label="개인정보처리방침" showChevron onPress={() => setPrivacySheetOpen(true)} />
             <SettingsItem icon={<Info size={18} />} label="버전" value="1.0.0" />
           </SettingsCard>
         </SettingsSection>
@@ -547,6 +551,10 @@ export function SettingsContainer() {
           </SettingsCard>
         </SettingsSection>
       </div>
+
+      {/* Terms & Privacy Sheets */}
+      <TermsSheet isOpen={termsSheetOpen} onClose={() => setTermsSheetOpen(false)} />
+      <PrivacySheet isOpen={privacySheetOpen} onClose={() => setPrivacySheetOpen(false)} />
 
       {/* Naver Import Sheet */}
       <NaverImportSheet
