@@ -94,7 +94,6 @@ export interface BubbleMember {
 
 export interface BubbleShare {
   id: string
-  recordId: string
   bubbleId: string
   sharedBy: string
   sharedAt: string
@@ -110,7 +109,6 @@ export interface BubbleItem {
   targetId: string
   targetType: 'restaurant' | 'wine'
   addedBy: string
-  recordId: string | null
   addedAt: string
 }
 

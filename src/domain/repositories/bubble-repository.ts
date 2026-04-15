@@ -136,7 +136,7 @@ export interface BubbleRepository {
     limit?: number
     offset?: number
   }): Promise<{ data: BubbleFeedItem[]; total: number }>
-  addShare(recordId: string, bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  addShare(bubbleId: string, sharedBy: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
   removeShare(shareId: string): Promise<void>
 
   getRankings(bubbleId: string, options: {
@@ -157,9 +157,9 @@ export interface BubbleRepository {
   getFeedFromBubbles(userId: string, targetType?: 'restaurant' | 'wine'): Promise<BubbleFeedItem[]>
   getRecentRecordsByUsers(userIds: string[], targetType?: 'restaurant' | 'wine'): Promise<MutualRecordItem[]>
   getUserBubbles(userId: string): Promise<UserBubbleMembership[]>
-  getRecordShares(recordId: string): Promise<BubbleShare[]>
-  shareRecord(recordId: string, bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
-  unshareRecord(recordId: string, bubbleId: string): Promise<void>
+  getTargetShares(targetId: string, targetType: 'restaurant' | 'wine', userId: string): Promise<BubbleShare[]>
+  shareRecord(bubbleId: string, userId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<BubbleShare>
+  unshareRecord(targetId: string, targetType: 'restaurant' | 'wine', bubbleId: string): Promise<void>
 
   // 전문성 집계
   getExpertise(bubbleId: string): Promise<BubbleExpertise[]>
@@ -175,7 +175,7 @@ export interface BubbleRepository {
   isItemInBubble(bubbleId: string, targetId: string, targetType: 'restaurant' | 'wine'): Promise<boolean>
 
   // ─── target 기반 자동 큐레이션 동기화 (bubble_items) ───
-  batchUpsertAutoItems(targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine'; recordId?: string }>, bubbleId: string, userId: string): Promise<void>
+  batchUpsertAutoItems(targets: Array<{ targetId: string; targetType: 'restaurant' | 'wine' }>, bubbleId: string, userId: string): Promise<void>
   batchDeleteAutoItems(targetIds: string[], targetType: 'restaurant' | 'wine', bubbleId: string): Promise<void>
   getAutoItemTargetIds(bubbleId: string, targetType?: 'restaurant' | 'wine'): Promise<string[]>
 }

@@ -37,7 +37,7 @@ export function useBubbleAutoSync(userId: string | null) {
 
       if (shouldShare.length > 0) {
         await bubbleRepo.batchUpsertAutoItems(
-          [{ targetId: record.targetId, targetType: record.targetType, recordId: record.id }],
+          [{ targetId: record.targetId, targetType: record.targetType }],
           membership.bubbleId, userId,
         )
         result.sharedTo.push(info)
@@ -75,7 +75,7 @@ export function useBubbleAutoSync(userId: string | null) {
     const toAddSet = new Set(toAdd)
     const toAddTargets = allRecords
       .filter((r) => toAddSet.has(r.targetId))
-      .map((r) => ({ targetId: r.targetId, targetType: r.targetType, recordId: r.id }))
+      .map((r) => ({ targetId: r.targetId, targetType: r.targetType }))
 
     await Promise.all([
       toAddTargets.length > 0 ? bubbleRepo.batchUpsertAutoItems(toAddTargets, bubbleId, userId) : Promise.resolve(),

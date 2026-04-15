@@ -28,7 +28,7 @@ export function useDeleteRecord() {
         // 삭제 전 정보 수집 (CASCADE 삭제 대비)
         const [histories, shares] = await Promise.all([
           xpRepo.getHistoriesByRecord(recordId),
-          bubbleRepo.getRecordShares(recordId).catch(() => []),
+          bubbleRepo.getTargetShares(targetId, _targetType, userId).catch(() => []),
         ])
 
         await recordRepo.delete(recordId)
