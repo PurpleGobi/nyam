@@ -311,7 +311,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
               <h1 style={{ fontSize: '21px', fontWeight: 800, color: 'var(--text)' }}>
                 {bubble.name}
               </h1>
-              {isOwner && (
+              {isMember && (
                 <button
                   type="button"
                   onClick={() => router.push(`/bubbles/${bubbleId}/settings`)}
