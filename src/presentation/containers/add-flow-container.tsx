@@ -17,6 +17,7 @@ import { extractExifFromFile } from '@/shared/utils/exif-parser'
 import { AppHeader } from '@/presentation/components/layout/app-header'
 import { FabBack } from '@/presentation/components/layout/fab-back'
 import { BubblePickerSheet } from '@/presentation/components/bubble/bubble-picker-sheet'
+import { useToast } from '@/presentation/components/ui/toast'
 import { CameraCapture } from '@/presentation/components/camera/camera-capture'
 import { SuccessScreen } from '@/presentation/components/add-flow/success-screen'
 
@@ -24,6 +25,7 @@ function AddFlowInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const { showToast } = useToast()
 
   const targetType = (searchParams.get('type') ?? 'restaurant') as RecordTargetType
   const entryPath = searchParams.get('from') ?? 'camera'
@@ -275,20 +277,6 @@ function AddFlowInner() {
           targetType={targetType}
           onCapture={handleCapture}
           previewUrl={tempPhotoUrl}
-          onAlbumSelect={() => {
-            const input = document.createElement('input')
-            input.type = 'file'
-            input.accept = 'image/*'
-            input.style.display = 'none'
-            document.body.appendChild(input)
-            input.onchange = (e) => {
-              const file = (e.target as HTMLInputElement).files?.[0]
-              document.body.removeChild(input)
-              if (!file) return
-              handleCapture(file)
-            }
-            input.click()
-          }}
           onSearchFallback={handleSearchFallback}
           onShelfMode={targetType === 'wine' ? () => {
             const input = document.createElement('input')
@@ -393,7 +381,11 @@ function AddFlowInner() {
           icon: b.bubbleIcon,
           iconBgColor: b.bubbleIconBgColor,
         }))}
-        onSelect={(bubbleId) => toggleBubbleItem(bubbleId, true)}
+        onSelect={async (bubbleId) => {
+          const bubble = bubblesWithStatus.find((b) => b.bubbleId === bubbleId)
+          await toggleBubbleItem(bubbleId, true)
+          showToast(`"${bubble?.bubbleName ?? '버블'}"에 추가했습니다`)
+        }}
         isLoading={isBubblesLoading}
       />
     </div>

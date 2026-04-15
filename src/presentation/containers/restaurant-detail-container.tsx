@@ -656,7 +656,11 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           icon: b.bubbleIcon,
           iconBgColor: b.bubbleIconBgColor,
         }))}
-        onSelect={(bubbleId) => toggleBubbleItem(bubbleId, true)}
+        onSelect={async (bubbleId) => {
+          const bubble = bubblesWithStatus.find((b) => b.bubbleId === bubbleId)
+          await toggleBubbleItem(bubbleId, true)
+          showToast(`"${bubble?.bubbleName ?? '버블'}"에 추가했습니다`)
+        }}
         isLoading={isBubblesLoading}
       />
 
