@@ -65,6 +65,9 @@ export function HomeTabs({
     if (!isSearchOpen) return
     const handleClickOutside = (e: MouseEvent) => {
       if (searchBarRef.current && !searchBarRef.current.contains(e.target as Node)) {
+        // 지도뷰 리스트/맵 영역 클릭은 검색을 닫지 않음
+        const target = e.target as HTMLElement
+        if (target.closest('[data-map-view]')) return
         onSearchToggle()
       }
     }

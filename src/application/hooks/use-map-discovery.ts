@@ -150,6 +150,9 @@ export function useMapDiscovery(params: {
   const areaFilterRef = useRef(areaFilter)
   areaFilterRef.current = areaFilter
 
+  // --- 지도 중심 좌표 (거리순 소팅 + distanceKm 계산 기준) ---
+  const mapCenterRef = useRef<{ lat: number; lng: number } | null>(null)
+
   // --- bounds API 호출 (모든 필터를 DB로 전달) ---
   const fetchBounds = useCallback(async (
     bounds: { north: number; south: number; east: number; west: number },
@@ -162,6 +165,8 @@ export function useMapDiscovery(params: {
     setIsLoading(true)
     try {
       const offset = (page - 1) * PAGE_SIZE
+      const centerLat = (bounds.north + bounds.south) / 2
+      const centerLng = (bounds.east + bounds.west) / 2
       const sp = new URLSearchParams({
         north: String(bounds.north),
         south: String(bounds.south),
@@ -177,10 +182,8 @@ export function useMapDiscovery(params: {
       if (genreFilterRef.current) sp.set('genre', genreFilterRef.current)
       if (districtFilterRef.current) sp.set('district', districtFilterRef.current)
       if (areaFilterRef.current) sp.set('area', areaFilterRef.current)
-      if (userLat != null && userLng != null) {
-        sp.set('userLat', String(userLat))
-        sp.set('userLng', String(userLng))
-      }
+      sp.set('userLat', String(centerLat))
+      sp.set('userLng', String(centerLng))
 
       const res = await fetch(`/api/restaurants/bounds?${sp}`)
       if (!res.ok) {
@@ -189,6 +192,8 @@ export function useMapDiscovery(params: {
       }
       const data = (await res.json()) as { restaurants: BoundsRestaurant[]; hasMore: boolean }
       setHasMore(data.hasMore)
+      const refLat = mapCenterRef.current?.lat ?? centerLat
+      const refLng = mapCenterRef.current?.lng ?? centerLng
       const mapped: MapDiscoveryItem[] = data.restaurants.map((r) => ({
         id: r.id,
         kakaoId: null,
@@ -197,10 +202,7 @@ export function useMapDiscovery(params: {
         area: r.district ?? r.area?.[0] ?? null,
         lat: r.lat,
         lng: r.lng,
-        distanceKm:
-          userLat != null && userLng != null
-            ? Math.round(haversineDistance(userLat, userLng, r.lat, r.lng) * 10) / 10
-            : null,
+        distanceKm: Math.round(haversineDistance(refLat, refLng, r.lat, r.lng) * 10) / 10,
         inNyamDb: true,
         restaurantId: r.id,
         myScore: r.myScore,
@@ -238,7 +240,7 @@ export function useMapDiscovery(params: {
     } finally {
       setIsLoading(false)
     }
-  }, [userLat, userLng])
+  }, [])
 
   // --- 페이지네이션 ---
   const totalPages = hasMore ? currentPage + 1 : currentPage
@@ -258,11 +260,12 @@ export function useMapDiscovery(params: {
 
   // --- 지도 idle 핸들러 ---
   const onMapIdle = useCallback((
-    _center: { lat: number; lng: number },
+    center: { lat: number; lng: number },
     _zoom: number,
     bounds: { north: number; south: number; east: number; west: number } | null,
   ) => {
     if (!bounds) return
+    mapCenterRef.current = center
     boundsRef.current = bounds
     setCurrentPage(1)
 
@@ -276,7 +279,7 @@ export function useMapDiscovery(params: {
     setCurrentPage(1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => fetchCurrent(1), 150)
-  }, [searchQuery, sourceFilter, sourceScoreFilter, prestigeFilter, prestigeGradeFilter, genreFilter, districtFilter, areaFilter, fetchCurrent])
+  }, [searchQuery, sortOption, sourceFilter, sourceScoreFilter, prestigeFilter, prestigeGradeFilter, genreFilter, districtFilter, areaFilter, fetchCurrent])
 
   // --- 페이지 변경 ---
   const setPage = useCallback((page: number) => {
