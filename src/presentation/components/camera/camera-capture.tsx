@@ -38,6 +38,13 @@ export function CameraCapture({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
+
+      // iOS Chrome: 촬영 원본을 앨범에 저장 (navigator.share → "이미지 저장")
+      const saveFile = new File([file], `nyam_${Date.now()}.jpg`, { type: file.type })
+      if (navigator.share && navigator.canShare?.({ files: [saveFile] })) {
+        navigator.share({ files: [saveFile] }).catch(() => { /* 닫기 무시 */ })
+      }
+
       onCapture(file)
       e.target.value = ''
     },
