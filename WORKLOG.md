@@ -6,11 +6,23 @@
 
 ---
 
+### 2026-04-15 #45 — 기록 삭제 시 auto bubble_items 자동 정리 트리거
+- **영역**: supabase/migrations/073(BEFORE DELETE 트리거 + 고아 auto 항목 일괄 정리)
+- **맥락**: bubble_items.record_id FK가 ON DELETE SET NULL이라 기록 삭제 후 auto 항목이 고아로 남아 버블 리스트에 계속 표시되던 버그. BEFORE DELETE 트리거로 source='auto' 행 자동 삭제, manual은 기존 SET NULL 유지. 기존 고아 auto 항목도 일괄 정리.
+- **미완료**: 없음
+- **다음**: 없음
+
+### 2026-04-15 #44 — 버블 설정 페이지 멤버 진입점 개방
+- **영역**: presentation/containers/bubble-detail-container.tsx (설정 아이콘 isOwner→isMember)
+- **맥락**: 설정 페이지 내부는 이미 role 기반 섹션 분리 완료(멤버: 공유방식+공개범위만 노출). 진입점만 오너 전용이어서 일반 멤버가 자신의 자동공유/공개범위 설정 불가했음. 1줄 수정으로 해결.
+- **미완료**: 없음
+- **다음**: 없음
+
 ### 2026-04-15 #43 — 버블 카드/리스트뷰 최신 데이터 싱크 수정
 - **영역**: application/hooks/(use-bubble-list, use-bubble-discover, use-bubble-expertise, use-bubble-similarity에 refreshKey 추가), presentation/containers/home-container(bubbleRefreshKey 상태+visibilitychange 자동 갱신, 아이템 추가/제거·가입취소 후 refreshBubbles 호출)
 - **맥락**: 버블 카드/리스트뷰의 기록수·멤버수·전문성·적합도가 일회성 로드 후 갱신되지 않던 문제. DB 트리거는 즉시 갱신하지만 UI 재조회 메커니즘 부재. 4개 훅에 refreshKey 파라미터 추가, home-container에서 액션 후 + visibilitychange 시 자동 갱신.
 - **미완료**: 없음
-- **다음**: bubble-detail-container의 isOwner→isMember 변경 커밋 (별도)
+- **다음**: 없음
 
 ### 2026-04-15 #42 — CF Shrinkage mean centering + 적합도 UI
 - **영역**: supabase/functions/predict-score(shrinkage 보정 평균 도입, λ=10, 전체평균 가중 보간, profiles→users 수정), docs/CF_SYSTEM.md(§3.1·§3.3 수식 업데이트), domain/similarity-repository(BubbleSimilarityResult+getBubbleSimilarities), infrastructure/supabase-similarity-repository(버블 적합도 일괄 조회), application/use-bubble-similarity(restaurant+wine 병합 훅), presentation/(mini-profile-popup 유저 적합도, bubble-card·compact-list-bubble·bubble-detail-container 버블 적합도), supabase migrations(user_score_means+user_similarities 테이블 생성, records RLS 인증유저 전체 읽기, redundant SELECT 정책 제거)
@@ -63,12 +75,6 @@
 ### 2026-04-13 #34 — 홈뷰 버블 필터 미작동 수정 + 로고 클릭 초기화
 - **영역**: presentation/(home-container: urlBubbleId→activeBubbleId state 전환, handleLogoReset 추가, components/layout/app-header: onLogoClick prop)
 - **맥락**: 버블 상세→리스트 보기 진입 시 필터 변경이 작동하지 않던 버그 수정. urlBubbleId가 상수여서 viewTypes가 항상 ['bubble']로 고정되고 칩 변경 시 초기화 effect가 재실행되며 덮어쓰기됨. state로 전환하여 필터 변경 시 bubble 모드 해제. 로고 클릭 시 필터/소팅/검색/소셜필터 전체 디폴트 복원.
-- **미완료**: 없음
-- **다음**: 브라우저 QA
-
-### 2026-04-13 #33 — 버블에서 제거 기능 + 버블 상세/설정 UI 리디자인
-- **영역**: application/hooks/(use-bubble-items: batchRemoveFromBubble 추가, use-home-targets: refreshKey 파라미터, use-home-state: initialSort), presentation/(home-container: FAB 버블 제거 선택 모드+BubblePickerSheet 자기 버블 제외, bubble-create-form: 수동/자동 공유 라디오 UI, bubble-settings: 공유 방식 라디오+토글 정리+stats 제거, bubble-detail-container: 정보/통계 섹션 리디자인+설정 버튼 이동, bubble-settings-container: 저장 후 상세 복귀)
-- **맥락**: (1) 홈뷰에서 버블 필터 활성 시 FAB에 "버블에서 제거" 메뉴 추가 — 선택 모드로 아이템 선택 후 BubblePickerSheet 없이 바로 제거+리스트 갱신. (2) BubblePickerSheet에서 현재 보고 있는 버블 제외(자기 버블 중복 추가 방지). (3) 버블 생성/설정: 공유 규칙을 수동/자동 라디오로 변경(디폴트 수동). (4) 버블 상세: 가입조건·공개설정 태그, 통계 카드를 상세로 이동. (5) 설정: stats prop 제거, 토글 레이아웃 정리, 저장 후 상세 페이지 복귀.
 - **미완료**: 없음
 - **다음**: 브라우저 QA
 
