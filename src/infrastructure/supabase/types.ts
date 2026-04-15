@@ -139,6 +139,41 @@ export type Database = {
           },
         ]
       }
+      bubble_photos: {
+        Row: {
+          bubble_id: string
+          created_at: string
+          id: string
+          order_index: number
+          uploaded_by: string
+          url: string
+        }
+        Insert: {
+          bubble_id: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          uploaded_by: string
+          url: string
+        }
+        Update: {
+          bubble_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          uploaded_by?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bubble_photos_bubble_id_fkey"
+            columns: ["bubble_id"]
+            isOneToOne: false
+            referencedRelation: "bubbles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bubble_ranking_snapshots: {
         Row: {
           avg_satisfaction: number | null
@@ -903,6 +938,86 @@ export type Database = {
         }
         Relationships: []
       }
+      user_score_means: {
+        Row: {
+          category: string
+          mean_x: number
+          mean_y: number
+          record_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          mean_x?: number
+          mean_y?: number
+          record_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          mean_x?: number
+          mean_y?: number
+          record_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_score_means_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_similarities: {
+        Row: {
+          category: string
+          confidence: number
+          n_overlap: number
+          similarity: number
+          updated_at: string
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          n_overlap?: number
+          similarity?: number
+          updated_at?: string
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          n_overlap?: number
+          similarity?: number
+          updated_at?: string
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_similarities_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_similarities_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           active_verified: number
@@ -1642,6 +1757,14 @@ export type Database = {
           wine_type: string
         }[]
       }
+      follow_counts: {
+        Args: { p_user_id: string }
+        Returns: {
+          followers: number
+          following: number
+          mutual: number
+        }[]
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -1820,6 +1943,8 @@ export type Database = {
           p_sort?: string
           p_south: number
           p_user_id: string
+          p_user_lat?: number
+          p_user_lng?: number
           p_west: number
         }
         Returns: {
@@ -1832,6 +1957,7 @@ export type Database = {
           kakao_map_url: string
           lat: number
           lng: number
+          my_score: number
           name: string
           phone: string
           prestige: Json
@@ -1850,6 +1976,8 @@ export type Database = {
           p_prestige_types?: string[]
           p_sort?: string
           p_south: number
+          p_user_lat?: number
+          p_user_lng?: number
           p_west: number
         }
         Returns: {
@@ -1862,6 +1990,7 @@ export type Database = {
           kakao_map_url: string
           lat: number
           lng: number
+          my_score: number
           name: string
           phone: string
           prestige: Json
@@ -1882,6 +2011,8 @@ export type Database = {
           p_sources?: string[]
           p_south: number
           p_user_id: string
+          p_user_lat?: number
+          p_user_lng?: number
           p_west: number
         }
         Returns: {
@@ -1894,6 +2025,7 @@ export type Database = {
           kakao_map_url: string
           lat: number
           lng: number
+          my_score: number
           name: string
           phone: string
           prestige: Json
@@ -1921,6 +2053,7 @@ export type Database = {
           area: string[]
           district: string
           genre: string
+          has_bookmark: boolean
           has_record: boolean
           id: string
           kakao_map_url: string
