@@ -92,3 +92,44 @@ export async function deleteImage(url: string): Promise<void> {
 
   if (error) throw new Error(`Storage delete failed: ${error.message}`)
 }
+
+/** Upload a bubble icon image: resize to 256x256 WebP, store in avatars bucket */
+export async function uploadBubbleIcon(file: File, userId: string): Promise<string> {
+  const blob = await resizeBubbleIconBlob(file)
+  const supabase = createClient()
+  const path = `bubble-icons/${userId}_${Date.now()}.webp`
+
+  const { error } = await supabase.storage
+    .from('avatars')
+    .upload(path, blob, { contentType: 'image/webp', upsert: false })
+
+  if (error) throw new Error(`Upload failed: ${error.message}`)
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return data.publicUrl
+}
+
+function resizeBubbleIconBlob(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const size = 256
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('Canvas context not available')); return }
+      const min = Math.min(img.width, img.height)
+      const sx = (img.width - min) / 2
+      const sy = (img.height - min) / 2
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size)
+      canvas.toBlob(
+        (b) => { if (b) resolve(b); else reject(new Error('Blob failed')) },
+        'image/webp',
+        0.85,
+      )
+    }
+    img.onerror = () => reject(new Error('Image load failed'))
+    img.src = URL.createObjectURL(file)
+  })
+}
