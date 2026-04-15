@@ -12,7 +12,10 @@ AS $$
 DECLARE
   v_url TEXT := 'https://gfshmpuuafjvwsgrxnie.supabase.co/functions/v1/compute-similarity';
   v_key TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc2htcHV1YWZqdndzZ3J4bmllIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzU1MzY2OSwiZXhwIjoyMDg5MTI5NjY5fQ.skVu-Nk92JL6EkmjQnu7xcz5XR-tJc7BAxO7x9qSnYo';
+  v_headers JSONB;
 BEGIN
+  v_headers := jsonb_build_object('Authorization', 'Bearer ' || v_key, 'Content-Type', 'application/json');
+
   IF TG_OP = 'INSERT' AND (NEW.axis_x IS NULL OR NEW.axis_y IS NULL) THEN
     RETURN NULL;
   END IF;
@@ -21,8 +24,8 @@ BEGIN
     IF NEW.axis_x IS NULL AND OLD.axis_x IS NOT NULL THEN
       PERFORM net.http_post(
         url := v_url,
-        headers := jsonb_build_object('Authorization', 'Bearer ' || v_key, 'Content-Type', 'application/json'),
-        body := jsonb_build_object('user_id', NEW.user_id, 'item_id', NEW.target_id, 'category', NEW.target_type, 'action', 'DELETE')::text
+        body := jsonb_build_object('user_id', NEW.user_id, 'item_id', NEW.target_id, 'category', NEW.target_type, 'action', 'DELETE'),
+        headers := v_headers
       );
       RETURN NULL;
     ELSIF NEW.axis_x IS NOT NULL THEN
@@ -34,8 +37,8 @@ BEGIN
 
   PERFORM net.http_post(
     url := v_url,
-    headers := jsonb_build_object('Authorization', 'Bearer ' || v_key, 'Content-Type', 'application/json'),
-    body := jsonb_build_object('user_id', COALESCE(NEW.user_id, OLD.user_id), 'item_id', COALESCE(NEW.target_id, OLD.target_id), 'category', COALESCE(NEW.target_type, OLD.target_type), 'action', TG_OP::text)::text
+    body := jsonb_build_object('user_id', COALESCE(NEW.user_id, OLD.user_id), 'item_id', COALESCE(NEW.target_id, OLD.target_id), 'category', COALESCE(NEW.target_type, OLD.target_type), 'action', TG_OP::text),
+    headers := v_headers
   );
 
   RETURN NULL;
