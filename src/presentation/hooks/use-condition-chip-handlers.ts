@@ -165,10 +165,14 @@ export function useConditionChipHandlers({
     return attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
   }, [attributes, conditionChips, childrenCascadeAttrs])
 
-  /** 교체 대상 칩을 제거한 chips 배열 반환 (칩 교체 시 사용) */
-  const chipsWithoutReplacing = (base: FilterChipItem[]) => {
+  /** 교체 대상 칩이 있으면 제자리 교체, 없으면 끝에 추가 */
+  const commitChips = (base: FilterChipItem[], newChips: FilterChipItem[]) => {
     const rid = replacingChipIdRef.current
-    return rid ? base.filter((c) => c.id !== rid) : base
+    if (!rid) return [...base, ...newChips]
+    // 교체 대상 위치에 newChips를 삽입, 나머지 제거
+    const idx = base.findIndex((c) => c.id === rid)
+    if (idx === -1) return [...base, ...newChips]
+    return [...base.slice(0, idx), ...newChips, ...base.slice(idx + 1)]
   }
 
   /* ── handlers ── */
@@ -177,39 +181,37 @@ export function useConditionChipHandlers({
     const selectedOpt = attr.options?.find((o) => o.value === value)
     const hasChildren = selectedOpt?.children && selectedOpt.children.length > 0
 
-    const base = chipsWithoutReplacing(chips)
-
     if (isCascadeAttr) {
       const typeKey = childrenCascadeTypeKey(attr.key)
-      const existingTypeChip = base.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
+      const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
 
+      const newChips: ConditionChip[] = []
       let next: FilterChipItem[]
       if (existingTypeChip) {
         const newValue = `${existingTypeChip.value},${value}`
         const newLabel = newValue.split(',').map((v) => attr.options?.find((o) => o.value === v.trim())?.label ?? v).join(', ')
-        next = base.map((c) =>
+        next = chips.map((c) =>
           c.id === existingTypeChip.id ? { ...c, value: newValue, displayLabel: newLabel } : c,
         )
       } else {
-        const typeChip: ConditionChip = {
+        newChips.push({
           id: generateChipId(),
           attribute: typeKey,
           operator: 'eq',
           value,
           displayLabel: selectedOpt?.label ?? value,
-        }
-        next = [...base, typeChip]
+        })
+        next = commitChips(chips, newChips)
       }
 
       if (hasChildren) {
-        const gradeChip: ConditionChip = {
+        next.push({
           id: generateChipId(),
           attribute: childrenCascadeGradeKey(attr.key, value),
           operator: 'eq',
           value: CASCADING_ALL,
           displayLabel: '전체',
-        }
-        next.push(gradeChip)
+        })
       }
       onChipsChange(next)
 
@@ -238,7 +240,7 @@ export function useConditionChipHandlers({
       value,
       displayLabel: option?.label ?? value,
     }
-    onChipsChange([...base, newChip])
+    onChipsChange(commitChips(chips, [newChip]))
     setSelectedAttribute(null)
     setEditingChipId(null)
     setIsAddOpen(false)
@@ -250,14 +252,12 @@ export function useConditionChipHandlers({
 
   /** multi-select 실시간 적용 */
   const applyMultiSelectImmediate = useCallback((attr: FilterAttribute, selected: Set<string>) => {
-    const base = chipsWithoutReplacing(chips)
-
     if (selected.size === 0) {
       if (multiSelectChipIdRef.current) {
-        onChipsChange(base.filter((c) => c.id !== multiSelectChipIdRef.current))
+        onChipsChange(chips.filter((c) => c.id !== multiSelectChipIdRef.current))
         multiSelectChipIdRef.current = null
-      } else if (editingChipId) {
-        onChipsChange(base)
+      } else if (replacingChipIdRef.current) {
+        onChipsChange(chips.filter((c) => c.id !== replacingChipIdRef.current))
       }
       setEditingChipId(null)
       return
@@ -269,7 +269,7 @@ export function useConditionChipHandlers({
       .join(', ')
 
     if (multiSelectChipIdRef.current) {
-      onChipsChange(base.map((c) =>
+      onChipsChange(chips.map((c) =>
         c.id === multiSelectChipIdRef.current
           ? { ...c, value: combinedValue, displayLabel: combinedLabel }
           : c,
@@ -284,9 +284,9 @@ export function useConditionChipHandlers({
         value: combinedValue,
         displayLabel: combinedLabel,
       }
-      onChipsChange([...base, newChip])
+      onChipsChange(commitChips(chips, [newChip]))
     }
-  }, [chips, onChipsChange, editingChipId, setEditingChipId])
+  }, [chips, onChipsChange, setEditingChipId])
 
   /** location 탭+도시 선택 → 도시 칩 바로 생성 */
   const handleLocationCityDirectSelect = useCallback((tabIndex: number, cityValue: string, cityLabel: string) => {
@@ -328,8 +328,8 @@ export function useConditionChipHandlers({
       })
     }
 
-    const base = chipsWithoutReplacing(chips)
-    onChipsChange([...base.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) : true), ...newChips])
+    const cleaned = chips.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) : true)
+    onChipsChange(commitChips(cleaned, newChips))
     setLocationState(null)
     setEditingChipId(null)
     setIsAddOpen(false)
@@ -344,8 +344,8 @@ export function useConditionChipHandlers({
       value: 'nearby',
       displayLabel: '내 주변',
     }
-    const base = chipsWithoutReplacing(chips)
-    onChipsChange([...base.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) && c.attribute !== 'location' : true), newChip])
+    const cleaned = chips.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) && c.attribute !== 'location' : true)
+    onChipsChange(commitChips(cleaned, [newChip]))
     setLocationState(null)
     setEditingChipId(null)
     setIsAddOpen(false)
@@ -411,8 +411,7 @@ export function useConditionChipHandlers({
     const totalLevels = attr.cascadingLabels?.length ?? 1
     const baseKey = attr.key
 
-    const base = chipsWithoutReplacing(chips)
-    const kept = base.filter((c) => {
+    const kept = chips.filter((c) => {
       if (isAdvancedChip(c)) return true
       if (!isCascadingKey(c.attribute)) return true
       if (getCascadingBaseKey(c.attribute) !== baseKey) return true
@@ -440,7 +439,7 @@ export function useConditionChipHandlers({
       })
     }
 
-    onChipsChange([...kept, ...newChips])
+    onChipsChange(commitChips(kept, newChips))
     setCascadingState(null)
     setEditingChipId(null)
     setIsAddOpen(false)
