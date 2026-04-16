@@ -41,6 +41,7 @@ interface FilterPopoverGroupProps {
   isAddOpen: boolean
   selectedAttribute: FilterAttribute | null
   editingChipId: string | null
+  replacingChipIdRef: React.MutableRefObject<string | null>
   cascadingState: CascadingStateValue | null
   multiSelectState: MultiSelectStateValue | null
   locationState: LocationStateValue | null
@@ -93,6 +94,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
     isAddOpen,
     selectedAttribute,
     editingChipId,
+    replacingChipIdRef,
     cascadingState,
     multiSelectState,
     locationState,
@@ -134,9 +136,10 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
     handleAdvancedClick,
   } = props
 
-  // 팝오버 앵커: 편집 중이면 칩 위치, 아니면 + 버튼
-  const popoverAnchorRef = editingChipId
-    ? { current: chipRefs.current.get(editingChipId) ?? null }
+  // 팝오버 앵커: 편집/교체 중이면 칩 위치, 아니면 + 버튼
+  const anchorChipId = editingChipId ?? replacingChipIdRef.current
+  const popoverAnchorRef = anchorChipId
+    ? { get current() { return chipRefs.current.get(anchorChipId) ?? null } }
     : addBtnRef
   const popoverAlign = 'left' as const
 

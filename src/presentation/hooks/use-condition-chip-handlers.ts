@@ -614,6 +614,7 @@ export function useConditionChipHandlers({
     isAddOpen,
     selectedAttribute,
     editingChipId,
+    replacingChipIdRef,
     chipRefs,
     cascadingState,
     multiSelectState,

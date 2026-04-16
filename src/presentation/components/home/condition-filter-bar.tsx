@@ -84,6 +84,7 @@ export function ConditionFilterBar({
     isAddOpen,
     selectedAttribute,
     editingChipId,
+    replacingChipIdRef,
     chipRefs,
     cascadingState,
     multiSelectState,
@@ -261,6 +262,7 @@ export function ConditionFilterBar({
         isAddOpen={isAddOpen}
         selectedAttribute={selectedAttribute}
         editingChipId={editingChipId}
+        replacingChipIdRef={replacingChipIdRef}
         cascadingState={cascadingState}
         multiSelectState={multiSelectState}
         locationState={locationState}
