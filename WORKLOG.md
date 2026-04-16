@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-04-16 #54 — 기록 섹션 통합 + 댓글 thread + 리액션 실시간 동기화
+- **영역**: domain(comment parentId), infrastructure(supabase-comment/reaction-repo), application(use-comments, use-reactions, use-record-reactions, use-record-comment-counts, use-all-target-records), presentation(all-records-section, all-record-card, comment-list, comment-input, comment-sheet-container, restaurant/wine-detail-container), supabase/migrations/079-081
+- **맥락**: (1) 식당/와인 상세에서 "나의 기록"+"모든 기록" → "기록" 섹션 통합(필터칩 전환, 디폴트 "나의 기록"). (2) 리액션 good/bad 상호배타 + 자기글 비활성화. (3) 댓글: 비버블 RLS 허용, 작성자 닉/핸들 표시, 대댓글 thread(parent_id). (4) 바텀시트↔카드 리액션/댓글카운트 실시간 동기화(syncReaction, onCommentCountChange). 33파일 변경.
+- **미완료**: 댓글별 좋아요 DB 연동 미구현(로컬 토글만), SSOT 문서 갱신(DATA_MODEL.md, 08_BUBBLE.md)
+- **다음**: SSOT 문서 갱신, 브라우저 QA
+
+### 2026-04-16 #53 — 버블 피드 댓글 + 리액션(good/bad) 기능 구현
+- **영역**: domain(reaction, xp), infrastructure(supabase-reaction/bubble/xp-repo), application(use-reactions, use-social-xp, use-bubble-feed), presentation(reaction-buttons, feed-card, comment-list, bubble-settings, bubble-detail-container, comment-sheet-container), supabase/migrations/079
+- **맥락**: 기존 want/check/fire/like/bookmark 5종 리액션을 good/bad 2종으로 완전 교체. 버블 피드에서 CompactListItem 탭 → 개별 기록 드릴다운 BottomSheet 추가. 각 기록에 good/bad 리액션 + 말풍선 아이콘(댓글 수) → CommentSheetContainer 연결. 버블 설정에 "댓글 허용" 토글 복원. 총 17개 파일 수정/생성.
+- **미완료**: 댓글별 좋아요 구조적 한계(comment-sheet-container targetId 이슈), N+1 쿼리 최적화(batch API)
+- **다음**: SSOT 문서 갱신(DATA_MODEL.md, 08_BUBBLE.md), 브라우저 QA
+
 ### 2026-04-16 #52 — 대형 파일 분할 + 기타 정비 (Phase 5+6)
 - **영역**: presentation/containers/home-container.tsx, presentation/components/home/condition-filter-bar.tsx, infrastructure/storage, shared/di, supabase/types.ts
 - **맥락**: home-container.tsx(1,525→1,120줄, -27%) 4파일 분할: use-bubble-select-mode.ts, use-home-filter-chips.ts, home-stats-panel.tsx, bubble-tab-content.tsx. condition-filter-bar.tsx(1,361→~230줄, -83%) 3파일 분할: filter-popover.tsx, use-condition-chip-handlers.ts, filter-popover-group.tsx. uploadBubbleIcon을 shared/di→infrastructure/storage로 이동. supabase/types.ts 재생성.
@@ -54,16 +66,5 @@
 - **미완료**: compute-similarity Edge Function에도 shrinkage 적용, 디버그 임시 파일은 정리 완료
 - **다음**: compute-similarity shrinkage 적용, CF_SYSTEM.md §3.1 적합도 계산에도 shrinkage 반영
 
-### 2026-04-14 #41 — 팔로우 시스템 단순화 (B안: 즉시 팔로우, 2상태)
-- **영역**: domain/(follow.ts AccessLevel 2종, follow-access.ts 단순화, follow-repository.ts pending 제거), infrastructure/supabase-follow-repository(즉시 accepted, getAccessLevel 단일조회, follow_counts RPC, Realtime 구독), application/(use-follow 2상태 토글, use-follow-list Realtime 연동, use-user-search 신규 DB 검색), presentation/(follow-button 팔로우/팔로잉 2종, followers-container 요청섹션 제거+DB검색, bubbler-hero mutual 분기 제거, bubbler-profile mutual→following)
-- **맥락**: 기존 4종 AccessLevel(none/pending/follow/mutual) + follow_policy 승인 로직을 X(트위터) 모델로 전환. 팔로우 즉시 반영, 승인 과정 없음. getCounts RPC로 5회→1회 최적화. Realtime으로 타인의 팔로우가 실시간 반영. 팔로워 페이지에서 전체 Supabase 사용자 DB 실시간 검색(debounce 300ms). use-follow-requests.ts 삭제.
-- **미완료**: following-feed의 mutual 필터 라벨 정리, member-grid의 FollowStatus 타입 정리
-- **다음**: 홈 소셜 피드 mutual 필터 검토, supabase/types.ts 재생성
-
-### 2026-04-14 #40 — 버블 오너 표시 (카드=닉네임, 상세=닉네임+@핸들)
-- **영역**: domain/entities/bubble.ts(ownerNickname/ownerHandle 추가), infrastructure/supabase-bubble-repository(BUBBLE_SELECT_WITH_OWNER FK 조인, toBubble 확장, findById/findByUserId/findPublic/create/update/findByInviteCode 전체 교체, toEntityRow READ_ONLY_FIELDS로 조인파생필드 쓰기 차단), presentation/components/bubble/bubble-card.tsx(오너 닉네임 by 라인 추가), presentation/containers/bubble-detail-container.tsx(설명 아래 운영자 닉네임+@핸들 노출)
-- **맥락**: 버블이 누가 만든 건지 불명확하던 문제 해결. A안(엔티티 조인) 선택 — Bubble 엔티티에 ownerNickname/ownerHandle 옵셔널 필드 추가, Supabase PostgREST FK 조인(`owner:users!created_by`)으로 별도 쿼리 없이 자연스럽게 전달. 카드뷰는 공간 제약으로 닉네임만 (`by 닉네임`), 상세페이지는 닉네임+@핸들 병기 (기존 Nyam 컨벤션). toEntityRow에 READ_ONLY_FIELDS 세트를 둬서 update 시 조인 파생 필드가 실수로 DB에 쓰이는 것 차단.
-- **미완료**: 없음
-- **다음**: 브라우저 QA (FK 조인 정상 동작, handle null 케이스, 카드 레이아웃)
 
 
