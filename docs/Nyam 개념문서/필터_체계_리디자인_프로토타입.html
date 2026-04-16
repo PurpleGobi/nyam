@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyam 필터 체계 리디자인 — 인터랙티브 프로토타입</title>
+<style>
+  :root {
+    --bg: #0F0F0F;
+    --surface: #1A1A1A;
+    --elevated: #242424;
+    --border: #333;
+    --text: #E8E8E8;
+    --text-secondary: #999;
+    --text-tertiary: #666;
+    --accent-food: #FF6038;
+    --accent-food-dim: rgba(255,96,56,0.15);
+    --accent-wine: #A855F7;
+    --accent-wine-dim: rgba(168,85,247,0.15);
+    --accent-social: #3B82F6;
+    --accent-social-dim: rgba(59,130,246,0.15);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --chip-h: 32px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 420px; margin: 0 auto;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 0;
+  }
+  .header h1 {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    text-align: center; margin-bottom: 10px;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .tab {
+    flex: 1; padding: 10px 0 8px;
+    text-align: center; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; background: none;
+    color: var(--text-tertiary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative; bottom: -2px;
+  }
+  .tab.active-food { color: var(--accent-food); border-bottom-color: var(--accent-food); }
+  .tab.active-wine { color: var(--accent-wine); border-bottom-color: var(--accent-wine); }
+  .tab.active-social { color: var(--accent-social); border-bottom-color: var(--accent-social); }
+  .tab:hover { color: var(--text-secondary); }
+
+  /* ── Chip Bar ── */
+  .chip-bar {
+    display: flex; gap: 6px; padding: 10px 16px;
+    overflow-x: auto; scrollbar-width: none;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .chip-bar::-webkit-scrollbar { display: none; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: var(--chip-h); padding: 0 12px;
+    border-radius: 16px; font-size: 13px; font-weight: 500;
+    white-space: nowrap; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .chip:hover { border-color: var(--text-tertiary); }
+  .chip.selected-food { background: var(--accent-food-dim); border-color: var(--accent-food); color: var(--accent-food); }
+  .chip.selected-wine { background: var(--accent-wine-dim); border-color: var(--accent-wine); color: var(--accent-wine); }
+  .chip.selected-social { background: var(--accent-social-dim); border-color: var(--accent-social); color: var(--accent-social); }
+
+  .chip-add {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: var(--chip-h); height: var(--chip-h);
+    border-radius: 50%; font-size: 16px;
+    border: 1px dashed var(--text-tertiary);
+    background: none; color: var(--text-tertiary);
+    cursor: pointer; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .chip-add:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
+  .chip .x { margin-left: 2px; font-size: 11px; opacity: 0.6; }
+
+  /* ── Filter Panel (slide-up) ── */
+  .filter-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5);
+    display: none; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .filter-overlay.open { display: flex; opacity: 1; align-items: flex-end; }
+
+  .filter-panel {
+    width: 100%; max-width: 420px; margin: 0 auto;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    max-height: 70vh; overflow-y: auto;
+    padding: 16px 0;
+    transform: translateY(20px);
+    transition: transform 0.25s ease;
+  }
+  .filter-overlay.open .filter-panel { transform: translateY(0); }
+
+  .filter-panel-title {
+    font-size: 15px; font-weight: 700;
+    padding: 0 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .filter-panel-title .close-btn {
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 18px; cursor: pointer; padding: 4px;
+  }
+
+  /* ── Layer Labels ── */
+  .layer-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--text-tertiary); text-transform: uppercase;
+    padding: 14px 20px 6px;
+  }
+  .layer-label.food { color: var(--accent-food); opacity: 0.7; }
+  .layer-label.wine { color: var(--accent-wine); opacity: 0.7; }
+  .layer-label.social { color: var(--accent-social); opacity: 0.7; }
+
+  /* ── Filter Row ── */
+  .filter-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .filter-row:hover { background: var(--elevated); }
+  .filter-row .label { font-size: 14px; font-weight: 500; }
+  .filter-row .arrow { color: var(--text-tertiary); font-size: 13px; }
+  .filter-row .badge {
+    font-size: 11px; padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .filter-row .badge.server {
+    background: rgba(52,211,153,0.15); color: #34D399;
+  }
+  .filter-row .badge.client {
+    background: rgba(251,191,36,0.15); color: #FBBF24;
+  }
+  .filter-row .meta {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Options Panel (nested) ── */
+  .options-panel {
+    display: none;
+    background: var(--bg);
+    border-radius: 12px;
+    margin: 4px 12px 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .options-panel.open { display: block; }
+
+  .options-panel .opt-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .options-panel .opt-header .back {
+    cursor: pointer; font-size: 16px; color: var(--text-tertiary);
+    background: none; border: none; padding: 0;
+  }
+
+  .opt-group-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-tertiary);
+    padding: 10px 14px 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .option-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .option-item:hover { background: var(--elevated); }
+  .option-item.selected { font-weight: 600; }
+  .option-item .check { opacity: 0; font-size: 14px; }
+  .option-item.selected .check { opacity: 1; }
+  .option-item .has-children { color: var(--text-tertiary); font-size: 12px; }
+
+  /* cascade children */
+  .cascade-children {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 4px 0;
+    background: var(--surface);
+  }
+  .cascade-children.open { display: block; }
+  .cascade-children .option-item {
+    padding-left: 28px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .cascade-children .option-item:hover { color: var(--text); }
+
+  /* ── Main Content Area ── */
+  .content { padding: 16px; }
+
+  .section-title {
+    font-size: 18px; font-weight: 700;
+    margin: 24px 0 8px;
+  }
+  .section-desc {
+    font-size: 13px; color: var(--text-secondary);
+    line-height: 1.6; margin-bottom: 16px;
+  }
+
+  /* ── Before/After comparison ── */
+  .comparison {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin: 12px 0 20px;
+  }
+  .comp-col {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .comp-col h4 {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .comp-col.after h4 { color: #34D399; }
+  .comp-item {
+    font-size: 12px; padding: 3px 0;
+    color: var(--text-secondary);
+  }
+  .comp-item.removed { text-decoration: line-through; color: #EF4444; opacity: 0.6; }
+  .comp-item.added { color: #34D399; font-weight: 600; }
+  .comp-item.changed { color: #FBBF24; }
+  .comp-item.kept { color: var(--text-secondary); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    padding: 8px 16px; margin-bottom: 8px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .legend-dot.server { background: #34D399; }
+  .legend-dot.client { background: #FBBF24; }
+  .legend-dot.view { background: #60A5FA; }
+
+  /* ── Info Box ── */
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 12px 0;
+  }
+  .info-box h4 {
+    font-size: 13px; font-weight: 700; margin-bottom: 6px;
+  }
+  .info-box p {
+    font-size: 12px; color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .info-box .tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px;
+    margin-right: 4px;
+  }
+  .info-box .tag.new { background: rgba(52,211,153,0.2); color: #34D399; }
+  .info-box .tag.removed { background: rgba(239,68,68,0.2); color: #EF4444; }
+  .info-box .tag.improved { background: rgba(251,191,36,0.2); color: #FBBF24; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 0;
+  }
+
+  /* ── Sticky sort bar ── */
+  .sort-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .sort-bar select {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 4px 8px; font-size: 12px;
+    outline: none; cursor: pointer;
+  }
+
+  /* ── Placeholder Cards ── */
+  .card-placeholder {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .card-placeholder .thumb {
+    width: 56px; height: 56px;
+    border-radius: 8px;
+    background: var(--elevated);
+    flex-shrink: 0;
+  }
+  .card-placeholder .lines {
+    flex: 1; display: flex; flex-direction: column; gap: 6px;
+  }
+  .card-placeholder .line {
+    height: 10px; border-radius: 4px; background: var(--elevated);
+  }
+  .card-placeholder .line.short { width: 60%; }
+  .card-placeholder .line.xshort { width: 35%; }
+
+  /* ── Tab description ── */
+  .tab-desc {
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-desc h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .tab-desc p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .change-summary {
+    display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .change-tag {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 10px;
+  }
+  .change-tag.add { background: rgba(52,211,153,0.15); color: #34D399; }
+  .change-tag.remove { background: rgba(239,68,68,0.15); color: #EF4444; }
+  .change-tag.improve { background: rgba(251,191,36,0.15); color: #FBBF24; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- HEADER                                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="header">
+  <h1>Nyam 필터 체계 리디자인 프로토타입</h1>
+  <div class="tabs">
+    <button class="tab active-food" onclick="switchTab('restaurant')" id="tab-restaurant">식당</button>
+    <button class="tab" onclick="switchTab('wine')" id="tab-wine">와인</button>
+    <button class="tab" onclick="switchTab('bubble')" id="tab-bubble">버블</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RESTAURANT TAB                              -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-restaurant" class="tab-panel">
+
+  <div class="tab-desc">
+    <h3>식당 탭 필터 리디자인</h3>
+    <p>10개 → 9개. 사용 빈도 낮은 2개 삭제, 실용적 1개 추가, 명성 세부 등급 추가.</p>
+    <div class="change-summary">
+      <span class="change-tag add">+ 식사시간</span>
+      <span class="change-tag improve">↑ 명성 세부등급</span>
+      <span class="change-tag remove">- 대표메뉴</span>
+      <span class="change-tag remove">- 동반자</span>
+    </div>
+  </div>
+
+  <!-- Chip Bar -->
+  <div class="chip-bar">
+    <span class="chip selected-food" onclick="toggleChip(this)">내 기록 <span class="x">✕</span></span>
+    <span class="chip selected-food" onclick="toggleChip(this)">팔로잉 <span class="x">✕</span></span>
+    <button class="chip-add" onclick="openFilterPanel('restaurant')" title="필터 추가">+</button>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot view"></span>뷰 결정</span>
+    <span class="legend-item"><span class="legend-dot server"></span>서버 필터</span>
+    <span class="legend-item"><span class="legend-dot client"></span>클라 필터</span>
+  </div>
+
+  <div class="sort-bar">
+    <span>정렬</span>
+    <select>
+      <option>최신순</option>
+      <option selected>점수 높은순</option>
+      <option>점수 낮은순</option>
+      <option>이름순</option>
+      <option>방문 많은순</option>
+      <option>거리순</option>
+    </select>
+  </div>
+
+  <!-- Filter Panel (slide-up) -->
+  <div class="filter-overlay" id="filter-restaurant">
+    <div class="filter-panel">
+      <div class="filter-panel-title">
+        <span>필터 선택</span>
+        <button class="close-btn" onclick="closeFilterPanel('restaurant')">✕</button>
+      </div>
+
+      <!-- Layer 1: 뷰 -->
+      <div class="layer-label food">LAYER 1 — 뷰 (데이터 소스)</div>
+      <div class="filter-row" onclick="toggleOptions('r-view')">
+        <span class="label">보기</span>
+        <div class="meta">
+          <span class="badge" style="background:rgba(96,165,250,0.15);color:#60A5FA">뷰</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-view">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-view')">‹</button> 보기 (multi-select)</div>
+        <div class="option-item selected" onclick="toggleOpt(this)"><span>내 기록</span><span class="check">✓</span></div>
+        <div class="option-item selected" onclick="toggleOpt(this)"><span>팔로잉</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>버블</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- Layer 2: 속성 -->
+      <div class="layer-label food">LAYER 2 — 속성 (대상 특성)</div>
+
+      <div class="filter-row" onclick="toggleOptions('r-genre')">
+        <span class="label">음식종류</span>
+        <div class="meta">
+          <span class="badge server">서버</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-genre">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-genre')">‹</button> 음식종류</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>한식</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>일식</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>중식</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>태국</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>베트남</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>인도</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>이탈리안</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>프렌치</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>스페인</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>지중해</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>미국</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>멕시칸</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>카페</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>바/주점</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>베이커리</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>기타</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('r-location')">
+        <span class="label">위치</span>
+        <div class="meta">
+          <span class="badge server">서버</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-location">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-location')">‹</button> 위치</div>
+        <!-- Tab toggle -->
+        <div style="display:flex;gap:0;margin:8px 12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <button style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:var(--accent-food);color:#fff;cursor:pointer" onclick="showLocTab(this,'district')">행정구역</button>
+          <button style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:var(--elevated);color:var(--text-secondary);cursor:pointer" onclick="showLocTab(this,'area')">생활권</button>
+        </div>
+        <!-- District -->
+        <div id="loc-district">
+          <div class="opt-group-label">도시</div>
+          <div class="option-item" onclick="toggleCascade('loc-seoul-d')"><span>서울</span><span class="has-children">25개 구 ›</span></div>
+          <div class="cascade-children" id="loc-seoul-d">
+            <div class="option-item" onclick="toggleOpt(this)"><span>강남구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>서초구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>마포구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>용산구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>성동구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>종로구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>중구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>송파구</span><span class="check">✓</span></div>
+            <div class="option-item" style="color:var(--text-tertiary);font-size:11px;padding-left:28px">… 외 17개 구</div>
+          </div>
+          <div class="option-item" onclick="toggleCascade('loc-busan-d')"><span>부산</span><span class="has-children">5개 구 ›</span></div>
+          <div class="cascade-children" id="loc-busan-d">
+            <div class="option-item" onclick="toggleOpt(this)"><span>해운대구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>수영구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>부산진구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>중구</span><span class="check">✓</span></div>
+            <div class="option-item" onclick="toggleOpt(this)"><span>남구</span><span class="check">✓</span></div>
+          </div>
+          <div class="option-item"><span>제주</span><span class="has-children">2개 시 ›</span></div>
+        </div>
+        <!-- Area -->
+        <div id="loc-area" style="display:none">
+          <div class="opt-group-label">서울</div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>강남</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>청담</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>압구정</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>이태원</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>홍대</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>성수</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>을지로</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>한남</span><span class="check">✓</span></div>
+          <div class="option-item" style="color:var(--text-tertiary);font-size:11px">… 외 24개 생활권</div>
+          <div class="opt-group-label" style="color:#34D399">부산 <span style="font-size:10px;font-weight:400">NEW</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>해운대</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>광안리</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>서면</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>남포동</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>전포</span><span class="check">✓</span></div>
+          <div class="opt-group-label" style="color:#34D399">제주 <span style="font-size:10px;font-weight:400">NEW</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>애월</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>중문</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>서귀포</span><span class="check">✓</span></div>
+        </div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('r-price')">
+        <span class="label">가격대</span>
+        <div class="meta">
+          <span class="badge server">서버</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-price">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-price')">‹</button> 가격대</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>저가</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>중간</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>고가</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- Prestige with children cascade -->
+      <div class="filter-row" onclick="toggleOptions('r-prestige')">
+        <span class="label">명성 <span style="font-size:10px;color:#FBBF24;font-weight:400">↑ 세부등급 추가</span></span>
+        <div class="meta">
+          <span class="badge server">서버</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-prestige">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-prestige')">‹</button> 명성</div>
+        <div class="option-item" onclick="toggleCascade('prestige-michelin')">
+          <span>미슐랭</span><span class="has-children">4등급 ›</span>
+        </div>
+        <div class="cascade-children" id="prestige-michelin">
+          <div class="option-item" onclick="toggleOpt(this)"><span>★★★ (3스타)</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>★★ (2스타)</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>★ (1스타)</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>빕 구르망</span><span class="check">✓</span></div>
+        </div>
+        <div class="option-item" onclick="toggleCascade('prestige-br')">
+          <span>블루리본</span><span class="has-children">3등급 ›</span>
+        </div>
+        <div class="cascade-children" id="prestige-br">
+          <div class="option-item" onclick="toggleOpt(this)"><span>3리본</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>2리본</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>1리본</span><span class="check">✓</span></div>
+        </div>
+        <div class="option-item" onclick="toggleCascade('prestige-tv')">
+          <span>TV출연</span><span class="has-children">6개 ›</span>
+        </div>
+        <div class="cascade-children" id="prestige-tv">
+          <div class="option-item" onclick="toggleOpt(this)"><span>흑백요리사</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>줄서는식당</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>생활의달인</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>맛있는녀석들</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>성시경 먹을텐데</span><span class="check">✓</span></div>
+          <div class="option-item" onclick="toggleOpt(this)"><span>허영만 백반기행</span><span class="check">✓</span></div>
+        </div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>수상없음</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- Layer 3: 기록 -->
+      <div class="layer-label food">LAYER 3 — 기록 (경험 메타)</div>
+
+      <div class="filter-row" onclick="toggleOptions('r-satisfaction')">
+        <span class="label">점수</span>
+        <div class="meta">
+          <span class="badge client">클라</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-satisfaction">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-satisfaction')">‹</button> 점수</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>90+</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>80~89</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>70~79</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>~69</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('r-visit')">
+        <span class="label">시기</span>
+        <div class="meta">
+          <span class="badge client">클라</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-visit">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-visit')">‹</button> 시기</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>최근 1주</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>1개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>3개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>6개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>1년+</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('r-scene')">
+        <span class="label">상황</span>
+        <div class="meta">
+          <span class="badge client">클라</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-scene">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-scene')">‹</button> 상황</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>혼밥</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>데이트</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>친구</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>가족</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>회식</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>술자리</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- NEW: meal_time -->
+      <div class="filter-row" onclick="toggleOptions('r-meal')" style="background:rgba(52,211,153,0.05)">
+        <span class="label">식사시간 <span style="font-size:10px;color:#34D399;font-weight:400">NEW</span></span>
+        <div class="meta">
+          <span class="badge client">클라</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-r-meal">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('r-meal')">‹</button> 식사시간</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>아침</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>점심</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>저녁</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>간식</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- REMOVED items -->
+      <div class="divider" style="margin:8px 0"></div>
+      <div style="padding:10px 20px">
+        <div style="font-size:11px;color:#EF4444;font-weight:600;margin-bottom:6px">삭제된 필터</div>
+        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8">
+          <span style="text-decoration:line-through">대표메뉴</span> — 코스/단품/오마카세/뷔페/세트. 사용 빈도 극히 낮음<br>
+          <span style="text-decoration:line-through">동반자</span> — 혼자/2인/3~4인/5인+. 입력률 낮고 필터 가치 낮음
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Placeholder content -->
+  <div style="padding:12px 16px">
+    <div class="card-placeholder">
+      <div class="thumb"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div><div class="line xshort"></div></div>
+    </div>
+    <div class="card-placeholder">
+      <div class="thumb"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div><div class="line xshort"></div></div>
+    </div>
+    <div class="card-placeholder">
+      <div class="thumb"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div><div class="line xshort"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- WINE TAB                                    -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-wine" class="tab-panel" style="display:none">
+  <div class="tab-desc">
+    <h3>와인 탭 필터 리디자인</h3>
+    <p>12개 → 12개. 미구현 가격 삭제, 바디 추가, 품종 그룹핑, 빈티지 동적화.</p>
+    <div class="change-summary">
+      <span class="change-tag add">+ 바디</span>
+      <span class="change-tag improve">↑ 품종 그룹핑</span>
+      <span class="change-tag improve">↑ 빈티지 동적화</span>
+      <span class="change-tag remove">- 가격 (range)</span>
+    </div>
+  </div>
+
+  <div class="chip-bar">
+    <span class="chip selected-wine" onclick="toggleChip(this)">내 기록 <span class="x">✕</span></span>
+    <button class="chip-add" onclick="openFilterPanel('wine')">+</button>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot view"></span>뷰 결정</span>
+    <span class="legend-item"><span class="legend-dot server"></span>서버 필터</span>
+    <span class="legend-item"><span class="legend-dot client"></span>클라 필터</span>
+  </div>
+
+  <div class="sort-bar">
+    <span>정렬</span>
+    <select>
+      <option>최신순</option>
+      <option selected>점수 높은순</option>
+      <option>점수 낮은순</option>
+      <option>이름순</option>
+      <option>방문 많은순</option>
+    </select>
+  </div>
+
+  <div class="filter-overlay" id="filter-wine">
+    <div class="filter-panel">
+      <div class="filter-panel-title">
+        <span>필터 선택</span>
+        <button class="close-btn" onclick="closeFilterPanel('wine')">✕</button>
+      </div>
+
+      <div class="layer-label wine">LAYER 1 — 뷰</div>
+      <div class="filter-row" onclick="toggleOptions('w-view')">
+        <span class="label">보기</span>
+        <div class="meta">
+          <span class="badge" style="background:rgba(96,165,250,0.15);color:#60A5FA">뷰</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+      <div class="options-panel" id="opts-w-view">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-view')">‹</button> 보기 (multi-select)</div>
+        <div class="option-item selected" onclick="toggleOpt(this)"><span>내 기록</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>팔로잉</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>버블</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="layer-label wine">LAYER 2 — 속성 (와인 특성)</div>
+
+      <div class="filter-row" onclick="toggleOptions('w-type')">
+        <span class="label">스타일</span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-type">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-type')">‹</button> 스타일</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Red</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>White</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Rosé</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Sparkling</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Orange</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Dessert</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Fortified</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- Variety with grouping -->
+      <div class="filter-row" onclick="toggleOptions('w-variety')" style="background:rgba(251,191,36,0.03)">
+        <span class="label">품종 <span style="font-size:10px;color:#FBBF24;font-weight:400">↑ 그룹핑</span></span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-variety">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-variety')">‹</button> 품종 (55종 — White/Red 그룹)</div>
+        <div class="opt-group-label">White (33종)</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>샤르도네 Chardonnay</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>소비뇽 블랑 Sauvignon Blanc</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>리슬링 Riesling</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>피노 그리 Pinot Grigio</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>게뷔르츠트라미너 Gewürztraminer</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>비오니에 Viognier</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>슈냉 블랑 Chenin Blanc</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>뮈스카 Muscat</span><span class="check">✓</span></div>
+        <div class="option-item" style="color:var(--text-tertiary);font-size:11px">… 외 25종</div>
+
+        <div class="opt-group-label">Red (32종)</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>카베르네 소비뇽 Cabernet Sauvignon</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>메를로 Merlot</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>피노 누아 Pinot Noir</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>쉬라즈 Syrah</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>산지오베제 Sangiovese</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>네비올로 Nebbiolo</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>말벡 Malbec</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>템프라니요 Tempranillo</span><span class="check">✓</span></div>
+        <div class="option-item" style="color:var(--text-tertiary);font-size:11px">… 외 24종</div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-country')">
+        <span class="label">산지</span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-country">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-country')">‹</button> 산지 (15개국)</div>
+        <div class="opt-group-label">유럽</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>France</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Italy</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Spain</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Portugal</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Germany</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Austria</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Hungary</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Greece</span><span class="check">✓</span></div>
+        <div class="opt-group-label">신대륙</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>USA</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Chile</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Argentina</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Australia</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>New Zealand</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>South Africa</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>Canada</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- Dynamic vintage -->
+      <div class="filter-row" onclick="toggleOptions('w-vintage')" style="background:rgba(251,191,36,0.03)">
+        <span class="label">빈티지 <span style="font-size:10px;color:#FBBF24;font-weight:400">↑ 동적</span></span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-vintage">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-vintage')">‹</button> 빈티지 (자동 생성)</div>
+        <div id="vintage-dynamic"></div>
+      </div>
+
+      <div class="layer-label wine">LAYER 3 — 기록 (시음 메타)</div>
+
+      <div class="filter-row" onclick="toggleOptions('w-sat')">
+        <span class="label">점수</span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-sat">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-sat')">‹</button> 점수</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>90+</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>80~89</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>70~79</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>~69</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-visit')">
+        <span class="label">시음시기</span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-visit">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-visit')">‹</button> 시음시기</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>최근 1주</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>1개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>3개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>6개월</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>1년+</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-pairing')">
+        <span class="label">페어링</span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-pairing">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-pairing')">‹</button> 페어링</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>적색육</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>백색육</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>어패류</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>치즈</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>채소</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>디저트</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-acidity')">
+        <span class="label">산미</span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-acidity">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-acidity')">‹</button> 산미</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>낮음</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>중간</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>높음</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-sweetness')">
+        <span class="label">당도</span>
+        <div class="meta"><span class="badge server">서버</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-sweetness">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-sweetness')">‹</button> 당도</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>드라이</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>오프드라이</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>스위트</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- NEW: body_level -->
+      <div class="filter-row" onclick="toggleOptions('w-body')" style="background:rgba(52,211,153,0.05)">
+        <span class="label">바디 <span style="font-size:10px;color:#34D399;font-weight:400">NEW</span></span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-body">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-body')">‹</button> 바디</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>라이트</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>미디엄</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>풀</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="filter-row" onclick="toggleOptions('w-complexity')">
+        <span class="label">복합도</span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-w-complexity">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('w-complexity')">‹</button> 복합도</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>단순 (0~33)</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>중간 (34~66)</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>복합 (67~100)</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="divider" style="margin:8px 0"></div>
+      <div style="padding:10px 20px">
+        <div style="font-size:11px;color:#EF4444;font-weight:600;margin-bottom:6px">삭제된 필터</div>
+        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8">
+          <span style="text-decoration:line-through">가격 (range)</span> — range UI 미구현 상태. 슬라이더 컴포넌트 구현 후 재도입 가능
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:12px 16px">
+    <div class="card-placeholder">
+      <div class="thumb"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div><div class="line xshort"></div></div>
+    </div>
+    <div class="card-placeholder">
+      <div class="thumb"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div><div class="line xshort"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- BUBBLE TAB                                  -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="panel-bubble" class="tab-panel" style="display:none">
+  <div class="tab-desc">
+    <h3>버블 탭 필터 리디자인</h3>
+    <p>4개 → 4개. 복잡한 전문분야 2개 삭제, 실용적인 유형/활성도 2개 추가.</p>
+    <div class="change-summary">
+      <span class="change-tag add">+ 유형 (식당/와인)</span>
+      <span class="change-tag add">+ 활성도</span>
+      <span class="change-tag remove">- 전문분야 레벨</span>
+      <span class="change-tag remove">- 전문분야 기록 수</span>
+    </div>
+  </div>
+
+  <div class="chip-bar">
+    <button class="chip-add" onclick="openFilterPanel('bubble')">+</button>
+  </div>
+
+  <div class="sort-bar">
+    <span>정렬</span>
+    <select>
+      <option selected>기록 많은 순</option>
+      <option>회원 많은 순</option>
+      <option>활동량 많은 순</option>
+      <option>최근 활동 순</option>
+      <option>이름 순</option>
+    </select>
+  </div>
+
+  <div class="filter-overlay" id="filter-bubble">
+    <div class="filter-panel">
+      <div class="filter-panel-title">
+        <span>필터 선택</span>
+        <button class="close-btn" onclick="closeFilterPanel('bubble')">✕</button>
+      </div>
+
+      <div class="layer-label social">LAYER 1 — 뷰</div>
+
+      <div class="filter-row" onclick="toggleOptions('b-type')">
+        <span class="label">종류</span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-b-type">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('b-type')">‹</button> 종류</div>
+        <div class="option-item" onclick="toggleOpt(this);showRoleFilter(this,'mine')"><span>나의 버블</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this);showRoleFilter(this,'following')"><span>팔로잉 버블</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this);showRoleFilter(this,'public')"><span>공개 버블</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="layer-label social">LAYER 2 — 속성</div>
+
+      <!-- Conditional: role -->
+      <div class="filter-row" id="b-role-row" onclick="toggleOptions('b-role')" style="opacity:0.4;pointer-events:none">
+        <span class="label">역할 <span style="font-size:10px;color:var(--text-tertiary);font-weight:400">종류=나의 버블 시 활성</span></span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-b-role">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('b-role')">‹</button> 역할</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>오너</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>멤버</span><span class="check">✓</span></div>
+      </div>
+
+      <!-- NEW: focus_type -->
+      <div class="filter-row" onclick="toggleOptions('b-focus')" style="background:rgba(52,211,153,0.05)">
+        <span class="label">유형 <span style="font-size:10px;color:#34D399;font-weight:400">NEW</span></span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-b-focus">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('b-focus')">‹</button> 유형</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>식당</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>와인</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="layer-label social">LAYER 3 — 활동</div>
+
+      <!-- NEW: activity -->
+      <div class="filter-row" onclick="toggleOptions('b-activity')" style="background:rgba(52,211,153,0.05)">
+        <span class="label">활성도 <span style="font-size:10px;color:#34D399;font-weight:400">NEW</span></span>
+        <div class="meta"><span class="badge client">클라</span><span class="arrow">›</span></div>
+      </div>
+      <div class="options-panel" id="opts-b-activity">
+        <div class="opt-header"><button class="back" onclick="toggleOptions('b-activity')">‹</button> 활성도</div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>24시간 내</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>최근 1주</span><span class="check">✓</span></div>
+        <div class="option-item" onclick="toggleOpt(this)"><span>최근 1개월</span><span class="check">✓</span></div>
+      </div>
+
+      <div class="divider" style="margin:8px 0"></div>
+      <div style="padding:10px 20px">
+        <div style="font-size:11px;color:#EF4444;font-weight:600;margin-bottom:6px">삭제된 필터</div>
+        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8">
+          <span style="text-decoration:line-through">전문분야 레벨</span> — 축 타입+값+임계값 3단계 UX 복잡. 소팅으로 대체<br>
+          <span style="text-decoration:line-through">전문분야 기록 수</span> — 레벨과 거의 동일한 축 중복
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:12px 16px">
+    <div class="card-placeholder">
+      <div class="thumb" style="border-radius:50%;width:48px;height:48px"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div></div>
+    </div>
+    <div class="card-placeholder">
+      <div class="thumb" style="border-radius:50%;width:48px;height:48px"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div></div>
+    </div>
+    <div class="card-placeholder">
+      <div class="thumb" style="border-radius:50%;width:48px;height:48px"></div>
+      <div class="lines"><div class="line"></div><div class="line short"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- BOTTOM: Before/After Summary                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="content" style="padding-bottom:60px">
+  <div class="section-title">Before / After 비교</div>
+
+  <!-- Restaurant -->
+  <div class="section-desc" style="margin-top:12px;font-weight:600;color:var(--accent-food)">식당 (10 → 9)</div>
+  <div class="comparison">
+    <div class="comp-col">
+      <h4>Before (10개)</h4>
+      <div class="comp-item kept">보기</div>
+      <div class="comp-item kept">음식종류</div>
+      <div class="comp-item kept">위치</div>
+      <div class="comp-item kept">가격대</div>
+      <div class="comp-item kept">상황</div>
+      <div class="comp-item kept">점수</div>
+      <div class="comp-item changed">명성 (등급 없음)</div>
+      <div class="comp-item removed">대표메뉴</div>
+      <div class="comp-item kept">시기</div>
+      <div class="comp-item removed">동반자</div>
+    </div>
+    <div class="comp-col after">
+      <h4>After (9개)</h4>
+      <div class="comp-item kept">보기</div>
+      <div class="comp-item kept">음식종류</div>
+      <div class="comp-item kept">위치 (+부산/제주 생활권)</div>
+      <div class="comp-item kept">가격대</div>
+      <div class="comp-item kept">상황</div>
+      <div class="comp-item kept">점수</div>
+      <div class="comp-item changed">명성 (+세부등급)</div>
+      <div class="comp-item added">식사시간 (NEW)</div>
+      <div class="comp-item kept">시기</div>
+    </div>
+  </div>
+
+  <!-- Wine -->
+  <div class="section-desc" style="font-weight:600;color:var(--accent-wine)">와인 (12 → 12)</div>
+  <div class="comparison">
+    <div class="comp-col">
+      <h4>Before (12개)</h4>
+      <div class="comp-item kept">보기</div>
+      <div class="comp-item kept">스타일</div>
+      <div class="comp-item changed">품종 (flat 55개)</div>
+      <div class="comp-item kept">산지</div>
+      <div class="comp-item changed">빈티지 (하드코딩)</div>
+      <div class="comp-item kept">점수</div>
+      <div class="comp-item kept">시음시기</div>
+      <div class="comp-item kept">페어링</div>
+      <div class="comp-item removed">가격 (range 미구현)</div>
+      <div class="comp-item kept">산미</div>
+      <div class="comp-item kept">당도</div>
+      <div class="comp-item kept">복합도</div>
+    </div>
+    <div class="comp-col after">
+      <h4>After (12개)</h4>
+      <div class="comp-item kept">보기</div>
+      <div class="comp-item kept">스타일</div>
+      <div class="comp-item changed">품종 (White/Red 그룹)</div>
+      <div class="comp-item kept">산지 (+유럽/신대륙 그룹)</div>
+      <div class="comp-item changed">빈티지 (동적 생성)</div>
+      <div class="comp-item kept">점수</div>
+      <div class="comp-item kept">시음시기</div>
+      <div class="comp-item kept">페어링</div>
+      <div class="comp-item kept">산미</div>
+      <div class="comp-item kept">당도</div>
+      <div class="comp-item added">바디 (NEW)</div>
+      <div class="comp-item kept">복합도</div>
+    </div>
+  </div>
+
+  <!-- Bubble -->
+  <div class="section-desc" style="font-weight:600;color:var(--accent-social)">버블 (4 → 4)</div>
+  <div class="comparison">
+    <div class="comp-col">
+      <h4>Before (4개)</h4>
+      <div class="comp-item kept">종류</div>
+      <div class="comp-item kept">역할</div>
+      <div class="comp-item removed">전문분야 레벨</div>
+      <div class="comp-item removed">전문분야 기록 수</div>
+    </div>
+    <div class="comp-col after">
+      <h4>After (4개)</h4>
+      <div class="comp-item kept">종류</div>
+      <div class="comp-item kept">역할</div>
+      <div class="comp-item added">유형 (NEW)</div>
+      <div class="comp-item added">활성도 (NEW)</div>
+    </div>
+  </div>
+
+  <!-- 3-layer model -->
+  <div class="section-title" style="margin-top:32px">3계층 필터 모델</div>
+  <div class="info-box">
+    <h4>Layer 1 — 뷰 (데이터 소스)</h4>
+    <p>내 기록 / 팔로잉 / 버블. 어디서 데이터를 가져올지 결정. 필터가 아니라 소스 선택자.</p>
+  </div>
+  <div class="info-box">
+    <h4>Layer 2 — 속성 (대상 고유 특성)</h4>
+    <p>식당의 장르/위치/가격, 와인의 스타일/품종/산지, 버블의 유형/역할 등 대상 자체의 메타데이터로 필터링.</p>
+  </div>
+  <div class="info-box">
+    <h4>Layer 3 — 기록 (경험 메타데이터)</h4>
+    <p>사용자 경험에서 파생된 데이터. 점수, 방문 시기, 상황, 식사시간, 페어링, 구조적 평가(산미/당도/바디) 등.</p>
+  </div>
+</div>
+
+<script>
+  // ── Tab switching ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none')
+    document.querySelectorAll('.tab').forEach(t => t.className = 'tab')
+    document.getElementById('panel-' + tab).style.display = 'block'
+    const cls = tab === 'restaurant' ? 'active-food' : tab === 'wine' ? 'active-wine' : 'active-social'
+    document.getElementById('tab-' + tab).classList.add(cls)
+  }
+
+  // ── Filter panel open/close ──
+  function openFilterPanel(tab) {
+    const overlay = document.getElementById('filter-' + tab)
+    overlay.classList.add('open')
+  }
+  function closeFilterPanel(tab) {
+    document.getElementById('filter-' + tab).classList.remove('open')
+  }
+
+  // Click overlay to close
+  document.querySelectorAll('.filter-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) ov.classList.remove('open')
+    })
+  })
+
+  // ── Options panel toggle ──
+  function toggleOptions(id) {
+    const panel = document.getElementById('opts-' + id)
+    panel.classList.toggle('open')
+  }
+
+  // ── Option select toggle ──
+  function toggleOpt(el) {
+    el.classList.toggle('selected')
+  }
+
+  // ── Cascade children toggle ──
+  function toggleCascade(id) {
+    document.getElementById(id).classList.toggle('open')
+  }
+
+  // ── Chip toggle ──
+  function toggleChip(el) {
+    el.remove()
+  }
+
+  // ── Location tab switch ──
+  function showLocTab(btn, type) {
+    const btns = btn.parentElement.children
+    for (const b of btns) {
+      b.style.background = 'var(--elevated)'
+      b.style.color = 'var(--text-secondary)'
+    }
+    btn.style.background = 'var(--accent-food)'
+    btn.style.color = '#fff'
+    document.getElementById('loc-district').style.display = type === 'district' ? 'block' : 'none'
+    document.getElementById('loc-area').style.display = type === 'area' ? 'block' : 'none'
+  }
+
+  // ── Bubble role conditional ──
+  function showRoleFilter(el, type) {
+    const roleRow = document.getElementById('b-role-row')
+    if (type === 'mine' && el.classList.contains('selected')) {
+      roleRow.style.opacity = '1'
+      roleRow.style.pointerEvents = 'auto'
+    } else {
+      roleRow.style.opacity = '0.4'
+      roleRow.style.pointerEvents = 'none'
+    }
+  }
+
+  // ── Dynamic vintage generation ──
+  function buildVintage() {
+    const year = new Date().getFullYear()
+    const container = document.getElementById('vintage-dynamic')
+    let html = ''
+    for (let i = 0; i < 6; i++) {
+      const y = year - i
+      html += `<div class="option-item" onclick="toggleOpt(this)"><span>${y}</span><span class="check">\u2713</span></div>`
+    }
+    html += `<div class="option-item" onclick="toggleOpt(this)"><span>${year - 6} \uc774\uc804</span><span class="check">\u2713</span></div>`
+    html += `<div style="padding:8px 14px;font-size:11px;color:var(--text-tertiary)">* \ud604\uc7ac \uc5f0\ub3c4(${year}) \uae30\uc900 \uc790\ub3d9 \uc0dd\uc131. \uc5c5\ub370\uc774\ud2b8 \ubd88\ud544\uc694.</div>`
+    container.innerHTML = html
+  }
+  buildVintage()
+</script>
+</body>
+</html>
