@@ -6,11 +6,17 @@
 
 ---
 
+### 2026-04-16 #55 — 통계 페이지 UI 전면 개선 + 데이터 부족 안내 일관화
+- **영역**: presentation/components/home(home-stats-panel, pd-lock-overlay, world-map-chart, wine-type-chart, monthly-chart), presentation/containers/home-container
+- **맥락**: (1) 통계 모드 진입 시 필터/소팅/목록 숨김(캘린더 모드 패턴). (2) SummaryCard(요약 그리드)+SectionCard(아이콘+타이틀 카드)+로딩 스켈레톤+StatsEmpty 추가. (3) PdLockOverlay 하드코딩 rgba→디자인 토큰(다크모드 호환)+진행 상태 표시. (4) 통계 아이콘 임계값 5→1 완화(와인 탭 노출). (5) WorldMapChart/WineTypeChart/MonthlyChart 자체 카드·라벨 중복 제거.
+- **미완료**: 없음
+- **다음**: 브라우저 QA
+
 ### 2026-04-16 #54 — 기록 섹션 통합 + 댓글 thread + 리액션 실시간 동기화
 - **영역**: domain(comment parentId), infrastructure(supabase-comment/reaction-repo), application(use-comments, use-reactions, use-record-reactions, use-record-comment-counts, use-all-target-records), presentation(all-records-section, all-record-card, comment-list, comment-input, comment-sheet-container, restaurant/wine-detail-container), supabase/migrations/079-081
 - **맥락**: (1) 식당/와인 상세에서 "나의 기록"+"모든 기록" → "기록" 섹션 통합(필터칩 전환, 디폴트 "나의 기록"). (2) 리액션 good/bad 상호배타 + 자기글 비활성화. (3) 댓글: 비버블 RLS 허용, 작성자 닉/핸들 표시, 대댓글 thread(parent_id). (4) 바텀시트↔카드 리액션/댓글카운트 실시간 동기화(syncReaction, onCommentCountChange). 33파일 변경.
-- **미완료**: 댓글별 좋아요 DB 연동 미구현(로컬 토글만), SSOT 문서 갱신(DATA_MODEL.md, 08_BUBBLE.md)
-- **다음**: SSOT 문서 갱신, 브라우저 QA
+- **미완료**: 댓글별 좋아요 DB 연동 미구현(로컬 토글만)
+- **다음**: 브라우저 QA
 
 ### 2026-04-16 #53 — 버블 피드 댓글 + 리액션(good/bad) 기능 구현
 - **영역**: domain(reaction, xp), infrastructure(supabase-reaction/bubble/xp-repo), application(use-reactions, use-social-xp, use-bubble-feed), presentation(reaction-buttons, feed-card, comment-list, bubble-settings, bubble-detail-container, comment-sheet-container), supabase/migrations/079
@@ -54,17 +60,6 @@
 - **미완료**: 없음
 - **다음**: 브라우저 QA
 
-### 2026-04-15 #44 — 버블 설정 페이지 멤버 진입점 개방
-- **영역**: presentation/containers/bubble-detail-container.tsx (설정 아이콘 isOwner→isMember)
-- **맥락**: 1줄 수정으로 해결.
-- **미완료**: 없음
-- **다음**: 없음
-
-### 2026-04-15 #42 — CF Shrinkage mean centering + 적합도 UI
-- **영역**: supabase/functions/predict-score(shrinkage 보정 평균 도입, λ=10, 전체평균 가중 보간, profiles→users 수정), docs/CF_SYSTEM.md(§3.1·§3.3 수식 업데이트), domain/similarity-repository(BubbleSimilarityResult+getBubbleSimilarities), infrastructure/supabase-similarity-repository(버블 적합도 일괄 조회), application/use-bubble-similarity(restaurant+wine 병합 훅), presentation/(mini-profile-popup 유저 적합도, bubble-card·compact-list-bubble·bubble-detail-container 버블 적합도), supabase migrations(user_score_means+user_similarities 테이블 생성, records RLS 인증유저 전체 읽기, redundant SELECT 정책 제거)
-- **맥락**: (1) records 공개 기록 표시 불일치 → records_authenticated_read RLS 추가 + redundant 정책 4개 제거. (2) Nyam 점수 미산출 → user_score_means/user_similarities 테이블 DB 미적용 발견·생성·시드. (3) Edge Function 배포 버전 불일치(MIN_OVERLAP=3, mutual 4상태) → repo 코드로 재배포(v2→v3). (4) full mean centering이 n=2~3에서 왜곡(50+58→69) → shrinkage 도입으로 57로 개선. (5) 미니 프로필에 유저간 적합도, 버블 카드/리스트/상세에 버블 적합도 표시.
-- **미완료**: compute-similarity Edge Function에도 shrinkage 적용, 디버그 임시 파일은 정리 완료
-- **다음**: compute-similarity shrinkage 적용, CF_SYSTEM.md §3.1 적합도 계산에도 shrinkage 반영
 
 
 
