@@ -28,20 +28,8 @@ export function WorldMapChart({ cities, totalCountries, totalPlaces }: WorldMapC
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Summary label */}
-      <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
-        {totalCountries}개국 {totalPlaces}곳
-      </div>
-
       {/* SVG Map */}
-      <div
-        className="overflow-hidden rounded-[14px]"
-        style={{
-          backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          padding: 14,
-        }}
-      >
+      <div>
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full"

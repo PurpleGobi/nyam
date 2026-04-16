@@ -6,10 +6,16 @@ import { Lock } from 'lucide-react'
 interface PdLockOverlayProps {
   minRecords: number
   currentCount: number
+  accentColor?: string
   children: ReactNode
 }
 
-export function PdLockOverlay({ minRecords, currentCount, children }: PdLockOverlayProps) {
+export function PdLockOverlay({
+  minRecords,
+  currentCount,
+  accentColor = 'var(--text-hint)',
+  children,
+}: PdLockOverlayProps) {
   const isLocked = currentCount < minRecords
   const remaining = minRecords - currentCount
 
@@ -18,27 +24,42 @@ export function PdLockOverlay({ minRecords, currentCount, children }: PdLockOver
   }
 
   return (
-    <div className="relative rounded-xl">
+    <div className="relative overflow-hidden rounded-[14px]">
       {/* Blurred content preview */}
-      <div className="pointer-events-none select-none" style={{ filter: 'blur(6px)' }}>
+      <div className="pointer-events-none select-none" style={{ filter: 'blur(6px)', opacity: 0.5 }}>
         {children}
       </div>
 
       {/* Lock overlay */}
       <div
-        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[4px] rounded-xl"
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[6px] rounded-[14px]"
         style={{
-          background: 'rgba(248,246,243,0.85)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
+          background: 'color-mix(in srgb, var(--bg-card) 85%, transparent)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
         }}
       >
-        <Lock size={20} style={{ color: 'var(--text-hint)' }} />
-        <p
-          className="text-[12px]"
-          style={{ fontWeight: 600, color: 'var(--text-hint)' }}
+        <div
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: 36,
+            height: 36,
+            backgroundColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+          }}
         >
-          기록 {remaining}개 더 남으면 열려요
+          <Lock size={16} style={{ color: accentColor }} />
+        </div>
+        <p
+          className="text-[13px] font-semibold"
+          style={{ color: 'var(--text-sub)' }}
+        >
+          기록 {remaining}개 더 추가하면 열려요
+        </p>
+        <p
+          className="text-[11px]"
+          style={{ color: 'var(--text-hint)' }}
+        >
+          현재 {currentCount}개 / {minRecords}개 필요
         </p>
       </div>
     </div>

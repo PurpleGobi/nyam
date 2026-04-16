@@ -354,7 +354,7 @@ export function HomeContainer() {
 
   // P2: stats는 패널 열릴 때만 fetch
   const [isStatsOpen, setIsStatsOpen] = useState(false)
-  const canShowStatsButton = targets.length >= 5
+  const canShowStatsButton = targets.length >= 1
   const restaurantStats = useRestaurantStats(user?.id ?? null, isStatsOpen && activeTab === 'restaurant')
   const wineStats = useWineStats(user?.id ?? null, isStatsOpen && activeTab === 'wine')
 
@@ -887,7 +887,7 @@ export function HomeContainer() {
         />
 
         {/* 소팅 드롭다운 — 버블 탭 포함 */}
-        {!isCalendarMode && isSortOpen && (
+        {!isCalendarMode && !isStatsOpen && isSortOpen && (
           isBubbleTab ? (
             <div className="relative">
               <SortDropdown<BubbleSortOption>
@@ -918,7 +918,7 @@ export function HomeContainer() {
         )}
 
         {/* 조건 필터 칩 바 */}
-        {!isCalendarMode && (
+        {!isCalendarMode && !isStatsOpen && (
           isBubbleTab ? (
             <ConditionFilterBar
               chips={bubbleConditionChips}
@@ -1018,7 +1018,7 @@ export function HomeContainer() {
         )}
 
         {/* 뷰 모드별 콘텐츠 */}
-        {!isBubbleTab && !isFollowingMode && renderContent()}
+        {!isBubbleTab && !isFollowingMode && !isStatsOpen && renderContent()}
       </div>
 
       <FabAdd

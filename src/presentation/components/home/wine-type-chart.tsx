@@ -17,18 +17,8 @@ export function WineTypeChart({ types }: WineTypeChartProps) {
   const maxCount = Math.max(...types.map((t) => t.count), 1)
 
   return (
-    <div
-      className="rounded-[14px] p-4"
-      style={{ border: '1px solid var(--border)' }}
-    >
-      <p
-        className="mb-3 text-[13px] font-semibold"
-        style={{ color: 'var(--text)' }}
-      >
-        와인 타입
-      </p>
-      <div className="flex flex-col gap-2">
-        {types.map((t) => {
+    <div className="flex flex-col gap-2">
+      {types.map((t) => {
           const ratio = t.count / maxCount
           const color = TYPE_COLORS[t.type] ?? 'var(--accent-wine)'
 
@@ -68,7 +58,6 @@ export function WineTypeChart({ types }: WineTypeChartProps) {
             </div>
           )
         })}
-      </div>
     </div>
   )
 }

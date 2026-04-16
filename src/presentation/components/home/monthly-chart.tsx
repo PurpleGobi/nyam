@@ -34,22 +34,21 @@ export function MonthlyChart({
 
   return (
     <div className="flex flex-col gap-[8px]">
-      {/* Total amount label */}
-      <div className="flex items-baseline gap-[6px]">
-        <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
-          월별 소비
-        </span>
-        <small
-          className="rounded-[6px] px-[8px] py-[2px] text-[12px]"
-          style={{
-            fontWeight: 600,
-            color: accentColor,
-            backgroundColor: `color-mix(in srgb, ${accentColor} 12%, transparent)`,
-          }}
-        >
-          총 {formatWon(totalAmount)}
-        </small>
-      </div>
+      {/* Total amount badge */}
+      {totalAmount > 0 && (
+        <div className="flex">
+          <small
+            className="rounded-[6px] px-[8px] py-[2px] text-[12px]"
+            style={{
+              fontWeight: 600,
+              color: accentColor,
+              backgroundColor: `color-mix(in srgb, ${accentColor} 12%, transparent)`,
+            }}
+          >
+            총 {formatWon(totalAmount)}
+          </small>
+        </div>
+      )}
 
       {/* Bar chart */}
       <div
