@@ -12,4 +12,8 @@ export interface Comment {
   content: string
   isAnonymous: boolean
   createdAt: string
+  parentId: string | null
+  authorNickname: string | null
+  authorHandle: string | null
+  authorAvatarColor: string | null
 }

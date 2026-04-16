@@ -12,7 +12,7 @@ export type XpReason =
   | 'bonus_onboard' | 'bonus_first_record' | 'bonus_first_bubble' | 'bonus_first_share'
   | 'milestone' | 'revisit'
 
-export type SocialAction = 'share' | 'like' | 'follow' | 'mutual'
+export type SocialAction = 'share' | 'good' | 'follow' | 'mutual'
 
 export type BonusType = 'onboard' | 'first_record' | 'first_bubble' | 'first_share'
 
@@ -107,7 +107,7 @@ export interface LevelUpEvent {
 /** 소셜 XP 일일 카운트 (어뷰징 방지용) */
 export interface DailySocialCounts {
   share: number
-  like: number
+  good: number
   follow: number
   mutual: number
   total: number

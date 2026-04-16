@@ -33,7 +33,6 @@ import { useToast } from '@/presentation/components/ui/toast'
 import { WINE_TYPE_LABELS } from '@/domain/entities/wine'
 import type { AromaSelection, AromaSectorId } from '@/domain/entities/aroma'
 import type { WineStructure } from '@/domain/entities/wine-structure'
-import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
 import { AllRecordsSection } from '@/presentation/components/detail/all-records-section'
 
 interface WineDetailContainerProps {
@@ -351,7 +350,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
     return []
   }, [wine, myRecords, publicRecords, recordPhotos])
 
-  // 연결 식당 이름 맵 (RecordTimeline용)
+  // 연결 식당 이름 맵 (기록 타임라인용)
   const linkedRestaurantNames = useMemo(() => {
     const map = new Map<string, string>()
     for (const r of linkedRestaurants) map.set(r.restaurantId, r.restaurantName)
@@ -753,17 +752,16 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
 
         <Divider />
 
-        {/* ─── 나의 기록 타임라인 ─── */}
-        <RecordTimeline
-          records={myRecords}
-          recordPhotos={recordPhotos}
+        {/* ─── 기록 (나의 기록 + 모든 기록 통합) ─── */}
+        <AllRecordsSection
+          targetId={wineId}
+          targetType="wine"
+          myRecords={myRecords}
+          myRecordPhotos={recordPhotos}
+          myRecordsMeta={tastingCount > 0 ? `시음 ${tastingCount}회 · ${latestTastingDate ?? ''}` : ''}
           accentColor="--accent-wine"
-          sectionTitle="나의 기록"
-          sectionMeta={tastingCount > 0 ? `시음 ${tastingCount}회 · ${latestTastingDate ?? ''}` : ''}
-          emptyIcon="wine"
           emptyTitle="아직 시음 기록이 없어요"
           emptyDescription="우하단 + 버튼으로 첫 기록을 남겨보세요"
-          targetType="wine"
           linkedRestaurantNames={linkedRestaurantNames}
           onLinkedRestaurantTap={(id) => router.push(`/restaurants/${id}`)}
           onRecordTap={(recordId) => {
@@ -774,11 +772,6 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
             )
           }}
         />
-
-        <Divider />
-
-        {/* ─── 모든 기록 ─── */}
-        <AllRecordsSection targetId={wineId} targetType="wine" />
 
         <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />
       </div>

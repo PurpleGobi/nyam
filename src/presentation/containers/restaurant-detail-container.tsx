@@ -23,7 +23,6 @@ import { ScoreCards } from '@/presentation/components/detail/score-cards'
 import { ScoreBreakdownPanel } from '@/presentation/components/detail/score-breakdown-panel'
 import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { BadgeRow } from '@/presentation/components/detail/badge-row'
-import { RecordTimeline } from '@/presentation/components/detail/record-timeline'
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { AllRecordsSection } from '@/presentation/components/detail/all-records-section'
@@ -564,28 +563,23 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
 
         <Divider />
 
-        {/* ─── 4. 나의 기록 타임라인 ─── */}
-        <RecordTimeline
-          records={myRecords}
-          recordPhotos={recordPhotos}
-          accentColor="--accent-food"
-          sectionTitle="나의 기록"
-          sectionMeta={
+        {/* ─── 4. 기록 (나의 기록 + 모든 기록 통합) ─── */}
+        <AllRecordsSection
+          targetId={restaurantId}
+          targetType="restaurant"
+          myRecords={myRecords}
+          myRecordPhotos={recordPhotos}
+          myRecordsMeta={
             myRecords.length > 0
               ? `방문 ${myRecords.length}회 · ${latestVisitDate ?? ''}`
               : ''
           }
-          emptyIcon="search"
+          accentColor="--accent-food"
           emptyTitle="아직 방문 기록이 없어요"
           emptyDescription="우하단 + 버튼으로 첫 기록을 남겨보세요"
           linkedWineNames={linkedWineNames}
           onLinkedWineTap={(id) => router.push(`/wines/${id}`)}
         />
-
-        <Divider />
-
-        {/* ─── 5. 모든 기록 ─── */}
-        <AllRecordsSection targetId={restaurantId} targetType="restaurant" />
 
         <Divider />
 

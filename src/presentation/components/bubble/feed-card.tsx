@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Clock, Heart, MessageCircle, Bookmark, CheckCircle2, Flame } from 'lucide-react'
+import { Clock, ThumbsUp, ThumbsDown, MessageCircle } from 'lucide-react'
 import type { ReactionType } from '@/domain/entities/reaction'
 import { formatTimeAgo } from '@/shared/utils/date-format'
 
@@ -20,7 +20,6 @@ interface FeedCardProps {
   photoUrls: string[]
   reactions: Record<string, number>
   myReactions: ReactionType[]
-  likeCount: number
   commentCount: number
   readCount: number
   onReactionToggle: (type: ReactionType) => void
@@ -41,7 +40,6 @@ export function FeedCard({
   photoUrls,
   reactions,
   myReactions,
-  likeCount,
   commentCount,
   readCount,
   onReactionToggle,
@@ -122,12 +120,10 @@ export function FeedCard({
         {/* 리액션 + 액션 */}
         <div className="flex items-center justify-between pt-1" style={{ borderTop: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3">
-            <ReactionChip icon={Bookmark} type="want" count={reactions.want ?? 0} active={myReactions.includes('want')} onToggle={onReactionToggle} activeColor="var(--accent-food)" />
-            <ReactionChip icon={CheckCircle2} type="check" count={reactions.check ?? 0} active={myReactions.includes('check')} onToggle={onReactionToggle} activeColor="var(--positive)" />
-            <ReactionChip icon={Flame} type="fire" count={reactions.fire ?? 0} active={myReactions.includes('fire')} onToggle={onReactionToggle} activeColor="#E55A35" />
+            <ReactionChip icon={ThumbsUp} type="good" count={reactions.good ?? 0} active={myReactions.includes('good')} onToggle={onReactionToggle} activeColor="var(--positive)" />
+            <ReactionChip icon={ThumbsDown} type="bad" count={reactions.bad ?? 0} active={myReactions.includes('bad')} onToggle={onReactionToggle} activeColor="var(--negative)" />
           </div>
           <div className="flex items-center gap-3">
-            <ReactionChip icon={Heart} type="like" count={likeCount} active={myReactions.includes('like')} onToggle={onReactionToggle} activeColor="var(--negative)" />
             <button type="button" onClick={(e) => { e.stopPropagation(); onCommentClick() }} className="flex items-center gap-1">
               <MessageCircle size={14} style={{ color: 'var(--text-hint)' }} />
               {commentCount > 0 && <span className="text-[11px]" style={{ color: 'var(--text-hint)' }}>{commentCount}</span>}
@@ -154,7 +150,7 @@ function ReactionChip({
   onToggle,
   activeColor,
 }: {
-  icon: typeof Bookmark
+  icon: typeof ThumbsUp
   type: string
   count: number
   active: boolean
@@ -215,4 +211,3 @@ function PhotoGrid({ photos }: { photos: string[] }) {
     </div>
   )
 }
-

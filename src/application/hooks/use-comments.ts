@@ -7,7 +7,7 @@ import { sendNotification } from '@/application/helpers/send-notification'
 
 const MAX_COMMENT_LENGTH = 300
 
-export function useComments(targetType: string, targetId: string, bubbleId: string) {
+export function useComments(targetType: string, targetId: string, bubbleId: string | null) {
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -30,6 +30,7 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
     content: string,
     isAnonymous: boolean,
     targetOwnerId?: string | null,
+    parentId?: string | null,
   ): Promise<Comment | null> => {
     const trimmed = content.trim()
     if (!trimmed || trimmed.length > MAX_COMMENT_LENGTH) return null
@@ -41,17 +42,23 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
       userId,
       content: trimmed,
       isAnonymous,
+      parentId: parentId ?? null,
     })
 
     // 낙관적 업데이트
     setComments((prev) => [...prev, comment])
 
-    // 알림: comment_reply → 기록 작성자 (본인 제외)
-    if (targetOwnerId && targetOwnerId !== userId) {
+    // 알림: 대댓글이면 부모 댓글 작성자에게, 아니면 기록 작성자에게
+    const notifyUserId = parentId
+      ? comments.find((c) => c.id === parentId)?.userId
+      : targetOwnerId
+    if (notifyUserId && notifyUserId !== userId) {
       sendNotification({
-        userId: targetOwnerId,
+        userId: notifyUserId,
         type: 'comment_reply',
-        title: isAnonymous ? '익명이 댓글을 남겼습니다' : '새 댓글이 달렸습니다',
+        title: parentId
+          ? (isAnonymous ? '익명이 답글을 남겼습니다' : '내 댓글에 답글이 달렸습니다')
+          : (isAnonymous ? '익명이 댓글을 남겼습니다' : '새 댓글이 달렸습니다'),
         body: trimmed.length > 50 ? `${trimmed.slice(0, 50)}...` : trimmed,
         actionStatus: null,
         actorId: isAnonymous ? null : userId,
@@ -62,11 +69,12 @@ export function useComments(targetType: string, targetId: string, bubbleId: stri
     }
 
     return comment
-  }, [targetType, targetId, bubbleId])
+  }, [targetType, targetId, bubbleId, comments])
 
   const deleteComment = useCallback(async (commentId: string, userId: string): Promise<void> => {
     await commentRepo.delete(commentId, userId)
-    setComments((prev) => prev.filter((c) => c.id !== commentId))
+    // 삭제된 댓글 + 그 대댓글들도 제거 (DB에서 ON DELETE CASCADE)
+    setComments((prev) => prev.filter((c) => c.id !== commentId && c.parentId !== commentId))
   }, [])
 
   return {

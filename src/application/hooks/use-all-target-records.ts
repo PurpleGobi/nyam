@@ -29,7 +29,7 @@ export interface AllRecordItem {
   photos: RecordPhoto[]
 }
 
-export type SourceFilter = 'all' | RecordSource
+export type SourceFilter = 'mine' | 'all' | RecordSource
 
 // ─── Hook ───
 
@@ -73,7 +73,7 @@ export function useAllTargetRecords({
 
       // 버블: 이미 author 정보 포함 (내 기록 제외)
       const shares = bubbleResult.status === 'fulfilled' ? bubbleResult.value : []
-      const bItems: AllRecordItem[] = shares
+      const bItemsRaw: AllRecordItem[] = shares
         .filter((s) => s.sharedBy !== userId)
         .map((s) => ({
           id: s.recordId,
@@ -92,6 +92,13 @@ export function useAllTargetRecords({
           visitDate: s.visitDate ?? null,
           photos: [],
         }))
+      // 같은 기록이 여러 버블에 공유된 경우 중복 제거
+      const seenRecordIds = new Set<string>()
+      const bItems = bItemsRaw.filter((item) => {
+        if (seenRecordIds.has(item.id)) return false
+        seenRecordIds.add(item.id)
+        return true
+      })
 
       // 팔로잉 + 공개: DiningRecord → author 정보 enrichment 필요
       const fRecords = followingResult.status === 'fulfilled' ? followingResult.value : []
@@ -171,6 +178,9 @@ export function useAllTargetRecords({
   const records = useMemo(() => {
     let items: AllRecordItem[]
     switch (sourceFilter) {
+      case 'mine':
+        items = []
+        break
       case 'bubble':
         items = bubbleItems
         break

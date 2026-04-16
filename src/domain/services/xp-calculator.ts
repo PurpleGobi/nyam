@@ -112,7 +112,7 @@ export function getCategoryForAxisType(axisType: AxisType): 'restaurant' | 'wine
 
 const SOCIAL_XP_MAP: Record<SocialAction, number> = {
   share: 1,
-  like: 1,
+  good: 1,
   follow: 1,
   mutual: 2,
 }

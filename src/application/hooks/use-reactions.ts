@@ -20,7 +20,7 @@ export function useReactions({
   targetOwnerId,
 }: UseReactionsParams) {
   const [counts, setCounts] = useState<Record<ReactionType, number>>({
-    like: 0, bookmark: 0, want: 0, check: 0, fire: 0,
+    good: 0, bad: 0,
   })
   const [myReactions, setMyReactions] = useState<Set<ReactionType>>(new Set())
   const [isLoading, setIsLoading] = useState(false)
@@ -48,36 +48,43 @@ export function useReactions({
     if (!userId || isLoading) return
     setIsLoading(true)
 
-    // 낙관적 업데이트: 즉시 UI 갱신
+    // 낙관적 업데이트: 즉시 UI 갱신 (good↔bad 상호 배타)
     const prevCounts = { ...counts }
     const prevMyReactions = new Set(myReactions)
     const willAdd = !myReactions.has(reactionType)
+    const opposite: ReactionType = reactionType === 'good' ? 'bad' : 'good'
+    const hadOpposite = myReactions.has(opposite)
 
     setCounts((prev) => ({
       ...prev,
       [reactionType]: prev[reactionType] + (willAdd ? 1 : -1),
+      ...(willAdd && hadOpposite ? { [opposite]: Math.max(0, prev[opposite] - 1) } : {}),
     }))
     setMyReactions((prev) => {
       const next = new Set(prev)
-      if (willAdd) next.add(reactionType)
-      else next.delete(reactionType)
+      if (willAdd) {
+        next.add(reactionType)
+        next.delete(opposite) // 반대쪽 해제
+      } else {
+        next.delete(reactionType)
+      }
       return next
     })
 
     try {
       const result = await reactionRepo.toggle(targetType, targetId, reactionType, userId)
 
-      // like + added → 소셜 XP (기록 작성자에게, 본인 제외)
-      if (result.added && reactionType === 'like' && targetOwnerId && targetOwnerId !== userId) {
-        await awardSocialXp(targetOwnerId, 'like')
+      // good + added → 소셜 XP (기록 작성자에게, 본인 제외)
+      if (result.added && reactionType === 'good' && targetOwnerId && targetOwnerId !== userId) {
+        await awardSocialXp(targetOwnerId, 'good')
       }
 
-      // like/want + added → 알림: reaction_like → 기록 작성자 (본인 제외)
-      if (result.added && (reactionType === 'like' || reactionType === 'want') && targetOwnerId && targetOwnerId !== userId) {
+      // good + added → 알림: reaction_like → 기록 작성자 (본인 제외)
+      if (result.added && reactionType === 'good' && targetOwnerId && targetOwnerId !== userId) {
         sendNotification({
           userId: targetOwnerId,
           type: 'reaction_like',
-          title: reactionType === 'like' ? '좋아요를 받았습니다' : '누군가 가고싶다고 했습니다',
+          title: '좋아요를 받았습니다',
           body: null,
           actionStatus: null,
           actorId: userId,

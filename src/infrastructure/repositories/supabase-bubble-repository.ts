@@ -212,7 +212,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
 
     if (options?.search) {
       const term = `%${options.search}%`
-      query = query.or(`name.ilike.${term},description.ilike.${term}`)
+      query = query.or(`name.ilike.${term},description.ilike.${term},search_keywords.cs.{${options.search}}`)
     }
     if (options?.focusType) query = query.eq('focus_type', options.focusType)
     if (options?.area) query = query.ilike('area', `%${options.area}%`)
@@ -720,7 +720,7 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .from('reactions')
       .select('target_id, reaction_type')
       .eq('target_type', 'record')
-      .eq('reaction_type', 'like')
+      .in('reaction_type', ['good', 'bad'])
       .in('target_id', recordIds)
     for (const row of data ?? []) {
       const id = row.target_id as string

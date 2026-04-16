@@ -66,6 +66,7 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
 
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
   const [currentBubble] = useState<Bubble>(bubble)
+  const [allowComments, setAllowComments] = useState(bubble.allowComments ?? true)
   const [shareRule, setShareRule] = useState<BubbleShareRule | null>(null)
   const [visibilityOverride, setVisibilityOverride] = useState<VisibilityOverride | null>(null)
   const memberLoaded = !memberLoading
@@ -102,6 +103,12 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
   const handleAutoSave = useCallback(async (updates: Partial<Bubble>) => {
     await updateSettings(updates)
   }, [updateSettings])
+
+  const handleToggleAllowComments = useCallback(() => {
+    const next = !allowComments
+    setAllowComments(next)
+    handleAutoSave({ allowComments: next })
+  }, [allowComments, handleAutoSave])
 
   /** 사진 업로드 + 갤러리 저장 (아이콘과 별도) */
   const handleSavePhotos = useCallback(async () => {
@@ -239,6 +246,8 @@ export function BubbleSettingsContainer({ bubbleId, bubble, myRole, onClose }: B
               theme="social"
             />
           }
+          allowComments={allowComments}
+          onToggleAllowComments={handleToggleAllowComments}
           shareRule={memberLoaded ? shareRule : undefined}
           onShareRuleChange={handleShareRuleChange}
           visibilityOverride={memberLoaded ? visibilityOverride : undefined}

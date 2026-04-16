@@ -208,11 +208,11 @@ export class SupabaseXpRepository implements XpRepository {
       .lte('created_at', endOfDay)
     if (error) throw error
 
-    const counts: DailySocialCounts = { share: 0, like: 0, follow: 0, mutual: 0, total: 0 }
+    const counts: DailySocialCounts = { share: 0, good: 0, follow: 0, mutual: 0, total: 0 }
     for (const row of data ?? []) {
       const xp = (row.xp_amount as number) ?? 0
       if (row.reason === 'social_share') counts.share += xp
-      else if (row.reason === 'social_like') counts.like += xp
+      else if (row.reason === 'social_like') counts.good += xp
       else if (row.reason === 'social_follow') counts.follow += xp
       else if (row.reason === 'social_mutual') counts.mutual += xp
       counts.total += xp

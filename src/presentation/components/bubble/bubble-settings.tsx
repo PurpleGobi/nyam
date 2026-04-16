@@ -91,6 +91,8 @@ interface BubbleSettingsProps {
   /** 통합 사진/아이콘 섹션 */
   photoSlot?: React.ReactNode
   hasPhotos?: boolean
+  allowComments?: boolean
+  onToggleAllowComments?: () => void
 }
 
 export function BubbleSettings({
@@ -104,6 +106,8 @@ export function BubbleSettings({
   onUploadPhoto,
   photoSlot,
   hasPhotos,
+  allowComments,
+  onToggleAllowComments,
 }: BubbleSettingsProps) {
   const [name, setName] = useState(bubble.name)
   const [description, setDescription] = useState(bubble.description ?? '')
@@ -113,7 +117,7 @@ export function BubbleSettings({
   const [selectedIcon, setSelectedIcon] = useState(bubble.icon ?? 'utensils-crossed')
   const [selectedColor, setSelectedColor] = useState(bubble.iconBgColor ?? '#F97316')
   const [coverMode, setCoverMode] = useState<'photo' | 'icon'>(
-    bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://')) ? 'photo' : 'icon',
+    bubble.coverPhotoUrl || (bubble.icon && (bubble.icon.startsWith('http://') || bubble.icon.startsWith('https://'))) ? 'photo' : 'icon',
   )
   const [photoPreview, setPhotoPreview] = useState<string | null>(initIsPhoto ? bubble.icon : null)
   const [uploadError, setUploadError] = useState(false)
@@ -129,7 +133,6 @@ export function BubbleSettings({
   const [maxMembers, setMaxMembers] = useState(bubble.maxMembers)
   const [isSearchable, setIsSearchable] = useState(bubble.isSearchable)
   const [searchKeywords, setSearchKeywords] = useState<string[]>(bubble.searchKeywords ?? [])
-  const [allowComments, setAllowComments] = useState(bubble.allowComments)
   const [allowExternalShare, setAllowExternalShare] = useState(bubble.allowExternalShare)
   const [showDanger, setShowDanger] = useState(false)
   const [keywordInput, setKeywordInput] = useState('')
@@ -237,7 +240,6 @@ export function BubbleSettings({
 
   // 토글 즉시 저장
   const handleSearchableChange = (v: boolean) => { setIsSearchable(v); saveField({ isSearchable: v }) }
-  const handleCommentsChange = (v: boolean) => { setAllowComments(v); saveField({ allowComments: v }) }
   const handleExternalShareChange = (v: boolean) => { setAllowExternalShare(v); saveField({ allowExternalShare: v }) }
 
   // 키워드 즉시 저장
@@ -448,7 +450,7 @@ export function BubbleSettings({
                 )}
               </div>
             )}
-            <ToggleRow label="댓글 허용" value={allowComments} onChange={handleCommentsChange} />
+            <ToggleRow label="댓글 허용" value={allowComments ?? true} onChange={() => onToggleAllowComments?.()} description="멤버가 기록에 댓글을 남길 수 있음" />
             <ToggleRow label="외부 공유 허용" value={allowExternalShare} onChange={handleExternalShareChange} />
           </div>
         </Section>

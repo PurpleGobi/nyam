@@ -20,7 +20,7 @@ export class SupabaseReactionRepository implements ReactionRepository {
     reactionType: ReactionType,
     userId: string,
   ): Promise<{ added: boolean }> {
-    // ON CONFLICT (target_type, target_id, reaction_type, user_id) 활용
+    // 같은 타입 기존 리액션 확인
     const { data: existing } = await this.supabase
       .from('reactions')
       .select('id')
@@ -34,6 +34,16 @@ export class SupabaseReactionRepository implements ReactionRepository {
       await this.supabase.from('reactions').delete().eq('id', existing.id)
       return { added: false }
     }
+
+    // 반대 리액션 삭제 (good↔bad 상호 배타)
+    const opposite: ReactionType = reactionType === 'good' ? 'bad' : 'good'
+    await this.supabase
+      .from('reactions')
+      .delete()
+      .eq('target_type', targetType)
+      .eq('target_id', targetId)
+      .eq('reaction_type', opposite)
+      .eq('user_id', userId)
 
     const { error } = await this.supabase
       .from('reactions')
@@ -61,6 +71,24 @@ export class SupabaseReactionRepository implements ReactionRepository {
     return (data ?? []).map(mapReaction)
   }
 
+  async getCountsByTargetIds(targetType: string, targetIds: string[]): Promise<Map<string, Record<ReactionType, number>>> {
+    const result = new Map<string, Record<ReactionType, number>>()
+    if (targetIds.length === 0) return result
+    const { data } = await this.supabase
+      .from('reactions')
+      .select('target_id, reaction_type')
+      .eq('target_type', targetType)
+      .in('target_id', targetIds)
+    for (const row of data ?? []) {
+      const tid = row.target_id as string
+      const rt = row.reaction_type as ReactionType
+      if (!result.has(tid)) result.set(tid, { good: 0, bad: 0 })
+      const counts = result.get(tid) as Record<ReactionType, number>
+      if (rt in counts) counts[rt]++
+    }
+    return result
+  }
+
   async getDailySocialXpCount(userId: string, date: string): Promise<number> {
     const { count } = await this.supabase
       .from('xp_log_changes')
@@ -79,7 +107,7 @@ export class SupabaseReactionRepository implements ReactionRepository {
       .eq('target_type', targetType)
       .eq('target_id', targetId)
 
-    const counts: Record<string, number> = { like: 0, bookmark: 0, want: 0, check: 0, fire: 0 }
+    const counts: Record<string, number> = { good: 0, bad: 0 }
     for (const row of data ?? []) {
       const rt = row.reaction_type as string
       if (rt in counts) counts[rt]++

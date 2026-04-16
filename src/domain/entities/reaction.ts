@@ -3,7 +3,7 @@
 
 export type ReactionTargetType = 'record' | 'comment'
 
-export type ReactionType = 'like' | 'bookmark' | 'want' | 'check' | 'fire'
+export type ReactionType = 'good' | 'bad'
 
 export interface Reaction {
   id: string
@@ -15,9 +15,6 @@ export interface Reaction {
 }
 
 export const REACTION_CONFIG: Record<ReactionType, { icon: string; label: string; color: string }> = {
-  want: { icon: 'bookmark-plus', label: '가고싶다', color: 'var(--accent-food)' },
-  check: { icon: 'check-circle-2', label: '다녀왔다', color: 'var(--positive)' },
-  fire: { icon: 'flame', label: '불꽃', color: '#E55A35' },
-  like: { icon: 'heart', label: '좋아요', color: 'var(--negative)' },
-  bookmark: { icon: 'bookmark', label: '저장', color: 'var(--accent-wine)' },
+  good: { icon: 'thumbs-up', label: '좋아요', color: 'var(--positive)' },
+  bad: { icon: 'thumbs-down', label: '별로예요', color: 'var(--negative)' },
 }

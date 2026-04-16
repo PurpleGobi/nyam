@@ -1,18 +1,26 @@
 'use client'
 
-import { useState } from 'react'
-import { Send, EyeOff } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Send, EyeOff, X } from 'lucide-react'
 
 interface CommentInputProps {
   onSubmit: (content: string, isAnonymous: boolean) => void
   maxLength: number
   disabled?: boolean
   disabledMessage?: string
+  replyTarget?: { commentId: string; authorName: string } | null
+  onCancelReply?: () => void
 }
 
-export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage }: CommentInputProps) {
+export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage, replyTarget, onCancelReply }: CommentInputProps) {
   const [content, setContent] = useState('')
   const [isAnonymous, setIsAnonymous] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // 답글 모드 진입 시 포커스
+  useEffect(() => {
+    if (replyTarget) textareaRef.current?.focus()
+  }, [replyTarget])
 
   const handleSubmit = () => {
     const trimmed = content.trim()
@@ -22,8 +30,8 @@ export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage }:
   }
 
   const remaining = maxLength - content.length
-  const cautionThreshold = 20  // 280자 이상 → caution
-  const dangerThreshold = 0    // 300자 → negative
+  const cautionThreshold = 20
+  const dangerThreshold = 0
 
   const counterColor =
     remaining <= dangerThreshold
@@ -34,12 +42,34 @@ export function CommentInput({ onSubmit, maxLength, disabled, disabledMessage }:
 
   return (
     <div className="flex flex-col gap-2" style={{ borderTop: '1px solid var(--border)' }}>
+      {/* 답글 표시 바 */}
+      {replyTarget && (
+        <div
+          className="flex items-center justify-between px-4 pt-2"
+          style={{ color: 'var(--accent-social)' }}
+        >
+          <span className="text-[11px] font-semibold">
+            {replyTarget.authorName}에게 답글
+          </span>
+          <button type="button" onClick={onCancelReply} className="p-1">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="flex items-end gap-2 px-4 pt-3 pb-2">
         <div className="min-w-0 flex-1">
           <textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={disabled && disabledMessage ? disabledMessage : '댓글을 입력하세요'}
+            placeholder={
+              disabled && disabledMessage
+                ? disabledMessage
+                : replyTarget
+                  ? `${replyTarget.authorName}에게 답글...`
+                  : '댓글을 입력하세요'
+            }
             maxLength={maxLength}
             rows={2}
             disabled={disabled}

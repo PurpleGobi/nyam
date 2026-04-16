@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { SocialAction } from '@/domain/entities/xp'
+import type { SocialAction, XpReason } from '@/domain/entities/xp'
 import { calculateSocialXp } from '@/domain/services/xp-calculator'
 import { xpRepo } from '@/shared/di/container'
 import { todayInTz, detectBrowserTimezone } from '@/shared/utils/date-format'
 
-const SOCIAL_REASON_MAP: Record<SocialAction, `social_${SocialAction}`> = {
+const SOCIAL_REASON_MAP: Record<SocialAction, XpReason> = {
   share: 'social_share',
-  like: 'social_like',
+  good: 'social_like',
   follow: 'social_follow',
   mutual: 'social_mutual',
 }

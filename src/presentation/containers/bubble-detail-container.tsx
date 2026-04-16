@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Trophy, Users, Settings, UserPlus, UserMinus, Plus, List, ShieldCheck, FileCheck, PencilLine, Star, Info, Sparkles } from 'lucide-react'
+import { Trophy, Users, Settings, UserPlus, UserMinus, Plus, List, Info, Sparkles } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useBubbleDetail } from '@/application/hooks/use-bubble-detail'
 import { useBubbleJoin } from '@/application/hooks/use-bubble-join'
@@ -670,7 +670,12 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
                   <button
                     key={entry.targetId}
                     type="button"
-                    onClick={() => router.push(rankingType === 'restaurant' ? `/restaurants/${entry.targetId}` : `/wines/${entry.targetId}`)}
+                    onClick={() => {
+                      const path = entry.targetType === 'wine'
+                        ? `/wines/${entry.targetId}`
+                        : `/restaurants/${entry.targetId}`
+                      router.push(path)
+                    }}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors active:bg-[var(--bg-elevated)]"
                     style={i < liveRanking.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}
                   >
@@ -796,6 +801,7 @@ export function BubbleDetailContainer({ bubbleId }: BubbleDetailContainerProps) 
         onAdd={handleAddItemFromSearch}
         isLoading={isSearchLoading}
       />
+
     </div>
   )
 }

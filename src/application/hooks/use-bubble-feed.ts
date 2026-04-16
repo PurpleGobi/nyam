@@ -44,6 +44,9 @@ export interface FeedShareEnriched {
   scene?: string | null
   visitDate?: string | null
   photoUrls?: string[]
+  commentCount: number
+  reactionCounts: Record<string, number>
+  myReactions: string[]
 }
 
 const DEFAULT_FILTERS: FeedFilters = {
@@ -79,6 +82,9 @@ function toEnriched(item: BubbleFeedItem): FeedShareEnriched {
     comment: item.comment,
     scene: item.scene,
     visitDate: item.visitDate,
+    commentCount: 0,
+    reactionCounts: {},
+    myReactions: [],
   }
 }
 

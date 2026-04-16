@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Trash2, Heart } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { ThumbsUp, Reply } from 'lucide-react'
 import type { Comment } from '@/domain/entities/comment'
 
 interface CommentListProps {
@@ -9,10 +9,28 @@ interface CommentListProps {
   currentUserId: string | null
   onDelete: (commentId: string) => void
   onLike: (commentId: string) => void
+  likedCommentIds?: Set<string>
+  onReply?: (commentId: string, authorName: string) => void
 }
 
-export function CommentList({ comments, currentUserId, onDelete, onLike }: CommentListProps) {
+export function CommentList({ comments, currentUserId, onDelete, onLike, likedCommentIds, onReply }: CommentListProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  // 루트 댓글과 대댓글 분리
+  const { rootComments, repliesByParent } = useMemo(() => {
+    const roots: Comment[] = []
+    const replies = new Map<string, Comment[]>()
+    for (const c of comments) {
+      if (c.parentId) {
+        const arr = replies.get(c.parentId) ?? []
+        arr.push(c)
+        replies.set(c.parentId, arr)
+      } else {
+        roots.push(c)
+      }
+    }
+    return { rootComments: roots, repliesByParent: replies }
+  }, [comments])
 
   if (comments.length === 0) {
     return <p className="py-6 text-center text-[13px] text-[var(--text-hint)]">아직 댓글이 없습니다</p>
@@ -32,55 +50,34 @@ export function CommentList({ comments, currentUserId, onDelete, onLike }: Comme
   return (
     <>
       <div className="flex flex-col gap-3">
-        {comments.map((comment) => {
-          const isOwn = comment.userId === currentUserId
-          const displayName = comment.isAnonymous ? '익명' : (comment.userId?.substring(0, 6) ?? '알 수 없음')
-          const date = new Date(comment.createdAt)
-          const dateLabel = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-
+        {rootComments.map((comment) => {
+          const childReplies = repliesByParent.get(comment.id) ?? []
           return (
-            <div key={comment.id} className="flex gap-2.5">
-              {/* 아바타 */}
-              <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                style={{
-                  backgroundColor: comment.isAnonymous ? 'var(--bg-card)' : 'var(--accent-social-light)',
-                  color: comment.isAnonymous ? 'var(--text-hint)' : 'var(--accent-social)',
-                }}
-              >
-                {comment.isAnonymous ? '?' : displayName[0].toUpperCase()}
-              </div>
-
-              {/* 내용 */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold text-[var(--text)]">{displayName}</span>
-                  <span className="text-[10px] text-[var(--text-hint)]">{dateLabel}</span>
+            <div key={comment.id}>
+              <CommentItem
+                comment={comment}
+                currentUserId={currentUserId}
+                onDelete={handleDeleteClick}
+                onLike={onLike}
+                likedCommentIds={likedCommentIds}
+                onReply={onReply}
+              />
+              {/* 대댓글 */}
+              {childReplies.length > 0 && (
+                <div className="ml-9 mt-1 flex flex-col gap-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
+                  {childReplies.map((reply) => (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      currentUserId={currentUserId}
+                      onDelete={handleDeleteClick}
+                      onLike={onLike}
+                      likedCommentIds={likedCommentIds}
+                      isReply
+                    />
+                  ))}
                 </div>
-                <p className="mt-0.5 text-[13px] leading-snug text-[var(--text-sub)]">{comment.content}</p>
-
-                {/* 댓글 좋아요 + 삭제 */}
-                <div className="mt-1 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => onLike(comment.id)}
-                    className="flex items-center gap-1 text-[11px] transition-colors"
-                    style={{ color: 'var(--text-hint)' }}
-                  >
-                    <Heart size={11} />
-                  </button>
-                  {isOwn && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(comment.id)}
-                      className="text-[11px]"
-                      style={{ color: 'var(--negative)' }}
-                    >
-                      삭제
-                    </button>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           )
         })}
@@ -117,5 +114,86 @@ export function CommentList({ comments, currentUserId, onDelete, onLike }: Comme
         </div>
       )}
     </>
+  )
+}
+
+// ─── 개별 댓글 아이템 ───
+
+interface CommentItemProps {
+  comment: Comment
+  currentUserId: string | null
+  onDelete: (commentId: string) => void
+  onLike: (commentId: string) => void
+  likedCommentIds?: Set<string>
+  onReply?: (commentId: string, authorName: string) => void
+  isReply?: boolean
+}
+
+function CommentItem({ comment, currentUserId, onDelete, onLike, likedCommentIds, onReply, isReply }: CommentItemProps) {
+  const isOwn = comment.userId === currentUserId
+  const displayName = comment.isAnonymous ? '익명' : (comment.authorNickname ?? '알 수 없음')
+  const displayHandle = comment.isAnonymous ? null : comment.authorHandle
+  const date = new Date(comment.createdAt)
+  const dateLabel = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+  const avatarSize = isReply ? 'h-6 w-6 text-[9px]' : 'h-7 w-7 text-[10px]'
+
+  return (
+    <div className="flex gap-2.5">
+      {/* 아바타 */}
+      <div
+        className={`flex shrink-0 items-center justify-center rounded-full font-bold ${avatarSize}`}
+        style={{
+          backgroundColor: comment.isAnonymous ? 'var(--bg-card)' : (comment.authorAvatarColor ?? 'var(--accent-social-light)'),
+          color: comment.isAnonymous ? 'var(--text-hint)' : 'var(--text-inverse)',
+        }}
+      >
+        {comment.isAnonymous ? '?' : displayName[0].toUpperCase()}
+      </div>
+
+      {/* 내용 */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className={`font-semibold text-[var(--text)] ${isReply ? 'text-[11px]' : 'text-[12px]'}`}>{displayName}</span>
+          {displayHandle && (
+            <span className="text-[10px] text-[var(--text-hint)]">@{displayHandle}</span>
+          )}
+          <span className="text-[10px] text-[var(--text-hint)]">{dateLabel}</span>
+        </div>
+        <p className={`mt-0.5 leading-snug text-[var(--text-sub)] ${isReply ? 'text-[12px]' : 'text-[13px]'}`}>{comment.content}</p>
+
+        {/* 액션: 좋아요 + 답글 + 삭제 */}
+        <div className="mt-1 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onLike(comment.id)}
+            className="flex items-center gap-1 text-[11px] transition-colors"
+            style={{ color: likedCommentIds?.has(comment.id) ? 'var(--positive)' : 'var(--text-hint)' }}
+          >
+            <ThumbsUp size={11} fill={likedCommentIds?.has(comment.id) ? 'currentColor' : 'none'} />
+          </button>
+          {!isReply && onReply && (
+            <button
+              type="button"
+              onClick={() => onReply(comment.id, displayName)}
+              className="flex items-center gap-1 text-[11px] transition-colors"
+              style={{ color: 'var(--text-hint)' }}
+            >
+              <Reply size={11} />
+              <span>답글</span>
+            </button>
+          )}
+          {isOwn && (
+            <button
+              type="button"
+              onClick={() => onDelete(comment.id)}
+              className="text-[11px]"
+              style={{ color: 'var(--negative)' }}
+            >
+              삭제
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
