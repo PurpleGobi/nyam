@@ -174,12 +174,14 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
                     } else if (attr.type === 'location') {
                       setLocationState({ attribute: attr, tabIndex: 0, level: 0, city: null })
                     } else if (attr.type === 'multi-select') {
-                      const existingChip = editingChipId
-                        ? conditionChips.find((c) => c.id === editingChipId && c.attribute === attr.key)
-                        : null
+                      // multi-select는 항상 기존 칩 값을 초기 선택으로 로드 (추가 선택 방식)
+                      const existingChip = conditionChips.find((c) => c.attribute === attr.key)
                       const initialSelected = existingChip
                         ? new Set(String(existingChip.value).split(',').map((v) => v.trim()))
                         : new Set<string>()
+                      if (existingChip) {
+                        multiSelectChipIdRef.current = existingChip.id
+                      }
                       setMultiSelectState({ attribute: attr, selected: initialSelected })
                     } else {
                       setSelectedAttribute(attr)
