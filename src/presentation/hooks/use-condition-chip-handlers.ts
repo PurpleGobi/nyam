@@ -54,7 +54,13 @@ export function useConditionChipHandlers({
 }) {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [selectedAttribute, setSelectedAttribute] = useState<FilterAttribute | null>(null)
-  const [editingChipId, setEditingChipId] = useState<string | null>(null)
+  const [editingChipId, _setEditingChipId] = useState<string | null>(null)
+  const replacingChipIdRef = useRef<string | null>(null)
+  /** editingChipId 설정 시 replacingChipIdRef도 함께 초기화 */
+  const setEditingChipId = useCallback((id: string | null) => {
+    _setEditingChipId(id)
+    if (id === null) replacingChipIdRef.current = null
+  }, [])
   const chipRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
   const [cascadingState, setCascadingState] = useState<CascadingStateValue | null>(null)
@@ -159,21 +165,29 @@ export function useConditionChipHandlers({
     return attributes.find((a) => a.key === chip.attribute)?.label ?? chip.attribute
   }, [attributes, conditionChips, childrenCascadeAttrs])
 
+  /** 교체 대상 칩을 제거한 chips 배열 반환 (칩 교체 시 사용) */
+  const chipsWithoutReplacing = (base: FilterChipItem[]) => {
+    const rid = replacingChipIdRef.current
+    return rid ? base.filter((c) => c.id !== rid) : base
+  }
+
   /* ── handlers ── */
   const handleAddCondition = useCallback((attr: FilterAttribute, value: string) => {
     const isCascadeAttr = childrenCascadeAttrs.some((ca) => ca.key === attr.key)
     const selectedOpt = attr.options?.find((o) => o.value === value)
     const hasChildren = selectedOpt?.children && selectedOpt.children.length > 0
 
+    const base = chipsWithoutReplacing(chips)
+
     if (isCascadeAttr) {
       const typeKey = childrenCascadeTypeKey(attr.key)
-      const existingTypeChip = chips.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
+      const existingTypeChip = base.find((c) => !isAdvancedChip(c) && c.attribute === typeKey) as ConditionChip | undefined
 
       let next: FilterChipItem[]
       if (existingTypeChip) {
         const newValue = `${existingTypeChip.value},${value}`
         const newLabel = newValue.split(',').map((v) => attr.options?.find((o) => o.value === v.trim())?.label ?? v).join(', ')
-        next = chips.map((c) =>
+        next = base.map((c) =>
           c.id === existingTypeChip.id ? { ...c, value: newValue, displayLabel: newLabel } : c,
         )
       } else {
@@ -184,7 +198,7 @@ export function useConditionChipHandlers({
           value,
           displayLabel: selectedOpt?.label ?? value,
         }
-        next = [...chips, typeChip]
+        next = [...base, typeChip]
       }
 
       if (hasChildren) {
@@ -205,6 +219,7 @@ export function useConditionChipHandlers({
         setSelectedAttribute(null)
         setIsAddOpen(false)
       }
+      setEditingChipId(null)
       setCascadingState(null)
       return
     }
@@ -217,33 +232,34 @@ export function useConditionChipHandlers({
       }
     }
     const newChip: ConditionChip = {
-      id: editingChipId ?? generateChipId(),
+      id: generateChipId(),
       attribute: attr.key,
       operator: 'eq',
       value,
       displayLabel: option?.label ?? value,
     }
-    if (editingChipId) {
-      onChipsChange(chips.map((c) => c.id === editingChipId ? newChip : c))
-    } else {
-      onChipsChange([...chips, newChip])
-    }
+    onChipsChange([...base, newChip])
     setSelectedAttribute(null)
     setEditingChipId(null)
     setIsAddOpen(false)
     setCascadingState(null)
-  }, [chips, onChipsChange, usedCascadeTypes, childrenCascadeAttrs, editingChipId])
+  }, [chips, onChipsChange, usedCascadeTypes, childrenCascadeAttrs, setEditingChipId])
 
   /** multi-select에서 editingChipId를 추적하는 ref */
   const multiSelectChipIdRef = useRef<string | null>(null)
 
   /** multi-select 실시간 적용 */
   const applyMultiSelectImmediate = useCallback((attr: FilterAttribute, selected: Set<string>) => {
+    const base = chipsWithoutReplacing(chips)
+
     if (selected.size === 0) {
       if (multiSelectChipIdRef.current) {
-        onChipsChange(chips.filter((c) => c.id !== multiSelectChipIdRef.current))
+        onChipsChange(base.filter((c) => c.id !== multiSelectChipIdRef.current))
         multiSelectChipIdRef.current = null
+      } else if (editingChipId) {
+        onChipsChange(base)
       }
+      setEditingChipId(null)
       return
     }
     const selectedValues = Array.from(selected)
@@ -253,7 +269,7 @@ export function useConditionChipHandlers({
       .join(', ')
 
     if (multiSelectChipIdRef.current) {
-      onChipsChange(chips.map((c) =>
+      onChipsChange(base.map((c) =>
         c.id === multiSelectChipIdRef.current
           ? { ...c, value: combinedValue, displayLabel: combinedLabel }
           : c,
@@ -268,9 +284,9 @@ export function useConditionChipHandlers({
         value: combinedValue,
         displayLabel: combinedLabel,
       }
-      onChipsChange([...chips, newChip])
+      onChipsChange([...base, newChip])
     }
-  }, [chips, onChipsChange])
+  }, [chips, onChipsChange, editingChipId, setEditingChipId])
 
   /** location 탭+도시 선택 → 도시 칩 바로 생성 */
   const handleLocationCityDirectSelect = useCallback((tabIndex: number, cityValue: string, cityLabel: string) => {
@@ -312,10 +328,12 @@ export function useConditionChipHandlers({
       })
     }
 
-    onChipsChange([...chips.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) : true), ...newChips])
+    const base = chipsWithoutReplacing(chips)
+    onChipsChange([...base.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) : true), ...newChips])
     setLocationState(null)
+    setEditingChipId(null)
     setIsAddOpen(false)
-  }, [locationState, chips, onChipsChange])
+  }, [locationState, chips, onChipsChange, setEditingChipId])
 
   /** location: 내 위치 선택 */
   const handleLocationNearby = useCallback(() => {
@@ -326,10 +344,12 @@ export function useConditionChipHandlers({
       value: 'nearby',
       displayLabel: '내 주변',
     }
-    onChipsChange([...chips.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) && c.attribute !== 'location' : true), newChip])
+    const base = chipsWithoutReplacing(chips)
+    onChipsChange([...base.filter((c) => !isAdvancedChip(c) ? !isLocationChipKey(c.attribute) && c.attribute !== 'location' : true), newChip])
     setLocationState(null)
+    setEditingChipId(null)
     setIsAddOpen(false)
-  }, [chips, onChipsChange])
+  }, [chips, onChipsChange, setEditingChipId])
 
   /** location: 도시 선택 → city 칩 업데이트 + detail 칩 자동 생성 */
   const handleLocationCitySelect = useCallback((cityValue: string, cityLabel: string) => {
@@ -364,7 +384,7 @@ export function useConditionChipHandlers({
 
     onChipsChange(nextChips)
     setEditingChipId(null)
-  }, [conditionChips, attributes, chips, onChipsChange])
+  }, [conditionChips, attributes, chips, onChipsChange, setEditingChipId])
 
   /** location: detail 선택 */
   const handleLocationDetailSelect = useCallback((detailValue: string, detailLabel: string) => {
@@ -382,7 +402,7 @@ export function useConditionChipHandlers({
       return c
     }))
     setEditingChipId(null)
-  }, [conditionChips, attributes, chips, onChipsChange])
+  }, [conditionChips, attributes, chips, onChipsChange, setEditingChipId])
 
   /** cascading-select 값 선택 */
   const handleCascadingSelect = useCallback((opt: CascadingOption) => {
@@ -391,7 +411,8 @@ export function useConditionChipHandlers({
     const totalLevels = attr.cascadingLabels?.length ?? 1
     const baseKey = attr.key
 
-    const kept = chips.filter((c) => {
+    const base = chipsWithoutReplacing(chips)
+    const kept = base.filter((c) => {
       if (isAdvancedChip(c)) return true
       if (!isCascadingKey(c.attribute)) return true
       if (getCascadingBaseKey(c.attribute) !== baseKey) return true
@@ -421,8 +442,9 @@ export function useConditionChipHandlers({
 
     onChipsChange([...kept, ...newChips])
     setCascadingState(null)
+    setEditingChipId(null)
     setIsAddOpen(false)
-  }, [cascadingState, chips, onChipsChange])
+  }, [cascadingState, chips, onChipsChange, setEditingChipId])
 
   const handleRemoveChip = useCallback((chipId: string) => {
     const chip = conditionChips.find((c) => c.id === chipId)
@@ -473,7 +495,7 @@ export function useConditionChipHandlers({
     }
     setEditingChipId(null)
     setCascadingState(null)
-  }, [chips, conditionChips, onChipsChange, childrenCascadeAttrs])
+  }, [chips, conditionChips, onChipsChange, childrenCascadeAttrs, setEditingChipId])
 
   /** 칩 값 변경 (일반 select) */
   const handleChangeChipValue = useCallback((chipId: string, newValue: string) => {
@@ -493,7 +515,7 @@ export function useConditionChipHandlers({
         : c,
     ))
     setEditingChipId(null)
-  }, [chips, conditionChips, attributes, onChipsChange])
+  }, [chips, conditionChips, attributes, onChipsChange, setEditingChipId])
 
   /** cascading 칩 값 변경 */
   const handleChangeCascadingChipValue = useCallback((chipId: string, opt: CascadingOption) => {
@@ -529,7 +551,7 @@ export function useConditionChipHandlers({
     })
     onChipsChange(nextChips)
     setEditingChipId(null)
-  }, [chips, conditionChips, attributes, onChipsChange])
+  }, [chips, conditionChips, attributes, onChipsChange, setEditingChipId])
 
   const closeAll = useCallback(() => {
     setIsAddOpen(false)
@@ -538,7 +560,7 @@ export function useConditionChipHandlers({
     setCascadingState(null)
     setMultiSelectState(null)
     setLocationState(null)
-  }, [])
+  }, [setEditingChipId])
 
   /** 칩 클릭 → 토글 or 편집 팝오버 */
   const handleChipClick = useCallback((chip: ConditionChip) => {
@@ -547,6 +569,7 @@ export function useConditionChipHandlers({
       return
     }
     setEditingChipId(chip.id)
+    replacingChipIdRef.current = chip.id
     setIsAddOpen(false)
     setSelectedAttribute(null)
     setCascadingState(null)
@@ -560,7 +583,20 @@ export function useConditionChipHandlers({
       setMultiSelectState({ attribute: msAttr, selected: currentValues })
       return
     }
-  }, [editingChipId, attributes, closeAll])
+  }, [editingChipId, attributes, closeAll, setEditingChipId])
+
+  /** 편집/하위 팝오버에서 상위 속성 목록으로 돌아가기 */
+  const navigateToAttributeList = useCallback(() => {
+    // replacingChipIdRef는 유지 — 다른 속성 선택 시 칩 교체용
+    _setEditingChipId(null)  // replacingChipIdRef 초기화 방지
+    setSelectedAttribute(null)
+    setCascadingState(null)
+    setMultiSelectState(null)
+    setLocationState(null)
+    setSocialChipOpen(null)
+    multiSelectChipIdRef.current = null
+    setIsAddOpen(true)
+  }, [])
 
   const handleAddClick = useCallback(() => {
     setEditingChipId(null)
@@ -571,7 +607,7 @@ export function useConditionChipHandlers({
       if (prev) setSelectedAttribute(null)
       return !prev
     })
-  }, [])
+  }, [setEditingChipId])
 
   return {
     // state
@@ -614,6 +650,7 @@ export function useConditionChipHandlers({
     handleChangeChipValue,
     handleChangeCascadingChipValue,
     closeAll,
+    navigateToAttributeList,
     handleChipClick,
     handleAddClick,
   }

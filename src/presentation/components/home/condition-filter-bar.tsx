@@ -119,6 +119,7 @@ export function ConditionFilterBar({
     handleChangeCascadingChipValue,
     findCascadingOptionsAtLevel,
     closeAll,
+    navigateToAttributeList,
   } = handlers
 
   const handleAdvancedClick = useCallback(() => {
@@ -296,6 +297,7 @@ export function ConditionFilterBar({
         handleChangeChipValue={handleChangeChipValue}
         handleChangeCascadingChipValue={handleChangeCascadingChipValue}
         findCascadingOptionsAtLevel={findCascadingOptionsAtLevel}
+        navigateToAttributeList={navigateToAttributeList}
         onAdvancedOpen={onAdvancedOpen}
         handleAdvancedClick={handleAdvancedClick}
       />

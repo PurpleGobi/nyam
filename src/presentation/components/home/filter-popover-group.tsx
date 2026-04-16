@@ -19,6 +19,20 @@ import { FilterPopover } from '@/presentation/components/home/filter-popover'
 import type { SocialFilterState, SocialFilterOption } from '@/presentation/components/home/condition-filter-bar'
 import type { CascadingStateValue, MultiSelectStateValue, LocationStateValue } from '@/presentation/hooks/use-condition-chip-handlers'
 
+/** 팝오버 공통 뒤로가기 헤더 */
+function PopoverBackHeader({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
+      style={{ color: 'var(--text-hint)' }}
+    >
+      ← {label}
+    </button>
+  )
+}
+
 interface FilterPopoverGroupProps {
   accent: string
   addBtnRef: React.RefObject<HTMLButtonElement | null>
@@ -66,6 +80,7 @@ interface FilterPopoverGroupProps {
   handleChangeChipValue: (chipId: string, newValue: string) => void
   handleChangeCascadingChipValue: (chipId: string, opt: CascadingOption) => void
   findCascadingOptionsAtLevel: (attr: FilterAttribute, level: number, currentChips: ConditionChip[]) => CascadingOption[] | null
+  navigateToAttributeList: () => void
   onAdvancedOpen?: () => void
   handleAdvancedClick: () => void
 }
@@ -114,15 +129,22 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
     handleChangeChipValue,
     handleChangeCascadingChipValue,
     findCascadingOptionsAtLevel,
+    navigateToAttributeList,
     onAdvancedOpen,
     handleAdvancedClick,
   } = props
+
+  // 팝오버 앵커: 편집 중이면 칩 위치, 아니면 + 버튼
+  const popoverAnchorRef = editingChipId
+    ? { current: chipRefs.current.get(editingChipId) ?? null }
+    : addBtnRef
+  const popoverAlign = 'left' as const
 
   return (
     <>
       {/* ── 속성 선택 팝오버 ── */}
       {isAddOpen && !selectedAttribute && !cascadingState && !multiSelectState && !locationState && (
-        <FilterPopover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align={editingChipId ? 'left' : 'right'} onClose={closeAll}>
+        <FilterPopover anchorRef={popoverAnchorRef} align={popoverAlign} onClose={closeAll}>
           {availableAttributes.map((attr, idx) => {
             const prevGroup = idx > 0 ? availableAttributes[idx - 1].group : undefined
             const showGroupLabel = attr.group !== undefined && attr.group !== prevGroup
@@ -192,15 +214,8 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
 
       {/* ── 값 선택 팝오버 (일반 select) ── */}
       {isAddOpen && selectedAttribute && selectedAttribute.type !== 'multi-select' && !cascadingState && (
-        <FilterPopover anchorRef={addBtnRef} align="right" onClose={closeAll}>
-          <button
-            type="button"
-            onClick={() => setSelectedAttribute(null)}
-            className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            ← {selectedAttribute.label}
-          </button>
+        <FilterPopover anchorRef={popoverAnchorRef} align={popoverAlign} onClose={closeAll}>
+          <PopoverBackHeader label={selectedAttribute.label} onBack={navigateToAttributeList} />
           {(selectedAttribute.options?.some((o) => o.children && o.children.length > 0)
             ? selectedAttribute.options?.filter((o) => !(usedCascadeTypes.get(selectedAttribute.key) ?? []).includes(o.value))
             : selectedAttribute.options
@@ -220,20 +235,13 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
 
       {/* ── multi-select 체크박스 팝오버 ── */}
       {multiSelectState && (
-        <FilterPopover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align="right" onClose={() => {
+        <FilterPopover anchorRef={popoverAnchorRef} align={popoverAlign} onClose={() => {
           setMultiSelectState(null)
           setIsAddOpen(false)
           setSocialChipOpen(null)
           multiSelectChipIdRef.current = null
         }}>
-          <button
-            type="button"
-            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); setSocialChipOpen(null); multiSelectChipIdRef.current = null; setIsAddOpen(true) }}
-            className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            ← {multiSelectState.attribute.label}
-          </button>
+          <PopoverBackHeader label={multiSelectState.attribute.label} onBack={navigateToAttributeList} />
           {multiSelectState.attribute.options?.map((opt, idx, arr) => {
             const isChecked = multiSelectState.selected.has(opt.value)
             const prevGroup = idx > 0 ? arr[idx - 1].group : undefined
@@ -351,15 +359,8 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
         const tabs: LocationTab[] = locAttr.locationTabs ?? []
         const currentTab = tabs[locTabIdx]
         return (
-          <FilterPopover anchorRef={addBtnRef} align="right" onClose={closeAll}>
-            <button
-              type="button"
-              onClick={() => { setLocationState(null); setSelectedAttribute(null) }}
-              className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
-              style={{ color: 'var(--text-hint)' }}
-            >
-              ← {locAttr.label}
-            </button>
+          <FilterPopover anchorRef={popoverAnchorRef} align={popoverAlign} onClose={closeAll}>
+            <PopoverBackHeader label={locAttr.label} onBack={navigateToAttributeList} />
             <button
               type="button"
               onClick={handleLocationNearby}
@@ -403,15 +404,8 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
 
       {/* ── cascading-select 초기 선택 팝오버 ── */}
       {isAddOpen && cascadingState && (
-        <FilterPopover anchorRef={addBtnRef} align="right" onClose={closeAll}>
-          <button
-            type="button"
-            onClick={() => setCascadingState(null)}
-            className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
-            style={{ color: 'var(--text-hint)' }}
-          >
-            ← {cascadingState.attribute.cascadingLabels?.[0] ?? cascadingState.attribute.label}
-          </button>
+        <FilterPopover anchorRef={popoverAnchorRef} align={popoverAlign} onClose={closeAll}>
+          <PopoverBackHeader label={cascadingState.attribute.cascadingLabels?.[0] ?? cascadingState.attribute.label} onBack={navigateToAttributeList} />
           {cascadingState.currentOptions.map((opt) => (
             <button
               key={opt.value}
@@ -452,9 +446,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
 
           return (
             <FilterPopover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
-              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                {levelLabel}
-              </div>
+              <PopoverBackHeader label={levelLabel} onBack={navigateToAttributeList} />
               {parentIsAll ? (
                 <div className="px-3 py-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>
                   상위 항목을 먼저 선택하세요
@@ -505,9 +497,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
           const cityLabel = tab.cascadingLabels[0] ?? '도시'
           return (
             <FilterPopover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
-              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                {cityLabel}
-              </div>
+              <PopoverBackHeader label={cityLabel} onBack={navigateToAttributeList} />
               {tab.cascadingOptions.map((cityOpt) => (
                 <button
                   key={cityOpt.value}
@@ -536,9 +526,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
           const detailLabel = tab.cascadingLabels[1] ?? '세부'
           return (
             <FilterPopover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
-              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                {detailLabel}
-              </div>
+              <PopoverBackHeader label={detailLabel} onBack={navigateToAttributeList} />
               <button
                 type="button"
                 onClick={() => {
@@ -578,9 +566,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
           if (!parentOpt?.children) return null
           return (
             <FilterPopover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
-              <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-                {parentOpt.label}
-              </div>
+              <PopoverBackHeader label={parentOpt.label} onBack={navigateToAttributeList} />
               <button
                 type="button"
                 onClick={() => {
@@ -622,9 +608,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
         if (!attr?.options) return null
         return (
           <FilterPopover anchorRef={chipBtnRef} align="left" onClose={() => setEditingChipId(null)}>
-            <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-              {attr.label}
-            </div>
+            <PopoverBackHeader label={attr.label} onBack={navigateToAttributeList} />
             {attr.options.map((opt) => (
               <button
                 key={opt.value}
