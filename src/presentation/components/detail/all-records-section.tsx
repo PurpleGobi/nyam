@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Users, MessageCircle } from 'lucide-react'
 import { useAuth } from '@/presentation/providers/auth-provider'
 import { useUserBubbles } from '@/application/hooks/use-user-bubbles'
 import { useAllTargetRecords } from '@/application/hooks/use-all-target-records'
 import type { SourceFilter } from '@/application/hooks/use-all-target-records'
+import type { RecordPhoto } from '@/domain/entities/record-photo'
 import { FilterChipGroup } from '@/presentation/components/ui/filter-chip'
 import { MiniProfilePopup } from '@/presentation/components/profile/mini-profile-popup'
+import { PopupWindow } from '@/presentation/components/ui/popup-window'
 import { AllRecordCard } from './all-record-card'
 
 interface AllRecordsSectionProps {
@@ -35,6 +37,17 @@ export function AllRecordsSection({ targetId, targetType }: AllRecordsSectionPro
   } = useAllTargetRecords({ targetId, targetType, userId: user?.id ?? null, userBubbleIds })
 
   const [miniProfileUserId, setMiniProfileUserId] = useState<string | null>(null)
+  const [popupPhotos, setPopupPhotos] = useState<string[]>([])
+  const [popupIndex, setPopupIndex] = useState<number | null>(null)
+
+  const openPhotoPopup = useCallback((photos: RecordPhoto[], startIndex: number) => {
+    setPopupPhotos(photos.map((p) => p.url))
+    setPopupIndex(startIndex)
+  }, [])
+
+  const handlePopupClick = useCallback(() => {
+    setPopupIndex((prev) => prev !== null ? (prev + 1) % popupPhotos.length : null)
+  }, [popupPhotos.length])
 
   const accentType = targetType === 'restaurant' ? 'food' as const : 'wine' as const
   const emptyTarget = targetType === 'restaurant' ? '이 식당' : '이 와인'
@@ -91,7 +104,9 @@ export function AllRecordsSection({ targetId, targetType }: AllRecordsSectionPro
               visitDate={r.visitDate}
               source={r.source}
               accentType={accentType}
+              photos={r.photos}
               onAuthorPress={() => setMiniProfileUserId(r.authorId)}
+              onPhotoPress={openPhotoPopup}
             />
           ))}
           {hasMore && (
@@ -124,6 +139,26 @@ export function AllRecordsSection({ targetId, targetType }: AllRecordsSectionPro
           targetUserId={miniProfileUserId}
         />
       )}
+
+      {/* 사진 팝업 */}
+      <PopupWindow isOpen={popupIndex !== null} onClose={() => setPopupIndex(null)}>
+        {popupIndex !== null && (
+          <div
+            className="fixed inset-0 flex items-center justify-center"
+            style={{ zIndex: 200, pointerEvents: 'none' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={popupPhotos[popupIndex]}
+              alt=""
+              onClick={handlePopupClick}
+              className="rounded-2xl shadow-lg"
+              style={{ maxWidth: 'min(90vw, 500px)', maxHeight: '70vh', objectFit: 'contain', cursor: 'pointer', pointerEvents: 'auto' }}
+              draggable={false}
+            />
+          </div>
+        )}
+      </PopupWindow>
     </section>
   )
 }

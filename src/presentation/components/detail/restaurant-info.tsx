@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Phone, Clock, ChevronDown, ExternalLink } from 'lucide-react'
 import type { BusinessHours, MenuItem } from '@/domain/entities/restaurant'
+import { MiniMapView } from '@/presentation/components/detail/mini-map-view'
 
 const DAY_NAMES: Record<string, string> = {
   mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일',
@@ -23,6 +24,9 @@ interface RestaurantInfoProps {
   name: string
   menus: MenuItem[]
   showMenuSection: boolean
+  externalIdKakao?: string | null
+  externalIdNaver?: string | null
+  externalIdGoogle?: string | null
 }
 
 export function RestaurantInfo({
@@ -34,6 +38,9 @@ export function RestaurantInfo({
   name,
   menus,
   showMenuSection,
+  externalIdKakao,
+  externalIdNaver,
+  externalIdGoogle,
 }: RestaurantInfoProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -47,14 +54,21 @@ export function RestaurantInfo({
 
   if (!hasLocation && !hasMenus && !hasAddress && !hasHours && !hasPhone) return null
 
+  const encodedName = encodeURIComponent(name)
   const kakaoMapUrl = hasLocation
-    ? `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`
+    ? externalIdKakao
+      ? `https://place.map.kakao.com/${externalIdKakao}`
+      : `https://map.kakao.com/?q=${encodedName}&x=${lng}&y=${lat}`
     : null
   const naverMapUrl = hasLocation
-    ? `https://map.naver.com/v5/search/${encodeURIComponent(name)}?c=${lng},${lat},15,0,0,0,dh`
+    ? externalIdNaver
+      ? `https://map.naver.com/v5/entry/place/${externalIdNaver}`
+      : `https://map.naver.com/v5/search/${encodedName}?c=${lng},${lat},15,0,0,0,dh`
     : null
   const googleMapUrl = hasLocation
-    ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(name)}`
+    ? externalIdGoogle
+      ? `https://www.google.com/maps/place/?q=place_id:${externalIdGoogle}`
+      : `https://www.google.com/maps/search/${encodedName}/@${lat},${lng},17z`
     : null
 
   return (
@@ -108,26 +122,8 @@ export function RestaurantInfo({
             className="flex flex-col gap-2"
             style={{ padding: '8px 0', borderBottom: hasMenus ? '1px solid #F0EDE8' : undefined }}
           >
-            {/* 미니 지도 플레이스홀더 */}
-            <div
-              className="flex items-center justify-center overflow-hidden rounded-lg"
-              style={{
-                height: '120px',
-                backgroundColor: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                if (kakaoMapUrl) window.open(kakaoMapUrl, '_blank')
-              }}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <MapPin size={20} style={{ color: 'var(--accent-food)' }} />
-                <span style={{ fontSize: '10px', color: 'var(--text-hint)' }}>
-                  지도에서 보기
-                </span>
-              </div>
-            </div>
+            {/* 미니 지도 */}
+            <MiniMapView lat={lat} lng={lng} height={140} />
 
             {/* 지도 앱 링크 버튼들 */}
             <div className="flex items-center gap-2">

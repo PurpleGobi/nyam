@@ -599,6 +599,9 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
           name={restaurant.name}
           menus={restaurant.menus ?? []}
           showMenuSection={viewMode === 'my_records'}
+          externalIdKakao={restaurant.externalIdKakao}
+          externalIdNaver={restaurant.externalIdNaver}
+          externalIdGoogle={restaurant.externalIdGoogle}
         />
 
         {/* 하단 spacer (FAB + 액션바 클리어런스) */}

@@ -5,6 +5,7 @@ import { bubbleRepo, profileRepo } from '@/shared/di/container'
 import { restaurantRepo, wineRepo } from '@/shared/di/container'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
 import type { DiningRecord } from '@/domain/entities/record'
+import type { RecordPhoto } from '@/domain/entities/record-photo'
 
 // ─── Types ───
 
@@ -25,6 +26,7 @@ export interface AllRecordItem {
   comment: string | null
   scene: string | null
   visitDate: string | null
+  photos: RecordPhoto[]
 }
 
 export type SourceFilter = 'all' | RecordSource
@@ -69,25 +71,27 @@ export function useAllTargetRecords({
         repo.findPublicRecordsByTarget(targetId, userId),
       ])
 
-      // 버블: 이미 author 정보 포함
+      // 버블: 이미 author 정보 포함 (내 기록 제외)
       const shares = bubbleResult.status === 'fulfilled' ? bubbleResult.value : []
-      const bItems: AllRecordItem[] = shares.map((s) => ({
-        id: s.recordId,
-        source: 'bubble' as const,
-        authorId: s.sharedBy,
-        authorNickname: s.authorNickname ?? '',
-        authorAvatar: s.authorAvatar ?? null,
-        authorAvatarColor: s.authorAvatarColor ?? null,
-        authorLevel: s.authorLevel ?? 1,
-        authorLevelTitle: s.authorLevelTitle ?? '',
-        satisfaction: s.satisfaction ?? null,
-        axisX: s.axisX ?? null,
-        axisY: s.axisY ?? null,
-        comment: s.comment ?? null,
-        scene: s.scene ?? null,
-        visitDate: s.visitDate ?? null,
-      }))
-      setBubbleItems(bItems)
+      const bItems: AllRecordItem[] = shares
+        .filter((s) => s.sharedBy !== userId)
+        .map((s) => ({
+          id: s.recordId,
+          source: 'bubble' as const,
+          authorId: s.sharedBy,
+          authorNickname: s.authorNickname ?? '',
+          authorAvatar: s.authorAvatar ?? null,
+          authorAvatarColor: s.authorAvatarColor ?? null,
+          authorLevel: s.authorLevel ?? 1,
+          authorLevelTitle: s.authorLevelTitle ?? '',
+          satisfaction: s.satisfaction ?? null,
+          axisX: s.axisX ?? null,
+          axisY: s.axisY ?? null,
+          comment: s.comment ?? null,
+          scene: s.scene ?? null,
+          visitDate: s.visitDate ?? null,
+          photos: [],
+        }))
 
       // 팔로잉 + 공개: DiningRecord → author 정보 enrichment 필요
       const fRecords = followingResult.status === 'fulfilled' ? followingResult.value : []
@@ -133,11 +137,27 @@ export function useAllTargetRecords({
           comment: r.comment,
           scene: r.scene,
           visitDate: r.visitDate,
+          photos: [],
         }
       }
 
-      setFollowingItems(fRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'following')))
-      setPublicItems(pRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'public')))
+      const fItems = fRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'following'))
+      const pItems = pRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'public'))
+
+      // 모든 기록의 사진 일괄 조회
+      const allItems = [...bItems, ...fItems, ...pItems]
+      const allRecordIds = [...new Set(allItems.map((item) => item.id).filter(Boolean))]
+      if (allRecordIds.length > 0) {
+        const photoMap = await repo.findRecordPhotos(allRecordIds)
+        for (const item of allItems) {
+          const photos = photoMap.get(item.id)
+          if (photos) item.photos = photos.filter((p) => p.isPublic)
+        }
+      }
+
+      setBubbleItems(bItems)
+      setFollowingItems(fItems)
+      setPublicItems(pItems)
     } finally {
       setIsLoading(false)
     }
