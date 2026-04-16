@@ -98,6 +98,7 @@ export function useConditionChipHandlers({
     }
   }
   const availableAttributes = attributes.filter((a) => {
+    if (a.type === 'multi-select') return true
     if (usedBaseKeys.has(a.key)) return false
     if (childrenCascadeAttrs.some((ca) => ca.key === a.key)) {
       const used = usedCascadeTypes.get(a.key) ?? []
@@ -216,17 +217,22 @@ export function useConditionChipHandlers({
       }
     }
     const newChip: ConditionChip = {
-      id: generateChipId(),
+      id: editingChipId ?? generateChipId(),
       attribute: attr.key,
       operator: 'eq',
       value,
       displayLabel: option?.label ?? value,
     }
-    onChipsChange([...chips, newChip])
+    if (editingChipId) {
+      onChipsChange(chips.map((c) => c.id === editingChipId ? newChip : c))
+    } else {
+      onChipsChange([...chips, newChip])
+    }
     setSelectedAttribute(null)
+    setEditingChipId(null)
     setIsAddOpen(false)
     setCascadingState(null)
-  }, [chips, onChipsChange, usedCascadeTypes, childrenCascadeAttrs])
+  }, [chips, onChipsChange, usedCascadeTypes, childrenCascadeAttrs, editingChipId])
 
   /** multi-select에서 editingChipId를 추적하는 ref */
   const multiSelectChipIdRef = useRef<string | null>(null)

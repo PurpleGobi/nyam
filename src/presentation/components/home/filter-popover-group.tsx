@@ -122,37 +122,52 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
     <>
       {/* ── 속성 선택 팝오버 ── */}
       {isAddOpen && !selectedAttribute && !cascadingState && !multiSelectState && !locationState && (
-        <FilterPopover anchorRef={addBtnRef} align="right" onClose={closeAll}>
-          <div className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-hint)' }}>
-            속성 선택
-          </div>
-          {availableAttributes.map((attr) => (
-            <button
-              key={attr.key}
-              type="button"
-              onClick={() => {
-                if (attr.type === 'cascading-select' && attr.cascadingOptions) {
-                  setCascadingState({ attribute: attr, level: 0, currentOptions: attr.cascadingOptions })
-                } else if (attr.type === 'location') {
-                  setLocationState({ attribute: attr, tabIndex: 0, level: 0, city: null })
-                } else if (attr.type === 'multi-select') {
-                  const existingChip = editingChipId
-                    ? conditionChips.find((c) => c.id === editingChipId && c.attribute === attr.key)
-                    : null
-                  const initialSelected = existingChip
-                    ? new Set(String(existingChip.value).split(',').map((v) => v.trim()))
-                    : new Set<string>()
-                  setMultiSelectState({ attribute: attr, selected: initialSelected })
-                } else {
-                  setSelectedAttribute(attr)
-                }
-              }}
-              className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
-              style={{ color: 'var(--text)' }}
-            >
-              {attr.label}
-            </button>
-          ))}
+        <FilterPopover anchorRef={editingChipId ? { current: chipRefs.current.get(editingChipId) ?? null } : addBtnRef} align={editingChipId ? 'left' : 'right'} onClose={closeAll}>
+          {availableAttributes.map((attr, idx) => {
+            const prevGroup = idx > 0 ? availableAttributes[idx - 1].group : undefined
+            const showGroupLabel = attr.group !== undefined && attr.group !== prevGroup
+            return (
+              <div key={attr.key}>
+                {showGroupLabel && (
+                  <div
+                    className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                    style={{
+                      color: 'var(--text-hint)',
+                      borderTop: idx > 0 ? '1px solid var(--border)' : undefined,
+                      marginTop: idx > 0 ? 4 : undefined,
+                      paddingTop: idx > 0 ? 6 : undefined,
+                    }}
+                  >
+                    {attr.group}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (attr.type === 'cascading-select' && attr.cascadingOptions) {
+                      setCascadingState({ attribute: attr, level: 0, currentOptions: attr.cascadingOptions })
+                    } else if (attr.type === 'location') {
+                      setLocationState({ attribute: attr, tabIndex: 0, level: 0, city: null })
+                    } else if (attr.type === 'multi-select') {
+                      const existingChip = editingChipId
+                        ? conditionChips.find((c) => c.id === editingChipId && c.attribute === attr.key)
+                        : null
+                      const initialSelected = existingChip
+                        ? new Set(String(existingChip.value).split(',').map((v) => v.trim()))
+                        : new Set<string>()
+                      setMultiSelectState({ attribute: attr, selected: initialSelected })
+                    } else {
+                      setSelectedAttribute(attr)
+                    }
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {attr.label}
+                </button>
+              </div>
+            )
+          })}
           {availableAttributes.length === 0 && (
             <div className="px-3 py-2 text-[12px]" style={{ color: 'var(--text-hint)' }}>
               추가 가능한 속성이 없습니다
@@ -213,7 +228,7 @@ export function FilterPopoverGroup(props: FilterPopoverGroupProps) {
         }}>
           <button
             type="button"
-            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); setSocialChipOpen(null); multiSelectChipIdRef.current = null }}
+            onClick={() => { setMultiSelectState(null); setSelectedAttribute(null); setSocialChipOpen(null); multiSelectChipIdRef.current = null; setIsAddOpen(true) }}
             className="flex w-full items-center gap-1 px-3 py-1.5 text-[11px] font-semibold"
             style={{ color: 'var(--text-hint)' }}
           >

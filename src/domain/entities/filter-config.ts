@@ -26,10 +26,14 @@ export interface LocationTab {
   cascadingOptions: CascadingOption[]  // 도시 레벨부터 시작 (국가 자동 선택)
 }
 
+export type FilterAttributeGroup = '뷰' | '속성' | '기록'
+
 export interface FilterAttribute {
   key: string
   label: string
   type: FilterAttributeType
+  /** 필터 속성 선택 팝오버에서 그룹 구분 표시 (뷰/속성/기록) */
+  group?: FilterAttributeGroup
   options?: FilterAttributeOption[]
   /** cascading-select 전용: 계층적 옵션 트리 */
   cascadingOptions?: CascadingOption[]
@@ -155,12 +159,13 @@ const LOCATION_AREA_TREE: CascadingOption[] = [
 
 // ─── 식당 필터 속성 ───
 
-// 순서: 보기, 음식종류, 위치, 가격대, 상황, 점수, 명성, 대표메뉴, 시기, 동반자
+// 순서: 뷰(보기) → 속성(음식종류, 위치, 가격대, 명성) → 기록(상황, 점수, 대표메뉴, 시기, 동반자)
 export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
   {
     key: 'view',
     label: '보기',
     type: 'multi-select',
+    group: '뷰',
     options: [
       { value: 'mine', label: '내 기록' },
       { value: 'following', label: '팔로잉' },
@@ -171,6 +176,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'genre',
     label: '음식종류',
     type: 'select',
+    group: '속성',
     options: [
       { value: '한식', label: '한식' },
       { value: '일식', label: '일식' },
@@ -194,6 +200,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'location',
     label: '위치',
     type: 'location',
+    group: '속성',
     defaultCountry: '한국',
     locationTabs: [
       {
@@ -229,6 +236,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'price_range',
     label: '가격대',
     type: 'select',
+    group: '속성',
     options: [
       { value: '1', label: '저가' },
       { value: '2', label: '중간' },
@@ -236,9 +244,22 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     ],
   },
   {
+    key: 'prestige',
+    label: '명성',
+    type: 'select',
+    group: '속성',
+    options: [
+      { value: 'michelin', label: '미슐랭' },
+      { value: 'blue_ribbon', label: '블루리본' },
+      { value: 'tv', label: 'TV출연' },
+      { value: 'none', label: '수상없음' },
+    ],
+  },
+  {
     key: 'scene',
     label: '상황',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'solo', label: '혼밥' },
       { value: 'romantic', label: '데이트' },
@@ -252,6 +273,7 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'satisfaction',
     label: '점수',
     type: 'select',
+    group: '기록',
     options: [
       { value: '90', label: '90+' },
       { value: '80', label: '80~89' },
@@ -260,20 +282,10 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     ],
   },
   {
-    key: 'prestige',
-    label: '명성',
-    type: 'select',
-    options: [
-      { value: 'michelin', label: '미슐랭' },
-      { value: 'blue_ribbon', label: '블루리본' },
-      { value: 'tv', label: 'TV출연' },
-      { value: 'none', label: '수상없음' },
-    ],
-  },
-  {
     key: 'menu_type',
     label: '대표메뉴',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'course', label: '코스' },
       { value: 'single', label: '단품' },
@@ -286,23 +298,13 @@ export const RESTAURANT_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'visit_date',
     label: '시기',
     type: 'select',
+    group: '기록',
     options: [
       { value: '1w', label: '최근 1주' },
       { value: '1m', label: '1개월' },
       { value: '3m', label: '3개월' },
       { value: '6m', label: '6개월' },
       { value: '1y', label: '1년+' },
-    ],
-  },
-  {
-    key: 'companion_count',
-    label: '동반자',
-    type: 'select',
-    options: [
-      { value: '1', label: '혼자' },
-      { value: '2', label: '2인' },
-      { value: '3-4', label: '3~4인' },
-      { value: '5+', label: '5인+' },
     ],
   },
 ]
@@ -468,6 +470,7 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'bubble_type',
     label: '종류',
     type: 'select',
+    group: '뷰',
     options: [
       { value: 'mine', label: '나의 버블' },
       { value: 'following', label: '팔로잉 버블' },
@@ -479,6 +482,7 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'role',
     label: '역할',
     type: 'select',
+    group: '속성',
     options: [
       { value: 'owner', label: '오너' },
       { value: 'member', label: '멤버' },
@@ -489,6 +493,7 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'expertise_level',
     label: '전문분야 레벨',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'genre', label: '장르' },
       { value: 'area', label: '지역' },
@@ -501,6 +506,7 @@ export const HOME_BUBBLE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'expertise_records',
     label: '전문분야 기록 수',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'genre', label: '장르' },
       { value: 'area', label: '지역' },
@@ -548,6 +554,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'view',
     label: '보기',
     type: 'multi-select',
+    group: '뷰',
     options: [
       { value: 'mine', label: '내 기록' },
       { value: 'following', label: '팔로잉' },
@@ -558,6 +565,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'wine_type',
     label: '스타일',
     type: 'select',
+    group: '속성',
     options: [
       { value: 'red', label: 'Red' },
       { value: 'white', label: 'White' },
@@ -572,6 +580,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'variety',
     label: '품종',
     type: 'select',
+    group: '속성',
     options: [
       // WSET L2+L3 완전 커버리지 (55종, body_order 순)
       // ── White (33종) ──
@@ -647,6 +656,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'country',
     label: '산지',
     type: 'select',
+    group: '속성',
     options: [
       // WSET L2+L3 전체 커버리지 (15개국)
       { value: 'France', label: 'France' },
@@ -670,6 +680,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'vintage',
     label: '빈티지',
     type: 'select',
+    group: '속성',
     options: [
       { value: '2024', label: '2024' },
       { value: '2023', label: '2023' },
@@ -684,6 +695,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'satisfaction',
     label: '점수',
     type: 'select',
+    group: '기록',
     options: [
       { value: '90', label: '90+' },
       { value: '80', label: '80~89' },
@@ -695,6 +707,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'visit_date',
     label: '시음시기',
     type: 'select',
+    group: '기록',
     options: [
       { value: '1w', label: '최근 1주' },
       { value: '1m', label: '1개월' },
@@ -707,6 +720,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'pairing_categories',
     label: '페어링',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'red_meat', label: '적색육' },
       { value: 'white_meat', label: '백색육' },
@@ -720,11 +734,13 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'purchase_price',
     label: '가격',
     type: 'range',
+    group: '기록',
   },
   {
     key: 'acidity_level',
     label: '산미',
     type: 'select',
+    group: '기록',
     options: [
       { value: '1', label: '낮음' },
       { value: '2', label: '중간' },
@@ -735,6 +751,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'sweetness_level',
     label: '당도',
     type: 'select',
+    group: '기록',
     options: [
       { value: '1', label: '드라이' },
       { value: '2', label: '오프드라이' },
@@ -745,6 +762,7 @@ export const WINE_FILTER_ATTRIBUTES: FilterAttribute[] = [
     key: 'complexity',
     label: '복합도',
     type: 'select',
+    group: '기록',
     options: [
       { value: 'simple', label: '단순 (0~33)' },
       { value: 'medium', label: '중간 (34~66)' },
