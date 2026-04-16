@@ -1,4 +1,4 @@
-<!-- updated: 2026-04-13 -->
+<!-- updated: 2026-04-16 -->
 # DATA_MODEL — 데이터 모델
 
 > affects: 모든 페이지, 모든 시스템
@@ -724,13 +724,13 @@ CREATE TABLE reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   target_type VARCHAR(20) NOT NULL,  -- 'record' | 'comment'
   target_id UUID NOT NULL,
-  reaction_type VARCHAR(20) NOT NULL,  -- 'like' | 'bookmark' | 'want' | 'check' | 'fire'
+  reaction_type VARCHAR(20) NOT NULL,  -- 'good' | 'bad'
   user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   UNIQUE(target_type, target_id, reaction_type, user_id),
   CONSTRAINT chk_reactions_target_type CHECK (target_type IN ('record','comment')),
-  CONSTRAINT chk_reactions_type        CHECK (reaction_type IN ('like','bookmark','want','check','fire'))
+  CONSTRAINT chk_reactions_type        CHECK (reaction_type IN ('good','bad'))
 );
 
 CREATE INDEX idx_reactions_target ON reactions(target_type, target_id, reaction_type);

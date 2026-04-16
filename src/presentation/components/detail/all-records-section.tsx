@@ -107,23 +107,13 @@ export function AllRecordsSection({
     }))
   }, [myRecords, myRecordPhotos, user])
 
-  // 현재 표시할 아이템: 'all'이면 내 기록 + 타인 기록 통합, 'mine'이면 내 기록만
+  // 현재 표시할 아이템
+  // - 'mine': props에서 받은 myRecordItems (비공개 메모 등 포함)
+  // - 나머지: hook이 해당 조건에 맞는 모든 기록 반환 (내 기록 포함)
   const displayItems = useMemo(() => {
     if (isMineFilter) return myRecordItems
-    if (sourceFilter === 'all') {
-      // 내 기록 + 타인 기록 합치고 중복 제거
-      const seen = new Set<string>()
-      const merged: AllRecordItem[] = []
-      for (const item of [...myRecordItems, ...records]) {
-        if (!seen.has(item.id)) {
-          seen.add(item.id)
-          merged.push(item)
-        }
-      }
-      return merged
-    }
     return records
-  }, [isMineFilter, sourceFilter, myRecordItems, records])
+  }, [isMineFilter, myRecordItems, records])
 
   // 리액션 + 댓글 카운트 batch 로드
   useEffect(() => {

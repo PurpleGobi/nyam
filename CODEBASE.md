@@ -1,11 +1,11 @@
 # CODEBASE.md — Nyam 코드베이스 구조 인덱스
 
 > 새 세션이 1분 안에 코드베이스를 파악하기 위한 문서. 코드 복사 금지 — 구조와 상태만.
-> 마지막 갱신: 2026-04-16 (Phase 5+6: 대형 파일 분할 + uploadBubbleIcon 이동 + types.ts 재생성)
+> 마지막 갱신: 2026-04-16 (버블 피드 댓글 + 리액션 good/bad 2종 구현, migration 079)
 
 ## 프로젝트 요약
 - 맛집/와인 기록 + 소셜(버블) 앱. Next.js App Router + Supabase + Clean Architecture
-- 총 ~450개 TS/TSX 파일, 55개 마이그레이션, 6개 Edge Function
+- 총 ~450개 TS/TSX 파일, 79개 마이그레이션, 6개 Edge Function
 
 ## src/ 레이어별 구조
 
@@ -61,7 +61,7 @@
 - onboarding/, design-system/
 
 ## supabase/
-- migrations/ (78개, 000~078): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052→078 pg_net) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개 + 073~078 bubble_items 완전 단순화(source+record_id+added_by DROP, 기록삭제/멤버탈퇴 트리거, 성능 인덱스)
+- migrations/ (79개, 000~079): 스키마 전체 + RLS + triggers + cron + WSET 아로마 구조 + 버블 트리거 SECURITY DEFINER 수정 + lists→bookmarks 전환(049) + CF 캐시 테이블(051) + CF trigger(052→078 pg_net) + bubble_items(053+054) + restaurant_prestige 리디자인(055) + 058 prestige rename + 059 쿼리 최적화 인덱스(gin/btree) + 061 RPC 함수 4개 + 073~078 bubble_items 완전 단순화(source+record_id+added_by DROP, 기록삭제/멤버탈퇴 트리거, 성능 인덱스) + 079 reactions CHECK 제약조건 good/bad 2종으로 변경
 - functions/ (6): process-account-deletion, refresh-active-xp, weekly-ranking-snapshot(bubble_items 전환 완료), compute-similarity(CF 증분 갱신), predict-score(단건 CF 예측, JWT+service_role), batch-predict(배치 CF 예측, 최대 50건)
 
 ## DI 등록 현황 (container.ts)

@@ -71,10 +71,9 @@ export function useAllTargetRecords({
         repo.findPublicRecordsByTarget(targetId, userId),
       ])
 
-      // 버블: 이미 author 정보 포함 (내 기록 제외)
+      // 버블: 이미 author 정보 포함
       const shares = bubbleResult.status === 'fulfilled' ? bubbleResult.value : []
       const bItemsRaw: AllRecordItem[] = shares
-        .filter((s) => s.sharedBy !== userId)
         .map((s) => ({
           id: s.recordId,
           source: 'bubble' as const,
@@ -104,9 +103,9 @@ export function useAllTargetRecords({
       const fRecords = followingResult.status === 'fulfilled' ? followingResult.value : []
       const pRecords = publicResult.status === 'fulfilled' ? publicResult.value : []
 
-      // 유니크 userId 수집 → 프로필 batch fetch
+      // 유니크 userId 수집 → 프로필 batch fetch (본인 포함)
       const allRecords = [...fRecords, ...pRecords]
-      const uniqueUserIds = [...new Set(allRecords.map((r) => r.userId).filter((id) => id !== userId))]
+      const uniqueUserIds = [...new Set(allRecords.map((r) => r.userId))]
 
       const profileMap = new Map<string, { nickname: string; avatarUrl: string | null; avatarColor: string | null; totalXp: number }>()
       if (uniqueUserIds.length > 0) {
@@ -148,8 +147,8 @@ export function useAllTargetRecords({
         }
       }
 
-      const fItems = fRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'following'))
-      const pItems = pRecords.filter((r) => r.userId !== userId).map((r) => enrichRecord(r, 'public'))
+      const fItems = fRecords.map((r) => enrichRecord(r, 'following'))
+      const pItems = pRecords.map((r) => enrichRecord(r, 'public'))
 
       // 모든 기록의 사진 일괄 조회
       const allItems = [...bItems, ...fItems, ...pItems]

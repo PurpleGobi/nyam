@@ -165,8 +165,9 @@ function CommentItem({ comment, currentUserId, onDelete, onLike, likedCommentIds
         <div className="mt-1 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => onLike(comment.id)}
-            className="flex items-center gap-1 text-[11px] transition-colors"
+            onClick={isOwn ? undefined : () => onLike(comment.id)}
+            disabled={isOwn}
+            className="flex items-center gap-1 text-[11px] transition-colors disabled:opacity-40"
             style={{ color: likedCommentIds?.has(comment.id) ? 'var(--positive)' : 'var(--text-hint)' }}
           >
             <ThumbsUp size={11} fill={likedCommentIds?.has(comment.id) ? 'currentColor' : 'none'} />
