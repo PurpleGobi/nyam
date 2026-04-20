@@ -19,6 +19,7 @@ interface QuadrantInputProps {
     targetId?: string
     targetType?: 'restaurant' | 'wine'
     isMicroDot?: boolean
+    dotSource?: 'mine' | 'bubble' | 'nyam'
   }>
   showHint?: boolean
   /** true면 현재 dot 숨김 (터치 전 상태) */
@@ -231,27 +232,6 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
               gap: '4px',
             }}
           >
-            <button
-              type="button"
-              onClick={() => setShowLabels((v) => !v)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: showLabels ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'var(--bg-elevated)',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                opacity: showLabels ? 1 : 0.7,
-              }}
-            >
-              <Info size={11} style={{ color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }} />
-              <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }}>
-                가이드
-              </span>
-            </button>
             {quadrantMode && onQuadrantModeChange && (
               <button
                 type="button"
@@ -290,10 +270,31 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                     borderRadius: quadrantMode === 'visits' ? '6px' : 0,
                   }}
                 >
-                  방문기록
+                  과거
                 </span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setShowLabels((v) => !v)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: showLabels ? (type === 'wine' ? 'var(--accent-wine)' : 'var(--accent-food)') : 'var(--bg-elevated)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                opacity: showLabels ? 1 : 0.7,
+              }}
+            >
+              <Info size={11} style={{ color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: showLabels ? 'var(--text-inverse)' : 'var(--text-sub)' }}>
+                가이드
+              </span>
+            </button>
           </div>
           {/* 사분면 박스 */}
           <div
@@ -360,6 +361,7 @@ export function QuadrantInput({ type, value, onChange, referencePoints = [], sho
                 channel={type === 'wine' ? 'wine-total' : 'total'}
                 isActive={selectedRefIdx === i}
                 isMicroDot={point.isMicroDot}
+                dotSource={point.dotSource}
                 onSelect={() => handleRefSelect(i)}
                 onLongPress={
                   onRefLongPress

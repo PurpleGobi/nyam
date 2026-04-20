@@ -6,6 +6,31 @@
 
 ---
 
+### 2026-04-20 #58 — 회원 리뷰 없는 식당용 AI 외부 정보 요약 + Google Places 사진 폴백
+- **영역**: supabase/migrations/083_restaurant_enrichment.sql(신규 테이블+RLS+trigger), supabase/functions/enrich-restaurant/index.ts(신규 Edge Function), src/domain/entities/restaurant-enrichment.ts(신규), src/domain/repositories/enrichment-repository.ts(신규), src/infrastructure/repositories/supabase-enrichment-repository.ts(신규), src/shared/di/container.ts(enrichmentRepo 등록), src/application/hooks/use-restaurant-enrichment.ts(신규, 폴링 3초), src/app/api/places/photo/route.ts(신규, Google Places Photo 프록시 302), src/presentation/components/detail/info-enrichment-block.tsx(신규, AI 요약 카드+source 칩), src/presentation/containers/restaurant-detail-container.tsx(heroPhotos 폴백 체인 + 정보 섹션 블록 통합), development_docs/systems/DATA_MODEL.md + CODEBASE.md 갱신
+- **맥락**: 카카오 시드만 있고 회원 리뷰 없는 식당의 상세 페이지가 정보 공백 문제 해결. Edge Function이 Tavily+Google Places(New v1)+Naver Local을 병렬 수집 → Gemini 1회 호출로 pros/cons/atmosphere/price_range/signatures 생성 + 각 claim에 source_ids 필수. 원문 전재 금지, 20자 인용 제한, 30일 TTL 캐싱. 사진은 Google Places photo_name만 저장 → /api/places/photo 프록시가 photoUri 받아 302 redirect(키 노출 방지). UI는 기존 정보 섹션 하단에 AI 카드 + 전체 출처 아코디언 + "📸 사진 출처: Google" attribution. migration 083 적용 + Edge Function version 1 ACTIVE 배포 완료. 빌드 통과.
+- **미완료**: 실제 호출 QA (enrichment 결과 품질 확인), 에지케이스(Google Places ID 매칭 실패/Gemini 응답 오류), 비용 모니터링 세팅
+- **다음**: 브라우저 QA로 실제 식당 상세 진입 테스트 + 결과물 확인
+
+### 2026-04-20 #57 — 보안 종합 감사(/cso comprehensive) 후속 패치 일괄
+- **영역**: middleware.ts, src/app/api/restaurants/prestige/match, supabase/functions/{process-account-deletion,refresh-active-xp,compute-similarity}/index.ts, supabase/config.toml, src/app/api/import/naver-map, src/shared/utils/postgrest-filter.ts(신규), src/{app/api/wines,restaurants,records}/* + 4 repository (.or() escape 7곳), src/app/api/import/auto-fill (xlsx→exceljs), src/infrastructure/repositories/supabase-settings-repository.ts (xlsx→exceljs), src/app/api/wines/{detail-ai,search-ai}/route.ts (input length cap), src/app/api/records/identify/route.ts (imageUrl host allowlist), src/infrastructure/api/ai-recognition.ts (AI 응답 sanitize), next.config.ts (CSP+headers), .env.example 전면 재작성, package.json (xlsx 제거), supabase/migrations/082_security_hardening.sql (records RLS 스펙 정렬 + storage list 정책 제거 + bubble_expertise security_invoker + 19 함수 search_path + cf trigger GUC 패턴)
+- **맥락**: cso 리포트(.gstack/security-reports/2026-04-20-comprehensive.json) CRITICAL 5건/HIGH 6건/MEDIUM 5건/INFO 1건 중 키 회전 외 모두 처리. records_authenticated_read(qual=true) 제거 → AUTH.md §4-5 스펙(public/followers/bubble_member) 정상 적용. searchUsers email 필터 제거(컬럼 비노출). naver-map SSRF substring→hostname allowlist + manual redirect 3hop. PostgREST `.or()` filter injection 방어 helper + 7곳. xlsx (RCE/ReDoS, no patch) 완전 제거. AI 응답 길이/range/enum sanitize. Supabase advisor 26→4건(잔여 4건은 PostGIS 시스템/대시보드 토글)
+- **미완료** (사용자 수동):
+  1. **키 회전(필수)**: Supabase service_role / KAKAO_REST_API_KEY (둘 다 git history 노출, KAKAO는 현재 키와 동일). 회전 후 Vercel 환경변수 갱신
+  2. **GUC 설정**: 키 회전 후 Supabase SQL Editor에서 `ALTER DATABASE postgres SET app.supabase_url TO 'https://gfshmpuuafjvwsgrxnie.supabase.co'; ALTER DATABASE postgres SET app.service_role_key TO '<new key>';`
+  3. **.env.local 정리**: `NEXT_PUBLIC_NAVER_MAP_CLIENT_SECRET`(40자) 삭제, `NAVER_MAP_CLIENT_SECRET`로 리네임. `NEXT_PUBLIC_NAVER_CLIENT_ID`/`NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` 둘 중 사용하는 쪽만 유지
+  4. **Supabase 대시보드**: Auth → Password security → "Check leaked passwords" 활성화 (HIBP)
+  5. **Supabase 대시보드 Functions**: process-account-deletion / refresh-active-xp / compute-similarity / weekly-ranking-snapshot / batch-predict / predict-score 모두 verify_jwt = true 확인 (config.toml 명시했지만 대시보드 재배포 필요)
+  6. **Vercel 환경변수**: `PRESTIGE_MATCH_CRON_SECRET` 신규 추가 (Vercel Cron으로 호출 시 Authorization: Bearer {value}). NEXT_PUBLIC_GOOGLE_MAPS_KEY는 GCP Console에서 referer 도메인 잠금 확인
+  7. **Edge functions 재배포**: 코드 변경됨 → `supabase functions deploy process-account-deletion refresh-active-xp compute-similarity` 실행
+- **다음**: 위 7개 수동 항목 사용자 처리 후 advisor 재검증
+
+### 2026-04-20 #56 — 문서 체계 대정리: SSOT 10개 재구성 + _archive 분리
+- **영역**: development_docs/systems/ (전체), development_docs/*.md (구조), _archive/ (신규), CLAUDE.md, CODEBASE.md
+- **맥락**: (1) 폴더 정리 — prototype/refactoring/pages/implementation(phases,handoff,shared)/개념문서/research/simulations/system_brainstorming 전부 `_archive/`로 이동. docs/ 폴더 제거. (2) SSOT 확장 7→10개 — RATING_ENGINE→RECORD_SYSTEM(3-Phase+AI 리뷰 추가), BUBBLE_SYSTEM(신규, 자동공유 필터+랭킹), SOCIAL_SYSTEM(신규, 팔로우+댓글+리액션+알림), MAP_LOCATION(신규, 생활권+Google Maps+크롤링). (3) 기존 SSOT 전면 정합성 갱신 — DATA_MODEL(bubble_shares제거/bubble_items신규/bookmarks제거/comments.parent_id/bubble_photos), AUTH(RLS 60→69개), XP_SYSTEM(RP→Prestige 흡수), RECOMMENDATION(CF 알고리즘 정식 문서화), QUERY_OPTIMIZATION(인덱스/RPC 카탈로그), DESIGN_SYSTEM(--text-inverse, @theme 매핑 재작성). (4) 코드/개념문서 불일치 발견 기록 — CF가 Pearson/Cosine 아닌 Mean-centering+2D 유클리드, 지도는 카카오맵 아닌 Google Maps, wines.critic_scores "RP"는 Robert Parker. (5) CLAUDE.md 참조 문서 맵/프로젝트 구조 갱신.
+- **미완료**: 페이지별 스펙은 iOS 이식 시 당시 코드 기준 재작성 예정 (지금 만들어도 계속 변경됨). types.ts는 081 이후 재생성 필요 (DATA_MODEL에 주석)
+- **다음**: 커밋 + 이후 작업은 새 SSOT 체계로 진행
+
 ### 2026-04-16 #55 — 통계 페이지 UI 전면 개선 + 데이터 부족 안내 일관화
 - **영역**: presentation/components/home(home-stats-panel, pd-lock-overlay, world-map-chart, wine-type-chart, monthly-chart), presentation/containers/home-container
 - **맥락**: (1) 통계 모드 진입 시 필터/소팅/목록 숨김(캘린더 모드 패턴). (2) SummaryCard(요약 그리드)+SectionCard(아이콘+타이틀 카드)+로딩 스켈레톤+StatsEmpty 추가. (3) PdLockOverlay 하드코딩 rgba→디자인 토큰(다크모드 호환)+진행 상태 표시. (4) 통계 아이콘 임계값 5→1 완화(와인 탭 노출). (5) WorldMapChart/WineTypeChart/MonthlyChart 자체 카드·라벨 중복 제거.
@@ -53,13 +78,4 @@
 - **맥락**: WineSearchCandidate를 infrastructure→domain으로 이동하여 R3/R4 위반 해소. bubble-create-container에서 shared/di 직접 import 제거 → useBubbleCreate.updateBubble hook 래핑. R3 위반 2→0건, R4 위반 3→0건.
 - **미완료**: 없음
 - **다음**: 타입 안전성 수정
-
-### 2026-04-15 #47 — bubble_items 완전 단순화 (source + record_id + added_by 제거)
-- **영역**: domain/(BubbleItem: addedBy+recordId+source 전부 제거), infrastructure/(supabase-bubble-repository ~30곳 added_by→bubble_members+records JOIN, supabase-restaurant/wine/profile-repository 동일 전환), application/(use-bubble-auto-sync·use-bubble-items·use-share-record userId 인자 정리), supabase/migrations/073~078(source DROP→record_id DROP→added_by DROP, 기록삭제 트리거 활성멤버 전체 체크, 멤버탈퇴 트리거 신규, member_item_stats 성능 최적화, RLS 단순화, 성능 인덱스 2개, CF 트리거+Edge Function 배포)
-- **맥락**: bubble_items가 (id, bubble_id, target_id, target_type, added_at)만 남는 순수 큐레이션 테이블로 완전 단순화. "누가 기록했는지"는 records+bubble_members JOIN으로 확인. 기록 삭제 시 활성 멤버 전체 기록 체크 → 아무도 없으면 삭제. 멤버 탈퇴 시에도 동일 정리. CF 적합도/신뢰도 자동 갱신 (compute-similarity 배포 + pg_net 트리거).
-- **미완료**: 없음
-- **다음**: 브라우저 QA
-
-
-
 

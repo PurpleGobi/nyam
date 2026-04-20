@@ -10,7 +10,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  */
 serve(async (req: Request) => {
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
+  const expectedToken = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+  if (!authHeader || authHeader !== expectedToken) {
     return new Response('Unauthorized', { status: 401 })
   }
 

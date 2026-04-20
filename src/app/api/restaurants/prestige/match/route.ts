@@ -1,6 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
+
+function isAuthorized(request: NextRequest): boolean {
+  const cronSecret = process.env.PRESTIGE_MATCH_CRON_SECRET
+  if (!cronSecret) return false
+  const header = request.headers.get('Authorization') ?? ''
+  return header === `Bearer ${cronSecret}`
+}
 
 interface PrestigeRow {
   id: string
@@ -66,7 +74,10 @@ function getSupabase(): SupabaseClient | null {
   return createClient(url, key)
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const supabase = getSupabase()
   if (!supabase) {
     return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 })
@@ -169,10 +180,12 @@ async function matchSinglePrestige(
 
     if (bestKakao) {
       // kakao_id로 기존 restaurant 재검색 (이번 배치에서 이미 생성된 것 포함)
+      const safeKakaoId = escapeForOrFilter(String(bestKakao.kakaoId), 50)
+      const safeKakaoUrl = escapeForOrFilter(bestKakao.kakaoMapUrl ?? '', 200)
       const { data: existingByKakao } = await supabase
         .from('restaurants')
         .select('id')
-        .or(`external_id_kakao.eq.${bestKakao.kakaoId},kakao_map_url.eq.${bestKakao.kakaoMapUrl ?? ''}`)
+        .or(`external_id_kakao.eq.${safeKakaoId},kakao_map_url.eq.${safeKakaoUrl}`)
         .limit(1)
 
       if (existingByKakao && existingByKakao.length > 0) {

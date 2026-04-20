@@ -71,6 +71,8 @@ interface RestaurantRecordFormProps {
   recentCompanions?: string[]
   onDelete?: () => void
   isDeleting?: boolean
+  quadrantMode?: 'visits' | 'compare'
+  onQuadrantModeChange?: (mode: 'visits' | 'compare') => void
 }
 
 export function RestaurantRecordForm({
@@ -85,6 +87,8 @@ export function RestaurantRecordForm({
   recentCompanions,
   onDelete,
   isDeleting,
+  quadrantMode,
+  onQuadrantModeChange,
 }: RestaurantRecordFormProps) {
   const [selectedGenre, setSelectedGenre] = useState<RestaurantGenre | null>(
     (target.genre as RestaurantGenre) ?? null,
@@ -286,7 +290,16 @@ export function RestaurantRecordForm({
               아직이에요
             </button>
           </div>
-          <QuadrantInput type="restaurant" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+          <QuadrantInput
+            type="restaurant"
+            value={quadrant}
+            onChange={handleQuadrantChange}
+            referencePoints={referenceRecords}
+            showHint={saveHint}
+            hideDot={!quadrantTouched}
+            quadrantMode={quadrantMode}
+            onQuadrantModeChange={onQuadrantModeChange}
+          />
         </div>
         <div className="mt-4">
           <PriceLevelSelector value={priceRange} onChange={setPriceRange} />

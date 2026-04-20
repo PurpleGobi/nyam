@@ -34,6 +34,12 @@ export interface QuadrantReferencePoint extends QuadrantPoint {
 
   /** 표시 점수 (= satisfaction) */
   score: number
+
+  /** 비교 모드에서 롱프레스 시 이동할 타깃 id */
+  targetId?: string
+
+  /** 비교 모드에서 롱프레스 시 이동할 타깃 타입 */
+  targetType?: 'restaurant' | 'wine'
 }
 
 /**

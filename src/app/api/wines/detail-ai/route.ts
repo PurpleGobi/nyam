@@ -123,6 +123,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<WineDetai
   if (!name) {
     return NextResponse.json({ success: false, wine: null, error: 'MISSING_NAME' }, { status: 400 })
   }
+  // AI 비용 폭주 + 프롬프트 인젝션 방어: 입력 길이 제한 (Finding #11)
+  if (name.length > 200 || (producer && producer.length > 200)) {
+    return NextResponse.json({ success: false, wine: null, error: 'INPUT_TOO_LONG' }, { status: 400 })
+  }
+  if (vintage != null && (typeof vintage !== 'number' || vintage < 1800 || vintage > 2100)) {
+    return NextResponse.json({ success: false, wine: null, error: 'INVALID_VINTAGE' }, { status: 400 })
+  }
 
   try {
     // 2단계: LLM에게 상세 정보 요청 → DB upsert

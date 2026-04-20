@@ -33,6 +33,7 @@ interface RatingInputProps {
     targetId?: string
     targetType?: 'restaurant' | 'wine'
     isMicroDot?: boolean
+    dotSource?: 'mine' | 'bubble' | 'nyam'
   }>
   showHint?: boolean
   hideDot?: boolean

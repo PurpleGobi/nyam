@@ -3,6 +3,8 @@
 import { useCallback, useRef } from 'react'
 import type { GaugeChannel } from '@/shared/utils/gauge-color'
 
+export type QuadrantDotSource = 'mine' | 'bubble' | 'nyam'
+
 interface QuadrantRefDotProps {
   x: number
   y: number
@@ -12,6 +14,7 @@ interface QuadrantRefDotProps {
   channel?: GaugeChannel
   isActive?: boolean
   isMicroDot?: boolean
+  dotSource?: QuadrantDotSource
   onSelect?: () => void
   onLongPress?: () => void
 }
@@ -19,11 +22,24 @@ interface QuadrantRefDotProps {
 const DOT_SIZE = 20
 const LONG_PRESS_MS = 500
 
-export function QuadrantRefDot({ x, y, satisfaction, name, isActive, isMicroDot, onSelect, onLongPress }: QuadrantRefDotProps) {
+// micro dot 소스별 색상/크기 (투명도 포함)
+const MICRO_STYLES: Record<QuadrantDotSource, { color: string; size: number; alpha: number }> = {
+  mine: { color: 'rgb(120, 113, 108)', size: 4, alpha: 0.5 },
+  bubble: { color: 'var(--accent-social)', size: 11, alpha: 0.55 },
+  nyam: { color: 'var(--brand)', size: 11, alpha: 0.5 },
+}
+
+export function QuadrantRefDot({ x, y, satisfaction, name, isActive, isMicroDot, dotSource, onSelect, onLongPress }: QuadrantRefDotProps) {
   const micro = isMicroDot ?? false
   const active = micro ? false : (isActive ?? false)
   const totalScore = satisfaction
   const baseOpacity = micro ? 0.5 : 0.15 + (totalScore / 100) * 0.45
+  const microStyle = MICRO_STYLES[dotSource ?? 'mine']
+  const microSize = microStyle.size
+  const microBg = `color-mix(in srgb, ${microStyle.color} ${Math.round(microStyle.alpha * 100)}%, transparent)`
+  const microShadow = dotSource && dotSource !== 'mine'
+    ? `0 0 6px 1px color-mix(in srgb, ${microStyle.color} 35%, transparent)`
+    : 'none'
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const didLongPress = useRef(false)
 
@@ -79,12 +95,14 @@ export function QuadrantRefDot({ x, y, satisfaction, name, isActive, isMicroDot,
       {/* 참조 dot — 클릭 영역을 dot에만 한정 */}
       <div
         style={{
-          width: micro ? '4px' : `${DOT_SIZE}px`,
-          height: micro ? '4px' : `${DOT_SIZE}px`,
+          width: micro ? `${microSize}px` : `${DOT_SIZE}px`,
+          height: micro ? `${microSize}px` : `${DOT_SIZE}px`,
           borderRadius: '50%',
-          backgroundColor: `rgba(120, 113, 108, ${active ? 0.85 : baseOpacity})`,
+          backgroundColor: micro
+            ? microBg
+            : `rgba(120, 113, 108, ${active ? 0.85 : baseOpacity})`,
           boxShadow: micro
-            ? 'none'
+            ? microShadow
             : active
               ? '0 0 8px 3px rgba(120, 113, 108, 0.4)'
               : `0 0 6px 2px rgba(120, 113, 108, ${0.05 + (totalScore / 100) * 0.15})`,

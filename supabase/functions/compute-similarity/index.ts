@@ -51,10 +51,6 @@ type SupabaseClient = ReturnType<typeof createClient>
 
 serve(async (req: Request) => {
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
-    return new Response('Unauthorized', { status: 401 })
-  }
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceRoleKey) {
@@ -62,6 +58,11 @@ serve(async (req: Request) => {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
+  }
+
+  const expectedToken = `Bearer ${serviceRoleKey}`
+  if (!authHeader || authHeader !== expectedToken) {
+    return new Response('Unauthorized', { status: 401 })
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)

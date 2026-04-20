@@ -45,8 +45,9 @@ export function ScoreCards({
             type="button"
             onClick={() => {
               if (isDisabled) return
-              // 확장 가능한 카드(Nyam, 버블)는 클릭 시 패널 토글
+              // 확장 카드(Nyam, 버블): 사분면 dot 토글 + 상세 패널 토글 동시
               if (card.expandable && panelKey) {
+                if (toggleActive) onToggle(card.source)
                 onPanelToggle(panelKey)
                 return
               }

@@ -195,21 +195,15 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
   )
 
   // visits 모드에서 selectedSources에 따른 타인 micro dot (멀티셀렉트)
-  // 소스 우선순위 dedup: mine > bubble (nyam은 CF 예측이므로 개별 dot 없음)
+  // 소스: mine(내 과거 방문) / bubble(버블 멤버) / nyam(공개 기록)
   const visitsRefPoints = useMemo(() => {
-    const seenRecordIds = new Set<string>()
-
     // 1. 내 기록 micro dots (최우선)
     const myMicroDots = selectedSources.includes('mine')
-      ? otherRecordRefs.map((r) => {
-          const rid = r._refIdx !== undefined ? sortedRecords[r._refIdx]?.id : undefined
-          if (rid) seenRecordIds.add(rid)
-          return { ...r, isMicroDot: true as const }
-        })
+      ? otherRecordRefs.map((r) => ({ ...r, isMicroDot: true as const, dotSource: 'mine' as const }))
       : []
 
     // 타인 micro dots (30개 제한)
-    type MicroDot = { x: number; y: number; satisfaction: number; name: string; score: number; isMicroDot: true }
+    type MicroDot = { x: number; y: number; satisfaction: number; name: string; score: number; isMicroDot: true; dotSource: 'bubble' | 'nyam' }
     const otherMicroDots: MicroDot[] = []
     const MAX_OTHER = 30
 
@@ -218,23 +212,39 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       for (const b of bubbleScores) {
         for (const d of b.dots) {
           if (otherMicroDots.length >= MAX_OTHER) break
-          otherMicroDots.push({ x: d.axisX, y: d.axisY, satisfaction: d.satisfaction, name: '', score: d.satisfaction, isMicroDot: true })
+          otherMicroDots.push({ x: d.axisX, y: d.axisY, satisfaction: d.satisfaction, name: '', score: d.satisfaction, isMicroDot: true, dotSource: 'bubble' })
         }
       }
     }
 
+    // 3. Nyam (공개 기록 — 타인 개별 평가)
+    if (selectedSources.includes('nyam')) {
+      for (const r of publicRecords) {
+        if (otherMicroDots.length >= MAX_OTHER) break
+        if (r.axisX == null || r.axisY == null || r.satisfaction == null) continue
+        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction, name: '', score: r.satisfaction, isMicroDot: true, dotSource: 'nyam' })
+      }
+    }
+
     return [...myMicroDots, ...otherMicroDots]
-  }, [selectedSources, otherRecordRefs, sortedRecords, bubbleScores])
+  }, [selectedSources, otherRecordRefs, bubbleScores, publicRecords])
 
   // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
   const bubbleAxisRecords = useMemo(
     () => bubbleScores.flatMap((b) => b.dots),
     [bubbleScores],
   )
+  const publicAxisRecords = useMemo(
+    () => publicRecords
+      .filter((r) => r.axisX != null && r.axisY != null && r.satisfaction != null)
+      .map((r) => ({ axisX: r.axisX ?? 0, axisY: r.axisY ?? 0, satisfaction: r.satisfaction ?? 0 })),
+    [publicRecords],
+  )
   const fallbackDot = useMemo(() => {
     if (avgDot) return null
     const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
       ['bubble', bubbleAxisRecords],
+      ['nyam', publicAxisRecords],
     ]
     const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
     if (!match) return null
@@ -244,7 +254,7 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
       axisY: Math.round(dots.reduce((s, d) => s + d.axisY, 0) / dots.length),
       satisfaction: Math.round(dots.reduce((s, d) => s + d.satisfaction, 0) / dots.length),
     }
-  }, [avgDot, selectedSources, bubbleAxisRecords])
+  }, [avgDot, selectedSources, bubbleAxisRecords, publicAxisRecords])
 
   const mySelected = selectedSources.includes('mine')
   const currentDot = mySelected
@@ -704,8 +714,8 @@ export function WineDetailContainer({ wineId, bubbleId }: WineDetailContainerPro
                   ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
                   : undefined
                 }
-                quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
-                onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
+                quadrantMode={allRecordsWithAxis.length >= 1 ? quadrantMode : undefined}
+                onQuadrantModeChange={allRecordsWithAxis.length >= 1 ? (mode) => {
                   setQuadrantMode(mode)
                   setFocusedRecordIdx(0)
                 } : undefined}

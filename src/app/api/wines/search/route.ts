@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -14,10 +15,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] })
   }
 
+  const safeQ = escapeForOrFilter(q)
+  if (safeQ.length < 2) {
+    return NextResponse.json({ results: [] })
+  }
+
   const { data: wines, error } = await supabase
     .from('wines')
     .select('id, name, producer, vintage, wine_type, region, country')
-    .or(`name.ilike.%${q}%,producer.ilike.%${q}%`)
+    .or(`name.ilike.%${safeQ}%,producer.ilike.%${safeQ}%`)
     .order('name')
     .limit(20)
 

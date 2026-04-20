@@ -215,49 +215,115 @@ export interface WineLabelRecognition {
   confidence: number
 }
 
+// AI 응답 sanitization (Finding #11):
+// LLM 출력은 untrusted. wines 테이블이 전 사용자에게 공유되므로 길이/타입/range cap 적용.
+const WINE_TYPES = new Set(['red', 'white', 'rose', 'sparkling', 'orange', 'fortified', 'dessert'])
+const SHORT_TEXT_MAX = 200
+const LONG_TEXT_MAX = 1000
+
+function safeStr(v: unknown, max = SHORT_TEXT_MAX): string | null {
+  if (v == null) return null
+  const s = typeof v === 'string' ? v : String(v)
+  return s.slice(0, max).trim() || null
+}
+function safeIntInRange(v: unknown, min: number, max: number): number | null {
+  const n = v != null ? Number(v) : NaN
+  if (!Number.isFinite(n)) return null
+  const i = Math.round(n)
+  return i >= min && i <= max ? i : null
+}
+function safeNumberInRange(v: unknown, min: number, max: number): number | null {
+  const n = v != null ? Number(v) : NaN
+  if (!Number.isFinite(n) || n < min || n > max) return null
+  return n
+}
+function safeStringArray(v: unknown, maxItems = 20, maxItemLen = SHORT_TEXT_MAX): string[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .slice(0, maxItems)
+    .map((item) => safeStr(item, maxItemLen))
+    .filter((s): s is string => s !== null)
+}
+
+function sanitizePriceReview(v: Record<string, unknown>): { verdict: string; summary: string; alternatives: Array<{ name: string; price: string }> } | null {
+  const verdictRaw = safeStr(v.verdict)
+  const verdict = verdictRaw && ['buy', 'conditional_buy', 'avoid'].includes(verdictRaw) ? verdictRaw : null
+  if (!verdict) return null
+  const summary = safeStr(v.summary, LONG_TEXT_MAX) ?? ''
+  const altsRaw = Array.isArray(v.alternatives) ? v.alternatives.slice(0, 5) : []
+  const alternatives = altsRaw
+    .map((a: unknown) => {
+      if (!a || typeof a !== 'object') return null
+      const obj = a as Record<string, unknown>
+      const name = safeStr(obj.name)
+      if (!name) return null
+      return { name, price: safeStr(obj.price) ?? '' }
+    })
+    .filter((a): a is { name: string; price: string } => a !== null)
+  return { verdict, summary, alternatives }
+}
+
+function sanitizeCriticScores(v: Record<string, unknown>): { RP?: number; WS?: number; JR?: number; JH?: number } | null {
+  const out: { RP?: number; WS?: number; JR?: number; JH?: number } = {}
+  const rp = safeNumberInRange(v.RP, 50, 100); if (rp != null) out.RP = rp
+  const ws = safeNumberInRange(v.WS, 50, 100); if (ws != null) out.WS = ws
+  const jr = safeNumberInRange(v.JR, 12, 20); if (jr != null) out.JR = jr
+  const jh = safeNumberInRange(v.JH, 50, 100); if (jh != null) out.JH = jh
+  return Object.keys(out).length > 0 ? out : null
+}
+
 function parseWineLabelResponse(parsed: Record<string, unknown>): WineLabelRecognition {
   const grapeVarieties = Array.isArray(parsed.grape_varieties)
-    ? (parsed.grape_varieties as Array<{ name: string; pct: number }>)
+    ? (parsed.grape_varieties as Array<{ name: unknown; pct: unknown }>)
+        .slice(0, 10)
+        .map((g) => ({
+          name: safeStr(g?.name) ?? '',
+          pct: safeNumberInRange(g?.pct, 0, 100) ?? 0,
+        }))
+        .filter((g) => g.name.length > 0)
     : null
 
+  const wineTypeRaw = safeStr(parsed.wine_type)
+  const wineType = wineTypeRaw && WINE_TYPES.has(wineTypeRaw) ? wineTypeRaw : null
+
   return {
-    wineName: (parsed.wine_name as string) ?? null,
-    producer: (parsed.producer as string) ?? null,
-    vintage: parsed.vintage ? Number(parsed.vintage) : null,
-    region: (parsed.region as string) ?? null,
-    subRegion: (parsed.sub_region as string) ?? null,
-    appellation: (parsed.appellation as string) ?? null,
-    country: (parsed.country as string) ?? null,
-    wineType: (parsed.wine_type as string) ?? null,
-    variety: (parsed.variety as string) ?? null,
+    wineName: safeStr(parsed.wine_name),
+    producer: safeStr(parsed.producer),
+    vintage: safeIntInRange(parsed.vintage, 1800, 2100),
+    region: safeStr(parsed.region),
+    subRegion: safeStr(parsed.sub_region),
+    appellation: safeStr(parsed.appellation),
+    country: safeStr(parsed.country),
+    wineType,
+    variety: safeStr(parsed.variety),
     grapeVarieties,
-    abv: parsed.abv ? Number(parsed.abv) : null,
-    classification: (parsed.classification as string) ?? null,
-    bodyLevel: parsed.body_level ? Number(parsed.body_level) : null,
-    acidityLevel: parsed.acidity_level ? Number(parsed.acidity_level) : null,
-    sweetnessLevel: parsed.sweetness_level ? Number(parsed.sweetness_level) : null,
-    foodPairings: Array.isArray(parsed.food_pairings) ? (parsed.food_pairings as string[]) : null,
-    servingTemp: (parsed.serving_temp as string) ?? null,
-    decanting: (parsed.decanting as string) ?? null,
-    referencePriceMin: parsed.reference_price_min ? Number(parsed.reference_price_min) : null,
-    referencePriceMax: parsed.reference_price_max ? Number(parsed.reference_price_max) : null,
+    abv: safeNumberInRange(parsed.abv, 0, 25),
+    classification: safeStr(parsed.classification),
+    bodyLevel: safeIntInRange(parsed.body_level, 1, 5),
+    acidityLevel: safeIntInRange(parsed.acidity_level, 1, 3),
+    sweetnessLevel: safeIntInRange(parsed.sweetness_level, 1, 3),
+    foodPairings: safeStringArray(parsed.food_pairings, 8, SHORT_TEXT_MAX),
+    servingTemp: safeStr(parsed.serving_temp),
+    decanting: safeStr(parsed.decanting),
+    referencePriceMin: safeIntInRange(parsed.reference_price_min, 0, 100_000_000),
+    referencePriceMax: safeIntInRange(parsed.reference_price_max, 0, 100_000_000),
     priceReview: parsed.price_review && typeof parsed.price_review === 'object'
-      ? parsed.price_review as { verdict: string; summary: string; alternatives: Array<{ name: string; price: string }> }
+      ? sanitizePriceReview(parsed.price_review as Record<string, unknown>)
       : null,
-    drinkingWindowStart: parsed.drinking_window_start ? Number(parsed.drinking_window_start) : null,
-    drinkingWindowEnd: parsed.drinking_window_end ? Number(parsed.drinking_window_end) : null,
-    vivinoRating: parsed.vivino_rating ? Number(parsed.vivino_rating) : null,
+    drinkingWindowStart: safeIntInRange(parsed.drinking_window_start, 1900, 2200),
+    drinkingWindowEnd: safeIntInRange(parsed.drinking_window_end, 1900, 2200),
+    vivinoRating: safeNumberInRange(parsed.vivino_rating, 0, 5),
     criticScores: parsed.critic_scores && typeof parsed.critic_scores === 'object'
-      ? parsed.critic_scores as { RP?: number; WS?: number; JR?: number; JH?: number }
+      ? sanitizeCriticScores(parsed.critic_scores as Record<string, unknown>)
       : null,
-    tastingNotes: (parsed.tasting_notes as string) ?? null,
-    aromaPrimary: Array.isArray(parsed.aroma_primary) ? (parsed.aroma_primary as string[]) : [],
-    aromaSecondary: Array.isArray(parsed.aroma_secondary) ? (parsed.aroma_secondary as string[]) : [],
-    aromaTertiary: Array.isArray(parsed.aroma_tertiary) ? (parsed.aroma_tertiary as string[]) : [],
-    balance: parsed.balance != null ? Number(parsed.balance) : null,
-    finish: parsed.finish != null ? Number(parsed.finish) : null,
-    intensity: parsed.intensity != null ? Number(parsed.intensity) : null,
-    confidence: (parsed.confidence as number) ?? 0,
+    tastingNotes: safeStr(parsed.tasting_notes, LONG_TEXT_MAX),
+    aromaPrimary: safeStringArray(parsed.aroma_primary, 20, 50),
+    aromaSecondary: safeStringArray(parsed.aroma_secondary, 20, 50),
+    aromaTertiary: safeStringArray(parsed.aroma_tertiary, 20, 50),
+    balance: safeIntInRange(parsed.balance, 0, 100),
+    finish: safeIntInRange(parsed.finish, 0, 100),
+    intensity: safeIntInRange(parsed.intensity, 0, 100),
+    confidence: safeNumberInRange(parsed.confidence, 0, 1) ?? 0,
   }
 }
 

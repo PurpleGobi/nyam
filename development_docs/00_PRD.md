@@ -1,6 +1,6 @@
 # Nyam PRD (Product Requirements Document)
 
-> 최종 갱신: 2026-04-13
+> 최종 갱신: 2026-04-20
 
 ---
 
@@ -123,7 +123,9 @@ Nyam은 세 가지 층위의 점수를 제공한다.
 
 ### 3.2 적합도 (Taste Similarity)
 
-겹치는 기록의 **사분면 2D 좌표(X, Y, 0~100)**를 비교한다. Mean-centering 필수 (시뮬레이션 검증: +19점 개선).
+겹치는 기록의 **사분면 2D 좌표(X, Y, 1~100)**를 비교한다. Mean-centering 필수 (시뮬레이션 검증: +19점 개선).
+
+> 만족도 범위는 **1~100** (DB CHECK `chk_records_satisfaction` 및 RECORD_SYSTEM §2.1과 일치).
 
 ```
 1. Mean-centering: 각 유저의 평균 점수를 빼서 편향 제거
@@ -136,6 +138,8 @@ Nyam은 세 가지 층위의 점수를 제공한다.
 ```
 
 **식당 적합도와 와인 적합도는 별개 산출**: 식당 취향은 맞는데 와인 취향은 안 맞을 수 있다.
+
+> **DB↔UI 표기 변환**: DB 저장은 REAL 0~1 (RECOMMENDATION §3.3 `compatibility REAL 0~1`), UI 표시는 0~100% (예: 0.87 → 87%).
 
 > D=60은 시뮬레이션에서 클러스터 분리 p<0.005 + 예측 MAE 최적으로 확정 (100점 스케일 기준).
 
@@ -175,6 +179,8 @@ Nyam은 세 가지 층위의 점수를 제공한다.
 | 내가 팔로우 (맞팔 포함) | ×1.5 | 내가 선택한 신뢰 |
 | 비팔로우 | ×1.0 | 순수 알고리즘 |
 
+> **현재 구현 상태**: `auto_approve` 단일 흐름만 구현되어 있다. `manual_approve`는 로직만 존재하고 pending 처리 UI 미구현, `conditional`은 로직 자체 미구현 (§8 프라이버시 참조).
+
 **팔로잉의 역할**: 팔로잉은 추천의 전제조건이 아니라 **신뢰 부스트 레이어**다. 팔로잉 0명이어도 전체 유저 CF로 점수가 산출된다. 팔로잉이 많을수록 내 네트워크 비중이 자연스럽게 커져서 예측이 더 정확해진다. 단, 부스트 효과는 미세 조정 수준이다 — 평가자 중 팔로우 비율이 ~10%이므로, 극적 차이가 아니라 "내 사람 의견을 살짝 더 반영"하는 역할. 맞팔 여부로 부스트를 나누지 않는 이유: 팔로우는 "나는 이 사람의 취향을 신뢰한다"는 일방적 선언이며, 상대가 나를 팔로백한다고 해서 상대의 점수가 나에게 더 유용해지는 건 아니다.
 
 > 높은 부스트(2.0+)는 오염 유저를 실수로 팔로우했을 때 피해가 커지므로 보수적 값(1.5/1.0)으로 확정.
@@ -210,8 +216,8 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 |---|---|---|
 | 대상 | 전체 유저 | 버블 멤버만 |
 | 다양성 보정 | 적용 (공격 방어) | **미적용** |
-| 최소 겹침 | 3개 | **0개** (겹침 불필요) |
-| 최소 기록자 | 3명 | **1명** |
+| 최소 겹침 | 1개 (스펙 3, 구현 1) | **0개** (겹침 불필요) |
+| 최소 기록자 | 3명 (스펙 3, 구현 1) | **1명** |
 | 팔로우 부스트 | ×1.5 / ×1.0 | **×1.0 균등** (멤버 간 차등 없음) |
 | 산출 방식 | CF 가중 예측 | 1명이면 그대로, 2명+이면 CF |
 
@@ -225,6 +231,8 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 ```
 
 > 버블 점수는 글로벌 Nyam 점수보다 MAE가 높다 (데이터 적으므로 당연). 버블의 가치는 정확도가 아니라 **맥락** 제공.
+
+> 개념문서 vs 실제 구현 차이: Nyam 점수의 "최소 기록자 3명"은 스펙이며, 실제 `cf-calculator.ts`의 `MIN_OVERLAP`은 **1**로 설정되어 있다 (RECOMMENDATION §3.6 참조). 콜드스타트 기간에 데이터 가용성을 우선한 결정.
 
 ### 3.7 유저에게 보여주는 방식
 
@@ -264,7 +272,7 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 
 ### 3.8 시뮬레이션 검증 결과 요약
 
-> 상세: `docs/simulations/cf_comprehensive/` (설계, 코드, 결과)
+> 상세: `_archive/simulations/cf_comprehensive/` (설계, 코드, 결과)
 
 **기본 성능 (강남구 10,000명 종합 시뮬레이션):**
 
@@ -308,8 +316,8 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 ### 시그니처 기능: 사분면 평가
 
 - 2D 좌표(특성 2축) + 자동 계산 만족도 + 상황 태그
-  - 식당: X축=음식 퀄리티, Y축=경험 만족도
-  - 와인: X축=구조·완성도, Y축=경험 만족도
+  - 식당: X축=음식 퀄리티, Y축=경험 가치
+  - 와인: X축=구조·완성도, Y축=즐거움·감성
   - 만족도 = (X + Y) / 2 자동 계산 (별도 입력 아님)
   - 점 크기는 고정 20px
 - 기록이 쌓이면 사분면 위에 "나만의 취향 지도" 자동 생성 (참조 점 opacity 0.3, 최대 8~12개)
@@ -419,7 +427,7 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 - 가입 정책 5종: invite_only, closed, manual_approve, auto_approve, open
 - 경험치 기반 가입 조건 설정 (최소 기록 수 + 최소 레벨)
 - 리스트 뷰 (대상 목록) + 피드 뷰 (기록 시간순)
-- 댓글(익명 옵션), 리액션 5종(좋아요/저장/가고싶다/다녀왔다/불꽃)
+- 댓글(익명 옵션), 리액션 2종(good/bad)
 - 자동/수동 큐레이션 — 자동: 필터 규칙 기반(기록 매칭), 수동: FAB "버블에 추가"로 대상 직접 추가
 - 콘텐츠 가시성 (rating_only/rating_and_comment)
 - 멤버별 가시성 오버라이드 (7개 키)
@@ -434,27 +442,29 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 
 ### Phase 1 + Phase 2 통합 (현재 개발 범위)
 
-> S1에서 P2 테이블 포함 전체 스키마 생성. 10 스프린트(68 태스크)로 진행.
+> S1에서 P2 테이블 포함 전체 스키마 생성. 11 스프린트(S0~S10)로 진행 (CLAUDE.md 스프린트 표 기준).
 
 **개인 기록**:
 - 온보딩 (지역 선택 → 식당 등록 → 버블 생성/탐색 → 완료)
 - 식당/와인 검색 및 등록 (텍스트 + 사진 + AI 인식)
-  - 카메라 3모드: 개별(individual), 진열대(shelf), 영수증(receipt)
+  - 카메라 3모드: 개별(individual), 진열장(shelf), 영수증(receipt)
   - AI 이미지 인식 + OCR (와인 라벨, 진열대, 영수증)
   - EXIF GPS 검증
 - 사분면 평가
-  - 식당: X축=음식 퀄리티, Y축=경험 만족도
-  - 와인: X축=구조·완성도, Y축=경험 만족도
+  - 식당: X축=음식 퀄리티, Y축=경험 가치
+  - 와인: X축=구조·완성도, Y축=즐거움·감성
   - 만족도 = (X + Y) / 2 자동 계산
 - 와인 아로마 휠 (WSET Level 3 기준, 16섹터 3링: 1차향 9섹터 + 2차향 4섹터 + 3차향 3섹터)
 - 와인 품질 평가 BLIC (Balance, Length/Finish, Intensity, Complexity) + autoScore
 - 상세 페이지 (식당/와인) — 리뷰, 사분면, 사진, 적합도 기반 점수
+- 식당 명성(Prestige) 뱃지 — 미슐랭/블루리본/TV 출연. XP_SYSTEM §15~§20 참조
+- 지도 — 식당 드릴다운 지도 + 와인 산지 드릴다운 지도 (현재 구현: 와인 산지 2단계까지 완료, 3/4단계는 후속 스프린트 이연 — 현재 구현 범위 밖 잔여 과제. MAP_LOCATION §7.3 참조)
 - 홈 — 4종 뷰 (카드/리스트/캘린더/지도) + 필터/소팅 + 통계 차트
   - 보기 필터: 내 기록(기본 ON) / 팔로잉 / 버블 (멀티셀렉, 미선택=전체)
   - FAB Speed Dial: 기록 추가 / 버블에 추가
 - 식당 장르 16종 + 장르 대분류 7개
 - 와인 7종 타입 (레드/화이트/로제/스파클링/오렌지/주정강화/디저트)
-- 페어링 8종 카테고리 (적색육/백색육/어패류/치즈/채소/매운·발효/디저트/샤퀴트리)
+- 페어링 8종 카테고리 (적색육/백색육/어패류/치즈/채소/매운·발효/디저트/샤퀴트리·견과)
 - 상황 태그 — 식당 6종(혼밥/데이트/친구/가족/회식/술자리), 와인 7종(혼술/데이트/모임/페어링/선물/테이스팅/디캔팅)
 - 식당·와인 연결 기록 (linkedRestaurantId/linkedWineId)
 - Discover (지역별 AI 분석/추천/랭킹 기반 식당 탐색)
@@ -464,10 +474,10 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
   - 보너스 XP (온보딩/첫 기록/첫 버블/첫 공유)
   - 마일스톤 시스템
 - Wrapped (연간 결산) — 카테고리별 통계, 레벨, Top 아이템, 버블 활동
-- 프라이버시 — 프로필 공개(is_public) + 팔로우 정책(4종)
+- 프라이버시 — 프로필 공개(is_public) + 팔로우 정책(4종) *(conditional은 미구현 — 로직 자체 없음 / manual_approve는 UI 미구현 — 로직 존재하나 pending 처리 UI 없음)*
   - 가시성 설정 7개 키: score, comment, photos, level, quadrant, bubbles, price
-- 알림 10종: level_up, bubble_join_request/approved, follow_request/accepted, bubble_invite, bubble_new_record, bubble_member_joined, reaction_like, comment_reply
-- Edge Functions 3종 (주간 랭킹 스냅샷, 활성 XP 갱신, 계정 삭제 처리)
+- 알림 10종: level_up, follow_request, follow_accepted, bubble_invite, bubble_join_request, bubble_join_approved, bubble_new_record, bubble_member_joined, reaction_like, comment_reply (SOCIAL_SYSTEM §6.2)
+- Edge Functions 7종: process-account-deletion, refresh-active-xp, weekly-ranking-snapshot, compute-similarity, predict-score, batch-predict, enrich-restaurant
 
 **소셜 — 팔로우 네트워크 (핵심)**:
 - 팔로우/맞팔로우 (Nyam의 핵심 소셜 축)
@@ -490,7 +500,7 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 - 경험치 기반 가입 조건 설정 (최소 기록 수 + 최소 레벨)
 - 자동/수동 큐레이션 — 자동: 필터 규칙 기반(기록 매칭), 수동: FAB "버블에 추가"로 대상 직접 추가
 - 리스트 뷰 (대상 목록) + 피드 뷰 (기록 시간순)
-- 댓글(익명 옵션), 리액션 5종
+- 댓글(익명 옵션), 리액션 2종 (good/bad — migration 079에서 5종→2종 전환, SOCIAL_SYSTEM §5 참조)
 - 멤버 역할 4종: owner, admin, member, follower
 - 초대 코드 + 만료 기한
 - 주간 랭킹 스냅샷 (크론)
@@ -512,12 +522,15 @@ Nyam 74  확신 12%          ← 낮으면 유저가 알아서 감안
 - **Frontend**: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 - **Backend**: Supabase (PostgreSQL + Auth + RLS + Edge Functions + Storage)
 - **AI/LLM**: Gemini Vision (사진 분석, OCR, 와인 검색/상세, 식당 분석/추천) — provider-agnostic 라우팅
-- **외부 API**: 카카오맵, 네이버 지도, 구글 Places (식당), 구글 이미지 검색, Tavily (웹 검색)
+- **외부 API**: 카카오 Local API(검색·역지오코딩), 네이버 지도, 구글 Places(식당 메타/사진), 구글 이미지 검색, Tavily(웹 검색 — enrich-restaurant Edge Function에서 사용)
+- **지도 렌더러**: Google Maps JS API (카카오는 렌더러가 아닌 Local 검색·역지오코딩 용도)
 - **모바일**: PWA 우선, 네이티브 전환 검토 (Phase 3+)
 
 ---
 
 ## 10. 성공 지표
+
+> 추천 엔진 품질 지표(MAE, 콜드스타트 커버리지 등)는 `development_docs/systems/RECOMMENDATION.md` §11 품질 지표 참조.
 
 | 지표 | Phase 1+2 목표 | 의미 |
 |------|---------------|------|

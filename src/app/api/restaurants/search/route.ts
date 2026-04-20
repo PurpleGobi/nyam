@@ -6,6 +6,7 @@ import { searchGooglePlaces } from '@/infrastructure/api/google-places'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
 import { haversineDistanceMeters } from '@/domain/services/distance'
 import type { RestaurantPrestige } from '@/domain/entities/restaurant'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -18,8 +19,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] })
   }
 
+  const safeQ = escapeForOrFilter(q)
+  if (!safeQ) {
+    return NextResponse.json({ results: [] })
+  }
+
   // 한 글자: 앞쪽 % 없이 (인덱스 활용, 빠름) / 두 글자 이상: %쿼리% (어디든 포함)
-  const pattern = q.length === 1 ? `${q}%` : `%${q}%`
+  const pattern = safeQ.length === 1 ? `${safeQ}%` : `%${safeQ}%`
 
   // ── Step 1: Nyam DB 검색 (auth와 병렬) ──
   const [authResult, searchResult] = await Promise.all([

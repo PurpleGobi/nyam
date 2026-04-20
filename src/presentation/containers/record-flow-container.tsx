@@ -122,12 +122,24 @@ function RecordFlowInner() {
     }
   }
 
-  // 이전 기록 참조점 + 최근 동행자
-  const { referenceRecords, recentCompanions } = useRecordReferences(
+  // 사분면 참조점 (과거/비교) + 최근 동행자
+  const { pastReferences, compareReferences, recentCompanions } = useRecordReferences(
     user?.id ?? null,
     state.targetId || null,
+    state.targetType,
     editRecordId,
   )
+  const [quadrantMode, setQuadrantMode] = useState<'visits' | 'compare'>('visits')
+  // 과거 기록 없으면 자동으로 비교 모드로 전환
+  const [prevPastLen, setPrevPastLen] = useState(pastReferences.length)
+  if (prevPastLen !== pastReferences.length) {
+    setPrevPastLen(pastReferences.length)
+    if (pastReferences.length === 0 && compareReferences.length > 0 && quadrantMode === 'visits') {
+      setQuadrantMode('compare')
+    }
+  }
+  const activeReferences = quadrantMode === 'compare' ? compareReferences : pastReferences
+  const hasAnyRefs = pastReferences.length > 0 || compareReferences.length > 0
 
   // 와인 메타 자동채움
   const { wineData, setWineData } = useWineMeta(
@@ -504,7 +516,9 @@ function RecordFlowInner() {
             distance: recordExtra?.distance,
           }}
           genreHint={genreHint ?? aiPrefill?.genre}
-          referenceRecords={isEditMode ? [] : referenceRecords}
+          referenceRecords={activeReferences}
+          quadrantMode={hasAnyRefs ? quadrantMode : undefined}
+          onQuadrantModeChange={hasAnyRefs ? setQuadrantMode : undefined}
           initialData={restaurantInitial ?? (aiPrefill?.foodType || exifVisitDate ? { menuTags: aiPrefill?.foodType ? [aiPrefill.foodType] : [], axisX: null, axisY: null, satisfaction: null, scene: null, comment: null, companions: null, privateNote: null, totalPrice: null, visitDate: exifVisitDate } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'restaurant' })}
@@ -556,7 +570,9 @@ function RecordFlowInner() {
             intensity: wineData?.intensity,
             isAiRecognized: !!wineData,
           }}
-          referenceRecords={isEditMode ? [] : referenceRecords}
+          referenceRecords={activeReferences}
+          quadrantMode={hasAnyRefs ? quadrantMode : undefined}
+          onQuadrantModeChange={hasAnyRefs ? setQuadrantMode : undefined}
           initialData={wineInitial ?? (exifVisitDate ? { visitDate: exifVisitDate, axisX: null, axisY: null, satisfaction: null, aromaPrimary: [], aromaSecondary: [], aromaTertiary: [], complexity: null, finish: null, balance: null, intensity: null, pairingCategories: null, comment: null, purchasePrice: null, companions: null, privateNote: null } : undefined)}
           saveLabel={saveLabel}
           onSave={(data) => handleSave({ ...data, targetType: 'wine' })}

@@ -1,7 +1,6 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { PdLockOverlay } from '@/presentation/components/home/pd-lock-overlay'
 import type { RestaurantStatsResult } from '@/application/hooks/use-restaurant-stats'
 import type { WineStatsResult } from '@/application/hooks/use-wine-stats'
 import { MapPin, Utensils, BarChart2, CalendarDays, Drama, Grape, Wine } from 'lucide-react'
@@ -201,7 +200,7 @@ export function HomeStatsPanel({
   const accentColor = isRestaurant ? 'var(--accent-food)' : 'var(--accent-wine)'
 
   if (stats.isLoading) return <StatsSkeleton />
-  if (stats.totalRecordCount === 0) return <StatsEmpty type={activeTab} />
+  if (isRestaurant && stats.totalRecordCount === 0) return <StatsEmpty type={activeTab} />
 
   const avgScore = computeAvgScore(stats.scoreBuckets)
 
@@ -274,41 +273,31 @@ export function HomeStatsPanel({
       {/* ── 와인 통계 ── */}
       {!isRestaurant && (
         <>
-          <PdLockOverlay minRecords={5} currentCount={wineStats.totalRecordCount} accentColor={accentColor}>
-            <WineRegionMap data={wineStats.countryStats} />
-          </PdLockOverlay>
+          <WineRegionMap data={wineStats.countryStats} />
 
-          <PdLockOverlay minRecords={10} currentCount={wineStats.totalRecordCount} accentColor={accentColor}>
-            <div className="flex flex-col gap-4">
-              <SectionCard icon={<Grape size={15} />} title="품종" accentColor={accentColor}>
-                <VarietalChart varieties={wineStats.varietalStats} />
-              </SectionCard>
+          <SectionCard icon={<Grape size={15} />} title="품종" accentColor={accentColor}>
+            <VarietalChart varieties={wineStats.varietalStats} />
+          </SectionCard>
 
-              <SectionCard icon={<BarChart2 size={15} />} title="점수 분포" accentColor={accentColor}>
-                <ScoreDistribution
-                  buckets={wineStats.scoreBuckets}
-                  accentColor={accentColor}
-                />
-              </SectionCard>
-            </div>
-          </PdLockOverlay>
+          <SectionCard icon={<BarChart2 size={15} />} title="점수 분포" accentColor={accentColor}>
+            <ScoreDistribution
+              buckets={wineStats.scoreBuckets}
+              accentColor={accentColor}
+            />
+          </SectionCard>
 
-          <PdLockOverlay minRecords={20} currentCount={wineStats.totalRecordCount} accentColor={accentColor}>
-            <div className="flex flex-col gap-4">
-              <SectionCard icon={<CalendarDays size={15} />} title="월별 소비" accentColor={accentColor}>
-                <MonthlyChart
-                  months={wineStats.monthlyStats}
-                  totalAmount={wineStats.totalSpending}
-                  accentColor={accentColor}
-                  unit="병"
-                />
-              </SectionCard>
+          <SectionCard icon={<CalendarDays size={15} />} title="월별 소비" accentColor={accentColor}>
+            <MonthlyChart
+              months={wineStats.monthlyStats}
+              totalAmount={wineStats.totalSpending}
+              accentColor={accentColor}
+              unit="병"
+            />
+          </SectionCard>
 
-              <SectionCard icon={<Wine size={15} />} title="와인 타입" accentColor={accentColor}>
-                <WineTypeChart types={wineStats.wineTypeStats} />
-              </SectionCard>
-            </div>
-          </PdLockOverlay>
+          <SectionCard icon={<Wine size={15} />} title="와인 타입" accentColor={accentColor}>
+            <WineTypeChart types={wineStats.wineTypeStats} />
+          </SectionCard>
         </>
       )}
     </div>

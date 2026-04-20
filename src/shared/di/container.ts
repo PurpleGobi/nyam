@@ -20,6 +20,7 @@ import { SupabaseHomeRepository } from '@/infrastructure/repositories/supabase-h
 import { SupabaseSimilarityRepository } from '@/infrastructure/repositories/supabase-similarity-repository'
 import { SupabasePredictionRepository } from '@/infrastructure/repositories/supabase-prediction-repository'
 import { SupabaseBubblePhotoRepository } from '@/infrastructure/repositories/supabase-bubble-photo-repository'
+import { SupabaseEnrichmentRepository } from '@/infrastructure/repositories/supabase-enrichment-repository'
 import { resizeImage, uploadImage, deleteImage, uploadBubbleIcon } from '@/infrastructure/storage/image-upload'
 import type { RecordRepository } from '@/domain/repositories/record-repository'
 import type { RestaurantRepository } from '@/domain/repositories/restaurant-repository'
@@ -41,6 +42,7 @@ import type { HomeRepository } from '@/domain/repositories/home-repository'
 import type { SimilarityRepository } from '@/domain/repositories/similarity-repository'
 import type { PredictionRepository } from '@/domain/repositories/prediction-repository'
 import type { BubblePhotoRepository } from '@/domain/repositories/bubble-photo-repository'
+import type { EnrichmentRepository } from '@/domain/repositories/enrichment-repository'
 
 export function getSupabaseClient() {
   return createClient()
@@ -69,6 +71,7 @@ export const homeRepo: HomeRepository = new SupabaseHomeRepository()
 export const similarityRepo: SimilarityRepository = new SupabaseSimilarityRepository()
 export const predictionRepo: PredictionRepository = new SupabasePredictionRepository()
 export const bubblePhotoRepo: BubblePhotoRepository = new SupabaseBubblePhotoRepository()
+export const enrichmentRepo: EnrichmentRepository = new SupabaseEnrichmentRepository()
 
 // Re-export uploadBubbleIcon from infrastructure/storage
 export { uploadBubbleIcon }

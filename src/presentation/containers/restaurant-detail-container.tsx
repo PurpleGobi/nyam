@@ -24,6 +24,8 @@ import { ScoreBreakdownPanel } from '@/presentation/components/detail/score-brea
 import { BubbleExpandPanel } from '@/presentation/components/detail/bubble-expand-panel'
 import { BadgeRow } from '@/presentation/components/detail/badge-row'
 import { RestaurantInfo } from '@/presentation/components/detail/restaurant-info'
+import { InfoEnrichmentBlock } from '@/presentation/components/detail/info-enrichment-block'
+import { useRestaurantEnrichment } from '@/application/hooks/use-restaurant-enrichment'
 import { DetailFab } from '@/presentation/components/detail/detail-fab'
 import { AllRecordsSection } from '@/presentation/components/detail/all-records-section'
 import { AxisLevelBadge } from '@/presentation/components/detail/axis-level-badge'
@@ -188,21 +190,15 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
   )
 
   // visits 모드에서 selectedSource에 따른 타인 micro dot
-  // 소스 우선순위 dedup: mine > bubble (nyam은 CF 예측이므로 개별 dot 없음)
+  // 소스: mine(내 과거 방문) / bubble(버블 멤버) / nyam(공개 기록)
   const visitsRefPoints = useMemo(() => {
-    const seenRecordIds = new Set<string>()
-
     // 1. 내 기록 micro dots (최우선)
     const myMicroDots = selectedSources.includes('mine')
-      ? otherRecordRefs.map((r) => {
-          const rid = r._refIdx !== undefined ? sortedRecords[r._refIdx]?.id : undefined
-          if (rid) seenRecordIds.add(rid)
-          return { ...r, isMicroDot: true as const }
-        })
+      ? otherRecordRefs.map((r) => ({ ...r, isMicroDot: true as const, dotSource: 'mine' as const }))
       : []
 
     // 타인 micro dots (30개 제한)
-    type MicroDot = { x: number; y: number; satisfaction: number; name: string; score: number; isMicroDot: true }
+    type MicroDot = { x: number; y: number; satisfaction: number; name: string; score: number; isMicroDot: true; dotSource: 'bubble' | 'nyam' }
     const otherMicroDots: MicroDot[] = []
     const MAX_OTHER = 30
 
@@ -211,23 +207,39 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       for (const b of bubbleScores) {
         for (const d of b.dots) {
           if (otherMicroDots.length >= MAX_OTHER) break
-          otherMicroDots.push({ x: d.axisX, y: d.axisY, satisfaction: d.satisfaction, name: '', score: d.satisfaction, isMicroDot: true })
+          otherMicroDots.push({ x: d.axisX, y: d.axisY, satisfaction: d.satisfaction, name: '', score: d.satisfaction, isMicroDot: true, dotSource: 'bubble' })
         }
       }
     }
 
+    // 3. Nyam (공개 기록 — 타인 개별 평가)
+    if (selectedSources.includes('nyam')) {
+      for (const r of publicRecords) {
+        if (otherMicroDots.length >= MAX_OTHER) break
+        if (r.axisX == null || r.axisY == null || r.satisfaction == null) continue
+        otherMicroDots.push({ x: r.axisX, y: r.axisY, satisfaction: r.satisfaction, name: '', score: r.satisfaction, isMicroDot: true, dotSource: 'nyam' })
+      }
+    }
+
     return [...myMicroDots, ...otherMicroDots]
-  }, [selectedSources, otherRecordRefs, sortedRecords, bubbleScores])
+  }, [selectedSources, otherRecordRefs, bubbleScores, publicRecords])
 
   // 타인 기록에서 폴백 dot 계산 (내 기록이 없을 때)
   const bubbleAxisRecords = useMemo(
     () => bubbleScores.flatMap((b) => b.dots),
     [bubbleScores],
   )
+  const publicAxisRecords = useMemo(
+    () => publicRecords
+      .filter((r) => r.axisX != null && r.axisY != null && r.satisfaction != null)
+      .map((r) => ({ axisX: r.axisX ?? 0, axisY: r.axisY ?? 0, satisfaction: r.satisfaction ?? 0 })),
+    [publicRecords],
+  )
   const fallbackDot = useMemo(() => {
     if (avgDot) return null
     const candidates: Array<[ScoreSource, Array<{ axisX: number; axisY: number; satisfaction: number }>]> = [
       ['bubble', bubbleAxisRecords],
+      ['nyam', publicAxisRecords],
     ]
     const match = candidates.find(([source, dots]) => selectedSources.includes(source) && dots.length > 0)
     if (!match) return null
@@ -237,7 +249,7 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       axisY: Math.round(dots.reduce((s, d) => s + d.axisY, 0) / dots.length),
       satisfaction: Math.round(dots.reduce((s, d) => s + d.satisfaction, 0) / dots.length),
     }
-  }, [avgDot, selectedSources, bubbleAxisRecords])
+  }, [avgDot, selectedSources, bubbleAxisRecords, publicAxisRecords])
 
   const mySelected = selectedSources.includes('mine')
   const currentDot = mySelected
@@ -307,7 +319,10 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       navigator.share({ title: restaurant?.name, url: window.location.href })
     }
   }, [restaurant])
-  // 히어로 사진: 소스 우선순위(나→팔로잉→공개) 기준 최신 사진
+  // Enrichment (회원 리뷰 없는 식당용 AI 요약 + 사진 폴백)
+  const { enrichment, isLoading: enrichmentLoading } = useRestaurantEnrichment(restaurantId)
+
+  // 히어로 사진: 소스 우선순위(내 → 공개 → 식당 기본 → Google Places 폴백)
   const heroPhotos = useMemo(() => {
     if (!restaurant) return []
     const getPhotosFromRecords = (records: typeof myRecords) => {
@@ -321,15 +336,35 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
       }
       return urls
     }
-    // 소스 우선순위: 나 → 공개 기록 → 식당 기본 사진
+    // 1. 내 기록 사진
     for (const records of [myRecords, publicRecords]) {
       const urls = getPhotosFromRecords(records)
       if (urls.length > 0) return urls
     }
+    // 2. 식당 기본 사진 (카카오 시드 등)
     const base = restaurant.photos ?? []
     if (base.length > 0) return base
+    // 3. Enrichment 폴백 (Google Places photo_name → 프록시 URL)
+    if (enrichment?.status === 'done' && enrichment.photoUrls.length > 0) {
+      return enrichment.photoUrls.map(
+        (name) => `/api/places/photo?name=${encodeURIComponent(name)}&max=800`,
+      )
+    }
     return []
-  }, [restaurant, myRecords, publicRecords, recordPhotos])
+  }, [restaurant, myRecords, publicRecords, recordPhotos, enrichment])
+
+  // Google 사진 폴백 여부 (attribution 필수)
+  const showGoogleAttribution = useMemo(() => {
+    if (!restaurant) return false
+    if (!enrichment || enrichment.status !== 'done') return false
+    if (enrichment.photoUrls.length === 0) return false
+    // 내/공개 기록이 있으면 그걸 쓰므로 폴백 아님
+    const hasMemberPhotos = [...myRecords, ...publicRecords].some((r) => (recordPhotos.get(r.id)?.length ?? 0) > 0)
+    if (hasMemberPhotos) return false
+    // 식당 기본 사진이 있으면 그걸 쓰므로 폴백 아님
+    if ((restaurant.photos ?? []).length > 0) return false
+    return true
+  }, [restaurant, enrichment, myRecords, publicRecords, recordPhotos])
 
   if (isLoading || !restaurant) {
     return (
@@ -551,8 +586,8 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
                   ? (refIdx) => setFocusedRecordIdx(otherRecordRefs[refIdx]?._refIdx ?? 0)
                   : undefined
                 }
-                quadrantMode={allRecordsWithAxis.length >= 2 ? quadrantMode : undefined}
-                onQuadrantModeChange={allRecordsWithAxis.length >= 2 ? (mode) => {
+                quadrantMode={allRecordsWithAxis.length >= 1 ? quadrantMode : undefined}
+                onQuadrantModeChange={allRecordsWithAxis.length >= 1 ? (mode) => {
                   setQuadrantMode(mode)
                   setFocusedRecordIdx(0)
                 } : undefined}
@@ -584,19 +619,33 @@ export function RestaurantDetailContainer({ restaurantId, bubbleId }: Restaurant
         <Divider />
 
         {/* ─── 6. 식당 정보 ─── */}
-        <RestaurantInfo
-          address={restaurant.address}
-          hours={restaurant.hours}
-          phone={restaurant.phone}
-          lat={restaurant.lat}
-          lng={restaurant.lng}
-          name={restaurant.name}
-          menus={restaurant.menus ?? []}
-          showMenuSection={viewMode === 'my_records'}
-          externalIdKakao={restaurant.externalIdKakao}
-          externalIdNaver={restaurant.externalIdNaver}
-          externalIdGoogle={restaurant.externalIdGoogle}
-        />
+        <section>
+          <RestaurantInfo
+            address={restaurant.address}
+            hours={restaurant.hours}
+            phone={restaurant.phone}
+            lat={restaurant.lat}
+            lng={restaurant.lng}
+            name={restaurant.name}
+            menus={restaurant.menus ?? []}
+            showMenuSection={viewMode === 'my_records'}
+            externalIdKakao={restaurant.externalIdKakao}
+            externalIdNaver={restaurant.externalIdNaver}
+            externalIdGoogle={restaurant.externalIdGoogle}
+          />
+          {/* AI 외부 정보 요약 (enrichment) — 정보 섹션 내부 하단 */}
+          <div style={{ padding: '0 20px 20px' }}>
+            <InfoEnrichmentBlock enrichment={enrichment} isLoading={enrichmentLoading} />
+            {showGoogleAttribution && (
+              <p
+                className="mt-2 text-right"
+                style={{ fontSize: '10px', color: 'var(--text-hint)' }}
+              >
+                📸 사진 출처: Google
+              </p>
+            )}
+          </div>
+        </section>
 
         {/* 하단 spacer (FAB + 액션바 클리어런스) */}
         <div style={{ height: myRecords.length > 0 ? '140px' : '80px' }} />

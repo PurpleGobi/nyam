@@ -1,5 +1,4 @@
 import { createClient } from '@/infrastructure/supabase/client'
-import { read, utils } from 'xlsx'
 import ExcelJS from 'exceljs'
 import type { SettingsRepository } from '@/domain/repositories/settings-repository'
 import type { UserSettings, VisibilityConfig, FollowPolicy, BubblePrivacyOverride, DeleteMode } from '@/domain/entities/settings'
@@ -221,25 +220,28 @@ export class SupabaseSettingsRepository implements SettingsRepository {
   }
 
   private async importExcelSheets(userId: string, buffer: ArrayBuffer): Promise<void> {
-    const wb = read(buffer, { type: 'array' })
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer)
+
+    const findSheet = (kw: string) => wb.worksheets.find((ws) => ws.name.includes(kw))
 
     // 식당 시트
-    const rSheetName = wb.SheetNames.find((n) => n.includes('식당'))
-    if (rSheetName && wb.Sheets[rSheetName]) {
-      const rows = utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[rSheetName])
-      await this.upsertRestaurantRecords(userId, rows)
+    const rSheet = findSheet('식당')
+    if (rSheet) {
+      await this.upsertRestaurantRecords(userId, sheetToRows(rSheet))
     }
 
     // 와인 시트
-    const wSheetName = wb.SheetNames.find((n) => n.includes('와인'))
-    if (wSheetName && wb.Sheets[wSheetName]) {
-      const rows = utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wSheetName])
-      await this.upsertWineRecords(userId, rows)
+    const wSheet = findSheet('와인')
+    if (wSheet) {
+      await this.upsertWineRecords(userId, sheetToRows(wSheet))
     }
 
     // 식당/와인 시트가 없는 경우 — 첫 번째 시트를 records로 직접 insert (하위 호환)
-    if (!rSheetName && !wSheetName) {
-      const rows = parseExcel(buffer)
+    if (!rSheet && !wSheet) {
+      const first = wb.worksheets[0]
+      if (!first) return
+      const rows = sheetToRows(first)
       if (rows.length === 0) return
       for (const row of rows) {
         row.user_id = userId
@@ -468,13 +470,39 @@ function parseCsv(text: string): Record<string, unknown>[] {
   })
 }
 
-function parseExcel(buffer: ArrayBuffer): Record<string, unknown>[] {
-  const workbook = read(buffer, { type: 'array' })
-  const sheetName = workbook.SheetNames[0]
-  if (!sheetName) return []
-  const sheet = workbook.Sheets[sheetName]
-  if (!sheet) return []
-  return utils.sheet_to_json<Record<string, unknown>>(sheet)
+/** ExcelJS Worksheet → array of {header: cell value} 객체. xlsx.utils.sheet_to_json 대체. */
+function sheetToRows(sheet: ExcelJS.Worksheet): Record<string, unknown>[] {
+  if (!sheet.actualRowCount || sheet.actualRowCount < 2) return []
+  const headerRow = sheet.getRow(1)
+  const headers: string[] = []
+  headerRow.eachCell({ includeEmpty: false }, (cell, col) => {
+    headers[col] = String(cell.value ?? '').trim()
+  })
+  const rows: Record<string, unknown>[] = []
+  for (let r = 2; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r)
+    if (!row.hasValues) continue
+    const obj: Record<string, unknown> = {}
+    let hasContent = false
+    row.eachCell({ includeEmpty: false }, (cell, col) => {
+      const key = headers[col]
+      if (!key) return
+      const v = cell.value
+      // ExcelJS 셀 값을 평탄화: rich text/hyperlink/formula → string
+      if (v && typeof v === 'object' && 'text' in v) {
+        obj[key] = (v as { text: string }).text
+      } else if (v && typeof v === 'object' && 'result' in v) {
+        obj[key] = (v as { result: unknown }).result ?? null
+      } else if (v instanceof Date) {
+        obj[key] = v.toISOString()
+      } else {
+        obj[key] = v
+      }
+      if (obj[key] !== null && obj[key] !== '') hasContent = true
+    })
+    if (hasContent) rows.push(obj)
+  }
+  return rows
 }
 
 async function generateTemplateWorkbook(): Promise<Blob> {

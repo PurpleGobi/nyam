@@ -151,6 +151,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<IdentifyR
   if (!imageUrl || !targetType) {
     return NextResponse.json({ success: false, result: null, error: 'MISSING_FIELDS' }, { status: 400 })
   }
+  // imageUrl은 Supabase Storage 도메인만 허용 (외부 URL을 Gemini로 보내 abuse 방지)
+  const expectedHost = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+  if (expectedHost) {
+    try {
+      const u = new URL(imageUrl)
+      if (u.hostname !== expectedHost) {
+        return NextResponse.json({ success: false, result: null, error: 'INVALID_IMAGE_URL' }, { status: 400 })
+      }
+    } catch {
+      return NextResponse.json({ success: false, result: null, error: 'INVALID_IMAGE_URL' }, { status: 400 })
+    }
+  }
 
   try {
     if (targetType === 'restaurant') {

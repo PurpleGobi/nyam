@@ -139,6 +139,8 @@ interface WineRecordFormProps {
   recentCompanions?: string[]
   onDelete?: () => void
   isDeleting?: boolean
+  quadrantMode?: 'visits' | 'compare'
+  onQuadrantModeChange?: (mode: 'visits' | 'compare') => void
 }
 
 function countActiveRings(sel: AromaSelection): number {
@@ -160,6 +162,8 @@ export function WineRecordForm({
   recentCompanions,
   onDelete,
   isDeleting,
+  quadrantMode,
+  onQuadrantModeChange,
 }: WineRecordFormProps) {
   // 와인 메타 (AI 자동 채움 + 수정 가능)
   const [producer, setProducer] = useState(target.producer ?? '')
@@ -616,7 +620,16 @@ export function WineRecordForm({
               아직이에요
             </button>
           </div>
-          <QuadrantInput type="wine" value={quadrant} onChange={handleQuadrantChange} referencePoints={referenceRecords} showHint={saveHint} hideDot={!quadrantTouched} />
+          <QuadrantInput
+            type="wine"
+            value={quadrant}
+            onChange={handleQuadrantChange}
+            referencePoints={referenceRecords}
+            showHint={saveHint}
+            hideDot={!quadrantTouched}
+            quadrantMode={quadrantMode}
+            onQuadrantModeChange={onQuadrantModeChange}
+          />
         </div>
       </section>
 

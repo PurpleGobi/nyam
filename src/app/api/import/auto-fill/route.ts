@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/infrastructure/supabase/server'
-import { read, utils } from 'xlsx'
 import ExcelJS from 'exceljs'
 import { searchKakaoLocal } from '@/infrastructure/api/kakao-local'
 import { getWineDetailByName } from '@/infrastructure/api/ai-recognition'
+
+/** ExcelJS Worksheet → array of {header: string} 객체. xlsx.utils.sheet_to_json 대체. defval='' 모드. */
+function sheetToStringRows(sheet: ExcelJS.Worksheet): Record<string, string>[] {
+  if (!sheet.actualRowCount || sheet.actualRowCount < 2) return []
+  const headerRow = sheet.getRow(1)
+  const headers: string[] = []
+  headerRow.eachCell({ includeEmpty: false }, (cell, col) => {
+    headers[col] = String(cell.value ?? '').trim()
+  })
+  const rows: Record<string, string>[] = []
+  for (let r = 2; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r)
+    if (!row.hasValues) continue
+    const obj: Record<string, string> = {}
+    for (let col = 1; col <= headers.length; col++) {
+      const key = headers[col]
+      if (!key) continue
+      const v = row.getCell(col).value
+      let str: string
+      if (v == null) str = ''
+      else if (v instanceof Date) str = v.toISOString()
+      else if (typeof v === 'object' && 'text' in v) str = String((v as { text: unknown }).text ?? '')
+      else if (typeof v === 'object' && 'result' in v) str = String((v as { result: unknown }).result ?? '')
+      else str = String(v)
+      obj[key] = str
+    }
+    rows.push(obj)
+  }
+  return rows
+}
 
 /**
  * POST /api/import/auto-fill
@@ -23,31 +52,26 @@ export async function POST(request: NextRequest) {
   }
 
   const buffer = await file.arrayBuffer()
-  const wb = read(buffer, { type: 'array' })
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer)
 
   // ExcelJS로 결과 workbook 생성
   const outWb = new ExcelJS.Workbook()
 
   // ── 식당 시트 처리 ──
-  const rSheetName = wb.SheetNames.find((n) => n.includes('식당'))
-  if (rSheetName) {
-    const rSheet = wb.Sheets[rSheetName]
-    if (rSheet) {
-      const rows = utils.sheet_to_json<Record<string, string>>(rSheet, { defval: '' })
-      const filled = await fillRestaurants(rows)
-      writeSheet(outWb, '식당 기록', filled, 'FFFF6038')
-    }
+  const rSheet = wb.worksheets.find((ws) => ws.name.includes('식당'))
+  if (rSheet) {
+    const rows = sheetToStringRows(rSheet)
+    const filled = await fillRestaurants(rows)
+    writeSheet(outWb, '식당 기록', filled, 'FFFF6038')
   }
 
   // ── 와인 시트 처리 ──
-  const wSheetName = wb.SheetNames.find((n) => n.includes('와인'))
-  if (wSheetName) {
-    const wSheet = wb.Sheets[wSheetName]
-    if (wSheet) {
-      const rows = utils.sheet_to_json<Record<string, string>>(wSheet, { defval: '' })
-      const filled = await fillWines(rows)
-      writeSheet(outWb, '와인 기록', filled, 'FF722F37')
-    }
+  const wSheet = wb.worksheets.find((ws) => ws.name.includes('와인'))
+  if (wSheet) {
+    const rows = sheetToStringRows(wSheet)
+    const filled = await fillWines(rows)
+    writeSheet(outWb, '와인 기록', filled, 'FF722F37')
   }
 
   const outBuffer = await outWb.xlsx.writeBuffer()

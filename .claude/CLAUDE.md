@@ -12,12 +12,12 @@
 
 ## 세션 시작 프로토콜
 
-작업 시작 전 **반드시** 순서대로 읽는다:
+작업 시작 전 **반드시** 순서대로 읽는다 (루트 CLAUDE.md와 동기화):
 
 ```
 1. WORKLOG.md       ← 최근 작업 맥락 (무엇을 했고, 무엇이 남았는지)
 2. CODEBASE.md      ← 코드베이스 구조 인덱스 (어디에 뭐가 있는지)
-3. CLAUDE.md        ← 프로젝트 규칙 (아키텍처, 게이트, 금지사항)
+3. CLAUDE.md        ← 프로젝트 규칙 (아키텍처, 게이트, 금지사항 — 루트)
 ```
 
 ## 아키텍처 절대 규칙 (R1-R5)
@@ -63,7 +63,7 @@ domain/entities → domain/repositories → infrastructure/repositories
 
 ```
 nyam/
-├── vibe-coder/                    ← vibe-coder 하네스 (이 폴더)
+├── .claude/                       ← vibe-coder 하네스 (이 폴더)
 │   ├── CLAUDE.md                  ← 이 파일
 │   ├── agents/
 │   │   ├── codebase-analyst.md    — 프로젝트 문서/구조/패턴 분석
@@ -99,12 +99,16 @@ nyam/
 |------------|----------|
 | 최근 작업 맥락 | `WORKLOG.md` |
 | 코드베이스 구조 | `CODEBASE.md` |
-| DB 스키마 | `development_docs/systems/DATA_MODEL.md` |
-| 인증/권한/RLS | `development_docs/systems/AUTH.md` |
-| 평가 엔진 | `development_docs/systems/RATING_ENGINE.md` |
-| 디자인 토큰 | `development_docs/systems/DESIGN_SYSTEM.md` |
-| XP/레벨 | `development_docs/systems/XP_SYSTEM.md` |
-| 추천 알고리즘 | `development_docs/systems/RECOMMENDATION.md` |
-| 페이지별 스펙 | `development_docs/pages/01~12_*.md` |
-| 클린 아키텍처 | `development_docs/implementation/shared/CLEAN_ARCH_PATTERN.md` |
-| 네이밍/규칙 | `development_docs/implementation/shared/CONVENTIONS.md` |
+| 클린 아키텍처 / 네이밍 규칙 / 크리티컬 게이트 | 루트 `CLAUDE.md` (R1~R5 + 코딩 규칙 + 금지 사항 섹션) |
+| 제품 정의 | `development_docs/00_PRD.md`, `00_IA.md`, `POST_LAUNCH.md` |
+| DB 스키마 / RPC / RLS | `development_docs/systems/DATA_MODEL.md` |
+| 인증/권한/RLS 정책 | `development_docs/systems/AUTH.md` |
+| 기록/평가/3-Phase/AI 리뷰 | `development_docs/systems/RECORD_SYSTEM.md` |
+| 디자인 토큰/컴포넌트 | `development_docs/systems/DESIGN_SYSTEM.md` |
+| XP/레벨/Prestige | `development_docs/systems/XP_SYSTEM.md` |
+| 버블 시스템 (생애주기/자동공유/랭킹) | `development_docs/systems/BUBBLE_SYSTEM.md` |
+| 소셜 (팔로우/댓글/리액션/알림) | `development_docs/systems/SOCIAL_SYSTEM.md` |
+| 추천/CF 알고리즘 | `development_docs/systems/RECOMMENDATION.md` |
+| 지도/위치/생활권/와인 산지 | `development_docs/systems/MAP_LOCATION.md` |
+| 쿼리 최적화/인덱스/RPC 카탈로그 | `development_docs/systems/QUERY_OPTIMIZATION.md` |
+| 과거 문서 (참고용) | `_archive/` (pages, prototype, implementation_phases, implementation_shared, refactoring, research, simulations, system_brainstorming, 개념문서_원본 — 세부는 탐색) |

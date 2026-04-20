@@ -20,6 +20,20 @@ interface NaverShareResponse {
   bookmarkList: NaverBookmark[]
 }
 
+// SSRF 방어: 정확히 이 호스트들로의 요청만 허용. substring 검사 금지.
+const ALLOWED_HOSTS = new Set(['naver.me', 'pages.map.naver.com', 'map.naver.com'])
+
+function safeParseUrl(input: string): URL | null {
+  try {
+    const url = new URL(input)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+    if (!ALLOWED_HOSTS.has(url.hostname)) return null
+    return url
+  } catch {
+    return null
+  }
+}
+
 /** URL 또는 단축 URL에서 shareId 추출 */
 async function resolveShareId(input: string): Promise<string | null> {
   // 이미 32자 hex인 경우
@@ -29,14 +43,22 @@ async function resolveShareId(input: string): Promise<string | null> {
   const folderMatch = input.match(/folder\/([a-f0-9]{32})/)
   if (folderMatch) return folderMatch[1]
 
-  // naver.me 단축 URL → 리다이렉트 따라가서 최종 URL에서 추출
-  if (input.includes('naver.me')) {
-    const res = await fetch(input, { redirect: 'follow' })
+  // 호스트 화이트리스트 통과한 경우만 redirect 수동 추적 (각 단계 재검증)
+  const startUrl = safeParseUrl(input)
+  if (!startUrl) return null
+
+  let current = startUrl.toString()
+  for (let hop = 0; hop < 3; hop++) {
+    const res = await fetch(current, { redirect: 'manual' })
     const finalUrl = res.url
     const match = finalUrl.match(/folder\/([a-f0-9]{32})/)
     if (match) return match[1]
+    const location = res.headers.get('location')
+    if (!location) break
+    const next = safeParseUrl(location)
+    if (!next) return null
+    current = next.toString()
   }
-
   return null
 }
 

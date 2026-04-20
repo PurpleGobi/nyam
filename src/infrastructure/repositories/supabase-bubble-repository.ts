@@ -1,4 +1,5 @@
 import { createClient } from '@/infrastructure/supabase/client'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
 import type { BubbleRepository, CreateBubbleInput, BubbleFeedItem, BubbleShareForTarget, UserBubbleMembership, MutualRecordItem, SearchUserResult } from '@/domain/repositories/bubble-repository'
 import type { Bubble, BubbleMember, BubbleMemberRole, BubbleMemberStatus, BubbleShare, BubbleRankingSnapshot, BubbleFocusType, BubbleVisibility, BubbleContentVisibility, BubbleJoinPolicy, VisibilityOverride, BubbleShareRule, BubbleExpertise, ExpertiseAxisType, BubbleItem } from '@/domain/entities/bubble'
 import { getLevelTitle } from '@/domain/services/xp-calculator'
@@ -131,12 +132,14 @@ export class SupabaseBubbleRepository implements BubbleRepository {
   private get supabase() { return createClient() }
 
   async searchUsers(query: string, excludeIds?: string[], limit = 10): Promise<SearchUserResult[]> {
-    if (!query.trim()) return []
-    const term = `%${query.trim()}%`
+    const safe = escapeForOrFilter(query.trim())
+    if (!safe) return []
+    const term = `%${safe}%`
+    // 보안: email 검색 제거 (Finding #2 / #9 방어). nickname/handle만 검색.
     let q = this.supabase
       .from('users')
-      .select('id, nickname, handle, email, avatar_url, avatar_color')
-      .or(`nickname.ilike.${term},handle.ilike.${term},email.ilike.${term}`)
+      .select('id, nickname, handle, avatar_url, avatar_color')
+      .or(`nickname.ilike.${term},handle.ilike.${term}`)
       .limit(limit)
     if (excludeIds && excludeIds.length > 0) {
       q = q.not('id', 'in', `(${excludeIds.join(',')})`)
@@ -211,8 +214,12 @@ export class SupabaseBubbleRepository implements BubbleRepository {
       .eq('visibility', 'public').eq('is_searchable', true)
 
     if (options?.search) {
-      const term = `%${options.search}%`
-      query = query.or(`name.ilike.${term},description.ilike.${term},search_keywords.cs.{${options.search}}`)
+      const safe = escapeForOrFilter(options.search)
+      if (safe) {
+        const term = `%${safe}%`
+        // search_keywords.cs.{...} 의 array literal 컨텐츠도 동일 escape 적용
+        query = query.or(`name.ilike.${term},description.ilike.${term},search_keywords.cs.{${safe}}`)
+      }
     }
     if (options?.focusType) query = query.eq('focus_type', options.focusType)
     if (options?.area) query = query.ilike('area', `%${options.area}%`)

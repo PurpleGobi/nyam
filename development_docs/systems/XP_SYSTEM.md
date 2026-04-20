@@ -1,10 +1,39 @@
-# XP_SYSTEM — 경험치 & 레벨 (v2)
+<!-- updated: 2026-04-20 -->
+---
+depends_on: [DATA_MODEL, RECORD_SYSTEM]
+affects: [RECOMMENDATION, BUBBLE_SYSTEM, SOCIAL_SYSTEM]
+---
 
-> affects: RECORD_FLOW, PROFILE, BUBBLE, HOME, ONBOARDING
-> 최종 갱신: 2026-04-02
+# XP_SYSTEM — 경험치 & 레벨 + Prestige(명성) (v2)
+
+> **유저 XP** (유저가 쌓은 경험)와 **Prestige** (식당 자체의 명성)는 **완전히 분리된 두 축**이다. 이 문서는 두 축 모두의 SSOT.
+> 최종 갱신: 2026-04-20
 > 시뮬레이션 검증: `system_brainstorming/simulation/` (test_xp_charts, test_xp_abuse, test_xp_global)
 
 ---
+
+## 0. 두 축 개요
+
+```
+┌─────────────────────────────┬──────────────────────────────────┐
+│ 유저 XP (§1~§14)             │ Prestige / 명성 (§15~§19)          │
+├─────────────────────────────┼──────────────────────────────────┤
+│ 저장 위치: users, xp_totals  │ 저장 위치: restaurant_prestige +    │
+│                             │          restaurants.prestige JSONB│
+│ 대상: 유저                   │ 대상: 식당 (와인은 critic_scores)  │
+│ 입력: 유저 행동(기록/소셜)    │ 입력: 외부 시드(미슐랭/블루리본/TV) │
+│ 산출: 계산                   │ 산출: 주입 → 트리거 캐시            │
+│ 변동: 수시                   │ 변동: 연 1회 수준                  │
+└─────────────────────────────┴──────────────────────────────────┘
+```
+
+- **유저 XP는 계산되는 값**이고, **Prestige는 외부에서 주입되는 시드 값**이다.
+- 두 축은 **서로 영향을 주고받지 않는다** — 권위 있는 식당에 기록한다고 유저 XP 보너스는 없다 (현재 구현 기준).
+- Prestige는 과거 "RP(Reputation)"로 도입되었고(055), 058에서 전면 rename되어 현재는 `prestige`로 통일되었다.
+
+---
+
+# Part A — 유저 XP 시스템
 
 ## 1. 설계 원칙
 
@@ -125,9 +154,9 @@
 | 활동 | XP | 비고 |
 |------|-----|------|
 | 버블에 기록 큐레이션 | +1 | 기록 있는 큐레이션만 |
-| 좋아요/찜 받음 | +1 | |
+| 좋아요(good 리액션) 받음 | +1 | bad 리액션은 XP 없음. 찜 시스템은 migration 063에서 제거됨 |
 | 팔로워 획득 (버블/개인) | +1 | |
-| 맞팔 성사 | +2 | 양쪽 모두 |
+| 맞팔 성사 | +2 | 양쪽 모두 **(스펙 — 현재 요청자만 부여됨, 미구현 이슈)**. 상세: SOCIAL_SYSTEM §2.7, §11 |
 
 > **소셜 XP 합산 일일 상한: 10 XP/일** (어떤 조합이든)
 
@@ -160,6 +189,15 @@
 풀 기록 1건: +18 XP (종합) + 세부 축 2개 × +5 (종합 미포함)
 + 마일스톤 달성 시 추가 보너스 (해당 시점에만)
 ```
+
+### 4-7. Prestige ↔ XP 관계 (중요)
+
+**현재 구현 기준, 식당의 prestige는 유저 XP 산정에 영향을 주지 않는다.**
+
+- 미슐랭 3스타 식당에 풀 기록해도, 동네 식당에 풀 기록해도 **똑같이 +18 XP**.
+- `domain/services/xp-calculator.ts`에 prestige 관련 보너스 로직 없음 (2026-04-20 기준).
+- 근거: XP는 "유저가 한 일"에 대한 보상이고, prestige는 "대상의 공신력"이다. 두 축이 섞이면 권위 식당 쇼핑이 발생하여 설계 원칙(§1 "이기적 동기")과 충돌한다.
+- 향후 정책 변경 시 이 섹션과 xp-calculator를 함께 수정한다.
 
 ---
 
@@ -215,6 +253,8 @@ const ANCHORS: [number, number][] = [
 ### 레벨 칭호
 
 > SSOT: DATA_MODEL.md의 `xp_seed_levels` 테이블 (`title`, `color` 필드)
+>
+> 매핑 값(색상/CSS 변수/Tailwind 이름)의 SSOT는 **DESIGN_SYSTEM.md §10**이며, `shared/utils/level-color.ts`는 현재 미사용(dead code 후보, §14 Shared 참고).
 
 | 레벨 구간 | 칭호 | 색상 | CSS 변수 | Tailwind |
 |----------|------|------|---------|---------|
@@ -250,6 +290,7 @@ const ANCHORS: [number, number][] = [
 - 소셜 XP 합산 일 상한 10 *(구현됨: `xp-calculator.ts` SOCIAL_DAILY_CAP)*
 - 기록 0 계정의 팔로우 XP 미부여 *(미구현 — 향후 추가 예정)*
 - 비정상 패턴 탐지 (1분 내 10+ 팔로우) *(미구현 — 향후 추가 예정)*
+- 맞팔 XP 양쪽 부여 *(미구현 — 현재 요청자만 +2 부여됨. 스펙: SOCIAL_SYSTEM §2.7. 상세: §4-3)*
 
 **통계 레벨:**
 - 식당/와인 표시 점수 = Trimmed Mean (양끝 5% 제거)
@@ -402,7 +443,7 @@ const ANCHORS: [number, number][] = [
 
 ---
 
-## 12. DB 스키마
+## 12. DB 스키마 (유저 XP)
 
 > SSOT: `000_schema_reference.sql` + DATA_MODEL.md
 > 테이블 네이밍: `xp_` 접두사 체계 (xp_totals, xp_log_*, xp_seed_*)
@@ -445,6 +486,10 @@ CREATE TABLE xp_totals (
 -- axis_value: 'restaurant'|'wine' (category) / '을지로' (area) / '일식' (genre) 등
 ```
 
+> **`bubble_expertise` 뷰 집계 범위 주의** — `bubble_expertise` 뷰(050_bubble_expertise_view.sql)는 `xp_totals` 중 **세부 축 4종(area/genre/wine_variety/wine_region)만 집계**하며, **category 축(restaurant/wine)은 제외**한다. category는 세부 축 XP의 합산 캐시(중간 계층, §3 참조)이므로 뷰에서 다시 집계하면 중복이 되기 때문이다.
+> - 근거: BUBBLE_SYSTEM §5-5 (버블 전문성은 세부 축 기준), XP_SYSTEM §17-5 (뷰는 유저 XP의 버블별 집계)
+> - 결과: 버블 전문성/추천 알고리즘은 "을지로"·"일식"·"보르도"·"피노 누아" 같은 **세부 축 단위**로만 작동하고, "식당 레벨"·"와인 레벨" 같은 카테고리 단위는 버블 전문성 판정에 사용되지 않는다.
+
 ### 12-4. xp_log_changes (XP 변동 이력 — 구 xp_histories)
 
 ```sql
@@ -465,6 +510,7 @@ CREATE TABLE xp_log_changes (
     'milestone','revisit'
   ))
 );
+-- ※ DB reason 코드 `social_like`는 079 good/bad 전환 이후에도 하위 호환 위해 유지. UI/도메인 SocialAction은 `good`
 ```
 
 ### 12-5. xp_seed_levels (레벨 정의 시드 — 구 level_thresholds)
@@ -537,6 +583,8 @@ get_record_count_by_axis(p_user_id, p_axis_type, p_axis_value) → INT
 get_revisit_count_by_axis(p_user_id, p_axis_type, p_axis_value) → INT
 ```
 
+> **082 search_path 잠금 주석** — `082_security_hardening.sql`에서 XP 관련 함수의 `search_path`를 `public, pg_temp`(또는 필요 시 `public, pg_temp, extensions`)로 `ALTER FUNCTION ... SET search_path = ...` 고정했다. 대상: `refresh_active_xp`, `increment_user_total_xp`, `upsert_user_experience`, `sync_restaurant_prestige_cache` 등. 이는 Supabase advisor의 mutable `search_path` 경고 대응으로, 호출 컨텍스트가 스키마를 덮어써 악성 함수 해석을 유도하는 경로를 차단한다.
+
 ### 12-10. 크론 스케줄
 
 | 크론 | 주기 | 함수 | 설명 |
@@ -590,7 +638,7 @@ EXIF 검증: 기록 저장 시 has_exif_gps / is_exif_verified 플래그 설정
 
 ---
 
-## 14. 코드 파일 맵
+## 14. 코드 파일 맵 (유저 XP)
 
 ### Domain (순수 로직, 외부 의존 0)
 
@@ -599,7 +647,6 @@ EXIF 검증: 기록 저장 시 has_exif_gps / is_exif_verified 플래그 설정
 | `domain/entities/xp.ts` | XP 타입 정의 (AxisType, XpReason, UserExperience, LevelInfo 등) |
 | `domain/repositories/xp-repository.ts` | XpRepository 인터페이스 |
 | `domain/services/xp-calculator.ts` | 순수 XP 계산 (기록/소셜/보너스/레벨/어뷰징 체크), XP_CONSTANTS 상수 |
-| `domain/services/onboarding-xp.ts` | 온보딩 전용 XP 계산 (완료 +10, 버블 생성, 식당 등록) |
 
 ### Infrastructure (Supabase 구현)
 
@@ -618,6 +665,11 @@ EXIF 검증: 기록 저장 시 has_exif_gps / is_exif_verified 플래그 설정
 | `application/hooks/use-social-xp.ts` | 소셜 XP 적립 (일일 상한 적용) |
 | `application/hooks/use-axis-level.ts` | 축별 레벨 조회 (식당/와인 상세용) |
 | `application/hooks/use-profile.ts` | 프로필 조회 hook (experiences, recentXp 5건, thresholds 포함) |
+
+> **XP 이력 건수 — 용도별 분리 (의도된 중첩)**
+> - `use-profile.ts` → **5건**: 프로필 화면 "최근 XP 이력" 요약용 (§11 `profile/recent-xp-list.tsx`). 프로필 초기 로드 비용 최소화.
+> - `use-xp.ts` → **20건**: 프로필 레벨 상세 시트(§11 `profile/level-detail-sheet.tsx`)의 XP 분석/전체 이력 표시용. 시트 오픈 시에만 로드.
+> - 두 hook이 각자 다른 스케일의 이력을 조회하며, 중첩으로 보이지만 **로딩 시점과 화면 맥락이 다른 용도 분리**다.
 
 ### Presentation (UI 컴포넌트)
 
@@ -647,7 +699,7 @@ EXIF 검증: 기록 저장 시 has_exif_gps / is_exif_verified 플래그 설정
 
 | 파일 | 역할 |
 |------|------|
-| `shared/utils/level-color.ts` | 레벨→색상/CSS변수/Tailwind 매핑 **(미사용 dead code — 실제로는 `xp-calculator.ts`의 getLevelColor 사용)** |
+| `shared/utils/level-color.ts` | 레벨→색상/CSS변수/Tailwind 매핑. **현재 미사용 (dead code 후보)** — 어떤 컴포넌트/훅에서도 import되지 않으며, 실제 색상/칭호 산출은 `domain/services/xp-calculator.ts`의 `getLevelColor` / `getLevelTitle`이 담당. 매핑 SSOT는 DESIGN_SYSTEM.md §10. 제거 또는 통합 대상. |
 | `shared/di/container.ts` | `xpRepo` DI 바인딩 |
 
 ### DB 마이그레이션
@@ -667,3 +719,279 @@ EXIF 검증: 기록 저장 시 has_exif_gps / is_exif_verified 플래그 설정
 |------|------|
 | `supabase/functions/refresh-active-xp/index.ts` | 활성 XP 크론 (매일 04:00 KST) |
 | `supabase/functions/weekly-ranking-snapshot/index.ts` | 주간 랭킹 크론 (매주 월요일 00:00 UTC) |
+
+---
+
+# Part B — Prestige(명성) 시스템
+
+## 15. Prestige란 무엇인가
+
+### 15-1. 정의
+
+**Prestige는 식당 자체에 부여되는 "명성" 점수**다. 미슐랭 가이드, 블루리본 서베이, TV 맛집 프로그램 출연 등 **외부 권위 기관이 인정한 식당 정보**를 표현하며, 유저의 점수 평가와는 **별개로 관리되는 시드 데이터**다.
+
+```
+유저 XP             =  "이 사람이 쌓은 경험"      (유저 테이블, 계산)
+Prestige (명성)    =  "이 식당의 권위/공신력"    (식당 테이블, 외부 주입)
+```
+
+### 15-2. 과거 명칭 — RP (Reputation)
+
+- **2026-04-09**: `restaurant_accolades` 테이블을 없애고 새 시스템 도입 (`055_restaurant_rp.sql`). 당시 이름은 **RP (Reputation)**. 테이블 `restaurant_rp`, 캐시 컬럼 `restaurants.rp`.
+- **이후**: 용어 혼동 방지를 위해 `058_rename_rp_to_prestige.sql`에서 전면 rename.
+  - `restaurant_rp` → `restaurant_prestige`
+  - `rp_type/rp_grade/rp_year` → `prestige_type/prestige_grade/prestige_year`
+  - `restaurants.rp` JSONB → `restaurants.prestige` JSONB
+  - 인덱스·RLS 정책·트리거 함수(`sync_restaurant_rp_cache` → `sync_restaurant_prestige_cache`)·RPC까지 모두 rename.
+- **현재(2026-04-20)**: `prestige`가 정식 용어. "RP"는 과거 명칭으로만 언급된다.
+
+### 15-3. 왜 별도 시스템인가
+
+- 명성 데이터는 **유저가 생성하지 않는다** — 크롤링/엑셀로 외부에서 주입된다.
+- **비정기 업데이트** — 미슐랭은 연 1회, TV는 방영 시, 블루리본은 연 1회.
+- 식당과의 **매칭이 필요** — 외부 데이터의 식당 이름과 DB의 식당이 다를 수 있으므로 이름/좌표 기반 매칭 프로세스가 별도로 존재.
+- **UI 여러 곳에 뱃지로 표시** — 별도 API 호출 없이 빠르게 렌더링되어야 하므로 `restaurants` 테이블에 JSONB 캐시 컬럼을 둔다.
+
+### 15-4. 와인에는 Prestige가 없다
+
+와인에는 `restaurants.prestige`에 해당하는 컬럼이 없다. 대신 와인은 `wines.critic_scores` JSONB에 **와인 평론가 점수**를 저장한다:
+
+```jsonc
+// wines.critic_scores 예시 (DATA_MODEL.md §2.4 참조)
+{ "WS": 95, "JR": 18.5, "JH": 96, "RP": 97 }
+// RP = Robert Parker (와인 평론가), 식당 prestige의 RP(Reputation)와 무관
+```
+
+> 주의: wines.critic_scores의 `"RP"`는 와인 평론가 **Robert Parker**의 약자이지, 과거 식당 명성 시스템의 Reputation과는 **의미가 완전히 다르다**. 문서·코드에서 혼동하지 않도록 유의.
+
+---
+
+## 16. Prestige 데이터 구조
+
+### 16-1. restaurant_prestige (시드 테이블 — 원본)
+
+크롤링/엑셀에서 들어온 원본 명성 데이터. **이 테이블이 명성 데이터의 유일한 입력 지점**이다.
+
+> 스키마 상세: DATA_MODEL.md §6 `restaurant_prestige`
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | UUID PK | |
+| `restaurant_id` | UUID FK (nullable) | restaurants 테이블과 매칭되면 채워짐. ON DELETE SET NULL |
+| `restaurant_name` | TEXT | 원본 식당 이름 |
+| `restaurant_name_norm` | TEXT | 정규화 이름 (매칭용) |
+| **`prestige_type`** | TEXT | `'michelin'` \| `'blue_ribbon'` \| `'tv'` (CHECK) |
+| **`prestige_year`** | INT | 선정/방영 연도 |
+| **`prestige_grade`** | TEXT | 등급 또는 프로그램명 (아래 표 참조) |
+| `region`, `area`, `address`, `phone` | TEXT | 매칭 보조 |
+| `lat`, `lng` | DOUBLE | 좌표 (매칭 보조, 반경 50m 체크) |
+| `kakao_id` | TEXT | 카카오맵 ID (매칭 후 저장) |
+| `source_url` | TEXT | 원본 소스 |
+| `verified` | BOOLEAN | 검증 여부 |
+
+**`prestige_grade` 값 규칙:**
+
+| prestige_type | prestige_grade 예시 |
+|---------------|---------------------|
+| `michelin` | `3_star`, `2_star`, `1_star`, `bib` |
+| `blue_ribbon` | `3_ribbon`, `2_ribbon`, `1_ribbon` |
+| `tv` | 프로그램명 그대로: `흑백요리사`, `줄서는식당`, `생활의달인` 등 |
+
+### 16-2. restaurants.prestige (JSONB 캐시)
+
+`restaurants` 테이블의 JSONB 컬럼. **`restaurant_prestige`에서 트리거로 자동 동기화**되며, UI에서 JOIN 없이 바로 읽는다.
+
+```jsonc
+// restaurants.prestige 예시
+[
+  { "type": "michelin",    "grade": "2_star" },
+  { "type": "blue_ribbon", "grade": "3_ribbon" },
+  { "type": "tv",          "grade": "흑백요리사" }
+]
+```
+
+- `year`는 포함하지 않음 (뱃지 표시에 불필요).
+- GIN 인덱스 적용 (`idx_restaurants_prestige`).
+- 도메인 타입: `src/domain/entities/restaurant.ts` → `RestaurantPrestige { type, grade }`.
+
+---
+
+## 17. Prestige 산출 로직
+
+### 17-1. 핵심: "산출"이 아니라 "주입 + 동기화"
+
+**Prestige는 계산되는 값이 아니다.** 외부 시드 데이터를 `restaurant_prestige`에 INSERT/UPDATE/DELETE 하면, 트리거가 `restaurants.prestige` JSONB 캐시를 자동 재구축한다. 활성 멤버 수·만족도·기록 수 같은 **유저 행동 기반 계산은 포함되지 않는다** (2026-04-20 기준 구현).
+
+```
+크롤링/엑셀
+    │
+    ▼
+┌─────────────────────┐
+│  restaurant_prestige │  ← 시드 데이터 INSERT/UPDATE/DELETE
+│  (원본 테이블)         │
+└──────────┬──────────┘
+           │
+           │  매칭 프로세스 (POST /api/restaurants/prestige/match)
+           │  1. 기존 restaurants에서 이름·좌표로 검색 (정규화 이름 완전 일치 + 50m 이내)
+           │  2. 없으면 카카오 API로 검색 → 이름 포함 매치 + 50m 이내면 매칭
+           │  3. 그래도 없으면 신규 restaurants 생성 후 매칭
+           │  4. 전부 실패 → restaurant_id = NULL 유지
+           ▼
+┌─────────────────────┐   트리거 (자동)      ┌──────────────────────┐
+│  restaurant_prestige │ ──────────────────→ │  restaurants.prestige  │
+│  restaurant_id 매칭   │   sync_restaurant_  │  JSONB 캐시           │
+└─────────────────────┘   prestige_cache()   └──────────┬───────────┘
+                                                       │
+                                                       ▼
+                                                  UI 뱃지 렌더
+```
+
+### 17-2. 트리거: `sync_restaurant_prestige_cache()`
+
+- **위치**: `058_rename_rp_to_prestige.sql` 내 `CREATE OR REPLACE FUNCTION sync_restaurant_prestige_cache()`
+- **트리거**: `trg_sync_restaurant_prestige_cache` (AFTER INSERT/UPDATE/DELETE, FOR EACH ROW)
+- **동작**:
+  - INSERT: 새 명성 추가 → 대상 식당의 `prestige` JSONB 재구축
+  - UPDATE: `restaurant_id` 변경 시 이전 식당과 새 식당 **모두** 갱신
+  - DELETE: 명성 제거 → 대상 식당의 `prestige` JSONB 재구축 (항목이 0이면 `[]`)
+- **결과값 구조**: `jsonb_agg(jsonb_build_object('type', prestige_type, 'grade', prestige_grade))`
+- **수동 갱신 불필요** — 트리거가 모든 경우를 처리한다.
+
+### 17-3. 매칭 API — `POST /api/restaurants/prestige/match`
+
+- **구현**: `src/app/api/restaurants/prestige/match/route.ts`
+- **절차**:
+  1. `restaurant_prestige`에서 `restaurant_id IS NULL`인 행 최대 200건 조회
+  2. 각 행에 대해:
+     - **Step A**: `restaurants`에서 정규화 이름 완전 일치 + 좌표 50m 이내 → 매칭
+     - **Step B**: 카카오 API 검색 → 이름 포함 매치 + 좌표 50m 이내 → 기존 식당 있으면 매칭 / 없으면 신규 생성 후 매칭
+     - **Step C**: 실패 시 `restaurant_id = NULL` 유지 (재시도 대상)
+  3. 매칭된 `restaurant_id` 세트에 대해 `restaurants.prestige` 캐시 bulk 갱신
+- **의존**: `infrastructure/api/kakao-local.ts` (카카오 로컬 검색), supabase service client
+
+### 17-4. 시드 업데이트 주기
+
+| 소스 | 주기 | 방법 |
+|------|------|------|
+| 미슐랭 | 연 1회 | 크롤링 → CSV → `restaurant_prestige` UPSERT → match API 호출 |
+| 블루리본 | 연 1회 | 크롤링 → CSV → `restaurant_prestige` UPSERT → match API 호출 |
+| TV 프로그램 | 비정기 (방영 시) | 엑셀 → `restaurant_prestige` INSERT (`prestige_type='tv'`, `prestige_grade=프로그램명`) → match API 호출 |
+
+미슐랭처럼 같은 식당의 등급이 매년 바뀌는 경우 `prestige_year`가 다른 새 행을 추가한다. 캐시 JSONB에는 동일 타입의 여러 행이 병합되지만, UI(`PrestigeBadges`)는 타입별 중복을 제거해 1개만 표시한다.
+
+### 17-5. bubble_expertise 뷰와의 관계 — **무관**
+
+`bubble_expertise` 뷰(050_bubble_expertise_view.sql)는 **버블 멤버들의 `xp_totals`를 집계**해 버블별 축(axis_type/axis_value) 전문성을 산출한다 (`bubble_id, axis_type, axis_value, total_xp, max_level, avg_level, member_count`). **Prestige는 이 뷰의 입력이나 출력에 전혀 등장하지 않는다.** 둘은 서로 다른 층위의 개념이다:
+
+- `bubble_expertise` = 유저 XP의 버블별 집계
+- `prestige` = 식당 단위의 외부 시드
+
+> **082 보안 강화 주석** — `082_security_hardening.sql`에서 `bubble_expertise` 뷰를 `WITH (security_invoker = true)`로 재생성했다. RLS는 이제 뷰 호출자 권한으로 평가된다 (기존 PostgreSQL 기본값인 `SECURITY DEFINER` → `SECURITY INVOKER` 전환). 이에 따라 뷰를 조회하는 사용자의 권한으로 `bubble_members` / `xp_totals` RLS 정책이 적용되므로, 비멤버가 타 버블의 전문성 데이터를 우회 조회할 수 없다.
+
+---
+
+## 18. Prestige 활용
+
+### 18-1. UI: PrestigeBadges 컴포넌트
+
+- **위치**: `src/presentation/components/ui/prestige-badges.tsx`
+- **Props**: `{ prestige: RestaurantPrestige[]; size?: 'sm' | 'md' }`
+- **아이콘 매핑**:
+
+| prestige_type | 아이콘 | 비고 |
+|---------------|--------|------|
+| `michelin` | `MichelinIcon` (3성/2성/1성은 아이콘 반복, `bib`은 `BibGourmandIcon`) | 커스텀 SVG 아이콘 |
+| `blue_ribbon` | `BlueRibbonIcon` (3/2/1 리본은 아이콘 반복) | 커스텀 SVG 아이콘 |
+| `tv` | lucide `Tv` + 프로그램명 텍스트 | 색상 `var(--accent-wine)` |
+
+- `size='sm'`: 11px (목록/카드용), `size='md'`: 14px (상세 헤더용)
+- **같은 `type:grade` 키 기준으로 중복 제거하여 한 번만 렌더** (내부 로직: `key = ${item.type}:${item.grade}`)
+
+### 18-2. 표시 위치 (현재 구현)
+
+`prestige`는 다음 경로에서 `restaurants.prestige` JSONB를 직접 읽어 렌더링된다 (JOIN 불필요):
+
+- 홈 카드/리스트 (`home/record-card.tsx`, `home/compact-list-item.tsx`, `home/map-compact-item.tsx`)
+- 식당 상세 헤더 (`restaurant-detail-container.tsx`)
+- 검색 결과 (`search/search-results.tsx`, `search/search-result-item.tsx`)
+- 지도뷰 (`home/map-view.tsx`)
+
+구체적 컴포넌트 목록은 `grep -l "prestige" src/presentation/components/` 로 확인.
+
+### 18-3. Prestige 기반 필터
+
+홈·검색의 "명성" 필터는 `restaurants.prestige` JSONB에 대해 contains 연산을 사용한다:
+
+- **PostgREST**: `prestige=cs.[{"type":"michelin"}]` / `prestige=eq.[]`(명성 없음)
+- **RPC**: 062 마이그레이션에서 3-way split — `search_restaurants_bounds_simple` / `search_restaurants_bounds_auth` / `search_restaurants_bounds_source` 각각이 `p_prestige_types TEXT[]`를 받아 `jsonb_array_elements(rst.prestige)`로 type 필터링. `src/app/api/restaurants/bounds/route.ts`는 인증/소스 여부에 따라 세 RPC 중 하나를 호출한다. 레거시 `search_restaurants_in_bounds`는 호출 금지 (QUERY_OPTIMIZATION §4-1 참고).
+- **domain layer**:
+  - `domain/services/filter-matcher.ts` — `matchPrestige()`, 속성 `prestige`(있음/없음) 및 `prestige_grade:<type>` 복합 조건
+  - `domain/services/filter-query-builder.ts` — PostgREST 필터 문자열 생성
+
+- GIN 인덱스(`idx_restaurants_prestige`)로 필터 성능 확보.
+
+### 18-4. 추천 알고리즘과의 연계
+
+Prestige의 추천 알고리즘 활용 여부 및 방식은 **RECOMMENDATION.md에 위임**한다. 본 문서는 데이터 구조와 캐시 메커니즘까지만 정의한다.
+
+> 참고: 과거 `domain/services/nyam-score.ts`에서 prestige 보너스를 사용하던 설계가 개념문서에 남아있으나, `nyam-score.ts`는 **dead code로 삭제됨**(WORKLOG #50, 2026-04-15). 현재 prestige는 UI 뱃지와 검색·지도 RPC 필터 용도가 주 사용처다.
+
+---
+
+## 19. Prestige 관련 파일 맵
+
+### Domain
+
+| 파일 | 역할 |
+|------|------|
+| `domain/entities/restaurant.ts` | `RestaurantPrestige { type, grade }`, `Restaurant.prestige: RestaurantPrestige[]` |
+| `domain/services/filter-matcher.ts` | `matchPrestige()`, attribute 체크(`prestige`, `prestige_grade:*`) |
+
+### Infrastructure / API
+
+| 파일 | 역할 |
+|------|------|
+| `src/app/api/restaurants/prestige/match/route.ts` | 매칭 API (restaurant_prestige → restaurants) |
+| `src/app/api/restaurants/bounds/route.ts` | 지도뷰 RPC 호출 시 `p_prestige_types` 전달 |
+| `src/app/api/restaurants/search/route.ts` | 검색 RPC 호출 |
+| `infrastructure/api/kakao-local.ts` | 매칭 보조 (카카오 로컬 검색) |
+
+### Presentation
+
+| 파일 | 역할 |
+|------|------|
+| `presentation/components/ui/prestige-badges.tsx` | 뱃지 렌더링 (sm/md) |
+| `presentation/components/home/record-card.tsx` | 홈 카드 prestige 표시 |
+| `presentation/components/home/compact-list-item.tsx` | 홈 리스트 prestige 표시 |
+| `presentation/components/home/map-compact-item.tsx` | 지도뷰 리스트 |
+| `presentation/components/home/map-view.tsx` | 지도 핀 |
+| `presentation/components/search/search-result-item.tsx` | 검색 결과 |
+
+### DB 마이그레이션
+
+| 파일 | 역할 |
+|------|------|
+| `supabase/migrations/055_restaurant_rp.sql` | 원본 도입 (`restaurant_rp` + `restaurants.rp` + sync 트리거 + RPC 리턴 타입 변경). `restaurant_accolades`로부터 데이터 이전 |
+| `supabase/migrations/058_rename_rp_to_prestige.sql` | 전면 rename: 테이블/컬럼/인덱스/RLS 정책/트리거 함수/RPC(`restaurants_within_radius`, `search_restaurants_in_bounds`) 모두 `rp` → `prestige` |
+| `supabase/migrations/062_search_restaurants_bounds_split.sql` | Prestige RPC 3-way split — `search_restaurants_bounds_simple` / `_auth` / `_source` 분리, 각 RPC가 `p_prestige_types TEXT[]` 수용. 레거시 `search_restaurants_in_bounds` deprecated (§18-3) |
+| `supabase/migrations/082_security_hardening.sql` | XP 관련 함수 `search_path` 고정(`refresh_active_xp`, `increment_user_total_xp`, `upsert_user_experience`, `sync_restaurant_prestige_cache` 등) + `bubble_expertise` 뷰 `SECURITY INVOKER` 전환 (§12-9, §17-5) |
+
+### 시드/크롤링 (저장소 외 또는 DB/ 경로)
+
+| 경로 | 역할 |
+|------|------|
+| `DB/미슐랭_크롤링/` | 미슐랭 연 1회 업데이트용 크롤링 스크립트 (저장소 외부 자산) |
+| `DB/블루리본_크롤링/` | 블루리본 연 1회 업데이트용 |
+
+---
+
+## 20. 통합 정리
+
+| 질문 | 답변 |
+|------|------|
+| 유저 XP와 Prestige는 같은 축인가? | **아니다.** 완전히 독립. 유저 테이블 vs 식당 테이블, 계산 vs 주입. |
+| 권위 식당(높은 prestige)에 기록하면 XP 보너스가 있나? | **현재 없다** (`xp-calculator.ts`에 prestige 분기 없음). 설계 원칙 §1("이기적 동기") 보존용. |
+| Prestige는 와인에도 있나? | **없다.** 와인은 `wines.critic_scores` JSONB에 평론가 점수(WS/JR/JH/Parker's RP 등)를 별도 관리. 식당의 prestige와 **이름·의미 모두 다르다**. |
+| RP와 Prestige는 다른 시스템인가? | **같은 시스템의 옛 이름과 현재 이름.** 055에서 RP로 도입, 058에서 전면 rename. 과거 마이그레이션/기록에만 `rp` 흔적이 남아있다. |
+| Prestige가 활성 멤버·만족도로 계산되나? | **아니다.** 외부 시드(미슐랭/블루리본/TV) 주입 + 매칭 + 트리거 캐시만 있다. 유저 행동 기반 산출 로직은 현재 없다. |
+| `bubble_expertise` 뷰가 prestige에 영향을 주나? | **아니다.** 서로 다른 층위. 뷰는 유저 XP의 버블별 집계일 뿐. |

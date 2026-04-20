@@ -24,6 +24,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<WineSearc
   if (!query || query.length < 2) {
     return NextResponse.json({ success: false, candidates: [], error: 'QUERY_TOO_SHORT' }, { status: 400 })
   }
+  if (query.length > 200) {
+    return NextResponse.json({ success: false, candidates: [], error: 'QUERY_TOO_LONG' }, { status: 400 })
+  }
 
   try {
     const candidates = await searchWineByName(query)

@@ -10,6 +10,7 @@ import type { DiningRecord } from '@/domain/entities/record'
 import type { RecordPhoto } from '@/domain/entities/record-photo'
 import type { RestaurantSearchResult } from '@/domain/entities/search'
 import { createClient } from '@/infrastructure/supabase/client'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
 
 function mapDbToRestaurant(data: Record<string, unknown>): Restaurant {
   return {
@@ -337,10 +338,12 @@ export class SupabaseRestaurantRepository implements RestaurantRepository {
   // ─── S3: 검색/등록 ───
 
   async search(query: string, userId: string): Promise<RestaurantSearchResult[]> {
+    const safe = escapeForOrFilter(query)
+    if (!safe) return []
     const { data, error } = await this.supabase
       .from('restaurants')
       .select('id, name, genre, area, address, lat, lng, phone, kakao_map_url, prestige')
-      .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
+      .or(`name.ilike.%${safe}%,address.ilike.%${safe}%`)
       .limit(20)
 
     if (error) throw new Error(`식당 검색 실패: ${error.message}`)

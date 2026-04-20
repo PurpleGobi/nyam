@@ -10,6 +10,7 @@ import type { WineSearchResult } from '@/domain/entities/search'
 import type { QuadrantRefDot, BubbleScoreRow } from '@/domain/repositories/restaurant-repository'
 import type { Database } from '@/infrastructure/supabase/types'
 import { createClient } from '@/infrastructure/supabase/client'
+import { escapeForOrFilter } from '@/shared/utils/postgrest-filter'
 
 type WineInsert = Database['public']['Tables']['wines']['Insert']
 
@@ -340,10 +341,12 @@ export class SupabaseWineRepository implements WineRepository {
   // ─── S3: 검색/등록 ───
 
   async search(query: string, userId: string): Promise<WineSearchResult[]> {
+    const safe = escapeForOrFilter(query)
+    if (!safe) return []
     const { data: wines, error } = await this.supabase
       .from('wines')
       .select('id, name, producer, vintage, wine_type, region, country')
-      .or(`name.ilike.%${query}%,producer.ilike.%${query}%`)
+      .or(`name.ilike.%${safe}%,producer.ilike.%${safe}%`)
       .order('name')
       .limit(20)
 

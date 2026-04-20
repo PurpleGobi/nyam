@@ -2,33 +2,41 @@
 
 import { useState, useEffect } from 'react'
 import type { QuadrantReferencePoint } from '@/domain/entities/quadrant'
-import { recordRepo } from '@/shared/di/container'
+import type { RecordTargetType } from '@/domain/entities/record'
+import { recordRepo, restaurantRepo, wineRepo } from '@/shared/di/container'
 
 interface UseRecordReferencesResult {
-  referenceRecords: QuadrantReferencePoint[]
+  /** 동일 타깃의 과거 방문 기록 ref 점 */
+  pastReferences: QuadrantReferencePoint[]
+  /** 다른 타깃(내가 기록한 다른 식당/와인)의 평균 ref 점 — 비교용 */
+  compareReferences: QuadrantReferencePoint[]
   recentCompanions: string[]
 }
 
 /**
- * 이전 기록 참조점 + 최근 동행자 로드 hook.
- * record-flow-container에서 recordRepo.findByUserAndTarget + recordRepo.findByUserId 호출을 대체.
+ * 사분면 참조점 + 최근 동행자 로드 hook.
+ * - pastReferences: 동일 타깃(같은 식당/와인)의 과거 방문 기록 (편집 중 기록은 제외)
+ * - compareReferences: 내가 기록한 다른 식당/와인의 평균 (최대 12개)
+ * - recentCompanions: 사용 빈도순 최근 동행자
  */
 export function useRecordReferences(
   userId: string | null,
   targetId: string | null,
+  targetType: RecordTargetType,
   editRecordId?: string | null,
 ): UseRecordReferencesResult {
-  const [referenceRecords, setReferenceRecords] = useState<QuadrantReferencePoint[]>([])
+  const [pastReferences, setPastReferences] = useState<QuadrantReferencePoint[]>([])
+  const [compareReferences, setCompareReferences] = useState<QuadrantReferencePoint[]>([])
   const [recentCompanions, setRecentCompanions] = useState<string[]>([])
 
-  // 이전 기록 참조점 로드
+  // 동일 타깃 과거 방문 기록 로드
   useEffect(() => {
     if (!userId || !targetId) return
     let cancelled = false
     const uid = userId
     const tid = targetId
 
-    async function loadPreviousRecords() {
+    async function loadPastRecords() {
       try {
         const records = await recordRepo.findByUserAndTarget(uid, tid)
         if (cancelled) return
@@ -42,14 +50,45 @@ export function useRecordReferences(
             name: r.visitDate ?? '',
             score: r.satisfaction ?? 50,
           }))
-        setReferenceRecords(refs)
+        setPastReferences(refs)
       } catch {
         // 참조 점 로드 실패 시 무시 — 핵심 기능 아님
       }
     }
-    loadPreviousRecords()
+    loadPastRecords()
     return () => { cancelled = true }
   }, [userId, targetId, editRecordId])
+
+  // 비교용 다른 타깃 평균 refs 로드 (동일 target type만)
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    const uid = userId
+    const excludeId = targetId ?? ''
+
+    async function loadCompareRefs() {
+      try {
+        const repo = targetType === 'wine' ? wineRepo : restaurantRepo
+        const refs = await repo.findQuadrantRefs(uid, excludeId)
+        if (cancelled) return
+        setCompareReferences(
+          refs.map((r) => ({
+            x: r.avgAxisX,
+            y: r.avgAxisY,
+            satisfaction: r.avgSatisfaction,
+            name: r.targetName,
+            score: r.avgSatisfaction,
+            targetId: r.targetId,
+            targetType,
+          })),
+        )
+      } catch {
+        // 비교 refs 로드 실패 시 무시 — 핵심 기능 아님
+      }
+    }
+    loadCompareRefs()
+    return () => { cancelled = true }
+  }, [userId, targetId, targetType])
 
   // 최근 동행자 목록 로드
   useEffect(() => {
@@ -82,5 +121,5 @@ export function useRecordReferences(
     return () => { cancelled = true }
   }, [userId])
 
-  return { referenceRecords, recentCompanions }
+  return { pastReferences, compareReferences, recentCompanions }
 }

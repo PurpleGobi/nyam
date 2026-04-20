@@ -8,40 +8,38 @@
 ```
 1. WORKLOG.md                         ← 최근 작업 맥락 (무엇을 했고, 무엇이 남았는지)
 2. CODEBASE.md                        ← 코드베이스 구조 인덱스 (어디에 뭐가 있는지)
+3. CLAUDE.md                          ← 프로젝트 규칙 (아키텍처, 게이트, 금지사항 — 이 파일)
 ```
-s
+
 ## 프로젝트 구조
 
 ```
 nyam/
 ├── CLAUDE.md                       # 이 파일 (최상위 규칙)
-├── development_docs/               # 설계 + 구현 문서
+├── development_docs/               # 설계 + 시스템 SSOT
 │   ├── 00_PRD.md                   #   제품 정의
-│   ├── 00_IA.md                    #   화면 맵, 스프린트 순서
-│   ├── systems/                    #   횡단 시스템 규칙 (SSOT)
-│   │   ├── DATA_MODEL.md           #     DB 스키마, 테이블, 관계
-│   │   ├── AUTH.md                 #     인증, 권한, RLS, 프라이버시
-│   │   ├── RATING_ENGINE.md        #     사분면, 아로마, 평가
-│   │   ├── DESIGN_SYSTEM.md        #     디자인 토큰, 컬러, 컴포넌트
-│   │   ├── XP_SYSTEM.md            #     경험치, 레벨, 어뷰징 방지
-│   │   └── RECOMMENDATION.md       #     추천 알고리즘 7종
-│   ├── pages/                      #   페이지별 구현 스펙 (01~12)
-│   ├── prototype/                  #   인터랙티브 목업 HTML
-│   └── implementation/             #   개발 실행 문서
-│       ├── phases/                 #     스프린트별 지침 (S1~S10)
-│       └── shared/                 #     공통 패턴 (클린 아키텍처, 테스트, 규칙)
-└── src/                            # 코드 (구현 시작 시 생성)
+│   ├── 00_IA.md                    #   화면 맵
+│   ├── POST_LAUNCH.md              #   출시 후 로드맵
+│   └── systems/                    #   횡단 시스템 규칙 (SSOT 10개)
+│       ├── DATA_MODEL.md           #     DB 스키마, 테이블, RPC, RLS
+│       ├── AUTH.md                 #     인증, 권한, RLS 정책
+│       ├── DESIGN_SYSTEM.md        #     디자인 토큰, 컴포넌트
+│       ├── RECORD_SYSTEM.md        #     사분면/아로마/3-Phase/AI 리뷰/카메라 3모드/검색·dedup
+│       ├── XP_SYSTEM.md            #     경험치/레벨 + Prestige
+│       ├── BUBBLE_SYSTEM.md        #     버블 생애주기, 자동 공유, 랭킹
+│       ├── SOCIAL_SYSTEM.md        #     팔로우, 댓글, 리액션, 알림
+│       ├── RECOMMENDATION.md       #     Phase 1 규칙 + CF 알고리즘
+│       ├── MAP_LOCATION.md         #     지도, 생활권, 와인 산지
+│       └── QUERY_OPTIMIZATION.md   #     쿼리 원칙, 인덱스, RPC
+├── _archive/                       # 과거 문서 (pages, prototype, 개념문서, refactoring 등)
+└── src/                            # 코드
 ```
-
----
-
 
 ---
 
 ## 작업 루프
 
 **커밋할 때마다** WORKLOG.md에 작업 엔트리 추가/갱신 (10개 초과 시 가장 오래된 것 삭제).
-
 
 ## 기술 스택
 
@@ -125,12 +123,10 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 □ pnpm lint           경고 0개
 □ TypeScript          any/as any/@ts-ignore/! 0개
 □ R1~R5               위반 없음 (위 grep 명령으로 확인)
-□ SSOT 정합성         코드가 systems/*.md + pages/*.md 스펙과 일치
-□ 목업 정합성         UI가 prototype/*.html과 일치
+□ SSOT 정합성         코드가 systems/*.md 스펙과 일치
 □ 보안                RLS 우회 없음, 키 노출 없음, SECURITY DEFINER 금지
 □ 모바일              360px에서 레이아웃 깨짐 없음
 ```
-
 
 ---
 
@@ -195,21 +191,24 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 
 ---
 
-## 스프린트 구조 (10 스프린트, 68 태스크)
+## 스프린트 구조 (11 스프린트, 68+ 태스크)
 
-| Sprint | 핵심 | 선행 |
-|--------|------|------|
-| **S1** Foundation | DB 전체 스키마(P1+P2) + RLS + 인증 4종 + 디자인 토큰 | 없음 |
-| **S2** Core Recording | 사분면 + 만족도 + 아로마 15섹터 3링 + 구조평가 + 페어링 8종 + 기록 플로우 | S1 |
-| **S3** Search | 카메라(Primary) + 검색 + OCR + EXIF GPS + 등록 + 풀플로우 | S1, S2 |
-| **S4** Detail Pages | 식당/와인 L1~L8 + 기록 상세 + 찜 CRUD | S1, S2 |
-| **S5** Home | 앱 셸 + 탭 + 4종 뷰 + 필터/소팅 + 통계 + 추천 7종 + 넛지 + Discover 서브스크린 | S1~S4 |
-| **S6** XP & Profile | XP 엔진 + 활성 XP 크론 + 프로필 + 설정 + 알림 | S2 |
-| **S7** Bubble | 생성/가입/초대 + 5종 가입정책 + 피드/랭킹/멤버 + 댓글/리액션 + 역할 + 랭킹 크론 | S1, S6 |
-| **S8** Integration | 팔로우/맞팔 + L9 + 홈 소셜 탭 + 버블 공유 + 버블러 프로필 | S4, S5, S7 |
-| **S9** Onboarding | 온보딩(로그인→맛집등록→버블생성→탐색→홈) + 넛지 정교화 + E2E + 최적화 | 전체 |
-| **S10** Maps | 식당 드릴다운 지도 + 와인 산지 3단계 드릴다운 지도 + SVG 데이터 | S6 |
+> ※ 모든 스프린트 개발 완료 — 상세 계획/태스크는 `_archive/implementation_phases/` 참조.
+> 이후 유지보수·개선 작업은 WORKLOG.md 엔트리 기반으로 진행한다.
 
+| Sprint | 핵심 | 선행 | 상태 |
+|--------|------|------|------|
+| **S0** Design System CSS | globals.css 토큰 + Tailwind 매핑 + page-component map | 없음 | 완료 |
+| **S1** Foundation | DB 전체 스키마(P1+P2) + RLS + 인증 4종 + 디자인 토큰 | 없음 | 완료 |
+| **S2** Core Recording | 사분면 + 만족도 + 아로마 16섹터 3링 + 구조평가 + 페어링 8종 + 기록 플로우 | S1 | 완료 |
+| **S3** Search | 카메라(Primary) + 검색 + OCR + EXIF GPS + 등록 + 풀플로우 | S1, S2 | 완료 |
+| **S4** Detail Pages | 식당/와인 L1~L8 + 기록 상세 + 찜 CRUD | S1, S2 | 완료 |
+| **S5** Home | 앱 셸 + 탭 + 4종 뷰 + 필터/소팅 + 통계 + 추천 7종 + 넛지 + Discover 서브스크린 | S1~S4 | 완료 |
+| **S6** XP & Profile | XP 엔진 + 활성 XP 크론 + 프로필 + 설정 + 알림 | S2 | 완료 |
+| **S7** Bubble | 생성/가입/초대 + 5종 가입정책 + 피드/랭킹/멤버 + 댓글/리액션 + 역할 + 랭킹 크론 | S1, S6 | 완료 |
+| **S8** Integration | 팔로우/맞팔 + L9 + 홈 소셜 탭 + 버블 공유 + 버블러 프로필 | S4, S5, S7 | 완료 |
+| **S9** Onboarding | 온보딩(로그인→맛집등록→버블생성→탐색→홈) + 넛지 정교화 + E2E + 최적화 | 전체 | 완료 |
+| **S10** Maps | 식당 드릴다운 지도 + 와인 산지 3단계 드릴다운 지도 + SVG 데이터 | S6 | 부분완료 (country/region 2단계 완료, sub_region/appellation 3·4단계 미착수 — MAP_LOCATION §7.3 참조) |
 
 ---
 
@@ -255,16 +254,15 @@ domain/entities → domain/repositories → infrastructure → application/hooks
 |------------|----------|
 | 코드베이스 구조 | `CODEBASE.md` |
 | 최근 작업 맥락 | `WORKLOG.md` |
-| 클린 아키텍처 패턴 | `implementation/shared/CLEAN_ARCH_PATTERN.md` |
-| 테스트 전략 | `implementation/shared/TESTING_STRATEGY.md` |
-| 네이밍/규칙 | `implementation/shared/CONVENTIONS.md` |
-| 스프린트 상세 | `implementation/phases/SN_xxx/00_overview.md` |
-| DB 스키마 | `systems/DATA_MODEL.md` |
-| 인증/권한/RLS | `systems/AUTH.md` |
-| 사분면/아로마/평가 | `systems/RATING_ENGINE.md` |
-| 디자인 토큰/컴포넌트 | `systems/DESIGN_SYSTEM.md` |
-| XP/레벨/어뷰징 | `systems/XP_SYSTEM.md` |
-| 쿼리 최적화 원칙 | `systems/QUERY_OPTIMIZATION.md` |
-| 추천 알고리즘 | `systems/RECOMMENDATION.md` |
-| 페이지별 스펙 | `pages/01~12_*.md` |
-| 비주얼 레퍼런스 | `prototype/*.html` |
+| 제품 정의 | `development_docs/00_PRD.md`, `00_IA.md`, `POST_LAUNCH.md` |
+| DB 스키마 / RPC / RLS | `development_docs/systems/DATA_MODEL.md` |
+| 인증/권한/RLS 정책 | `development_docs/systems/AUTH.md` |
+| 기록/평가/3-Phase/AI 리뷰 | `development_docs/systems/RECORD_SYSTEM.md` |
+| 디자인 토큰/컴포넌트 | `development_docs/systems/DESIGN_SYSTEM.md` |
+| XP/레벨/Prestige | `development_docs/systems/XP_SYSTEM.md` |
+| 버블 시스템 (생애주기/자동공유/랭킹) | `development_docs/systems/BUBBLE_SYSTEM.md` |
+| 소셜 (팔로우/댓글/리액션/알림) | `development_docs/systems/SOCIAL_SYSTEM.md` |
+| 추천/CF 알고리즘 | `development_docs/systems/RECOMMENDATION.md` |
+| 지도/위치/생활권/와인 산지 | `development_docs/systems/MAP_LOCATION.md` |
+| 쿼리 최적화/인덱스/RPC 카탈로그 | `development_docs/systems/QUERY_OPTIMIZATION.md` |
+| 과거 문서 (참고용) | `_archive/` (pages, prototype, refactoring, implementation_phases, implementation_shared, research, simulations, system_brainstorming, 개념문서_원본 — 세부는 `_archive/` 탐색) |
